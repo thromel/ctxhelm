@@ -1,0 +1,6 @@
+.worktrees/
+/target/
+/.ctxpack/cache/
+/.ctxpack/index/
+*.log
+.DS_Store

@@ -1,0 +1,17 @@
+[package]
+name = "ctxpack"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+anyhow.workspace = true
+clap.workspace = true
+ctxpack-compiler = { path = "../ctxpack-compiler" }
+ctxpack-core = { path = "../ctxpack-core" }
+ctxpack-index = { path = "../ctxpack-index" }
+ctxpack-mcp = { path = "../ctxpack-mcp" }
+serde_json.workspace = true
+
+[dev-dependencies]
+uuid.workspace = true
