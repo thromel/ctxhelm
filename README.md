@@ -50,6 +50,15 @@ Implemented MCP tools:
 
 Implemented MCP resources include `ctxpack://repo/summary`, `ctxpack://repo/test-map`, `ctxpack://pack/guide`, safe file slices, and symbol search. Implemented prompts cover bugfix, feature, refactor, review, test-writing, and explanation workflows.
 
+## Client Integration Status
+
+Current local smoke status:
+
+- Claude Code `2.1.92`: end-to-end MCP tool use verified with `.mcp.json`, `--strict-mcp-config`, and an explicit `repo` argument. Claude connected to ctxpack, called `prepare_task`, and received target files plus `pnpm vitest run <test>` validation.
+- Codex CLI `0.120.0`: MCP registration/config discovery verified with `codex mcp get ctxpack`. Non-interactive `codex exec` MCP tool use is not yet verified; in local smoke tests it did not expose/call `ctxpack.prepare_task` even when the server was configured.
+
+When using ctxpack through MCP, pass the active repository path as `repo` whenever the client knows it. Some clients launch MCP servers from a different working directory than the project they expose.
+
 ## Safe Inventory
 
 Build the local file inventory for a repository:
@@ -101,6 +110,7 @@ cargo run -p ctxpack -- related-tests src/auth/session.ts --repo /path/to/repo
 ```
 
 The result includes confidence, a reason, and a best-effort targeted test command.
+For JavaScript and TypeScript repos, ctxpack now checks nearby `package.json` scripts and package-manager lockfiles to prefer commands such as `pnpm vitest run <test>` or `npm test -- <test>` instead of assuming a single runner.
 
 ## Git Co-Change Hints
 

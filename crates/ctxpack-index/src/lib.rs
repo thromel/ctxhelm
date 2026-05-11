@@ -431,7 +431,7 @@ pub fn related_tests(
 
         results.push(RelatedTestResult {
             path: file.path.clone(),
-            command: test_command_for(&file.path),
+            command: test_command_for(&repo_root, &file.path),
             confidence: (score / 20.0).min(0.95),
             reason,
         });
@@ -716,6 +716,9 @@ fn is_test_path(lower: &str, name: &str) -> bool {
     lower.contains("/tests/")
         || lower.contains("/test/")
         || lower.contains("/spec/")
+        || lower.starts_with("tests/")
+        || lower.starts_with("test/")
+        || lower.starts_with("spec/")
         || name.contains(".test.")
         || name.contains(".spec.")
         || name.ends_with("_test.go")
@@ -1337,10 +1340,10 @@ fn score_test_file(
     Some((score, reasons.join("; ")))
 }
 
-fn test_command_for(path: &str) -> Option<String> {
+fn test_command_for(repo_root: &Path, path: &str) -> Option<String> {
     let lower = path.to_ascii_lowercase();
     if lower.ends_with(".rs") {
-        Some("cargo test".to_string())
+        Some(rust_test_command(path))
     } else if lower.ends_with(".go") {
         Some(format!("go test ./{}", package_dir(path)))
     } else if lower.ends_with(".py") {
@@ -1350,10 +1353,127 @@ fn test_command_for(path: &str) -> Option<String> {
         || lower.ends_with(".js")
         || lower.ends_with(".jsx")
     {
-        Some(format!("pnpm test {path}"))
+        Some(javascript_test_command(repo_root, path))
     } else {
         None
     }
+}
+
+fn rust_test_command(path: &str) -> String {
+    if let Some(file_name) = path
+        .strip_prefix("tests/")
+        .and_then(|rest| rest.strip_suffix(".rs"))
+    {
+        if !file_name.contains('/') {
+            return format!("cargo test --test {file_name}");
+        }
+    }
+    "cargo test".to_string()
+}
+
+fn javascript_test_command(repo_root: &Path, path: &str) -> String {
+    let package_root =
+        nearest_package_root(repo_root, path).unwrap_or_else(|| repo_root.to_path_buf());
+    let package_manager = detect_js_package_manager(&package_root);
+    let script = read_test_script(&package_root);
+
+    if let Some(script) = script {
+        let lower_script = script.to_ascii_lowercase();
+        if lower_script.contains("vitest") {
+            return format!("{} vitest run {path}", package_manager.command());
+        }
+        if lower_script.contains("jest") {
+            return format!("{} jest {path}", package_manager.command());
+        }
+        if !is_placeholder_test_script(&lower_script) {
+            return package_manager.run_test_script(path);
+        }
+    }
+
+    format!("{} test {path}", package_manager.command())
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum JsPackageManager {
+    Pnpm,
+    Yarn,
+    Npm,
+    Bun,
+}
+
+impl JsPackageManager {
+    fn command(self) -> &'static str {
+        match self {
+            JsPackageManager::Pnpm => "pnpm",
+            JsPackageManager::Yarn => "yarn",
+            JsPackageManager::Npm => "npm",
+            JsPackageManager::Bun => "bun",
+        }
+    }
+
+    fn run_test_script(self, path: &str) -> String {
+        match self {
+            JsPackageManager::Pnpm => format!("pnpm test -- {path}"),
+            JsPackageManager::Yarn => format!("yarn test {path}"),
+            JsPackageManager::Npm => format!("npm test -- {path}"),
+            JsPackageManager::Bun => format!("bun test {path}"),
+        }
+    }
+}
+
+fn nearest_package_root(repo_root: &Path, path: &str) -> Option<PathBuf> {
+    let mut current = repo_root.join(path).parent()?.to_path_buf();
+    loop {
+        if current.join("package.json").is_file() {
+            return Some(current);
+        }
+        if current == repo_root {
+            break;
+        }
+        if !current.pop() {
+            break;
+        }
+    }
+    if repo_root.join("package.json").is_file() {
+        Some(repo_root.to_path_buf())
+    } else {
+        None
+    }
+}
+
+fn detect_js_package_manager(package_root: &Path) -> JsPackageManager {
+    if package_root.join("pnpm-lock.yaml").is_file() {
+        JsPackageManager::Pnpm
+    } else if package_root.join("yarn.lock").is_file() {
+        JsPackageManager::Yarn
+    } else if package_root.join("package-lock.json").is_file()
+        || package_root.join("npm-shrinkwrap.json").is_file()
+    {
+        JsPackageManager::Npm
+    } else if package_root.join("bun.lock").is_file() || package_root.join("bun.lockb").is_file() {
+        JsPackageManager::Bun
+    } else {
+        JsPackageManager::Pnpm
+    }
+}
+
+fn read_test_script(package_root: &Path) -> Option<String> {
+    let package_json = fs::read_to_string(package_root.join("package.json")).ok()?;
+    let value = serde_json::from_str::<serde_json::Value>(&package_json).ok()?;
+    value
+        .get("scripts")?
+        .get("test")?
+        .as_str()
+        .map(str::trim)
+        .filter(|script| !script.is_empty())
+        .map(str::to_string)
+}
+
+fn is_placeholder_test_script(script: &str) -> bool {
+    script.contains("no test")
+        || script.contains("no tests")
+        || script.contains("missing script")
+        || script.contains("error")
 }
 
 fn package_dir(path: &str) -> String {
@@ -1718,6 +1838,95 @@ mod tests {
         );
         assert!(results[0].confidence > 0.5);
         assert!(results[0].reason.contains("source stem `session`"));
+
+        std::env::remove_var("CTXPACK_HOME");
+    }
+
+    #[test]
+    fn related_tests_uses_vitest_script_and_package_manager_lockfile() {
+        let _guard = env_lock();
+        let temp = tempfile::tempdir().unwrap();
+        let repo = temp.path().join("repo");
+        let home = temp.path().join("ctxpack-home");
+        fs::create_dir_all(repo.join(".git")).unwrap();
+        fs::create_dir_all(repo.join("src/auth")).unwrap();
+        fs::create_dir_all(repo.join("tests/auth")).unwrap();
+        fs::write(
+            repo.join("package.json"),
+            r#"{"scripts":{"test":"vitest run"}}"#,
+        )
+        .unwrap();
+        fs::write(repo.join("pnpm-lock.yaml"), "lockfileVersion: '9.0'\n").unwrap();
+        fs::write(
+            repo.join("src/auth/session.ts"),
+            "export function requireSession() {}\n",
+        )
+        .unwrap();
+        fs::write(
+            repo.join("tests/auth/session.test.ts"),
+            "requireSession keeps auth tests connected\n",
+        )
+        .unwrap();
+        std::env::set_var("CTXPACK_HOME", &home);
+
+        let results = related_tests(&repo, &["src/auth/session.ts".to_string()]).unwrap();
+
+        assert_eq!(
+            results[0].command.as_deref(),
+            Some("pnpm vitest run tests/auth/session.test.ts")
+        );
+
+        std::env::remove_var("CTXPACK_HOME");
+    }
+
+    #[test]
+    fn related_tests_uses_npm_test_script_with_separator() {
+        let _guard = env_lock();
+        let temp = tempfile::tempdir().unwrap();
+        let repo = temp.path().join("repo");
+        let home = temp.path().join("ctxpack-home");
+        fs::create_dir_all(repo.join(".git")).unwrap();
+        fs::create_dir_all(repo.join("src")).unwrap();
+        fs::create_dir_all(repo.join("tests")).unwrap();
+        fs::write(repo.join("package.json"), r#"{"scripts":{"test":"mocha"}}"#).unwrap();
+        fs::write(repo.join("package-lock.json"), "{}\n").unwrap();
+        fs::write(
+            repo.join("src/payment.js"),
+            "export function normalizePayment() {}\n",
+        )
+        .unwrap();
+        fs::write(repo.join("tests/payment.test.js"), "normalizePayment\n").unwrap();
+        std::env::set_var("CTXPACK_HOME", &home);
+
+        let results = related_tests(&repo, &["src/payment.js".to_string()]).unwrap();
+
+        assert_eq!(
+            results[0].command.as_deref(),
+            Some("npm test -- tests/payment.test.js")
+        );
+
+        std::env::remove_var("CTXPACK_HOME");
+    }
+
+    #[test]
+    fn related_tests_uses_rust_integration_test_command() {
+        let _guard = env_lock();
+        let temp = tempfile::tempdir().unwrap();
+        let repo = temp.path().join("repo");
+        let home = temp.path().join("ctxpack-home");
+        fs::create_dir_all(repo.join(".git")).unwrap();
+        fs::create_dir_all(repo.join("src")).unwrap();
+        fs::create_dir_all(repo.join("tests")).unwrap();
+        fs::write(repo.join("src/auth.rs"), "pub fn require_session() {}\n").unwrap();
+        fs::write(repo.join("tests/auth.rs"), "require_session();\n").unwrap();
+        std::env::set_var("CTXPACK_HOME", &home);
+
+        let results = related_tests(&repo, &["src/auth.rs".to_string()]).unwrap();
+
+        assert_eq!(
+            results[0].command.as_deref(),
+            Some("cargo test --test auth")
+        );
 
         std::env::remove_var("CTXPACK_HOME");
     }

@@ -322,7 +322,7 @@ fn tools_list_result() -> Value {
                         },
                         "repo": {
                             "type": "string",
-                            "description": "Optional repository path. Defaults to the MCP server working directory."
+                            "description": "Optional repository path. Pass the active workspace path when known; defaults to the MCP server working directory."
                         },
                         "mode": {
                             "type": "string",
@@ -351,7 +351,7 @@ fn tools_list_result() -> Value {
                         },
                         "repo": {
                             "type": "string",
-                            "description": "Optional repository path. Defaults to the MCP server working directory."
+                            "description": "Optional repository path. Pass the active workspace path when known; defaults to the MCP server working directory."
                         },
                         "limit": {
                             "type": "integer",
@@ -377,7 +377,7 @@ fn tools_list_result() -> Value {
                         },
                         "repo": {
                             "type": "string",
-                            "description": "Optional repository path. Defaults to the MCP server working directory."
+                            "description": "Optional repository path. Pass the active workspace path when known; defaults to the MCP server working directory."
                         },
                         "include": {
                             "type": "array",
@@ -411,7 +411,7 @@ fn tools_list_result() -> Value {
                         },
                         "repo": {
                             "type": "string",
-                            "description": "Optional repository path. Defaults to the MCP server working directory."
+                            "description": "Optional repository path. Pass the active workspace path when known; defaults to the MCP server working directory."
                         },
                         "mode": {
                             "type": "string",
@@ -451,7 +451,7 @@ fn tools_list_result() -> Value {
                         },
                         "repo": {
                             "type": "string",
-                            "description": "Optional repository path. Defaults to the MCP server working directory."
+                            "description": "Optional repository path. Pass the active workspace path when known; defaults to the MCP server working directory."
                         }
                     },
                     "required": ["paths"],
@@ -467,7 +467,7 @@ fn tools_list_result() -> Value {
                     "properties": {
                         "repo": {
                             "type": "string",
-                            "description": "Optional repository path. Defaults to the MCP server working directory."
+                            "description": "Optional repository path. Pass the active workspace path when known; defaults to the MCP server working directory."
                         },
                         "includeUntracked": {
                             "type": "boolean",
@@ -762,7 +762,7 @@ fn workflow_prompt(mode: &str, task: &str, instruction: &str) -> String {
     } else {
         format!("Task: {task}")
     };
-    format!("{task_line}\nMode: {mode}\n\n{instruction}\n\nKeep ctxpack read-only: use it for context and use the host agent's native tools for file reads, edits, and validation commands.")
+    format!("{task_line}\nMode: {mode}\n\n{instruction}\n\nWhen the active workspace path is known, pass it as the ctxpack `repo` argument so the MCP server does not infer the wrong working directory.\n\nKeep ctxpack read-only: use it for context and use the host agent's native tools for file reads, edits, and validation commands.")
 }
 
 fn test_command_for_path(path: &str) -> String {

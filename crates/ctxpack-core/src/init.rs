@@ -80,7 +80,7 @@ opencode_snippet = false
 pub const AGENTS_SECTION: &str = r#"<!-- ctxpack:start -->
 ## ctxpack
 
-For non-trivial code changes, call the ctxpack MCP tool `prepare_task` before planning edits when MCP is configured. Otherwise, run `ctxpack prepare-task`.
+For non-trivial code changes, call the ctxpack MCP tool `prepare_task` before planning edits when MCP is configured. Pass the active repository path as `repo` when the agent knows it. Otherwise, run `ctxpack prepare-task`.
 
 Use ctxpack for:
 - likely target files
@@ -100,7 +100,7 @@ alwaysApply: true
 
 For tasks that modify code, investigate bugs, add features, or affect multiple files:
 
-1. Call the ctxpack MCP tool `prepare_task` when available, or run `ctxpack prepare-task`.
+1. Call the ctxpack MCP tool `prepare_task` when available, passing the active repository path as `repo` when known, or run `ctxpack prepare-task`.
 2. Prefer returned target files, related tests, examples, and constraints.
 3. Read actual files using Cursor's native file tools before editing.
 4. Do not load broad repository context unless ctxpack recommends it.
@@ -111,7 +111,7 @@ pub const CLAUDE_BUGFIX_COMMAND: &str = r#"# ctxpack Bugfix
 
 Use this command for non-trivial bug fixes.
 
-1. Call `ctxpack.prepare_task` for the user's task when MCP is available.
+1. Call `ctxpack.prepare_task` for the user's task when MCP is available, passing the active repository path as `repo` when known.
 2. Read the returned target files with native tools.
 3. Request a standard pack only if direct file reads are insufficient.
 4. Make the smallest patch that addresses the bug.
@@ -139,7 +139,7 @@ Add a local stdio MCP server for ctxpack in your Codex MCP configuration:
 
   command: ctxpack serve-mcp
 
-The first implemented tool is `prepare_task`. This command does not mutate global Codex config automatically.
+Pass the active repository path as `repo` when calling ctxpack MCP tools from an agent. The first implemented tool is `prepare_task`. This command does not mutate global Codex config automatically.
 "#;
 
 pub fn adapter_path(adapter: AgentAdapter) -> &'static str {
@@ -386,6 +386,7 @@ mod tests {
         assert!(CODEX_MCP_SETUP.contains("ctxpack serve-mcp"));
         assert!(CODEX_MCP_SETUP.contains("does not mutate global Codex config"));
         assert!(CODEX_MCP_SETUP.contains("prepare_task"));
+        assert!(CODEX_MCP_SETUP.contains("active repository path as `repo`"));
     }
 
     #[test]
@@ -406,8 +407,15 @@ mod tests {
     fn agents_section_contains_ctxpack_markers() {
         assert!(AGENTS_SECTION.contains("when MCP is configured"));
         assert!(AGENTS_SECTION.contains("prepare_task"));
+        assert!(AGENTS_SECTION.contains("active repository path as `repo`"));
         assert!(AGENTS_SECTION.contains(AGENTS_SECTION_START));
         assert!(AGENTS_SECTION.contains(AGENTS_SECTION_END));
+    }
+
+    #[test]
+    fn native_rules_ask_agents_to_pass_explicit_repo_path() {
+        assert!(CURSOR_RULE.contains("active repository path as `repo`"));
+        assert!(CLAUDE_BUGFIX_COMMAND.contains("active repository path as `repo`"));
     }
 
     #[test]

@@ -296,15 +296,16 @@ Do not request deep packs unless the brief or standard pack is insufficient.
 
 ### 7.2 Codex
 
-Codex is the first verified path.
+Codex remains a primary target, but current local smoke coverage only verifies MCP registration/config discovery for Codex CLI.
 
 - Configure the local stdio MCP server.
 - Use `AGENTS.md` as the repo instruction source.
 - Keep `.ctxpack/cards/` optional for cloud or disconnected contexts.
-- Verify with a sample repo task that Codex calls `prepare_task`, reads target files, edits with native tools, and runs suggested validation.
+- Next verification target: a sample repo task where Codex calls `prepare_task`, reads target files, edits with native tools, and runs suggested validation.
 
 ### 7.3 Claude Code
 
+- Current local smoke coverage verifies end-to-end MCP tool use with `.mcp.json`, `--strict-mcp-config`, and an explicit `repo` argument.
 - Add `CLAUDE.md` or `.claude/commands/*` only when the user opts in.
 - Expose MCP prompts as slash-command workflows.
 - Do not auto-inject a full pack on every prompt.
@@ -381,7 +382,7 @@ No source code leaves the machine by default.
 
 ### 9.1 MVP Success Metrics
 
-- Setup success: user can initialize a repo and connect at least Codex through MCP.
+- Setup success: user can initialize a repo and connect at least one target agent through MCP; current verified end-to-end client is Claude Code, while Codex CLI registration is verified separately.
 - Agent adoption: agent calls `prepare_task` for non-trivial tasks via `AGENTS.md` or native rules.
 - Context compactness: `prepare_task` stays under roughly 1,500 tokens; standard packs remain budgeted.
 - File relevance: in dogfood tasks, ctxpack target files overlap files the agent actually reads or edits.

@@ -125,27 +125,40 @@ pub fn prepare_context_plan(
         })
         .collect();
 
-    let co_changes = co_change_hints(
+    let mut has_history = false;
+    match co_change_hints(
         &repo_root,
         &source_target_paths,
         &CoChangeOptions {
             limit: co_change_limit(&plan.task_type),
         },
-    )?;
-    for hint in co_changes.into_iter().take(5) {
-        plan.risk_flags.push(RiskFlag {
-            code: "co_change_hint".to_string(),
-            message: format!(
-                "{} changed with target files in {} local commit(s): {}",
-                hint.path, hint.commit_count, hint.reason
-            ),
-        });
+    ) {
+        Ok(co_changes) => {
+            has_history = !co_changes.is_empty();
+            for hint in co_changes.into_iter().take(5) {
+                plan.risk_flags.push(RiskFlag {
+                    code: "co_change_hint".to_string(),
+                    message: format!(
+                        "{} changed with target files in {} local commit(s): {}",
+                        hint.path, hint.commit_count, hint.reason
+                    ),
+                });
+            }
+        }
+        Err(error) => {
+            plan.risk_flags.push(RiskFlag {
+                code: "co_change_unavailable".to_string(),
+                message: format!(
+                    "Local git co-change hints were unavailable; continuing without history signal: {error}"
+                ),
+            });
+        }
     }
 
     plan.confidence = plan_confidence(
         !plan.target_files.is_empty(),
         !plan.related_tests.is_empty(),
-        !plan.risk_flags.is_empty(),
+        has_history,
     );
 
     Ok(plan)
@@ -721,6 +734,43 @@ mod tests {
         assert!(markdown.contains("- Lines: 31-31"));
         assert!(markdown.contains("31: export function requireSession"));
         assert!(markdown.contains("... omitted lines 1-"));
+
+        std::env::remove_var("CTXPACK_HOME");
+    }
+
+    #[test]
+    fn prepare_context_plan_degrades_when_git_history_is_unavailable() {
+        let _guard = env_lock();
+        let temp = tempfile::tempdir().unwrap();
+        let repo = temp.path().join("repo");
+        let home = temp.path().join("ctxpack-home");
+        fs::create_dir_all(repo.join("src/auth")).unwrap();
+        fs::create_dir_all(repo.join("tests/auth")).unwrap();
+        fs::write(
+            repo.join("src/auth/session.ts"),
+            "export function requireSession() { return true; }\n",
+        )
+        .unwrap();
+        fs::write(
+            repo.join("tests/auth/session.test.ts"),
+            "import { requireSession } from '../../src/auth/session';\n",
+        )
+        .unwrap();
+        std::env::set_var("CTXPACK_HOME", &home);
+
+        let plan = prepare_context_plan(&repo, "fix requireSession bug", TaskType::BugFix).unwrap();
+
+        assert_eq!(plan.target_files[0].path, "src/auth/session.ts");
+        assert_eq!(plan.related_tests[0].path, "tests/auth/session.test.ts");
+        assert!(plan
+            .risk_flags
+            .iter()
+            .any(|flag| flag.code == "co_change_unavailable"));
+        assert!(plan
+            .risk_flags
+            .iter()
+            .all(|flag| flag.code != "co_change_hint"));
+        assert_eq!(plan.confidence, plan_confidence(true, true, false));
 
         std::env::remove_var("CTXPACK_HOME");
     }
