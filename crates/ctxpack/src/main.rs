@@ -9,9 +9,10 @@ use ctxpack_core::{
     TaskType,
 };
 use ctxpack_index::{
-    append_eval_trace, co_change_hints, extract_symbols, lexical_search, list_eval_traces,
-    related_tests, symbol_search, write_inventory, CoChangeOptions, InventoryOptions,
-    InventoryReport, SearchOptions, SymbolOptions,
+    append_eval_trace, co_change_hints, dependency_edges, extract_symbols, lexical_search,
+    list_eval_traces, related_dependency_edges, related_tests, symbol_search, write_inventory,
+    CoChangeOptions, DependencyOptions, InventoryOptions, InventoryReport, SearchOptions,
+    SymbolOptions,
 };
 use std::path::PathBuf;
 
@@ -39,6 +40,7 @@ enum Command {
     Symbols(SymbolsArgs),
     RelatedTests(RelatedTestsArgs),
     CoChanges(CoChangesArgs),
+    Dependencies(DependenciesArgs),
     Eval(EvalArgs),
     ServeMcp,
 }
@@ -89,6 +91,20 @@ struct CoChangesArgs {
     repo: Option<PathBuf>,
     #[arg(long, default_value_t = 10)]
     limit: usize,
+}
+
+#[derive(Debug, Args)]
+struct DependenciesArgs {
+    paths: Vec<String>,
+    #[arg(long)]
+    repo: Option<PathBuf>,
+    #[arg(long, default_value_t = 20)]
+    limit: usize,
+    #[arg(
+        long,
+        help = "Return all safe local dependency edges instead of anchor-related edges."
+    )]
+    all: bool,
 }
 
 #[derive(Debug, Args)]
@@ -278,6 +294,17 @@ fn main() -> Result<()> {
                 &args.paths,
                 &CoChangeOptions { limit: args.limit },
             )?;
+            println!("{}", serde_json::to_string_pretty(&results)?);
+        }
+        Command::Dependencies(args) => {
+            let start = args.repo.clone().unwrap_or(std::env::current_dir()?);
+            let repo = RepoRoot::discover_from(&start)?;
+            let options = DependencyOptions { limit: args.limit };
+            let results = if args.all || args.paths.is_empty() {
+                dependency_edges(&repo.path, &options)?
+            } else {
+                related_dependency_edges(&repo.path, &args.paths, &options)?
+            };
             println!("{}", serde_json::to_string_pretty(&results)?);
         }
         Command::Eval(args) => match args.command {

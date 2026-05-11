@@ -3,9 +3,9 @@ use ctxpack_core::{
     PackSection, PrivacyStatus, RelatedTest, RiskFlag, TargetFile, TaskType,
 };
 use ctxpack_index::{
-    co_change_hints, lexical_search, load_or_build_inventory, related_tests, repo_id_for_path,
-    symbol_search, task_hash, CoChangeOptions, InventoryError, InventoryOptions, SearchOptions,
-    SymbolOptions,
+    co_change_hints, lexical_search, load_or_build_inventory, related_dependency_edges,
+    related_tests, repo_id_for_path, symbol_search, task_hash, CoChangeOptions, DependencyOptions,
+    InventoryError, InventoryOptions, SearchOptions, SymbolOptions,
 };
 use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
@@ -181,10 +181,47 @@ pub fn prepare_context_plan_with_paths(
         }
     }
 
+    let mut has_graph = false;
+    match related_dependency_edges(
+        repo_root,
+        &source_target_paths,
+        &DependencyOptions {
+            limit: co_change_limit(&plan.task_type),
+        },
+    ) {
+        Ok(edges) => {
+            has_graph = !edges.is_empty();
+            let source_targets = source_target_paths.iter().cloned().collect::<BTreeSet<_>>();
+            for edge in edges.into_iter().take(5) {
+                let direction = if source_targets.contains(&edge.source_path) {
+                    "target imports"
+                } else {
+                    "imports target"
+                };
+                plan.risk_flags.push(RiskFlag {
+                    code: "dependency_edge".to_string(),
+                    message: format!(
+                        "{} `{}` -> `{}`: {}",
+                        direction, edge.source_path, edge.target_path, edge.reason
+                    ),
+                });
+            }
+        }
+        Err(error) => {
+            plan.risk_flags.push(RiskFlag {
+                code: "dependency_graph_unavailable".to_string(),
+                message: format!(
+                    "Local dependency graph was unavailable; continuing without graph signal: {error}"
+                ),
+            });
+        }
+    }
+
     plan.confidence = plan_confidence(
         !plan.target_files.is_empty(),
         !plan.related_tests.is_empty(),
         has_history,
+        has_graph,
     );
 
     Ok(plan)
@@ -454,15 +491,18 @@ fn symbol_line_range(start_line: u32, end_line: u32) -> LineRange {
     }
 }
 
-fn plan_confidence(has_targets: bool, has_tests: bool, has_history: bool) -> f32 {
-    let mut confidence = if has_targets { 0.45 } else { 0.05 };
+fn plan_confidence(has_targets: bool, has_tests: bool, has_history: bool, has_graph: bool) -> f32 {
+    let mut confidence: f32 = if has_targets { 0.45 } else { 0.05 };
     if has_tests {
         confidence += 0.25;
     }
     if has_history {
         confidence += 0.15;
     }
-    confidence
+    if has_graph {
+        confidence += 0.10;
+    }
+    confidence.min(0.95)
 }
 
 type AnchoredTarget = (TargetFile, FileRole);
@@ -879,7 +919,43 @@ mod tests {
             .risk_flags
             .iter()
             .all(|flag| flag.code != "co_change_hint"));
-        assert_eq!(plan.confidence, plan_confidence(true, true, false));
+        assert_eq!(plan.confidence, plan_confidence(true, true, false, true));
+
+        std::env::remove_var("CTXPACK_HOME");
+    }
+
+    #[test]
+    fn prepare_context_plan_adds_dependency_edges_as_graph_evidence() {
+        let _guard = env_lock();
+        let temp = tempfile::tempdir().unwrap();
+        let repo = temp.path().join("repo");
+        let home = temp.path().join("ctxpack-home");
+        fs::create_dir_all(repo.join("src/auth")).unwrap();
+        fs::create_dir_all(repo.join("tests/auth")).unwrap();
+        fs::write(
+            repo.join("src/auth/session.ts"),
+            "import { parseCookie } from './cookies';\nexport function requireSession() { return parseCookie(); }\n",
+        )
+        .unwrap();
+        fs::write(
+            repo.join("src/auth/cookies.ts"),
+            "export function parseCookie() { return true; }\n",
+        )
+        .unwrap();
+        fs::write(
+            repo.join("tests/auth/session.test.ts"),
+            "import { requireSession } from '../../src/auth/session';\n",
+        )
+        .unwrap();
+        std::env::set_var("CTXPACK_HOME", &home);
+
+        let plan = prepare_context_plan(&repo, "fix requireSession bug", TaskType::BugFix).unwrap();
+
+        assert_eq!(plan.target_files[0].path, "src/auth/session.ts");
+        assert!(plan.risk_flags.iter().any(|flag| {
+            flag.code == "dependency_edge" && flag.message.contains("src/auth/cookies.ts")
+        }));
+        assert_eq!(plan.confidence, plan_confidence(true, true, false, true));
 
         std::env::remove_var("CTXPACK_HOME");
     }

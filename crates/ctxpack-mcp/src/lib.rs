@@ -4,8 +4,9 @@ use ctxpack_compiler::{
 };
 use ctxpack_core::{FileRole, PackBudget, RepoRoot, TaskType};
 use ctxpack_index::{
-    append_eval_trace, co_change_hints, lexical_search, load_or_build_inventory, related_tests,
-    symbol_search, CoChangeOptions, InventoryOptions, SearchOptions, SymbolOptions,
+    append_eval_trace, co_change_hints, dependency_edges, lexical_search, load_or_build_inventory,
+    related_dependency_edges, related_tests, symbol_search, CoChangeOptions, DependencyOptions,
+    InventoryOptions, SearchOptions, SymbolOptions,
 };
 use serde::Deserialize;
 use serde_json::{json, Value};
@@ -125,6 +126,7 @@ struct RelatedArgs {
 enum RelatedInclude {
     Tests,
     Commits,
+    Dependencies,
 }
 
 #[derive(Debug, Deserialize)]
@@ -276,6 +278,12 @@ fn resources_list_result() -> Value {
                 "mimeType": "application/json"
             },
             {
+                "uri": "ctxpack://repo/dependency-graph",
+                "name": "Repository Dependency Graph",
+                "description": "Safe local import edges inferred from source and test files.",
+                "mimeType": "application/json"
+            },
+            {
                 "uri": "ctxpack://pack/guide",
                 "name": "Context Pack Guide",
                 "description": "How to request task-conditioned context packs with ctxpack.get_pack.",
@@ -376,7 +384,7 @@ fn tools_list_result() -> Value {
             {
                 "name": "related",
                 "title": "Related Repository Context",
-                "description": "Expand around a path with related tests and local git co-change hints.",
+                "description": "Expand around a path with related tests, dependency edges, and local git co-change hints.",
                 "inputSchema": {
                     "type": "object",
                     "properties": {
@@ -392,9 +400,9 @@ fn tools_list_result() -> Value {
                             "type": "array",
                             "items": {
                                 "type": "string",
-                                "enum": ["tests", "commits"]
+                                "enum": ["tests", "commits", "dependencies"]
                             },
-                            "description": "Optional expansion categories. Defaults to tests and commits."
+                            "description": "Optional expansion categories. Defaults to tests, commits, and dependencies."
                         },
                         "limit": {
                             "type": "integer",
@@ -504,6 +512,7 @@ fn read_resource(params: Value) -> Result<Value, RpcError> {
     let content = match params.uri.as_str() {
         "ctxpack://repo/summary" => resource_json(&repo_summary(&repo.path)?),
         "ctxpack://repo/test-map" => resource_json(&repo_test_map(&repo.path)?),
+        "ctxpack://repo/dependency-graph" => resource_json(&repo_dependency_graph(&repo.path)?),
         "ctxpack://pack/guide" => pack_guide_markdown(),
         uri if uri.starts_with("ctxpack://file/") => read_file_resource(&repo.path, uri)?,
         uri if uri.starts_with("ctxpack://symbol/") => read_symbol_resource(&repo.path, uri)?,
@@ -694,6 +703,14 @@ fn repo_test_map(repo: &Path) -> Result<Value, RpcError> {
     Ok(json!({ "tests": tests }))
 }
 
+fn repo_dependency_graph(repo: &Path) -> Result<Value, RpcError> {
+    let edges = dependency_edges(repo, &DependencyOptions { limit: 200 }).map_err(|error| {
+        RpcError::invalid_params(format!("failed to build dependency graph: {error}"))
+    })?;
+
+    Ok(json!({ "edges": edges }))
+}
+
 fn read_file_resource(repo: &Path, uri: &str) -> Result<ResourceContent, RpcError> {
     let (path, lines) = parse_file_uri(uri)?;
     let inventory = load_or_build_inventory(repo, &InventoryOptions::default())
@@ -818,6 +835,8 @@ fn call_related(arguments: Value) -> Result<Value, RpcError> {
     let include_tests = args.include.is_empty() || args.include.contains(&RelatedInclude::Tests);
     let include_commits =
         args.include.is_empty() || args.include.contains(&RelatedInclude::Commits);
+    let include_dependencies =
+        args.include.is_empty() || args.include.contains(&RelatedInclude::Dependencies);
     let paths = vec![args.path];
 
     let tests = if include_tests {
@@ -836,10 +855,18 @@ fn call_related(arguments: Value) -> Result<Value, RpcError> {
     } else {
         Vec::new()
     };
+    let dependency_edges = if include_dependencies {
+        related_dependency_edges(&repo.path, &paths, &DependencyOptions { limit }).map_err(
+            |error| RpcError::invalid_params(format!("failed to find dependency edges: {error}")),
+        )?
+    } else {
+        Vec::new()
+    };
 
     tool_json_result(json!({
         "relatedTests": tests,
-        "coChangeHints": co_changes
+        "coChangeHints": co_changes,
+        "dependencyEdges": dependency_edges
     }))
 }
 
@@ -1093,10 +1120,11 @@ mod tests {
         .unwrap();
         let resources = response["result"]["resources"].as_array().unwrap();
 
-        assert_eq!(resources.len(), 3);
+        assert_eq!(resources.len(), 4);
         assert_eq!(resources[0]["uri"], "ctxpack://repo/summary");
         assert_eq!(resources[1]["uri"], "ctxpack://repo/test-map");
-        assert_eq!(resources[2]["uri"], "ctxpack://pack/guide");
+        assert_eq!(resources[2]["uri"], "ctxpack://repo/dependency-graph");
+        assert_eq!(resources[3]["uri"], "ctxpack://pack/guide");
     }
 
     #[test]
@@ -1193,6 +1221,10 @@ mod tests {
             r#"{"jsonrpc":"2.0","id":11,"method":"resources/read","params":{"uri":"ctxpack://repo/test-map"}}"#,
         )
         .unwrap();
+        let dependency_graph = handle_line(
+            r#"{"jsonrpc":"2.0","id":17,"method":"resources/read","params":{"uri":"ctxpack://repo/dependency-graph"}}"#,
+        )
+        .unwrap();
 
         assert!(summary["result"]["contents"][0]["text"]
             .as_str()
@@ -1202,6 +1234,10 @@ mod tests {
             .as_str()
             .unwrap()
             .contains("tests/auth/session.test.ts"));
+        assert!(dependency_graph["result"]["contents"][0]["text"]
+            .as_str()
+            .unwrap()
+            .contains("src/auth/cookies.ts"));
 
         std::env::set_current_dir(cwd).unwrap();
         std::env::remove_var("CTXPACK_HOME");
@@ -1225,8 +1261,9 @@ mod tests {
         .unwrap();
 
         let file_text = file["result"]["contents"][0]["text"].as_str().unwrap();
-        assert!(file_text.contains("1: export function requireSession"));
-        assert!(!file_text.contains("3: }"));
+        assert!(file_text.contains("1: import { parseCookie } from './cookies';"));
+        assert!(file_text.contains("2: export function requireSession"));
+        assert!(!file_text.contains("4: }"));
         assert!(symbol["result"]["contents"][0]["text"]
             .as_str()
             .unwrap()
@@ -1274,7 +1311,7 @@ mod tests {
     }
 
     #[test]
-    fn related_call_returns_tests_and_co_change_hints() {
+    fn related_call_returns_tests_co_change_hints_and_dependency_edges() {
         let _guard = env_lock();
         let repo = fixture_repo();
         std::env::set_var("CTXPACK_HOME", &repo.home);
@@ -1288,9 +1325,20 @@ mod tests {
             response["result"]["structuredContent"]["relatedTests"][0]["path"],
             "tests/auth/session.test.ts"
         );
+        let co_change_paths = response["result"]["structuredContent"]["coChangeHints"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .filter_map(|hint| hint["path"].as_str())
+            .collect::<Vec<_>>();
+        assert!(co_change_paths.contains(&"tests/auth/session.test.ts"));
         assert_eq!(
-            response["result"]["structuredContent"]["coChangeHints"][0]["path"],
-            "tests/auth/session.test.ts"
+            response["result"]["structuredContent"]["dependencyEdges"][0]["sourcePath"],
+            "src/auth/session.ts"
+        );
+        assert_eq!(
+            response["result"]["structuredContent"]["dependencyEdges"][0]["targetPath"],
+            "src/auth/cookies.ts"
         );
         std::env::remove_var("CTXPACK_HOME");
     }
@@ -1420,8 +1468,13 @@ mod tests {
         run_git(&repo, &["config", "user.email", "ctxpack@example.com"]);
         run_git(&repo, &["config", "user.name", "ctxpack"]);
         fs::write(
+            repo.join("src/auth/cookies.ts"),
+            "export function parseCookie() { return true; }\n",
+        )
+        .unwrap();
+        fs::write(
             repo.join("src/auth/session.ts"),
-            "export function requireSession() {\n  return true;\n}\n",
+            "import { parseCookie } from './cookies';\nexport function requireSession() {\n  return parseCookie();\n}\n",
         )
         .unwrap();
         fs::write(

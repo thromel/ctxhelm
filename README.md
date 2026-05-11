@@ -49,14 +49,14 @@ Implemented MCP tools:
 - `related_tests`
 - `current_diff`
 
-Implemented MCP resources include `ctxpack://repo/summary`, `ctxpack://repo/test-map`, `ctxpack://pack/guide`, safe file slices, and symbol search. Implemented prompts cover bugfix, feature, refactor, review, test-writing, and explanation workflows.
+Implemented MCP resources include `ctxpack://repo/summary`, `ctxpack://repo/test-map`, `ctxpack://repo/dependency-graph`, `ctxpack://pack/guide`, safe file slices, and symbol search. Implemented prompts cover bugfix, feature, refactor, review, test-writing, and explanation workflows.
 
 ## Client Integration Status
 
 Current local smoke status:
 
 - Claude Code `2.1.92`: end-to-end MCP tool use verified with `.mcp.json`, `--strict-mcp-config`, and an explicit `repo` argument. Claude connected to ctxpack, called `prepare_task`, and received target files plus `pnpm vitest run <test>` validation.
-- Codex CLI `0.120.0`: MCP registration/config discovery verified with `codex mcp get ctxpack`. Non-interactive `codex exec` MCP tool use is not yet verified; in local smoke tests it did not expose/call `ctxpack.prepare_task` even when the server was configured.
+- Codex CLI `0.130.0`: end-to-end MCP `prepare_task` use verified with a temporary `CODEX_HOME`, configured ctxpack server, explicit `repo` argument, and non-interactive approval bypass for the smoke run.
 
 When using ctxpack through MCP, pass the active repository path as `repo` whenever the client knows it. Some clients launch MCP servers from a different working directory than the project they expose.
 
@@ -123,6 +123,22 @@ cargo run -p ctxpack -- co-changes src/auth/session.ts --repo /path/to/repo --li
 
 Co-change hints read only local git metadata and are filtered through the safe inventory.
 
+## Dependency Graph
+
+Inspect safe local import edges around a file:
+
+```bash
+cargo run -p ctxpack -- dependencies src/auth/session.ts --repo /path/to/repo --limit 10
+```
+
+Return the current safe dependency graph:
+
+```bash
+cargo run -p ctxpack -- dependencies --all --repo /path/to/repo --limit 50
+```
+
+Dependency edges are inferred from local TypeScript/JavaScript, Python, and Rust imports in safe source/test files. External packages, generated files, sensitive files, and ignored files are excluded by default. MCP clients can request dependency expansion through `related` with `include: ["dependencies"]`, and can read the repository graph resource at `ctxpack://repo/dependency-graph`.
+
 ## Context Plan
 
 Prepare a task-conditioned context plan:
@@ -137,7 +153,7 @@ Pass active editor files as repeatable anchors when the host agent knows them:
 cargo run -p ctxpack -- prepare-task "fix redirect behavior" --repo /path/to/repo --mode bug-fix --path src/auth/middleware.ts
 ```
 
-The plan fuses active path anchors, symbol search, lexical search, related tests, and local co-change hints into target files, line hints, validation commands, risk flags, and pack resource options. MCP clients can pass the same active/open files through the `paths` array on `prepare_task`.
+The plan fuses active path anchors, symbol search, lexical search, related tests, local dependency edges, and local co-change hints into target files, line hints, validation commands, risk flags, and pack resource options. MCP clients can pass the same active/open files through the `paths` array on `prepare_task`.
 
 ## Context Pack
 

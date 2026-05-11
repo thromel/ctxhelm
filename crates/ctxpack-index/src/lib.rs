@@ -128,6 +128,28 @@ pub struct CoChangeHint {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
+pub struct DependencyOptions {
+    pub limit: usize,
+}
+
+impl Default for DependencyOptions {
+    fn default() -> Self {
+        Self { limit: 50 }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct DependencyEdge {
+    pub source_path: String,
+    pub target_path: String,
+    pub kind: String,
+    pub confidence: f32,
+    pub reason: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
 pub struct SymbolOptions {
     pub limit: usize,
 }
@@ -520,6 +542,80 @@ pub fn co_change_hints(
     Ok(hints)
 }
 
+pub fn dependency_edges(
+    repo_root: impl AsRef<Path>,
+    options: &DependencyOptions,
+) -> Result<Vec<DependencyEdge>, InventoryError> {
+    let repo_root = canonicalize(repo_root.as_ref())?;
+    let inventory = load_or_build_inventory(&repo_root, &InventoryOptions::default())?;
+    let safe_files = safe_dependency_files(&inventory);
+    let safe_paths = safe_files
+        .iter()
+        .map(|file| file.path.clone())
+        .collect::<BTreeSet<_>>();
+    let mut seen = BTreeSet::new();
+    let mut edges = Vec::new();
+
+    for file in safe_files {
+        let content = fs::read_to_string(repo_root.join(&file.path)).unwrap_or_default();
+        for import in imports_for_file(file, &content) {
+            let Some(target_path) = resolve_import_target(&file.path, &import.raw, &safe_paths)
+            else {
+                continue;
+            };
+            if target_path == file.path {
+                continue;
+            }
+            if seen.insert((file.path.clone(), target_path.clone(), import.raw.clone())) {
+                edges.push(DependencyEdge {
+                    source_path: file.path.clone(),
+                    target_path,
+                    kind: "imports".to_string(),
+                    confidence: import.confidence,
+                    reason: format!("{} import `{}`", import.language, import.raw),
+                });
+            }
+        }
+    }
+
+    edges.sort_by(|left, right| {
+        left.source_path
+            .cmp(&right.source_path)
+            .then_with(|| left.target_path.cmp(&right.target_path))
+    });
+    edges.truncate(options.limit.max(1));
+    Ok(edges)
+}
+
+pub fn related_dependency_edges(
+    repo_root: impl AsRef<Path>,
+    anchor_paths: &[String],
+    options: &DependencyOptions,
+) -> Result<Vec<DependencyEdge>, InventoryError> {
+    let repo_root = canonicalize(repo_root.as_ref())?;
+    let anchors = anchor_paths
+        .iter()
+        .map(|path| normalize_input_path(&repo_root, path))
+        .filter(|path| !path.is_empty())
+        .collect::<BTreeSet<_>>();
+    if anchors.is_empty() {
+        return Ok(Vec::new());
+    }
+
+    let mut edges = dependency_edges(&repo_root, &DependencyOptions { limit: usize::MAX })?
+        .into_iter()
+        .filter(|edge| anchors.contains(&edge.source_path) || anchors.contains(&edge.target_path))
+        .collect::<Vec<_>>();
+    edges.sort_by(|left, right| {
+        edge_anchor_rank(left, &anchors)
+            .cmp(&edge_anchor_rank(right, &anchors))
+            .then_with(|| left.source_path.cmp(&right.source_path))
+            .then_with(|| left.target_path.cmp(&right.target_path))
+    });
+    edges.truncate(options.limit.max(1));
+    Ok(edges)
+}
+
 pub fn append_eval_trace(
     repo_root: impl AsRef<Path>,
     trace: &EvalTrace,
@@ -646,6 +742,251 @@ fn normalize_input_path(repo_root: &Path, path: &str) -> String {
         })
         .collect::<Vec<_>>()
         .join("/")
+}
+
+fn safe_dependency_files(inventory: &RepoInventory) -> Vec<&FileInventoryEntry> {
+    inventory
+        .files
+        .iter()
+        .filter(|file| {
+            !file.generated
+                && !file.ignored
+                && matches!(file.role, FileRole::Source | FileRole::Test)
+                && matches!(
+                    file.language.as_deref(),
+                    Some("typescript" | "javascript" | "python" | "rust")
+                )
+        })
+        .collect()
+}
+
+#[derive(Debug, Clone, PartialEq)]
+struct ImportRef {
+    raw: String,
+    language: &'static str,
+    confidence: f32,
+}
+
+fn imports_for_file(file: &FileInventoryEntry, content: &str) -> Vec<ImportRef> {
+    match file.language.as_deref() {
+        Some("typescript" | "javascript") => js_imports(content),
+        Some("python") => python_imports(content),
+        Some("rust") => rust_imports(content),
+        _ => Vec::new(),
+    }
+}
+
+fn js_imports(content: &str) -> Vec<ImportRef> {
+    let mut imports = Vec::new();
+    for line in content.lines() {
+        let trimmed = line.trim();
+        if trimmed.starts_with("//") {
+            continue;
+        }
+        if trimmed.starts_with("import ") {
+            if let Some((_, after_from)) = trimmed.rsplit_once(" from ") {
+                push_quoted_import(&mut imports, after_from, "javascript/typescript", 0.95);
+            } else {
+                push_quoted_import(&mut imports, trimmed, "javascript/typescript", 0.9);
+            }
+        }
+        for marker in ["require(", "import("] {
+            if let Some((_, rest)) = trimmed.split_once(marker) {
+                push_quoted_import(&mut imports, rest, "javascript/typescript", 0.8);
+            }
+        }
+    }
+    imports
+}
+
+fn python_imports(content: &str) -> Vec<ImportRef> {
+    let mut imports = Vec::new();
+    for line in content.lines() {
+        let trimmed = line.trim();
+        if trimmed.starts_with('#') {
+            continue;
+        }
+        if let Some(rest) = trimmed.strip_prefix("from ") {
+            if let Some((module, _)) = rest.split_once(" import ") {
+                if !module.trim().is_empty() {
+                    imports.push(ImportRef {
+                        raw: python_module_to_path(module.trim()),
+                        language: "python",
+                        confidence: 0.9,
+                    });
+                }
+            }
+        } else if let Some(rest) = trimmed.strip_prefix("import ") {
+            for module in rest.split(',') {
+                let module = module.split_whitespace().next().unwrap_or("");
+                if !module.is_empty() {
+                    imports.push(ImportRef {
+                        raw: python_module_to_path(module),
+                        language: "python",
+                        confidence: 0.75,
+                    });
+                }
+            }
+        }
+    }
+    imports
+}
+
+fn rust_imports(content: &str) -> Vec<ImportRef> {
+    let mut imports = Vec::new();
+    for line in content.lines() {
+        let trimmed = line.trim();
+        if trimmed.starts_with("//") {
+            continue;
+        }
+        let trimmed = trimmed.strip_prefix("pub ").unwrap_or(trimmed);
+        if let Some(module) = trimmed
+            .strip_prefix("mod ")
+            .and_then(|rest| rest.split(';').next())
+        {
+            imports.push(ImportRef {
+                raw: format!("./{}", module.trim()),
+                language: "rust",
+                confidence: 0.9,
+            });
+        } else if let Some(path) = trimmed
+            .strip_prefix("use ")
+            .and_then(|rest| rest.split(';').next())
+            .filter(|path| path.starts_with("crate::") || path.starts_with("super::"))
+        {
+            imports.push(ImportRef {
+                raw: path.trim().to_string(),
+                language: "rust",
+                confidence: 0.7,
+            });
+        }
+    }
+    imports
+}
+
+fn push_quoted_import(
+    imports: &mut Vec<ImportRef>,
+    text: &str,
+    language: &'static str,
+    confidence: f32,
+) {
+    if let Some(raw) = quoted_import_value(text) {
+        imports.push(ImportRef {
+            raw,
+            language,
+            confidence,
+        });
+    }
+}
+
+fn quoted_import_value(text: &str) -> Option<String> {
+    let quote_index = text.find(['"', '\''])?;
+    let quote = text.as_bytes()[quote_index] as char;
+    let rest = &text[quote_index + 1..];
+    let end = rest.find(quote)?;
+    Some(rest[..end].to_string())
+}
+
+fn python_module_to_path(module: &str) -> String {
+    if module.starts_with('.') {
+        let dots = module
+            .chars()
+            .take_while(|character| *character == '.')
+            .count();
+        let rest = module.trim_start_matches('.').replace('.', "/");
+        let mut path = if dots <= 1 {
+            ".".to_string()
+        } else {
+            std::iter::repeat_n("..", dots - 1)
+                .collect::<Vec<_>>()
+                .join("/")
+        };
+        if !rest.is_empty() {
+            path.push('/');
+            path.push_str(&rest);
+        }
+        path
+    } else {
+        module.replace('.', "/")
+    }
+}
+
+fn resolve_import_target(
+    source_path: &str,
+    raw: &str,
+    safe_paths: &BTreeSet<String>,
+) -> Option<String> {
+    let raw = raw.trim();
+    if raw.is_empty() {
+        return None;
+    }
+
+    if raw.starts_with("crate::") {
+        let base = raw.trim_start_matches("crate::").replace("::", "/");
+        return first_existing(&format!("src/{base}"), safe_paths);
+    }
+    if raw.starts_with("super::") {
+        let base = raw.trim_start_matches("super::").replace("::", "/");
+        let parent = Path::new(source_path).parent().and_then(Path::parent)?;
+        return first_existing(&join_normalized(parent, &base)?, safe_paths);
+    }
+
+    let base = if raw.starts_with('.') {
+        let parent = Path::new(source_path)
+            .parent()
+            .unwrap_or_else(|| Path::new(""));
+        join_normalized(parent, raw)?
+    } else {
+        raw.to_string()
+    };
+    first_existing(&base, safe_paths)
+}
+
+fn first_existing(base: &str, safe_paths: &BTreeSet<String>) -> Option<String> {
+    let mut candidates = vec![base.to_string()];
+    for extension in ["ts", "tsx", "js", "jsx", "mjs", "cjs", "py", "rs", "go"] {
+        candidates.push(format!("{base}.{extension}"));
+    }
+    for extension in ["ts", "tsx", "js", "jsx", "py", "rs"] {
+        candidates.push(format!("{base}/index.{extension}"));
+        candidates.push(format!("{base}/mod.{extension}"));
+    }
+    candidates
+        .into_iter()
+        .find(|candidate| safe_paths.contains(candidate))
+}
+
+fn join_normalized(parent: &Path, raw: &str) -> Option<String> {
+    let mut parts = parent
+        .components()
+        .filter_map(|component| match component {
+            Component::Normal(part) => Some(part.to_string_lossy().to_string()),
+            _ => None,
+        })
+        .collect::<Vec<_>>();
+    for component in Path::new(raw).components() {
+        match component {
+            Component::Normal(part) => parts.push(part.to_string_lossy().to_string()),
+            Component::CurDir => {}
+            Component::ParentDir => {
+                parts.pop()?;
+            }
+            _ => return None,
+        }
+    }
+    Some(parts.join("/"))
+}
+
+fn edge_anchor_rank(edge: &DependencyEdge, anchors: &BTreeSet<String>) -> u8 {
+    match (
+        anchors.contains(&edge.source_path),
+        anchors.contains(&edge.target_path),
+    ) {
+        (true, false) => 0,
+        (false, true) => 1,
+        (true, true) => 2,
+        (false, false) => 3,
+    }
 }
 
 fn classify_path(path: &str) -> FileRole {
@@ -1804,6 +2145,99 @@ mod tests {
         assert_eq!(results[0].symbol.name, "requireSession");
         assert_eq!(results[0].symbol.path, "src/session.ts");
         assert!(results[0].reason.contains("symbol name exactly matched"));
+
+        std::env::remove_var("CTXPACK_HOME");
+    }
+
+    #[test]
+    fn dependency_edges_resolve_safe_local_imports() {
+        let _guard = env_lock();
+        let temp = tempfile::tempdir().unwrap();
+        let repo = temp.path().join("repo");
+        let home = temp.path().join("ctxpack-home");
+        fs::create_dir_all(repo.join(".git")).unwrap();
+        fs::create_dir_all(repo.join("src/auth")).unwrap();
+        fs::create_dir_all(repo.join("src/db")).unwrap();
+        fs::create_dir_all(repo.join("dist")).unwrap();
+        fs::write(
+            repo.join("src/auth/session.ts"),
+            "import { parseCookie } from './cookies';\nimport { findUser } from '../db/user';\nimport express from 'express';\nexport function requireSession() { return parseCookie() && findUser(); }\n",
+        )
+        .unwrap();
+        fs::write(
+            repo.join("src/auth/cookies.ts"),
+            "export function parseCookie() { return true; }\n",
+        )
+        .unwrap();
+        fs::write(
+            repo.join("src/db/user.ts"),
+            "export function findUser() { return true; }\n",
+        )
+        .unwrap();
+        fs::write(
+            repo.join("dist/generated.js"),
+            "export const generated = true;\n",
+        )
+        .unwrap();
+        std::env::set_var("CTXPACK_HOME", &home);
+
+        let edges = dependency_edges(&repo, &DependencyOptions { limit: 10 }).unwrap();
+        let pairs = edges
+            .iter()
+            .map(|edge| (edge.source_path.as_str(), edge.target_path.as_str()))
+            .collect::<Vec<_>>();
+
+        assert!(pairs.contains(&("src/auth/session.ts", "src/auth/cookies.ts")));
+        assert!(pairs.contains(&("src/auth/session.ts", "src/db/user.ts")));
+        assert!(edges.iter().all(|edge| edge.kind == "imports"));
+        assert!(edges
+            .iter()
+            .all(|edge| !edge.target_path.starts_with("dist/")));
+        assert!(edges
+            .iter()
+            .all(|edge| !edge.target_path.contains("express")));
+
+        std::env::remove_var("CTXPACK_HOME");
+    }
+
+    #[test]
+    fn related_dependency_edges_return_incoming_and_outgoing_edges() {
+        let _guard = env_lock();
+        let temp = tempfile::tempdir().unwrap();
+        let repo = temp.path().join("repo");
+        let home = temp.path().join("ctxpack-home");
+        fs::create_dir_all(repo.join(".git")).unwrap();
+        fs::create_dir_all(repo.join("src/auth")).unwrap();
+        fs::write(
+            repo.join("src/app.ts"),
+            "import { requireSession } from './auth/session';\nexport const app = requireSession();\n",
+        )
+        .unwrap();
+        fs::write(
+            repo.join("src/auth/session.ts"),
+            "import { parseCookie } from './cookies';\nexport function requireSession() { return parseCookie(); }\n",
+        )
+        .unwrap();
+        fs::write(
+            repo.join("src/auth/cookies.ts"),
+            "export function parseCookie() { return true; }\n",
+        )
+        .unwrap();
+        std::env::set_var("CTXPACK_HOME", &home);
+
+        let edges = related_dependency_edges(
+            &repo,
+            &["src/auth/session.ts".to_string()],
+            &DependencyOptions { limit: 10 },
+        )
+        .unwrap();
+        let pairs = edges
+            .iter()
+            .map(|edge| (edge.source_path.as_str(), edge.target_path.as_str()))
+            .collect::<Vec<_>>();
+
+        assert!(pairs.contains(&("src/auth/session.ts", "src/auth/cookies.ts")));
+        assert!(pairs.contains(&("src/app.ts", "src/auth/session.ts")));
 
         std::env::remove_var("CTXPACK_HOME");
     }
