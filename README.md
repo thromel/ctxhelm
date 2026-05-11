@@ -131,7 +131,13 @@ Prepare a task-conditioned context plan:
 cargo run -p ctxpack -- prepare-task "fix requireSession bug" --repo /path/to/repo --mode bug-fix
 ```
 
-The plan fuses symbol search, lexical search, related tests, and local co-change hints into target files, line hints, validation commands, risk flags, and pack resource options.
+Pass active editor files as repeatable anchors when the host agent knows them:
+
+```bash
+cargo run -p ctxpack -- prepare-task "fix redirect behavior" --repo /path/to/repo --mode bug-fix --path src/auth/middleware.ts
+```
+
+The plan fuses active path anchors, symbol search, lexical search, related tests, and local co-change hints into target files, line hints, validation commands, risk flags, and pack resource options. MCP clients can pass the same active/open files through the `paths` array on `prepare_task`.
 
 ## Context Pack
 
@@ -141,7 +147,7 @@ Materialize a budgeted context pack:
 cargo run -p ctxpack -- get-pack "fix requireSession bug" --repo /path/to/repo --mode bug-fix --budget brief
 ```
 
-Use `--format json` for structured output.
+Use `--format json` for structured output. `get-pack` also accepts repeatable `--path <file>` anchors, and the MCP `get_pack` tool accepts the same `paths` array.
 
 ## Local Eval Traces
 

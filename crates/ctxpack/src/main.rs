@@ -1,8 +1,8 @@
 use anyhow::Result;
 use clap::{Args, Parser, Subcommand, ValueEnum};
 use ctxpack_compiler::{
-    compile_context_pack_with_plan, eval_trace_for_pack, eval_trace_for_plan, prepare_context_plan,
-    render_pack_markdown,
+    compile_context_pack_with_plan_and_paths, eval_trace_for_pack, eval_trace_for_plan,
+    prepare_context_plan_with_paths, render_pack_markdown,
 };
 use ctxpack_core::{
     run_init, AgentAdapter, EvalTrace, InitAction, InitOptions, InitReport, PackBudget, RepoRoot,
@@ -98,6 +98,11 @@ struct PrepareTaskArgs {
     repo: Option<PathBuf>,
     #[arg(long, value_enum, default_value_t = Mode::Explain)]
     mode: Mode,
+    #[arg(
+        long = "path",
+        help = "Active/open file path to pin as a context anchor. Repeatable."
+    )]
+    paths: Vec<String>,
     #[arg(long, default_value = "generic")]
     target_agent: String,
 }
@@ -113,6 +118,11 @@ struct GetPackArgs {
     budget: Budget,
     #[arg(long, value_enum, default_value_t = PackFormat::Markdown)]
     format: PackFormat,
+    #[arg(
+        long = "path",
+        help = "Active/open file path to pin as a context anchor. Repeatable."
+    )]
+    paths: Vec<String>,
     #[arg(long, default_value = "generic")]
     target_agent: String,
 }
@@ -207,7 +217,12 @@ fn main() -> Result<()> {
         Command::PrepareTask(args) => {
             let start = args.repo.clone().unwrap_or(std::env::current_dir()?);
             let repo = RepoRoot::discover_from(&start)?;
-            let plan = prepare_context_plan(&repo.path, &args.task, args.mode.into())?;
+            let plan = prepare_context_plan_with_paths(
+                &repo.path,
+                &args.task,
+                args.mode.into(),
+                &args.paths,
+            )?;
             let trace = eval_trace_for_plan(&repo.path, &args.task, &args.target_agent, &plan);
             append_eval_trace(&repo.path, &trace)?;
             println!("{}", serde_json::to_string_pretty(&plan)?);
@@ -215,11 +230,12 @@ fn main() -> Result<()> {
         Command::GetPack(args) => {
             let start = args.repo.clone().unwrap_or(std::env::current_dir()?);
             let repo = RepoRoot::discover_from(&start)?;
-            let (plan, pack) = compile_context_pack_with_plan(
+            let (plan, pack) = compile_context_pack_with_plan_and_paths(
                 &repo.path,
                 &args.task,
                 args.mode.into(),
                 args.budget.into(),
+                &args.paths,
             )?;
             let trace =
                 eval_trace_for_pack(&repo.path, &args.task, &args.target_agent, &plan, &pack);

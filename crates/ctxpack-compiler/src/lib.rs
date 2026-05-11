@@ -3,12 +3,13 @@ use ctxpack_core::{
     PackSection, PrivacyStatus, RelatedTest, RiskFlag, TargetFile, TaskType,
 };
 use ctxpack_index::{
-    co_change_hints, lexical_search, related_tests, repo_id_for_path, symbol_search, task_hash,
-    CoChangeOptions, InventoryError, SearchOptions, SymbolOptions,
+    co_change_hints, lexical_search, load_or_build_inventory, related_tests, repo_id_for_path,
+    symbol_search, task_hash, CoChangeOptions, InventoryError, InventoryOptions, SearchOptions,
+    SymbolOptions,
 };
 use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
-use std::path::Path;
+use std::path::{Component, Path};
 use std::time::{SystemTime, UNIX_EPOCH};
 use uuid::Uuid;
 
@@ -21,6 +22,16 @@ pub fn prepare_context_plan(
     task: &str,
     task_type: TaskType,
 ) -> Result<ContextPlan, InventoryError> {
+    prepare_context_plan_with_paths(repo_root, task, task_type, &[])
+}
+
+pub fn prepare_context_plan_with_paths(
+    repo_root: impl AsRef<Path>,
+    task: &str,
+    task_type: TaskType,
+    anchor_paths: &[String],
+) -> Result<ContextPlan, InventoryError> {
+    let repo_root = repo_root.as_ref();
     let mut plan = base_plan(task_type);
     let task = task.trim();
     if task.is_empty() {
@@ -30,14 +41,14 @@ pub fn prepare_context_plan(
     }
 
     let symbol_results = symbol_search(
-        &repo_root,
+        repo_root,
         task,
         &SymbolOptions {
             limit: search_limit(&plan.task_type),
         },
     )?;
     let search_results = lexical_search(
-        &repo_root,
+        repo_root,
         task,
         &SearchOptions {
             limit: search_limit(&plan.task_type),
@@ -49,6 +60,21 @@ pub fn prepare_context_plan(
     }
     let mut target_files = Vec::new();
     let mut seen_paths = BTreeSet::new();
+    let (anchor_targets, unavailable_anchors) = anchored_target_files(repo_root, anchor_paths)?;
+    for unavailable in unavailable_anchors {
+        plan.risk_flags.push(RiskFlag {
+            code: "anchor_unavailable".to_string(),
+            message: format!(
+                "Active context path `{unavailable}` was not included because it is ignored, generated, sensitive, outside the repo, or not inventoried."
+            ),
+        });
+    }
+    for (target, role) in anchor_targets {
+        roles.insert(target.path.clone(), role);
+        if seen_paths.insert(target.path.clone()) {
+            target_files.push(target);
+        }
+    }
     for result in symbol_results.iter().take(5) {
         if seen_paths.insert(result.symbol.path.clone()) {
             target_files.push(TargetFile {
@@ -99,7 +125,7 @@ pub fn prepare_context_plan(
         );
     }
 
-    let test_results = related_tests(&repo_root, &source_target_paths)?;
+    let test_results = related_tests(repo_root, &source_target_paths)?;
     let mut command_set = BTreeSet::new();
     plan.related_tests = test_results
         .iter()
@@ -127,7 +153,7 @@ pub fn prepare_context_plan(
 
     let mut has_history = false;
     match co_change_hints(
-        &repo_root,
+        repo_root,
         &source_target_paths,
         &CoChangeOptions {
             limit: co_change_limit(&plan.task_type),
@@ -180,8 +206,18 @@ pub fn compile_context_pack_with_plan(
     task_type: TaskType,
     budget: PackBudget,
 ) -> Result<(ContextPlan, ContextPack), InventoryError> {
+    compile_context_pack_with_plan_and_paths(repo_root, task, task_type, budget, &[])
+}
+
+pub fn compile_context_pack_with_plan_and_paths(
+    repo_root: impl AsRef<Path>,
+    task: &str,
+    task_type: TaskType,
+    budget: PackBudget,
+    anchor_paths: &[String],
+) -> Result<(ContextPlan, ContextPack), InventoryError> {
     let repo_root = repo_root.as_ref();
-    let plan = prepare_context_plan(repo_root, task, task_type)?;
+    let plan = prepare_context_plan_with_paths(repo_root, task, task_type, anchor_paths)?;
     let pack = compile_pack_from_plan(repo_root, task, &plan, budget);
     Ok((plan, pack))
 }
@@ -427,6 +463,79 @@ fn plan_confidence(has_targets: bool, has_tests: bool, has_history: bool) -> f32
         confidence += 0.15;
     }
     confidence
+}
+
+type AnchoredTarget = (TargetFile, FileRole);
+
+fn anchored_target_files(
+    repo_root: &Path,
+    anchor_paths: &[String],
+) -> Result<(Vec<AnchoredTarget>, Vec<String>), InventoryError> {
+    if anchor_paths.is_empty() {
+        return Ok((Vec::new(), Vec::new()));
+    }
+
+    let inventory = load_or_build_inventory(repo_root, &InventoryOptions::default())?;
+    let files_by_path = inventory
+        .files
+        .into_iter()
+        .filter(|file| !file.ignored && !file.generated && file.role != FileRole::Sensitive)
+        .map(|file| (file.path.clone(), file.role))
+        .collect::<BTreeMap<_, _>>();
+    let mut seen = BTreeSet::new();
+    let mut targets = Vec::new();
+    let mut unavailable = Vec::new();
+
+    for input in anchor_paths {
+        let Some(path) = normalize_anchor_path(repo_root, input) else {
+            unavailable.push(input.clone());
+            continue;
+        };
+        let Some(role) = files_by_path.get(&path) else {
+            unavailable.push(input.clone());
+            continue;
+        };
+        if seen.insert(path.clone()) {
+            targets.push((
+                TargetFile {
+                    path,
+                    reason: "explicit path anchor from active context".to_string(),
+                    line_range: None,
+                    confidence: 0.98,
+                },
+                role.clone(),
+            ));
+        }
+    }
+
+    Ok((targets, unavailable))
+}
+
+fn normalize_anchor_path(repo_root: &Path, input: &str) -> Option<String> {
+    let input = input.trim();
+    if input.is_empty() {
+        return None;
+    }
+
+    let path = Path::new(input);
+    let relative = if path.is_absolute() {
+        path.strip_prefix(repo_root).ok()?
+    } else {
+        path
+    };
+    let mut parts = Vec::new();
+    for component in relative.components() {
+        match component {
+            Component::Normal(part) => parts.push(part.to_string_lossy().to_string()),
+            Component::CurDir => {}
+            _ => return None,
+        }
+    }
+    if parts.is_empty() {
+        None
+    } else {
+        Some(parts.join("/"))
+    }
 }
 
 struct PackLimits {
@@ -771,6 +880,102 @@ mod tests {
             .iter()
             .all(|flag| flag.code != "co_change_hint"));
         assert_eq!(plan.confidence, plan_confidence(true, true, false));
+
+        std::env::remove_var("CTXPACK_HOME");
+    }
+
+    #[test]
+    fn prepare_context_plan_prefers_explicit_path_anchors() {
+        let _guard = env_lock();
+        let temp = tempfile::tempdir().unwrap();
+        let repo = temp.path().join("repo");
+        let home = temp.path().join("ctxpack-home");
+        fs::create_dir_all(repo.join("src/auth")).unwrap();
+        fs::create_dir_all(repo.join("src/billing")).unwrap();
+        fs::create_dir_all(repo.join("tests/billing")).unwrap();
+        run_git(&repo, &["init"]);
+        run_git(&repo, &["config", "user.email", "ctxpack@example.com"]);
+        run_git(&repo, &["config", "user.name", "ctxpack"]);
+        fs::write(
+            repo.join("src/auth/session.ts"),
+            "export function requireSession() { return true; }\n",
+        )
+        .unwrap();
+        fs::write(
+            repo.join("src/billing/invoice.ts"),
+            "export function issueInvoice() { return 'invoice'; }\n",
+        )
+        .unwrap();
+        fs::write(
+            repo.join("tests/billing/invoice.test.ts"),
+            "import { issueInvoice } from '../../src/billing/invoice';\n",
+        )
+        .unwrap();
+        run_git(&repo, &["add", "."]);
+        run_git(&repo, &["commit", "-m", "add billing"]);
+        std::env::set_var("CTXPACK_HOME", &home);
+
+        let anchors = vec!["src/billing/invoice.ts".to_string()];
+        let plan =
+            prepare_context_plan_with_paths(&repo, "fix session bug", TaskType::BugFix, &anchors)
+                .unwrap();
+
+        assert_eq!(plan.target_files[0].path, "src/billing/invoice.ts");
+        assert_eq!(
+            plan.target_files[0].reason,
+            "explicit path anchor from active context"
+        );
+        assert_eq!(plan.target_files[0].confidence, 0.98);
+        assert_eq!(plan.related_tests[0].path, "tests/billing/invoice.test.ts");
+
+        std::env::remove_var("CTXPACK_HOME");
+    }
+
+    #[test]
+    fn prepare_context_plan_reports_unavailable_path_anchors() {
+        let _guard = env_lock();
+        let temp = tempfile::tempdir().unwrap();
+        let repo = temp.path().join("repo");
+        let home = temp.path().join("ctxpack-home");
+        fs::create_dir_all(repo.join("src/auth")).unwrap();
+        fs::create_dir_all(repo.join("dist")).unwrap();
+        fs::write(
+            repo.join("src/auth/session.ts"),
+            "export function requireSession() { return true; }\n",
+        )
+        .unwrap();
+        fs::write(
+            repo.join("dist/generated.js"),
+            "export const generated = true;\n",
+        )
+        .unwrap();
+        std::env::set_var("CTXPACK_HOME", &home);
+
+        let anchors = vec![
+            "../outside.ts".to_string(),
+            "dist/generated.js".to_string(),
+            "src/auth/session.ts".to_string(),
+        ];
+        let plan =
+            prepare_context_plan_with_paths(&repo, "fix session bug", TaskType::BugFix, &anchors)
+                .unwrap();
+
+        assert_eq!(plan.target_files[0].path, "src/auth/session.ts");
+        assert_eq!(
+            plan.risk_flags
+                .iter()
+                .filter(|flag| flag.code == "anchor_unavailable")
+                .count(),
+            2
+        );
+        assert!(plan
+            .risk_flags
+            .iter()
+            .any(|flag| flag.message.contains("../outside.ts")));
+        assert!(plan
+            .risk_flags
+            .iter()
+            .any(|flag| flag.message.contains("dist/generated.js")));
 
         std::env::remove_var("CTXPACK_HOME");
     }

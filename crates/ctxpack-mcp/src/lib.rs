@@ -1,6 +1,6 @@
 use ctxpack_compiler::{
-    compile_context_pack_with_plan, eval_trace_for_pack, eval_trace_for_plan, prepare_context_plan,
-    render_pack_markdown,
+    compile_context_pack_with_plan_and_paths, eval_trace_for_pack, eval_trace_for_plan,
+    prepare_context_plan_with_paths, render_pack_markdown,
 };
 use ctxpack_core::{FileRole, PackBudget, RepoRoot, TaskType};
 use ctxpack_index::{
@@ -75,6 +75,8 @@ struct PrepareTaskArgs {
     #[serde(default)]
     mode: Option<TaskType>,
     #[serde(default)]
+    paths: Vec<String>,
+    #[serde(default)]
     target_agent: Option<String>,
 }
 
@@ -90,6 +92,8 @@ struct GetPackArgs {
     budget: Option<PackBudget>,
     #[serde(default)]
     format: Option<PackFormat>,
+    #[serde(default)]
+    paths: Vec<String>,
     #[serde(default)]
     target_agent: Option<String>,
 }
@@ -329,6 +333,11 @@ fn tools_list_result() -> Value {
                             "description": "Optional task type override.",
                             "enum": ["bug_fix", "feature", "refactor", "review", "test", "explain"]
                         },
+                        "paths": {
+                            "type": "array",
+                            "items": { "type": "string" },
+                            "description": "Optional active/open repo-relative or absolute paths to pin as context anchors."
+                        },
                         "targetAgent": {
                             "type": "string",
                             "description": "Optional host agent label for local eval traces."
@@ -427,6 +436,11 @@ fn tools_list_result() -> Value {
                             "type": "string",
                             "description": "Text response format.",
                             "enum": ["markdown", "json"]
+                        },
+                        "paths": {
+                            "type": "array",
+                            "items": { "type": "string" },
+                            "description": "Optional active/open repo-relative or absolute paths to pin as context anchors."
                         },
                         "targetAgent": {
                             "type": "string",
@@ -597,10 +611,11 @@ fn call_prepare_task(arguments: Value) -> Result<Value, RpcError> {
     }
 
     let repo = discover_repo(args.repo)?;
-    let plan = prepare_context_plan(
+    let plan = prepare_context_plan_with_paths(
         &repo.path,
         &args.task,
         args.mode.unwrap_or(TaskType::Explain),
+        &args.paths,
     )
     .map_err(|error| RpcError::invalid_params(format!("failed to prepare task: {error}")))?;
     let trace = eval_trace_for_plan(
@@ -839,11 +854,12 @@ fn call_get_pack(arguments: Value) -> Result<Value, RpcError> {
 
     let repo = discover_repo(args.repo)?;
     let budget = args.budget.unwrap_or(PackBudget::Brief);
-    let (plan, pack) = compile_context_pack_with_plan(
+    let (plan, pack) = compile_context_pack_with_plan_and_paths(
         &repo.path,
         &args.task,
         args.mode.unwrap_or(TaskType::Explain),
         budget,
+        &args.paths,
     )
     .map_err(|error| RpcError::invalid_params(format!("failed to compile pack: {error}")))?;
     let trace = eval_trace_for_pack(
@@ -1053,10 +1069,18 @@ mod tests {
         assert_eq!(tools.len(), 6);
         assert_eq!(tools[0]["name"], "prepare_task");
         assert_eq!(tools[0]["inputSchema"]["required"][0], "task");
+        assert_eq!(
+            tools[0]["inputSchema"]["properties"]["paths"]["items"]["type"],
+            "string"
+        );
         assert_eq!(tools[1]["name"], "search");
         assert_eq!(tools[2]["name"], "related");
         assert_eq!(tools[3]["name"], "get_pack");
         assert_eq!(tools[3]["inputSchema"]["required"][0], "task");
+        assert_eq!(
+            tools[3]["inputSchema"]["properties"]["paths"]["items"]["type"],
+            "string"
+        );
         assert_eq!(tools[4]["name"], "related_tests");
         assert_eq!(tools[5]["name"], "current_diff");
     }
@@ -1114,6 +1138,28 @@ mod tests {
             .as_str()
             .unwrap()
             .contains("\"taskType\": \"bug_fix\""));
+        std::env::remove_var("CTXPACK_HOME");
+    }
+
+    #[test]
+    fn prepare_task_call_prefers_path_anchor() {
+        let _guard = env_lock();
+        let repo = fixture_repo();
+        std::env::set_var("CTXPACK_HOME", &repo.home);
+        let request = format!(
+            r#"{{"jsonrpc":"2.0","id":15,"method":"tools/call","params":{{"name":"prepare_task","arguments":{{"task":"explain unrelated area","repo":"{}","mode":"explain","paths":["src/auth/session.ts"]}}}}}}"#,
+            repo.repo.display()
+        );
+        let response = handle_line(&request).unwrap();
+
+        assert_eq!(
+            response["result"]["structuredContent"]["targetFiles"][0]["path"],
+            "src/auth/session.ts"
+        );
+        assert_eq!(
+            response["result"]["structuredContent"]["targetFiles"][0]["reason"],
+            "explicit path anchor from active context"
+        );
         std::env::remove_var("CTXPACK_HOME");
     }
 
@@ -1330,6 +1376,23 @@ mod tests {
         assert!(text.contains("# Context Pack"));
         assert!(text.contains("src/auth/session.ts"));
         assert!(text.contains("tests/auth/session.test.ts"));
+        std::env::remove_var("CTXPACK_HOME");
+    }
+
+    #[test]
+    fn get_pack_call_uses_path_anchor_in_pack() {
+        let _guard = env_lock();
+        let repo = fixture_repo();
+        std::env::set_var("CTXPACK_HOME", &repo.home);
+        let request = format!(
+            r#"{{"jsonrpc":"2.0","id":16,"method":"tools/call","params":{{"name":"get_pack","arguments":{{"task":"explain unrelated area","repo":"{}","mode":"explain","budget":"brief","format":"markdown","paths":["src/auth/session.ts"]}}}}}}"#,
+            repo.repo.display()
+        );
+        let response = handle_line(&request).unwrap();
+        let text = response["result"]["content"][0]["text"].as_str().unwrap();
+
+        assert!(text.contains("explicit path anchor from active context"));
+        assert!(text.contains("src/auth/session.ts"));
         std::env::remove_var("CTXPACK_HOME");
     }
 
