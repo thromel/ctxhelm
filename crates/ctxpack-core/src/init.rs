@@ -74,6 +74,7 @@ local_only = true
 agents_md = true
 cursor_rules = false
 claude_commands = false
+claude_mcp_snippet = false
 opencode_snippet = false
 "#;
 
@@ -119,6 +120,16 @@ Use this command for non-trivial bug fixes.
 6. Summarize the changed behavior and validation result.
 "#;
 
+pub const CLAUDE_MCP_SNIPPET: &str = r#"{
+  "mcpServers": {
+    "ctxpack": {
+      "command": "ctxpack",
+      "args": ["serve-mcp"]
+    }
+  }
+}
+"#;
+
 pub const OPENCODE_SNIPPET: &str = r#"{
   "$schema": "https://opencode.ai/config.json",
   "ctxpackNote": "Registers ctxpack as a local read-only MCP context server. The first implemented tool is prepare_task.",
@@ -158,6 +169,14 @@ pub fn adapter_content(adapter: AgentAdapter) -> &'static str {
     }
 }
 
+pub fn adapter_files(adapter: AgentAdapter) -> Vec<(&'static str, &'static str)> {
+    let mut files = vec![(adapter_path(adapter), adapter_content(adapter))];
+    if adapter == AgentAdapter::Claude {
+        files.push((".ctxpack/adapters/claude-mcp.json", CLAUDE_MCP_SNIPPET));
+    }
+    files
+}
+
 pub fn agents_section() -> &'static str {
     AGENTS_SECTION
 }
@@ -179,12 +198,9 @@ pub fn run_init(
     upsert_agents_section(repo_root, &mut report)?;
 
     for adapter in &options.adapters {
-        write_file(
-            repo_root,
-            adapter_path(*adapter),
-            adapter_content(*adapter).to_string(),
-            &mut report,
-        )?;
+        for (path, content) in adapter_files(*adapter) {
+            write_file(repo_root, path, content.to_string(), &mut report)?;
+        }
     }
 
     Ok(report)
@@ -195,7 +211,7 @@ fn config_toml(options: &InitOptions) -> String {
     let claude = options.adapters.contains(&AgentAdapter::Claude);
     let opencode = options.adapters.contains(&AgentAdapter::OpenCode);
     format!(
-        "version = 1\nlocal_only = true\n\n[adapters]\nagents_md = true\ncursor_rules = {cursor}\nclaude_commands = {claude}\nopencode_snippet = {opencode}\n"
+        "version = 1\nlocal_only = true\n\n[adapters]\nagents_md = true\ncursor_rules = {cursor}\nclaude_commands = {claude}\nclaude_mcp_snippet = {claude}\nopencode_snippet = {opencode}\n"
     )
 }
 
@@ -378,6 +394,9 @@ mod tests {
             adapter_path(AgentAdapter::OpenCode),
             ".ctxpack/adapters/opencode.jsonc.snippet"
         );
+        assert!(adapter_files(AgentAdapter::Claude)
+            .iter()
+            .any(|(path, _)| *path == ".ctxpack/adapters/claude-mcp.json"));
     }
 
     #[test]
@@ -419,6 +438,20 @@ mod tests {
     }
 
     #[test]
+    fn claude_mcp_snippet_is_valid_project_mcp_json() {
+        let value = serde_json::from_str::<serde_json::Value>(CLAUDE_MCP_SNIPPET).unwrap();
+
+        assert_eq!(
+            value["mcpServers"]["ctxpack"]["command"].as_str(),
+            Some("ctxpack")
+        );
+        assert_eq!(
+            value["mcpServers"]["ctxpack"]["args"][0].as_str(),
+            Some("serve-mcp")
+        );
+    }
+
+    #[test]
     fn opencode_snippet_is_valid_json() {
         serde_json::from_str::<serde_json::Value>(OPENCODE_SNIPPET).unwrap();
     }
@@ -447,6 +480,10 @@ mod writer_tests {
         assert!(temp
             .path()
             .join(".claude/commands/ctxpack-bugfix.md")
+            .exists());
+        assert!(temp
+            .path()
+            .join(".ctxpack/adapters/claude-mcp.json")
             .exists());
         assert!(temp
             .path()
@@ -662,6 +699,7 @@ mod writer_tests {
         assert!(config.contains("agents_md = true"));
         assert!(config.contains("cursor_rules = true"));
         assert!(config.contains("claude_commands = false"));
+        assert!(config.contains("claude_mcp_snippet = false"));
         assert!(config.contains("opencode_snippet = true"));
     }
 

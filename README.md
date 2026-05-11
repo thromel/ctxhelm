@@ -30,6 +30,7 @@ cargo run -p ctxpack -- init --repo /path/to/repo --cursor --claude --opencode
 ```
 
 `ctxpack init` writes only repo-local files. It prints Codex MCP setup guidance but does not mutate global Codex configuration.
+`--claude` writes a slash-command file plus `.ctxpack/adapters/claude-mcp.json`, a project MCP config snippet you can copy or merge into `.mcp.json`.
 
 ## MCP Runtime
 
