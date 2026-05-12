@@ -4,9 +4,10 @@ use ctxpack_compiler::{
 };
 use ctxpack_core::{ContextPack, FileRole, PackBudget, RepoRoot, TaskType};
 use ctxpack_index::{
-    append_eval_trace, build_inventory, co_change_hints, dependency_edges, lexical_search,
+    append_eval_trace, co_change_hints, current_diff_summary, dependency_edges, lexical_search,
     load_or_build_inventory, related_dependency_edges, related_tests, symbol_search, test_map,
-    CoChangeOptions, DependencyOptions, InventoryOptions, SearchOptions, SymbolOptions,
+    CoChangeOptions, CurrentDiffOptions, DependencyOptions, InventoryOptions, SearchOptions,
+    SymbolOptions,
 };
 use serde::Deserialize;
 use serde_json::{json, Value};
@@ -14,7 +15,6 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
 use std::io::{self, BufRead, Write};
 use std::path::{Path, PathBuf};
-use std::process::Command;
 use std::sync::{Mutex, OnceLock};
 
 pub const PLANNED_MCP_TOOL_NAMES: &[&str] = &[
@@ -79,6 +79,8 @@ struct PrepareTaskArgs {
     #[serde(default)]
     paths: Vec<String>,
     #[serde(default)]
+    include_current_diff: bool,
+    #[serde(default)]
     target_agent: Option<String>,
 }
 
@@ -96,6 +98,8 @@ struct GetPackArgs {
     format: Option<PackFormat>,
     #[serde(default)]
     paths: Vec<String>,
+    #[serde(default)]
+    include_current_diff: bool,
     #[serde(default)]
     target_agent: Option<String>,
 }
@@ -359,6 +363,10 @@ fn tools_list_result() -> Value {
                             "items": { "type": "string" },
                             "description": "Optional active/open repo-relative or absolute paths to pin as context anchors."
                         },
+                        "includeCurrentDiff": {
+                            "type": "boolean",
+                            "description": "When true, add safe changed paths from the current local diff as context anchors without returning source text."
+                        },
                         "targetAgent": {
                             "type": "string",
                             "description": "Optional host agent label for local eval traces."
@@ -473,6 +481,10 @@ fn tools_list_result() -> Value {
                             "type": "array",
                             "items": { "type": "string" },
                             "description": "Optional active/open repo-relative or absolute paths to pin as context anchors."
+                        },
+                        "includeCurrentDiff": {
+                            "type": "boolean",
+                            "description": "When true, add safe changed paths from the current local diff as context anchors without returning source text."
                         },
                         "targetAgent": {
                             "type": "string",
@@ -659,11 +671,12 @@ fn call_prepare_task(arguments: Value) -> Result<Value, RpcError> {
     }
 
     let repo = discover_repo(args.repo)?;
+    let paths = context_anchor_paths(&repo.path, args.paths, args.include_current_diff)?;
     let plan = prepare_context_plan_with_paths(
         &repo.path,
         &args.task,
         args.mode.unwrap_or(TaskType::Explain),
-        &args.paths,
+        &paths,
     )
     .map_err(|error| RpcError::invalid_params(format!("failed to prepare task: {error}")))?;
     let trace = eval_trace_for_plan(
@@ -1030,6 +1043,45 @@ fn related_anchor_paths(
     Ok((paths, symbol_matches))
 }
 
+fn context_anchor_paths(
+    repo: &Path,
+    explicit_paths: Vec<String>,
+    include_current_diff: bool,
+) -> Result<Vec<String>, RpcError> {
+    let mut paths = Vec::new();
+    let mut seen = BTreeSet::new();
+    for path in explicit_paths {
+        let path = path.trim();
+        if !path.is_empty() && seen.insert(path.to_string()) {
+            paths.push(path.to_string());
+        }
+    }
+
+    if include_current_diff {
+        let diff = current_diff_summary(
+            repo,
+            &CurrentDiffOptions {
+                include_untracked: true,
+            },
+        )
+        .map_err(|error| {
+            RpcError::invalid_params(format!("failed to collect current diff anchors: {error}"))
+        })?;
+        for path in diff
+            .staged
+            .into_iter()
+            .chain(diff.unstaged.into_iter())
+            .chain(diff.untracked.into_iter())
+        {
+            if seen.insert(path.clone()) {
+                paths.push(path);
+            }
+        }
+    }
+
+    Ok(paths)
+}
+
 fn call_get_pack(arguments: Value) -> Result<Value, RpcError> {
     let args: GetPackArgs = serde_json::from_value(arguments).map_err(|error| {
         RpcError::invalid_params(format!("invalid get_pack arguments: {error}"))
@@ -1040,13 +1092,14 @@ fn call_get_pack(arguments: Value) -> Result<Value, RpcError> {
     }
 
     let repo = discover_repo(args.repo)?;
+    let paths = context_anchor_paths(&repo.path, args.paths, args.include_current_diff)?;
     let budget = args.budget.unwrap_or(PackBudget::Brief);
     let (plan, pack) = compile_context_pack_with_plan_and_paths(
         &repo.path,
         &args.task,
         args.mode.unwrap_or(TaskType::Explain),
         budget,
-        &args.paths,
+        &paths,
     )
     .map_err(|error| RpcError::invalid_params(format!("failed to compile pack: {error}")))?;
     let trace = eval_trace_for_pack(
@@ -1101,32 +1154,15 @@ fn call_current_diff(arguments: Value) -> Result<Value, RpcError> {
     })?;
 
     let repo = discover_repo(args.repo)?;
-    let unstaged = git_lines(&repo.path, &["diff", "--name-only"])?;
-    let staged = git_lines(&repo.path, &["diff", "--cached", "--name-only"])?;
-    let untracked = if args.include_untracked {
-        git_lines(&repo.path, &["ls-files", "--others", "--exclude-standard"])?
-    } else {
-        Vec::new()
-    };
-    let (unstaged, excluded_unstaged) = safe_diff_paths(&repo.path, unstaged)?;
-    let (staged, excluded_staged) = safe_diff_paths(&repo.path, staged)?;
-    let (untracked, excluded_untracked) = safe_diff_paths(&repo.path, untracked)?;
-
-    tool_json_result(json!({
-        "unstaged": unstaged,
-        "staged": staged,
-        "untracked": untracked,
-        "excluded": {
-            "unstaged": excluded_unstaged,
-            "staged": excluded_staged,
-            "untracked": excluded_untracked,
-            "reason": "paths excluded by safe inventory policy; source content was not returned"
+    let summary = current_diff_summary(
+        &repo.path,
+        &CurrentDiffOptions {
+            include_untracked: args.include_untracked,
         },
-        "privacyStatus": {
-            "localOnly": true,
-            "sourceTextReturned": false
-        }
-    }))
+    )
+    .map_err(|error| RpcError::invalid_params(format!("failed to read current diff: {error}")))?;
+
+    tool_json_result(summary)
 }
 
 fn discover_repo(repo: Option<PathBuf>) -> Result<RepoRoot, RpcError> {
@@ -1141,30 +1177,6 @@ fn discover_repo(repo: Option<PathBuf>) -> Result<RepoRoot, RpcError> {
 
 fn bounded_limit(limit: Option<usize>, default: usize) -> usize {
     limit.unwrap_or(default).clamp(1, 50)
-}
-
-fn safe_diff_paths(repo: &Path, paths: Vec<String>) -> Result<(Vec<String>, usize), RpcError> {
-    if paths.is_empty() {
-        return Ok((Vec::new(), 0));
-    }
-    let inventory = build_inventory(repo, &InventoryOptions::default()).map_err(|error| {
-        RpcError::invalid_params(format!("failed to apply safe inventory policy: {error}"))
-    })?;
-    let safe_paths = inventory
-        .files
-        .into_iter()
-        .map(|file| file.path)
-        .collect::<BTreeSet<_>>();
-    let mut safe = Vec::new();
-    let mut excluded = 0;
-    for path in paths {
-        if safe_paths.contains(&path) {
-            safe.push(path);
-        } else {
-            excluded += 1;
-        }
-    }
-    Ok((safe, excluded))
 }
 
 fn tool_json_result(value: impl serde::Serialize) -> Result<Value, RpcError> {
@@ -1183,28 +1195,6 @@ fn tool_json_result(value: impl serde::Serialize) -> Result<Value, RpcError> {
         "structuredContent": structured,
         "isError": false
     }))
-}
-
-fn git_lines(repo: &std::path::Path, args: &[&str]) -> Result<Vec<String>, RpcError> {
-    let output = Command::new("git")
-        .arg("-C")
-        .arg(repo)
-        .args(args)
-        .output()
-        .map_err(|error| RpcError::invalid_params(format!("failed to run git: {error}")))?;
-    if !output.status.success() {
-        return Err(RpcError::invalid_params(format!(
-            "git command failed: {}",
-            String::from_utf8_lossy(&output.stderr).trim()
-        )));
-    }
-
-    Ok(String::from_utf8_lossy(&output.stdout)
-        .lines()
-        .map(str::trim)
-        .filter(|line| !line.is_empty())
-        .map(ToOwned::to_owned)
-        .collect())
 }
 
 fn success_response(id: Value, result: Value) -> Value {
@@ -1297,6 +1287,10 @@ mod tests {
             tools[0]["inputSchema"]["properties"]["paths"]["items"]["type"],
             "string"
         );
+        assert_eq!(
+            tools[0]["inputSchema"]["properties"]["includeCurrentDiff"]["type"],
+            "boolean"
+        );
         assert_eq!(tools[1]["name"], "search");
         assert_eq!(tools[2]["name"], "related");
         assert_eq!(tools[3]["name"], "get_pack");
@@ -1304,6 +1298,10 @@ mod tests {
         assert_eq!(
             tools[3]["inputSchema"]["properties"]["paths"]["items"]["type"],
             "string"
+        );
+        assert_eq!(
+            tools[3]["inputSchema"]["properties"]["includeCurrentDiff"]["type"],
+            "boolean"
         );
         assert_eq!(tools[4]["name"], "related_tests");
         assert_eq!(tools[5]["name"], "current_diff");
@@ -1409,6 +1407,33 @@ mod tests {
         std::env::set_var("CTXPACK_HOME", &repo.home);
         let request = format!(
             r#"{{"jsonrpc":"2.0","id":15,"method":"tools/call","params":{{"name":"prepare_task","arguments":{{"task":"explain unrelated area","repo":"{}","mode":"explain","paths":["src/auth/session.ts"]}}}}}}"#,
+            repo.repo.display()
+        );
+        let response = handle_line(&request).unwrap();
+
+        assert_eq!(
+            response["result"]["structuredContent"]["targetFiles"][0]["path"],
+            "src/auth/session.ts"
+        );
+        assert_eq!(
+            response["result"]["structuredContent"]["targetFiles"][0]["reason"],
+            "explicit path anchor from active context"
+        );
+        std::env::remove_var("CTXPACK_HOME");
+    }
+
+    #[test]
+    fn prepare_task_call_can_anchor_current_diff() {
+        let _guard = env_lock();
+        let repo = fixture_repo();
+        fs::write(
+            repo.repo.join("src/auth/session.ts"),
+            "import { parseCookie } from './cookies';\nexport function requireSession() {\n  return !parseCookie();\n}\n",
+        )
+        .unwrap();
+        std::env::set_var("CTXPACK_HOME", &repo.home);
+        let request = format!(
+            r#"{{"jsonrpc":"2.0","id":26,"method":"tools/call","params":{{"name":"prepare_task","arguments":{{"task":"explain unrelated area","repo":"{}","mode":"explain","includeCurrentDiff":true}}}}}}"#,
             repo.repo.display()
         );
         let response = handle_line(&request).unwrap();

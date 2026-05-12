@@ -52,6 +52,7 @@ Implemented MCP tools:
 `search` returns compact, source-free local matches from safe inventoried files and symbols. Use `kinds: ["file"]` or `kinds: ["symbol"]` to narrow the result set when an agent needs a specific evidence type.
 
 `current_diff` returns safe changed path lists only. Paths excluded by ignore, generated, sensitive, or other safe-inventory policy are summarized by count and source text is never returned.
+`prepare_task` and `get_pack` can also accept `includeCurrentDiff: true` to add those safe changed paths as context anchors without returning source text.
 
 `related` can expand from either a `path` or a `symbol`. Symbol expansion resolves safe symbol matches first, then returns the same related tests, dependency edges, and co-change hints around the resolved file paths.
 If local git history is unavailable, `related` still returns non-history context and includes a warning instead of failing the whole call.
@@ -160,6 +161,12 @@ Pass active editor files as repeatable anchors when the host agent knows them:
 
 ```bash
 cargo run -p ctxpack -- prepare-task "fix redirect behavior" --repo /path/to/repo --mode bug-fix --path src/auth/middleware.ts
+```
+
+Use safe current-diff paths as anchors for review or in-progress work:
+
+```bash
+cargo run -p ctxpack -- prepare-task "review current auth changes" --repo /path/to/repo --mode review --current-diff
 ```
 
 The plan fuses active path anchors, symbol search, lexical search, related tests, local dependency edges, and local co-change hints into target files, line hints, validation commands, risk flags, and pack resource options. MCP clients can pass the same active/open files through the `paths` array on `prepare_task`.

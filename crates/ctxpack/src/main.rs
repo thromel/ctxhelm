@@ -9,11 +9,13 @@ use ctxpack_core::{
     TaskType,
 };
 use ctxpack_index::{
-    append_eval_trace, co_change_hints, dependency_edges, extract_symbols, lexical_search,
-    list_eval_traces, related_dependency_edges, related_tests, symbol_search, write_inventory,
-    CoChangeOptions, DependencyOptions, InventoryOptions, InventoryReport, SearchOptions,
-    SymbolOptions,
+    append_eval_trace, co_change_hints, current_diff_summary, dependency_edges, extract_symbols,
+    lexical_search, list_eval_traces, related_dependency_edges, related_tests, symbol_search,
+    write_inventory, CoChangeOptions, CurrentDiffOptions, DependencyOptions, InventoryOptions,
+    InventoryReport, SearchOptions, SymbolOptions,
 };
+use std::collections::BTreeSet;
+use std::path::Path;
 use std::path::PathBuf;
 
 #[derive(Debug, Parser)]
@@ -119,6 +121,11 @@ struct PrepareTaskArgs {
         help = "Active/open file path to pin as a context anchor. Repeatable."
     )]
     paths: Vec<String>,
+    #[arg(
+        long = "current-diff",
+        help = "Add safe changed paths from the current local diff as context anchors."
+    )]
+    include_current_diff: bool,
     #[arg(long, default_value = "generic")]
     target_agent: String,
 }
@@ -139,6 +146,11 @@ struct GetPackArgs {
         help = "Active/open file path to pin as a context anchor. Repeatable."
     )]
     paths: Vec<String>,
+    #[arg(
+        long = "current-diff",
+        help = "Add safe changed paths from the current local diff as context anchors."
+    )]
+    include_current_diff: bool,
     #[arg(long, default_value = "generic")]
     target_agent: String,
 }
@@ -233,12 +245,9 @@ fn main() -> Result<()> {
         Command::PrepareTask(args) => {
             let start = args.repo.clone().unwrap_or(std::env::current_dir()?);
             let repo = RepoRoot::discover_from(&start)?;
-            let plan = prepare_context_plan_with_paths(
-                &repo.path,
-                &args.task,
-                args.mode.into(),
-                &args.paths,
-            )?;
+            let paths = context_anchor_paths(&repo.path, args.paths, args.include_current_diff)?;
+            let plan =
+                prepare_context_plan_with_paths(&repo.path, &args.task, args.mode.into(), &paths)?;
             let trace = eval_trace_for_plan(&repo.path, &args.task, &args.target_agent, &plan);
             append_eval_trace(&repo.path, &trace)?;
             println!("{}", serde_json::to_string_pretty(&plan)?);
@@ -246,12 +255,13 @@ fn main() -> Result<()> {
         Command::GetPack(args) => {
             let start = args.repo.clone().unwrap_or(std::env::current_dir()?);
             let repo = RepoRoot::discover_from(&start)?;
+            let paths = context_anchor_paths(&repo.path, args.paths, args.include_current_diff)?;
             let (plan, pack) = compile_context_pack_with_plan_and_paths(
                 &repo.path,
                 &args.task,
                 args.mode.into(),
                 args.budget.into(),
-                &args.paths,
+                &paths,
             )?;
             let trace =
                 eval_trace_for_pack(&repo.path, &args.task, &args.target_agent, &plan, &pack);
@@ -369,6 +379,40 @@ fn print_inventory_report(report: &InventoryReport) {
         report.sensitive_count
     );
     println!("- inventory: {}", report.inventory_path.display());
+}
+
+fn context_anchor_paths(
+    repo: &Path,
+    explicit_paths: Vec<String>,
+    include_current_diff: bool,
+) -> Result<Vec<String>> {
+    let mut paths = Vec::new();
+    let mut seen = BTreeSet::new();
+    for path in explicit_paths {
+        let path = path.trim();
+        if !path.is_empty() && seen.insert(path.to_string()) {
+            paths.push(path.to_string());
+        }
+    }
+    if include_current_diff {
+        let diff = current_diff_summary(
+            repo,
+            &CurrentDiffOptions {
+                include_untracked: true,
+            },
+        )?;
+        for path in diff
+            .staged
+            .into_iter()
+            .chain(diff.unstaged.into_iter())
+            .chain(diff.untracked.into_iter())
+        {
+            if seen.insert(path.clone()) {
+                paths.push(path);
+            }
+        }
+    }
+    Ok(paths)
 }
 
 fn render_eval_checklist(traces: &[EvalTrace]) -> String {

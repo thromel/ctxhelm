@@ -148,6 +148,38 @@ pub struct DependencyEdge {
     pub reason: String,
 }
 
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct CurrentDiffOptions {
+    pub include_untracked: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct CurrentDiffExcluded {
+    pub unstaged: usize,
+    pub staged: usize,
+    pub untracked: usize,
+    pub reason: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct CurrentDiffPrivacyStatus {
+    pub local_only: bool,
+    pub source_text_returned: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct CurrentDiffSummary {
+    pub unstaged: Vec<String>,
+    pub staged: Vec<String>,
+    pub untracked: Vec<String>,
+    pub excluded: CurrentDiffExcluded,
+    pub privacy_status: CurrentDiffPrivacyStatus,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct SymbolOptions {
@@ -635,6 +667,41 @@ pub fn related_dependency_edges(
     Ok(edges)
 }
 
+pub fn current_diff_summary(
+    repo_root: impl AsRef<Path>,
+    options: &CurrentDiffOptions,
+) -> Result<CurrentDiffSummary, InventoryError> {
+    let repo_root = canonicalize(repo_root.as_ref())?;
+    let unstaged = git_name_only(&repo_root, &["diff", "--name-only"])?;
+    let staged = git_name_only(&repo_root, &["diff", "--cached", "--name-only"])?;
+    let untracked = if options.include_untracked {
+        git_name_only(&repo_root, &["ls-files", "--others", "--exclude-standard"])?
+    } else {
+        Vec::new()
+    };
+
+    let (unstaged, excluded_unstaged) = safe_changed_paths(&repo_root, unstaged)?;
+    let (staged, excluded_staged) = safe_changed_paths(&repo_root, staged)?;
+    let (untracked, excluded_untracked) = safe_changed_paths(&repo_root, untracked)?;
+
+    Ok(CurrentDiffSummary {
+        unstaged,
+        staged,
+        untracked,
+        excluded: CurrentDiffExcluded {
+            unstaged: excluded_unstaged,
+            staged: excluded_staged,
+            untracked: excluded_untracked,
+            reason: "paths excluded by safe inventory policy; source content was not returned"
+                .to_string(),
+        },
+        privacy_status: CurrentDiffPrivacyStatus {
+            local_only: true,
+            source_text_returned: false,
+        },
+    })
+}
+
 pub fn append_eval_trace(
     repo_root: impl AsRef<Path>,
     trace: &EvalTrace,
@@ -761,6 +828,34 @@ fn normalize_input_path(repo_root: &Path, path: &str) -> String {
         })
         .collect::<Vec<_>>()
         .join("/")
+}
+
+fn safe_changed_paths(
+    repo_root: &Path,
+    paths: Vec<String>,
+) -> Result<(Vec<String>, usize), InventoryError> {
+    if paths.is_empty() {
+        return Ok((Vec::new(), 0));
+    }
+    let inventory = build_inventory(repo_root, &InventoryOptions::default())?;
+    let safe_paths = inventory
+        .files
+        .into_iter()
+        .map(|file| file.path)
+        .collect::<BTreeSet<_>>();
+    let mut safe = Vec::new();
+    let mut excluded = 0;
+    for path in paths {
+        let path = normalize_input_path(repo_root, &path);
+        if safe_paths.contains(&path) {
+            safe.push(path);
+        } else {
+            excluded += 1;
+        }
+    }
+    safe.sort();
+    safe.dedup();
+    Ok((safe, excluded))
 }
 
 fn safe_dependency_files(inventory: &RepoInventory) -> Vec<&FileInventoryEntry> {
@@ -1850,32 +1945,43 @@ struct GitCommitFiles {
 }
 
 fn git_commit_file_sets(repo_root: &Path) -> Result<Vec<GitCommitFiles>, InventoryError> {
+    let stdout = git_stdout(repo_root, &["log", "--name-only", "--format=commit:%H"])?;
+
+    Ok(parse_git_log_name_only(&stdout))
+}
+
+fn git_name_only(repo_root: &Path, args: &[&str]) -> Result<Vec<String>, InventoryError> {
+    Ok(git_stdout(repo_root, args)?
+        .lines()
+        .map(str::trim)
+        .filter(|line| !line.is_empty())
+        .map(|line| line.replace('\\', "/"))
+        .collect())
+}
+
+fn git_stdout(repo_root: &Path, args: &[&str]) -> Result<String, InventoryError> {
     let output = Command::new("git")
         .arg("-C")
         .arg(repo_root)
-        .arg("log")
-        .arg("--name-only")
-        .arg("--format=commit:%H")
+        .args(args)
         .output()
         .map_err(|source| InventoryError::Git {
             repo_root: repo_root.to_path_buf(),
             message: source.to_string(),
         })?;
 
-    if !output.status.success() {
-        let message = String::from_utf8_lossy(&output.stderr).trim().to_string();
-        if is_empty_git_history_message(&message) {
-            return Ok(Vec::new());
-        }
-        return Err(InventoryError::Git {
-            repo_root: repo_root.to_path_buf(),
-            message,
-        });
+    if output.status.success() {
+        return Ok(String::from_utf8_lossy(&output.stdout).to_string());
     }
 
-    Ok(parse_git_log_name_only(&String::from_utf8_lossy(
-        &output.stdout,
-    )))
+    let message = String::from_utf8_lossy(&output.stderr).trim().to_string();
+    if args.first() == Some(&"log") && is_empty_git_history_message(&message) {
+        return Ok(String::new());
+    }
+    Err(InventoryError::Git {
+        repo_root: repo_root.to_path_buf(),
+        message,
+    })
 }
 
 fn is_empty_git_history_message(message: &str) -> bool {
@@ -2569,6 +2675,58 @@ mod tests {
         .unwrap();
 
         assert!(hints.is_empty());
+        std::env::remove_var("CTXPACK_HOME");
+    }
+
+    #[test]
+    fn current_diff_summary_returns_safe_changed_paths_without_source_text() {
+        let _guard = env_lock();
+        let temp = tempfile::tempdir().unwrap();
+        let repo = temp.path().join("repo");
+        let home = temp.path().join("ctxpack-home");
+        fs::create_dir_all(repo.join("src")).unwrap();
+        fs::create_dir_all(repo.join("tests")).unwrap();
+        fs::create_dir_all(repo.join("dist")).unwrap();
+        run_git(&repo, &["init"]);
+        run_git(&repo, &["config", "user.email", "ctxpack@example.com"]);
+        run_git(&repo, &["config", "user.name", "ctxpack"]);
+        fs::write(repo.join("src/lib.ts"), "export const value = 1;\n").unwrap();
+        fs::write(repo.join("README.md"), "# Repo\n").unwrap();
+        fs::write(repo.join("dist/app.min.js"), "generated\n").unwrap();
+        fs::write(repo.join("private.key"), "secret\n").unwrap();
+        run_git(&repo, &["add", "."]);
+        run_git(&repo, &["commit", "-m", "initial"]);
+        fs::write(repo.join("src/lib.ts"), "export const value = 2;\n").unwrap();
+        fs::write(repo.join("README.md"), "# Repo changed\n").unwrap();
+        run_git(&repo, &["add", "README.md"]);
+        fs::write(repo.join("tests/new.test.ts"), "test('new', () => {});\n").unwrap();
+        fs::write(repo.join("dist/new.min.js"), "generated\n").unwrap();
+        fs::write(repo.join("local.key"), "secret\n").unwrap();
+        std::env::set_var("CTXPACK_HOME", &home);
+
+        let summary = current_diff_summary(
+            &repo,
+            &CurrentDiffOptions {
+                include_untracked: true,
+            },
+        )
+        .unwrap();
+
+        assert_eq!(summary.unstaged, vec!["src/lib.ts"]);
+        assert_eq!(summary.staged, vec!["README.md"]);
+        assert_eq!(summary.untracked, vec!["tests/new.test.ts"]);
+        assert_eq!(summary.excluded.untracked, 2);
+        assert!(summary
+            .excluded
+            .reason
+            .contains("source content was not returned"));
+        assert!(summary.privacy_status.local_only);
+        assert!(!summary.privacy_status.source_text_returned);
+
+        let without_untracked =
+            current_diff_summary(&repo, &CurrentDiffOptions::default()).unwrap();
+        assert!(without_untracked.untracked.is_empty());
+
         std::env::remove_var("CTXPACK_HOME");
     }
 
