@@ -562,11 +562,15 @@ fn render_historical_eval_report(report: &HistoricalEvalReport) -> String {
     let mut output = String::from("# ctxpack Historical Retrieval Eval\n\n");
     output.push_str("This source-free report replays recent commit subjects through `prepare_task` and compares recommended context paths with the safe files changed by each commit.\n\n");
     output.push_str(&format!(
-        "- Repo ID: `{}`\n- Evaluated commits: `{}`\n- File Recall@5: `{:.2}`\n- File Recall@10: `{:.2}`\n- Source Recall@5: `{:.2}`\n- Source Recall@10: `{:.2}`\n- Test Recall@5: `{:.2}`\n- Test Recall@10: `{:.2}`\n- Test recommendation rate: `{:.2}`\n- Average recommended context files: `{:.2}`\n- Privacy: local-only `{}`\n\n",
+        "- Repo ID: `{}`\n- Evaluated commits: `{}`\n- File Recall@5: `{:.2}`\n- File Recall@10: `{:.2}`\n- Lexical Baseline Recall@5: `{:.2}`\n- Lexical Baseline Recall@10: `{:.2}`\n- ctxpack Lift@5: `{:+.2}`\n- ctxpack Lift@10: `{:+.2}`\n- Source Recall@5: `{:.2}`\n- Source Recall@10: `{:.2}`\n- Test Recall@5: `{:.2}`\n- Test Recall@10: `{:.2}`\n- Test recommendation rate: `{:.2}`\n- Average recommended context files: `{:.2}`\n- Privacy: local-only `{}`\n\n",
         report.repo_id,
         report.evaluated_commits,
         report.file_recall_at_5,
         report.file_recall_at_10,
+        report.lexical_baseline_recall_at_5,
+        report.lexical_baseline_recall_at_10,
+        report.ctxpack_lift_at_5,
+        report.ctxpack_lift_at_10,
         report.source_recall_at_5,
         report.source_recall_at_10,
         report.test_recall_at_5,
@@ -598,7 +602,7 @@ fn render_historical_eval_report(report: &HistoricalEvalReport) -> String {
     for commit in &report.commits {
         let short_sha = commit.sha.chars().take(12).collect::<String>();
         output.push_str(&format!(
-            "### `{short_sha}`\n\n- Task hash: `{}`\n- Task type: `{:?}`\n- Target agent: `{}`\n- Confidence: `{:.2}`\n- Source text logged: `{}`\n- Safe changed files: `{}`\n- Excluded changed files: `{}`\n- Hits@5: `{}`\n- Hits@10: `{}`\n- Source hits@5/10: `{}/{}` of `{}`\n- Test hits@5/10: `{}/{}` of `{}`\n",
+            "### `{short_sha}`\n\n- Task hash: `{}`\n- Task type: `{:?}`\n- Target agent: `{}`\n- Confidence: `{:.2}`\n- Source text logged: `{}`\n- Safe changed files: `{}`\n- Excluded changed files: `{}`\n- Hits@5: `{}`\n- Hits@10: `{}`\n- Lexical baseline hits@5/10: `{}/{}`\n- Source hits@5/10: `{}/{}` of `{}`\n- Test hits@5/10: `{}/{}` of `{}`\n",
             commit.task_hash,
             commit.task_type,
             commit.target_agent,
@@ -608,6 +612,8 @@ fn render_historical_eval_report(report: &HistoricalEvalReport) -> String {
             commit.excluded_changed_file_count,
             commit.file_hits_at_5.len(),
             commit.file_hits_at_10.len(),
+            commit.lexical_baseline_hits_at_5.len(),
+            commit.lexical_baseline_hits_at_10.len(),
             commit.source_hits_at_5,
             commit.source_hits_at_10,
             commit.source_files_changed,
@@ -710,6 +716,10 @@ mod tests {
             evaluated_commits: 1,
             file_recall_at_5: 1.0,
             file_recall_at_10: 1.0,
+            lexical_baseline_recall_at_5: 0.5,
+            lexical_baseline_recall_at_10: 0.5,
+            ctxpack_lift_at_5: 0.5,
+            ctxpack_lift_at_10: 0.5,
             source_recall_at_5: 1.0,
             source_recall_at_10: 1.0,
             test_recall_at_5: 0.0,
@@ -735,8 +745,11 @@ mod tests {
                     "tests/auth.test.ts".to_string(),
                 ],
                 recommended_commands: vec!["pnpm test tests/auth.test.ts".to_string()],
+                lexical_baseline_files: vec!["README.md".to_string()],
                 file_hits_at_5: vec!["src/auth.ts".to_string()],
                 file_hits_at_10: vec!["src/auth.ts".to_string()],
+                lexical_baseline_hits_at_5: vec![],
+                lexical_baseline_hits_at_10: vec![],
                 missing_files_at_10: vec![],
                 source_files_changed: 1,
                 source_hits_at_5: 1,
@@ -754,10 +767,13 @@ mod tests {
 
         assert!(markdown.contains("# ctxpack Historical Retrieval Eval"));
         assert!(markdown.contains("File Recall@5: `1.00`"));
+        assert!(markdown.contains("Lexical Baseline Recall@5: `0.50`"));
+        assert!(markdown.contains("ctxpack Lift@10: `+0.50`"));
         assert!(markdown.contains("Source Recall@10: `1.00`"));
         assert!(markdown.contains("Test Recall@10: `0.00`"));
         assert!(markdown.contains("Top Retrieval Gaps"));
         assert!(markdown.contains("`README.md` (Docs) missed `1` time"));
+        assert!(markdown.contains("Lexical baseline hits@5/10: `0/0`"));
         assert!(markdown.contains("Source hits@5/10: `1/1` of `1`"));
         assert!(markdown.contains("`abcdef123456`"));
         assert!(markdown.contains("`src/auth.ts`"));

@@ -31,6 +31,10 @@ pub struct HistoricalEvalReport {
     pub evaluated_commits: usize,
     pub file_recall_at_5: f32,
     pub file_recall_at_10: f32,
+    pub lexical_baseline_recall_at_5: f32,
+    pub lexical_baseline_recall_at_10: f32,
+    pub ctxpack_lift_at_5: f32,
+    pub ctxpack_lift_at_10: f32,
     pub source_recall_at_5: f32,
     pub source_recall_at_10: f32,
     pub test_recall_at_5: f32,
@@ -63,8 +67,11 @@ pub struct HistoricalCommitEval {
     pub recommended_tests: Vec<String>,
     pub recommended_context_files: Vec<String>,
     pub recommended_commands: Vec<String>,
+    pub lexical_baseline_files: Vec<String>,
     pub file_hits_at_5: Vec<String>,
     pub file_hits_at_10: Vec<String>,
+    pub lexical_baseline_hits_at_5: Vec<String>,
+    pub lexical_baseline_hits_at_10: Vec<String>,
     pub missing_files_at_10: Vec<String>,
     pub source_files_changed: usize,
     pub source_hits_at_5: usize,
@@ -168,10 +175,15 @@ pub fn evaluate_historical_commits(
             .collect::<Vec<_>>();
         let recommended_context_files =
             context_file_ranking(&recommended_files, &recommended_tests);
+        let lexical_baseline_files = lexical_baseline_context_files(repo_root, &task)?;
         let file_hits_at_5 =
             changed_file_hits(&sample.safe_changed_files, &recommended_context_files, 5);
         let file_hits_at_10 =
             changed_file_hits(&sample.safe_changed_files, &recommended_context_files, 10);
+        let lexical_baseline_hits_at_5 =
+            changed_file_hits(&sample.safe_changed_files, &lexical_baseline_files, 5);
+        let lexical_baseline_hits_at_10 =
+            changed_file_hits(&sample.safe_changed_files, &lexical_baseline_files, 10);
         let missing_files_at_10 =
             missing_changed_files(&sample.safe_changed_files, &recommended_context_files, 10);
         let source_changed_files =
@@ -202,8 +214,11 @@ pub fn evaluate_historical_commits(
             recommended_tests,
             recommended_context_files,
             recommended_commands,
+            lexical_baseline_files,
             file_hits_at_5,
             file_hits_at_10,
+            lexical_baseline_hits_at_5,
+            lexical_baseline_hits_at_10,
             missing_files_at_10,
             source_files_changed: source_changed_files.len(),
             source_hits_at_5,
@@ -216,11 +231,20 @@ pub fn evaluate_historical_commits(
         });
     }
 
+    let file_recall_at_5 = average_recall(&commits, 5);
+    let file_recall_at_10 = average_recall(&commits, 10);
+    let lexical_baseline_recall_at_5 = average_lexical_baseline_recall(&commits, 5);
+    let lexical_baseline_recall_at_10 = average_lexical_baseline_recall(&commits, 10);
+
     Ok(HistoricalEvalReport {
         repo_id: pack_repo_id(repo_root),
         evaluated_commits: commits.len(),
-        file_recall_at_5: average_recall(&commits, 5),
-        file_recall_at_10: average_recall(&commits, 10),
+        file_recall_at_5,
+        file_recall_at_10,
+        lexical_baseline_recall_at_5,
+        lexical_baseline_recall_at_10,
+        ctxpack_lift_at_5: file_recall_at_5 - lexical_baseline_recall_at_5,
+        ctxpack_lift_at_10: file_recall_at_10 - lexical_baseline_recall_at_10,
         source_recall_at_5: average_role_recall(&commits, FileRole::Source, 5),
         source_recall_at_10: average_role_recall(&commits, FileRole::Source, 10),
         test_recall_at_5: average_role_recall(&commits, FileRole::Test, 5),
@@ -957,6 +981,17 @@ fn context_file_ranking(recommended_files: &[String], recommended_tests: &[Strin
         .collect()
 }
 
+fn lexical_baseline_context_files(
+    repo_root: &Path,
+    task: &str,
+) -> Result<Vec<String>, InventoryError> {
+    let results = lexical_search(repo_root, task, &SearchOptions { limit: 10 })?;
+    Ok(results
+        .into_iter()
+        .map(|result| result.path)
+        .collect::<Vec<_>>())
+}
+
 fn changed_file_hits(
     safe_changed_files: &[String],
     recommended_context_files: &[String],
@@ -1018,6 +1053,30 @@ fn average_recall(commits: &[HistoricalCommitEval], limit: usize) -> f32 {
                     commit.file_hits_at_5.len()
                 } else {
                     commit.file_hits_at_10.len()
+                };
+                hit_count as f32 / commit.safe_changed_files.len() as f32
+            }
+        })
+        .sum::<f32>();
+
+    total / commits.len() as f32
+}
+
+fn average_lexical_baseline_recall(commits: &[HistoricalCommitEval], limit: usize) -> f32 {
+    if commits.is_empty() {
+        return 0.0;
+    }
+
+    let total = commits
+        .iter()
+        .map(|commit| {
+            if commit.safe_changed_files.is_empty() {
+                0.0
+            } else {
+                let hit_count = if limit <= 5 {
+                    commit.lexical_baseline_hits_at_5.len()
+                } else {
+                    commit.lexical_baseline_hits_at_10.len()
                 };
                 hit_count as f32 / commit.safe_changed_files.len() as f32
             }
@@ -1874,11 +1933,20 @@ mod tests {
         assert_eq!(report.commits[0].file_hits_at_5.len(), 2);
         assert_eq!(report.file_recall_at_5, 1.0);
         assert_eq!(report.file_recall_at_10, 1.0);
+        assert_eq!(report.lexical_baseline_recall_at_5, 1.0);
+        assert_eq!(report.lexical_baseline_recall_at_10, 1.0);
+        assert_eq!(report.ctxpack_lift_at_5, 0.0);
+        assert_eq!(report.ctxpack_lift_at_10, 0.0);
         assert_eq!(report.source_recall_at_5, 1.0);
         assert_eq!(report.source_recall_at_10, 1.0);
         assert_eq!(report.test_recall_at_5, 1.0);
         assert_eq!(report.test_recall_at_10, 1.0);
         assert!(report.top_missing_files.is_empty());
+        assert!(report.commits[0]
+            .lexical_baseline_files
+            .contains(&"src/auth/session.ts".to_string()));
+        assert_eq!(report.commits[0].lexical_baseline_hits_at_5.len(), 2);
+        assert_eq!(report.commits[0].lexical_baseline_hits_at_10.len(), 2);
         assert_eq!(report.commits[0].source_files_changed, 1);
         assert_eq!(report.commits[0].source_hits_at_5, 1);
         assert_eq!(report.commits[0].source_hits_at_10, 1);
@@ -1888,6 +1956,8 @@ mod tests {
         assert!(report.test_recommendation_rate > 0.0);
         assert!(!report.commits[0].source_text_logged);
         assert!(value.get("commits").is_some());
+        assert_eq!(value["lexicalBaselineRecallAt5"], 1.0);
+        assert_eq!(value["ctxpackLiftAt10"], 0.0);
         assert_eq!(value["sourceRecallAt5"], 1.0);
         assert_eq!(value["testRecallAt10"], 1.0);
         assert!(value["privacyStatus"]["localOnly"].as_bool().unwrap());
