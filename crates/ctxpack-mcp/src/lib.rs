@@ -113,7 +113,10 @@ struct SearchArgs {
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct RelatedArgs {
-    path: String,
+    #[serde(default)]
+    path: Option<String>,
+    #[serde(default)]
+    symbol: Option<String>,
     #[serde(default)]
     repo: Option<PathBuf>,
     #[serde(default)]
@@ -385,13 +388,17 @@ fn tools_list_result() -> Value {
             {
                 "name": "related",
                 "title": "Related Repository Context",
-                "description": "Expand around a path with related tests, dependency edges, and local git co-change hints.",
+                "description": "Expand around a path or symbol with related tests, dependency edges, and local git co-change hints.",
                 "inputSchema": {
                     "type": "object",
                     "properties": {
                         "path": {
                             "type": "string",
                             "description": "Repository-relative or absolute file path to expand from."
+                        },
+                        "symbol": {
+                            "type": "string",
+                            "description": "Symbol name or query to resolve first, then expand from matching symbol paths."
                         },
                         "repo": {
                             "type": "string",
@@ -412,7 +419,6 @@ fn tools_list_result() -> Value {
                             "description": "Maximum count for each expansion category."
                         }
                     },
-                    "required": ["path"],
                     "additionalProperties": false
                 }
             },
@@ -894,18 +900,15 @@ fn call_related(arguments: Value) -> Result<Value, RpcError> {
     let args: RelatedArgs = serde_json::from_value(arguments)
         .map_err(|error| RpcError::invalid_params(format!("invalid related arguments: {error}")))?;
 
-    if args.path.trim().is_empty() {
-        return Err(RpcError::invalid_params("path must not be empty"));
-    }
-
     let repo = discover_repo(args.repo)?;
     let limit = bounded_limit(args.limit, 10);
+    let (paths, symbol_matches) = related_anchor_paths(&repo.path, args.path, args.symbol, limit)?;
     let include_tests = args.include.is_empty() || args.include.contains(&RelatedInclude::Tests);
     let include_commits =
         args.include.is_empty() || args.include.contains(&RelatedInclude::Commits);
     let include_dependencies =
         args.include.is_empty() || args.include.contains(&RelatedInclude::Dependencies);
-    let paths = vec![args.path];
+    let mut warnings = Vec::new();
 
     let tests = if include_tests {
         related_tests(&repo.path, &paths)
@@ -917,9 +920,15 @@ fn call_related(arguments: Value) -> Result<Value, RpcError> {
         Vec::new()
     };
     let co_changes = if include_commits {
-        co_change_hints(&repo.path, &paths, &CoChangeOptions { limit }).map_err(|error| {
-            RpcError::invalid_params(format!("failed to find co-change hints: {error}"))
-        })?
+        match co_change_hints(&repo.path, &paths, &CoChangeOptions { limit }) {
+            Ok(hints) => hints,
+            Err(error) => {
+                warnings.push(format!(
+                    "Local git co-change hints were unavailable; continuing without history signal: {error}"
+                ));
+                Vec::new()
+            }
+        }
     } else {
         Vec::new()
     };
@@ -932,10 +941,59 @@ fn call_related(arguments: Value) -> Result<Value, RpcError> {
     };
 
     tool_json_result(json!({
+        "resolvedPaths": paths,
+        "symbolMatches": symbol_matches,
         "relatedTests": tests,
         "coChangeHints": co_changes,
-        "dependencyEdges": dependency_edges
+        "dependencyEdges": dependency_edges,
+        "warnings": warnings
     }))
+}
+
+fn related_anchor_paths(
+    repo: &Path,
+    path: Option<String>,
+    symbol: Option<String>,
+    limit: usize,
+) -> Result<(Vec<String>, Value), RpcError> {
+    let mut paths = Vec::new();
+    let mut seen = BTreeSet::new();
+
+    if let Some(path) = path.map(|value| value.trim().to_string()) {
+        if !path.is_empty() && seen.insert(path.clone()) {
+            paths.push(path);
+        }
+    }
+
+    let symbol_matches = if let Some(symbol) = symbol.map(|value| value.trim().to_string()) {
+        if symbol.is_empty() {
+            Value::Array(Vec::new())
+        } else {
+            let results =
+                symbol_search(repo, &symbol, &SymbolOptions { limit }).map_err(|error| {
+                    RpcError::invalid_params(format!("failed to resolve related symbol: {error}"))
+                })?;
+            for result in &results {
+                let path = result.symbol.path.clone();
+                if seen.insert(path.clone()) {
+                    paths.push(path);
+                }
+            }
+            serde_json::to_value(results).map_err(|error| {
+                RpcError::invalid_params(format!("failed to serialize symbol matches: {error}"))
+            })?
+        }
+    } else {
+        Value::Array(Vec::new())
+    };
+
+    if paths.is_empty() {
+        return Err(RpcError::invalid_params(
+            "related requires a non-empty path or symbol",
+        ));
+    }
+
+    Ok((paths, symbol_matches))
 }
 
 fn call_get_pack(arguments: Value) -> Result<Value, RpcError> {
@@ -1509,6 +1567,99 @@ mod tests {
             response["result"]["structuredContent"]["dependencyEdges"][0]["targetPath"],
             "src/auth/cookies.ts"
         );
+        std::env::remove_var("CTXPACK_HOME");
+    }
+
+    #[test]
+    fn related_call_accepts_symbol_anchor() {
+        let _guard = env_lock();
+        let repo = fixture_repo();
+        std::env::set_var("CTXPACK_HOME", &repo.home);
+        let request = format!(
+            r#"{{"jsonrpc":"2.0","id":22,"method":"tools/call","params":{{"name":"related","arguments":{{"symbol":"requireSession","repo":"{}","limit":3}}}}}}"#,
+            repo.repo.display()
+        );
+        let response = handle_line(&request).unwrap();
+
+        assert_eq!(
+            response["result"]["structuredContent"]["resolvedPaths"][0],
+            "src/auth/session.ts"
+        );
+        assert_eq!(
+            response["result"]["structuredContent"]["symbolMatches"][0]["symbol"]["name"],
+            "requireSession"
+        );
+        assert_eq!(
+            response["result"]["structuredContent"]["relatedTests"][0]["path"],
+            "tests/auth/session.test.ts"
+        );
+        assert_eq!(
+            response["result"]["structuredContent"]["dependencyEdges"][0]["sourcePath"],
+            "src/auth/session.ts"
+        );
+        std::env::remove_var("CTXPACK_HOME");
+    }
+
+    #[test]
+    fn related_call_requires_path_or_symbol() {
+        let response = handle_line(
+            r#"{"jsonrpc":"2.0","id":23,"method":"tools/call","params":{"name":"related","arguments":{"limit":3}}}"#,
+        )
+        .unwrap();
+
+        assert_eq!(response["error"]["code"], -32602);
+        assert!(response["error"]["message"]
+            .as_str()
+            .unwrap()
+            .contains("path or symbol"));
+    }
+
+    #[test]
+    fn related_call_degrades_when_git_history_is_unavailable() {
+        let _guard = env_lock();
+        let temp = tempfile::tempdir().unwrap();
+        let repo = temp.path().join("repo");
+        let home = temp.path().join("ctxpack-home");
+        fs::create_dir_all(repo.join(".git")).unwrap();
+        fs::create_dir_all(repo.join("src/auth")).unwrap();
+        fs::create_dir_all(repo.join("tests/auth")).unwrap();
+        fs::write(
+            repo.join("src/auth/session.ts"),
+            "export function requireSession() { return true; }\n",
+        )
+        .unwrap();
+        fs::write(
+            repo.join("tests/auth/session.test.ts"),
+            "import { requireSession } from '../../src/auth/session';\n",
+        )
+        .unwrap();
+        std::env::set_var("CTXPACK_HOME", &home);
+        let request = format!(
+            r#"{{"jsonrpc":"2.0","id":24,"method":"tools/call","params":{{"name":"related","arguments":{{"symbol":"requireSession","repo":"{}","limit":3}}}}}}"#,
+            repo.display()
+        );
+        let response = handle_line(&request).unwrap();
+
+        assert_eq!(
+            response["result"]["structuredContent"]["resolvedPaths"][0],
+            "src/auth/session.ts"
+        );
+        assert_eq!(
+            response["result"]["structuredContent"]["relatedTests"][0]["path"],
+            "tests/auth/session.test.ts"
+        );
+        assert_eq!(
+            response["result"]["structuredContent"]["coChangeHints"]
+                .as_array()
+                .unwrap()
+                .len(),
+            0
+        );
+        assert!(response["result"]["structuredContent"]["warnings"][0]
+            .as_str()
+            .unwrap()
+            .contains("co-change hints were unavailable"));
+
         std::env::remove_var("CTXPACK_HOME");
     }
 
