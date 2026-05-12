@@ -469,6 +469,25 @@ pub fn related_tests(
     Ok(results)
 }
 
+pub fn test_map(repo_root: impl AsRef<Path>) -> Result<Vec<RelatedTestResult>, InventoryError> {
+    let repo_root = canonicalize(repo_root.as_ref())?;
+    let inventory = load_or_build_inventory(&repo_root, &InventoryOptions::default())?;
+    let mut results = inventory
+        .files
+        .into_iter()
+        .filter(|file| file.role == FileRole::Test && !file.generated && !file.ignored)
+        .map(|file| RelatedTestResult {
+            path: file.path.clone(),
+            command: test_command_for(&repo_root, &file.path),
+            confidence: 1.0,
+            reason: "safe test file from inventory".to_string(),
+        })
+        .collect::<Vec<_>>();
+
+    results.sort_by(|left, right| left.path.cmp(&right.path));
+    Ok(results)
+}
+
 pub fn co_change_hints(
     repo_root: impl AsRef<Path>,
     anchor_paths: &[String],
@@ -2397,6 +2416,53 @@ mod tests {
             .collect::<Vec<_>>();
 
         assert_eq!(paths, vec!["tests/billing.test.ts"]);
+
+        std::env::remove_var("CTXPACK_HOME");
+    }
+
+    #[test]
+    fn test_map_lists_safe_tests_with_package_aware_commands() {
+        let _guard = env_lock();
+        let temp = tempfile::tempdir().unwrap();
+        let repo = temp.path().join("repo");
+        let home = temp.path().join("ctxpack-home");
+        fs::create_dir_all(repo.join(".git")).unwrap();
+        fs::create_dir_all(repo.join("src/auth")).unwrap();
+        fs::create_dir_all(repo.join("tests/auth")).unwrap();
+        fs::create_dir_all(repo.join("dist")).unwrap();
+        fs::write(
+            repo.join("package.json"),
+            r#"{"scripts":{"test":"vitest run"}}"#,
+        )
+        .unwrap();
+        fs::write(repo.join("pnpm-lock.yaml"), "lockfileVersion: '9.0'\n").unwrap();
+        fs::write(
+            repo.join("src/auth/session.ts"),
+            "export function requireSession() { return true; }\n",
+        )
+        .unwrap();
+        fs::write(
+            repo.join("tests/auth/session.test.ts"),
+            "import { requireSession } from '../../src/auth/session';\n",
+        )
+        .unwrap();
+        fs::write(
+            repo.join("dist/generated.test.ts"),
+            "test('generated', () => {});\n",
+        )
+        .unwrap();
+        std::env::set_var("CTXPACK_HOME", &home);
+
+        let tests = test_map(&repo).unwrap();
+
+        assert_eq!(tests.len(), 1);
+        assert_eq!(tests[0].path, "tests/auth/session.test.ts");
+        assert_eq!(
+            tests[0].command.as_deref(),
+            Some("pnpm vitest run tests/auth/session.test.ts")
+        );
+        assert_eq!(tests[0].confidence, 1.0);
+        assert_eq!(tests[0].reason, "safe test file from inventory");
 
         std::env::remove_var("CTXPACK_HOME");
     }

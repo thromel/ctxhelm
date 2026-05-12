@@ -5,8 +5,8 @@ use ctxpack_compiler::{
 use ctxpack_core::{ContextPack, FileRole, PackBudget, RepoRoot, TaskType};
 use ctxpack_index::{
     append_eval_trace, co_change_hints, dependency_edges, lexical_search, load_or_build_inventory,
-    related_dependency_edges, related_tests, symbol_search, CoChangeOptions, DependencyOptions,
-    InventoryOptions, SearchOptions, SymbolOptions,
+    related_dependency_edges, related_tests, symbol_search, test_map, CoChangeOptions,
+    DependencyOptions, InventoryOptions, SearchOptions, SymbolOptions,
 };
 use serde::Deserialize;
 use serde_json::{json, Value};
@@ -769,19 +769,8 @@ fn repo_summary(repo: &Path) -> Result<Value, RpcError> {
 }
 
 fn repo_test_map(repo: &Path) -> Result<Value, RpcError> {
-    let inventory = load_or_build_inventory(repo, &InventoryOptions::default())
-        .map_err(|error| RpcError::invalid_params(format!("failed to load inventory: {error}")))?;
-    let tests = inventory
-        .files
-        .into_iter()
-        .filter(|file| file.role == FileRole::Test && !file.generated && !file.ignored)
-        .map(|file| {
-            json!({
-                "path": file.path,
-                "command": test_command_for_path(&file.path)
-            })
-        })
-        .collect::<Vec<_>>();
+    let tests = test_map(repo)
+        .map_err(|error| RpcError::invalid_params(format!("failed to build test map: {error}")))?;
 
     Ok(json!({ "tests": tests }))
 }
@@ -878,10 +867,6 @@ fn workflow_prompt(mode: &str, task: &str, instruction: &str) -> String {
         format!("Task: {task}")
     };
     format!("{task_line}\nMode: {mode}\n\n{instruction}\n\nWhen the active workspace path is known, pass it as the ctxpack `repo` argument so the MCP server does not infer the wrong working directory.\n\nKeep ctxpack read-only: use it for context and use the host agent's native tools for file reads, edits, and validation commands.")
-}
-
-fn test_command_for_path(path: &str) -> String {
-    format!("pnpm test {path}")
 }
 
 fn call_search(arguments: Value) -> Result<Value, RpcError> {
@@ -1357,6 +1342,34 @@ mod tests {
             .as_str()
             .unwrap()
             .contains("src/auth/cookies.ts"));
+
+        std::env::set_current_dir(cwd).unwrap();
+        std::env::remove_var("CTXPACK_HOME");
+    }
+
+    #[test]
+    fn resource_test_map_uses_package_aware_commands() {
+        let _guard = env_lock();
+        let repo = fixture_repo();
+        fs::write(
+            repo.repo.join("package.json"),
+            r#"{"scripts":{"test":"vitest run"}}"#,
+        )
+        .unwrap();
+        fs::write(repo.repo.join("pnpm-lock.yaml"), "lockfileVersion: '9.0'\n").unwrap();
+        std::env::set_var("CTXPACK_HOME", &repo.home);
+        let cwd = std::env::current_dir().unwrap();
+        std::env::set_current_dir(&repo.repo).unwrap();
+
+        let test_map = handle_line(
+            r#"{"jsonrpc":"2.0","id":20,"method":"resources/read","params":{"uri":"ctxpack://repo/test-map"}}"#,
+        )
+        .unwrap();
+        let text = test_map["result"]["contents"][0]["text"].as_str().unwrap();
+
+        assert!(text.contains("tests/auth/session.test.ts"));
+        assert!(text.contains("pnpm vitest run tests/auth/session.test.ts"));
+        assert!(text.contains("safe test file from inventory"));
 
         std::env::set_current_dir(cwd).unwrap();
         std::env::remove_var("CTXPACK_HOME");
