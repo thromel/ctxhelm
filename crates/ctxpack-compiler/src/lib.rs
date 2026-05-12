@@ -31,10 +31,23 @@ pub struct HistoricalEvalReport {
     pub evaluated_commits: usize,
     pub file_recall_at_5: f32,
     pub file_recall_at_10: f32,
+    pub source_recall_at_5: f32,
+    pub source_recall_at_10: f32,
+    pub test_recall_at_5: f32,
+    pub test_recall_at_10: f32,
     pub test_recommendation_rate: f32,
     pub average_recommended_context_files: f32,
+    pub top_missing_files: Vec<HistoricalMissingFileSummary>,
     pub commits: Vec<HistoricalCommitEval>,
     pub privacy_status: PrivacyStatus,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct HistoricalMissingFileSummary {
+    pub path: String,
+    pub role: FileRole,
+    pub missed_count: usize,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -53,6 +66,12 @@ pub struct HistoricalCommitEval {
     pub file_hits_at_5: Vec<String>,
     pub file_hits_at_10: Vec<String>,
     pub missing_files_at_10: Vec<String>,
+    pub source_files_changed: usize,
+    pub source_hits_at_5: usize,
+    pub source_hits_at_10: usize,
+    pub test_files_changed: usize,
+    pub test_hits_at_5: usize,
+    pub test_hits_at_10: usize,
     pub confidence: f32,
     pub source_text_logged: bool,
 }
@@ -104,6 +123,12 @@ pub fn evaluate_historical_commits(
     options: &HistoricalEvalOptions,
 ) -> Result<HistoricalEvalReport, InventoryError> {
     let repo_root = repo_root.as_ref();
+    let inventory = load_or_build_inventory(repo_root, &InventoryOptions::default())?;
+    let roles_by_path = inventory
+        .files
+        .iter()
+        .map(|file| (file.path.clone(), file.role.clone()))
+        .collect::<BTreeMap<_, _>>();
     let samples = historical_commit_samples(
         repo_root,
         &HistoricalCommitOptions {
@@ -149,6 +174,22 @@ pub fn evaluate_historical_commits(
             changed_file_hits(&sample.safe_changed_files, &recommended_context_files, 10);
         let missing_files_at_10 =
             missing_changed_files(&sample.safe_changed_files, &recommended_context_files, 10);
+        let source_changed_files =
+            filter_changed_files_by_role(&sample.safe_changed_files, &roles_by_path, |role| {
+                matches!(role, FileRole::Source)
+            });
+        let test_changed_files =
+            filter_changed_files_by_role(&sample.safe_changed_files, &roles_by_path, |role| {
+                matches!(role, FileRole::Test)
+            });
+        let source_hits_at_5 =
+            changed_file_hits(&source_changed_files, &recommended_context_files, 5).len();
+        let source_hits_at_10 =
+            changed_file_hits(&source_changed_files, &recommended_context_files, 10).len();
+        let test_hits_at_5 =
+            changed_file_hits(&test_changed_files, &recommended_context_files, 5).len();
+        let test_hits_at_10 =
+            changed_file_hits(&test_changed_files, &recommended_context_files, 10).len();
 
         commits.push(HistoricalCommitEval {
             sha: sample.sha,
@@ -164,6 +205,12 @@ pub fn evaluate_historical_commits(
             file_hits_at_5,
             file_hits_at_10,
             missing_files_at_10,
+            source_files_changed: source_changed_files.len(),
+            source_hits_at_5,
+            source_hits_at_10,
+            test_files_changed: test_changed_files.len(),
+            test_hits_at_5,
+            test_hits_at_10,
             confidence: plan.confidence,
             source_text_logged: false,
         });
@@ -174,8 +221,13 @@ pub fn evaluate_historical_commits(
         evaluated_commits: commits.len(),
         file_recall_at_5: average_recall(&commits, 5),
         file_recall_at_10: average_recall(&commits, 10),
+        source_recall_at_5: average_role_recall(&commits, FileRole::Source, 5),
+        source_recall_at_10: average_role_recall(&commits, FileRole::Source, 10),
+        test_recall_at_5: average_role_recall(&commits, FileRole::Test, 5),
+        test_recall_at_10: average_role_recall(&commits, FileRole::Test, 10),
         test_recommendation_rate: test_recommendation_rate(&commits),
         average_recommended_context_files: average_recommended_context_files(&commits),
+        top_missing_files: top_missing_files(&commits, &roles_by_path, 10),
         commits,
         privacy_status: PrivacyStatus::local_only(),
     })
@@ -939,6 +991,18 @@ fn missing_changed_files(
         .collect()
 }
 
+fn filter_changed_files_by_role(
+    safe_changed_files: &[String],
+    roles_by_path: &BTreeMap<String, FileRole>,
+    predicate: impl Fn(&FileRole) -> bool,
+) -> Vec<String> {
+    safe_changed_files
+        .iter()
+        .filter(|path| roles_by_path.get(*path).is_some_and(&predicate))
+        .cloned()
+        .collect()
+}
+
 fn average_recall(commits: &[HistoricalCommitEval], limit: usize) -> f32 {
     if commits.is_empty() {
         return 0.0;
@@ -963,6 +1027,43 @@ fn average_recall(commits: &[HistoricalCommitEval], limit: usize) -> f32 {
     total / commits.len() as f32
 }
 
+fn average_role_recall(commits: &[HistoricalCommitEval], role: FileRole, limit: usize) -> f32 {
+    let mut total = 0.0;
+    let mut count = 0usize;
+    for commit in commits {
+        let (changed, hits) = match role {
+            FileRole::Source => (
+                commit.source_files_changed,
+                if limit <= 5 {
+                    commit.source_hits_at_5
+                } else {
+                    commit.source_hits_at_10
+                },
+            ),
+            FileRole::Test => (
+                commit.test_files_changed,
+                if limit <= 5 {
+                    commit.test_hits_at_5
+                } else {
+                    commit.test_hits_at_10
+                },
+            ),
+            _ => (0, 0),
+        };
+        if changed == 0 {
+            continue;
+        }
+        total += hits as f32 / changed as f32;
+        count += 1;
+    }
+
+    if count == 0 {
+        0.0
+    } else {
+        total / count as f32
+    }
+}
+
 fn test_recommendation_rate(commits: &[HistoricalCommitEval]) -> f32 {
     if commits.is_empty() {
         return 0.0;
@@ -983,6 +1084,39 @@ fn average_recommended_context_files(commits: &[HistoricalCommitEval]) -> f32 {
         .map(|commit| commit.recommended_context_files.len())
         .sum::<usize>();
     total as f32 / commits.len() as f32
+}
+
+fn top_missing_files(
+    commits: &[HistoricalCommitEval],
+    roles_by_path: &BTreeMap<String, FileRole>,
+    limit: usize,
+) -> Vec<HistoricalMissingFileSummary> {
+    let mut counts = BTreeMap::<String, usize>::new();
+    for commit in commits {
+        for path in &commit.missing_files_at_10 {
+            *counts.entry(path.clone()).or_insert(0) += 1;
+        }
+    }
+
+    let mut missing = counts
+        .into_iter()
+        .map(|(path, missed_count)| HistoricalMissingFileSummary {
+            role: roles_by_path
+                .get(&path)
+                .cloned()
+                .unwrap_or(FileRole::Unknown),
+            path,
+            missed_count,
+        })
+        .collect::<Vec<_>>();
+    missing.sort_by(|left, right| {
+        right
+            .missed_count
+            .cmp(&left.missed_count)
+            .then_with(|| left.path.cmp(&right.path))
+    });
+    missing.truncate(limit.max(1));
+    missing
 }
 
 fn search_limit(task_type: &TaskType) -> usize {
@@ -1740,9 +1874,22 @@ mod tests {
         assert_eq!(report.commits[0].file_hits_at_5.len(), 2);
         assert_eq!(report.file_recall_at_5, 1.0);
         assert_eq!(report.file_recall_at_10, 1.0);
+        assert_eq!(report.source_recall_at_5, 1.0);
+        assert_eq!(report.source_recall_at_10, 1.0);
+        assert_eq!(report.test_recall_at_5, 1.0);
+        assert_eq!(report.test_recall_at_10, 1.0);
+        assert!(report.top_missing_files.is_empty());
+        assert_eq!(report.commits[0].source_files_changed, 1);
+        assert_eq!(report.commits[0].source_hits_at_5, 1);
+        assert_eq!(report.commits[0].source_hits_at_10, 1);
+        assert_eq!(report.commits[0].test_files_changed, 1);
+        assert_eq!(report.commits[0].test_hits_at_5, 1);
+        assert_eq!(report.commits[0].test_hits_at_10, 1);
         assert!(report.test_recommendation_rate > 0.0);
         assert!(!report.commits[0].source_text_logged);
         assert!(value.get("commits").is_some());
+        assert_eq!(value["sourceRecallAt5"], 1.0);
+        assert_eq!(value["testRecallAt10"], 1.0);
         assert!(value["privacyStatus"]["localOnly"].as_bool().unwrap());
         assert!(value["commits"][0].get("title").is_none());
         assert!(value["commits"][0].get("task").is_none());

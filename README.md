@@ -218,4 +218,4 @@ Run a source-free historical retrieval eval over recent local commits:
 cargo run -p ctxpack -- eval history --repo /path/to/repo --limit 20 --mode bug-fix
 ```
 
-This replays each commit subject through `prepare_task`, treats the commit's safe changed files as hidden labels, and reports File Recall@5, File Recall@10, test recommendation rate, missing files, and excluded generated/sensitive path counts. The report uses task hashes and path labels; it does not include source snippets.
+This replays each commit subject through `prepare_task`, treats the commit's safe changed files as hidden labels, and reports File Recall@5/10, Source Recall@5/10, Test Recall@5/10, test recommendation rate, top retrieval gaps by file role, and excluded generated/sensitive path counts. The report uses task hashes and path labels; it does not include source snippets.

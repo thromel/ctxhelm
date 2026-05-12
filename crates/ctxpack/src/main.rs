@@ -562,11 +562,15 @@ fn render_historical_eval_report(report: &HistoricalEvalReport) -> String {
     let mut output = String::from("# ctxpack Historical Retrieval Eval\n\n");
     output.push_str("This source-free report replays recent commit subjects through `prepare_task` and compares recommended context paths with the safe files changed by each commit.\n\n");
     output.push_str(&format!(
-        "- Repo ID: `{}`\n- Evaluated commits: `{}`\n- File Recall@5: `{:.2}`\n- File Recall@10: `{:.2}`\n- Test recommendation rate: `{:.2}`\n- Average recommended context files: `{:.2}`\n- Privacy: local-only `{}`\n\n",
+        "- Repo ID: `{}`\n- Evaluated commits: `{}`\n- File Recall@5: `{:.2}`\n- File Recall@10: `{:.2}`\n- Source Recall@5: `{:.2}`\n- Source Recall@10: `{:.2}`\n- Test Recall@5: `{:.2}`\n- Test Recall@10: `{:.2}`\n- Test recommendation rate: `{:.2}`\n- Average recommended context files: `{:.2}`\n- Privacy: local-only `{}`\n\n",
         report.repo_id,
         report.evaluated_commits,
         report.file_recall_at_5,
         report.file_recall_at_10,
+        report.source_recall_at_5,
+        report.source_recall_at_10,
+        report.test_recall_at_5,
+        report.test_recall_at_10,
         report.test_recommendation_rate,
         report.average_recommended_context_files,
         report.privacy_status.local_only
@@ -577,11 +581,24 @@ fn render_historical_eval_report(report: &HistoricalEvalReport) -> String {
         return output;
     }
 
+    output.push_str("## Top Retrieval Gaps\n\n");
+    if report.top_missing_files.is_empty() {
+        output.push_str("- No missing files at 10 across evaluated commits.\n\n");
+    } else {
+        for gap in &report.top_missing_files {
+            output.push_str(&format!(
+                "- `{}` ({:?}) missed `{}` time(s)\n",
+                gap.path, gap.role, gap.missed_count
+            ));
+        }
+        output.push('\n');
+    }
+
     output.push_str("## Commits\n\n");
     for commit in &report.commits {
         let short_sha = commit.sha.chars().take(12).collect::<String>();
         output.push_str(&format!(
-            "### `{short_sha}`\n\n- Task hash: `{}`\n- Task type: `{:?}`\n- Target agent: `{}`\n- Confidence: `{:.2}`\n- Source text logged: `{}`\n- Safe changed files: `{}`\n- Excluded changed files: `{}`\n- Hits@5: `{}`\n- Hits@10: `{}`\n",
+            "### `{short_sha}`\n\n- Task hash: `{}`\n- Task type: `{:?}`\n- Target agent: `{}`\n- Confidence: `{:.2}`\n- Source text logged: `{}`\n- Safe changed files: `{}`\n- Excluded changed files: `{}`\n- Hits@5: `{}`\n- Hits@10: `{}`\n- Source hits@5/10: `{}/{}` of `{}`\n- Test hits@5/10: `{}/{}` of `{}`\n",
             commit.task_hash,
             commit.task_type,
             commit.target_agent,
@@ -590,7 +607,13 @@ fn render_historical_eval_report(report: &HistoricalEvalReport) -> String {
             commit.safe_changed_files.len(),
             commit.excluded_changed_file_count,
             commit.file_hits_at_5.len(),
-            commit.file_hits_at_10.len()
+            commit.file_hits_at_10.len(),
+            commit.source_hits_at_5,
+            commit.source_hits_at_10,
+            commit.source_files_changed,
+            commit.test_hits_at_5,
+            commit.test_hits_at_10,
+            commit.test_files_changed
         ));
         output.push_str("\nChanged files:\n");
         push_plain_path_list(
@@ -687,8 +710,17 @@ mod tests {
             evaluated_commits: 1,
             file_recall_at_5: 1.0,
             file_recall_at_10: 1.0,
+            source_recall_at_5: 1.0,
+            source_recall_at_10: 1.0,
+            test_recall_at_5: 0.0,
+            test_recall_at_10: 0.0,
             test_recommendation_rate: 1.0,
             average_recommended_context_files: 2.0,
+            top_missing_files: vec![ctxpack_compiler::HistoricalMissingFileSummary {
+                path: "README.md".to_string(),
+                role: ctxpack_core::FileRole::Docs,
+                missed_count: 1,
+            }],
             commits: vec![ctxpack_compiler::HistoricalCommitEval {
                 sha: "abcdef1234567890".to_string(),
                 task_hash: "hash-1".to_string(),
@@ -706,6 +738,12 @@ mod tests {
                 file_hits_at_5: vec!["src/auth.ts".to_string()],
                 file_hits_at_10: vec!["src/auth.ts".to_string()],
                 missing_files_at_10: vec![],
+                source_files_changed: 1,
+                source_hits_at_5: 1,
+                source_hits_at_10: 1,
+                test_files_changed: 0,
+                test_hits_at_5: 0,
+                test_hits_at_10: 0,
                 confidence: 0.85,
                 source_text_logged: false,
             }],
@@ -716,6 +754,11 @@ mod tests {
 
         assert!(markdown.contains("# ctxpack Historical Retrieval Eval"));
         assert!(markdown.contains("File Recall@5: `1.00`"));
+        assert!(markdown.contains("Source Recall@10: `1.00`"));
+        assert!(markdown.contains("Test Recall@10: `0.00`"));
+        assert!(markdown.contains("Top Retrieval Gaps"));
+        assert!(markdown.contains("`README.md` (Docs) missed `1` time"));
+        assert!(markdown.contains("Source hits@5/10: `1/1` of `1`"));
         assert!(markdown.contains("`abcdef123456`"));
         assert!(markdown.contains("`src/auth.ts`"));
         assert!(markdown.contains("Source text logged: `false`"));
