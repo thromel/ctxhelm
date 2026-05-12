@@ -108,6 +108,15 @@ struct SearchArgs {
     repo: Option<PathBuf>,
     #[serde(default)]
     limit: Option<usize>,
+    #[serde(default)]
+    kinds: Vec<SearchKind>,
+}
+
+#[derive(Debug, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+enum SearchKind {
+    File,
+    Symbol,
 }
 
 #[derive(Debug, Deserialize)]
@@ -362,7 +371,7 @@ fn tools_list_result() -> Value {
             {
                 "name": "search",
                 "title": "Search Repository Context",
-                "description": "Run compact lexical search over safe inventoried repository files.",
+                "description": "Run compact local search over safe inventoried repository files and symbols.",
                 "inputSchema": {
                     "type": "object",
                     "properties": {
@@ -379,6 +388,14 @@ fn tools_list_result() -> Value {
                             "minimum": 1,
                             "maximum": 50,
                             "description": "Maximum result count."
+                        },
+                        "kinds": {
+                            "type": "array",
+                            "items": {
+                                "type": "string",
+                                "enum": ["file", "symbol"]
+                            },
+                            "description": "Optional result kinds. Defaults to file and symbol matches."
                         }
                     },
                     "required": ["query"],
@@ -884,16 +901,33 @@ fn call_search(arguments: Value) -> Result<Value, RpcError> {
     }
 
     let repo = discover_repo(args.repo)?;
-    let results = lexical_search(
-        &repo.path,
-        &args.query,
-        &SearchOptions {
-            limit: bounded_limit(args.limit, 10),
-        },
-    )
-    .map_err(|error| RpcError::invalid_params(format!("failed to search repo: {error}")))?;
+    let limit = bounded_limit(args.limit, 10);
+    let include_files = args.kinds.is_empty() || args.kinds.contains(&SearchKind::File);
+    let include_symbols = args.kinds.is_empty() || args.kinds.contains(&SearchKind::Symbol);
 
-    tool_json_result(results)
+    let files = if include_files {
+        lexical_search(&repo.path, &args.query, &SearchOptions { limit })
+            .map_err(|error| RpcError::invalid_params(format!("failed to search repo: {error}")))?
+    } else {
+        Vec::new()
+    };
+    let symbols = if include_symbols {
+        symbol_search(&repo.path, &args.query, &SymbolOptions { limit }).map_err(|error| {
+            RpcError::invalid_params(format!("failed to search repo symbols: {error}"))
+        })?
+    } else {
+        Vec::new()
+    };
+
+    tool_json_result(json!({
+        "query": args.query.trim(),
+        "files": files,
+        "symbols": symbols,
+        "privacyStatus": {
+            "localOnly": true,
+            "sourceTextReturned": false
+        }
+    }))
 }
 
 fn call_related(arguments: Value) -> Result<Value, RpcError> {
@@ -1516,7 +1550,7 @@ mod tests {
     }
 
     #[test]
-    fn search_call_returns_lexical_matches() {
+    fn search_call_returns_file_and_symbol_matches() {
         let _guard = env_lock();
         let repo = fixture_repo();
         std::env::set_var("CTXPACK_HOME", &repo.home);
@@ -1527,13 +1561,46 @@ mod tests {
         let response = handle_line(&request).unwrap();
 
         assert_eq!(
-            response["result"]["structuredContent"][0]["path"],
+            response["result"]["structuredContent"]["files"][0]["path"],
             "src/auth/session.ts"
+        );
+        assert_eq!(
+            response["result"]["structuredContent"]["symbols"][0]["symbol"]["name"],
+            "requireSession"
+        );
+        assert_eq!(
+            response["result"]["structuredContent"]["privacyStatus"]["sourceTextReturned"],
+            false
         );
         assert!(response["result"]["content"][0]["text"]
             .as_str()
             .unwrap()
             .contains("src/auth/session.ts"));
+        std::env::remove_var("CTXPACK_HOME");
+    }
+
+    #[test]
+    fn search_call_filters_to_symbol_kind() {
+        let _guard = env_lock();
+        let repo = fixture_repo();
+        std::env::set_var("CTXPACK_HOME", &repo.home);
+        let request = format!(
+            r#"{{"jsonrpc":"2.0","id":25,"method":"tools/call","params":{{"name":"search","arguments":{{"query":"requireSession","repo":"{}","limit":2,"kinds":["symbol"]}}}}}}"#,
+            repo.repo.display()
+        );
+        let response = handle_line(&request).unwrap();
+
+        assert_eq!(
+            response["result"]["structuredContent"]["files"]
+                .as_array()
+                .unwrap()
+                .len(),
+            0
+        );
+        assert_eq!(
+            response["result"]["structuredContent"]["symbols"][0]["symbol"]["path"],
+            "src/auth/session.ts"
+        );
         std::env::remove_var("CTXPACK_HOME");
     }
 

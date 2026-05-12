@@ -49,6 +49,8 @@ Implemented MCP tools:
 - `related_tests`
 - `current_diff`
 
+`search` returns compact, source-free local matches from safe inventoried files and symbols. Use `kinds: ["file"]` or `kinds: ["symbol"]` to narrow the result set when an agent needs a specific evidence type.
+
 `current_diff` returns safe changed path lists only. Paths excluded by ignore, generated, sensitive, or other safe-inventory policy are summarized by count and source text is never returned.
 
 `related` can expand from either a `path` or a `symbol`. Symbol expansion resolves safe symbol matches first, then returns the same related tests, dependency edges, and co-change hints around the resolved file paths.
