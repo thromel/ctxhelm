@@ -233,7 +233,8 @@ pub fn compile_context_pack(
     task_type: TaskType,
     budget: PackBudget,
 ) -> Result<ContextPack, InventoryError> {
-    let (_, pack) = compile_context_pack_with_plan(repo_root, task, task_type, budget)?;
+    let (_, pack) =
+        compile_context_pack_with_plan_for_agent(repo_root, task, task_type, budget, "generic")?;
     Ok(pack)
 }
 
@@ -243,7 +244,14 @@ pub fn compile_context_pack_with_plan(
     task_type: TaskType,
     budget: PackBudget,
 ) -> Result<(ContextPlan, ContextPack), InventoryError> {
-    compile_context_pack_with_plan_and_paths(repo_root, task, task_type, budget, &[])
+    compile_context_pack_with_plan_and_paths_for_agent(
+        repo_root,
+        task,
+        task_type,
+        budget,
+        &[],
+        "generic",
+    )
 }
 
 pub fn compile_context_pack_with_plan_and_paths(
@@ -253,9 +261,44 @@ pub fn compile_context_pack_with_plan_and_paths(
     budget: PackBudget,
     anchor_paths: &[String],
 ) -> Result<(ContextPlan, ContextPack), InventoryError> {
+    compile_context_pack_with_plan_and_paths_for_agent(
+        repo_root,
+        task,
+        task_type,
+        budget,
+        anchor_paths,
+        "generic",
+    )
+}
+
+pub fn compile_context_pack_with_plan_for_agent(
+    repo_root: impl AsRef<Path>,
+    task: &str,
+    task_type: TaskType,
+    budget: PackBudget,
+    target_agent: &str,
+) -> Result<(ContextPlan, ContextPack), InventoryError> {
+    compile_context_pack_with_plan_and_paths_for_agent(
+        repo_root,
+        task,
+        task_type,
+        budget,
+        &[],
+        target_agent,
+    )
+}
+
+pub fn compile_context_pack_with_plan_and_paths_for_agent(
+    repo_root: impl AsRef<Path>,
+    task: &str,
+    task_type: TaskType,
+    budget: PackBudget,
+    anchor_paths: &[String],
+    target_agent: &str,
+) -> Result<(ContextPlan, ContextPack), InventoryError> {
     let repo_root = repo_root.as_ref();
     let plan = prepare_context_plan_with_paths(repo_root, task, task_type, anchor_paths)?;
-    let pack = compile_pack_from_plan(repo_root, task, &plan, budget);
+    let pack = compile_pack_from_plan(repo_root, task, &plan, budget, target_agent);
     Ok((plan, pack))
 }
 
@@ -265,7 +308,17 @@ pub fn compile_context_pack_from_plan(
     plan: &ContextPlan,
     budget: PackBudget,
 ) -> ContextPack {
-    compile_pack_from_plan(repo_root.as_ref(), task, plan, budget)
+    compile_context_pack_from_plan_for_agent(repo_root, task, plan, budget, "generic")
+}
+
+pub fn compile_context_pack_from_plan_for_agent(
+    repo_root: impl AsRef<Path>,
+    task: &str,
+    plan: &ContextPlan,
+    budget: PackBudget,
+    target_agent: &str,
+) -> ContextPack {
+    compile_pack_from_plan(repo_root.as_ref(), task, plan, budget, target_agent)
 }
 
 fn compile_pack_from_plan(
@@ -273,6 +326,7 @@ fn compile_pack_from_plan(
     task: &str,
     plan: &ContextPlan,
     budget: PackBudget,
+    target_agent: &str,
 ) -> ContextPack {
     let limits = pack_limits(&budget);
 
@@ -338,7 +392,10 @@ fn compile_pack_from_plan(
     ContextPack {
         id: Uuid::new_v4(),
         task_id: plan.task_id,
+        repo_id: pack_repo_id(repo_root),
+        task_hash: task_hash(task),
         task_type: plan.task_type.clone(),
+        target_agent: normalized_target_agent(target_agent),
         budget,
         sections,
         token_estimate,
@@ -346,6 +403,11 @@ fn compile_pack_from_plan(
         warnings,
         privacy_status: plan.privacy_status.clone(),
     }
+}
+
+fn pack_repo_id(repo_root: &Path) -> String {
+    let canonical = fs::canonicalize(repo_root).unwrap_or_else(|_| repo_root.to_path_buf());
+    repo_id_for_path(&canonical)
 }
 
 pub fn render_pack_markdown(pack: &ContextPack) -> String {
@@ -1164,6 +1226,12 @@ mod tests {
         assert_eq!(trace.pack_id, Some(pack.id));
         assert_eq!(trace.budget, Some(PackBudget::Brief));
         assert_eq!(trace.target_agent, "codex");
+        assert_eq!(
+            pack.repo_id,
+            repo_id_for_path(&fs::canonicalize(&repo).unwrap())
+        );
+        assert_eq!(pack.task_hash, task_hash("fix requireSession bug"));
+        assert_eq!(pack.target_agent, "generic");
         assert!(trace
             .recommended_files
             .contains(&"src/auth/session.ts".to_string()));
@@ -1195,9 +1263,19 @@ mod tests {
             &plan,
             PackBudget::Brief,
         );
+        let codex_pack = compile_context_pack_from_plan_for_agent(
+            &repo,
+            "fix requireSession bug",
+            &plan,
+            PackBudget::Brief,
+            "codex",
+        );
 
         assert_eq!(pack.task_id, plan.task_id);
         assert_eq!(pack.task_type, plan.task_type);
+        assert_eq!(pack.target_agent, "generic");
+        assert_eq!(codex_pack.target_agent, "codex");
+        assert_eq!(codex_pack.task_hash, task_hash("fix requireSession bug"));
         assert!(render_pack_markdown(&pack).contains("src/auth/session.ts"));
 
         std::env::remove_var("CTXPACK_HOME");

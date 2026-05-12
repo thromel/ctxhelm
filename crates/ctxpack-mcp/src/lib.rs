@@ -1,6 +1,7 @@
 use ctxpack_compiler::{
-    compile_context_pack_from_plan, compile_context_pack_with_plan_and_paths, eval_trace_for_pack,
-    eval_trace_for_plan, prepare_context_plan_with_paths, render_pack_markdown,
+    compile_context_pack_from_plan_for_agent, compile_context_pack_with_plan_and_paths_for_agent,
+    eval_trace_for_pack, eval_trace_for_plan, prepare_context_plan_with_paths,
+    render_pack_markdown,
 };
 use ctxpack_core::{ContextPack, FileRole, PackBudget, RepoRoot, TaskType};
 use ctxpack_index::{
@@ -694,7 +695,12 @@ fn call_prepare_task(arguments: Value) -> Result<Value, RpcError> {
     append_eval_trace(&repo.path, &trace).map_err(|error| {
         RpcError::invalid_params(format!("failed to record eval trace: {error}"))
     })?;
-    cache_pack_resources(&repo.path, &args.task, &plan)?;
+    cache_pack_resources(
+        &repo.path,
+        &args.task,
+        &plan,
+        args.target_agent.as_deref().unwrap_or("generic"),
+    )?;
     let structured = serde_json::to_value(&plan)
         .map_err(|error| RpcError::invalid_params(format!("failed to serialize plan: {error}")))?;
     let text = serde_json::to_string_pretty(&plan)
@@ -730,12 +736,19 @@ fn cache_pack_resources(
     repo: &Path,
     task: &str,
     plan: &ctxpack_core::ContextPlan,
+    target_agent: &str,
 ) -> Result<(), RpcError> {
     let mut cache = pack_resource_cache()
         .lock()
         .map_err(|_| RpcError::invalid_params("pack resource cache is unavailable"))?;
     for option in &plan.pack_options {
-        let pack = compile_context_pack_from_plan(repo, task, plan, option.budget.clone());
+        let pack = compile_context_pack_from_plan_for_agent(
+            repo,
+            task,
+            plan,
+            option.budget.clone(),
+            target_agent,
+        );
         cache_context_pack(&mut cache, &option.resource_uri, &pack)?;
     }
     Ok(())
@@ -1129,21 +1142,17 @@ fn call_get_pack(arguments: Value) -> Result<Value, RpcError> {
     let repo = discover_repo(args.repo)?;
     let paths = context_anchor_paths(&repo.path, args.paths, args.include_current_diff)?;
     let budget = args.budget.unwrap_or(PackBudget::Brief);
-    let (plan, pack) = compile_context_pack_with_plan_and_paths(
+    let target_agent = args.target_agent.as_deref().unwrap_or("generic");
+    let (plan, pack) = compile_context_pack_with_plan_and_paths_for_agent(
         &repo.path,
         &args.task,
         args.mode.unwrap_or(TaskType::Explain),
         budget,
         &paths,
+        target_agent,
     )
     .map_err(|error| RpcError::invalid_params(format!("failed to compile pack: {error}")))?;
-    let trace = eval_trace_for_pack(
-        &repo.path,
-        &args.task,
-        args.target_agent.as_deref().unwrap_or("generic"),
-        &plan,
-        &pack,
-    );
+    let trace = eval_trace_for_pack(&repo.path, &args.task, target_agent, &plan, &pack);
     append_eval_trace(&repo.path, &trace).map_err(|error| {
         RpcError::invalid_params(format!("failed to record eval trace: {error}"))
     })?;
@@ -1943,13 +1952,23 @@ mod tests {
         let repo = fixture_repo();
         std::env::set_var("CTXPACK_HOME", &repo.home);
         let request = format!(
-            r#"{{"jsonrpc":"2.0","id":5,"method":"tools/call","params":{{"name":"get_pack","arguments":{{"task":"fix requireSession bug","repo":"{}","mode":"bug_fix","budget":"brief","format":"markdown"}}}}}}"#,
+            r#"{{"jsonrpc":"2.0","id":5,"method":"tools/call","params":{{"name":"get_pack","arguments":{{"task":"fix requireSession bug","repo":"{}","mode":"bug_fix","budget":"brief","format":"markdown","targetAgent":"codex"}}}}}}"#,
             repo.repo.display()
         );
         let response = handle_line(&request).unwrap();
         let text = response["result"]["content"][0]["text"].as_str().unwrap();
 
         assert_eq!(response["result"]["structuredContent"]["budget"], "brief");
+        assert_eq!(
+            response["result"]["structuredContent"]["targetAgent"],
+            "codex"
+        );
+        assert!(response["result"]["structuredContent"]["taskHash"]
+            .as_str()
+            .is_some_and(|hash| hash.len() == 64));
+        assert!(response["result"]["structuredContent"]["repoId"]
+            .as_str()
+            .is_some_and(|repo_id| !repo_id.is_empty()));
         assert_eq!(
             response["result"]["structuredContent"]["privacyStatus"]["localOnly"],
             true

@@ -96,7 +96,10 @@ pub struct PackSection {
 pub struct ContextPack {
     pub id: Uuid,
     pub task_id: Uuid,
+    pub repo_id: String,
+    pub task_hash: String,
     pub task_type: TaskType,
+    pub target_agent: String,
     pub budget: PackBudget,
     pub sections: Vec<PackSection>,
     pub token_estimate: usize,
@@ -208,7 +211,10 @@ mod tests {
         let pack = ContextPack {
             id: Uuid::nil(),
             task_id: Uuid::nil(),
+            repo_id: "repo-1".to_string(),
+            task_hash: "hash-1".to_string(),
             task_type: TaskType::BugFix,
+            target_agent: "codex".to_string(),
             budget: PackBudget::Brief,
             sections: vec![PackSection {
                 title: "Task".to_string(),
@@ -225,14 +231,22 @@ mod tests {
 
         assert_eq!(value["id"], "00000000-0000-0000-0000-000000000000");
         assert_eq!(value["taskId"], "00000000-0000-0000-0000-000000000000");
+        assert_eq!(value["repoId"], "repo-1");
+        assert_eq!(value["taskHash"], "hash-1");
         assert_eq!(value["taskType"], "bug_fix");
+        assert_eq!(value["targetAgent"], "codex");
         assert_eq!(value["budget"], "brief");
         assert_eq!(value["sections"][0]["title"], "Task");
         assert_eq!(value["tokenEstimate"], 12);
         assert_eq!(value["privacyStatus"]["localOnly"], true);
 
         assert!(value.get("task_id").is_none());
+        assert!(value.get("repo_id").is_none());
+        assert!(value.get("task_hash").is_none());
+        assert!(value.get("target_agent").is_none());
         assert!(value.get("token_estimate").is_none());
+        assert!(value.get("task").is_none());
+        assert!(value.get("sourceText").is_none());
     }
 
     #[test]

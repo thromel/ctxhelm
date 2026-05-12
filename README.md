@@ -182,6 +182,7 @@ cargo run -p ctxpack -- get-pack "fix requireSession bug" --repo /path/to/repo -
 ```
 
 Use `--format json` for structured output. `get-pack` also accepts repeatable `--path <file>` anchors, and the MCP `get_pack` tool accepts the same `paths` array.
+Structured packs include source-free provenance fields: `repoId`, `taskHash`, and `targetAgent`.
 
 ## Local Eval Traces
 

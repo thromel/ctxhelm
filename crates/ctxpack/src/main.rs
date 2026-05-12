@@ -1,7 +1,7 @@
 use anyhow::Result;
 use clap::{Args, Parser, Subcommand, ValueEnum};
 use ctxpack_compiler::{
-    compile_context_pack_with_plan_and_paths, eval_trace_for_pack, eval_trace_for_plan,
+    compile_context_pack_with_plan_and_paths_for_agent, eval_trace_for_pack, eval_trace_for_plan,
     prepare_context_plan_with_paths, render_pack_markdown,
 };
 use ctxpack_core::{
@@ -256,12 +256,13 @@ fn main() -> Result<()> {
             let start = args.repo.clone().unwrap_or(std::env::current_dir()?);
             let repo = RepoRoot::discover_from(&start)?;
             let paths = context_anchor_paths(&repo.path, args.paths, args.include_current_diff)?;
-            let (plan, pack) = compile_context_pack_with_plan_and_paths(
+            let (plan, pack) = compile_context_pack_with_plan_and_paths_for_agent(
                 &repo.path,
                 &args.task,
                 args.mode.into(),
                 args.budget.into(),
                 &paths,
+                &args.target_agent,
             )?;
             let trace =
                 eval_trace_for_pack(&repo.path, &args.task, &args.target_agent, &plan, &pack);
