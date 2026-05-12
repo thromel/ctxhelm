@@ -133,6 +133,8 @@ struct RelatedArgs {
     #[serde(default)]
     repo: Option<PathBuf>,
     #[serde(default)]
+    include_current_diff: bool,
+    #[serde(default)]
     include: Vec<RelatedInclude>,
     #[serde(default)]
     limit: Option<usize>,
@@ -428,6 +430,10 @@ fn tools_list_result() -> Value {
                         "repo": {
                             "type": "string",
                             "description": "Optional repository path. Pass the active workspace path when known; defaults to the MCP server working directory."
+                        },
+                        "includeCurrentDiff": {
+                            "type": "boolean",
+                            "description": "When true, add safe changed paths from the current local diff as expansion anchors without returning source text."
                         },
                         "include": {
                             "type": "array",
@@ -949,7 +955,13 @@ fn call_related(arguments: Value) -> Result<Value, RpcError> {
 
     let repo = discover_repo(args.repo)?;
     let limit = bounded_limit(args.limit, 10);
-    let (paths, symbol_matches) = related_anchor_paths(&repo.path, args.path, args.symbol, limit)?;
+    let (paths, symbol_matches) = related_anchor_paths(
+        &repo.path,
+        args.path,
+        args.symbol,
+        args.include_current_diff,
+        limit,
+    )?;
     let include_tests = args.include.is_empty() || args.include.contains(&RelatedInclude::Tests);
     let include_commits =
         args.include.is_empty() || args.include.contains(&RelatedInclude::Commits);
@@ -1001,6 +1013,7 @@ fn related_anchor_paths(
     repo: &Path,
     path: Option<String>,
     symbol: Option<String>,
+    include_current_diff: bool,
     limit: usize,
 ) -> Result<(Vec<String>, Value), RpcError> {
     let mut paths = Vec::new();
@@ -1034,9 +1047,31 @@ fn related_anchor_paths(
         Value::Array(Vec::new())
     };
 
+    if include_current_diff {
+        let diff = current_diff_summary(
+            repo,
+            &CurrentDiffOptions {
+                include_untracked: true,
+            },
+        )
+        .map_err(|error| {
+            RpcError::invalid_params(format!("failed to collect current diff anchors: {error}"))
+        })?;
+        for path in diff
+            .staged
+            .into_iter()
+            .chain(diff.unstaged.into_iter())
+            .chain(diff.untracked.into_iter())
+        {
+            if seen.insert(path.clone()) {
+                paths.push(path);
+            }
+        }
+    }
+
     if paths.is_empty() {
         return Err(RpcError::invalid_params(
-            "related requires a non-empty path or symbol",
+            "related requires a non-empty path, symbol, or current diff anchor",
         ));
     }
 
@@ -1293,6 +1328,10 @@ mod tests {
         );
         assert_eq!(tools[1]["name"], "search");
         assert_eq!(tools[2]["name"], "related");
+        assert_eq!(
+            tools[2]["inputSchema"]["properties"]["includeCurrentDiff"]["type"],
+            "boolean"
+        );
         assert_eq!(tools[3]["name"], "get_pack");
         assert_eq!(tools[3]["inputSchema"]["required"][0], "task");
         assert_eq!(
@@ -1693,6 +1732,37 @@ mod tests {
     }
 
     #[test]
+    fn related_call_can_expand_current_diff_anchor() {
+        let _guard = env_lock();
+        let repo = fixture_repo();
+        fs::write(
+            repo.repo.join("src/auth/session.ts"),
+            "import { parseCookie } from './cookies';\nexport function requireSession() {\n  return !parseCookie();\n}\n",
+        )
+        .unwrap();
+        std::env::set_var("CTXPACK_HOME", &repo.home);
+        let request = format!(
+            r#"{{"jsonrpc":"2.0","id":27,"method":"tools/call","params":{{"name":"related","arguments":{{"includeCurrentDiff":true,"repo":"{}","limit":3}}}}}}"#,
+            repo.repo.display()
+        );
+        let response = handle_line(&request).unwrap();
+
+        assert_eq!(
+            response["result"]["structuredContent"]["resolvedPaths"][0],
+            "src/auth/session.ts"
+        );
+        assert_eq!(
+            response["result"]["structuredContent"]["relatedTests"][0]["path"],
+            "tests/auth/session.test.ts"
+        );
+        assert_eq!(
+            response["result"]["structuredContent"]["dependencyEdges"][0]["sourcePath"],
+            "src/auth/session.ts"
+        );
+        std::env::remove_var("CTXPACK_HOME");
+    }
+
+    #[test]
     fn related_call_requires_path_or_symbol() {
         let response = handle_line(
             r#"{"jsonrpc":"2.0","id":23,"method":"tools/call","params":{"name":"related","arguments":{"limit":3}}}"#,
@@ -1703,7 +1773,7 @@ mod tests {
         assert!(response["error"]["message"]
             .as_str()
             .unwrap()
-            .contains("path or symbol"));
+            .contains("path, symbol, or current diff"));
     }
 
     #[test]

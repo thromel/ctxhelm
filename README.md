@@ -54,7 +54,7 @@ Implemented MCP tools:
 `current_diff` returns safe changed path lists only. Paths excluded by ignore, generated, sensitive, or other safe-inventory policy are summarized by count and source text is never returned.
 `prepare_task` and `get_pack` can also accept `includeCurrentDiff: true` to add those safe changed paths as context anchors without returning source text.
 
-`related` can expand from either a `path` or a `symbol`. Symbol expansion resolves safe symbol matches first, then returns the same related tests, dependency edges, and co-change hints around the resolved file paths.
+`related` can expand from a `path`, `symbol`, or `includeCurrentDiff: true`. Symbol expansion resolves safe symbol matches first, and current-diff expansion uses safe changed paths; both return related tests, dependency edges, and co-change hints around the resolved file paths.
 If local git history is unavailable, `related` still returns non-history context and includes a warning instead of failing the whole call.
 
 Implemented MCP resources include `ctxpack://repo/summary`, package-aware `ctxpack://repo/test-map`, `ctxpack://repo/dependency-graph`, `ctxpack://pack/guide`, session-scoped `ctxpack://pack/<task-id>/<budget>` resources returned by `prepare_task`, safe file slices, and symbol search. Implemented prompts cover bugfix, feature, refactor, review, test-writing, and explanation workflows.
