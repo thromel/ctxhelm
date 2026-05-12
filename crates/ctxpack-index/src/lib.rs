@@ -6,7 +6,9 @@ use std::fs::{self, OpenOptions};
 use std::io;
 use std::io::Write;
 use std::path::{Component, Path, PathBuf};
-use std::process::Command;
+use std::process::{Command, Stdio};
+use std::thread;
+use std::time::{Duration, Instant};
 use thiserror::Error;
 use uuid::Uuid;
 
@@ -178,6 +180,27 @@ pub struct CurrentDiffSummary {
     pub untracked: Vec<String>,
     pub excluded: CurrentDiffExcluded,
     pub privacy_status: CurrentDiffPrivacyStatus,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct HistoricalCommitOptions {
+    pub limit: usize,
+}
+
+impl Default for HistoricalCommitOptions {
+    fn default() -> Self {
+        Self { limit: 20 }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct HistoricalCommitSample {
+    pub sha: String,
+    pub title: String,
+    pub safe_changed_files: Vec<String>,
+    pub excluded_changed_file_count: usize,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -700,6 +723,49 @@ pub fn current_diff_summary(
             source_text_returned: false,
         },
     })
+}
+
+pub fn historical_commit_samples(
+    repo_root: impl AsRef<Path>,
+    options: &HistoricalCommitOptions,
+) -> Result<Vec<HistoricalCommitSample>, InventoryError> {
+    let repo_root = canonicalize(repo_root.as_ref())?;
+    let inventory = build_inventory(&repo_root, &InventoryOptions::default())?;
+    let safe_paths = inventory
+        .files
+        .into_iter()
+        .map(|file| file.path)
+        .collect::<BTreeSet<_>>();
+    let commits = git_commit_subject_file_sets(&repo_root, options.limit.max(1).saturating_mul(5))?;
+    let mut samples = commits
+        .into_iter()
+        .filter_map(|commit| {
+            let mut safe_changed_files = Vec::new();
+            let mut excluded_changed_file_count = 0;
+            for path in commit.files {
+                let path = normalize_input_path(&repo_root, &path);
+                if safe_paths.contains(&path) {
+                    safe_changed_files.push(path);
+                } else {
+                    excluded_changed_file_count += 1;
+                }
+            }
+            safe_changed_files.sort();
+            safe_changed_files.dedup();
+            if safe_changed_files.is_empty() {
+                return None;
+            }
+            Some(HistoricalCommitSample {
+                sha: commit.sha,
+                title: commit.title,
+                safe_changed_files,
+                excluded_changed_file_count,
+            })
+        })
+        .collect::<Vec<_>>();
+
+    samples.truncate(options.limit.max(1));
+    Ok(samples)
 }
 
 pub fn append_eval_trace(
@@ -1944,10 +2010,103 @@ struct GitCommitFiles {
     files: Vec<String>,
 }
 
-fn git_commit_file_sets(repo_root: &Path) -> Result<Vec<GitCommitFiles>, InventoryError> {
-    let stdout = git_stdout(repo_root, &["log", "--name-only", "--format=commit:%H"])?;
+#[derive(Debug)]
+struct GitCommitSubjectFiles {
+    sha: String,
+    title: String,
+    files: Vec<String>,
+}
 
-    Ok(parse_git_log_name_only(&stdout))
+fn git_commit_file_sets(repo_root: &Path) -> Result<Vec<GitCommitFiles>, InventoryError> {
+    let shas = git_stdout_with_timeout(
+        repo_root,
+        &["rev-list", "--max-count=50", "HEAD"],
+        Duration::from_secs(2),
+    )?;
+    let mut commits = Vec::new();
+
+    for sha in shas.lines().map(str::trim).filter(|sha| !sha.is_empty()) {
+        let Ok(output) = git_stdout_with_timeout(
+            repo_root,
+            &[
+                "diff-tree",
+                "--root",
+                "--no-commit-id",
+                "--name-only",
+                "-r",
+                "--diff-filter=ACMRT",
+                "--no-renames",
+                sha,
+            ],
+            Duration::from_millis(250),
+        ) else {
+            continue;
+        };
+        let files = output
+            .lines()
+            .map(str::trim)
+            .filter(|line| !line.is_empty())
+            .map(|line| line.replace('\\', "/"))
+            .collect::<Vec<_>>();
+        commits.push(GitCommitFiles {
+            sha: sha.to_string(),
+            files,
+        });
+    }
+
+    Ok(commits)
+}
+
+fn git_commit_subject_file_sets(
+    repo_root: &Path,
+    max_count: usize,
+) -> Result<Vec<GitCommitSubjectFiles>, InventoryError> {
+    let max_count = format!("--max-count={}", max_count.max(1));
+    let shas = git_stdout_with_timeout(
+        repo_root,
+        &["rev-list", &max_count, "HEAD"],
+        Duration::from_secs(2),
+    )?;
+    let mut commits = Vec::new();
+
+    for sha in shas.lines().map(str::trim).filter(|sha| !sha.is_empty()) {
+        let title = git_stdout_with_timeout(
+            repo_root,
+            &["log", "-1", "--format=%s", sha],
+            Duration::from_millis(250),
+        )
+        .map(|title| title.trim().to_string())
+        .unwrap_or_default();
+        let Ok(output) = git_stdout_with_timeout(
+            repo_root,
+            &[
+                "diff-tree",
+                "--root",
+                "--no-commit-id",
+                "--name-only",
+                "-r",
+                "--diff-filter=ACMRT",
+                "--no-renames",
+                sha,
+            ],
+            Duration::from_millis(250),
+        ) else {
+            continue;
+        };
+        let files = output
+            .lines()
+            .map(str::trim)
+            .filter(|line| !line.is_empty())
+            .map(|line| line.replace('\\', "/"))
+            .collect::<Vec<_>>();
+        commits.push(GitCommitSubjectFiles {
+            sha: sha.to_string(),
+            title,
+            files,
+        });
+    }
+
+    Ok(commits)
 }
 
 fn git_name_only(repo_root: &Path, args: &[&str]) -> Result<Vec<String>, InventoryError> {
@@ -1975,7 +2134,68 @@ fn git_stdout(repo_root: &Path, args: &[&str]) -> Result<String, InventoryError>
     }
 
     let message = String::from_utf8_lossy(&output.stderr).trim().to_string();
-    if args.first() == Some(&"log") && is_empty_git_history_message(&message) {
+    if matches!(args.first(), Some(&"log") | Some(&"rev-list"))
+        && is_empty_git_history_message(&message)
+    {
+        return Ok(String::new());
+    }
+    Err(InventoryError::Git {
+        repo_root: repo_root.to_path_buf(),
+        message,
+    })
+}
+
+fn git_stdout_with_timeout(
+    repo_root: &Path,
+    args: &[&str],
+    timeout: Duration,
+) -> Result<String, InventoryError> {
+    let mut child = Command::new("git")
+        .arg("-C")
+        .arg(repo_root)
+        .args(args)
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .map_err(|source| InventoryError::Git {
+            repo_root: repo_root.to_path_buf(),
+            message: source.to_string(),
+        })?;
+
+    let start = Instant::now();
+    loop {
+        match child.try_wait().map_err(|source| InventoryError::Git {
+            repo_root: repo_root.to_path_buf(),
+            message: source.to_string(),
+        })? {
+            Some(_) => break,
+            None if start.elapsed() >= timeout => {
+                let _ = child.kill();
+                let _ = child.wait();
+                return Err(InventoryError::Git {
+                    repo_root: repo_root.to_path_buf(),
+                    message: format!("git {:?} timed out after {:?}", args, timeout),
+                });
+            }
+            None => thread::sleep(Duration::from_millis(20)),
+        }
+    }
+
+    let output = child
+        .wait_with_output()
+        .map_err(|source| InventoryError::Git {
+            repo_root: repo_root.to_path_buf(),
+            message: source.to_string(),
+        })?;
+
+    if output.status.success() {
+        return Ok(String::from_utf8_lossy(&output.stdout).to_string());
+    }
+
+    let message = String::from_utf8_lossy(&output.stderr).trim().to_string();
+    if matches!(args.first(), Some(&"log") | Some(&"rev-list"))
+        && is_empty_git_history_message(&message)
+    {
         return Ok(String::new());
     }
     Err(InventoryError::Git {
@@ -1987,8 +2207,10 @@ fn git_stdout(repo_root: &Path, args: &[&str]) -> Result<String, InventoryError>
 fn is_empty_git_history_message(message: &str) -> bool {
     message.contains("does not have any commits yet")
         || message.contains("your current branch") && message.contains("does not have any commits")
+        || message.contains("ambiguous argument 'HEAD'") && message.contains("unknown revision")
 }
 
+#[cfg(test)]
 fn parse_git_log_name_only(output: &str) -> Vec<GitCommitFiles> {
     let mut commits = Vec::new();
     let mut current_sha: Option<String> = None;
@@ -2023,13 +2245,55 @@ fn parse_git_log_name_only(output: &str) -> Vec<GitCommitFiles> {
 }
 
 #[cfg(test)]
+fn parse_git_log_subject_name_only(output: &str) -> Vec<GitCommitSubjectFiles> {
+    let mut commits = Vec::new();
+    let mut current_sha: Option<String> = None;
+    let mut current_title = String::new();
+    let mut current_files = Vec::new();
+
+    for line in output.lines() {
+        if let Some(rest) = line.strip_prefix("commit:") {
+            if let Some(previous_sha) = current_sha.take() {
+                commits.push(GitCommitSubjectFiles {
+                    sha: previous_sha,
+                    title: std::mem::take(&mut current_title),
+                    files: std::mem::take(&mut current_files),
+                });
+            }
+            let (sha, title) = rest.split_once('\0').unwrap_or((rest, ""));
+            current_sha = Some(sha.to_string());
+            current_title = title.trim().to_string();
+            continue;
+        }
+
+        let path = line.trim();
+        if path.is_empty() {
+            continue;
+        }
+        current_files.push(path.replace('\\', "/"));
+    }
+
+    if let Some(sha) = current_sha {
+        commits.push(GitCommitSubjectFiles {
+            sha,
+            title: current_title,
+            files: current_files,
+        });
+    }
+
+    commits
+}
+
+#[cfg(test)]
 mod tests {
     use super::*;
     use std::sync::{Mutex, OnceLock};
 
     fn env_lock() -> std::sync::MutexGuard<'static, ()> {
         static LOCK: OnceLock<Mutex<()>> = OnceLock::new();
-        LOCK.get_or_init(|| Mutex::new(())).lock().unwrap()
+        LOCK.get_or_init(|| Mutex::new(()))
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
     }
 
     #[test]
@@ -2584,6 +2848,64 @@ mod tests {
         assert_eq!(commits[0].files, vec!["src/a.ts", "tests/a.test.ts"]);
         assert_eq!(commits[1].sha, "def");
         assert_eq!(commits[1].files, vec!["src/b.ts"]);
+    }
+
+    #[test]
+    fn parses_git_log_subject_name_only_output() {
+        let commits = parse_git_log_subject_name_only(
+            "commit:abc\u{0}fix auth redirect\nsrc/a.ts\ntests/a.test.ts\n\ncommit:def\u{0}add billing\nsrc/b.ts\n",
+        );
+
+        assert_eq!(commits.len(), 2);
+        assert_eq!(commits[0].sha, "abc");
+        assert_eq!(commits[0].title, "fix auth redirect");
+        assert_eq!(commits[0].files, vec!["src/a.ts", "tests/a.test.ts"]);
+        assert_eq!(commits[1].sha, "def");
+        assert_eq!(commits[1].title, "add billing");
+        assert_eq!(commits[1].files, vec!["src/b.ts"]);
+    }
+
+    #[test]
+    fn historical_commit_samples_return_safe_labels_without_excluded_paths() {
+        let _guard = env_lock();
+        let temp = tempfile::tempdir().unwrap();
+        let repo = temp.path().join("repo");
+        let home = temp.path().join("ctxpack-home");
+        fs::create_dir_all(repo.join("src/auth")).unwrap();
+        fs::create_dir_all(repo.join("tests/auth")).unwrap();
+        fs::create_dir_all(repo.join("dist")).unwrap();
+        run_git(&repo, &["init"]);
+        run_git(&repo, &["config", "user.email", "ctxpack@example.com"]);
+        run_git(&repo, &["config", "user.name", "ctxpack"]);
+        fs::write(
+            repo.join("src/auth/session.ts"),
+            "export function requireSession() { return true; }\n",
+        )
+        .unwrap();
+        fs::write(
+            repo.join("tests/auth/session.test.ts"),
+            "import { requireSession } from '../../src/auth/session';\n",
+        )
+        .unwrap();
+        fs::write(repo.join("dist/generated.min.js"), "generated\n").unwrap();
+        fs::write(repo.join(".env"), "TOKEN=secret\n").unwrap();
+        run_git(&repo, &["add", "."]);
+        run_git(&repo, &["commit", "-m", "fix requireSession bug"]);
+        std::env::set_var("CTXPACK_HOME", &home);
+
+        let samples =
+            historical_commit_samples(&repo, &HistoricalCommitOptions { limit: 10 }).unwrap();
+
+        assert_eq!(samples.len(), 1);
+        assert_eq!(samples[0].title, "fix requireSession bug");
+        assert_eq!(
+            samples[0].safe_changed_files,
+            vec!["src/auth/session.ts", "tests/auth/session.test.ts"]
+        );
+        assert_eq!(samples[0].excluded_changed_file_count, 2);
+        assert!(!serde_json::to_string(&samples).unwrap().contains("TOKEN"));
+
+        std::env::remove_var("CTXPACK_HOME");
     }
 
     #[test]

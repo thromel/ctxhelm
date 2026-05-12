@@ -2,7 +2,8 @@ use anyhow::Result;
 use clap::{Args, Parser, Subcommand, ValueEnum};
 use ctxpack_compiler::{
     compile_context_pack_with_plan_and_paths_for_agent, eval_trace_for_pack, eval_trace_for_plan,
-    prepare_context_plan_with_paths, render_pack_markdown,
+    evaluate_historical_commits, prepare_context_plan_with_paths, render_pack_markdown,
+    HistoricalEvalOptions, HistoricalEvalReport,
 };
 use ctxpack_core::{
     run_init, AgentAdapter, EvalTrace, InitAction, InitOptions, InitReport, PackBudget, RepoRoot,
@@ -165,6 +166,7 @@ struct EvalArgs {
 enum EvalCommand {
     Traces(EvalTracesArgs),
     Checklist(EvalTracesArgs),
+    History(EvalHistoryArgs),
 }
 
 #[derive(Debug, Args)]
@@ -173,6 +175,20 @@ struct EvalTracesArgs {
     repo: Option<PathBuf>,
     #[arg(long, default_value_t = 20)]
     limit: usize,
+}
+
+#[derive(Debug, Args)]
+struct EvalHistoryArgs {
+    #[arg(long)]
+    repo: Option<PathBuf>,
+    #[arg(long, default_value_t = 20)]
+    limit: usize,
+    #[arg(long, value_enum, default_value_t = Mode::BugFix)]
+    mode: Mode,
+    #[arg(long, default_value = "generic")]
+    target_agent: String,
+    #[arg(long, value_enum, default_value_t = PackFormat::Markdown)]
+    format: PackFormat,
 }
 
 #[derive(Debug, Clone, ValueEnum)]
@@ -330,6 +346,22 @@ fn main() -> Result<()> {
                 let repo = RepoRoot::discover_from(&start)?;
                 let traces = list_eval_traces(&repo.path, args.limit)?;
                 println!("{}", render_eval_checklist(&traces));
+            }
+            EvalCommand::History(args) => {
+                let start = args.repo.clone().unwrap_or(std::env::current_dir()?);
+                let repo = RepoRoot::discover_from(&start)?;
+                let report = evaluate_historical_commits(
+                    &repo.path,
+                    &HistoricalEvalOptions {
+                        limit: args.limit,
+                        task_type: args.mode.into(),
+                        target_agent: args.target_agent,
+                    },
+                )?;
+                match args.format {
+                    PackFormat::Markdown => println!("{}", render_historical_eval_report(&report)),
+                    PackFormat::Json => println!("{}", serde_json::to_string_pretty(&report)?),
+                }
             }
         },
         Command::ServeMcp => {
@@ -491,10 +523,77 @@ fn push_checkbox_list(output: &mut String, items: &[String], empty_message: &str
     }
 }
 
+fn render_historical_eval_report(report: &HistoricalEvalReport) -> String {
+    let mut output = String::from("# ctxpack Historical Retrieval Eval\n\n");
+    output.push_str("This source-free report replays recent commit subjects through `prepare_task` and compares recommended context paths with the safe files changed by each commit.\n\n");
+    output.push_str(&format!(
+        "- Repo ID: `{}`\n- Evaluated commits: `{}`\n- File Recall@5: `{:.2}`\n- File Recall@10: `{:.2}`\n- Test recommendation rate: `{:.2}`\n- Average recommended context files: `{:.2}`\n- Privacy: local-only `{}`\n\n",
+        report.repo_id,
+        report.evaluated_commits,
+        report.file_recall_at_5,
+        report.file_recall_at_10,
+        report.test_recommendation_rate,
+        report.average_recommended_context_files,
+        report.privacy_status.local_only
+    ));
+
+    if report.commits.is_empty() {
+        output.push_str("No safe historical commits were available for evaluation.\n");
+        return output;
+    }
+
+    output.push_str("## Commits\n\n");
+    for commit in &report.commits {
+        let short_sha = commit.sha.chars().take(12).collect::<String>();
+        output.push_str(&format!(
+            "### `{short_sha}`\n\n- Task hash: `{}`\n- Task type: `{:?}`\n- Target agent: `{}`\n- Confidence: `{:.2}`\n- Source text logged: `{}`\n- Safe changed files: `{}`\n- Excluded changed files: `{}`\n- Hits@5: `{}`\n- Hits@10: `{}`\n",
+            commit.task_hash,
+            commit.task_type,
+            commit.target_agent,
+            commit.confidence,
+            commit.source_text_logged,
+            commit.safe_changed_files.len(),
+            commit.excluded_changed_file_count,
+            commit.file_hits_at_5.len(),
+            commit.file_hits_at_10.len()
+        ));
+        output.push_str("\nChanged files:\n");
+        push_plain_path_list(
+            &mut output,
+            &commit.safe_changed_files,
+            "No safe changed files.",
+        );
+        output.push_str("\nRecommended context files:\n");
+        push_plain_path_list(
+            &mut output,
+            &commit.recommended_context_files,
+            "No context files recommended.",
+        );
+        if !commit.missing_files_at_10.is_empty() {
+            output.push_str("\nMissing changed files at 10:\n");
+            push_plain_path_list(&mut output, &commit.missing_files_at_10, "None.");
+        }
+        output.push('\n');
+    }
+
+    output
+}
+
+fn push_plain_path_list(output: &mut String, items: &[String], empty_message: &str) {
+    if items.is_empty() {
+        output.push_str(&format!("- {empty_message}\n"));
+        return;
+    }
+    for item in items {
+        output.push_str(&format!("- `{item}`\n"));
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use ctxpack_core::PackBudget;
+    use ctxpack_core::PrivacyStatus;
     use uuid::Uuid;
 
     #[test]
@@ -524,5 +623,47 @@ mod tests {
         assert!(checklist.contains("Missing file read by agent"));
         assert!(checklist.contains("Source text logged: `false`"));
         assert!(!checklist.contains("source code"));
+    }
+
+    #[test]
+    fn historical_eval_report_renders_source_free_metrics() {
+        let report = HistoricalEvalReport {
+            repo_id: "repo-1".to_string(),
+            evaluated_commits: 1,
+            file_recall_at_5: 1.0,
+            file_recall_at_10: 1.0,
+            test_recommendation_rate: 1.0,
+            average_recommended_context_files: 2.0,
+            commits: vec![ctxpack_compiler::HistoricalCommitEval {
+                sha: "abcdef1234567890".to_string(),
+                task_hash: "hash-1".to_string(),
+                task_type: TaskType::BugFix,
+                target_agent: "codex".to_string(),
+                safe_changed_files: vec!["src/auth.ts".to_string()],
+                excluded_changed_file_count: 1,
+                recommended_files: vec!["src/auth.ts".to_string()],
+                recommended_tests: vec!["tests/auth.test.ts".to_string()],
+                recommended_context_files: vec![
+                    "src/auth.ts".to_string(),
+                    "tests/auth.test.ts".to_string(),
+                ],
+                recommended_commands: vec!["pnpm test tests/auth.test.ts".to_string()],
+                file_hits_at_5: vec!["src/auth.ts".to_string()],
+                file_hits_at_10: vec!["src/auth.ts".to_string()],
+                missing_files_at_10: vec![],
+                confidence: 0.85,
+                source_text_logged: false,
+            }],
+            privacy_status: PrivacyStatus::local_only(),
+        };
+
+        let markdown = render_historical_eval_report(&report);
+
+        assert!(markdown.contains("# ctxpack Historical Retrieval Eval"));
+        assert!(markdown.contains("File Recall@5: `1.00`"));
+        assert!(markdown.contains("`abcdef123456`"));
+        assert!(markdown.contains("`src/auth.ts`"));
+        assert!(markdown.contains("Source text logged: `false`"));
+        assert!(!markdown.contains("source code"));
     }
 }

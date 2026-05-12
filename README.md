@@ -201,3 +201,11 @@ cargo run -p ctxpack -- eval checklist --repo /path/to/repo --limit 5
 ```
 
 Traces store task hashes, task type, target agent label, recommended files/tests/commands, optional pack id, optional budget, and created time. They do not store task text or source snippets.
+
+Run a source-free historical retrieval eval over recent local commits:
+
+```bash
+cargo run -p ctxpack -- eval history --repo /path/to/repo --limit 20 --mode bug-fix
+```
+
+This replays each commit subject through `prepare_task`, treats the commit's safe changed files as hidden labels, and reports File Recall@5, File Recall@10, test recommendation rate, missing files, and excluded generated/sensitive path counts. The report uses task hashes and path labels; it does not include source snippets.

@@ -3,15 +3,58 @@ use ctxpack_core::{
     PackSection, PrivacyStatus, RelatedTest, RiskFlag, TargetFile, TaskType,
 };
 use ctxpack_index::{
-    co_change_hints, lexical_search, load_or_build_inventory, related_dependency_edges,
-    related_tests, repo_id_for_path, symbol_search, task_hash, CoChangeOptions, DependencyOptions,
-    InventoryError, InventoryOptions, SearchOptions, SymbolOptions,
+    co_change_hints, historical_commit_samples, lexical_search, load_or_build_inventory,
+    related_dependency_edges, related_tests, repo_id_for_path, symbol_search, task_hash,
+    CoChangeOptions, DependencyOptions, HistoricalCommitOptions, InventoryError, InventoryOptions,
+    SearchOptions, SymbolOptions,
 };
+use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
 use std::path::{Component, Path};
 use std::time::{SystemTime, UNIX_EPOCH};
 use uuid::Uuid;
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct HistoricalEvalOptions {
+    pub limit: usize,
+    pub task_type: TaskType,
+    pub target_agent: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct HistoricalEvalReport {
+    pub repo_id: String,
+    pub evaluated_commits: usize,
+    pub file_recall_at_5: f32,
+    pub file_recall_at_10: f32,
+    pub test_recommendation_rate: f32,
+    pub average_recommended_context_files: f32,
+    pub commits: Vec<HistoricalCommitEval>,
+    pub privacy_status: PrivacyStatus,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct HistoricalCommitEval {
+    pub sha: String,
+    pub task_hash: String,
+    pub task_type: TaskType,
+    pub target_agent: String,
+    pub safe_changed_files: Vec<String>,
+    pub excluded_changed_file_count: usize,
+    pub recommended_files: Vec<String>,
+    pub recommended_tests: Vec<String>,
+    pub recommended_context_files: Vec<String>,
+    pub recommended_commands: Vec<String>,
+    pub file_hits_at_5: Vec<String>,
+    pub file_hits_at_10: Vec<String>,
+    pub missing_files_at_10: Vec<String>,
+    pub confidence: f32,
+    pub source_text_logged: bool,
+}
 
 pub fn empty_plan_for_task(task_type: TaskType) -> ContextPlan {
     base_plan(task_type)
@@ -25,11 +68,103 @@ pub fn prepare_context_plan(
     prepare_context_plan_with_paths(repo_root, task, task_type, &[])
 }
 
+pub fn evaluate_historical_commits(
+    repo_root: impl AsRef<Path>,
+    options: &HistoricalEvalOptions,
+) -> Result<HistoricalEvalReport, InventoryError> {
+    let repo_root = repo_root.as_ref();
+    let samples = historical_commit_samples(
+        repo_root,
+        &HistoricalCommitOptions {
+            limit: options.limit,
+        },
+    )?;
+    let target_agent = normalized_target_agent(&options.target_agent);
+    let mut commits = Vec::new();
+
+    for sample in samples {
+        let task = if sample.title.trim().is_empty() {
+            format!("change {}", sample.sha)
+        } else {
+            sample.title.clone()
+        };
+        let plan = prepare_context_plan_with_paths_and_history(
+            repo_root,
+            &task,
+            options.task_type.clone(),
+            &[],
+            false,
+        )?;
+        let recommended_files = plan
+            .target_files
+            .iter()
+            .map(|target| target.path.clone())
+            .collect::<Vec<_>>();
+        let recommended_tests = plan
+            .related_tests
+            .iter()
+            .map(|test| test.path.clone())
+            .collect::<Vec<_>>();
+        let recommended_commands = plan
+            .recommended_commands
+            .iter()
+            .map(|command| command.command.clone())
+            .collect::<Vec<_>>();
+        let recommended_context_files =
+            context_file_ranking(&recommended_files, &recommended_tests);
+        let file_hits_at_5 =
+            changed_file_hits(&sample.safe_changed_files, &recommended_context_files, 5);
+        let file_hits_at_10 =
+            changed_file_hits(&sample.safe_changed_files, &recommended_context_files, 10);
+        let missing_files_at_10 =
+            missing_changed_files(&sample.safe_changed_files, &recommended_context_files, 10);
+
+        commits.push(HistoricalCommitEval {
+            sha: sample.sha,
+            task_hash: task_hash(&task),
+            task_type: options.task_type.clone(),
+            target_agent: target_agent.clone(),
+            safe_changed_files: sample.safe_changed_files,
+            excluded_changed_file_count: sample.excluded_changed_file_count,
+            recommended_files,
+            recommended_tests,
+            recommended_context_files,
+            recommended_commands,
+            file_hits_at_5,
+            file_hits_at_10,
+            missing_files_at_10,
+            confidence: plan.confidence,
+            source_text_logged: false,
+        });
+    }
+
+    Ok(HistoricalEvalReport {
+        repo_id: pack_repo_id(repo_root),
+        evaluated_commits: commits.len(),
+        file_recall_at_5: average_recall(&commits, 5),
+        file_recall_at_10: average_recall(&commits, 10),
+        test_recommendation_rate: test_recommendation_rate(&commits),
+        average_recommended_context_files: average_recommended_context_files(&commits),
+        commits,
+        privacy_status: PrivacyStatus::local_only(),
+    })
+}
+
 pub fn prepare_context_plan_with_paths(
     repo_root: impl AsRef<Path>,
     task: &str,
     task_type: TaskType,
     anchor_paths: &[String],
+) -> Result<ContextPlan, InventoryError> {
+    prepare_context_plan_with_paths_and_history(repo_root, task, task_type, anchor_paths, true)
+}
+
+fn prepare_context_plan_with_paths_and_history(
+    repo_root: impl AsRef<Path>,
+    task: &str,
+    task_type: TaskType,
+    anchor_paths: &[String],
+    include_history: bool,
 ) -> Result<ContextPlan, InventoryError> {
     let repo_root = repo_root.as_ref();
     let mut plan = base_plan(task_type);
@@ -152,32 +287,34 @@ pub fn prepare_context_plan_with_paths(
         .collect();
 
     let mut has_history = false;
-    match co_change_hints(
-        repo_root,
-        &source_target_paths,
-        &CoChangeOptions {
-            limit: co_change_limit(&plan.task_type),
-        },
-    ) {
-        Ok(co_changes) => {
-            has_history = !co_changes.is_empty();
-            for hint in co_changes.into_iter().take(5) {
+    if include_history {
+        match co_change_hints(
+            repo_root,
+            &source_target_paths,
+            &CoChangeOptions {
+                limit: co_change_limit(&plan.task_type),
+            },
+        ) {
+            Ok(co_changes) => {
+                has_history = !co_changes.is_empty();
+                for hint in co_changes.into_iter().take(5) {
+                    plan.risk_flags.push(RiskFlag {
+                        code: "co_change_hint".to_string(),
+                        message: format!(
+                            "{} changed with target files in {} local commit(s): {}",
+                            hint.path, hint.commit_count, hint.reason
+                        ),
+                    });
+                }
+            }
+            Err(error) => {
                 plan.risk_flags.push(RiskFlag {
-                    code: "co_change_hint".to_string(),
+                    code: "co_change_unavailable".to_string(),
                     message: format!(
-                        "{} changed with target files in {} local commit(s): {}",
-                        hint.path, hint.commit_count, hint.reason
+                        "Local git co-change hints were unavailable; continuing without history signal: {error}"
                     ),
                 });
             }
-        }
-        Err(error) => {
-            plan.risk_flags.push(RiskFlag {
-                code: "co_change_unavailable".to_string(),
-                message: format!(
-                    "Local git co-change hints were unavailable; continuing without history signal: {error}"
-                ),
-            });
         }
     }
 
@@ -541,6 +678,95 @@ fn normalized_target_agent(target_agent: &str) -> String {
     } else {
         target_agent.to_string()
     }
+}
+
+fn context_file_ranking(recommended_files: &[String], recommended_tests: &[String]) -> Vec<String> {
+    let mut seen = BTreeSet::new();
+    recommended_files
+        .iter()
+        .chain(recommended_tests.iter())
+        .filter_map(|path| seen.insert(path.clone()).then_some(path.clone()))
+        .collect()
+}
+
+fn changed_file_hits(
+    safe_changed_files: &[String],
+    recommended_context_files: &[String],
+    limit: usize,
+) -> Vec<String> {
+    let recommended = recommended_context_files
+        .iter()
+        .take(limit)
+        .cloned()
+        .collect::<BTreeSet<_>>();
+    safe_changed_files
+        .iter()
+        .filter(|path| recommended.contains(*path))
+        .cloned()
+        .collect()
+}
+
+fn missing_changed_files(
+    safe_changed_files: &[String],
+    recommended_context_files: &[String],
+    limit: usize,
+) -> Vec<String> {
+    let recommended = recommended_context_files
+        .iter()
+        .take(limit)
+        .cloned()
+        .collect::<BTreeSet<_>>();
+    safe_changed_files
+        .iter()
+        .filter(|path| !recommended.contains(*path))
+        .cloned()
+        .collect()
+}
+
+fn average_recall(commits: &[HistoricalCommitEval], limit: usize) -> f32 {
+    if commits.is_empty() {
+        return 0.0;
+    }
+
+    let total = commits
+        .iter()
+        .map(|commit| {
+            if commit.safe_changed_files.is_empty() {
+                0.0
+            } else {
+                let hit_count = if limit <= 5 {
+                    commit.file_hits_at_5.len()
+                } else {
+                    commit.file_hits_at_10.len()
+                };
+                hit_count as f32 / commit.safe_changed_files.len() as f32
+            }
+        })
+        .sum::<f32>();
+
+    total / commits.len() as f32
+}
+
+fn test_recommendation_rate(commits: &[HistoricalCommitEval]) -> f32 {
+    if commits.is_empty() {
+        return 0.0;
+    }
+    let with_tests = commits
+        .iter()
+        .filter(|commit| !commit.recommended_tests.is_empty())
+        .count();
+    with_tests as f32 / commits.len() as f32
+}
+
+fn average_recommended_context_files(commits: &[HistoricalCommitEval]) -> f32 {
+    if commits.is_empty() {
+        return 0.0;
+    }
+    let total = commits
+        .iter()
+        .map(|commit| commit.recommended_context_files.len())
+        .sum::<usize>();
+    total as f32 / commits.len() as f32
 }
 
 fn search_limit(task_type: &TaskType) -> usize {
@@ -1241,6 +1467,72 @@ mod tests {
         assert_eq!(trace.recommended_tests, vec!["tests/auth/session.test.ts"]);
         assert_eq!(value["sourceTextLogged"], false);
         assert!(value.get("task").is_none());
+
+        std::env::remove_var("CTXPACK_HOME");
+    }
+
+    #[test]
+    fn evaluate_historical_commits_reports_recall_without_source_text() {
+        let _guard = env_lock();
+        let temp = tempfile::tempdir().unwrap();
+        let repo = temp.path().join("repo");
+        let home = temp.path().join("ctxpack-home");
+        fs::create_dir_all(repo.join("src/auth")).unwrap();
+        fs::create_dir_all(repo.join("tests/auth")).unwrap();
+        fs::create_dir_all(repo.join("dist")).unwrap();
+        run_git(&repo, &["init"]);
+        run_git(&repo, &["config", "user.email", "ctxpack@example.com"]);
+        run_git(&repo, &["config", "user.name", "ctxpack"]);
+        fs::write(
+            repo.join("src/auth/session.ts"),
+            "export function requireSession() { return true; }\n",
+        )
+        .unwrap();
+        fs::write(
+            repo.join("tests/auth/session.test.ts"),
+            "import { requireSession } from '../../src/auth/session';\n",
+        )
+        .unwrap();
+        fs::write(repo.join("dist/generated.min.js"), "generated\n").unwrap();
+        run_git(&repo, &["add", "."]);
+        run_git(&repo, &["commit", "-m", "fix requireSession bug"]);
+        std::env::set_var("CTXPACK_HOME", &home);
+
+        let report = evaluate_historical_commits(
+            &repo,
+            &HistoricalEvalOptions {
+                limit: 5,
+                task_type: TaskType::BugFix,
+                target_agent: "codex".to_string(),
+            },
+        )
+        .unwrap();
+        let value = serde_json::to_value(&report).unwrap();
+
+        assert_eq!(report.evaluated_commits, 1);
+        assert_eq!(report.commits[0].target_agent, "codex");
+        assert_eq!(
+            report.commits[0].safe_changed_files,
+            vec!["src/auth/session.ts", "tests/auth/session.test.ts"]
+        );
+        assert!(report.commits[0]
+            .recommended_context_files
+            .contains(&"src/auth/session.ts".to_string()));
+        assert!(report.commits[0]
+            .recommended_context_files
+            .contains(&"tests/auth/session.test.ts".to_string()));
+        assert_eq!(report.commits[0].file_hits_at_5.len(), 2);
+        assert_eq!(report.file_recall_at_5, 1.0);
+        assert_eq!(report.file_recall_at_10, 1.0);
+        assert!(report.test_recommendation_rate > 0.0);
+        assert!(!report.commits[0].source_text_logged);
+        assert!(value.get("commits").is_some());
+        assert!(value["privacyStatus"]["localOnly"].as_bool().unwrap());
+        assert!(value["commits"][0].get("title").is_none());
+        assert!(value["commits"][0].get("task").is_none());
+        assert!(!serde_json::to_string(&report)
+            .unwrap()
+            .contains("export function"));
 
         std::env::remove_var("CTXPACK_HOME");
     }

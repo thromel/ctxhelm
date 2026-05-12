@@ -237,6 +237,7 @@ version = "0.1.0"
 dependencies = [
  "ctxpack-core",
  "ctxpack-index",
+ "serde",
  "serde_json",
  "tempfile",
  "uuid",
