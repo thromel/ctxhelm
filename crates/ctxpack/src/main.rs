@@ -2,8 +2,9 @@ use anyhow::Result;
 use clap::{Args, Parser, Subcommand, ValueEnum};
 use ctxpack_compiler::{
     compile_context_pack_with_plan_and_paths_for_agent, eval_trace_for_pack, eval_trace_for_plan,
-    evaluate_historical_commits, prepare_context_plan_with_paths, render_pack_markdown,
-    HistoricalEvalOptions, HistoricalEvalReport,
+    evaluate_historical_commits, generate_context_cards, prepare_context_plan_with_paths,
+    render_pack_markdown, ContextCardsOptions, ContextCardsReport, HistoricalEvalOptions,
+    HistoricalEvalReport,
 };
 use ctxpack_core::{
     run_init, AgentAdapter, EvalTrace, InitAction, InitOptions, InitReport, PackBudget, RepoRoot,
@@ -44,6 +45,7 @@ enum Command {
     RelatedTests(RelatedTestsArgs),
     CoChanges(CoChangesArgs),
     Dependencies(DependenciesArgs),
+    Cards(CardsArgs),
     Eval(EvalArgs),
     ServeMcp,
 }
@@ -108,6 +110,27 @@ struct DependenciesArgs {
         help = "Return all safe local dependency edges instead of anchor-related edges."
     )]
     all: bool,
+}
+
+#[derive(Debug, Args)]
+struct CardsArgs {
+    #[command(subcommand)]
+    command: CardsCommand,
+}
+
+#[derive(Debug, Subcommand)]
+enum CardsCommand {
+    Generate(CardsGenerateArgs),
+}
+
+#[derive(Debug, Args)]
+struct CardsGenerateArgs {
+    #[arg(long)]
+    repo: Option<PathBuf>,
+    #[arg(long, default_value_t = 40)]
+    limit: usize,
+    #[arg(long, value_enum, default_value_t = PackFormat::Markdown)]
+    format: PackFormat,
 }
 
 #[derive(Debug, Args)]
@@ -334,6 +357,18 @@ fn main() -> Result<()> {
             };
             println!("{}", serde_json::to_string_pretty(&results)?);
         }
+        Command::Cards(args) => match args.command {
+            CardsCommand::Generate(args) => {
+                let start = args.repo.clone().unwrap_or(std::env::current_dir()?);
+                let repo = RepoRoot::discover_from(&start)?;
+                let report =
+                    generate_context_cards(&repo.path, &ContextCardsOptions { limit: args.limit })?;
+                match args.format {
+                    PackFormat::Markdown => println!("{}", render_cards_report(&report)),
+                    PackFormat::Json => println!("{}", serde_json::to_string_pretty(&report)?),
+                }
+            }
+        },
         Command::Eval(args) => match args.command {
             EvalCommand::Traces(args) => {
                 let start = args.repo.clone().unwrap_or(std::env::current_dir()?);
@@ -579,6 +614,26 @@ fn render_historical_eval_report(report: &HistoricalEvalReport) -> String {
     output
 }
 
+fn render_cards_report(report: &ContextCardsReport) -> String {
+    let mut output = String::from("# ctxpack Context Cards\n\n");
+    output.push_str(&format!(
+        "- Repo ID: `{}`\n- Cards directory: `{}`\n- Cards generated: `{}`\n- Privacy: local-only `{}`\n\n",
+        report.repo_id,
+        report.cards_dir.display(),
+        report.cards.len(),
+        report.privacy_status.local_only
+    ));
+    for card in &report.cards {
+        output.push_str(&format!(
+            "- `{}`: `{}` ({} bytes)\n",
+            card.name,
+            card.path.display(),
+            card.bytes
+        ));
+    }
+    output
+}
+
 fn push_plain_path_list(output: &mut String, items: &[String], empty_message: &str) {
     if items.is_empty() {
         output.push_str(&format!("- {empty_message}\n"));
@@ -665,5 +720,27 @@ mod tests {
         assert!(markdown.contains("`src/auth.ts`"));
         assert!(markdown.contains("Source text logged: `false`"));
         assert!(!markdown.contains("source code"));
+    }
+
+    #[test]
+    fn cards_report_renders_generated_paths() {
+        let report = ContextCardsReport {
+            repo_id: "repo-1".to_string(),
+            cards_dir: PathBuf::from("/tmp/repo/.ctxpack/cards"),
+            cards: vec![ctxpack_compiler::GeneratedContextCard {
+                name: "repo-overview".to_string(),
+                path: PathBuf::from("/tmp/repo/.ctxpack/cards/repo-overview.md"),
+                title: "Repo Overview".to_string(),
+                bytes: 123,
+            }],
+            privacy_status: PrivacyStatus::local_only(),
+        };
+
+        let markdown = render_cards_report(&report);
+
+        assert!(markdown.contains("# ctxpack Context Cards"));
+        assert!(markdown.contains("Cards generated: `1`"));
+        assert!(markdown.contains("repo-overview.md"));
+        assert!(markdown.contains("Privacy: local-only `true`"));
     }
 }

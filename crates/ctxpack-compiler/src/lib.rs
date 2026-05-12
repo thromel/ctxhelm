@@ -3,15 +3,16 @@ use ctxpack_core::{
     PackSection, PrivacyStatus, RelatedTest, RiskFlag, TargetFile, TaskType,
 };
 use ctxpack_index::{
-    co_change_hints, historical_commit_samples, lexical_search, load_or_build_inventory,
-    related_dependency_edges, related_tests, repo_id_for_path, symbol_search, task_hash,
-    CoChangeOptions, DependencyOptions, HistoricalCommitOptions, InventoryError, InventoryOptions,
+    co_change_hints, dependency_edges, extract_symbols, historical_commit_samples, lexical_search,
+    load_or_build_inventory, related_dependency_edges, related_tests, repo_id_for_path,
+    symbol_search, task_hash, test_map, CoChangeOptions, DependencyEdge, DependencyOptions,
+    HistoricalCommitOptions, InventoryError, InventoryOptions, RelatedTestResult, RepoInventory,
     SearchOptions, SymbolOptions,
 };
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
-use std::path::{Component, Path};
+use std::path::{Component, Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
 use uuid::Uuid;
 
@@ -54,6 +55,36 @@ pub struct HistoricalCommitEval {
     pub missing_files_at_10: Vec<String>,
     pub confidence: f32,
     pub source_text_logged: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct ContextCardsOptions {
+    pub limit: usize,
+}
+
+impl Default for ContextCardsOptions {
+    fn default() -> Self {
+        Self { limit: 40 }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct GeneratedContextCard {
+    pub name: String,
+    pub path: PathBuf,
+    pub title: String,
+    pub bytes: usize,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct ContextCardsReport {
+    pub repo_id: String,
+    pub cards_dir: PathBuf,
+    pub cards: Vec<GeneratedContextCard>,
+    pub privacy_status: PrivacyStatus,
 }
 
 pub fn empty_plan_for_task(task_type: TaskType) -> ContextPlan {
@@ -146,6 +177,66 @@ pub fn evaluate_historical_commits(
         test_recommendation_rate: test_recommendation_rate(&commits),
         average_recommended_context_files: average_recommended_context_files(&commits),
         commits,
+        privacy_status: PrivacyStatus::local_only(),
+    })
+}
+
+pub fn generate_context_cards(
+    repo_root: impl AsRef<Path>,
+    options: &ContextCardsOptions,
+) -> Result<ContextCardsReport, InventoryError> {
+    let repo_root = repo_root.as_ref();
+    let inventory = load_or_build_inventory(repo_root, &InventoryOptions::default())?;
+    let repo_root = inventory.repo_root.clone();
+    let repo_id = inventory.repo_id.clone();
+    let limit = options.limit.max(1);
+    let cards_dir = repo_root.join(".ctxpack").join("cards");
+    fs::create_dir_all(&cards_dir).map_err(|source| InventoryError::CreateDir {
+        path: cards_dir.clone(),
+        source,
+    })?;
+
+    let symbols = extract_symbols(&repo_root)?;
+    let tests = test_map(&repo_root)?;
+    let edges = dependency_edges(&repo_root, &DependencyOptions { limit })?;
+
+    let cards = [
+        (
+            "repo-overview",
+            "Repo Overview",
+            render_repo_overview_card(&repo_id, &inventory, &symbols, limit),
+        ),
+        (
+            "testing",
+            "Testing",
+            render_testing_card(&repo_id, &tests, limit),
+        ),
+        (
+            "dependency-graph",
+            "Dependency Graph",
+            render_dependency_card(&repo_id, &edges, limit),
+        ),
+    ];
+
+    let mut generated = Vec::new();
+    for (name, title, content) in cards {
+        let path = cards_dir.join(format!("{name}.md"));
+        fs::write(&path, &content).map_err(|source| InventoryError::Write {
+            path: path.clone(),
+            source,
+        })?;
+        generated.push(GeneratedContextCard {
+            name: name.to_string(),
+            path,
+            title: title.to_string(),
+            bytes: content.len(),
+        });
+    }
+
+    Ok(ContextCardsReport {
+        repo_id,
+        cards_dir,
+        cards: generated,
         privacy_status: PrivacyStatus::local_only(),
     })
 }
@@ -677,6 +768,131 @@ fn normalized_target_agent(target_agent: &str) -> String {
         "generic".to_string()
     } else {
         target_agent.to_string()
+    }
+}
+
+fn render_repo_overview_card(
+    repo_id: &str,
+    inventory: &RepoInventory,
+    symbols: &[ctxpack_index::CodeSymbol],
+    limit: usize,
+) -> String {
+    let mut role_counts = BTreeMap::new();
+    let mut language_counts = BTreeMap::new();
+    for file in &inventory.files {
+        *role_counts
+            .entry(format!("{:?}", file.role))
+            .or_insert(0usize) += 1;
+        if let Some(language) = &file.language {
+            *language_counts.entry(language.clone()).or_insert(0usize) += 1;
+        }
+    }
+
+    let mut output = card_header("Repo Overview", repo_id);
+    output.push_str("## File Roles\n\n");
+    push_count_list(&mut output, &role_counts);
+    output.push_str("\n## Languages\n\n");
+    push_count_list(&mut output, &language_counts);
+    output.push_str("\n## Key Files\n\n");
+    let key_files = inventory
+        .files
+        .iter()
+        .filter(|file| {
+            matches!(
+                file.role,
+                FileRole::Source
+                    | FileRole::Test
+                    | FileRole::Config
+                    | FileRole::Schema
+                    | FileRole::Docs
+            )
+        })
+        .take(limit)
+        .map(|file| format!("`{}` ({:?})", file.path, file.role))
+        .collect::<Vec<_>>();
+    push_bullet_items(&mut output, &key_files, "No safe files were inventoried.");
+
+    output.push_str("\n## Symbols\n\n");
+    let symbol_items = symbols
+        .iter()
+        .filter(|symbol| {
+            symbol.exported
+                || matches!(
+                    symbol.kind,
+                    ctxpack_index::SymbolKind::Class
+                        | ctxpack_index::SymbolKind::Interface
+                        | ctxpack_index::SymbolKind::Function
+                )
+        })
+        .take(limit)
+        .map(|symbol| {
+            format!(
+                "`{}` {:?} at `{}`:{}",
+                symbol.name, symbol.kind, symbol.path, symbol.start_line
+            )
+        })
+        .collect::<Vec<_>>();
+    push_bullet_items(&mut output, &symbol_items, "No symbols were extracted.");
+    output
+}
+
+fn render_testing_card(repo_id: &str, tests: &[RelatedTestResult], limit: usize) -> String {
+    let mut output = card_header("Testing", repo_id);
+    output.push_str("## Test Files\n\n");
+    if tests.is_empty() {
+        output.push_str("- No safe test files were detected.\n");
+        return output;
+    }
+
+    for test in tests.iter().take(limit) {
+        output.push_str(&format!("- `{}`\n", test.path));
+        if let Some(command) = &test.command {
+            output.push_str(&format!("  - Command: `{command}`\n"));
+        }
+    }
+    output
+}
+
+fn render_dependency_card(repo_id: &str, edges: &[DependencyEdge], limit: usize) -> String {
+    let mut output = card_header("Dependency Graph", repo_id);
+    output.push_str("## Safe Local Import Edges\n\n");
+    if edges.is_empty() {
+        output.push_str("- No safe local dependency edges were detected.\n");
+        return output;
+    }
+
+    for edge in edges.iter().take(limit) {
+        output.push_str(&format!(
+            "- `{}` -> `{}` ({}, confidence {:.2})\n",
+            edge.source_path, edge.target_path, edge.kind, edge.confidence
+        ));
+    }
+    output
+}
+
+fn card_header(title: &str, repo_id: &str) -> String {
+    format!(
+        "# {title}\n\n- Generated by: `ctxpack cards generate`\n- Repo ID: `{repo_id}`\n- Privacy: local-only `true`\n- Source snippets included: `false`\n\n"
+    )
+}
+
+fn push_count_list(output: &mut String, counts: &BTreeMap<String, usize>) {
+    if counts.is_empty() {
+        output.push_str("- None detected.\n");
+        return;
+    }
+    for (name, count) in counts {
+        output.push_str(&format!("- `{name}`: `{count}`\n"));
+    }
+}
+
+fn push_bullet_items(output: &mut String, items: &[String], empty_message: &str) {
+    if items.is_empty() {
+        output.push_str(&format!("- {empty_message}\n"));
+        return;
+    }
+    for item in items {
+        output.push_str(&format!("- {item}\n"));
     }
 }
 
@@ -1533,6 +1749,65 @@ mod tests {
         assert!(!serde_json::to_string(&report)
             .unwrap()
             .contains("export function"));
+
+        std::env::remove_var("CTXPACK_HOME");
+    }
+
+    #[test]
+    fn generate_context_cards_writes_source_free_repo_cards() {
+        let _guard = env_lock();
+        let temp = tempfile::tempdir().unwrap();
+        let repo = temp.path().join("repo");
+        let home = temp.path().join("ctxpack-home");
+        fs::create_dir_all(repo.join("src/auth")).unwrap();
+        fs::create_dir_all(repo.join("tests/auth")).unwrap();
+        fs::create_dir_all(repo.join("dist")).unwrap();
+        run_git(&repo, &["init"]);
+        fs::write(
+            repo.join("src/auth/session.ts"),
+            "import { parseCookie } from './cookies';\nexport function requireSession() { return parseCookie(); }\n",
+        )
+        .unwrap();
+        fs::write(
+            repo.join("src/auth/cookies.ts"),
+            "export function parseCookie() { return true; }\n",
+        )
+        .unwrap();
+        fs::write(
+            repo.join("tests/auth/session.test.ts"),
+            "import { requireSession } from '../../src/auth/session';\n",
+        )
+        .unwrap();
+        fs::write(repo.join("dist/generated.min.js"), "generated\n").unwrap();
+        fs::write(repo.join(".env"), "TOKEN=secret\n").unwrap();
+        std::env::set_var("CTXPACK_HOME", &home);
+
+        let report = generate_context_cards(&repo, &ContextCardsOptions { limit: 20 }).unwrap();
+
+        assert_eq!(report.cards.len(), 3);
+        assert_eq!(
+            report.cards_dir,
+            fs::canonicalize(&repo).unwrap().join(".ctxpack/cards")
+        );
+        let overview = fs::read_to_string(repo.join(".ctxpack/cards/repo-overview.md")).unwrap();
+        let testing = fs::read_to_string(repo.join(".ctxpack/cards/testing.md")).unwrap();
+        let dependencies =
+            fs::read_to_string(repo.join(".ctxpack/cards/dependency-graph.md")).unwrap();
+
+        assert!(overview.contains("# Repo Overview"));
+        assert!(overview.contains("`src/auth/session.ts`"));
+        assert!(overview.contains("`requireSession`"));
+        assert!(testing.contains("# Testing"));
+        assert!(testing.contains("`tests/auth/session.test.ts`"));
+        assert!(testing.contains("pnpm test tests/auth/session.test.ts"));
+        assert!(dependencies.contains("# Dependency Graph"));
+        assert!(dependencies.contains("`src/auth/session.ts` -> `src/auth/cookies.ts`"));
+        for content in [&overview, &testing, &dependencies] {
+            assert!(content.contains("Source snippets included: `false`"));
+            assert!(!content.contains("return parseCookie"));
+            assert!(!content.contains("TOKEN=secret"));
+            assert!(!content.contains("generated.min.js"));
+        }
 
         std::env::remove_var("CTXPACK_HOME");
     }

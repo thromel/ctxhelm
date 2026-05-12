@@ -184,6 +184,16 @@ cargo run -p ctxpack -- get-pack "fix requireSession bug" --repo /path/to/repo -
 Use `--format json` for structured output. `get-pack` also accepts repeatable `--path <file>` anchors, and the MCP `get_pack` tool accepts the same `paths` array.
 Structured and Markdown packs include source-free provenance fields: `repoId`, `taskHash`, and `targetAgent`.
 
+## Context Cards
+
+Generate optional repo-committable cards for cloud or disconnected agent contexts:
+
+```bash
+cargo run -p ctxpack -- cards generate --repo /path/to/repo
+```
+
+This writes `.ctxpack/cards/repo-overview.md`, `.ctxpack/cards/testing.md`, and `.ctxpack/cards/dependency-graph.md`. Cards are deterministic, local-only, and source-snippet-free; they summarize safe inventory paths, roles, symbols, test commands, and local dependency edges.
+
 ## Local Eval Traces
 
 `prepare-task`, `get-pack`, and the matching MCP tools append source-free local traces under `~/.ctxpack/repos/<repo-id>/traces.jsonl`.
