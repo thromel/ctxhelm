@@ -49,6 +49,8 @@ Implemented MCP tools:
 - `related_tests`
 - `current_diff`
 
+`current_diff` returns safe changed path lists only. Paths excluded by ignore, generated, sensitive, or other safe-inventory policy are summarized by count and source text is never returned.
+
 Implemented MCP resources include `ctxpack://repo/summary`, package-aware `ctxpack://repo/test-map`, `ctxpack://repo/dependency-graph`, `ctxpack://pack/guide`, session-scoped `ctxpack://pack/<task-id>/<budget>` resources returned by `prepare_task`, safe file slices, and symbol search. Implemented prompts cover bugfix, feature, refactor, review, test-writing, and explanation workflows.
 
 ## Client Integration Status

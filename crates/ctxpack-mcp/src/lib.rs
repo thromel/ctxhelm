@@ -4,13 +4,13 @@ use ctxpack_compiler::{
 };
 use ctxpack_core::{ContextPack, FileRole, PackBudget, RepoRoot, TaskType};
 use ctxpack_index::{
-    append_eval_trace, co_change_hints, dependency_edges, lexical_search, load_or_build_inventory,
-    related_dependency_edges, related_tests, symbol_search, test_map, CoChangeOptions,
-    DependencyOptions, InventoryOptions, SearchOptions, SymbolOptions,
+    append_eval_trace, build_inventory, co_change_hints, dependency_edges, lexical_search,
+    load_or_build_inventory, related_dependency_edges, related_tests, symbol_search, test_map,
+    CoChangeOptions, DependencyOptions, InventoryOptions, SearchOptions, SymbolOptions,
 };
 use serde::Deserialize;
 use serde_json::{json, Value};
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
 use std::io::{self, BufRead, Write};
 use std::path::{Path, PathBuf};
@@ -484,7 +484,7 @@ fn tools_list_result() -> Value {
             {
                 "name": "current_diff",
                 "title": "Current Diff Summary",
-                "description": "Return changed path lists from the local git working tree without reading source content.",
+                "description": "Return safe changed path lists from the local git working tree without returning source content.",
                 "inputSchema": {
                     "type": "object",
                     "properties": {
@@ -1016,11 +1016,24 @@ fn call_current_diff(arguments: Value) -> Result<Value, RpcError> {
     } else {
         Vec::new()
     };
+    let (unstaged, excluded_unstaged) = safe_diff_paths(&repo.path, unstaged)?;
+    let (staged, excluded_staged) = safe_diff_paths(&repo.path, staged)?;
+    let (untracked, excluded_untracked) = safe_diff_paths(&repo.path, untracked)?;
 
     tool_json_result(json!({
         "unstaged": unstaged,
         "staged": staged,
-        "untracked": untracked
+        "untracked": untracked,
+        "excluded": {
+            "unstaged": excluded_unstaged,
+            "staged": excluded_staged,
+            "untracked": excluded_untracked,
+            "reason": "paths excluded by safe inventory policy; source content was not returned"
+        },
+        "privacyStatus": {
+            "localOnly": true,
+            "sourceTextReturned": false
+        }
     }))
 }
 
@@ -1036,6 +1049,30 @@ fn discover_repo(repo: Option<PathBuf>) -> Result<RepoRoot, RpcError> {
 
 fn bounded_limit(limit: Option<usize>, default: usize) -> usize {
     limit.unwrap_or(default).clamp(1, 50)
+}
+
+fn safe_diff_paths(repo: &Path, paths: Vec<String>) -> Result<(Vec<String>, usize), RpcError> {
+    if paths.is_empty() {
+        return Ok((Vec::new(), 0));
+    }
+    let inventory = build_inventory(repo, &InventoryOptions::default()).map_err(|error| {
+        RpcError::invalid_params(format!("failed to apply safe inventory policy: {error}"))
+    })?;
+    let safe_paths = inventory
+        .files
+        .into_iter()
+        .map(|file| file.path)
+        .collect::<BTreeSet<_>>();
+    let mut safe = Vec::new();
+    let mut excluded = 0;
+    for path in paths {
+        if safe_paths.contains(&path) {
+            safe.push(path);
+        } else {
+            excluded += 1;
+        }
+    }
+    Ok((safe, excluded))
 }
 
 fn tool_json_result(value: impl serde::Serialize) -> Result<Value, RpcError> {
@@ -1524,6 +1561,37 @@ mod tests {
             .as_str()
             .unwrap()
             .contains("return false"));
+        assert_eq!(
+            response["result"]["structuredContent"]["privacyStatus"]["sourceTextReturned"],
+            false
+        );
+    }
+
+    #[test]
+    fn current_diff_filters_sensitive_and_generated_paths() {
+        let repo = fixture_repo();
+        fs::create_dir_all(repo.repo.join("dist")).unwrap();
+        fs::write(repo.repo.join("src/auth/session.ts"), "safe change\n").unwrap();
+        fs::write(repo.repo.join("dist/generated.js"), "generated change\n").unwrap();
+        fs::write(repo.repo.join(".env"), "TOKEN=secret\n").unwrap();
+        let request = format!(
+            r#"{{"jsonrpc":"2.0","id":21,"method":"tools/call","params":{{"name":"current_diff","arguments":{{"repo":"{}","includeUntracked":true}}}}}}"#,
+            repo.repo.display()
+        );
+        let response = handle_line(&request).unwrap();
+        let text = response["result"]["content"][0]["text"].as_str().unwrap();
+
+        assert_eq!(
+            response["result"]["structuredContent"]["unstaged"][0],
+            "src/auth/session.ts"
+        );
+        assert_eq!(
+            response["result"]["structuredContent"]["excluded"]["untracked"],
+            2
+        );
+        assert!(!text.contains("dist/generated.js"));
+        assert!(!text.contains(".env"));
+        assert!(!text.contains("TOKEN=secret"));
     }
 
     #[test]
