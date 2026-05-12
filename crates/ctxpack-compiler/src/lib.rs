@@ -419,6 +419,10 @@ fn base_plan(task_type: TaskType) -> ContextPlan {
                 budget: PackBudget::Standard,
                 resource_uri: format!("ctxpack://pack/{task_id}/standard"),
             },
+            PackOption {
+                budget: PackBudget::Deep,
+                resource_uri: format!("ctxpack://pack/{task_id}/deep"),
+            },
         ],
         missing_info_questions: Vec::new(),
         risk_flags: Vec::new(),
@@ -804,11 +808,12 @@ mod tests {
     }
 
     #[test]
-    fn empty_plan_includes_brief_and_standard_pack_options() {
+    fn empty_plan_includes_progressive_pack_options() {
         let plan = empty_plan_for_task(TaskType::Explain);
-        assert_eq!(plan.pack_options.len(), 2);
+        assert_eq!(plan.pack_options.len(), 3);
         assert!(plan.pack_options[0].resource_uri.ends_with("/brief"));
         assert!(plan.pack_options[1].resource_uri.ends_with("/standard"));
+        assert!(plan.pack_options[2].resource_uri.ends_with("/deep"));
     }
 
     #[test]

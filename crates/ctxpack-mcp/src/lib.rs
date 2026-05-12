@@ -1416,13 +1416,25 @@ mod tests {
         let task_id = response["result"]["structuredContent"]["taskId"]
             .as_str()
             .unwrap();
+        assert_eq!(
+            response["result"]["structuredContent"]["packOptions"][2]["budget"],
+            "deep"
+        );
         let pack_uri = response["result"]["structuredContent"]["packOptions"][0]["resourceUri"]
+            .as_str()
+            .unwrap();
+        let deep_pack_uri = response["result"]["structuredContent"]["packOptions"][2]
+            ["resourceUri"]
             .as_str()
             .unwrap();
         let resource_request = format!(
             r#"{{"jsonrpc":"2.0","id":19,"method":"resources/read","params":{{"uri":"{pack_uri}"}}}}"#
         );
         let resource_response = handle_line(&resource_request).unwrap();
+        let deep_resource_request = format!(
+            r#"{{"jsonrpc":"2.0","id":28,"method":"resources/read","params":{{"uri":"{deep_pack_uri}.json"}}}}"#
+        );
+        let deep_resource_response = handle_line(&deep_resource_request).unwrap();
         let text = resource_response["result"]["contents"][0]["text"]
             .as_str()
             .unwrap();
@@ -1435,6 +1447,14 @@ mod tests {
         assert!(text.contains("src/auth/session.ts"));
         assert!(text.contains("tests/auth/session.test.ts"));
         assert!(text.contains(&format!("Task ID: `{task_id}`")));
+        assert_eq!(
+            deep_resource_response["result"]["contents"][0]["mimeType"],
+            "application/json"
+        );
+        assert!(deep_resource_response["result"]["contents"][0]["text"]
+            .as_str()
+            .unwrap()
+            .contains("\"budget\": \"deep\""));
 
         std::env::remove_var("CTXPACK_HOME");
     }
