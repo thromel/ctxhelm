@@ -1974,6 +1974,8 @@ mod tests {
             true
         );
         assert!(text.contains("# Context Pack"));
+        assert!(text.contains("- Target agent: `codex`"));
+        assert!(text.contains("- Task hash: `"));
         assert!(text.contains("src/auth/session.ts"));
         assert!(text.contains("tests/auth/session.test.ts"));
         std::env::remove_var("CTXPACK_HOME");

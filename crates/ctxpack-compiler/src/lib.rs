@@ -412,9 +412,12 @@ fn pack_repo_id(repo_root: &Path) -> String {
 
 pub fn render_pack_markdown(pack: &ContextPack) -> String {
     let mut output = format!(
-        "# Context Pack\n\n- Pack ID: `{}`\n- Task ID: `{}`\n- Task type: `{:?}`\n- Budget: `{:?}`\n- Confidence: `{:.2}`\n- Estimated tokens: `{}`\n- Privacy: local-only `{}`\n\n",
+        "# Context Pack\n\n- Pack ID: `{}`\n- Task ID: `{}`\n- Repo ID: `{}`\n- Task hash: `{}`\n- Target agent: `{}`\n- Task type: `{:?}`\n- Budget: `{:?}`\n- Confidence: `{:.2}`\n- Estimated tokens: `{}`\n- Privacy: local-only `{}`\n\n",
         pack.id,
         pack.task_id,
+        pack.repo_id,
+        pack.task_hash,
+        pack.target_agent,
         pack.task_type,
         pack.budget,
         pack.confidence,
@@ -1276,7 +1279,12 @@ mod tests {
         assert_eq!(pack.target_agent, "generic");
         assert_eq!(codex_pack.target_agent, "codex");
         assert_eq!(codex_pack.task_hash, task_hash("fix requireSession bug"));
-        assert!(render_pack_markdown(&pack).contains("src/auth/session.ts"));
+        let markdown = render_pack_markdown(&codex_pack);
+        assert!(markdown.contains("src/auth/session.ts"));
+        assert!(markdown.contains("- Repo ID: `"));
+        assert!(markdown.contains(&format!("- Task hash: `{}`", codex_pack.task_hash)));
+        assert!(markdown.contains("- Target agent: `codex`"));
+        assert!(!markdown.contains("sourceText"));
 
         std::env::remove_var("CTXPACK_HOME");
     }
