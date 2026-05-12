@@ -1,8 +1,8 @@
 use ctxpack_compiler::{
-    compile_context_pack_with_plan_and_paths, eval_trace_for_pack, eval_trace_for_plan,
-    prepare_context_plan_with_paths, render_pack_markdown,
+    compile_context_pack_from_plan, compile_context_pack_with_plan_and_paths, eval_trace_for_pack,
+    eval_trace_for_plan, prepare_context_plan_with_paths, render_pack_markdown,
 };
-use ctxpack_core::{FileRole, PackBudget, RepoRoot, TaskType};
+use ctxpack_core::{ContextPack, FileRole, PackBudget, RepoRoot, TaskType};
 use ctxpack_index::{
     append_eval_trace, co_change_hints, dependency_edges, lexical_search, load_or_build_inventory,
     related_dependency_edges, related_tests, symbol_search, CoChangeOptions, DependencyOptions,
@@ -15,6 +15,7 @@ use std::fs;
 use std::io::{self, BufRead, Write};
 use std::path::{Path, PathBuf};
 use std::process::Command;
+use std::sync::{Mutex, OnceLock};
 
 pub const PLANNED_MCP_TOOL_NAMES: &[&str] = &[
     "prepare_task",
@@ -508,14 +509,29 @@ fn read_resource(params: Value) -> Result<Value, RpcError> {
         RpcError::invalid_params(format!("invalid resources/read params: {error}"))
     })?;
 
-    let repo = discover_repo(None)?;
     let content = match params.uri.as_str() {
-        "ctxpack://repo/summary" => resource_json(&repo_summary(&repo.path)?),
-        "ctxpack://repo/test-map" => resource_json(&repo_test_map(&repo.path)?),
-        "ctxpack://repo/dependency-graph" => resource_json(&repo_dependency_graph(&repo.path)?),
+        "ctxpack://repo/summary" => {
+            let repo = discover_repo(None)?;
+            resource_json(&repo_summary(&repo.path)?)
+        }
+        "ctxpack://repo/test-map" => {
+            let repo = discover_repo(None)?;
+            resource_json(&repo_test_map(&repo.path)?)
+        }
+        "ctxpack://repo/dependency-graph" => {
+            let repo = discover_repo(None)?;
+            resource_json(&repo_dependency_graph(&repo.path)?)
+        }
         "ctxpack://pack/guide" => pack_guide_markdown(),
-        uri if uri.starts_with("ctxpack://file/") => read_file_resource(&repo.path, uri)?,
-        uri if uri.starts_with("ctxpack://symbol/") => read_symbol_resource(&repo.path, uri)?,
+        uri if uri.starts_with("ctxpack://pack/") => read_pack_resource(uri)?,
+        uri if uri.starts_with("ctxpack://file/") => {
+            let repo = discover_repo(None)?;
+            read_file_resource(&repo.path, uri)?
+        }
+        uri if uri.starts_with("ctxpack://symbol/") => {
+            let repo = discover_repo(None)?;
+            read_symbol_resource(&repo.path, uri)?
+        }
         uri => {
             return Err(RpcError::invalid_params(format!(
                 "unsupported resource URI: {uri}"
@@ -636,6 +652,7 @@ fn call_prepare_task(arguments: Value) -> Result<Value, RpcError> {
     append_eval_trace(&repo.path, &trace).map_err(|error| {
         RpcError::invalid_params(format!("failed to record eval trace: {error}"))
     })?;
+    cache_pack_resources(&repo.path, &args.task, &plan)?;
     let structured = serde_json::to_value(&plan)
         .map_err(|error| RpcError::invalid_params(format!("failed to serialize plan: {error}")))?;
     let text = serde_json::to_string_pretty(&plan)
@@ -654,6 +671,72 @@ fn call_prepare_task(arguments: Value) -> Result<Value, RpcError> {
 struct ResourceContent {
     mime_type: &'static str,
     text: String,
+}
+
+#[derive(Debug, Clone)]
+struct CachedResource {
+    mime_type: &'static str,
+    text: String,
+}
+
+fn pack_resource_cache() -> &'static Mutex<BTreeMap<String, CachedResource>> {
+    static CACHE: OnceLock<Mutex<BTreeMap<String, CachedResource>>> = OnceLock::new();
+    CACHE.get_or_init(|| Mutex::new(BTreeMap::new()))
+}
+
+fn cache_pack_resources(
+    repo: &Path,
+    task: &str,
+    plan: &ctxpack_core::ContextPlan,
+) -> Result<(), RpcError> {
+    let mut cache = pack_resource_cache()
+        .lock()
+        .map_err(|_| RpcError::invalid_params("pack resource cache is unavailable"))?;
+    for option in &plan.pack_options {
+        let pack = compile_context_pack_from_plan(repo, task, plan, option.budget.clone());
+        cache_context_pack(&mut cache, &option.resource_uri, &pack)?;
+    }
+    Ok(())
+}
+
+fn cache_context_pack(
+    cache: &mut BTreeMap<String, CachedResource>,
+    uri: &str,
+    pack: &ContextPack,
+) -> Result<(), RpcError> {
+    let markdown = render_pack_markdown(pack);
+    cache.insert(
+        uri.to_string(),
+        CachedResource {
+            mime_type: "text/markdown",
+            text: markdown,
+        },
+    );
+    cache.insert(
+        format!("{uri}.json"),
+        CachedResource {
+            mime_type: "application/json",
+            text: serde_json::to_string_pretty(pack).map_err(|error| {
+                RpcError::invalid_params(format!("failed to serialize cached pack: {error}"))
+            })?,
+        },
+    );
+    Ok(())
+}
+
+fn read_pack_resource(uri: &str) -> Result<ResourceContent, RpcError> {
+    let cache = pack_resource_cache()
+        .lock()
+        .map_err(|_| RpcError::invalid_params("pack resource cache is unavailable"))?;
+    let Some(resource) = cache.get(uri) else {
+        return Err(RpcError::invalid_params(format!(
+            "pack resource is not available in this MCP session; call prepare_task first: {uri}"
+        )));
+    };
+    Ok(ResourceContent {
+        mime_type: resource.mime_type,
+        text: resource.text.clone(),
+    })
 }
 
 fn resource_json(value: &Value) -> ResourceContent {
@@ -1166,6 +1249,42 @@ mod tests {
             .as_str()
             .unwrap()
             .contains("\"taskType\": \"bug_fix\""));
+        std::env::remove_var("CTXPACK_HOME");
+    }
+
+    #[test]
+    fn prepare_task_call_caches_pack_resources_for_session_reads() {
+        let _guard = env_lock();
+        let repo = fixture_repo();
+        std::env::set_var("CTXPACK_HOME", &repo.home);
+        let request = format!(
+            r#"{{"jsonrpc":"2.0","id":18,"method":"tools/call","params":{{"name":"prepare_task","arguments":{{"task":"fix requireSession bug","repo":"{}","mode":"bug_fix"}}}}}}"#,
+            repo.repo.display()
+        );
+        let response = handle_line(&request).unwrap();
+        let task_id = response["result"]["structuredContent"]["taskId"]
+            .as_str()
+            .unwrap();
+        let pack_uri = response["result"]["structuredContent"]["packOptions"][0]["resourceUri"]
+            .as_str()
+            .unwrap();
+        let resource_request = format!(
+            r#"{{"jsonrpc":"2.0","id":19,"method":"resources/read","params":{{"uri":"{pack_uri}"}}}}"#
+        );
+        let resource_response = handle_line(&resource_request).unwrap();
+        let text = resource_response["result"]["contents"][0]["text"]
+            .as_str()
+            .unwrap();
+
+        assert_eq!(
+            resource_response["result"]["contents"][0]["mimeType"],
+            "text/markdown"
+        );
+        assert!(text.contains("# Context Pack"));
+        assert!(text.contains("src/auth/session.ts"));
+        assert!(text.contains("tests/auth/session.test.ts"));
+        assert!(text.contains(&format!("Task ID: `{task_id}`")));
+
         std::env::remove_var("CTXPACK_HOME");
     }
 

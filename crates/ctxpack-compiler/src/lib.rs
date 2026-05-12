@@ -259,6 +259,15 @@ pub fn compile_context_pack_with_plan_and_paths(
     Ok((plan, pack))
 }
 
+pub fn compile_context_pack_from_plan(
+    repo_root: impl AsRef<Path>,
+    task: &str,
+    plan: &ContextPlan,
+    budget: PackBudget,
+) -> ContextPack {
+    compile_pack_from_plan(repo_root.as_ref(), task, plan, budget)
+}
+
 fn compile_pack_from_plan(
     repo_root: &Path,
     task: &str,
@@ -1156,6 +1165,35 @@ mod tests {
         assert_eq!(trace.recommended_tests, vec!["tests/auth/session.test.ts"]);
         assert_eq!(value["sourceTextLogged"], false);
         assert!(value.get("task").is_none());
+
+        std::env::remove_var("CTXPACK_HOME");
+    }
+
+    #[test]
+    fn compile_context_pack_from_plan_reuses_existing_task_id() {
+        let _guard = env_lock();
+        let temp = tempfile::tempdir().unwrap();
+        let repo = temp.path().join("repo");
+        let home = temp.path().join("ctxpack-home");
+        fs::create_dir_all(repo.join("src/auth")).unwrap();
+        fs::write(
+            repo.join("src/auth/session.ts"),
+            "export function requireSession() { return true; }\n",
+        )
+        .unwrap();
+        std::env::set_var("CTXPACK_HOME", &home);
+
+        let plan = prepare_context_plan(&repo, "fix requireSession bug", TaskType::BugFix).unwrap();
+        let pack = compile_context_pack_from_plan(
+            &repo,
+            "fix requireSession bug",
+            &plan,
+            PackBudget::Brief,
+        );
+
+        assert_eq!(pack.task_id, plan.task_id);
+        assert_eq!(pack.task_type, plan.task_type);
+        assert!(render_pack_markdown(&pack).contains("src/auth/session.ts"));
 
         std::env::remove_var("CTXPACK_HOME");
     }

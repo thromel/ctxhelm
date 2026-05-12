@@ -49,7 +49,7 @@ Implemented MCP tools:
 - `related_tests`
 - `current_diff`
 
-Implemented MCP resources include `ctxpack://repo/summary`, `ctxpack://repo/test-map`, `ctxpack://repo/dependency-graph`, `ctxpack://pack/guide`, safe file slices, and symbol search. Implemented prompts cover bugfix, feature, refactor, review, test-writing, and explanation workflows.
+Implemented MCP resources include `ctxpack://repo/summary`, `ctxpack://repo/test-map`, `ctxpack://repo/dependency-graph`, `ctxpack://pack/guide`, session-scoped `ctxpack://pack/<task-id>/<budget>` resources returned by `prepare_task`, safe file slices, and symbol search. Implemented prompts cover bugfix, feature, refactor, review, test-writing, and explanation workflows.
 
 ## Client Integration Status
 
@@ -154,6 +154,8 @@ cargo run -p ctxpack -- prepare-task "fix redirect behavior" --repo /path/to/rep
 ```
 
 The plan fuses active path anchors, symbol search, lexical search, related tests, local dependency edges, and local co-change hints into target files, line hints, validation commands, risk flags, and pack resource options. MCP clients can pass the same active/open files through the `paths` array on `prepare_task`.
+
+For MCP clients, the `packOptions[*].resourceUri` values returned by `prepare_task` are loadable during the same MCP server session. Add `.json` to a returned pack URI to read the structured pack resource instead of Markdown.
 
 ## Context Pack
 
