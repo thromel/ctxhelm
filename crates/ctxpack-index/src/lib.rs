@@ -204,6 +204,7 @@ impl Default for HistoricalCommitOptions {
 #[serde(rename_all = "camelCase")]
 pub struct HistoricalCommitSample {
     pub sha: String,
+    pub parent_sha: Option<String>,
     pub title: String,
     pub safe_changed_files: Vec<String>,
     pub excluded_changed_file_count: usize,
@@ -775,6 +776,7 @@ pub fn historical_commit_samples(
             }
             Some(HistoricalCommitSample {
                 sha: commit.sha,
+                parent_sha: commit.parent_sha,
                 title: commit.title,
                 safe_changed_files,
                 excluded_changed_file_count,
@@ -1361,28 +1363,32 @@ fn score_file(
     let mut reasons = Vec::new();
 
     for term in query_terms {
+        let weight = query_term_weight(term);
+        if weight == 0.0 {
+            continue;
+        }
         let mut matched = false;
 
         if path.contains(term) {
-            score += 8.0;
+            score += 8.0 * weight;
             matched = true;
             reasons.push(format!("path matched `{term}`"));
         }
         if file_name.contains(term) {
-            score += 5.0;
+            score += 5.0 * weight;
             matched = true;
             reasons.push(format!("file name matched `{term}`"));
         }
 
         let occurrences = count_occurrences(&content, term);
         if occurrences > 0 {
-            score += 2.0 + occurrences.min(10) as f32;
+            score += (2.0 + occurrences.min(10) as f32) * weight;
             matched = true;
             reasons.push(format!("content matched `{term}` {occurrences} time(s)"));
         }
 
         if !matched {
-            score -= 1.0;
+            score -= 1.0 * weight;
         }
     }
 
@@ -1408,6 +1414,49 @@ fn count_occurrences(haystack: &str, needle: &str) -> usize {
         return 0;
     }
     haystack.matches(needle).count()
+}
+
+fn query_term_weight(term: &str) -> f32 {
+    if matches!(
+        term,
+        "a" | "an"
+            | "and"
+            | "are"
+            | "as"
+            | "be"
+            | "by"
+            | "for"
+            | "from"
+            | "in"
+            | "is"
+            | "of"
+            | "on"
+            | "or"
+            | "the"
+            | "to"
+            | "with"
+    ) {
+        return 0.0;
+    }
+
+    if matches!(
+        term,
+        "csharp"
+            | "go"
+            | "java"
+            | "javascript"
+            | "js"
+            | "kotlin"
+            | "python"
+            | "rust"
+            | "scala"
+            | "typescript"
+            | "ts"
+    ) {
+        return 0.25;
+    }
+
+    1.0
 }
 
 fn symbols_for_file(file: &FileInventoryEntry, content: &str) -> Vec<CodeSymbol> {
@@ -1641,32 +1690,36 @@ fn score_symbol(symbol: CodeSymbol, query_terms: &[String]) -> Option<SymbolSear
     let mut reasons = Vec::new();
 
     for term in query_terms {
+        let weight = query_term_weight(term);
+        if weight == 0.0 {
+            continue;
+        }
         let mut matched = false;
         if name == *term {
-            score += 24.0;
+            score += 24.0 * weight;
             matched = true;
             reasons.push(format!("symbol name exactly matched `{term}`"));
         } else if name.starts_with(term) {
-            score += 16.0;
+            score += 16.0 * weight;
             matched = true;
             reasons.push(format!("symbol name starts with `{term}`"));
         } else if name.contains(term) {
-            score += 12.0;
+            score += 12.0 * weight;
             matched = true;
             reasons.push(format!("symbol name contains `{term}`"));
         }
         if path.contains(term) {
-            score += 4.0;
+            score += 4.0 * weight;
             matched = true;
             reasons.push(format!("path contains `{term}`"));
         }
         if signature.contains(term) {
-            score += 2.0;
+            score += 2.0 * weight;
             matched = true;
             reasons.push(format!("signature contains `{term}`"));
         }
         if !matched {
-            score -= 2.0;
+            score -= 2.0 * weight;
         }
     }
 
@@ -2039,6 +2092,7 @@ struct GitCommitFiles {
 #[derive(Debug)]
 struct GitCommitSubjectFiles {
     sha: String,
+    parent_sha: Option<String>,
     title: String,
     files: Vec<String>,
 }
@@ -2104,6 +2158,7 @@ fn git_commit_subject_file_sets(
         )
         .map(|title| title.trim().to_string())
         .unwrap_or_default();
+        let parent_sha = git_parent_sha(repo_root, sha)?;
         let Ok(output) = git_stdout_with_timeout(
             repo_root,
             &[
@@ -2128,12 +2183,26 @@ fn git_commit_subject_file_sets(
             .collect::<Vec<_>>();
         commits.push(GitCommitSubjectFiles {
             sha: sha.to_string(),
+            parent_sha,
             title,
             files,
         });
     }
 
     Ok(commits)
+}
+
+fn git_parent_sha(repo_root: &Path, sha: &str) -> Result<Option<String>, InventoryError> {
+    let output = git_stdout_with_timeout(
+        repo_root,
+        &["rev-list", "--parents", "-n", "1", sha],
+        Duration::from_millis(250),
+    )?;
+    Ok(output
+        .split_whitespace()
+        .nth(1)
+        .filter(|parent| !parent.is_empty())
+        .map(str::to_string))
 }
 
 fn commit_range(base: Option<&str>, head: Option<&str>) -> Option<String> {
@@ -2295,6 +2364,7 @@ fn parse_git_log_subject_name_only(output: &str) -> Vec<GitCommitSubjectFiles> {
             if let Some(previous_sha) = current_sha.take() {
                 commits.push(GitCommitSubjectFiles {
                     sha: previous_sha,
+                    parent_sha: None,
                     title: std::mem::take(&mut current_title),
                     files: std::mem::take(&mut current_files),
                 });
@@ -2315,6 +2385,7 @@ fn parse_git_log_subject_name_only(output: &str) -> Vec<GitCommitSubjectFiles> {
     if let Some(sha) = current_sha {
         commits.push(GitCommitSubjectFiles {
             sha,
+            parent_sha: None,
             title: current_title,
             files: current_files,
         });
@@ -2596,6 +2667,42 @@ mod tests {
 
         assert_eq!(paths, vec!["src/login.ts"]);
         assert!(inventory_path(&repo_id_for_path(&fs::canonicalize(&repo).unwrap())).exists());
+
+        std::env::remove_var("CTXPACK_HOME");
+    }
+
+    #[test]
+    fn lexical_search_prioritizes_specific_terms_over_common_language_mentions() {
+        let _guard = env_lock();
+        let temp = tempfile::tempdir().unwrap();
+        let repo = temp.path().join("repo");
+        let home = temp.path().join("ctxpack-home");
+        fs::create_dir_all(repo.join(".git")).unwrap();
+        fs::create_dir_all(repo.join("src/main/java/gr/uom/java/xmi")).unwrap();
+        fs::create_dir_all(repo.join("src/main/java/org/refactoringminer/astDiff/utils")).unwrap();
+        fs::write(
+            repo.join("src/main/java/gr/uom/java/xmi/TypeScriptFileProcessor.java"),
+            "final class TypeScriptFileProcessor { String name = \"TypeScript TypeScript TypeScript TypeScript TypeScript TypeScript TypeScript TypeScript TypeScript TypeScript TypeScript TypeScript\"; }\n",
+        )
+        .unwrap();
+        fs::write(
+            repo.join("src/main/java/org/refactoringminer/astDiff/utils/Constants.java"),
+            "final class Constants { String rule = \"support enum declarations for parser nodes\"; }\n",
+        )
+        .unwrap();
+        std::env::set_var("CTXPACK_HOME", &home);
+
+        let results = lexical_search(
+            &repo,
+            "Support enum declarations in TypeScript",
+            &SearchOptions { limit: 5 },
+        )
+        .unwrap();
+
+        assert_eq!(
+            results[0].path,
+            "src/main/java/org/refactoringminer/astDiff/utils/Constants.java"
+        );
 
         std::env::remove_var("CTXPACK_HOME");
     }

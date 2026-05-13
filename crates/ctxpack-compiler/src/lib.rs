@@ -13,6 +13,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
 use std::path::{Component, Path, PathBuf};
+use std::process::{Command as ProcessCommand, Stdio};
 use std::time::{SystemTime, UNIX_EPOCH};
 use uuid::Uuid;
 
@@ -139,6 +140,11 @@ pub fn evaluate_historical_commits(
 ) -> Result<HistoricalEvalReport, InventoryError> {
     let repo_root = repo_root.as_ref();
     let inventory = load_or_build_inventory(repo_root, &InventoryOptions::default())?;
+    let snapshot_paths = inventory
+        .files
+        .iter()
+        .map(|file| file.path.clone())
+        .collect::<Vec<_>>();
     let roles_by_path = inventory
         .files
         .iter()
@@ -161,8 +167,14 @@ pub fn evaluate_historical_commits(
         } else {
             sample.title.clone()
         };
-        let plan = prepare_context_plan_with_paths_and_history(
+        let eval_repo = HistoricalEvalWorktree::for_parent(
             repo_root,
+            sample.parent_sha.as_deref(),
+            &snapshot_paths,
+        )?;
+        let eval_root = eval_repo.path();
+        let plan = prepare_context_plan_with_paths_and_history(
+            eval_root,
             &task,
             options.task_type.clone(),
             &[],
@@ -185,7 +197,7 @@ pub fn evaluate_historical_commits(
             .collect::<Vec<_>>();
         let recommended_context_files =
             context_file_ranking(&recommended_files, &recommended_tests);
-        let lexical_baseline_files = lexical_baseline_context_files(repo_root, &task)?;
+        let lexical_baseline_files = lexical_baseline_context_files(eval_root, &task)?;
         let file_hits_at_5 =
             changed_file_hits(&sample.safe_changed_files, &recommended_context_files, 5);
         let file_hits_at_10 =
@@ -332,6 +344,146 @@ pub fn generate_context_cards(
         cards: generated,
         privacy_status: PrivacyStatus::local_only(),
     })
+}
+
+struct HistoricalEvalWorktree<'a> {
+    path: PathBuf,
+    _source_repo: &'a Path,
+    _temp_dir: Option<tempfile::TempDir>,
+}
+
+impl<'a> HistoricalEvalWorktree<'a> {
+    fn for_parent(
+        source_repo: &'a Path,
+        parent_sha: Option<&str>,
+        snapshot_paths: &[String],
+    ) -> Result<Self, InventoryError> {
+        let Some(parent_sha) = parent_sha.filter(|sha| !sha.trim().is_empty()) else {
+            return Ok(Self {
+                path: source_repo.to_path_buf(),
+                _source_repo: source_repo,
+                _temp_dir: None,
+            });
+        };
+
+        let temp_dir = tempfile::Builder::new()
+            .prefix("ctxpack-historical-eval-")
+            .tempdir()
+            .map_err(|source| InventoryError::CreateDir {
+                path: std::env::temp_dir(),
+                source,
+            })?;
+        let path = temp_dir.path().join("repo");
+        fs::create_dir_all(&path).map_err(|source| InventoryError::CreateDir {
+            path: path.clone(),
+            source,
+        })?;
+        let revision_paths =
+            git_existing_paths_at_revision(source_repo, parent_sha, snapshot_paths)?;
+        git_extract_revision_paths(source_repo, parent_sha, &revision_paths, &path)?;
+
+        Ok(Self {
+            path,
+            _source_repo: source_repo,
+            _temp_dir: Some(temp_dir),
+        })
+    }
+
+    fn path(&self) -> &Path {
+        &self.path
+    }
+}
+
+fn git_existing_paths_at_revision(
+    source_repo: &Path,
+    revision: &str,
+    candidate_paths: &[String],
+) -> Result<Vec<String>, InventoryError> {
+    if candidate_paths.is_empty() {
+        return Ok(Vec::new());
+    }
+
+    let output = ProcessCommand::new("git")
+        .arg("-C")
+        .arg(source_repo)
+        .args(["ls-tree", "-r", "--name-only", revision])
+        .output()
+        .map_err(|source| InventoryError::Git {
+            repo_root: source_repo.to_path_buf(),
+            message: source.to_string(),
+        })?;
+    if !output.status.success() {
+        return Err(InventoryError::Git {
+            repo_root: source_repo.to_path_buf(),
+            message: String::from_utf8_lossy(&output.stderr).trim().to_string(),
+        });
+    }
+
+    let existing_paths = String::from_utf8_lossy(&output.stdout)
+        .lines()
+        .map(str::to_string)
+        .collect::<BTreeSet<_>>();
+    Ok(candidate_paths
+        .iter()
+        .filter(|path| existing_paths.contains(path.as_str()))
+        .cloned()
+        .collect())
+}
+
+fn git_extract_revision_paths(
+    source_repo: &Path,
+    revision: &str,
+    paths: &[String],
+    destination: &Path,
+) -> Result<(), InventoryError> {
+    for chunk in paths.chunks(200) {
+        if chunk.is_empty() {
+            continue;
+        }
+        let mut archive = ProcessCommand::new("git")
+            .arg("-C")
+            .arg(source_repo)
+            .args(["archive", "--format=tar", revision, "--"])
+            .args(chunk)
+            .stdout(Stdio::piped())
+            .spawn()
+            .map_err(|source| InventoryError::Git {
+                repo_root: source_repo.to_path_buf(),
+                message: source.to_string(),
+            })?;
+        let archive_stdout = archive.stdout.take().ok_or_else(|| InventoryError::Git {
+            repo_root: source_repo.to_path_buf(),
+            message: "failed to capture git archive output".to_string(),
+        })?;
+        let tar_output = ProcessCommand::new("tar")
+            .args(["-xf", "-", "-C"])
+            .arg(destination)
+            .stdin(Stdio::from(archive_stdout))
+            .output()
+            .map_err(|source| InventoryError::Git {
+                repo_root: source_repo.to_path_buf(),
+                message: source.to_string(),
+            })?;
+        let archive_status = archive.wait().map_err(|source| InventoryError::Git {
+            repo_root: source_repo.to_path_buf(),
+            message: source.to_string(),
+        })?;
+        if !archive_status.success() {
+            return Err(InventoryError::Git {
+                repo_root: source_repo.to_path_buf(),
+                message: format!("git archive failed for revision {revision}"),
+            });
+        }
+        if !tar_output.status.success() {
+            return Err(InventoryError::Git {
+                repo_root: source_repo.to_path_buf(),
+                message: String::from_utf8_lossy(&tar_output.stderr)
+                    .trim()
+                    .to_string(),
+            });
+        }
+    }
+    Ok(())
 }
 
 pub fn prepare_context_plan_with_paths(
@@ -2084,6 +2236,87 @@ mod tests {
     }
 
     #[test]
+    fn evaluate_historical_commits_uses_parent_snapshot_without_future_context() {
+        let _guard = env_lock();
+        let temp = tempfile::tempdir().unwrap();
+        let repo = temp.path().join("repo");
+        let home = temp.path().join("ctxpack-home");
+        fs::create_dir_all(repo.join("src/future")).unwrap();
+        run_git(&repo, &["init"]);
+        run_git(&repo, &["config", "user.email", "ctxpack@example.com"]);
+        run_git(&repo, &["config", "user.name", "ctxpack"]);
+        fs::write(repo.join("README.md"), "# Repo\n").unwrap();
+        run_git(&repo, &["add", "."]);
+        run_git(&repo, &["commit", "-m", "initial repo"]);
+        fs::write(
+            repo.join("src/future/widget.ts"),
+            "export function FutureWidget() { return true; }\n",
+        )
+        .unwrap();
+        run_git(&repo, &["add", "."]);
+        run_git(&repo, &["commit", "-m", "add FutureWidget support"]);
+        std::env::set_var("CTXPACK_HOME", &home);
+
+        let report = evaluate_historical_commits(
+            &repo,
+            &HistoricalEvalOptions {
+                limit: 1,
+                task_type: TaskType::Feature,
+                target_agent: "codex".to_string(),
+                base: None,
+                head: None,
+            },
+        )
+        .unwrap();
+
+        assert_eq!(report.evaluated_commits, 1);
+        assert_eq!(
+            report.commits[0].safe_changed_files,
+            vec!["src/future/widget.ts"]
+        );
+        assert!(!report.commits[0]
+            .recommended_context_files
+            .contains(&"src/future/widget.ts".to_string()));
+        assert_eq!(report.file_recall_at_10, 0.0);
+        assert_eq!(report.lexical_baseline_recall_at_10, 0.0);
+        assert_eq!(report.top_missing_files[0].path, "src/future/widget.ts");
+
+        std::env::remove_var("CTXPACK_HOME");
+    }
+
+    #[test]
+    fn historical_eval_parent_snapshot_extracts_only_indexable_paths() {
+        let _guard = env_lock();
+        let temp = tempfile::tempdir().unwrap();
+        let repo = temp.path().join("repo");
+        fs::create_dir_all(repo.join("src")).unwrap();
+        fs::create_dir_all(repo.join("target/generated")).unwrap();
+        run_git(&repo, &["init"]);
+        run_git(&repo, &["config", "user.email", "ctxpack@example.com"]);
+        run_git(&repo, &["config", "user.name", "ctxpack"]);
+        fs::write(repo.join("src/lib.ts"), "export const visible = true;\n").unwrap();
+        fs::write(
+            repo.join("target/generated/huge.ts"),
+            "export const generated = true;\n",
+        )
+        .unwrap();
+        run_git(&repo, &["add", "."]);
+        run_git(&repo, &["commit", "-m", "initial repo"]);
+        let revision = git_stdout(&repo, &["rev-parse", "HEAD"]);
+
+        let snapshot = HistoricalEvalWorktree::for_parent(
+            &repo,
+            Some(revision.trim()),
+            &["src/lib.ts".to_string()],
+        )
+        .unwrap();
+
+        assert!(snapshot.path().join("src/lib.ts").exists());
+        assert!(!snapshot.path().join("target/generated/huge.ts").exists());
+        assert!(!snapshot.path().join(".git").exists());
+    }
+
+    #[test]
     fn generate_context_cards_writes_source_free_repo_cards() {
         let _guard = env_lock();
         let temp = tempfile::tempdir().unwrap();
@@ -2199,5 +2432,21 @@ mod tests {
             args,
             String::from_utf8_lossy(&output.stderr)
         );
+    }
+
+    fn git_stdout(repo: &Path, args: &[&str]) -> String {
+        let output = ProcessCommand::new("git")
+            .arg("-C")
+            .arg(repo)
+            .args(args)
+            .output()
+            .unwrap();
+        assert!(
+            output.status.success(),
+            "git {:?} failed: {}",
+            args,
+            String::from_utf8_lossy(&output.stderr)
+        );
+        String::from_utf8(output.stdout).unwrap()
     }
 }
