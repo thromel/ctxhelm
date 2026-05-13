@@ -2,11 +2,65 @@ mod common;
 
 use assert_cmd::Command;
 use common::{fixture_repo, json_stdout, CTXPACK_HOME_ENV};
+use predicates::prelude::PredicateBooleanExt;
 use predicates::str::contains;
 use serde_json::{json, Value};
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command as StdCommand;
+
+#[test]
+fn workspace_packages_have_release_identity() {
+    let repo_root = workspace_root();
+    let output = StdCommand::new("cargo")
+        .args(["metadata", "--no-deps", "--format-version", "1"])
+        .current_dir(&repo_root)
+        .output()
+        .unwrap();
+    assert!(
+        output.status.success(),
+        "cargo metadata failed: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+
+    let metadata: Value = serde_json::from_slice(&output.stdout).unwrap();
+    let packages = metadata["packages"].as_array().unwrap();
+    let expected = [
+        "ctxpack",
+        "ctxpack-core",
+        "ctxpack-index",
+        "ctxpack-compiler",
+        "ctxpack-mcp",
+    ];
+    for name in expected {
+        let package = packages
+            .iter()
+            .find(|package| package["name"] == name)
+            .unwrap_or_else(|| panic!("missing package metadata for {name}"));
+        assert_eq!(package["version"], "1.1.0", "{name} version");
+        assert_eq!(package["license"], "MIT", "{name} license");
+        assert!(
+            package["repository"].as_str().is_some_and(|value| !value.is_empty()),
+            "{name} repository metadata missing"
+        );
+        assert!(
+            package["description"]
+                .as_str()
+                .is_some_and(|value| !value.is_empty()),
+            "{name} description metadata missing"
+        );
+        assert!(
+            package["rust_version"]
+                .as_str()
+                .is_some_and(|value| !value.is_empty()),
+            "{name} rust-version metadata missing"
+        );
+    }
+
+    let license = fs::read_to_string(repo_root.join("LICENSE")).unwrap();
+    assert!(license.contains("MIT License"));
+    assert!(license.contains("Permission is hereby granted"));
+}
 
 #[test]
 fn help_lists_core_commands() {
@@ -21,8 +75,140 @@ fn help_lists_core_commands() {
         .stdout(contains("search"))
         .stdout(contains("related-tests"))
         .stdout(contains("dependencies"))
+        .stdout(contains("setup-check"))
         .stdout(contains("eval"))
         .stdout(contains("serve-mcp"));
+}
+
+#[test]
+fn version_reports_release_identity() {
+    Command::cargo_bin("ctxpack")
+        .unwrap()
+        .arg("--version")
+        .assert()
+        .success()
+        .stdout(contains("ctxpack 1.1.0"));
+}
+
+#[test]
+fn init_reports_file_actions_and_next_steps() {
+    let fixture = fixture_repo();
+
+    Command::cargo_bin("ctxpack")
+        .unwrap()
+        .env(CTXPACK_HOME_ENV, &fixture.home)
+        .args(["init", "--repo"])
+        .arg(&fixture.repo)
+        .assert()
+        .success()
+        .stdout(contains("Initialized ctxpack in"))
+        .stdout(contains("created:"))
+        .stdout(contains("skipped:"))
+        .stdout(contains(".cursor/rules/ctxpack.mdc"))
+        .stdout(contains("Next steps"))
+        .stdout(contains("ctxpack --version"))
+        .stdout(contains("ctxpack --help"))
+        .stdout(contains("ctxpack setup-check --repo"))
+        .stdout(contains("prepare_task"))
+        .stdout(contains("get_pack"));
+
+    Command::cargo_bin("ctxpack")
+        .unwrap()
+        .env(CTXPACK_HOME_ENV, &fixture.home)
+        .args(["init", "--repo"])
+        .arg(&fixture.repo)
+        .assert()
+        .success()
+        .stdout(contains("unchanged:"))
+        .stdout(contains("skipped:"));
+}
+
+#[test]
+fn init_with_adapters_reports_repo_local_outputs_only() {
+    let fixture = fixture_repo();
+
+    Command::cargo_bin("ctxpack")
+        .unwrap()
+        .env(CTXPACK_HOME_ENV, &fixture.home)
+        .args(["init", "--repo"])
+        .arg(&fixture.repo)
+        .args(["--cursor", "--claude", "--opencode"])
+        .assert()
+        .success()
+        .stdout(contains(".cursor/rules/ctxpack.mdc"))
+        .stdout(contains(".claude/commands/ctxpack-bugfix.md"))
+        .stdout(contains(".ctxpack/adapters/claude-mcp.json"))
+        .stdout(contains(".ctxpack/adapters/opencode.jsonc.snippet"))
+        .stdout(contains("does not mutate global agent config"))
+        .stdout(contains("Copy/paste"))
+        .stdout(predicates::str::contains("mutate global Codex, Claude, Cursor, or OpenCode config").not());
+}
+
+#[test]
+fn setup_check_reports_generated_artifacts() {
+    let fixture = fixture_repo();
+
+    Command::cargo_bin("ctxpack")
+        .unwrap()
+        .env(CTXPACK_HOME_ENV, &fixture.home)
+        .args(["init", "--repo"])
+        .arg(&fixture.repo)
+        .args(["--cursor", "--claude", "--opencode"])
+        .assert()
+        .success();
+
+    Command::cargo_bin("ctxpack")
+        .unwrap()
+        .env(CTXPACK_HOME_ENV, &fixture.home)
+        .args(["setup-check", "--repo"])
+        .arg(&fixture.repo)
+        .args(["--cursor", "--claude", "--opencode"])
+        .assert()
+        .success()
+        .stdout(contains("Setup check for"))
+        .stdout(contains("pass: AGENTS.md"))
+        .stdout(contains("pass: .cursor/rules/ctxpack.mdc"))
+        .stdout(contains("warn: ctxpack binary path guidance"))
+        .stdout(contains("ctxpack --version"))
+        .stdout(contains("which ctxpack"))
+        .stdout(contains("does not mutate global agent config"));
+}
+
+#[test]
+fn setup_check_fails_when_expected_adapter_file_is_missing() {
+    let fixture = fixture_repo();
+
+    Command::cargo_bin("ctxpack")
+        .unwrap()
+        .env(CTXPACK_HOME_ENV, &fixture.home)
+        .args(["init", "--repo"])
+        .arg(&fixture.repo)
+        .assert()
+        .success();
+
+    Command::cargo_bin("ctxpack")
+        .unwrap()
+        .env(CTXPACK_HOME_ENV, &fixture.home)
+        .args(["setup-check", "--repo"])
+        .arg(&fixture.repo)
+        .arg("--cursor")
+        .assert()
+        .failure()
+        .stdout(contains("fail: .cursor/rules/ctxpack.mdc"));
+}
+
+#[test]
+fn setup_check_help_documents_read_only_validation() {
+    Command::cargo_bin("ctxpack")
+        .unwrap()
+        .args(["setup-check", "--help"])
+        .assert()
+        .success()
+        .stdout(contains("read-only"))
+        .stdout(contains("generated setup artifacts"))
+        .stdout(contains("--cursor"))
+        .stdout(contains("--claude"))
+        .stdout(contains("--opencode"));
 }
 
 #[test]
@@ -802,15 +988,136 @@ fn real_client_smoke_scripts_have_contract_guards() {
             "prepare_task",
             "get_pack",
             "repo",
+            "CTXPACK_BIN",
             "CTXPACK_REQUIRE_REAL_CLIENT",
             "CTXPACK_SKIP_REAL_CLIENT",
+            "CTXPACK_REAL_CLIENT_EVIDENCE_DIR",
+            "clientVersion",
+            "ctxpackVersion",
+            "prepareTask",
+            "getPack",
+            "required",
+            "--version",
+            "serve-mcp",
+            "request_log",
             "skipped",
             "passed",
             "failed",
         ] {
             assert!(content.contains(needle), "{script} missing {needle}");
         }
+        assert!(
+            content.contains("CTXPACK_BIN=\"$ctxpack_bin\""),
+            "{script} must propagate the selected binary into child smoke commands"
+        );
+        assert!(
+            content.contains("\"$ctxpack_bin\" --version"),
+            "{script} must capture ctxpack version from the selected binary"
+        );
+        assert!(
+            content.contains("\"$ctxpack_bin\" serve-mcp") || content.contains("'tee -a \"$CTXPACK_REAL_CLIENT_REQUEST_LOG\" | \"$ctxpack_bin\" serve-mcp'"),
+            "{script} must launch the MCP server through the selected binary"
+        );
+        assert!(
+            content.contains("CTXPACK_REAL_CLIENT_EVIDENCE_DIR"),
+            "{script} must support stable evidence output"
+        );
+        assert!(
+            content.contains("write_evidence"),
+            "{script} must emit machine-checkable evidence on success"
+        );
+        assert!(
+            content.contains("CTXPACK_RUN_REAL_CLIENT")
+                || content.contains("CTXPACK_REQUIRE_REAL_CLIENT"),
+            "{script} must keep real-client execution env-gated"
+        );
     }
+}
+
+#[test]
+fn mcp_protocol_smoke_script_supports_selected_binary() {
+    let script_path = workspace_root().join("scripts/smoke-mcp-protocol.sh");
+    let content = fs::read_to_string(&script_path).unwrap();
+
+    let syntax = StdCommand::new("bash")
+        .arg("-n")
+        .arg(&script_path)
+        .status()
+        .unwrap();
+    assert!(syntax.success(), "scripts/smoke-mcp-protocol.sh failed bash -n");
+
+    assert!(content.contains("CTXPACK_BIN"));
+    assert!(content.contains("serve-mcp"));
+    assert!(
+        content.contains("cargo") && content.contains("run"),
+        "development cargo fallback must remain"
+    );
+    assert!(
+        content.find("CTXPACK_BIN").unwrap() < content.find("serve-mcp").unwrap(),
+        "selected binary handling must be established before serve-mcp launch"
+    );
+    assert!(
+        content.contains("diff_repo=\"$(mktemp -d)\""),
+        "current_diff proof should use an isolated temporary repo"
+    );
+    assert!(
+        content.contains("git -C \"$diff_repo\" init -q"),
+        "temporary current_diff repo must be initialized as a git repo"
+    );
+    assert!(
+        !content.contains("smoke_diff_file=\"$CTXPACK_SMOKE_REPO/$smoke_diff_path\""),
+        "MCP smoke must not create current_diff proof files inside the target repo"
+    );
+    assert!(content.contains("prepare_task"));
+    assert!(content.contains("get_pack"));
+    assert!(content.contains("\"repo\""));
+}
+
+#[test]
+fn first_pack_smoke_script_contract_and_execution() {
+    let script_path = workspace_root().join("scripts/smoke-first-pack.sh");
+    let content = fs::read_to_string(&script_path).unwrap();
+
+    let syntax = StdCommand::new("bash")
+        .arg("-n")
+        .arg(&script_path)
+        .status()
+        .unwrap();
+    assert!(syntax.success(), "scripts/smoke-first-pack.sh failed bash -n");
+
+    for needle in [
+        "CTXPACK_BIN",
+        "command -v ctxpack",
+        "CTXPACK_HOME",
+        "git",
+        "init --repo",
+        "setup-check --repo",
+        "scripts/smoke-mcp-protocol.sh",
+        "prepare-task",
+        "get-pack",
+        "targetFiles",
+        "packOptions",
+        "repoId",
+        "sections",
+    ] {
+        assert!(content.contains(needle), "smoke-first-pack missing {needle}");
+    }
+
+    let output = StdCommand::new("bash")
+        .arg(&script_path)
+        .env("CTXPACK_BIN", env!("CARGO_BIN_EXE_ctxpack"))
+        .output()
+        .unwrap();
+    assert!(
+        output.status.success(),
+        "smoke-first-pack failed\nstdout:\n{}\nstderr:\n{}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    assert!(stdout.contains("ctxpack first-pack smoke ok"));
+    assert!(stdout.contains("binary="));
+    assert!(stdout.contains("repo="));
 }
 
 fn inventory_path_under(home: &Path) -> PathBuf {
@@ -820,6 +1127,15 @@ fn inventory_path_under(home: &Path) -> PathBuf {
         .map(|entry| entry.unwrap().path().join("inventory.json"))
         .find(|path| path.exists())
         .unwrap()
+}
+
+fn workspace_root() -> PathBuf {
+    PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .unwrap()
+        .parent()
+        .unwrap()
+        .to_path_buf()
 }
 
 fn rpc_request(id: u64, method: &str, params: Value) -> String {

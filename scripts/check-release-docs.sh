@@ -1,0 +1,149 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+README="${ROOT_DIR}/README.md"
+RELEASE_DOC="${ROOT_DIR}/docs/release.md"
+QUICKSTART_DOC="${ROOT_DIR}/docs/quickstart.md"
+AGENT_SETUP_DOC="${ROOT_DIR}/docs/agent-setup.md"
+TROUBLESHOOTING_DOC="${ROOT_DIR}/docs/troubleshooting.md"
+
+fail() {
+  echo "release docs check failed: $*" >&2
+  exit 1
+}
+
+require_file() {
+  [[ -f "$1" ]] || fail "missing $1"
+}
+
+require_text() {
+  local file="$1"
+  local text="$2"
+  grep -F -- "$text" "$file" >/dev/null || fail "missing '${text}' in ${file#${ROOT_DIR}/}"
+}
+
+reject_text() {
+  local file="$1"
+  local text="$2"
+  if grep -F -- "$text" "$file" >/dev/null; then
+    fail "unsupported required path '${text}' in ${file#${ROOT_DIR}/}"
+  fi
+}
+
+require_file "${README}"
+require_file "${RELEASE_DOC}"
+require_file "${QUICKSTART_DOC}"
+require_file "${AGENT_SETUP_DOC}"
+require_file "${TROUBLESHOOTING_DOC}"
+
+for file in "${README}" "${RELEASE_DOC}"; do
+  require_text "$file" "ctxpack --version"
+  require_text "$file" "ctxpack --help"
+  require_text "$file" "v1.1.0"
+  require_text "$file" "sha256sums.txt"
+done
+
+require_text "${README}" "ctxpack-v1.1.0"
+require_text "${README}" "shasum -a 256 -c sha256sums.txt"
+require_text "${README}" "sha256sum -c sha256sums.txt"
+require_text "${README}" "docs/quickstart.md"
+require_text "${README}" "docs/release.md"
+require_text "${README}" "docs/agent-setup.md"
+require_text "${README}" "docs/troubleshooting.md"
+require_text "${README}" "ctxpack init --repo"
+require_text "${README}" "ctxpack setup-check --repo"
+require_text "${README}" "ctxpack prepare-task"
+require_text "${README}" "ctxpack get-pack"
+
+require_text "${QUICKSTART_DOC}" "ctxpack --version"
+require_text "${QUICKSTART_DOC}" "ctxpack --help"
+require_text "${QUICKSTART_DOC}" "ctxpack init --repo"
+require_text "${QUICKSTART_DOC}" "ctxpack setup-check --repo"
+require_text "${QUICKSTART_DOC}" "ctxpack prepare-task"
+require_text "${QUICKSTART_DOC}" "ctxpack get-pack"
+require_text "${QUICKSTART_DOC}" "explicit \`--repo\`"
+require_text "${QUICKSTART_DOC}" "session-scoped"
+require_text "${QUICKSTART_DOC}" "get_pack"
+
+require_text "${AGENT_SETUP_DOC}" "Codex CLI"
+require_text "${AGENT_SETUP_DOC}" "Claude Code"
+require_text "${AGENT_SETUP_DOC}" "Cursor"
+require_text "${AGENT_SETUP_DOC}" "OpenCode"
+require_text "${AGENT_SETUP_DOC}" "deterministic protocol proof"
+require_text "${AGENT_SETUP_DOC}" "real-client proof"
+require_text "${AGENT_SETUP_DOC}" "prepare_task"
+require_text "${AGENT_SETUP_DOC}" "get_pack"
+require_text "${AGENT_SETUP_DOC}" "does not claim machine-checkable Cursor"
+require_text "${AGENT_SETUP_DOC}" "does not claim machine-checkable OpenCode"
+
+require_text "${TROUBLESHOOTING_DOC}" "PATH"
+require_text "${TROUBLESHOOTING_DOC}" "absolute"
+require_text "${TROUBLESHOOTING_DOC}" "CTXPACK_HOME"
+require_text "${TROUBLESHOOTING_DOC}" "wrong cwd"
+require_text "${TROUBLESHOOTING_DOC}" "MCP startup"
+require_text "${TROUBLESHOOTING_DOC}" "stdout"
+require_text "${TROUBLESHOOTING_DOC}" "setup-check"
+require_text "${TROUBLESHOOTING_DOC}" "does not run real agent clients"
+require_text "${TROUBLESHOOTING_DOC}" "uninstall"
+require_text "${TROUBLESHOOTING_DOC}" "state cleanup"
+require_text "${TROUBLESHOOTING_DOC}" "session-scoped"
+require_text "${TROUBLESHOOTING_DOC}" "get_pack"
+
+require_text "${RELEASE_DOC}" "scripts/release-package.sh"
+require_text "${RELEASE_DOC}" "scripts/audit-release-artifact.sh"
+require_text "${RELEASE_DOC}" "scripts/release-gate.sh"
+require_text "${RELEASE_DOC}" "scripts/check-release-docs.sh"
+require_text "${RELEASE_DOC}" "scripts/smoke-first-pack.sh"
+require_text "${RELEASE_DOC}" "scripts/smoke-mcp-protocol.sh"
+require_text "${RELEASE_DOC}" "scripts/smoke-codex-mcp.sh"
+require_text "${RELEASE_DOC}" "scripts/smoke-claude-mcp.sh"
+require_text "${RELEASE_DOC}" "CTXPACK_BIN"
+require_text "${RELEASE_DOC}" "CTXPACK_REQUIRE_REAL_CLIENT"
+require_text "${RELEASE_DOC}" "CTXPACK_SKIP_REAL_CLIENT"
+require_text "${RELEASE_DOC}" "CTXPACK_REAL_CLIENT_EVIDENCE_DIR"
+require_text "${RELEASE_DOC}" "cargo test --workspace"
+require_text "${RELEASE_DOC}" "wrong cwd"
+require_text "${RELEASE_DOC}" "does not publish"
+require_text "${RELEASE_DOC}" "does not create tags"
+require_text "${RELEASE_DOC}" "does not mutate global agent config"
+require_text "${RELEASE_DOC}" "does not run user project tests"
+require_text "${RELEASE_DOC}" "Cursor and OpenCode real-client proof is not claimed"
+require_text "${RELEASE_DOC}" "cargo install --git https://github.com/thromel/ctxpack --tag v1.1.0 ctxpack --locked"
+require_text "${RELEASE_DOC}" "cargo install --path crates/ctxpack --locked"
+require_text "${RELEASE_DOC}" "cargo build -p ctxpack --release --locked"
+require_text "${RELEASE_DOC}" "crates.io"
+require_text "${RELEASE_DOC}" "Homebrew"
+require_text "${RELEASE_DOC}" "self-update"
+require_text "${RELEASE_DOC}" "signed installers"
+require_text "${RELEASE_DOC}" "cloud telemetry"
+require_text "${RELEASE_DOC}" "global agent config"
+
+reject_text "${README}" "brew install ctxpack"
+reject_text "${README}" "cargo install ctxpack"
+reject_text "${README}" "cargo run -p ctxpack -- init"
+reject_text "${README}" "cargo run -p ctxpack -- serve-mcp"
+reject_text "${README}" "self-update is required"
+reject_text "${README}" "signed installers are required"
+reject_text "${README}" "cloud telemetry is required"
+reject_text "${README}" "global agent config mutation is required"
+reject_text "${QUICKSTART_DOC}" "cargo run -p ctxpack -- init"
+reject_text "${QUICKSTART_DOC}" "cargo run -p ctxpack -- serve-mcp"
+reject_text "${AGENT_SETUP_DOC}" "Cursor real-client proof"
+reject_text "${AGENT_SETUP_DOC}" "OpenCode real-client proof"
+reject_text "${AGENT_SETUP_DOC}" "Cursor tool-call validation is verified"
+reject_text "${AGENT_SETUP_DOC}" "OpenCode tool-call validation is verified"
+reject_text "${RELEASE_DOC}" "brew install ctxpack"
+reject_text "${RELEASE_DOC}" "cargo install ctxpack"
+reject_text "${RELEASE_DOC}" "gh release create"
+reject_text "${RELEASE_DOC}" "git tag v1.1.0"
+reject_text "${RELEASE_DOC}" "uploads artifacts"
+reject_text "${RELEASE_DOC}" "publishes the release"
+reject_text "${RELEASE_DOC}" "requires Cursor real-client proof"
+reject_text "${RELEASE_DOC}" "requires OpenCode real-client proof"
+reject_text "${RELEASE_DOC}" "self-update is required"
+reject_text "${RELEASE_DOC}" "signed installers are required"
+reject_text "${RELEASE_DOC}" "cloud telemetry is required"
+reject_text "${RELEASE_DOC}" "global agent config mutation is required"
+
+echo "release docs are consistent"

@@ -1,5 +1,6 @@
 .worktrees/
 /target/
+/dist/
 /.ctxpack/cache/
 /.ctxpack/index/
 *.log

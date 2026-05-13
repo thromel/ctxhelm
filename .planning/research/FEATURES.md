@@ -1,191 +1,143 @@
-# Feature Research
+# Feature Research: v1.1 Packaging & Adoption
 
-**Domain:** Local-first agent-native repository context compiler for coding agents
+**Domain:** Local-first agent-native adoption for ctxpack
 **Researched:** 2026-05-13
-**Confidence:** HIGH for agent-native surfaces and local ctxpack state; MEDIUM for competitor feature emphasis because vendor docs expose capabilities but not full ranking internals.
+**Confidence:** HIGH for current ctxpack state and Codex/Claude local CLI behavior; MEDIUM for Cursor/OpenCode config details because they should be rechecked during implementation against current docs and client versions.
 
-## Feature Landscape
+## Scope Recommendation
 
-### Table Stakes (Users Expect These)
+v1.1 should make a completed v1 ctxpack easy to install, initialize, configure in real coding agents, and smoke-test. It should not change retrieval quality, add cloud services, or turn ctxpack into another coding agent.
 
-Features users assume exist. Missing these = product feels incomplete.
+The release should optimize for one user question: "Can I install this, wire it into my agent, prove MCP works, and get my first useful context pack in under ten minutes?"
+
+## Table Stakes
 
 | Feature | Why Expected | Complexity | Notes |
 |---------|--------------|------------|-------|
-| Agent-native setup artifacts | Current coding agents already use repository instruction files such as `AGENTS.md`, `.github/copilot-instructions.md`, `CLAUDE.md`, rules, and MCP configuration. | MEDIUM | Keep `ctxpack init` focused on repo-local `AGENTS.md`, `.ctxpack/ctxpack.toml`, and thin adapter snippets. Do not mutate global client config automatically. |
-| Small MCP tool/resource/prompt surface | MCP standardizes tools, resources, and prompts; coding-agent clients expect typed discovery and structured outputs. | MEDIUM | Preserve a small surface: `prepare_task`, `get_pack`, `search`, `related`, `related_tests`, `current_diff`, plus browsable repo/pack/file/symbol resources and workflow prompts. |
-| Safe repository inventory | Codebase-aware tools index repositories and respect ignore files; users expect generated, vendored, and sensitive files not to pollute context. | HIGH | Must respect `.gitignore`, `.ctxpackignore`, `.cursorignore`, generated-file exclusions, and secret-path exclusions. Add freshness checks before expanding use. |
-| Hybrid local retrieval | Agents can already run `rg`; ctxpack must at least combine exact path anchors, lexical search, symbol search, current diff, dependency hints, related tests, and co-change hints. | HIGH | Retrieval should be typed, source-safe where possible, and explain which signal selected each file. Lexical-only search is not enough post-MVP. |
-| Task-conditioned context plans | The product promise is not "search my repo"; users expect a plan that names target files, tests, validation commands, risk flags, and pack options for a specific task. | MEDIUM | `prepare_task` remains the main product action. Plans should be compact enough for agent use and rich enough for follow-up pack/resource reads. |
-| Related tests and targeted commands | Coding agents are judged by whether their patch is testable; users expect likely tests and runnable commands, not only source files. | HIGH | Include confidence and reason. Improve package-manager/workspace inference and expose weak-command diagnostics rather than pretending certainty. |
-| Budgeted context packs | Agents need brief, standard, and deep context depending on task complexity and model budget. | MEDIUM | Keep Markdown and JSON outputs. Packs may include safe snippets, but every snippet path must be revalidated against current safe inventory before read. |
-| Current-diff awareness | Real agent sessions often start from in-progress changes; users expect changed safe files to anchor bugfix, review, and continuation tasks. | LOW | Keep source text out of `current_diff`; use safe changed paths as anchors for plans and related expansion. |
-| Source-free traces and eval reports | Trust requires measuring retrieval without storing prompts or source snippets. | MEDIUM | Keep traces under local ctxpack state. Add retention and `--no-trace`/config controls so read-like operations remain operationally predictable. |
-| Operational diagnostics | A weak plan should say whether the cause is stale cache, unreadable files, missing git history, skipped large files, parse gaps, or low-information task text. | MEDIUM | This is table stakes for post-MVP trust because otherwise users cannot distinguish product failure from repository/task ambiguity. |
-| Real client compatibility | The product surface is agent-native, so CLI-only success is insufficient. | MEDIUM | Maintain smoke paths for Codex CLI, Claude Code, Cursor/OpenCode-style adapters, and explicit `repo` arguments because MCP servers may launch outside the project cwd. |
+| Copy-paste quickstart | Adoption fails if users must infer command order from the full README. | LOW | Put one happy path first: install, `ctxpack init`, `ctxpack smoke mcp`, agent setup, first `prepare-task`/`get-pack`. |
+| Init setup report | `ctxpack init` already writes repo-local files, but users need a clear "what changed / what next" report. | LOW | Report generated files, skipped/unchanged files, exact MCP command, and next smoke command. Keep JSON output available for tests. |
+| Agent profile generation | Users expect first-class setup for Codex, Claude Code, Cursor, and OpenCode. | MEDIUM | Keep one stable ctxpack core. Generate thin per-agent artifacts and snippets; do not fork planner behavior by agent. |
+| Codex MCP guidance | Codex MCP config is user/global state, so setup must be explicit and inspectable. | LOW | Print `codex mcp add ctxpack -- ctxpack serve-mcp` and an equivalent config snippet. Do not mutate global Codex config by default. |
+| Claude project setup | Claude Code supports project-scoped MCP config and slash-command workflows. | MEDIUM | Keep `.claude/commands/ctxpack-bugfix.md`; add a clearer project `.mcp.json` merge/write option or exact `claude mcp add-json --scope project` command. |
+| Cursor rules setup | Cursor users expect repo-local rules under `.cursor/rules/`. | LOW | Keep `.cursor/rules/ctxpack.mdc` small and always focused on calling dynamic ctxpack/MCP context rather than injecting a repo map. |
+| OpenCode setup snippet | OpenCode users need a mergeable local MCP config snippet. | MEDIUM | Keep `.ctxpack/adapters/opencode.jsonc.snippet`, but document where to merge it and provide a lint/check command. |
+| Smoke command ladder | Users need to distinguish ctxpack brokenness from client auth/model issues. | MEDIUM | Make deterministic protocol smoke the hard gate, then optional Codex/Claude real-client smokes. Cursor/OpenCode can start with config/artifact validation unless a machine-checkable client smoke is available. |
+| Doctor/troubleshooting output | MCP setup fails for PATH, cwd, repo arg, permissions, stale cache, or client config reasons. | MEDIUM | Add `ctxpack doctor` or `ctxpack smoke --explain` that checks binary path, repo root, inventory, MCP initialize/tools, and setup files. |
+| First useful pack journey | The first success should show visible value, not just config success. | LOW | Quickstart should end with `ctxpack prepare-task "..." --repo . --path ...` and `ctxpack get-pack "..." --repo . --budget brief`. |
+| Release artifact verification | Packaging is adoption work only if users can install without building from source. | MEDIUM | Gate release with binary install check, `ctxpack --help`, `ctxpack init`, protocol smoke, and generated config snapshot tests. |
 
-### Differentiators (Competitive Advantage)
-
-Features that set the product apart. Not required for a generic repo search tool, but critical for proving ctxpack is better than agents doing grep themselves.
+## Differentiators
 
 | Feature | Value Proposition | Complexity | Notes |
 |---------|-------------------|------------|-------|
-| Measured lift over lexical/grep baseline | Converts "better context" from a claim into evidence. | HIGH | Make historical eval the product scorecard: File Recall@5/10, Source Recall, Test Recall, test recommendation rate, missing-role breakdown, and ctxpack-vs-lexical lift. This is the top post-MVP differentiator. |
-| Graph-first context expansion | Finds related implementation, tests, examples, configs, and constraints that text search misses. | HIGH | Promote dependency edges, co-change clusters, symbol relationships, and current-diff anchors into first-class ranking features rather than only risk-flag evidence. |
-| Evidence-set compiler, not search results | Agents need the smallest useful evidence set, ordered by actionability. | HIGH | Compile target files, related tests, examples, constraints, commands, risk flags, and checklist sections into one task-conditioned object. |
-| Signal attribution and rationale | Lets users and agents understand why a file was recommended. | MEDIUM | For every selected file/test, expose signals such as lexical, symbol, path anchor, current diff, dependency, co-change, test mapping, and examples. This makes debugging retrieval possible. |
-| Source-free provenance | Enables cloud-agent handoff and local audit without leaking source or prompt text. | MEDIUM | Preserve `repoId`, `taskHash`, `targetAgent`, privacy status, and source-free cards/traces. This is stronger than generic codebase indexing when privacy matters. |
-| Agent-specific shaping | Different clients load instructions, rules, prompts, and MCP resources differently. | MEDIUM | Generate thin Codex/Claude/Cursor/OpenCode/GitHub Copilot guidance around one stable core contract instead of branching product logic per agent. |
-| Dynamic context discovery assets | Cursor's 2026 direction favors fewer static tokens and more pull-on-demand context. | MEDIUM | Keep static AGENTS/rules small. Put deeper packs, cards, file slices, symbol resources, and diagnostics behind discoverable MCP/resources so agents fetch only when needed. |
-| Freshness-aware incremental local cache | Users trust results only if active repo changes are reflected. | HIGH | Add cheap invalidation using inventory metadata, ignore-file hashes, file mtimes/sizes/hashes, tool version, and scan options. Rebuild or warn before plans/search use stale inventory. |
-| Configurable privacy policy | Local-first value depends on repo-specific secret and generated-file conventions. | MEDIUM | Move hard-coded denylist into a tested policy module with default conservative rules plus opt-in project config for secret paths, generated paths, vendored paths, and safe exceptions. |
-| Historical retrieval gap reports | Makes roadmap work data-driven by showing which roles/signals are missed. | MEDIUM | Rank recurring misses by role and path family, e.g. docs/config/test files lagging source recall. Feed this into feature prioritization. |
-| Persistent/reconstructable MCP pack resources | Real MCP clients reconnect, parallelize, and launch multiple server processes. | MEDIUM | Either persist pack metadata by task id or make pack resources regenerate from source-free plan/provenance. This differentiates ctxpack from session-fragile demos. |
-| Local context cards for disconnected/cloud agents | Gives non-local or disconnected agents source-free orientation without uploading repository contents. | LOW | Keep deterministic `.ctxpack/cards/` summaries for repo overview, tests, and dependency graph. Treat cards as handoff artifacts, not full source context. |
+| Agent-native first-run UX | ctxpack feels like it belongs inside existing agents instead of asking users to change workflows. | MEDIUM | Keep AGENTS.md, MCP, and thin adapter files as the product surface. CLI remains setup/debug automation. |
+| Machine-checkable client proof | Claims about Codex/Claude integrations are credible only when tool calls are proven. | MEDIUM | Preserve server-side request logging in smoke scripts and require `prepare_task` plus `get_pack` with explicit `repo`. |
+| Explicit non-mutation policy | Users trust setup more when global config writes are visible and optional. | LOW | Default to repo-local writes and printed commands/snippets. Add opt-in apply modes only after dry-run output is stable. |
+| Configuration linting | Config generation is less valuable if users cannot validate it before opening an agent. | MEDIUM | Add checks for generated files, JSON syntax, command availability, and whether `ctxpack serve-mcp` starts from a wrong cwd. |
+| One-page adoption docs | A concise quickstart lowers the cost of trying ctxpack on another repo. | LOW | Split "Quickstart" from "Reference"; keep troubleshooting close to setup commands. |
 
-### Anti-Features (Commonly Requested, Often Problematic)
+## Anti-Features
 
-Features that seem good but create problems.
+| Anti-Feature | Why Avoid | What to Do Instead |
+|--------------|-----------|-------------------|
+| Auto-editing global Codex/Claude/OpenCode config by default | Hidden MCP server registration is a trust problem and can affect unrelated projects. | Print exact commands/snippets; offer explicit `--apply` later only with dry-run and confirmation semantics. |
+| Running user project tests in smoke commands | ctxpack is read-only and should not own project execution permissions. | Smoke ctxpack/MCP/client behavior; recommend validation commands in packs. |
+| Retrieval-quality expansion in v1.1 | v1.1 is packaging/adoption; broad ranking work will blur acceptance criteria. | Defer to v1.2 Retrieval Quality Proof. |
+| Standalone UI or chat app | Adds a new daily surface and conflicts with the agent-native product thesis. | Keep setup/docs/CLI/MCP focused on existing agents. |
+| Cloud indexing or hosted setup | Violates local-first positioning and creates privacy review before adoption proof. | Ship local binaries, local config, local smokes. |
+| Full Cursor/OpenCode real-client automation without reliable evidence | A passing transcript without tool-call proof can become a false compatibility claim. | Start with generated-artifact validation; add real-client smoke only when machine-checkable. |
+| Large static instruction files | Token-heavy rules become stale and compete with agent instructions. | Keep static guidance short; point to MCP `prepare_task` and `get_pack`. |
 
-| Feature | Why Requested | Why Problematic | Alternative |
-|---------|---------------|-----------------|-------------|
-| Autonomous editing, test execution, dependency install, or commits | Looks like a complete coding agent. | Duplicates Codex/Claude/Cursor responsibilities and breaks the read-only trust contract. | Stay a context compiler; recommend files, tests, commands, and constraints. |
-| Cloud indexing, cloud embeddings, or cloud reranking by default | Promises semantic search and large-repo scale. | Undercuts local-first privacy and creates vendor/backend trust questions. | Default to local lexical/symbol/graph/history; consider optional local semantic search only if eval proves lift. |
-| Standalone chat app or editor replacement | Gives a visible product surface. | Users already work in coding agents and IDEs; a separate daily UI adds adoption friction. | Keep AGENTS.md, MCP, cards, and thin native adapters as the product surface. |
-| Giant static repo map injected into every session | Feels comprehensive. | Consumes tokens, becomes stale, and can reduce instruction adherence. | Use compact always-on guidance plus dynamic MCP resources/packs. |
-| Large MCP tool catalog | More tools seem more capable. | Long tool descriptions bloat context and increase client decision complexity. | Maintain a small tool surface with typed parameters and richer resources behind it. |
-| Sourceful telemetry or prompt logging | Easier debugging and eval. | Violates privacy expectations and blocks use on sensitive repositories. | Store task hashes, path labels, roles, signal metadata, and source-free metrics. |
-| Silent fallback to empty results | Avoids surfacing errors. | Agents misread infrastructure failures as "nothing relevant exists." | Return structured warnings for stale cache, unreadable files, parse failures, git timeouts, and skipped files. |
-| Language-perfect static analysis as the next goal | Sounds rigorous. | It can consume months before proving user value and still miss framework conventions. | Add parser-backed improvements only where historical eval or dogfood gaps show retrieval lift. |
-| Insecure one-click MCP/global config mutation | Makes setup frictionless. | Local MCP server commands execute with user privileges; hidden global mutation damages trust. | Print/copy explicit config snippets, show exact commands, and keep repo-local generated artifacts. |
-| Indexing every file by default including generated/vendor/secret-like paths | Maximizes recall. | Pollutes rankings, slows indexing, and risks source/secret exposure. | Exclude by default, report exclusions, and require explicit opt-in with visible privacy status. |
+## Quickstart Journey
+
+Recommended docs flow:
+
+```bash
+# 1. Install or build ctxpack
+ctxpack --help
+
+# 2. Initialize the repository
+ctxpack init --repo . --cursor --claude --opencode
+
+# 3. Prove the local MCP server works without any agent auth
+ctxpack smoke mcp --repo .
+
+# 4. Add one agent integration explicitly
+codex mcp add ctxpack -- ctxpack serve-mcp
+# or: claude mcp add-json --scope project ctxpack '{"command":"ctxpack","args":["serve-mcp"]}'
+
+# 5. Optional real-client proof where supported
+ctxpack smoke codex --repo .
+ctxpack smoke claude --repo .
+
+# 6. Get first useful context
+ctxpack prepare-task "fix the failing auth session test" --repo .
+ctxpack get-pack "fix the failing auth session test" --repo . --budget brief
+```
+
+Implementation note: existing scripts already cover protocol, Codex, and Claude smoke paths. v1.1 should wrap or document them as user-facing commands so users do not need to discover `scripts/`.
+
+## Agent Setup Matrix
+
+| Agent | v1.1 Output | Default Write Scope | Smoke Gate | Recommendation |
+|-------|-------------|---------------------|------------|----------------|
+| Codex CLI | Printed `codex mcp add ctxpack -- ctxpack serve-mcp` plus config snippet. | No global mutation by default. | Protocol smoke, optional real-client smoke with isolated `CODEX_HOME`. | Treat Codex setup as explicit user action. Current local CLI supports `codex mcp add`. |
+| Claude Code | `.claude/commands/ctxpack-bugfix.md` plus `.mcp.json` snippet or explicit `claude mcp add-json --scope project`. | Repo/project-local. | Protocol smoke, optional real-client smoke with strict MCP config. | Make project setup the smoothest path because Claude supports project-scoped MCP. |
+| Cursor | `.cursor/rules/ctxpack.mdc`. | Repo-local. | Generated-file lint plus protocol smoke. | Keep the rule tiny; instruct Cursor to use MCP/dynamic context when configured. |
+| OpenCode | `.ctxpack/adapters/opencode.jsonc.snippet` and docs for merge location. | Repo-local snippet by default. | Generated-file lint plus protocol smoke. | Avoid claiming full client proof until an automated OpenCode MCP smoke can verify tool calls. |
 
 ## Feature Dependencies
 
-```
-Safe inventory + privacy policy
-    |--requires--> Freshness/invalidation metadata
-    |--enables--> Hybrid retrieval
-    |--enables--> MCP file/symbol resources
-    `--enables--> Safe snippets in packs
-
-Hybrid retrieval
-    |--requires--> Lexical + symbol + path/current-diff anchors
-    |--enhanced-by--> Dependency graph + co-change history
-    |--enhanced-by--> Related test inference
-    `--feeds--> Task-conditioned context plan
-
-Task-conditioned context plan
-    |--feeds--> Budgeted context packs
-    |--feeds--> MCP pack resources
-    |--feeds--> Source-free traces
-    `--requires--> Signal attribution + diagnostics
-
-Historical eval
-    |--requires--> Source-free labels and traces
-    |--measures--> Hybrid retrieval lift
-    `--prioritizes--> Graph/test/example/constraint improvements
-
-Agent-native adapters
-    |--requires--> Stable core contracts
-    |--requires--> Small static instructions
-    `--enhanced-by--> Dynamic pack/resources/cards
-
-Cloud indexing by default
-    `--conflicts--> Local-first privacy contract
+```text
+Release install artifact
+  -> ctxpack --help
+  -> ctxpack init report
+  -> generated adapter files/snippets
+  -> protocol smoke
+  -> optional real-client smokes
+  -> first prepare-task/get-pack quickstart
 ```
 
-### Dependency Notes
+```text
+Agent config generation
+  -> exact command/snippet output
+  -> config lint
+  -> no hidden global mutation
+  -> troubleshooting docs
+```
 
-- **Safe inventory requires freshness metadata:** every search, plan, pack, file resource, symbol resource, and current-diff expansion inherits privacy and correctness from inventory. Stale inventory is therefore a feature blocker, not only a cache bug.
-- **Graph/test expansion requires hybrid retrieval:** graph edges and related tests should rerank or expand already plausible candidates; used alone, they can flood plans with noisy neighbors.
-- **Historical eval requires source-free labels:** the product cannot rely on sourceful logs to prove retrieval quality because privacy is part of the value proposition.
-- **Agent-specific shaping requires stable contracts:** adapters should change prompts and setup files, not fork the planner output schema.
-- **Dynamic context discovery requires small static instructions:** if AGENTS/rules become huge, ctxpack loses the main advantage of on-demand MCP resources and budgeted packs.
-- **Cloud indexing conflicts with local-first defaults:** optional remote features can be revisited later, but default behavior must remain local-only.
+## v1.1 MVP Recommendation
 
-## MVP Definition
+Prioritize:
 
-### Current MVP Baseline (Already Present)
+1. **Quickstart and init report** - the shortest path from install to first pack.
+2. **Agent setup matrix** - Codex, Claude, Cursor, OpenCode generation with explicit write scope.
+3. **Smoke command ladder** - protocol hard gate, optional Codex/Claude real-client proof, config lint for Cursor/OpenCode.
+4. **Troubleshooting/doctor** - PATH, repo arg, wrong cwd, MCP startup, generated config, and stale inventory diagnostics.
 
-Minimum viable product already exists in this brownfield codebase.
+Defer:
 
-- [x] Agent-native initialization through `AGENTS.md`, `.ctxpack/ctxpack.toml`, and thin adapters.
-- [x] MCP tools/resources/prompts around task prep, search, related files, packs, tests, and current diff.
-- [x] Safe local inventory with generated/sensitive exclusions and ignore-file support.
-- [x] Hybrid retrieval across lexical, symbols, related tests, dependency hints, current diff, and co-change hints.
-- [x] Budgeted context packs with Markdown/JSON output and source-free provenance.
-- [x] Source-free traces, historical eval, and deterministic context cards.
+- Cursor/OpenCode real-client smoke unless tool-call evidence can be captured reliably.
+- Any retrieval-ranking changes; v1.1 should not move eval baselines.
+- Hosted installers, UI, team policy, and cloud indexing.
 
-### Add After Validation (Post-MVP P1)
+## Acceptance Gates
 
-Features to add now because they directly determine whether ctxpack beats agent grep.
-
-- [ ] Graph-first ranking lift - promote dependency/co-change/test signals into file selection and prove File Recall@5/10 lift over lexical baseline.
-- [ ] Inventory freshness and cache diagnostics - prevent stale or unsafe recommendations in active repositories.
-- [ ] Weak-plan diagnostics - explain missing git, parse gaps, skipped files, unreadable files, stale cache, and low-signal prompts.
-- [ ] Privacy policy hardening - broaden secret filename coverage and support repo-specific policy config.
-- [ ] Signal attribution - show why each file/test/command was selected.
-
-### Future Consideration (v2+)
-
-Features to defer until measured local context quality is strong.
-
-- [ ] Optional local semantic retrieval - add only if historical eval shows lift beyond lexical+symbol+graph and it remains local by default.
-- [ ] Parser-backed language plugins - prioritize languages and constructs that historical eval identifies as recurring misses.
-- [ ] Multi-repo/workspace context - defer until single-repo freshness, graph, and privacy are reliable.
-- [ ] Team/shared index reuse - useful for large repos, but it introduces trust, access-control, and cache-coherency complexity.
-- [ ] Hosted enterprise sync/admin - outside the current local-first product contract.
-
-## Feature Prioritization Matrix
-
-| Feature | User Value | Implementation Cost | Priority |
-|---------|------------|---------------------|----------|
-| Graph-first ranking lift | HIGH | HIGH | P1 |
-| Inventory freshness/invalidation | HIGH | HIGH | P1 |
-| Operational weak-plan diagnostics | HIGH | MEDIUM | P1 |
-| Privacy policy hardening/config | HIGH | MEDIUM | P1 |
-| Signal attribution per recommendation | HIGH | MEDIUM | P1 |
-| Related test command confidence improvements | HIGH | HIGH | P1 |
-| Persistent/reconstructable MCP pack resources | MEDIUM | MEDIUM | P2 |
-| Historical gap reports by role/signal | MEDIUM | MEDIUM | P2 |
-| Agent-specific adapter refinements | MEDIUM | MEDIUM | P2 |
-| Context card expansion | MEDIUM | LOW | P2 |
-| Optional local semantic retrieval | MEDIUM | HIGH | P3 |
-| Multi-repo workspace context | MEDIUM | HIGH | P3 |
-| Team/shared index reuse | MEDIUM | HIGH | P3 |
-| Hosted backend/admin | LOW | HIGH | P3 |
-
-**Priority key:**
-- P1: Must have for post-MVP proof
-- P2: Should have once quality and reliability are stable
-- P3: Future consideration after local-first value is proven
-
-## Competitor Feature Analysis
-
-| Feature | Cursor | Claude/GitHub/Copilot/VS Code | Aider/Sourcegraph/Continue | Our Approach |
-|---------|--------|--------------------------------|----------------------------|--------------|
-| Instruction files | Rules, skills, and context discovery are part of the agent harness. | Claude uses `CLAUDE.md`; GitHub/VS Code support repository instructions and `AGENTS.md`. | Aider has repo conventions but less cross-agent instruction standardization. | Generate portable `AGENTS.md` plus thin native adapters; keep static files small and source-controlled. |
-| Codebase retrieval | Cursor emphasizes codebase indexing, semantic search, secure large-repo indexing, and dynamic context discovery. | Coding agents can inspect files and use MCP/tooling, but retrieval quality varies by client. | Sourcegraph Cody uses search-backed context; Continue historically combined embeddings and keyword search; Aider uses repo maps. | Stay local-first and typed: lexical + symbols + graph + tests + history + current diff, measured against a lexical baseline. |
-| Context budgeting | Cursor explicitly optimizes dynamic context and tool-token usage. | Claude docs warn instruction files consume context and favor concise/path-scoped rules. | Aider repo maps compress whole-repo symbols into context. | Budgeted packs and resources should let agents pull brief/standard/deep context on demand. |
-| Test and validation selection | Often handled by the agent reading repo scripts or IDE/test integrations. | Instruction files commonly encode build/test commands. | Search tools can find tests but usually do not compile targeted validation plans. | Make likely tests, command confidence, and validation plans first-class outputs. |
-| Privacy posture | Cursor documents secure indexing mechanics but indexing may involve service-side components depending on product mode. | Claude/Copilot docs focus on instruction and client behavior, not ctxpack-style source-free eval. | Continue legacy codebase indexing used local embeddings by default; Sourcegraph can be managed/self-hosted. | Default local-only, source-free traces/cards, safe snippets only after inventory filtering. |
-| Quality proof | Cursor publishes eval-style claims for semantic search and token reductions. | Client docs describe mechanisms more than retrieval metrics. | Aider/Sourcegraph/Continue describe context mechanisms, not per-repo historical recall lift. | Use `ctxpack eval history` as the proof engine and roadmap feedback loop. |
+| Gate | Required Proof |
+|------|----------------|
+| Install smoke | Fresh shell can run `ctxpack --help`. |
+| Init smoke | Temp repo init creates/updates only expected repo-local files and prints next steps. |
+| Config snapshots | Generated Codex/Claude/Cursor/OpenCode artifacts are snapshot-tested. |
+| Protocol smoke | MCP initialize/tools plus `prepare_task`/`get_pack` pass from wrong cwd with explicit `repo`. |
+| Codex smoke | Optional/required mode records `prepare_task` and `get_pack` tool calls with explicit `repo`. |
+| Claude smoke | Optional/required mode records `prepare_task` and `get_pack` tool calls with explicit `repo`. |
+| Docs smoke | Quickstart commands are copy-pasteable and match current CLI flags. |
 
 ## Sources
 
-- Project context: `.planning/PROJECT.md`, `.planning/codebase/ARCHITECTURE.md`, `.planning/codebase/CONCERNS.md`, `README.md` (HIGH confidence for current ctxpack state).
-- Model Context Protocol server concepts: https://modelcontextprotocol.io/docs/learn/server-concepts (HIGH confidence for MCP tools/resources/prompts shape).
-- Model Context Protocol security best practices: https://modelcontextprotocol.io/docs/tutorials/security/security_best_practices (HIGH confidence for least-privilege/local-server safety implications).
-- Claude Code memory/instructions docs: https://code.claude.com/docs/en/memory (HIGH confidence for `CLAUDE.md`, path rules, `AGENTS.md` import, and instruction-size guidance).
-- GitHub Copilot repository instructions: https://docs.github.com/en/copilot/how-tos/copilot-on-github/customize-copilot/add-custom-instructions/add-repository-instructions (HIGH confidence for `AGENTS.md` and repository/path-specific instructions).
-- VS Code Copilot custom instructions: https://code.visualstudio.com/docs/copilot/customization/custom-instructions (HIGH confidence for always-on and file-based instruction patterns).
-- Cursor dynamic context discovery, Jan 6 2026: https://cursor.com/blog/dynamic-context-discovery (MEDIUM confidence; vendor research/blog, but directly relevant to context budgeting).
-- Cursor secure codebase indexing, Jan 27 2026: https://cursor.com/blog/secure-codebase-indexing (MEDIUM confidence; vendor research/blog, useful for large-repo indexing expectations).
-- Aider repository map docs: https://aider.chat/docs/repomap.html (HIGH confidence for repo-map feature framing).
-- Sourcegraph Cody context docs: https://sourcegraph.com/docs/cody/core-concepts/context (HIGH confidence for search-backed context framing).
-- Continue deprecated codebase provider docs: https://docs.continue.dev/reference/deprecated-codebase (MEDIUM confidence for historical local embedding + keyword expectations; feature is explicitly deprecated).
-
----
-*Feature research for: local-first agent-native repo context compiler*
-*Researched: 2026-05-13*
+- Local project state: `.planning/PROJECT.md`, `.planning/REQUIREMENTS.md`, `README.md`, `crates/ctxpack-core/src/init.rs`, `scripts/smoke-mcp-protocol.sh`, `scripts/smoke-codex-mcp.sh`, `scripts/smoke-claude-mcp.sh` (HIGH confidence).
+- Local CLI checks on 2026-05-13: `codex-cli 0.130.0` supports `codex mcp add <name> -- <command>`; Claude Code `2.1.140` supports `claude mcp add-json --scope <local|user|project>`; OpenCode `1.14.25` exposes `opencode mcp add/list/auth/logout/debug` (HIGH confidence for this machine).
+- Claude Code MCP docs: https://code.claude.com/docs/en/mcp (HIGH confidence for Claude MCP setup concepts).
+- Cursor rules docs: https://docs.cursor.com/context/rules (MEDIUM confidence; verify exact MDC fields during implementation).
+- OpenCode config/MCP docs: https://opencode.ai/docs/config/ and https://opencode.ai/docs/mcp-servers/ (MEDIUM confidence; verify schema during implementation).
+- Model Context Protocol server concepts: https://modelcontextprotocol.io/docs/learn/server-concepts (HIGH confidence for tools/resources/prompts framing).

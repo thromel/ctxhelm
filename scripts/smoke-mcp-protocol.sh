@@ -17,6 +17,11 @@ if [[ ! -d "$CTXPACK_SMOKE_REPO" ]]; then
   exit 1
 fi
 
+if [[ -n "${CTXPACK_BIN:-}" && ! -x "$CTXPACK_BIN" ]]; then
+  echo "CTXPACK_BIN is not executable: $CTXPACK_BIN" >&2
+  exit 1
+fi
+
 created_home=0
 if [[ -z "${CTXPACK_HOME:-}" ]]; then
   CTXPACK_HOME="$(mktemp -d)"
@@ -24,11 +29,12 @@ if [[ -z "${CTXPACK_HOME:-}" ]]; then
 fi
 
 server_cwd="$(mktemp -d)"
-smoke_diff_path="ctxpack_smoke_current_diff_$$.rs"
-smoke_diff_file="$CTXPACK_SMOKE_REPO/$smoke_diff_path"
+diff_repo="$(mktemp -d)"
+smoke_diff_path="src/ctxpack_smoke_current_diff_$$.rs"
+smoke_diff_file="$diff_repo/$smoke_diff_path"
 
 cleanup() {
-  rm -f "$smoke_diff_file"
+  rm -rf "$diff_repo"
   rm -rf "$server_cwd"
   if [[ "$created_home" == "1" ]]; then
     rm -rf "$CTXPACK_HOME"
@@ -36,34 +42,40 @@ cleanup() {
 }
 trap cleanup EXIT
 
+git -C "$diff_repo" init -q
+mkdir -p "$(dirname "$smoke_diff_file")"
 printf 'pub fn ctxpack_smoke_current_diff() {}\n' >"$smoke_diff_file"
 export CTXPACK_HOME
 
-python3 - "$CTXPACK_ROOT" "$CTXPACK_SMOKE_REPO" "$CTXPACK_SMOKE_TASK" "$CTXPACK_SMOKE_PATH" "$CTXPACK_SMOKE_QUERY" "$server_cwd" "$smoke_diff_path" <<'PY'
+python3 - "$CTXPACK_ROOT" "$CTXPACK_SMOKE_REPO" "$CTXPACK_SMOKE_TASK" "$CTXPACK_SMOKE_PATH" "$CTXPACK_SMOKE_QUERY" "$server_cwd" "$diff_repo" "$smoke_diff_path" "${CTXPACK_BIN:-}" <<'PY'
 import json
 import os
 import subprocess
 import sys
 from pathlib import Path
 
-root, repo, task, anchor_path, query, server_cwd, smoke_diff_path = sys.argv[1:]
+root, repo, task, anchor_path, query, server_cwd, diff_repo, smoke_diff_path, ctxpack_bin = sys.argv[1:]
 repo_path = Path(repo).resolve()
+diff_repo_path = Path(diff_repo).resolve()
 anchor = repo_path / anchor_path
 if not anchor.exists():
     raise SystemExit(f"anchor path does not exist in CTXPACK_SMOKE_REPO: {anchor_path}")
 
 env = os.environ.copy()
-command = [
-    "cargo",
-    "run",
-    "--quiet",
-    "--manifest-path",
-    str(Path(root) / "Cargo.toml"),
-    "-p",
-    "ctxpack",
-    "--",
-    "serve-mcp",
-]
+if ctxpack_bin:
+    command = [ctxpack_bin, "serve-mcp"]
+else:
+    command = [
+        "cargo",
+        "run",
+        "--quiet",
+        "--manifest-path",
+        str(Path(root) / "Cargo.toml"),
+        "-p",
+        "ctxpack",
+        "--",
+        "serve-mcp",
+    ]
 server = subprocess.Popen(
     command,
     cwd=server_cwd,
@@ -200,7 +212,7 @@ try:
         tool(
             "current_diff",
             {
-                "repo": str(repo_path),
+                "repo": str(diff_repo_path),
                 "includeUntracked": True,
             },
         ),

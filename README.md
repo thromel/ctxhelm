@@ -8,36 +8,80 @@ The MVP exposes compact task context through:
 - MCP tools/resources/prompts for dynamic context
 - Thin native adapter files for Codex, Claude Code, Cursor, and OpenCode
 
-## Development
+ctxpack does not edit source code, run your project tests, install dependencies, or mutate global agent configuration. It writes repo-local guidance, optional adapter snippets, and local ctxpack state.
+
+## Install v1.1.0
+
+The v1.1.0 install path is a prebuilt GitHub Releases-style archive named like `ctxpack-v1.1.0-aarch64-apple-darwin.tar.gz` or `ctxpack-v1.1.0-x86_64-unknown-linux-gnu.tar.gz`.
+
+Download the archive and checksum file for your platform, then verify the SHA-256 checksums:
 
 ```bash
-cargo test --workspace
-cargo run -p ctxpack -- --help
+shasum -a 256 -c sha256sums.txt
+sha256sum -c sha256sums.txt
 ```
 
-## Initialization
-
-Initialize a repository with the portable AGENTS.md guidance and `.ctxpack/ctxpack.toml`:
+Extract the archive and put the binary on your `PATH`:
 
 ```bash
-cargo run -p ctxpack -- init --repo /path/to/repo
+tar -xzf ctxpack-v1.1.0-aarch64-apple-darwin.tar.gz
+install -m 0755 ctxpack-v1.1.0-aarch64-apple-darwin/ctxpack ~/.local/bin/ctxpack
+ctxpack --version
+ctxpack --help
 ```
 
-Generate optional native adapter files:
+The expected version diagnostic is `ctxpack 1.1.0`. See [docs/release.md](docs/release.md) for release details, source-build fallbacks, and maintainer packaging checks.
+
+## Install To First Pack
+
+Start from the installed `ctxpack` binary and an existing git repository:
 
 ```bash
-cargo run -p ctxpack -- init --repo /path/to/repo --cursor --claude --opencode
+ctxpack --version
+ctxpack --help
+export REPO=/path/to/repo
 ```
 
-`ctxpack init` writes only repo-local files. It prints Codex MCP setup guidance but does not mutate global Codex configuration.
-`--claude` writes a slash-command file plus `.ctxpack/adapters/claude-mcp.json`, a project MCP config snippet you can copy or merge into `.mcp.json`.
+Initialize repo-local guidance and optional agent snippets:
+
+```bash
+ctxpack init --repo "$REPO" --cursor --claude --opencode
+ctxpack setup-check --repo "$REPO" --cursor --claude --opencode
+```
+
+Ask for a task plan with an explicit repo and, when you know it, an active file path:
+
+```bash
+ctxpack prepare-task "fix requireSession bug" \
+  --repo "$REPO" \
+  --mode bug-fix \
+  --path src/auth/session.ts
+```
+
+Materialize a compact context pack for the same task:
+
+```bash
+ctxpack get-pack "fix requireSession bug" \
+  --repo "$REPO" \
+  --mode bug-fix \
+  --budget brief
+```
+
+For the longer walkthrough, including setup validation, deterministic MCP proof context, and how to interpret pack options, see [docs/quickstart.md](docs/quickstart.md).
+
+## More Docs
+
+- [First-pack quickstart](docs/quickstart.md)
+- [Release and install guide](docs/release.md)
+- [Agent setup matrix](docs/agent-setup.md)
+- [Troubleshooting](docs/troubleshooting.md)
 
 ## MCP Runtime
 
 Start the local stdio MCP server:
 
 ```bash
-cargo run -p ctxpack -- serve-mcp
+ctxpack serve-mcp
 ```
 
 Implemented MCP tools:
@@ -63,8 +107,9 @@ Implemented MCP resources include `ctxpack://repo/summary`, package-aware `ctxpa
 
 Current local smoke status:
 
-- Claude Code `2.1.92`: end-to-end MCP tool use verified with `.mcp.json`, `--strict-mcp-config`, and an explicit `repo` argument. Claude connected to ctxpack, called `prepare_task`, and received target files plus `pnpm vitest run <test>` validation.
-- Codex CLI `0.130.0`: end-to-end MCP `prepare_task` use verified with a temporary `CODEX_HOME`, configured ctxpack server, explicit `repo` argument, and non-interactive approval bypass for the smoke run.
+- Deterministic protocol proof is the required release gate: direct JSON-RPC/MCP calls verify `prepare_task`, `get_pack`, `search`, `related`, `related_tests`, `current_diff`, and same-session pack-resource reads with an explicit `repo`.
+- Codex CLI `0.130.0`: optional real-client smoke support can require source-free server-side evidence for both `prepare_task` and `get_pack` with an isolated `CODEX_HOME`.
+- Claude Code `2.1.140`: optional real-client smoke support can require source-free server-side evidence for both `prepare_task` and `get_pack` with strict MCP config.
 
 When using ctxpack through MCP, pass the active repository path as `repo` whenever the client knows it. Some clients launch MCP servers from a different working directory than the project they expose.
 
@@ -73,7 +118,7 @@ When using ctxpack through MCP, pass the active repository path as `repo` whenev
 Build the local file inventory for a repository:
 
 ```bash
-cargo run -p ctxpack -- index --repo /path/to/repo
+ctxpack index --repo /path/to/repo
 ```
 
 The inventory respects `.gitignore`, `.ctxpackignore`, and `.cursorignore`, excludes sensitive/generated files by default, and writes JSON under `~/.ctxpack/repos/<repo-id>/inventory.json`.
@@ -81,7 +126,7 @@ The inventory respects `.gitignore`, `.ctxpackignore`, and `.cursorignore`, excl
 Generated and sensitive files require explicit opt-in:
 
 ```bash
-cargo run -p ctxpack -- index --repo /path/to/repo --include-generated --include-sensitive
+ctxpack index --repo /path/to/repo --include-generated --include-sensitive
 ```
 
 ## Lexical Search
@@ -89,7 +134,7 @@ cargo run -p ctxpack -- index --repo /path/to/repo --include-generated --include
 Search the safe inventory:
 
 ```bash
-cargo run -p ctxpack -- search "requireSession" --repo /path/to/repo --limit 5
+ctxpack search "requireSession" --repo /path/to/repo --limit 5
 ```
 
 If no inventory exists for the repo, `ctxpack search` builds one using the safe default inventory rules before searching.
@@ -99,13 +144,13 @@ If no inventory exists for the repo, `ctxpack search` builds one using the safe 
 Extract language-aware symbols from safe inventoried files:
 
 ```bash
-cargo run -p ctxpack -- symbols --repo /path/to/repo --limit 20
+ctxpack symbols --repo /path/to/repo --limit 20
 ```
 
 Search symbols by name, path, or signature:
 
 ```bash
-cargo run -p ctxpack -- symbols --repo /path/to/repo --query requireSession --limit 5
+ctxpack symbols --repo /path/to/repo --query requireSession --limit 5
 ```
 
 The current local extractor covers TypeScript/JavaScript, Python, Rust, and Go definitions. MCP symbol resources use the same symbol search path through `ctxpack://symbol/<query>`.
@@ -115,7 +160,7 @@ The current local extractor covers TypeScript/JavaScript, Python, Rust, and Go d
 Find likely tests for changed source files:
 
 ```bash
-cargo run -p ctxpack -- related-tests src/auth/session.ts --repo /path/to/repo
+ctxpack related-tests src/auth/session.ts --repo /path/to/repo
 ```
 
 The result includes confidence, a reason, and a best-effort targeted test command.
@@ -128,7 +173,7 @@ The MCP `ctxpack://repo/test-map` resource uses the same package-aware command i
 Find files that have changed together in local git history:
 
 ```bash
-cargo run -p ctxpack -- co-changes src/auth/session.ts --repo /path/to/repo --limit 5
+ctxpack co-changes src/auth/session.ts --repo /path/to/repo --limit 5
 ```
 
 Co-change hints read only local git metadata and are filtered through the safe inventory.
@@ -138,13 +183,13 @@ Co-change hints read only local git metadata and are filtered through the safe i
 Inspect safe local import edges around a file:
 
 ```bash
-cargo run -p ctxpack -- dependencies src/auth/session.ts --repo /path/to/repo --limit 10
+ctxpack dependencies src/auth/session.ts --repo /path/to/repo --limit 10
 ```
 
 Return the current safe dependency graph:
 
 ```bash
-cargo run -p ctxpack -- dependencies --all --repo /path/to/repo --limit 50
+ctxpack dependencies --all --repo /path/to/repo --limit 50
 ```
 
 Dependency edges are inferred from local TypeScript/JavaScript, Python, and Rust imports in safe source/test files. External packages, generated files, sensitive files, and ignored files are excluded by default. MCP clients can request dependency expansion through `related` with `include: ["dependencies"]`, and can read the repository graph resource at `ctxpack://repo/dependency-graph`.
@@ -154,19 +199,19 @@ Dependency edges are inferred from local TypeScript/JavaScript, Python, and Rust
 Prepare a task-conditioned context plan:
 
 ```bash
-cargo run -p ctxpack -- prepare-task "fix requireSession bug" --repo /path/to/repo --mode bug-fix
+ctxpack prepare-task "fix requireSession bug" --repo /path/to/repo --mode bug-fix
 ```
 
 Pass active editor files as repeatable anchors when the host agent knows them:
 
 ```bash
-cargo run -p ctxpack -- prepare-task "fix redirect behavior" --repo /path/to/repo --mode bug-fix --path src/auth/middleware.ts
+ctxpack prepare-task "fix redirect behavior" --repo /path/to/repo --mode bug-fix --path src/auth/middleware.ts
 ```
 
 Use safe current-diff paths as anchors for review or in-progress work:
 
 ```bash
-cargo run -p ctxpack -- prepare-task "review current auth changes" --repo /path/to/repo --mode review --current-diff
+ctxpack prepare-task "review current auth changes" --repo /path/to/repo --mode review --current-diff
 ```
 
 The plan fuses active path anchors, symbol search, lexical search, related tests, local dependency edges, and local co-change hints into target files, line hints, validation commands, risk flags, and pack resource options. MCP clients can pass the same active/open files through the `paths` array on `prepare_task`.
@@ -178,7 +223,7 @@ For MCP clients, the `packOptions[*].resourceUri` values returned by `prepare_ta
 Materialize a budgeted context pack:
 
 ```bash
-cargo run -p ctxpack -- get-pack "fix requireSession bug" --repo /path/to/repo --mode bug-fix --budget brief
+ctxpack get-pack "fix requireSession bug" --repo /path/to/repo --mode bug-fix --budget brief
 ```
 
 Use `--format json` for structured output. `get-pack` also accepts repeatable `--path <file>` anchors, and the MCP `get_pack` tool accepts the same `paths` array.
@@ -189,7 +234,7 @@ Structured and Markdown packs include source-free provenance fields: `repoId`, `
 Generate optional repo-committable cards for cloud or disconnected agent contexts:
 
 ```bash
-cargo run -p ctxpack -- cards generate --repo /path/to/repo
+ctxpack cards generate --repo /path/to/repo
 ```
 
 This writes `.ctxpack/cards/repo-overview.md`, `.ctxpack/cards/testing.md`, and `.ctxpack/cards/dependency-graph.md`. Cards are deterministic, local-only, and source-snippet-free; they summarize safe inventory paths, roles, symbols, test commands, and local dependency edges.
@@ -201,13 +246,13 @@ This writes `.ctxpack/cards/repo-overview.md`, `.ctxpack/cards/testing.md`, and 
 Inspect recent traces:
 
 ```bash
-cargo run -p ctxpack -- eval traces --repo /path/to/repo --limit 20
+ctxpack eval traces --repo /path/to/repo --limit 20
 ```
 
 Generate a manual dogfood checklist from recent traces:
 
 ```bash
-cargo run -p ctxpack -- eval checklist --repo /path/to/repo --limit 5
+ctxpack eval checklist --repo /path/to/repo --limit 5
 ```
 
 Traces store task hashes, task type, target agent label, recommended files/tests/commands, optional pack id, optional budget, and created time. They do not store task text or source snippets.
@@ -215,9 +260,18 @@ Traces store task hashes, task type, target agent label, recommended files/tests
 Run a source-free historical retrieval eval over recent local commits:
 
 ```bash
-cargo run -p ctxpack -- eval history --repo /path/to/repo --limit 20 --mode bug-fix
+ctxpack eval history --repo /path/to/repo --limit 20 --mode bug-fix
 ```
 
 Use `--base <rev> --head <rev>` to freeze the evaluated commit range for apples-to-apples tuning on larger repositories.
 
 This replays each commit subject through `prepare_task`, treats the commit's safe changed files as hidden labels, and reports File Recall@5/10, lexical baseline recall, ctxpack lift, Source Recall@5/10, Test Recall@5/10, test recommendation rate, low-information commit counts, top retrieval gaps by file role, and excluded generated/sensitive path counts. The report uses task hashes and path labels; it does not include source snippets.
+
+## Development
+
+Development commands require a source checkout:
+
+```bash
+cargo test --workspace
+cargo run -p ctxpack -- --help
+```

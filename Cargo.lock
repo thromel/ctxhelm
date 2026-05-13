@@ -241,7 +241,7 @@ checksum = "d0a5c400df2834b80a4c3327b3aad3a4c4cd4de0629063962b03235697506a28"
 
 [[package]]
 name = "ctxpack"
-version = "0.1.0"
+version = "1.1.0"
 dependencies = [
  "anyhow",
  "assert_cmd",
@@ -258,7 +258,7 @@ dependencies = [
 
 [[package]]
 name = "ctxpack-compiler"
-version = "0.1.0"
+version = "1.1.0"
 dependencies = [
  "ctxpack-core",
  "ctxpack-index",
@@ -270,7 +270,7 @@ dependencies = [
 
 [[package]]
 name = "ctxpack-core"
-version = "0.1.0"
+version = "1.1.0"
 dependencies = [
  "serde",
  "serde_json",
@@ -281,7 +281,7 @@ dependencies = [
 
 [[package]]
 name = "ctxpack-index"
-version = "0.1.0"
+version = "1.1.0"
 dependencies = [
  "blake3",
  "ctxpack-core",
@@ -295,7 +295,7 @@ dependencies = [
 
 [[package]]
 name = "ctxpack-mcp"
-version = "0.1.0"
+version = "1.1.0"
 dependencies = [
  "ctxpack-compiler",
  "ctxpack-core",

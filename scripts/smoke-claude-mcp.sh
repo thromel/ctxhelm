@@ -2,31 +2,31 @@
 set -euo pipefail
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
-ctxpack_root="$(cd "$script_dir/.." && pwd -P)"
+ctxpack_root="${CTXPACK_ROOT:-$(cd "$script_dir/.." && pwd -P)}"
 protocol_script="$ctxpack_root/scripts/smoke-mcp-protocol.sh"
 repo_input="${CTXPACK_SMOKE_REPO:-$PWD}"
 task="${CTXPACK_SMOKE_TASK:-fix requireSession auth bug}"
+anchor_path="${CTXPACK_SMOKE_PATH:-crates/ctxpack-mcp/src/lib.rs}"
+query="${CTXPACK_SMOKE_QUERY:-prepare_task}"
 require_real="${CTXPACK_REQUIRE_REAL_CLIENT:-0}"
+run_real="${CTXPACK_RUN_REAL_CLIENT:-0}"
 
-repo="$(cd "$repo_input" && pwd -P)"
-ctxpack_home="$(mktemp -d)"
-work_dir="$(mktemp -d)"
-cleanup() {
-  rm -rf "$ctxpack_home" "$work_dir"
+resolve_ctxpack_bin() {
+  if [[ -n "${CTXPACK_BIN:-}" ]]; then
+    if [[ ! "$CTXPACK_BIN" = /* ]]; then
+      echo "CTXPACK_BIN must be absolute: $CTXPACK_BIN" >&2
+      exit 64
+    fi
+    if [[ ! -x "$CTXPACK_BIN" ]]; then
+      echo "CTXPACK_BIN is not executable: $CTXPACK_BIN" >&2
+      exit 64
+    fi
+    printf '%s/%s\n' "$(cd "$(dirname "$CTXPACK_BIN")" && pwd -P)" "$(basename "$CTXPACK_BIN")"
+    return
+  fi
+  cargo build -p ctxpack >/dev/null
+  printf '%s/target/debug/ctxpack\n' "$ctxpack_root"
 }
-trap cleanup EXIT
-
-echo "ctxpack Claude MCP smoke: running deterministic protocol gate"
-CTXPACK_ROOT="$ctxpack_root" \
-  CTXPACK_SMOKE_REPO="$repo" \
-  CTXPACK_SMOKE_TASK="$task" \
-  CTXPACK_HOME="$ctxpack_home" \
-  bash "$protocol_script"
-
-if [[ "${CTXPACK_SKIP_REAL_CLIENT:-0}" == "1" ]]; then
-  echo "ctxpack Claude MCP smoke skipped: CTXPACK_SKIP_REAL_CLIENT=1 after protocol gate passed"
-  exit 0
-fi
 
 fail_or_skip() {
   local reason="$1"
@@ -38,10 +38,69 @@ fail_or_skip() {
   exit 0
 }
 
+write_evidence() {
+  local evidence_file="$1"
+  python3 - "$evidence_file" "$repo" "$client_version" "$ctxpack_version" "$require_real" <<'PY'
+import json
+import pathlib
+import sys
+
+path, repo, client_version, ctxpack_version, required = sys.argv[1:]
+evidence = {
+    "client": "claude",
+    "clientVersion": client_version,
+    "ctxpackVersion": ctxpack_version,
+    "repo": repo,
+    "prepareTask": True,
+    "getPack": True,
+    "required": required == "1",
+}
+payload = json.dumps(evidence, sort_keys=True)
+if path:
+    target = pathlib.Path(path)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(payload + "\n", encoding="utf-8")
+else:
+    print("ctxpack Claude MCP smoke evidence: " + payload)
+PY
+}
+
+repo="$(cd "$repo_input" && pwd -P)"
+ctxpack_bin="$(resolve_ctxpack_bin)"
+ctxpack_home="$(mktemp -d)"
+work_dir="$(mktemp -d)"
+cleanup() {
+  rm -rf "$ctxpack_home" "$work_dir"
+}
+trap cleanup EXIT
+
+ctxpack_version="$("$ctxpack_bin" --version)"
+
+echo "ctxpack Claude MCP smoke: running deterministic protocol gate"
+CTXPACK_BIN="$ctxpack_bin" \
+  CTXPACK_ROOT="$ctxpack_root" \
+  CTXPACK_SMOKE_REPO="$repo" \
+  CTXPACK_SMOKE_TASK="$task" \
+  CTXPACK_SMOKE_PATH="$anchor_path" \
+  CTXPACK_SMOKE_QUERY="$query" \
+  CTXPACK_HOME="$ctxpack_home" \
+  bash "$protocol_script"
+
+if [[ "${CTXPACK_SKIP_REAL_CLIENT:-0}" == "1" ]]; then
+  echo "ctxpack Claude MCP smoke skipped: CTXPACK_SKIP_REAL_CLIENT=1 after protocol gate passed"
+  exit 0
+fi
+
+if [[ "$require_real" != "1" && "$run_real" != "1" ]]; then
+  echo "ctxpack Claude MCP smoke skipped: set CTXPACK_RUN_REAL_CLIENT=1 or CTXPACK_REQUIRE_REAL_CLIENT=1 after protocol gate passed"
+  exit 0
+fi
+
 if ! command -v claude >/dev/null 2>&1; then
   fail_or_skip "claude is not installed"
 fi
 
+client_version="$(claude --version 2>&1 | head -n 1)"
 request_log="$work_dir/ctxpack-mcp-requests.jsonl"
 events="$work_dir/claude-stream.jsonl"
 stderr_log="$work_dir/claude-stderr.log"
@@ -54,9 +113,9 @@ mkdir -p "$outside_cwd"
   printf '%s\n' '#!/usr/bin/env bash'
   printf '%s\n' 'set -euo pipefail'
   printf 'export CTXPACK_HOME=%q\n' "$ctxpack_home"
-  printf 'export CTXPACK_ROOT=%q\n' "$ctxpack_root"
   printf 'export CTXPACK_REAL_CLIENT_REQUEST_LOG=%q\n' "$request_log"
-  printf '%s\n' 'tee -a "$CTXPACK_REAL_CLIENT_REQUEST_LOG" | cargo run --quiet --manifest-path "$CTXPACK_ROOT/Cargo.toml" -p ctxpack -- serve-mcp'
+  printf 'ctxpack_bin=%q\n' "$ctxpack_bin"
+  printf '%s\n' 'tee -a "$CTXPACK_REAL_CLIENT_REQUEST_LOG" | "$ctxpack_bin" serve-mcp'
 } >"$server_wrapper"
 chmod +x "$server_wrapper"
 
@@ -134,6 +193,11 @@ if missing:
     raise SystemExit("missing explicit-repo tool calls: " + ", ".join(missing))
 PY
 then
+  evidence_path=""
+  if [[ -n "${CTXPACK_REAL_CLIENT_EVIDENCE_DIR:-}" ]]; then
+    evidence_path="${CTXPACK_REAL_CLIENT_EVIDENCE_DIR}/claude-mcp-evidence.json"
+  fi
+  write_evidence "$evidence_path"
   echo "ctxpack Claude MCP smoke passed: server-side instrumentation recorded prepare_task and get_pack with repo=$repo"
   exit 0
 fi

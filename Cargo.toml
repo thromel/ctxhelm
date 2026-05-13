@@ -9,8 +9,13 @@ members = [
 resolver = "2"
 
 [workspace.package]
+version = "1.1.0"
 edition = "2021"
 license = "MIT"
+repository = "https://github.com/thromel/ctxpack"
+readme = "README.md"
+description = "Local-first context broker that prepares safe repository context packs for coding agents"
+rust-version = "1.87"
 
 [workspace.dependencies]
 anyhow = "1"

@@ -6,6 +6,10 @@ Repo Context Packer is a local-first, read-only context broker that helps existi
 
 The current codebase is a Rust workspace with a CLI, MCP server, safe repository inventory, lexical and symbol retrieval, related-test inference, dependency hints, current-diff anchors, context packs, generated context cards, local eval traces, and historical retrieval evaluation.
 
+## Current State: v1.1 Packaging & Adoption Shipped
+
+The v1.1 milestone is complete. ctxpack is now installable from audited local release artifacts, documented for first-pack adoption, and guarded by release smokes that prove selected-binary behavior, deterministic MCP protocol behavior, and optional Codex/Claude client wrapper paths.
+
 ## Core Value
 
 Given a coding task, ctxpack should return the smallest safe evidence set that makes an existing coding agent more likely to inspect the right files, run the right tests, and avoid irrelevant context.
@@ -27,10 +31,17 @@ Given a coding task, ctxpack should return the smallest safe evidence set that m
 - ✓ Phase 2 validated the trust layer: stale inventory detection/rebuild diagnostics, centralized source-read policy, safe pack/card/file-resource revalidation, structured CLI/MCP diagnostics, and non-fatal trace/cache write handling.
 - ✓ Phase 3 validated measured retrieval lift gates: typed retrieval candidates, source-free attribution, fixed-budget ranking, status-aware historical eval labels, lexical comparison, signal ablations, grouped retrieval gaps, checklist reporting, CLI/MCP compatibility, and bounded RefactoringMiner smoke.
 - ✓ Phase 4 validated agent-native client durability: deterministic MCP protocol smoke from wrong cwd, required-mode Codex CLI and Claude Code real-client smokes with server-side `prepare_task`/`get_pack` evidence, explicit session-scoped pack resource diagnostics, bounded MCP pack cache behavior, and thin dynamic adapter guidance.
+- ✓ v1.1 validated repeatable local release artifacts, SHA-256 checksums, source-build fallbacks, and release artifact leakage audit.
+- ✓ v1.1 validated repo-local agent setup, actionable `ctxpack init` reporting, read-only `setup-check`, and first-pack smoke through deterministic MCP proof.
+- ✓ v1.1 validated installed-binary quickstart docs, agent setup matrix, troubleshooting docs, and proof-boundary documentation for Codex, Claude Code, Cursor, and OpenCode.
+- ✓ v1.1 validated a local release gate covering workspace tests, docs consistency, packaging/audit, selected-binary behavior, first-pack smoke, wrong-cwd MCP proof, and optional Codex/Claude wrappers.
 
 ### Active
 
-No v1 active requirements remain. Next work should start from v2 requirements or a new milestone.
+- Broaden real-repo historical evals and benchmark reports for retrieval quality proof.
+- Report token ROI, retrieval deltas, failure modes, and regression trends from source-free eval artifacts.
+- Use RefactoringMiner and additional real repositories as bounded proof targets.
+- Convert repeated retrieval gaps into measurable requirements for future storage, semantic retrieval, and parser precision milestones.
 
 ### Out of Scope
 
@@ -53,6 +64,17 @@ The codebase map in `.planning/codebase/` documents the current system. Phase 1 
 - `crates/ctxpack/src/main.rs` owns the user-facing CLI and command output.
 
 The current proof point is a complete v1 local context broker. The product can provide attributed context recommendations, fixed-budget eval reports, signal ablations, grouped retrieval gaps, source-free large-repo smoke validation, deterministic MCP protocol checks, and real-client Codex CLI / Claude Code smoke proof with explicit repo arguments.
+
+v1.1 Packaging & Adoption shipped the install, setup, documentation, and release-gate layer around the completed v1 context broker without expanding ctxpack into a standalone app, autonomous editor, or cloud service. The next high-leverage milestone is retrieval quality proof: making the product's value measurable across more real repositories and historical tasks.
+
+Future milestone strategy:
+
+- **v1.2 Retrieval Quality Proof**: broaden real-repo evals, benchmark reports, ROI metrics, and failure analysis.
+- **v1.3 Production Storage**: add durable local storage, faster incremental indexing, and disciplined cache behavior.
+- **v1.4 Local Semantic Retrieval**: add optional local embeddings/vector retrieval with hybrid fusion and explicit privacy controls.
+- **v1.5 Parser/Semantic Precision**: expand Tree-sitter coverage and add optional SCIP/LSP precision only where measured gaps justify it.
+- **v2.0 Workspace & Team Layer**: support multi-repo workspaces, shared source-free context cards, and team policy files.
+- **v2.1 UI / Pack Inspector**: add optional diagnostics UI for packs, retrieval gaps, evals, and context health.
 
 ## Constraints
 
@@ -77,6 +99,9 @@ The current proof point is a complete v1 local context broker. The product can p
 | Trust diagnostics before retrieval lift | Measured retrieval work should build on fresh inventory, safe source reads, and explicit degraded-result diagnostics. | ✓ Validated in Phase 2 |
 | Measured retrieval before client durability | Real clients should consume ranked, attributed, source-free context surfaces, not unstable heuristic output. | ✓ Validated in Phase 3 |
 | Real-client proof must be machine-checkable | Agent-native durability requires server-side or transcript evidence for `prepare_task` and `get_pack`, not final assistant prose. | ✓ Validated in Phase 4 |
+| Release artifacts must preserve clean-checkout semantics | Publication gates should not silently package dirty source unless maintainers explicitly opt into an in-flight validation override. | ✓ Validated in v1.1 audit |
+| Deterministic smokes must not write into target repos | ctxpack's read-only product contract applies to release validation as well as runtime agent use. | ✓ Validated in v1.1 audit |
+| Deterministic protocol proof is the required gate | Real Codex/Claude client proof is valuable but remains optional and environment-gated; deterministic MCP proof is the portable release blocker. | ✓ Validated in Phase 8 |
 
 ## Evolution
 
@@ -96,4 +121,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-05-13 after Phase 4 completion*
+*Last updated: 2026-05-14 after v1.1 milestone completion*
