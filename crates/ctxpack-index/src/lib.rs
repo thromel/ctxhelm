@@ -186,11 +186,17 @@ pub struct CurrentDiffSummary {
 #[serde(rename_all = "camelCase")]
 pub struct HistoricalCommitOptions {
     pub limit: usize,
+    pub base: Option<String>,
+    pub head: Option<String>,
 }
 
 impl Default for HistoricalCommitOptions {
     fn default() -> Self {
-        Self { limit: 20 }
+        Self {
+            limit: 20,
+            base: None,
+            head: None,
+        }
     }
 }
 
@@ -255,6 +261,7 @@ pub fn build_inventory(
 ) -> Result<RepoInventory, InventoryError> {
     let repo_root = canonicalize(repo_root.as_ref())?;
     let mut files = Vec::new();
+    let mut ignored_count = 0;
     let mut generated_count = 0;
     let mut sensitive_count = 0;
 
@@ -297,14 +304,20 @@ pub fn build_inventory(
             continue;
         }
 
-        let metadata = fs::metadata(path).map_err(|source| InventoryError::Read {
-            path: path.to_path_buf(),
-            source,
-        })?;
-        let bytes = fs::read(path).map_err(|source| InventoryError::Read {
-            path: path.to_path_buf(),
-            source,
-        })?;
+        let metadata = match fs::metadata(path) {
+            Ok(metadata) => metadata,
+            Err(_) => {
+                ignored_count += 1;
+                continue;
+            }
+        };
+        let bytes = match fs::read(path) {
+            Ok(bytes) => bytes,
+            Err(_) => {
+                ignored_count += 1;
+                continue;
+            }
+        };
 
         files.push(FileInventoryEntry {
             path: relative.clone(),
@@ -323,7 +336,7 @@ pub fn build_inventory(
         repo_id: repo_id_for_path(&repo_root),
         repo_root,
         files,
-        ignored_count: 0,
+        ignored_count,
         generated_count,
         sensitive_count,
     })
@@ -730,13 +743,18 @@ pub fn historical_commit_samples(
     options: &HistoricalCommitOptions,
 ) -> Result<Vec<HistoricalCommitSample>, InventoryError> {
     let repo_root = canonicalize(repo_root.as_ref())?;
-    let inventory = build_inventory(&repo_root, &InventoryOptions::default())?;
+    let inventory = load_or_build_inventory(&repo_root, &InventoryOptions::default())?;
     let safe_paths = inventory
         .files
         .into_iter()
         .map(|file| file.path)
         .collect::<BTreeSet<_>>();
-    let commits = git_commit_subject_file_sets(&repo_root, options.limit.max(1).saturating_mul(5))?;
+    let commits = git_commit_subject_file_sets(
+        &repo_root,
+        options.limit.max(1).saturating_mul(5),
+        options.base.as_deref(),
+        options.head.as_deref(),
+    )?;
     let mut samples = commits
         .into_iter()
         .filter_map(|commit| {
@@ -1216,15 +1234,23 @@ fn is_sensitive_path(lower: &str, name: &str) -> bool {
 
 fn is_generated_path(lower: &str, name: &str) -> bool {
     lower.contains("/node_modules/")
+        || lower.contains("/.gradle/")
         || lower.contains("/target/")
         || lower.contains("/dist/")
         || lower.contains("/build/")
+        || lower.contains("/build ")
         || lower.contains("/coverage/")
         || lower.contains("/vendor/")
+        || lower.contains("/resources/astdiff/")
+        || lower.contains("/resources/mappings/")
+        || lower.contains("/resources/oracle/")
+        || lower.contains("/resources/web/monaco/")
         || lower.starts_with("node_modules/")
+        || lower.starts_with(".gradle/")
         || lower.starts_with("target/")
         || lower.starts_with("dist/")
         || lower.starts_with("build/")
+        || lower.starts_with("build ")
         || name.ends_with(".min.js")
         || name.ends_with(".min.css")
         || name == "package-lock.json"
@@ -2060,13 +2086,14 @@ fn git_commit_file_sets(repo_root: &Path) -> Result<Vec<GitCommitFiles>, Invento
 fn git_commit_subject_file_sets(
     repo_root: &Path,
     max_count: usize,
+    base: Option<&str>,
+    head: Option<&str>,
 ) -> Result<Vec<GitCommitSubjectFiles>, InventoryError> {
     let max_count = format!("--max-count={}", max_count.max(1));
-    let shas = git_stdout_with_timeout(
-        repo_root,
-        &["rev-list", &max_count, "HEAD"],
-        Duration::from_secs(2),
-    )?;
+    let rev = commit_range(base, head);
+    let mut rev_list_args = vec!["rev-list", &max_count];
+    rev_list_args.push(rev.as_deref().unwrap_or("HEAD"));
+    let shas = git_stdout_with_timeout(repo_root, &rev_list_args, Duration::from_secs(2))?;
     let mut commits = Vec::new();
 
     for sha in shas.lines().map(str::trim).filter(|sha| !sha.is_empty()) {
@@ -2107,6 +2134,18 @@ fn git_commit_subject_file_sets(
     }
 
     Ok(commits)
+}
+
+fn commit_range(base: Option<&str>, head: Option<&str>) -> Option<String> {
+    match (
+        base.filter(|value| !value.trim().is_empty()),
+        head.filter(|value| !value.trim().is_empty()),
+    ) {
+        (Some(base), Some(head)) => Some(format!("{}..{}", base.trim(), head.trim())),
+        (Some(base), None) => Some(format!("{}..HEAD", base.trim())),
+        (None, Some(head)) => Some(head.trim().to_string()),
+        (None, None) => None,
+    }
 }
 
 fn git_name_only(repo_root: &Path, args: &[&str]) -> Result<Vec<String>, InventoryError> {
@@ -2306,6 +2345,27 @@ mod tests {
         assert_eq!(classify_path("README.md"), FileRole::Docs);
         assert_eq!(classify_path(".env"), FileRole::Sensitive);
         assert_eq!(classify_path("dist/app.min.js"), FileRole::Generated);
+        assert_eq!(
+            classify_path(".gradle/7.4/fileHashes.bin"),
+            FileRole::Generated
+        );
+        assert_eq!(classify_path("build 2/tmp/cache.bin"), FileRole::Generated);
+        assert_eq!(
+            classify_path("src/test/resources/oracle/commits/example.json"),
+            FileRole::Generated
+        );
+        assert_eq!(
+            classify_path("src/test/resources/astDiff/defects4j/example.json"),
+            FileRole::Generated
+        );
+        assert_eq!(
+            classify_path("src/test/resources/mappings/example.json"),
+            FileRole::Generated
+        );
+        assert_eq!(
+            classify_path("src/main/resources/web/monaco/min/vs/editor/editor.main.js"),
+            FileRole::Generated
+        );
     }
 
     #[test]
@@ -2319,6 +2379,12 @@ mod tests {
         fs::create_dir_all(repo.join("src")).unwrap();
         fs::create_dir_all(repo.join("tests")).unwrap();
         fs::create_dir_all(repo.join("dist")).unwrap();
+        fs::create_dir_all(repo.join(".gradle/7.4")).unwrap();
+        fs::create_dir_all(repo.join("build 2/tmp")).unwrap();
+        fs::create_dir_all(repo.join("src/test/resources/oracle/commits")).unwrap();
+        fs::create_dir_all(repo.join("src/test/resources/astDiff/defects4j")).unwrap();
+        fs::create_dir_all(repo.join("src/test/resources/mappings")).unwrap();
+        fs::create_dir_all(repo.join("src/main/resources/web/monaco/min/vs/editor")).unwrap();
         fs::write(repo.join("src/lib.ts"), "export const x = 1;\n").unwrap();
         fs::write(repo.join("tests/lib.test.ts"), "test('x', () => {});\n").unwrap();
         fs::write(repo.join("README.md"), "# Repo\n").unwrap();
@@ -2327,6 +2393,28 @@ mod tests {
         fs::write(repo.join(".env"), "TOKEN=secret\n").unwrap();
         fs::write(repo.join("private.key"), "secret\n").unwrap();
         fs::write(repo.join("dist/app.min.js"), "minified\n").unwrap();
+        fs::write(repo.join(".gradle/7.4/fileHashes.bin"), "cache\n").unwrap();
+        fs::write(repo.join("build 2/tmp/cache.bin"), "cache\n").unwrap();
+        fs::write(
+            repo.join("src/test/resources/oracle/commits/example.json"),
+            "{}\n",
+        )
+        .unwrap();
+        fs::write(
+            repo.join("src/test/resources/astDiff/defects4j/example.json"),
+            "{}\n",
+        )
+        .unwrap();
+        fs::write(
+            repo.join("src/test/resources/mappings/example.json"),
+            "{}\n",
+        )
+        .unwrap();
+        fs::write(
+            repo.join("src/main/resources/web/monaco/min/vs/editor/editor.main.js"),
+            "generated\n",
+        )
+        .unwrap();
         fs::write(repo.join("ignored-by-git.ts"), "ignored\n").unwrap();
         fs::write(repo.join("ignored-by-ctxpack.ts"), "ignored\n").unwrap();
         fs::write(repo.join("ignored-by-cursor.ts"), "ignored\n").unwrap();
@@ -2346,6 +2434,12 @@ mod tests {
         assert!(!paths.contains(&".env"));
         assert!(!paths.contains(&"private.key"));
         assert!(!paths.contains(&"dist/app.min.js"));
+        assert!(!paths.contains(&".gradle/7.4/fileHashes.bin"));
+        assert!(!paths.contains(&"build 2/tmp/cache.bin"));
+        assert!(!paths.contains(&"src/test/resources/oracle/commits/example.json"));
+        assert!(!paths.contains(&"src/test/resources/astDiff/defects4j/example.json"));
+        assert!(!paths.contains(&"src/test/resources/mappings/example.json"));
+        assert!(!paths.contains(&"src/main/resources/web/monaco/min/vs/editor/editor.main.js"));
         assert!(!paths.contains(&"ignored-by-git.ts"));
         assert!(!paths.contains(&"ignored-by-ctxpack.ts"));
         assert!(!paths.contains(&"ignored-by-cursor.ts"));
@@ -2387,6 +2481,34 @@ mod tests {
 
         assert!(paths.contains(&".env"));
         assert!(paths.contains(&"dist/app.min.js"));
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn inventory_skips_unreadable_files_instead_of_aborting() {
+        use std::os::unix::fs::PermissionsExt;
+
+        let temp = tempfile::tempdir().unwrap();
+        let repo = temp.path();
+        fs::create_dir(repo.join(".git")).unwrap();
+        fs::create_dir_all(repo.join("src")).unwrap();
+        fs::write(repo.join("src/lib.ts"), "export const x = 1;\n").unwrap();
+        fs::write(repo.join("src/unreadable.ts"), "export const secret = 1;\n").unwrap();
+        let unreadable = repo.join("src/unreadable.ts");
+        let original_permissions = fs::metadata(&unreadable).unwrap().permissions();
+        fs::set_permissions(&unreadable, fs::Permissions::from_mode(0o000)).unwrap();
+
+        let inventory = build_inventory(repo, &InventoryOptions::default()).unwrap();
+        fs::set_permissions(&unreadable, original_permissions).unwrap();
+        let paths = inventory
+            .files
+            .iter()
+            .map(|file| file.path.as_str())
+            .collect::<Vec<_>>();
+
+        assert!(paths.contains(&"src/lib.ts"));
+        assert!(!paths.contains(&"src/unreadable.ts"));
+        assert_eq!(inventory.ignored_count, 1);
     }
 
     #[test]
@@ -2893,8 +3015,15 @@ mod tests {
         run_git(&repo, &["commit", "-m", "fix requireSession bug"]);
         std::env::set_var("CTXPACK_HOME", &home);
 
-        let samples =
-            historical_commit_samples(&repo, &HistoricalCommitOptions { limit: 10 }).unwrap();
+        let samples = historical_commit_samples(
+            &repo,
+            &HistoricalCommitOptions {
+                limit: 10,
+                base: None,
+                head: None,
+            },
+        )
+        .unwrap();
 
         assert_eq!(samples.len(), 1);
         assert_eq!(samples[0].title, "fix requireSession bug");
@@ -2904,6 +3033,59 @@ mod tests {
         );
         assert_eq!(samples[0].excluded_changed_file_count, 2);
         assert!(!serde_json::to_string(&samples).unwrap().contains("TOKEN"));
+
+        std::env::remove_var("CTXPACK_HOME");
+    }
+
+    #[test]
+    fn historical_commit_samples_can_use_stable_revision_range() {
+        let _guard = env_lock();
+        let temp = tempfile::tempdir().unwrap();
+        let repo = temp.path().join("repo");
+        let home = temp.path().join("ctxpack-home");
+        fs::create_dir_all(repo.join("src/auth")).unwrap();
+        run_git(&repo, &["init"]);
+        run_git(&repo, &["config", "user.email", "ctxpack@example.com"]);
+        run_git(&repo, &["config", "user.name", "ctxpack"]);
+        fs::write(repo.join("src/auth/first.ts"), "export const first = 1;\n").unwrap();
+        run_git(&repo, &["add", "."]);
+        run_git(&repo, &["commit", "-m", "first auth change"]);
+        let base = git_stdout_with_timeout(&repo, &["rev-parse", "HEAD"], Duration::from_secs(1))
+            .unwrap()
+            .trim()
+            .to_string();
+        fs::write(
+            repo.join("src/auth/second.ts"),
+            "export const second = 2;\n",
+        )
+        .unwrap();
+        run_git(&repo, &["add", "."]);
+        run_git(&repo, &["commit", "-m", "second auth change"]);
+        fs::write(repo.join("src/auth/third.ts"), "export const third = 3;\n").unwrap();
+        run_git(&repo, &["add", "."]);
+        run_git(&repo, &["commit", "-m", "third auth change"]);
+        let head = git_stdout_with_timeout(&repo, &["rev-parse", "HEAD"], Duration::from_secs(1))
+            .unwrap()
+            .trim()
+            .to_string();
+        std::env::set_var("CTXPACK_HOME", &home);
+
+        let samples = historical_commit_samples(
+            &repo,
+            &HistoricalCommitOptions {
+                limit: 10,
+                base: Some(base),
+                head: Some(head),
+            },
+        )
+        .unwrap();
+
+        assert_eq!(samples.len(), 2);
+        assert_eq!(samples[0].title, "third auth change");
+        assert_eq!(samples[1].title, "second auth change");
+        assert!(samples
+            .iter()
+            .all(|sample| sample.title != "first auth change"));
 
         std::env::remove_var("CTXPACK_HOME");
     }

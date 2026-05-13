@@ -24,6 +24,8 @@ pub struct HistoricalEvalOptions {
     pub limit: usize,
     pub task_type: TaskType,
     pub target_agent: String,
+    pub base: Option<String>,
+    pub head: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -31,6 +33,9 @@ pub struct HistoricalEvalOptions {
 pub struct HistoricalEvalReport {
     pub repo_id: String,
     pub evaluated_commits: usize,
+    pub base: Option<String>,
+    pub head: Option<String>,
+    pub low_information_commit_count: usize,
     pub file_recall_at_5: f32,
     pub file_recall_at_10: f32,
     pub lexical_baseline_recall_at_5: f32,
@@ -81,6 +86,7 @@ pub struct HistoricalCommitEval {
     pub test_files_changed: usize,
     pub test_hits_at_5: usize,
     pub test_hits_at_10: usize,
+    pub low_information_task: bool,
     pub confidence: f32,
     pub source_text_logged: bool,
 }
@@ -142,6 +148,8 @@ pub fn evaluate_historical_commits(
         repo_root,
         &HistoricalCommitOptions {
             limit: options.limit,
+            base: options.base.clone(),
+            head: options.head.clone(),
         },
     )?;
     let target_agent = normalized_target_agent(&options.target_agent);
@@ -228,6 +236,7 @@ pub fn evaluate_historical_commits(
             test_files_changed: test_changed_files.len(),
             test_hits_at_5,
             test_hits_at_10,
+            low_information_task: is_low_information_task(&task),
             confidence: plan.confidence,
             source_text_logged: false,
         });
@@ -241,6 +250,12 @@ pub fn evaluate_historical_commits(
     Ok(HistoricalEvalReport {
         repo_id: pack_repo_id(repo_root),
         evaluated_commits: commits.len(),
+        base: options.base.clone(),
+        head: options.head.clone(),
+        low_information_commit_count: commits
+            .iter()
+            .filter(|commit| commit.low_information_task)
+            .count(),
         file_recall_at_5,
         file_recall_at_10,
         lexical_baseline_recall_at_5,
@@ -1093,6 +1108,47 @@ fn average_lexical_baseline_recall(commits: &[HistoricalCommitEval], limit: usiz
     total / commits.len() as f32
 }
 
+fn is_low_information_task(task: &str) -> bool {
+    let information_score = task
+        .split(|character: char| !(character.is_ascii_alphanumeric() || character == '_'))
+        .filter_map(|term| {
+            let term = term.trim();
+            let normalized = term.to_ascii_lowercase();
+            if normalized.len() < 3
+                || normalized
+                    .chars()
+                    .all(|character| character.is_ascii_digit())
+            {
+                return None;
+            }
+            if matches!(
+                normalized.as_str(),
+                "fix"
+                    | "fixes"
+                    | "fixed"
+                    | "close"
+                    | "closes"
+                    | "closed"
+                    | "issue"
+                    | "bug"
+                    | "for"
+                    | "the"
+                    | "and"
+                    | "with"
+                    | "from"
+            ) {
+                return None;
+            }
+            let has_lower = term.chars().any(|character| character.is_ascii_lowercase());
+            let has_upper = term.chars().any(|character| character.is_ascii_uppercase());
+            let identifier_like = term.contains('_') || has_lower && has_upper;
+            Some(if identifier_like { 2 } else { 1 })
+        })
+        .sum::<usize>();
+
+    information_score < 2
+}
+
 fn average_role_recall(commits: &[HistoricalCommitEval], role: FileRole, limit: usize) -> f32 {
     let mut total = 0.0;
     let mut count = 0usize;
@@ -1521,6 +1577,17 @@ mod tests {
         assert!(plan.pack_options[0].resource_uri.ends_with("/brief"));
         assert!(plan.pack_options[1].resource_uri.ends_with("/standard"));
         assert!(plan.pack_options[2].resource_uri.ends_with("/deep"));
+    }
+
+    #[test]
+    fn low_information_task_detection_flags_issue_only_titles() {
+        assert!(is_low_information_task("Fixes #1061"));
+        assert!(is_low_information_task("fix bug"));
+        assert!(!is_low_information_task("fix requireSession bug"));
+        assert!(!is_low_information_task(
+            "Improve signature for nested functions in TypeScript"
+        ));
+        assert!(!is_low_information_task("Add test for #1060"));
     }
 
     #[test]
@@ -1953,12 +2020,17 @@ mod tests {
                 limit: 5,
                 task_type: TaskType::BugFix,
                 target_agent: "codex".to_string(),
+                base: None,
+                head: None,
             },
         )
         .unwrap();
         let value = serde_json::to_value(&report).unwrap();
 
         assert_eq!(report.evaluated_commits, 1);
+        assert_eq!(report.base, None);
+        assert_eq!(report.head, None);
+        assert_eq!(report.low_information_commit_count, 0);
         assert_eq!(report.commits[0].target_agent, "codex");
         assert_eq!(
             report.commits[0].safe_changed_files,
@@ -1993,6 +2065,7 @@ mod tests {
         assert_eq!(report.commits[0].test_files_changed, 1);
         assert_eq!(report.commits[0].test_hits_at_5, 1);
         assert_eq!(report.commits[0].test_hits_at_10, 1);
+        assert!(!report.commits[0].low_information_task);
         assert!(report.test_recommendation_rate > 0.0);
         assert!(!report.commits[0].source_text_logged);
         assert!(value.get("commits").is_some());
