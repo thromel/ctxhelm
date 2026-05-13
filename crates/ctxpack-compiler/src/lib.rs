@@ -16,6 +16,8 @@ use std::path::{Component, Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
 use uuid::Uuid;
 
+const PREPARE_TASK_TARGET_LIMIT: usize = 8;
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct HistoricalEvalOptions {
@@ -377,7 +379,10 @@ fn prepare_context_plan_with_paths_and_history(
             target_files.push(target);
         }
     }
-    for result in symbol_results.iter().take(5) {
+    for result in &symbol_results {
+        if target_files.len() >= PREPARE_TASK_TARGET_LIMIT {
+            break;
+        }
         if seen_paths.insert(result.symbol.path.clone()) {
             target_files.push(TargetFile {
                 path: result.symbol.path.clone(),
@@ -393,7 +398,10 @@ fn prepare_context_plan_with_paths_and_history(
             });
         }
     }
-    for result in search_results.iter().take(5) {
+    for result in &search_results {
+        if target_files.len() >= PREPARE_TASK_TARGET_LIMIT {
+            break;
+        }
         if seen_paths.insert(result.path.clone()) {
             target_files.push(TargetFile {
                 path: result.path.clone(),
@@ -403,7 +411,6 @@ fn prepare_context_plan_with_paths_and_history(
             });
         }
     }
-    target_files.truncate(5);
     let target_paths = target_files
         .iter()
         .map(|target| target.path.clone())
@@ -1556,6 +1563,39 @@ mod tests {
             .risk_flags
             .iter()
             .any(|flag| flag.message.contains("tests/auth/session.test.ts")));
+
+        std::env::remove_var("CTXPACK_HOME");
+    }
+
+    #[test]
+    fn prepare_context_plan_keeps_supporting_targets_past_top_five() {
+        let _guard = env_lock();
+        let temp = tempfile::tempdir().unwrap();
+        let repo = temp.path().join("repo");
+        let home = temp.path().join("ctxpack-home");
+        fs::create_dir_all(repo.join("src/auth")).unwrap();
+        run_git(&repo, &["init"]);
+        run_git(&repo, &["config", "user.email", "ctxpack@example.com"]);
+        run_git(&repo, &["config", "user.name", "ctxpack"]);
+        for index in 0..10 {
+            fs::write(
+                repo.join(format!("src/auth/session_{index}.ts")),
+                format!("export function session{index}() {{ return 'auth session redirect'; }}\n"),
+            )
+            .unwrap();
+        }
+        run_git(&repo, &["add", "."]);
+        run_git(&repo, &["commit", "-m", "add auth session files"]);
+        std::env::set_var("CTXPACK_HOME", &home);
+
+        let plan =
+            prepare_context_plan(&repo, "fix auth session redirect", TaskType::BugFix).unwrap();
+
+        assert_eq!(plan.target_files.len(), PREPARE_TASK_TARGET_LIMIT);
+        assert!(plan
+            .target_files
+            .iter()
+            .any(|target| target.path.as_str() >= "src/auth/session_5.ts"));
 
         std::env::remove_var("CTXPACK_HOME");
     }
