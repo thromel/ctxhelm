@@ -28,7 +28,12 @@ Decimal phases appear between their surrounding integers in numeric order.
   2. Maintainer can run MCP handler, resource, and prompt tests that verify tool names, resource URI shapes, session behavior, structured content, and error responses.
   3. Maintainer can compare stable JSON shapes for context plans, packs, eval traces, MCP structured content, and CLI outputs before changing internals.
   4. Maintainer can split large modules into focused submodules while existing CLI, MCP, and library behavior remains unchanged.
-**Plans**: TBD
+**Plans**: 4 plans
+Plans:
+- [ ] 01-compatibility-guardrails-module-boundaries-01-PLAN.md — Add binary-level CLI compatibility guardrails.
+- [ ] 01-compatibility-guardrails-module-boundaries-02-PLAN.md — Lock public JSON and MCP protocol compatibility surfaces.
+- [ ] 01-compatibility-guardrails-module-boundaries-03-PLAN.md — Split ctxpack-index behind stable crate-root exports.
+- [ ] 01-compatibility-guardrails-module-boundaries-04-PLAN.md — Split ctxpack-compiler and ctxpack-mcp behind stable facades.
 
 ### Phase 2: Trust Layer & Operational Diagnostics
 **Goal**: Users can trust that ctxpack read paths are fresh, privacy-gated, and explicit about partial or degraded results.
