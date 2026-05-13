@@ -1,22 +1,10 @@
-use ctxpack_compiler::{
-    compile_context_pack_from_plan_for_agent, compile_context_pack_with_plan_and_paths_for_agent,
-    eval_trace_for_pack, eval_trace_for_plan, prepare_context_plan_with_paths,
-    render_pack_markdown,
-};
-use ctxpack_core::{ContextPack, FileRole, PackBudget, RepoRoot, TaskType};
-use ctxpack_index::{
-    append_eval_trace, co_change_hints, current_diff_summary, dependency_edges, lexical_search,
-    load_or_build_inventory, related_dependency_edges, related_tests, symbol_search, test_map,
-    CoChangeOptions, CurrentDiffOptions, DependencyOptions, InventoryOptions, SearchOptions,
-    SymbolOptions,
-};
-use serde::Deserialize;
-use serde_json::{json, Value};
-use std::collections::{BTreeMap, BTreeSet};
-use std::fs;
-use std::io::{self, BufRead, Write};
-use std::path::{Path, PathBuf};
-use std::sync::{Mutex, OnceLock};
+mod prompts;
+mod protocol;
+mod resources;
+mod schemas;
+mod tools;
+
+pub use protocol::{run_server, run_stdio_server};
 
 pub const PLANNED_MCP_TOOL_NAMES: &[&str] = &[
     "prepare_task",
@@ -36,1229 +24,10 @@ pub const IMPLEMENTED_MCP_TOOL_NAMES: &[&str] = &[
     "current_diff",
 ];
 
-const JSONRPC_VERSION: &str = "2.0";
-const MCP_PROTOCOL_VERSION: &str = "2025-11-25";
-
-#[derive(Debug, Deserialize)]
-struct JsonRpcRequest {
-    id: Option<Value>,
-    method: String,
-    #[serde(default)]
-    params: Value,
-}
-
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct CallToolParams {
-    name: String,
-    #[serde(default)]
-    arguments: Value,
-}
-
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct ReadResourceParams {
-    uri: String,
-}
-
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct GetPromptParams {
-    name: String,
-    #[serde(default)]
-    arguments: Value,
-}
-
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct PrepareTaskArgs {
-    task: String,
-    #[serde(default)]
-    repo: Option<PathBuf>,
-    #[serde(default)]
-    mode: Option<TaskType>,
-    #[serde(default)]
-    paths: Vec<String>,
-    #[serde(default)]
-    include_current_diff: bool,
-    #[serde(default)]
-    target_agent: Option<String>,
-}
-
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct GetPackArgs {
-    task: String,
-    #[serde(default)]
-    repo: Option<PathBuf>,
-    #[serde(default)]
-    mode: Option<TaskType>,
-    #[serde(default)]
-    budget: Option<PackBudget>,
-    #[serde(default)]
-    format: Option<PackFormat>,
-    #[serde(default)]
-    paths: Vec<String>,
-    #[serde(default)]
-    include_current_diff: bool,
-    #[serde(default)]
-    target_agent: Option<String>,
-}
-
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct SearchArgs {
-    query: String,
-    #[serde(default)]
-    repo: Option<PathBuf>,
-    #[serde(default)]
-    limit: Option<usize>,
-    #[serde(default)]
-    kinds: Vec<SearchKind>,
-}
-
-#[derive(Debug, Deserialize, PartialEq, Eq)]
-#[serde(rename_all = "lowercase")]
-enum SearchKind {
-    File,
-    Symbol,
-}
-
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct RelatedArgs {
-    #[serde(default)]
-    path: Option<String>,
-    #[serde(default)]
-    symbol: Option<String>,
-    #[serde(default)]
-    repo: Option<PathBuf>,
-    #[serde(default)]
-    include_current_diff: bool,
-    #[serde(default)]
-    include: Vec<RelatedInclude>,
-    #[serde(default)]
-    limit: Option<usize>,
-}
-
-#[derive(Debug, Deserialize, PartialEq, Eq)]
-#[serde(rename_all = "snake_case")]
-enum RelatedInclude {
-    Tests,
-    Commits,
-    Dependencies,
-}
-
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct RelatedTestsArgs {
-    paths: Vec<String>,
-    #[serde(default)]
-    repo: Option<PathBuf>,
-}
-
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct CurrentDiffArgs {
-    #[serde(default)]
-    repo: Option<PathBuf>,
-    #[serde(default)]
-    include_untracked: bool,
-}
-
-#[derive(Debug, Deserialize, PartialEq, Eq)]
-#[serde(rename_all = "lowercase")]
-enum PackFormat {
-    Markdown,
-    Json,
-}
-
-#[derive(Debug)]
-struct RpcError {
-    code: i32,
-    message: String,
-}
-
-impl RpcError {
-    fn parse_error(message: impl Into<String>) -> Self {
-        Self {
-            code: -32700,
-            message: message.into(),
-        }
-    }
-
-    fn invalid_params(message: impl Into<String>) -> Self {
-        Self {
-            code: -32602,
-            message: message.into(),
-        }
-    }
-
-    fn method_not_found(method: &str) -> Self {
-        Self {
-            code: -32601,
-            message: format!("method not found: {method}"),
-        }
-    }
-}
-
-pub fn run_stdio_server() -> io::Result<()> {
-    let stdin = io::stdin();
-    let stdout = io::stdout();
-    run_server(stdin.lock(), stdout.lock())
-}
-
-pub fn run_server<R, W>(reader: R, mut writer: W) -> io::Result<()>
-where
-    R: BufRead,
-    W: Write,
-{
-    for line in reader.lines() {
-        let line = line?;
-        if line.trim().is_empty() {
-            continue;
-        }
-
-        if let Some(response) = handle_line(&line) {
-            serde_json::to_writer(&mut writer, &response)?;
-            writer.write_all(b"\n")?;
-            writer.flush()?;
-        }
-    }
-
-    Ok(())
-}
-
-fn handle_line(line: &str) -> Option<Value> {
-    let parsed = match serde_json::from_str::<JsonRpcRequest>(line) {
-        Ok(request) => request,
-        Err(error) => {
-            return Some(error_response(
-                Value::Null,
-                RpcError::parse_error(format!("invalid JSON-RPC request: {error}")),
-            ));
-        }
-    };
-
-    let id = parsed.id.clone()?;
-
-    match handle_request(&parsed) {
-        Ok(result) => Some(success_response(id, result)),
-        Err(error) => Some(error_response(id, error)),
-    }
-}
-
-fn handle_request(request: &JsonRpcRequest) -> Result<Value, RpcError> {
-    match request.method.as_str() {
-        "initialize" => Ok(initialize_result()),
-        "tools/list" => Ok(tools_list_result()),
-        "tools/call" => call_tool(request.params.clone()),
-        "resources/list" => Ok(resources_list_result()),
-        "resources/read" => read_resource(request.params.clone()),
-        "prompts/list" => Ok(prompts_list_result()),
-        "prompts/get" => get_prompt(request.params.clone()),
-        method => Err(RpcError::method_not_found(method)),
-    }
-}
-
-fn initialize_result() -> Value {
-    json!({
-        "protocolVersion": MCP_PROTOCOL_VERSION,
-        "capabilities": {
-            "tools": {
-                "listChanged": false
-            },
-            "resources": {
-                "listChanged": false
-            },
-            "prompts": {
-                "listChanged": false
-            }
-        },
-        "serverInfo": {
-            "name": "ctxpack",
-            "version": env!("CARGO_PKG_VERSION")
-        }
-    })
-}
-
-fn resources_list_result() -> Value {
-    json!({
-        "resources": [
-            {
-                "uri": "ctxpack://repo/summary",
-                "name": "Repository Summary",
-                "description": "Safe inventory summary for the current repository.",
-                "mimeType": "application/json"
-            },
-            {
-                "uri": "ctxpack://repo/test-map",
-                "name": "Repository Test Map",
-                "description": "Test files and inferred targeted commands.",
-                "mimeType": "application/json"
-            },
-            {
-                "uri": "ctxpack://repo/dependency-graph",
-                "name": "Repository Dependency Graph",
-                "description": "Safe local import edges inferred from source and test files.",
-                "mimeType": "application/json"
-            },
-            {
-                "uri": "ctxpack://pack/guide",
-                "name": "Context Pack Guide",
-                "description": "How to request task-conditioned context packs with ctxpack.get_pack.",
-                "mimeType": "text/markdown"
-            }
-        ]
-    })
-}
-
-fn prompts_list_result() -> Value {
-    json!({
-        "prompts": [
-            prompt_descriptor("bugfix", "Prepare and solve a bug fix with targeted repo context."),
-            prompt_descriptor("feature", "Prepare and implement a feature using analogous repo context."),
-            prompt_descriptor("refactor", "Plan a refactor using callers, tests, and constraints."),
-            prompt_descriptor("review_diff", "Review the current diff with repo-aware context."),
-            prompt_descriptor("write_tests", "Find source context and write focused tests."),
-            prompt_descriptor("explain_area", "Explain an area of the codebase with grounded files.")
-        ]
-    })
-}
-
-fn prompt_descriptor(name: &str, description: &str) -> Value {
-    json!({
-        "name": name,
-        "description": description,
-        "arguments": [{
-            "name": "task",
-            "description": "The developer task or area to work on.",
-            "required": name != "review_diff"
-        }]
-    })
-}
-
-fn tools_list_result() -> Value {
-    json!({
-        "tools": [
-            {
-                "name": "prepare_task",
-                "title": "Prepare Task Context",
-                "description": "Return a compact, local-only ContextPlan for a coding task.",
-                "inputSchema": {
-                    "type": "object",
-                    "properties": {
-                        "task": {
-                            "type": "string",
-                            "description": "The developer task to prepare context for."
-                        },
-                        "repo": {
-                            "type": "string",
-                            "description": "Optional repository path. Pass the active workspace path when known; defaults to the MCP server working directory."
-                        },
-                        "mode": {
-                            "type": "string",
-                            "description": "Optional task type override.",
-                            "enum": ["bug_fix", "feature", "refactor", "review", "test", "explain"]
-                        },
-                        "paths": {
-                            "type": "array",
-                            "items": { "type": "string" },
-                            "description": "Optional active/open repo-relative or absolute paths to pin as context anchors."
-                        },
-                        "includeCurrentDiff": {
-                            "type": "boolean",
-                            "description": "When true, add safe changed paths from the current local diff as context anchors without returning source text."
-                        },
-                        "targetAgent": {
-                            "type": "string",
-                            "description": "Optional host agent label for local eval traces."
-                        }
-                    },
-                    "required": ["task"],
-                    "additionalProperties": false
-                }
-            },
-            {
-                "name": "search",
-                "title": "Search Repository Context",
-                "description": "Run compact local search over safe inventoried repository files and symbols.",
-                "inputSchema": {
-                    "type": "object",
-                    "properties": {
-                        "query": {
-                            "type": "string",
-                            "description": "Identifier, path fragment, error text, or concept to search for."
-                        },
-                        "repo": {
-                            "type": "string",
-                            "description": "Optional repository path. Pass the active workspace path when known; defaults to the MCP server working directory."
-                        },
-                        "limit": {
-                            "type": "integer",
-                            "minimum": 1,
-                            "maximum": 50,
-                            "description": "Maximum result count."
-                        },
-                        "kinds": {
-                            "type": "array",
-                            "items": {
-                                "type": "string",
-                                "enum": ["file", "symbol"]
-                            },
-                            "description": "Optional result kinds. Defaults to file and symbol matches."
-                        }
-                    },
-                    "required": ["query"],
-                    "additionalProperties": false
-                }
-            },
-            {
-                "name": "related",
-                "title": "Related Repository Context",
-                "description": "Expand around a path or symbol with related tests, dependency edges, and local git co-change hints.",
-                "inputSchema": {
-                    "type": "object",
-                    "properties": {
-                        "path": {
-                            "type": "string",
-                            "description": "Repository-relative or absolute file path to expand from."
-                        },
-                        "symbol": {
-                            "type": "string",
-                            "description": "Symbol name or query to resolve first, then expand from matching symbol paths."
-                        },
-                        "repo": {
-                            "type": "string",
-                            "description": "Optional repository path. Pass the active workspace path when known; defaults to the MCP server working directory."
-                        },
-                        "includeCurrentDiff": {
-                            "type": "boolean",
-                            "description": "When true, add safe changed paths from the current local diff as expansion anchors without returning source text."
-                        },
-                        "include": {
-                            "type": "array",
-                            "items": {
-                                "type": "string",
-                                "enum": ["tests", "commits", "dependencies"]
-                            },
-                            "description": "Optional expansion categories. Defaults to tests, commits, and dependencies."
-                        },
-                        "limit": {
-                            "type": "integer",
-                            "minimum": 1,
-                            "maximum": 50,
-                            "description": "Maximum count for each expansion category."
-                        }
-                    },
-                    "additionalProperties": false
-                }
-            },
-            {
-                "name": "get_pack",
-                "title": "Get Context Pack",
-                "description": "Return a budgeted, local-only ContextPack for a coding task.",
-                "inputSchema": {
-                    "type": "object",
-                    "properties": {
-                        "task": {
-                            "type": "string",
-                            "description": "The developer task to compile context for."
-                        },
-                        "repo": {
-                            "type": "string",
-                            "description": "Optional repository path. Pass the active workspace path when known; defaults to the MCP server working directory."
-                        },
-                        "mode": {
-                            "type": "string",
-                            "description": "Optional task type override.",
-                            "enum": ["bug_fix", "feature", "refactor", "review", "test", "explain"]
-                        },
-                        "budget": {
-                            "type": "string",
-                            "description": "Context budget.",
-                            "enum": ["brief", "standard", "deep"]
-                        },
-                        "format": {
-                            "type": "string",
-                            "description": "Text response format.",
-                            "enum": ["markdown", "json"]
-                        },
-                        "paths": {
-                            "type": "array",
-                            "items": { "type": "string" },
-                            "description": "Optional active/open repo-relative or absolute paths to pin as context anchors."
-                        },
-                        "includeCurrentDiff": {
-                            "type": "boolean",
-                            "description": "When true, add safe changed paths from the current local diff as context anchors without returning source text."
-                        },
-                        "targetAgent": {
-                            "type": "string",
-                            "description": "Optional host agent label for local eval traces."
-                        }
-                    },
-                    "required": ["task"],
-                    "additionalProperties": false
-                }
-            },
-            {
-                "name": "related_tests",
-                "title": "Find Related Tests",
-                "description": "Find likely test files and targeted commands for source paths.",
-                "inputSchema": {
-                    "type": "object",
-                    "properties": {
-                        "paths": {
-                            "type": "array",
-                            "items": { "type": "string" },
-                            "description": "Repository-relative or absolute source paths."
-                        },
-                        "repo": {
-                            "type": "string",
-                            "description": "Optional repository path. Pass the active workspace path when known; defaults to the MCP server working directory."
-                        }
-                    },
-                    "required": ["paths"],
-                    "additionalProperties": false
-                }
-            },
-            {
-                "name": "current_diff",
-                "title": "Current Diff Summary",
-                "description": "Return safe changed path lists from the local git working tree without returning source content.",
-                "inputSchema": {
-                    "type": "object",
-                    "properties": {
-                        "repo": {
-                            "type": "string",
-                            "description": "Optional repository path. Pass the active workspace path when known; defaults to the MCP server working directory."
-                        },
-                        "includeUntracked": {
-                            "type": "boolean",
-                            "description": "Include untracked non-ignored paths."
-                        }
-                    },
-                    "additionalProperties": false
-                }
-            }
-        ]
-    })
-}
-
-fn read_resource(params: Value) -> Result<Value, RpcError> {
-    let params: ReadResourceParams = serde_json::from_value(params).map_err(|error| {
-        RpcError::invalid_params(format!("invalid resources/read params: {error}"))
-    })?;
-
-    let content = match params.uri.as_str() {
-        "ctxpack://repo/summary" => {
-            let repo = discover_repo(None)?;
-            resource_json(&repo_summary(&repo.path)?)
-        }
-        "ctxpack://repo/test-map" => {
-            let repo = discover_repo(None)?;
-            resource_json(&repo_test_map(&repo.path)?)
-        }
-        "ctxpack://repo/dependency-graph" => {
-            let repo = discover_repo(None)?;
-            resource_json(&repo_dependency_graph(&repo.path)?)
-        }
-        "ctxpack://pack/guide" => pack_guide_markdown(),
-        uri if uri.starts_with("ctxpack://pack/") => read_pack_resource(uri)?,
-        uri if uri.starts_with("ctxpack://file/") => {
-            let repo = discover_repo(None)?;
-            read_file_resource(&repo.path, uri)?
-        }
-        uri if uri.starts_with("ctxpack://symbol/") => {
-            let repo = discover_repo(None)?;
-            read_symbol_resource(&repo.path, uri)?
-        }
-        uri => {
-            return Err(RpcError::invalid_params(format!(
-                "unsupported resource URI: {uri}"
-            )))
-        }
-    };
-
-    Ok(json!({
-        "contents": [{
-            "uri": params.uri,
-            "mimeType": content.mime_type,
-            "text": content.text
-        }]
-    }))
-}
-
-fn get_prompt(params: Value) -> Result<Value, RpcError> {
-    let params: GetPromptParams = serde_json::from_value(params).map_err(|error| {
-        RpcError::invalid_params(format!("invalid prompts/get params: {error}"))
-    })?;
-    let task = params
-        .arguments
-        .get("task")
-        .and_then(Value::as_str)
-        .unwrap_or("")
-        .trim();
-
-    let text = match params.name.as_str() {
-        "bugfix" => workflow_prompt(
-            "bug_fix",
-            task,
-            "Call ctxpack.prepare_task first, read the returned target files, request ctxpack.get_pack only if needed, make the smallest source change, then run the related test command.",
-        ),
-        "feature" => workflow_prompt(
-            "feature",
-            task,
-            "Call ctxpack.prepare_task, inspect analogous target files and tests, request a standard pack when examples are needed, then implement within existing repo patterns.",
-        ),
-        "refactor" => workflow_prompt(
-            "refactor",
-            task,
-            "Call ctxpack.prepare_task, expand with ctxpack.related around the affected files, preserve behavior, and validate with related tests.",
-        ),
-        "review_diff" => workflow_prompt(
-            "review",
-            task,
-            "Call ctxpack.current_diff, inspect changed paths, use ctxpack.related for risky files, then report findings ordered by severity.",
-        ),
-        "write_tests" => workflow_prompt(
-            "test",
-            task,
-            "Call ctxpack.prepare_task and ctxpack.related_tests, inspect the source under test and existing test style, then add focused tests.",
-        ),
-        "explain_area" => workflow_prompt(
-            "explain",
-            task,
-            "Call ctxpack.prepare_task and use ctxpack.search for named concepts, then explain only from files actually read or returned by ctxpack.",
-        ),
-        name => {
-            return Err(RpcError::invalid_params(format!(
-                "prompt is not implemented: {name}"
-            )))
-        }
-    };
-
-    Ok(json!({
-        "description": format!("ctxpack {} workflow", params.name),
-        "messages": [{
-            "role": "user",
-            "content": {
-                "type": "text",
-                "text": text
-            }
-        }]
-    }))
-}
-
-fn call_tool(params: Value) -> Result<Value, RpcError> {
-    let params: CallToolParams = serde_json::from_value(params)
-        .map_err(|error| RpcError::invalid_params(format!("invalid tools/call params: {error}")))?;
-
-    match params.name.as_str() {
-        "prepare_task" => call_prepare_task(params.arguments),
-        "search" => call_search(params.arguments),
-        "related" => call_related(params.arguments),
-        "get_pack" => call_get_pack(params.arguments),
-        "related_tests" => call_related_tests(params.arguments),
-        "current_diff" => call_current_diff(params.arguments),
-        name => Err(RpcError::invalid_params(format!(
-            "tool is not implemented: {name}"
-        ))),
-    }
-}
-
-fn call_prepare_task(arguments: Value) -> Result<Value, RpcError> {
-    let args: PrepareTaskArgs = serde_json::from_value(arguments).map_err(|error| {
-        RpcError::invalid_params(format!("invalid prepare_task arguments: {error}"))
-    })?;
-
-    if args.task.trim().is_empty() {
-        return Err(RpcError::invalid_params("task must not be empty"));
-    }
-
-    let repo = discover_repo(args.repo)?;
-    let paths = context_anchor_paths(&repo.path, args.paths, args.include_current_diff)?;
-    let plan = prepare_context_plan_with_paths(
-        &repo.path,
-        &args.task,
-        args.mode.unwrap_or(TaskType::Explain),
-        &paths,
-    )
-    .map_err(|error| RpcError::invalid_params(format!("failed to prepare task: {error}")))?;
-    let trace = eval_trace_for_plan(
-        &repo.path,
-        &args.task,
-        args.target_agent.as_deref().unwrap_or("generic"),
-        &plan,
-    );
-    append_eval_trace(&repo.path, &trace).map_err(|error| {
-        RpcError::invalid_params(format!("failed to record eval trace: {error}"))
-    })?;
-    cache_pack_resources(
-        &repo.path,
-        &args.task,
-        &plan,
-        args.target_agent.as_deref().unwrap_or("generic"),
-    )?;
-    let structured = serde_json::to_value(&plan)
-        .map_err(|error| RpcError::invalid_params(format!("failed to serialize plan: {error}")))?;
-    let text = serde_json::to_string_pretty(&plan)
-        .map_err(|error| RpcError::invalid_params(format!("failed to serialize plan: {error}")))?;
-
-    Ok(json!({
-        "content": [{
-            "type": "text",
-            "text": text
-        }],
-        "structuredContent": structured,
-        "isError": false
-    }))
-}
-
-struct ResourceContent {
-    mime_type: &'static str,
-    text: String,
-}
-
-#[derive(Debug, Clone)]
-struct CachedResource {
-    mime_type: &'static str,
-    text: String,
-}
-
-fn pack_resource_cache() -> &'static Mutex<BTreeMap<String, CachedResource>> {
-    static CACHE: OnceLock<Mutex<BTreeMap<String, CachedResource>>> = OnceLock::new();
-    CACHE.get_or_init(|| Mutex::new(BTreeMap::new()))
-}
-
-fn cache_pack_resources(
-    repo: &Path,
-    task: &str,
-    plan: &ctxpack_core::ContextPlan,
-    target_agent: &str,
-) -> Result<(), RpcError> {
-    let mut cache = pack_resource_cache()
-        .lock()
-        .map_err(|_| RpcError::invalid_params("pack resource cache is unavailable"))?;
-    for option in &plan.pack_options {
-        let pack = compile_context_pack_from_plan_for_agent(
-            repo,
-            task,
-            plan,
-            option.budget.clone(),
-            target_agent,
-        );
-        cache_context_pack(&mut cache, &option.resource_uri, &pack)?;
-    }
-    Ok(())
-}
-
-fn cache_context_pack(
-    cache: &mut BTreeMap<String, CachedResource>,
-    uri: &str,
-    pack: &ContextPack,
-) -> Result<(), RpcError> {
-    let markdown = render_pack_markdown(pack);
-    cache.insert(
-        uri.to_string(),
-        CachedResource {
-            mime_type: "text/markdown",
-            text: markdown,
-        },
-    );
-    cache.insert(
-        format!("{uri}.json"),
-        CachedResource {
-            mime_type: "application/json",
-            text: serde_json::to_string_pretty(pack).map_err(|error| {
-                RpcError::invalid_params(format!("failed to serialize cached pack: {error}"))
-            })?,
-        },
-    );
-    Ok(())
-}
-
-fn read_pack_resource(uri: &str) -> Result<ResourceContent, RpcError> {
-    let cache = pack_resource_cache()
-        .lock()
-        .map_err(|_| RpcError::invalid_params("pack resource cache is unavailable"))?;
-    let Some(resource) = cache.get(uri) else {
-        return Err(RpcError::invalid_params(format!(
-            "pack resource is not available in this MCP session; call prepare_task first: {uri}"
-        )));
-    };
-    Ok(ResourceContent {
-        mime_type: resource.mime_type,
-        text: resource.text.clone(),
-    })
-}
-
-fn resource_json(value: &Value) -> ResourceContent {
-    ResourceContent {
-        mime_type: "application/json",
-        text: serde_json::to_string_pretty(value).unwrap_or_else(|_| "{}".to_string()),
-    }
-}
-
-fn repo_summary(repo: &Path) -> Result<Value, RpcError> {
-    let inventory = load_or_build_inventory(repo, &InventoryOptions::default())
-        .map_err(|error| RpcError::invalid_params(format!("failed to load inventory: {error}")))?;
-    let mut roles = BTreeMap::<String, usize>::new();
-    for file in &inventory.files {
-        *roles.entry(format!("{:?}", file.role)).or_default() += 1;
-    }
-
-    Ok(json!({
-        "repoId": inventory.repo_id,
-        "fileCount": inventory.files.len(),
-        "generatedCount": inventory.generated_count,
-        "sensitiveCount": inventory.sensitive_count,
-        "roles": roles,
-        "privacyStatus": {
-            "localOnly": true,
-            "remoteEmbeddingsUsed": false,
-            "remoteRerankingUsed": false
-        }
-    }))
-}
-
-fn repo_test_map(repo: &Path) -> Result<Value, RpcError> {
-    let tests = test_map(repo)
-        .map_err(|error| RpcError::invalid_params(format!("failed to build test map: {error}")))?;
-
-    Ok(json!({ "tests": tests }))
-}
-
-fn repo_dependency_graph(repo: &Path) -> Result<Value, RpcError> {
-    let edges = dependency_edges(repo, &DependencyOptions { limit: 200 }).map_err(|error| {
-        RpcError::invalid_params(format!("failed to build dependency graph: {error}"))
-    })?;
-
-    Ok(json!({ "edges": edges }))
-}
-
-fn read_file_resource(repo: &Path, uri: &str) -> Result<ResourceContent, RpcError> {
-    let (path, lines) = parse_file_uri(uri)?;
-    let inventory = load_or_build_inventory(repo, &InventoryOptions::default())
-        .map_err(|error| RpcError::invalid_params(format!("failed to load inventory: {error}")))?;
-    let Some(file) = inventory.files.into_iter().find(|file| file.path == path) else {
-        return Err(RpcError::invalid_params(format!(
-            "file is not in safe inventory: {path}"
-        )));
-    };
-    if file.generated || file.ignored || file.role == FileRole::Sensitive {
-        return Err(RpcError::invalid_params(format!(
-            "file is excluded by ctxpack policy: {path}"
-        )));
-    }
-
-    let content = fs::read_to_string(repo.join(&file.path))
-        .map_err(|error| RpcError::invalid_params(format!("failed to read file: {error}")))?;
-    let text = render_line_slice(&content, lines.unwrap_or((1, 120)));
-    Ok(ResourceContent {
-        mime_type: "text/plain",
-        text,
-    })
-}
-
-fn read_symbol_resource(repo: &Path, uri: &str) -> Result<ResourceContent, RpcError> {
-    let symbol = uri.trim_start_matches("ctxpack://symbol/").trim();
-    if symbol.is_empty() {
-        return Err(RpcError::invalid_params(
-            "symbol resource requires a symbol",
-        ));
-    }
-    let results = symbol_search(repo, symbol, &SymbolOptions { limit: 10 })
-        .map_err(|error| RpcError::invalid_params(format!("failed to search symbol: {error}")))?;
-    Ok(ResourceContent {
-        mime_type: "application/json",
-        text: serde_json::to_string_pretty(&results).unwrap_or_else(|_| "[]".to_string()),
-    })
-}
-
-fn pack_guide_markdown() -> ResourceContent {
-    ResourceContent {
-        mime_type: "text/markdown",
-        text: "Use the `ctxpack.get_pack` MCP tool with `task`, optional `mode`, and `budget` to compile a task-conditioned context pack. Packs are generated on demand so they reflect the current safe inventory and git history.".to_string(),
-    }
-}
-
-fn parse_file_uri(uri: &str) -> Result<(String, Option<(usize, usize)>), RpcError> {
-    let rest = uri.trim_start_matches("ctxpack://file/");
-    let (path, query) = rest.split_once('?').unwrap_or((rest, ""));
-    let path = path.trim_start_matches('/').to_string();
-    if path.is_empty() {
-        return Err(RpcError::invalid_params("file resource requires a path"));
-    }
-    let lines = query
-        .split('&')
-        .find_map(|part| part.strip_prefix("lines="))
-        .and_then(|range| {
-            let (start, end) = range.split_once('-')?;
-            Some((start.parse::<usize>().ok()?, end.parse::<usize>().ok()?))
-        })
-        .map(|(start, end)| (start.max(1), end.max(start).min(start + 500)));
-    Ok((path, lines))
-}
-
-fn render_line_slice(content: &str, lines: (usize, usize)) -> String {
-    let (start, end) = lines;
-    content
-        .lines()
-        .enumerate()
-        .filter_map(|(index, line)| {
-            let line_no = index + 1;
-            (line_no >= start && line_no <= end).then(|| format!("{line_no:>4}: {line}"))
-        })
-        .collect::<Vec<_>>()
-        .join("\n")
-}
-
-fn workflow_prompt(mode: &str, task: &str, instruction: &str) -> String {
-    let task_line = if task.is_empty() {
-        "Task: use the user's current request.".to_string()
-    } else {
-        format!("Task: {task}")
-    };
-    format!("{task_line}\nMode: {mode}\n\n{instruction}\n\nWhen the active workspace path is known, pass it as the ctxpack `repo` argument so the MCP server does not infer the wrong working directory.\n\nKeep ctxpack read-only: use it for context and use the host agent's native tools for file reads, edits, and validation commands.")
-}
-
-fn call_search(arguments: Value) -> Result<Value, RpcError> {
-    let args: SearchArgs = serde_json::from_value(arguments)
-        .map_err(|error| RpcError::invalid_params(format!("invalid search arguments: {error}")))?;
-
-    if args.query.trim().is_empty() {
-        return Err(RpcError::invalid_params("query must not be empty"));
-    }
-
-    let repo = discover_repo(args.repo)?;
-    let limit = bounded_limit(args.limit, 10);
-    let include_files = args.kinds.is_empty() || args.kinds.contains(&SearchKind::File);
-    let include_symbols = args.kinds.is_empty() || args.kinds.contains(&SearchKind::Symbol);
-
-    let files = if include_files {
-        lexical_search(&repo.path, &args.query, &SearchOptions { limit })
-            .map_err(|error| RpcError::invalid_params(format!("failed to search repo: {error}")))?
-    } else {
-        Vec::new()
-    };
-    let symbols = if include_symbols {
-        symbol_search(&repo.path, &args.query, &SymbolOptions { limit }).map_err(|error| {
-            RpcError::invalid_params(format!("failed to search repo symbols: {error}"))
-        })?
-    } else {
-        Vec::new()
-    };
-
-    tool_json_result(json!({
-        "query": args.query.trim(),
-        "files": files,
-        "symbols": symbols,
-        "privacyStatus": {
-            "localOnly": true,
-            "sourceTextReturned": false
-        }
-    }))
-}
-
-fn call_related(arguments: Value) -> Result<Value, RpcError> {
-    let args: RelatedArgs = serde_json::from_value(arguments)
-        .map_err(|error| RpcError::invalid_params(format!("invalid related arguments: {error}")))?;
-
-    let repo = discover_repo(args.repo)?;
-    let limit = bounded_limit(args.limit, 10);
-    let (paths, symbol_matches) = related_anchor_paths(
-        &repo.path,
-        args.path,
-        args.symbol,
-        args.include_current_diff,
-        limit,
-    )?;
-    let include_tests = args.include.is_empty() || args.include.contains(&RelatedInclude::Tests);
-    let include_commits =
-        args.include.is_empty() || args.include.contains(&RelatedInclude::Commits);
-    let include_dependencies =
-        args.include.is_empty() || args.include.contains(&RelatedInclude::Dependencies);
-    let mut warnings = Vec::new();
-
-    let tests = if include_tests {
-        related_tests(&repo.path, &paths)
-            .map_err(|error| RpcError::invalid_params(format!("failed to find tests: {error}")))?
-            .into_iter()
-            .take(limit)
-            .collect::<Vec<_>>()
-    } else {
-        Vec::new()
-    };
-    let co_changes = if include_commits {
-        match co_change_hints(&repo.path, &paths, &CoChangeOptions { limit }) {
-            Ok(hints) => hints,
-            Err(error) => {
-                warnings.push(format!(
-                    "Local git co-change hints were unavailable; continuing without history signal: {error}"
-                ));
-                Vec::new()
-            }
-        }
-    } else {
-        Vec::new()
-    };
-    let dependency_edges = if include_dependencies {
-        related_dependency_edges(&repo.path, &paths, &DependencyOptions { limit }).map_err(
-            |error| RpcError::invalid_params(format!("failed to find dependency edges: {error}")),
-        )?
-    } else {
-        Vec::new()
-    };
-
-    tool_json_result(json!({
-        "resolvedPaths": paths,
-        "symbolMatches": symbol_matches,
-        "relatedTests": tests,
-        "coChangeHints": co_changes,
-        "dependencyEdges": dependency_edges,
-        "warnings": warnings
-    }))
-}
-
-fn related_anchor_paths(
-    repo: &Path,
-    path: Option<String>,
-    symbol: Option<String>,
-    include_current_diff: bool,
-    limit: usize,
-) -> Result<(Vec<String>, Value), RpcError> {
-    let mut paths = Vec::new();
-    let mut seen = BTreeSet::new();
-
-    if let Some(path) = path.map(|value| value.trim().to_string()) {
-        if !path.is_empty() && seen.insert(path.clone()) {
-            paths.push(path);
-        }
-    }
-
-    let symbol_matches = if let Some(symbol) = symbol.map(|value| value.trim().to_string()) {
-        if symbol.is_empty() {
-            Value::Array(Vec::new())
-        } else {
-            let results =
-                symbol_search(repo, &symbol, &SymbolOptions { limit }).map_err(|error| {
-                    RpcError::invalid_params(format!("failed to resolve related symbol: {error}"))
-                })?;
-            for result in &results {
-                let path = result.symbol.path.clone();
-                if seen.insert(path.clone()) {
-                    paths.push(path);
-                }
-            }
-            serde_json::to_value(results).map_err(|error| {
-                RpcError::invalid_params(format!("failed to serialize symbol matches: {error}"))
-            })?
-        }
-    } else {
-        Value::Array(Vec::new())
-    };
-
-    if include_current_diff {
-        let diff = current_diff_summary(
-            repo,
-            &CurrentDiffOptions {
-                include_untracked: true,
-            },
-        )
-        .map_err(|error| {
-            RpcError::invalid_params(format!("failed to collect current diff anchors: {error}"))
-        })?;
-        for path in diff
-            .staged
-            .into_iter()
-            .chain(diff.unstaged.into_iter())
-            .chain(diff.untracked.into_iter())
-        {
-            if seen.insert(path.clone()) {
-                paths.push(path);
-            }
-        }
-    }
-
-    if paths.is_empty() {
-        return Err(RpcError::invalid_params(
-            "related requires a non-empty path, symbol, or current diff anchor",
-        ));
-    }
-
-    Ok((paths, symbol_matches))
-}
-
-fn context_anchor_paths(
-    repo: &Path,
-    explicit_paths: Vec<String>,
-    include_current_diff: bool,
-) -> Result<Vec<String>, RpcError> {
-    let mut paths = Vec::new();
-    let mut seen = BTreeSet::new();
-    for path in explicit_paths {
-        let path = path.trim();
-        if !path.is_empty() && seen.insert(path.to_string()) {
-            paths.push(path.to_string());
-        }
-    }
-
-    if include_current_diff {
-        let diff = current_diff_summary(
-            repo,
-            &CurrentDiffOptions {
-                include_untracked: true,
-            },
-        )
-        .map_err(|error| {
-            RpcError::invalid_params(format!("failed to collect current diff anchors: {error}"))
-        })?;
-        for path in diff
-            .staged
-            .into_iter()
-            .chain(diff.unstaged.into_iter())
-            .chain(diff.untracked.into_iter())
-        {
-            if seen.insert(path.clone()) {
-                paths.push(path);
-            }
-        }
-    }
-
-    Ok(paths)
-}
-
-fn call_get_pack(arguments: Value) -> Result<Value, RpcError> {
-    let args: GetPackArgs = serde_json::from_value(arguments).map_err(|error| {
-        RpcError::invalid_params(format!("invalid get_pack arguments: {error}"))
-    })?;
-
-    if args.task.trim().is_empty() {
-        return Err(RpcError::invalid_params("task must not be empty"));
-    }
-
-    let repo = discover_repo(args.repo)?;
-    let paths = context_anchor_paths(&repo.path, args.paths, args.include_current_diff)?;
-    let budget = args.budget.unwrap_or(PackBudget::Brief);
-    let target_agent = args.target_agent.as_deref().unwrap_or("generic");
-    let (plan, pack) = compile_context_pack_with_plan_and_paths_for_agent(
-        &repo.path,
-        &args.task,
-        args.mode.unwrap_or(TaskType::Explain),
-        budget,
-        &paths,
-        target_agent,
-    )
-    .map_err(|error| RpcError::invalid_params(format!("failed to compile pack: {error}")))?;
-    let trace = eval_trace_for_pack(&repo.path, &args.task, target_agent, &plan, &pack);
-    append_eval_trace(&repo.path, &trace).map_err(|error| {
-        RpcError::invalid_params(format!("failed to record eval trace: {error}"))
-    })?;
-
-    let structured = serde_json::to_value(&pack)
-        .map_err(|error| RpcError::invalid_params(format!("failed to serialize pack: {error}")))?;
-    let text = match args.format.unwrap_or(PackFormat::Markdown) {
-        PackFormat::Markdown => render_pack_markdown(&pack),
-        PackFormat::Json => serde_json::to_string_pretty(&pack).map_err(|error| {
-            RpcError::invalid_params(format!("failed to serialize pack: {error}"))
-        })?,
-    };
-
-    Ok(json!({
-        "content": [{
-            "type": "text",
-            "text": text
-        }],
-        "structuredContent": structured,
-        "isError": false
-    }))
-}
-
-fn call_related_tests(arguments: Value) -> Result<Value, RpcError> {
-    let args: RelatedTestsArgs = serde_json::from_value(arguments).map_err(|error| {
-        RpcError::invalid_params(format!("invalid related_tests arguments: {error}"))
-    })?;
-
-    if args.paths.is_empty() {
-        return Err(RpcError::invalid_params("paths must not be empty"));
-    }
-
-    let repo = discover_repo(args.repo)?;
-    let results = related_tests(&repo.path, &args.paths)
-        .map_err(|error| RpcError::invalid_params(format!("failed to find tests: {error}")))?;
-
-    tool_json_result(results)
-}
-
-fn call_current_diff(arguments: Value) -> Result<Value, RpcError> {
-    let args: CurrentDiffArgs = serde_json::from_value(arguments).map_err(|error| {
-        RpcError::invalid_params(format!("invalid current_diff arguments: {error}"))
-    })?;
-
-    let repo = discover_repo(args.repo)?;
-    let summary = current_diff_summary(
-        &repo.path,
-        &CurrentDiffOptions {
-            include_untracked: args.include_untracked,
-        },
-    )
-    .map_err(|error| RpcError::invalid_params(format!("failed to read current diff: {error}")))?;
-
-    tool_json_result(summary)
-}
-
-fn discover_repo(repo: Option<PathBuf>) -> Result<RepoRoot, RpcError> {
-    let start = match repo {
-        Some(path) => path,
-        None => std::env::current_dir()
-            .map_err(|error| RpcError::invalid_params(format!("failed to read cwd: {error}")))?,
-    };
-    RepoRoot::discover_from(&start)
-        .map_err(|error| RpcError::invalid_params(format!("failed to discover repo: {error}")))
-}
-
-fn bounded_limit(limit: Option<usize>, default: usize) -> usize {
-    limit.unwrap_or(default).clamp(1, 50)
-}
-
-fn tool_json_result(value: impl serde::Serialize) -> Result<Value, RpcError> {
-    let structured = serde_json::to_value(value).map_err(|error| {
-        RpcError::invalid_params(format!("failed to serialize tool result: {error}"))
-    })?;
-    let text = serde_json::to_string_pretty(&structured).map_err(|error| {
-        RpcError::invalid_params(format!("failed to serialize tool result: {error}"))
-    })?;
-
-    Ok(json!({
-        "content": [{
-            "type": "text",
-            "text": text
-        }],
-        "structuredContent": structured,
-        "isError": false
-    }))
-}
-
-fn success_response(id: Value, result: Value) -> Value {
-    json!({
-        "jsonrpc": JSONRPC_VERSION,
-        "id": id,
-        "result": result
-    })
-}
-
-fn error_response(id: Value, error: RpcError) -> Value {
-    json!({
-        "jsonrpc": JSONRPC_VERSION,
-        "id": id,
-        "error": {
-            "code": error.code,
-            "message": error.message
-        }
-    })
-}
+#[cfg(test)]
+use protocol::handle_line;
+#[cfg(test)]
+use resources::{clear_pack_resource_cache, pack_resource_cache_len, pack_resource_cache_limit};
 
 #[cfg(test)]
 mod tests {
@@ -1276,7 +45,9 @@ mod tests {
 
     fn env_lock() -> std::sync::MutexGuard<'static, ()> {
         static LOCK: OnceLock<Mutex<()>> = OnceLock::new();
-        LOCK.get_or_init(|| Mutex::new(())).lock().unwrap()
+        LOCK.get_or_init(|| Mutex::new(()))
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
     }
 
     #[test]
@@ -1287,6 +58,26 @@ mod tests {
     #[test]
     fn implemented_tool_surface_stays_small() {
         assert_eq!(IMPLEMENTED_MCP_TOOL_NAMES, PLANNED_MCP_TOOL_NAMES);
+    }
+
+    #[test]
+    fn initialize_public_capabilities_are_stable() {
+        let response =
+            handle_line(r#"{"jsonrpc":"2.0","id":1,"method":"initialize","params":{}}"#).unwrap();
+
+        assert_eq!(response["result"]["serverInfo"]["name"], "ctxpack");
+        assert_eq!(
+            response["result"]["capabilities"]["tools"]["listChanged"],
+            false
+        );
+        assert_eq!(
+            response["result"]["capabilities"]["resources"]["listChanged"],
+            false
+        );
+        assert_eq!(
+            response["result"]["capabilities"]["prompts"]["listChanged"],
+            false
+        );
     }
 
     #[test]
@@ -1335,6 +126,10 @@ mod tests {
             tools[0]["inputSchema"]["properties"]["includeCurrentDiff"]["type"],
             "boolean"
         );
+        assert_eq!(
+            tools[0]["inputSchema"]["properties"]["recordTrace"]["type"],
+            "boolean"
+        );
         assert_eq!(tools[1]["name"], "search");
         assert_eq!(tools[2]["name"], "related");
         assert_eq!(
@@ -1351,8 +146,49 @@ mod tests {
             tools[3]["inputSchema"]["properties"]["includeCurrentDiff"]["type"],
             "boolean"
         );
+        assert_eq!(
+            tools[3]["inputSchema"]["properties"]["recordTrace"]["type"],
+            "boolean"
+        );
         assert_eq!(tools[4]["name"], "related_tests");
         assert_eq!(tools[5]["name"], "current_diff");
+    }
+
+    #[test]
+    fn tools_list_public_surface_is_exact() {
+        let expected_tools = [
+            "prepare_task",
+            "search",
+            "related",
+            "get_pack",
+            "related_tests",
+            "current_diff",
+        ];
+        assert_eq!(IMPLEMENTED_MCP_TOOL_NAMES, expected_tools);
+
+        let response =
+            handle_line(r#"{"jsonrpc":"2.0","id":"tools","method":"tools/list","params":{}}"#)
+                .unwrap();
+        let tool_names = response["result"]["tools"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|tool| tool["name"].as_str().unwrap())
+            .collect::<Vec<_>>();
+
+        assert_eq!(tool_names, expected_tools);
+        for tool in response["result"]["tools"].as_array().unwrap() {
+            assert_eq!(tool["inputSchema"]["type"], "object");
+            assert_eq!(tool["inputSchema"]["additionalProperties"], false);
+        }
+        assert_eq!(
+            response["result"]["tools"][0]["inputSchema"]["required"][0],
+            "task"
+        );
+        assert_eq!(
+            response["result"]["tools"][4]["inputSchema"]["required"][0],
+            "paths"
+        );
     }
 
     #[test]
@@ -1371,6 +207,86 @@ mod tests {
     }
 
     #[test]
+    fn resources_public_uri_shapes_are_stable() {
+        let _guard = env_lock();
+        let repo = fixture_repo();
+        std::env::set_var("CTXPACK_HOME", &repo.home);
+        let cwd = std::env::current_dir().unwrap();
+        std::env::set_current_dir(&repo.repo).unwrap();
+
+        let list = handle_line(
+            r#"{"jsonrpc":"2.0","id":"resources","method":"resources/list","params":{}}"#,
+        )
+        .unwrap();
+        let uris = list["result"]["resources"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|resource| resource["uri"].as_str().unwrap())
+            .collect::<Vec<_>>();
+
+        assert_eq!(
+            uris,
+            vec![
+                "ctxpack://repo/summary",
+                "ctxpack://repo/test-map",
+                "ctxpack://repo/dependency-graph",
+                "ctxpack://pack/guide",
+            ]
+        );
+
+        let summary = handle_line(
+            r#"{"jsonrpc":"2.0","id":30,"method":"resources/read","params":{"uri":"ctxpack://repo/summary"}}"#,
+        )
+        .unwrap();
+        let test_map = handle_line(
+            r#"{"jsonrpc":"2.0","id":31,"method":"resources/read","params":{"uri":"ctxpack://repo/test-map"}}"#,
+        )
+        .unwrap();
+        let dependency_graph = handle_line(
+            r#"{"jsonrpc":"2.0","id":32,"method":"resources/read","params":{"uri":"ctxpack://repo/dependency-graph"}}"#,
+        )
+        .unwrap();
+        let guide = handle_line(
+            r#"{"jsonrpc":"2.0","id":33,"method":"resources/read","params":{"uri":"ctxpack://pack/guide"}}"#,
+        )
+        .unwrap();
+        let file = handle_line(
+            r#"{"jsonrpc":"2.0","id":34,"method":"resources/read","params":{"uri":"ctxpack://file/src/auth/session.ts?lines=1-2"}}"#,
+        )
+        .unwrap();
+        let symbol = handle_line(
+            r#"{"jsonrpc":"2.0","id":35,"method":"resources/read","params":{"uri":"ctxpack://symbol/requireSession"}}"#,
+        )
+        .unwrap();
+
+        assert_eq!(
+            summary["result"]["contents"][0]["uri"],
+            "ctxpack://repo/summary"
+        );
+        assert_eq!(
+            test_map["result"]["contents"][0]["uri"],
+            "ctxpack://repo/test-map"
+        );
+        assert_eq!(
+            dependency_graph["result"]["contents"][0]["uri"],
+            "ctxpack://repo/dependency-graph"
+        );
+        assert_eq!(guide["result"]["contents"][0]["mimeType"], "text/markdown");
+        assert!(file["result"]["contents"][0]["text"]
+            .as_str()
+            .unwrap()
+            .contains("requireSession"));
+        assert!(symbol["result"]["contents"][0]["text"]
+            .as_str()
+            .unwrap()
+            .contains("src/auth/session.ts"));
+
+        std::env::set_current_dir(cwd).unwrap();
+        std::env::remove_var("CTXPACK_HOME");
+    }
+
+    #[test]
     fn prompts_list_exposes_workflow_prompts() {
         let response =
             handle_line(r#"{"jsonrpc":"2.0","id":"prompts","method":"prompts/list","params":{}}"#)
@@ -1380,6 +296,112 @@ mod tests {
         assert_eq!(prompts.len(), 6);
         assert_eq!(prompts[0]["name"], "bugfix");
         assert_eq!(prompts[5]["name"], "explain_area");
+    }
+
+    #[test]
+    fn prompts_public_surface_is_stable() {
+        let list =
+            handle_line(r#"{"jsonrpc":"2.0","id":"prompts","method":"prompts/list","params":{}}"#)
+                .unwrap();
+        let prompt_names = list["result"]["prompts"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|prompt| prompt["name"].as_str().unwrap())
+            .collect::<Vec<_>>();
+
+        assert_eq!(
+            prompt_names,
+            vec![
+                "bugfix",
+                "feature",
+                "refactor",
+                "review_diff",
+                "write_tests",
+                "explain_area",
+            ]
+        );
+        for prompt in list["result"]["prompts"].as_array().unwrap() {
+            assert_eq!(prompt["arguments"][0]["name"], "task");
+            assert_eq!(prompt["arguments"][0]["description"].is_string(), true);
+        }
+
+        let get = handle_line(
+            r#"{"jsonrpc":"2.0","id":36,"method":"prompts/get","params":{"name":"review_diff","arguments":{"task":"review current branch"}}}"#,
+        )
+        .unwrap();
+        let message = &get["result"]["messages"][0];
+        assert_eq!(message["role"], "user");
+        assert_eq!(message["content"]["type"], "text");
+        assert!(message["content"]["text"]
+            .as_str()
+            .unwrap()
+            .contains("ctxpack.current_diff"));
+    }
+
+    #[test]
+    fn public_surface_compatibility_guards_cover_all_protocol_descriptors() {
+        initialize_public_capabilities_are_stable();
+        tools_list_public_surface_is_exact();
+        tool_calls_include_text_and_structured_content();
+        resources_public_uri_shapes_are_stable();
+        prompts_public_surface_is_stable();
+    }
+
+    #[test]
+    fn tool_calls_include_text_and_structured_content() {
+        let _guard = env_lock();
+        let repo = fixture_repo();
+        std::env::set_var("CTXPACK_HOME", &repo.home);
+        fs::write(
+            repo.repo.join("src/auth/session.ts"),
+            "import { parseCookie } from './cookies';\nexport function requireSession() {\n  return !parseCookie();\n}\n",
+        )
+        .unwrap();
+
+        let requests = [
+            format!(
+                r#"{{"jsonrpc":"2.0","id":40,"method":"tools/call","params":{{"name":"prepare_task","arguments":{{"task":"fix requireSession bug","repo":"{}","mode":"bug_fix"}}}}}}"#,
+                repo.repo.display()
+            ),
+            format!(
+                r#"{{"jsonrpc":"2.0","id":41,"method":"tools/call","params":{{"name":"search","arguments":{{"query":"requireSession","repo":"{}","limit":2}}}}}}"#,
+                repo.repo.display()
+            ),
+            format!(
+                r#"{{"jsonrpc":"2.0","id":42,"method":"tools/call","params":{{"name":"related","arguments":{{"path":"src/auth/session.ts","repo":"{}","limit":2}}}}}}"#,
+                repo.repo.display()
+            ),
+            format!(
+                r#"{{"jsonrpc":"2.0","id":43,"method":"tools/call","params":{{"name":"get_pack","arguments":{{"task":"fix requireSession bug","repo":"{}","mode":"bug_fix","budget":"brief","format":"markdown"}}}}}}"#,
+                repo.repo.display()
+            ),
+            format!(
+                r#"{{"jsonrpc":"2.0","id":44,"method":"tools/call","params":{{"name":"current_diff","arguments":{{"repo":"{}","includeUntracked":true}}}}}}"#,
+                repo.repo.display()
+            ),
+        ];
+
+        for request in requests {
+            let response = handle_line(&request).unwrap();
+            assert!(response["result"]["content"][0]["text"].is_string());
+            assert!(response["result"]["structuredContent"].is_object());
+            assert_eq!(response["result"]["isError"], false);
+        }
+
+        let related_tests = handle_line(&format!(
+            r#"{{"jsonrpc":"2.0","id":45,"method":"tools/call","params":{{"name":"related_tests","arguments":{{"paths":["src/auth/session.ts"],"repo":"{}"}}}}}}"#,
+            repo.repo.display()
+        ))
+        .unwrap();
+        assert!(related_tests["result"]["content"][0]["text"].is_string());
+        assert!(related_tests["result"]["structuredContent"].is_array());
+        assert_eq!(
+            related_tests["result"]["structuredContent"][0]["path"],
+            "tests/auth/session.test.ts"
+        );
+
+        std::env::remove_var("CTXPACK_HOME");
     }
 
     #[test]
@@ -1405,6 +427,38 @@ mod tests {
             response["result"]["structuredContent"]["targetFiles"][0]["path"],
             "src/auth/session.ts"
         );
+        assert!(
+            response["result"]["structuredContent"]["targetFiles"][0]["attribution"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .any(
+                    |evidence| evidence["reasonCode"].is_string() && evidence["signal"].is_string()
+                )
+        );
+        assert_eq!(
+            response["result"]["structuredContent"]["relatedTests"][0]["path"],
+            "tests/auth/session.test.ts"
+        );
+        assert!(
+            response["result"]["structuredContent"]["relatedTests"][0]["attribution"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .any(
+                    |evidence| evidence["reasonCode"].is_string() && evidence["signal"].is_string()
+                )
+        );
+        assert!(
+            response["result"]["structuredContent"]["retrievalCandidates"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .any(|candidate| candidate["path"] == "src/auth/session.ts"
+                    && candidate["kind"] == "file"
+                    && candidate["signalScores"].is_array()
+                    && candidate["evidence"].is_array())
+        );
         assert!(response["result"]["content"][0]["text"]
             .as_str()
             .unwrap()
@@ -1413,9 +467,144 @@ mod tests {
     }
 
     #[test]
+    fn diagnostics_prepare_task_and_get_pack_include_trace_write_failures() {
+        let _guard = env_lock();
+        let repo = fixture_repo();
+        let blocked_home = repo._temp.path().join("ctxpack-home-file");
+        fs::write(&blocked_home, "not a directory\n").unwrap();
+        std::env::set_var("CTXPACK_HOME", &blocked_home);
+
+        let prepare = handle_line(&format!(
+            r#"{{"jsonrpc":"2.0","id":70,"method":"tools/call","params":{{"name":"prepare_task","arguments":{{"task":"fix requireSession bug","repo":"{}","mode":"bug_fix"}}}}}}"#,
+            repo.repo.display()
+        ))
+        .unwrap();
+        let pack = handle_line(&format!(
+            r#"{{"jsonrpc":"2.0","id":71,"method":"tools/call","params":{{"name":"get_pack","arguments":{{"task":"fix requireSession bug","repo":"{}","mode":"bug_fix","budget":"brief","format":"json"}}}}}}"#,
+            repo.repo.display()
+        ))
+        .unwrap();
+
+        assert!(prepare.get("error").is_none(), "{prepare:?}");
+        assert!(pack.get("error").is_none(), "{pack:?}");
+        assert_eq!(
+            prepare["result"]["structuredContent"]["targetFiles"][0]["path"],
+            "src/auth/session.ts"
+        );
+        assert_eq!(pack["result"]["structuredContent"]["budget"], "brief");
+        assert!(diagnostic_codes(&prepare["result"]["structuredContent"])
+            .contains(&"trace_write_failed"));
+        assert!(
+            diagnostic_codes(&pack["result"]["structuredContent"]).contains(&"trace_write_failed")
+        );
+
+        std::env::remove_var("CTXPACK_HOME");
+    }
+
+    #[test]
+    fn diagnostics_mcp_tools_expose_machine_readable_fields() {
+        let _guard = env_lock();
+        let repo = fixture_repo();
+        std::env::set_var("CTXPACK_HOME", &repo.home);
+
+        let prepare = handle_line(&format!(
+            r#"{{"jsonrpc":"2.0","id":72,"method":"tools/call","params":{{"name":"prepare_task","arguments":{{"task":"Fixes #1061","repo":"{}","mode":"bug_fix","recordTrace":false}}}}}}"#,
+            repo.repo.display()
+        ))
+        .unwrap();
+        let search = handle_line(&format!(
+            r#"{{"jsonrpc":"2.0","id":73,"method":"tools/call","params":{{"name":"search","arguments":{{"query":"requireSession","repo":"{}","limit":2}}}}}}"#,
+            repo.repo.display()
+        ))
+        .unwrap();
+        let related = handle_line(&format!(
+            r#"{{"jsonrpc":"2.0","id":74,"method":"tools/call","params":{{"name":"related","arguments":{{"path":"src/auth/session.ts","repo":"{}","limit":2}}}}}}"#,
+            repo.repo.display()
+        ))
+        .unwrap();
+        let related_tests = handle_line(&format!(
+            r#"{{"jsonrpc":"2.0","id":75,"method":"tools/call","params":{{"name":"related_tests","arguments":{{"paths":["src/auth/session.ts"],"repo":"{}"}}}}}}"#,
+            repo.repo.display()
+        ))
+        .unwrap();
+        let current_diff = handle_line(&format!(
+            r#"{{"jsonrpc":"2.0","id":76,"method":"tools/call","params":{{"name":"current_diff","arguments":{{"repo":"{}","includeUntracked":true}}}}}}"#,
+            repo.repo.display()
+        ))
+        .unwrap();
+
+        assert!(diagnostic_codes(&prepare["result"]["structuredContent"])
+            .contains(&"low_information_task"));
+        assert!(search["result"]["structuredContent"]["diagnostics"].is_array());
+        assert!(related["result"]["structuredContent"]["diagnostics"].is_array());
+        assert!(related_tests["result"]["structuredContent"].is_array());
+        assert!(related_tests["result"]["diagnostics"].is_array());
+        assert!(current_diff["result"]["structuredContent"]["diagnostics"].is_array());
+
+        std::env::remove_var("CTXPACK_HOME");
+    }
+
+    #[test]
+    fn diagnostics_search_reports_stale_cache_rebuild() {
+        let _guard = env_lock();
+        let repo = fixture_repo();
+        std::env::set_var("CTXPACK_HOME", &repo.home);
+        ctxpack_index::write_inventory(&repo.repo, &ctxpack_index::InventoryOptions::default())
+            .unwrap();
+        fs::write(
+            repo.repo.join("src/auth/refreshed.ts"),
+            "export const refreshed = true;\n",
+        )
+        .unwrap();
+
+        let response = handle_line(&format!(
+            r#"{{"jsonrpc":"2.0","id":77,"method":"tools/call","params":{{"name":"search","arguments":{{"query":"refreshed","repo":"{}","limit":2}}}}}}"#,
+            repo.repo.display()
+        ))
+        .unwrap();
+
+        let codes = diagnostic_codes(&response["result"]["structuredContent"]);
+        assert!(codes.contains(&"inventory_stale"));
+        assert!(codes.contains(&"inventory_rebuilt"));
+        assert_eq!(
+            response["result"]["structuredContent"]["files"][0]["path"],
+            "src/auth/refreshed.ts"
+        );
+
+        std::env::remove_var("CTXPACK_HOME");
+    }
+
+    #[test]
+    fn file_resource_revalidates_against_current_safe_inventory() {
+        let _guard = env_lock();
+        let repo = fixture_repo();
+        std::env::set_var("CTXPACK_HOME", &repo.home);
+        let cwd = std::env::current_dir().unwrap();
+        std::env::set_current_dir(&repo.repo).unwrap();
+        ctxpack_index::write_inventory(&repo.repo, &ctxpack_index::InventoryOptions::default())
+            .unwrap();
+        fs::write(repo.repo.join(".ctxpackignore"), "src/auth/session.ts\n").unwrap();
+
+        let response = handle_line(
+            r#"{"jsonrpc":"2.0","id":78,"method":"resources/read","params":{"uri":"ctxpack://file/src/auth/session.ts?lines=1-2"}}"#,
+        )
+        .unwrap();
+
+        assert_eq!(response["error"]["code"], -32602);
+        assert!(response["error"]["message"]
+            .as_str()
+            .unwrap()
+            .contains("safe inventory"));
+
+        std::env::set_current_dir(cwd).unwrap();
+        std::env::remove_var("CTXPACK_HOME");
+    }
+
+    #[test]
     fn prepare_task_call_caches_pack_resources_for_session_reads() {
         let _guard = env_lock();
         let repo = fixture_repo();
+        clear_pack_resource_cache();
         std::env::set_var("CTXPACK_HOME", &repo.home);
         let request = format!(
             r#"{{"jsonrpc":"2.0","id":18,"method":"tools/call","params":{{"name":"prepare_task","arguments":{{"task":"fix requireSession bug","repo":"{}","mode":"bug_fix"}}}}}}"#,
@@ -1464,6 +653,134 @@ mod tests {
             .as_str()
             .unwrap()
             .contains("\"budget\": \"deep\""));
+
+        std::env::remove_var("CTXPACK_HOME");
+    }
+
+    #[test]
+    fn pack_resources_are_session_scoped_characterization() {
+        let _guard = env_lock();
+        let repo = fixture_repo();
+        clear_pack_resource_cache();
+        std::env::set_var("CTXPACK_HOME", &repo.home);
+
+        let guide = handle_line(
+            r#"{"jsonrpc":"2.0","id":49,"method":"resources/read","params":{"uri":"ctxpack://pack/guide"}}"#,
+        )
+        .unwrap();
+        let guide_text = guide["result"]["contents"][0]["text"].as_str().unwrap();
+        assert!(guide_text.contains("MCP-session scoped"));
+        assert!(guide_text.contains("get_pack"));
+        assert!(guide_text.contains("reconnect-safe"));
+
+        let missing = handle_line(
+            r#"{"jsonrpc":"2.0","id":50,"method":"resources/read","params":{"uri":"ctxpack://pack/not-yet-created/brief"}}"#,
+        )
+        .unwrap();
+        assert_eq!(missing["error"]["code"], -32602);
+        let missing_message = missing["error"]["message"].as_str().unwrap();
+        assert!(missing_message.contains("session-scoped"));
+        assert!(missing_message.contains("same MCP server process"));
+        assert!(missing_message.contains("call prepare_task first"));
+
+        let request = format!(
+            r#"{{"jsonrpc":"2.0","id":51,"method":"tools/call","params":{{"name":"prepare_task","arguments":{{"task":"fix requireSession bug","repo":"{}","mode":"bug_fix","targetAgent":"codex"}}}}}}"#,
+            repo.repo.display()
+        );
+        let response = handle_line(&request).unwrap();
+        let pack_uri = response["result"]["structuredContent"]["packOptions"][0]["resourceUri"]
+            .as_str()
+            .unwrap();
+        let markdown_request = format!(
+            r#"{{"jsonrpc":"2.0","id":52,"method":"resources/read","params":{{"uri":"{pack_uri}"}}}}"#
+        );
+        let json_request = format!(
+            r#"{{"jsonrpc":"2.0","id":53,"method":"resources/read","params":{{"uri":"{pack_uri}.json"}}}}"#
+        );
+        let markdown = handle_line(&markdown_request).unwrap();
+        let json = handle_line(&json_request).unwrap();
+
+        assert_eq!(markdown["result"]["contents"][0]["uri"], pack_uri);
+        assert_eq!(
+            markdown["result"]["contents"][0]["mimeType"],
+            "text/markdown"
+        );
+        assert!(markdown["result"]["contents"][0]["text"]
+            .as_str()
+            .unwrap()
+            .contains("# Context Pack"));
+        assert_eq!(
+            json["result"]["contents"][0]["mimeType"],
+            "application/json"
+        );
+        assert!(json["result"]["contents"][0]["text"]
+            .as_str()
+            .unwrap()
+            .contains("\"targetAgent\": \"codex\""));
+
+        clear_pack_resource_cache();
+        let unavailable_after_clear = handle_line(&markdown_request).unwrap();
+        assert_eq!(unavailable_after_clear["error"]["code"], -32602);
+        let unavailable_message = unavailable_after_clear["error"]["message"]
+            .as_str()
+            .unwrap();
+        assert!(unavailable_message.contains("session-scoped"));
+        assert!(unavailable_message.contains("same MCP server process"));
+        assert!(unavailable_message.contains("call prepare_task first"));
+
+        std::env::remove_var("CTXPACK_HOME");
+    }
+
+    #[test]
+    fn pack_resource_cache_bounds_growth_and_evicts_oldest_entries() {
+        let _guard = env_lock();
+        let repo = fixture_repo();
+        clear_pack_resource_cache();
+        std::env::set_var("CTXPACK_HOME", &repo.home);
+
+        let mut first_uri = String::new();
+        let mut newest_uri = String::new();
+        for index in 0..(pack_resource_cache_limit() + 3) {
+            let request = format!(
+                r#"{{"jsonrpc":"2.0","id":{},"method":"tools/call","params":{{"name":"prepare_task","arguments":{{"task":"fix requireSession bug {index}","repo":"{}","mode":"bug_fix","targetAgent":"codex","recordTrace":false}}}}}}"#,
+                100 + index,
+                repo.repo.display()
+            );
+            let response = handle_line(&request).unwrap();
+            let uri = response["result"]["structuredContent"]["packOptions"][0]["resourceUri"]
+                .as_str()
+                .unwrap()
+                .to_string();
+            if first_uri.is_empty() {
+                first_uri = uri.clone();
+            }
+            newest_uri = uri;
+        }
+
+        assert!(
+            pack_resource_cache_len() <= pack_resource_cache_limit(),
+            "pack cache grew to {} entries with limit {}",
+            pack_resource_cache_len(),
+            pack_resource_cache_limit()
+        );
+
+        let newest_read = handle_line(&format!(
+            r#"{{"jsonrpc":"2.0","id":201,"method":"resources/read","params":{{"uri":"{newest_uri}"}}}}"#
+        ))
+        .unwrap();
+        assert_eq!(
+            newest_read["result"]["contents"][0]["mimeType"],
+            "text/markdown"
+        );
+
+        let old_read = handle_line(&format!(
+            r#"{{"jsonrpc":"2.0","id":202,"method":"resources/read","params":{{"uri":"{first_uri}"}}}}"#
+        ))
+        .unwrap();
+        assert_eq!(old_read["error"]["code"], -32602);
+        let message = old_read["error"]["message"].as_str().unwrap();
+        assert!(message.contains("session-scoped"));
+        assert!(message.contains("call prepare_task first"));
 
         std::env::remove_var("CTXPACK_HOME");
     }
@@ -1947,6 +1264,36 @@ mod tests {
     }
 
     #[test]
+    fn json_rpc_error_codes_are_stable() {
+        let parse = handle_line(r#"{"jsonrpc":"2.0","id":null,"method":"initialize""#).unwrap();
+        let missing_method = handle_line(
+            r#"{"jsonrpc":"2.0","id":60,"method":"sampling/createMessage","params":{}}"#,
+        )
+        .unwrap();
+        let invalid_params = handle_line(
+            r#"{"jsonrpc":"2.0","id":61,"method":"tools/call","params":{"name":"prepare_task","arguments":{"task":""}}}"#,
+        )
+        .unwrap();
+        let unsupported_resource = handle_line(
+            r#"{"jsonrpc":"2.0","id":62,"method":"resources/read","params":{"uri":"ctxpack://unknown/resource"}}"#,
+        )
+        .unwrap();
+
+        assert_eq!(parse["error"]["code"], -32700);
+        assert_eq!(missing_method["error"]["code"], -32601);
+        assert_eq!(invalid_params["error"]["code"], -32602);
+        assert_eq!(unsupported_resource["error"]["code"], -32602);
+        assert!(missing_method["error"]["message"]
+            .as_str()
+            .unwrap()
+            .contains("method not found"));
+        assert!(invalid_params["error"]["message"]
+            .as_str()
+            .unwrap()
+            .contains("task must not be empty"));
+    }
+
+    #[test]
     fn get_pack_call_returns_markdown_and_structured_pack() {
         let _guard = env_lock();
         let repo = fixture_repo();
@@ -2059,5 +1406,14 @@ mod tests {
             args,
             String::from_utf8_lossy(&output.stderr)
         );
+    }
+
+    fn diagnostic_codes(value: &serde_json::Value) -> Vec<&str> {
+        value["diagnostics"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .filter_map(|diagnostic| diagnostic["code"].as_str())
+            .collect()
     }
 }

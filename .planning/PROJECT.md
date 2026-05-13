@@ -23,16 +23,14 @@ Given a coding task, ctxpack should return the smallest safe evidence set that m
 - ✓ Local eval traces and historical retrieval evals are source-free and report file recall, lexical baseline comparison, missing files, and privacy status.
 - ✓ Generated context cards provide source-free repo summaries, testing summaries, and dependency graph summaries for cloud or disconnected agent contexts.
 - ✓ End-to-end local MCP smoke has been verified for Claude Code and Codex CLI with explicit `repo` arguments.
+- ✓ Phase 1 validated compatibility guardrails and module boundaries: binary CLI tests, public JSON contract tests, MCP protocol/resource/prompt tests, and focused index/compiler/MCP modules behind stable crate-root facades.
+- ✓ Phase 2 validated the trust layer: stale inventory detection/rebuild diagnostics, centralized source-read policy, safe pack/card/file-resource revalidation, structured CLI/MCP diagnostics, and non-fatal trace/cache write handling.
+- ✓ Phase 3 validated measured retrieval lift gates: typed retrieval candidates, source-free attribution, fixed-budget ranking, status-aware historical eval labels, lexical comparison, signal ablations, grouped retrieval gaps, checklist reporting, CLI/MCP compatibility, and bounded RefactoringMiner smoke.
+- ✓ Phase 4 validated agent-native client durability: deterministic MCP protocol smoke from wrong cwd, required-mode Codex CLI and Claude Code real-client smokes with server-side `prepare_task`/`get_pack` evidence, explicit session-scoped pack resource diagnostics, bounded MCP pack cache behavior, and thin dynamic adapter guidance.
 
 ### Active
 
-- [ ] Make graph expansion first-class in the context plan, not only risk-flag evidence, so ctxpack can beat lexical baseline on historical evals.
-- [ ] Add inventory freshness checks so search, planning, symbols, tests, dependency graph, and MCP results do not rely on stale cached file metadata.
-- [ ] Strengthen privacy classification beyond the current denylist, especially for package-manager auth files, SSH keys, cloud credentials, and sensitive JSON names.
-- [ ] Add operational diagnostics for weak or partial context plans, including stale cache, unreadable files, skipped large files, git timeout, and missing external-tool signals.
-- [ ] Add binary-level CLI tests for the main commands so Clap wiring, output formats, repo path handling, and write side effects are covered outside library unit tests.
-- [ ] Improve historical retrieval evaluation quality, including rename/delete cases and graph/history lift measurement on large real repositories such as RefactoringMiner.
-- [ ] Split the largest modules along stable boundaries without changing public contracts: inventory/privacy, search/scoring, symbols, dependencies, tests, git/history, traces, planning, packs, cards, eval, MCP schemas, MCP tools, and MCP resources.
+No v1 active requirements remain. Next work should start from v2 requirements or a new milestone.
 
 ### Out of Scope
 
@@ -46,15 +44,15 @@ Given a coding task, ctxpack should return the smallest safe evidence set that m
 
 The product started from the thesis that code agents do not need another generic repo chat app; they need a context compiler that decides which files, tests, examples, constraints, and snippets belong in the model context for a specific task. The existing implementation follows that shape: a Rust workspace separates contracts, indexing/retrieval, context compilation, MCP transport, and CLI rendering.
 
-The codebase map in `.planning/codebase/` documents the current system:
+The codebase map in `.planning/codebase/` documents the current system. Phase 1 completed compatibility guardrails and module-boundary hardening, Phase 2 completed trust-layer freshness, privacy/source-read policy, diagnostics, and constrained local write handling, Phase 3 completed measured retrieval quality gates, and Phase 4 completed agent-native client durability:
 
 - `crates/ctxpack-core/src/contracts.rs` defines the stable typed contracts consumed by CLI and MCP.
-- `crates/ctxpack-index/src/lib.rs` owns safe inventory, search, symbols, test mapping, dependency edges, git history, current diff, historical samples, and eval traces.
-- `crates/ctxpack-compiler/src/lib.rs` owns context-plan fusion, pack compilation, context-card generation, Markdown rendering, provenance, and historical eval.
-- `crates/ctxpack-mcp/src/lib.rs` owns JSON-RPC/MCP tools, resources, prompts, session-scoped pack cache, and tool/resource response shaping.
+- `crates/ctxpack-index/src/lib.rs` is the stable facade for safe inventory, freshness, source-read policy, search, symbols, test mapping, dependency edges, git history, current diff, status-aware historical samples, and eval traces implemented in focused index modules.
+- `crates/ctxpack-compiler/src/lib.rs` is the stable facade for diagnostic-aware context-plan fusion, typed retrieval ranking, pack compilation, source revalidation, context-card generation, Markdown rendering, provenance, and fixed-budget historical eval implemented in focused compiler modules.
+- `crates/ctxpack-mcp/src/lib.rs` is the stable facade for JSON-RPC/MCP protocol, tools, resources, prompts, diagnostics, session-scoped pack cache, and tool/resource response shaping implemented in focused MCP modules.
 - `crates/ctxpack/src/main.rs` owns the user-facing CLI and command output.
 
-The current proof point is mixed. The product is useful enough to provide agent-native context, targeted tests, source-free local traces, and real MCP integration. However, on the RefactoringMiner historical eval slice, ctxpack currently ties lexical baseline at Recall@10, even after improving Recall@5 from `0.29` to `0.43`. The next product work must create measurable lift over lexical retrieval, not merely more features.
+The current proof point is a complete v1 local context broker. The product can provide attributed context recommendations, fixed-budget eval reports, signal ablations, grouped retrieval gaps, source-free large-repo smoke validation, deterministic MCP protocol checks, and real-client Codex CLI / Claude Code smoke proof with explicit repo arguments.
 
 ## Constraints
 
@@ -74,7 +72,11 @@ The current proof point is mixed. The product is useful enough to provide agent-
 | Rust workspace core | The product needs fast local filesystem/git work, deterministic CLI behavior, and small distributable binaries. | ✓ Good |
 | Small MCP tool surface | Too many MCP tools increase context overhead and client decision complexity. | ✓ Good |
 | Source-free eval traces and historical reports | Retrieval quality should be measured without storing prompt text or source snippets. | ✓ Good |
-| Use real repositories for proof | RefactoringMiner exposes scale, history, and retrieval-quality failures that synthetic fixtures miss. | — Pending |
+| Use real repositories for proof | RefactoringMiner exposes scale, history, and retrieval-quality failures that synthetic fixtures miss. | ✓ Validated in Phase 3 smoke |
+| Compatibility guardrails before refactors | Binary CLI, JSON contract, and MCP compatibility tests should fail before internal module changes drift public behavior. | ✓ Validated in Phase 1 |
+| Trust diagnostics before retrieval lift | Measured retrieval work should build on fresh inventory, safe source reads, and explicit degraded-result diagnostics. | ✓ Validated in Phase 2 |
+| Measured retrieval before client durability | Real clients should consume ranked, attributed, source-free context surfaces, not unstable heuristic output. | ✓ Validated in Phase 3 |
+| Real-client proof must be machine-checkable | Agent-native durability requires server-side or transcript evidence for `prepare_task` and `get_pack`, not final assistant prose. | ✓ Validated in Phase 4 |
 
 ## Evolution
 
@@ -94,4 +96,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-05-13 after initialization*
+*Last updated: 2026-05-13 after Phase 4 completion*

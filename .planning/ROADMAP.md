@@ -12,10 +12,10 @@ This roadmap hardens ctxpack from a useful post-MVP context broker into a trustw
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Compatibility Guardrails & Module Boundaries** - Maintainers can protect current CLI, MCP, and JSON behavior while splitting large modules.
-- [ ] **Phase 2: Trust Layer & Operational Diagnostics** - Users receive fresh, safe, explainable results instead of stale cache, unsafe snippets, or silent partial failures.
-- [ ] **Phase 3: Measured Retrieval Lift & Eval Gates** - ctxpack ranks typed evidence from graph, test, history, symbol, and diff signals and proves lift with source-free evals.
-- [ ] **Phase 4: Agent-Native Client Durability** - Real clients use ctxpack reliably through explicit repo arguments, durable pack semantics, and thin dynamic adapter guidance.
+- [x] **Phase 1: Compatibility Guardrails & Module Boundaries** - Maintainers can protect current CLI, MCP, and JSON behavior while splitting large modules.
+- [x] **Phase 2: Trust Layer & Operational Diagnostics** - Users receive fresh, safe, explainable results instead of stale cache, unsafe snippets, or silent partial failures.
+- [x] **Phase 3: Measured Retrieval Lift & Eval Gates** - ctxpack ranks typed evidence from graph, test, history, symbol, and diff signals and proves lift with source-free evals.
+- [x] **Phase 4: Agent-Native Client Durability** - Real clients use ctxpack reliably through explicit repo arguments, durable pack semantics, and thin dynamic adapter guidance.
 
 ## Phase Details
 
@@ -30,10 +30,10 @@ Decimal phases appear between their surrounding integers in numeric order.
   4. Maintainer can split large modules into focused submodules while existing CLI, MCP, and library behavior remains unchanged.
 **Plans**: 4 plans
 Plans:
-- [ ] 01-compatibility-guardrails-module-boundaries-01-PLAN.md — Add binary-level CLI compatibility guardrails.
-- [ ] 01-compatibility-guardrails-module-boundaries-02-PLAN.md — Lock public JSON and MCP protocol compatibility surfaces.
-- [ ] 01-compatibility-guardrails-module-boundaries-03-PLAN.md — Split ctxpack-index behind stable crate-root exports.
-- [ ] 01-compatibility-guardrails-module-boundaries-04-PLAN.md — Split ctxpack-compiler and ctxpack-mcp behind stable facades.
+- [x] 01-compatibility-guardrails-module-boundaries-01-PLAN.md — Add binary-level CLI compatibility guardrails.
+- [x] 01-compatibility-guardrails-module-boundaries-02-PLAN.md — Lock public JSON and MCP protocol compatibility surfaces.
+- [x] 01-compatibility-guardrails-module-boundaries-03-PLAN.md — Split ctxpack-index behind stable crate-root exports.
+- [x] 01-compatibility-guardrails-module-boundaries-04-PLAN.md — Split ctxpack-compiler and ctxpack-mcp behind stable facades.
 
 ### Phase 2: Trust Layer & Operational Diagnostics
 **Goal**: Users can trust that ctxpack read paths are fresh, privacy-gated, and explicit about partial or degraded results.
@@ -45,7 +45,13 @@ Plans:
   3. Pack, file-resource, and card generation exclude credential, auth, generated, vendored, binary, oversized, unreadable, and non-UTF-8 inputs through a centralized tested policy.
   4. CLI and MCP outputs expose stable diagnostics for weak plans, stale cache, missing or timed-out git, skipped files, parse gaps, and partial graph/test/history coverage.
   5. Context retrieval remains usable in read-only or constrained home-directory environments, with trace/cache writes visible, controllable, and non-fatal when possible.
-**Plans**: TBD
+**Plans**: 5 plans
+Plans:
+- [x] 02-trust-layer-operational-diagnostics-01-PLAN.md — Define diagnostics contracts and central source-read policy.
+- [x] 02-trust-layer-operational-diagnostics-02-PLAN.md — Add trusted inventory freshness and cache-write diagnostics.
+- [x] 02-trust-layer-operational-diagnostics-03-PLAN.md — Wire fresh inventory and source-read diagnostics through index read paths.
+- [x] 02-trust-layer-operational-diagnostics-04-PLAN.md — Add compiler plan diagnostics and pack/card source revalidation.
+- [x] 02-trust-layer-operational-diagnostics-05-PLAN.md — Expose diagnostics and constrained write behavior through CLI and MCP.
 
 ### Phase 3: Measured Retrieval Lift & Eval Gates
 **Goal**: Users and maintainers can see ranked, attributed evidence that improves over lexical retrieval at fixed budgets and remains source-free in reports.
@@ -57,7 +63,13 @@ Plans:
   3. Graph expansion stays budgeted and non-recursive by default, so retrieval lift is measured at fixed context budgets rather than through context bloat.
   4. Maintainer can run frozen historical eval ranges, including large-repo smokes, with reproducible refs, role-aware labels, rename/delete handling, lexical baselines, ranking metrics, and signal ablations.
   5. Eval and checklist reports remain source-free and prompt-free while summarizing retrieval failures by path role, signal gap, and repeated missing-file family.
-**Plans**: TBD
+**Plans**: 5 plans
+Plans:
+- [x] 03-measured-retrieval-lift-eval-gates-01-PLAN.md — Define additive typed candidate and attribution contracts.
+- [x] 03-measured-retrieval-lift-eval-gates-02-PLAN.md — Rank and project fixed-budget attributed retrieval candidates.
+- [x] 03-measured-retrieval-lift-eval-gates-03-PLAN.md — Add frozen historical eval ranges and role/status labels.
+- [x] 03-measured-retrieval-lift-eval-gates-04-PLAN.md — Add ranking metrics, ablations, and source-free gap reports.
+- [x] 03-measured-retrieval-lift-eval-gates-05-PLAN.md — Validate CLI/MCP compatibility and bounded historical-eval smoke.
 
 ### Phase 4: Agent-Native Client Durability
 **Goal**: Users can rely on ctxpack from real coding-agent clients without session surprises, wrong-repo behavior, or static context dumps.
@@ -68,7 +80,12 @@ Plans:
   2. User can tell whether MCP pack resources are session-scoped or reconstructed from persisted source-free metadata after server restarts.
   3. Maintainer can test MCP cache growth, reconnect behavior, and wrong-working-directory behavior without relying on manual client inspection.
   4. Generated adapter guidance stays thin and directs agents to dynamic ctxpack calls instead of injecting large static repository context.
-**Plans**: TBD
+**Plans**: 4 plans
+Plans:
+- [x] 04-agent-native-client-durability-01-PLAN.md — Add deterministic MCP protocol smoke with explicit-repo wrong-cwd coverage.
+- [x] 04-agent-native-client-durability-02-PLAN.md — Keep generated adapter guidance thin, dynamic, and repo-explicit.
+- [x] 04-agent-native-client-durability-03-PLAN.md — Make pack resource session scope and cache growth visible/tested.
+- [x] 04-agent-native-client-durability-04-PLAN.md — Add optional Codex CLI and Claude Code real-client smoke wrappers.
 
 ## Requirement Coverage
 
@@ -115,7 +132,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Compatibility Guardrails & Module Boundaries | 0/TBD | Not started | - |
-| 2. Trust Layer & Operational Diagnostics | 0/TBD | Not started | - |
-| 3. Measured Retrieval Lift & Eval Gates | 0/TBD | Not started | - |
-| 4. Agent-Native Client Durability | 0/TBD | Not started | - |
+| 1. Compatibility Guardrails & Module Boundaries | 4/4 | Complete | 2026-05-13 |
+| 2. Trust Layer & Operational Diagnostics | 5/5 | Complete | 2026-05-13 |
+| 3. Measured Retrieval Lift & Eval Gates | 5/5 | Complete | 2026-05-13 |
+| 4. Agent-Native Client Durability | 4/4 | Complete | 2026-05-13 |

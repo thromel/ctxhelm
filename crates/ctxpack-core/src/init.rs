@@ -90,7 +90,7 @@ Use ctxpack for:
 - architecture constraints
 - validation commands
 
-Read actual files with the agent's native tools before editing. Do not request deep packs unless brief or standard context is insufficient.
+Read actual files with the agent's native tools before editing. Request `get_pack` progressively, starting brief or standard, only when direct file reads or the plan are insufficient.
 <!-- ctxpack:end -->
 "#;
 
@@ -104,7 +104,7 @@ For tasks that modify code, investigate bugs, add features, or affect multiple f
 1. Call the ctxpack MCP tool `prepare_task` when available, passing the active repository path as `repo` when known, or run `ctxpack prepare-task`.
 2. Prefer returned target files, related tests, examples, and constraints.
 3. Read actual files using Cursor's native file tools before editing.
-4. Do not load broad repository context unless ctxpack recommends it.
+4. Call `get_pack` progressively only when direct file reads or brief context are insufficient.
 5. Run targeted validation commands returned by ctxpack when available.
 "#;
 
@@ -114,7 +114,7 @@ Use this command for non-trivial bug fixes.
 
 1. Call `ctxpack.prepare_task` for the user's task when MCP is available, passing the active repository path as `repo` when known.
 2. Read the returned target files with native tools.
-3. Request a standard pack only if direct file reads are insufficient.
+3. Request `get_pack` progressively, starting brief or standard, only if direct file reads are insufficient.
 4. Make the smallest patch that addresses the bug.
 5. Run the related test command returned by ctxpack when available.
 6. Summarize the changed behavior and validation result.
@@ -132,7 +132,7 @@ pub const CLAUDE_MCP_SNIPPET: &str = r#"{
 
 pub const OPENCODE_SNIPPET: &str = r#"{
   "$schema": "https://opencode.ai/config.json",
-  "ctxpackNote": "Registers ctxpack as a local read-only MCP context server. The first implemented tool is prepare_task.",
+  "ctxpackNote": "Registers ctxpack as a local read-only MCP context server. Call prepare_task with the active repository path as `repo`, read files natively, and use get_pack progressively only when needed.",
   "instructions": ["AGENTS.md"],
   "mcp": {
     "ctxpack": {
@@ -150,7 +150,7 @@ Add a local stdio MCP server for ctxpack in your Codex MCP configuration:
 
   command: ctxpack serve-mcp
 
-Pass the active repository path as `repo` when calling ctxpack MCP tools from an agent. The first implemented tool is `prepare_task`. This command does not mutate global Codex config automatically.
+Call `prepare_task` first and pass the active repository path as `repo` when known. Read actual files with Codex tools, then call `get_pack` progressively only when direct file reads or brief context are insufficient. This command does not mutate global Codex config automatically.
 "#;
 
 pub fn adapter_path(adapter: AgentAdapter) -> &'static str {
@@ -379,6 +379,87 @@ fn find_agents_section_bounds(existing: &str) -> Option<(usize, usize)> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn generated_guidance_artifacts() -> [(&'static str, &'static str, usize); 5] {
+        [
+            ("AGENTS", AGENTS_SECTION, 1_400),
+            ("Cursor", CURSOR_RULE, 1_400),
+            ("Claude command", CLAUDE_BUGFIX_COMMAND, 1_400),
+            ("OpenCode snippet", OPENCODE_SNIPPET, 900),
+            ("Codex setup", CODEX_MCP_SETUP, 900),
+        ]
+    }
+
+    #[test]
+    fn adapter_guidance_stays_thin_and_dynamic() {
+        let forbidden = [
+            "Repository map:",
+            "Full context pack",
+            "inventory dump",
+            "paste this repo",
+            "source snippets",
+        ];
+
+        for (name, content, byte_limit) in generated_guidance_artifacts() {
+            assert!(
+                content.len() <= byte_limit,
+                "{name} guidance is {} bytes, above {byte_limit}",
+                content.len()
+            );
+            assert!(
+                content.contains("prepare_task"),
+                "{name} guidance must point agents to dynamic prepare_task calls"
+            );
+            assert!(
+                content.contains("active repository path as `repo`"),
+                "{name} guidance must tell agents to pass explicit repo when known"
+            );
+
+            for phrase in forbidden {
+                assert!(
+                    !content.contains(phrase),
+                    "{name} guidance must not include static context dump phrase {phrase:?}"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn adapter_guidance_points_to_progressive_packs() {
+        for (name, content, _) in generated_guidance_artifacts() {
+            assert!(
+                content.contains("prepare_task"),
+                "{name} guidance must call prepare_task first"
+            );
+            assert!(
+                content.contains("get_pack") || content.contains("progressive"),
+                "{name} guidance must mention get_pack or progressive pack loading"
+            );
+        }
+    }
+
+    #[test]
+    fn adapter_guidance_does_not_claim_prepare_task_is_the_only_tool() {
+        assert!(!OPENCODE_SNIPPET.contains("The first implemented tool is prepare_task"));
+        assert!(!CODEX_MCP_SETUP.contains("The first implemented tool is `prepare_task`"));
+    }
+
+    #[test]
+    fn claude_mcp_snippet_stays_small_local_stdio_config() {
+        let value = serde_json::from_str::<serde_json::Value>(CLAUDE_MCP_SNIPPET).unwrap();
+
+        assert!(CLAUDE_MCP_SNIPPET.len() <= 300);
+        assert_eq!(
+            value["mcpServers"]["ctxpack"]["command"].as_str(),
+            Some("ctxpack")
+        );
+        assert_eq!(
+            value["mcpServers"]["ctxpack"]["args"][0].as_str(),
+            Some("serve-mcp")
+        );
+        assert!(!CLAUDE_MCP_SNIPPET.contains("claude mcp add"));
+        assert!(!CLAUDE_MCP_SNIPPET.contains("global"));
+    }
 
     #[test]
     fn adapter_paths_are_repo_local() {

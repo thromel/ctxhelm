@@ -1,2400 +1,63 @@
+mod dependencies;
+mod freshness;
+mod git;
+mod inventory;
+mod policy;
+mod related_tests;
+mod search;
+mod symbols;
+mod traces;
+
+pub use dependencies::{
+    dependency_edges, dependency_edges_report, related_dependency_edges,
+    related_dependency_edges_report, DependencyEdge, DependencyEdgesReport, DependencyOptions,
+};
+pub use freshness::{
+    check_inventory_freshness, load_or_refresh_inventory, InventoryFreshness, InventoryLoadReport,
+    InventoryStaleReason, LoadCacheStatus,
+};
+pub use git::{
+    co_change_hints, co_change_hints_report, current_diff_summary, current_diff_summary_report,
+    historical_commit_samples, historical_commit_samples_report, ChangeKind, CoChangeHint,
+    CoChangeOptions, CoChangeReport, CurrentDiffExcluded, CurrentDiffOptions,
+    CurrentDiffPrivacyStatus, CurrentDiffReport, CurrentDiffSummary, HistoricalChangedPath,
+    HistoricalCommitOptions, HistoricalCommitReport, HistoricalCommitSample,
+    HistoricalPathExclusionReason, LabelScope,
+};
+pub use inventory::{
+    build_inventory, inventory_path, load_inventory, load_or_build_inventory, repo_id_for_path,
+    task_hash, write_inventory, FileInventoryEntry, IgnoreFileFingerprint, InventoryError,
+    InventoryManifestEntry, InventoryMetadata, InventoryOptions, InventoryReport, RepoInventory,
+    INVENTORY_SCHEMA_VERSION,
+};
+pub use policy::{
+    classify_path, read_safe_source, SourceRead, SourceReadReason, SourceReadStatus,
+    SOURCE_READ_MAX_BYTES,
+};
+pub use related_tests::{
+    related_tests, related_tests_report, test_map, test_map_report, RelatedTestResult,
+    RelatedTestsReport,
+};
+pub use search::{
+    lexical_search, lexical_search_report, SearchOptions, SearchReport, SearchResult,
+};
+pub use symbols::{
+    extract_symbols, extract_symbols_report, symbol_search, symbol_search_report, CodeSymbol,
+    SymbolExtractionReport, SymbolKind, SymbolOptions, SymbolSearchReport, SymbolSearchResult,
+};
+pub use traces::{append_eval_trace, list_eval_traces, trace_path, try_append_eval_trace};
+
+#[cfg(test)]
 use ctxpack_core::{EvalTrace, FileRole};
-use ignore::WalkBuilder;
-use serde::{Deserialize, Serialize};
-use std::collections::{BTreeMap, BTreeSet};
-use std::fs::{self, OpenOptions};
-use std::io;
-use std::io::Write;
-use std::path::{Component, Path, PathBuf};
-use std::process::{Command, Stdio};
-use std::thread;
-use std::time::{Duration, Instant};
-use thiserror::Error;
+#[cfg(test)]
+use git::{git_stdout_with_timeout, parse_git_log_name_only, parse_git_log_subject_name_only};
+#[cfg(test)]
+use std::{fs, path::Path, process::Command, time::Duration};
+#[cfg(test)]
 use uuid::Uuid;
 
-#[derive(Debug, Error)]
-pub enum InventoryError {
-    #[error("failed to canonicalize {path}: {source}")]
-    Canonicalize { path: PathBuf, source: io::Error },
-    #[error("failed to read {path}: {source}")]
-    Read { path: PathBuf, source: io::Error },
-    #[error("failed to write {path}: {source}")]
-    Write { path: PathBuf, source: io::Error },
-    #[error("failed to create directory {path}: {source}")]
-    CreateDir { path: PathBuf, source: io::Error },
-    #[error("failed to serialize inventory: {0}")]
-    Serialize(serde_json::Error),
-    #[error("failed to deserialize inventory {path}: {source}")]
-    Deserialize {
-        path: PathBuf,
-        source: serde_json::Error,
-    },
-    #[error("git command failed in {repo_root}: {message}")]
-    Git { repo_root: PathBuf, message: String },
-}
-
-#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
-#[serde(rename_all = "camelCase")]
-pub struct InventoryOptions {
-    pub include_generated: bool,
-    pub include_sensitive: bool,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-#[serde(rename_all = "camelCase")]
-pub struct FileInventoryEntry {
-    pub path: String,
-    pub language: Option<String>,
-    pub role: FileRole,
-    pub hash: String,
-    pub size_bytes: u64,
-    pub generated: bool,
-    pub ignored: bool,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-#[serde(rename_all = "camelCase")]
-pub struct RepoInventory {
-    pub repo_id: String,
-    pub repo_root: PathBuf,
-    pub files: Vec<FileInventoryEntry>,
-    pub ignored_count: usize,
-    pub generated_count: usize,
-    pub sensitive_count: usize,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-#[serde(rename_all = "camelCase")]
-pub struct InventoryReport {
-    pub repo_id: String,
-    pub repo_root: PathBuf,
-    pub inventory_path: PathBuf,
-    pub file_count: usize,
-    pub ignored_count: usize,
-    pub generated_count: usize,
-    pub sensitive_count: usize,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-#[serde(rename_all = "camelCase")]
-pub struct SearchOptions {
-    pub limit: usize,
-}
-
-impl Default for SearchOptions {
-    fn default() -> Self {
-        Self { limit: 10 }
-    }
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-#[serde(rename_all = "camelCase")]
-pub struct SearchResult {
-    pub path: String,
-    pub role: FileRole,
-    pub language: Option<String>,
-    pub score: f32,
-    pub reason: String,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-#[serde(rename_all = "camelCase")]
-pub struct RelatedTestResult {
-    pub path: String,
-    pub command: Option<String>,
-    pub confidence: f32,
-    pub reason: String,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-#[serde(rename_all = "camelCase")]
-pub struct CoChangeOptions {
-    pub limit: usize,
-}
-
-impl Default for CoChangeOptions {
-    fn default() -> Self {
-        Self { limit: 10 }
-    }
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-#[serde(rename_all = "camelCase")]
-pub struct CoChangeHint {
-    pub path: String,
-    pub commit_count: usize,
-    pub confidence: f32,
-    pub sample_commits: Vec<String>,
-    pub reason: String,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-#[serde(rename_all = "camelCase")]
-pub struct DependencyOptions {
-    pub limit: usize,
-}
-
-impl Default for DependencyOptions {
-    fn default() -> Self {
-        Self { limit: 50 }
-    }
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-#[serde(rename_all = "camelCase")]
-pub struct DependencyEdge {
-    pub source_path: String,
-    pub target_path: String,
-    pub kind: String,
-    pub confidence: f32,
-    pub reason: String,
-}
-
-#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
-#[serde(rename_all = "camelCase")]
-pub struct CurrentDiffOptions {
-    pub include_untracked: bool,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-#[serde(rename_all = "camelCase")]
-pub struct CurrentDiffExcluded {
-    pub unstaged: usize,
-    pub staged: usize,
-    pub untracked: usize,
-    pub reason: String,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-#[serde(rename_all = "camelCase")]
-pub struct CurrentDiffPrivacyStatus {
-    pub local_only: bool,
-    pub source_text_returned: bool,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-#[serde(rename_all = "camelCase")]
-pub struct CurrentDiffSummary {
-    pub unstaged: Vec<String>,
-    pub staged: Vec<String>,
-    pub untracked: Vec<String>,
-    pub excluded: CurrentDiffExcluded,
-    pub privacy_status: CurrentDiffPrivacyStatus,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-#[serde(rename_all = "camelCase")]
-pub struct HistoricalCommitOptions {
-    pub limit: usize,
-    pub base: Option<String>,
-    pub head: Option<String>,
-}
-
-impl Default for HistoricalCommitOptions {
-    fn default() -> Self {
-        Self {
-            limit: 20,
-            base: None,
-            head: None,
-        }
-    }
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-#[serde(rename_all = "camelCase")]
-pub struct HistoricalCommitSample {
-    pub sha: String,
-    pub parent_sha: Option<String>,
-    pub title: String,
-    pub safe_changed_files: Vec<String>,
-    pub excluded_changed_file_count: usize,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-#[serde(rename_all = "camelCase")]
-pub struct SymbolOptions {
-    pub limit: usize,
-}
-
-impl Default for SymbolOptions {
-    fn default() -> Self {
-        Self { limit: 20 }
-    }
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-#[serde(rename_all = "snake_case")]
-pub enum SymbolKind {
-    Function,
-    Method,
-    Class,
-    Interface,
-    Type,
-    Constant,
-    Import,
-    Module,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-#[serde(rename_all = "camelCase")]
-pub struct CodeSymbol {
-    pub name: String,
-    pub kind: SymbolKind,
-    pub path: String,
-    pub language: Option<String>,
-    pub start_line: u32,
-    pub end_line: u32,
-    pub signature: String,
-    pub exported: bool,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-#[serde(rename_all = "camelCase")]
-pub struct SymbolSearchResult {
-    pub symbol: CodeSymbol,
-    pub score: f32,
-    pub reason: String,
-}
-
-pub fn build_inventory(
-    repo_root: impl AsRef<Path>,
-    options: &InventoryOptions,
-) -> Result<RepoInventory, InventoryError> {
-    let repo_root = canonicalize(repo_root.as_ref())?;
-    let mut files = Vec::new();
-    let mut ignored_count = 0;
-    let mut generated_count = 0;
-    let mut sensitive_count = 0;
-
-    let mut walker = WalkBuilder::new(&repo_root);
-    walker
-        .hidden(false)
-        .git_ignore(true)
-        .git_global(false)
-        .git_exclude(true)
-        .parents(true)
-        .ignore(false)
-        .add_custom_ignore_filename(".ctxpackignore")
-        .add_custom_ignore_filename(".cursorignore");
-
-    for result in walker.build() {
-        let Ok(entry) = result else {
-            continue;
-        };
-        if !entry.file_type().is_some_and(|kind| kind.is_file()) {
-            continue;
-        }
-
-        let path = entry.path();
-        let relative = normalize_relative_path(&repo_root, path);
-        if relative == ".git" || relative.starts_with(".git/") {
-            continue;
-        }
-
-        let role = classify_path(&relative);
-        let generated = role == FileRole::Generated;
-        let sensitive = role == FileRole::Sensitive;
-
-        if generated {
-            generated_count += 1;
-        }
-        if sensitive {
-            sensitive_count += 1;
-        }
-        if (generated && !options.include_generated) || (sensitive && !options.include_sensitive) {
-            continue;
-        }
-
-        let metadata = match fs::metadata(path) {
-            Ok(metadata) => metadata,
-            Err(_) => {
-                ignored_count += 1;
-                continue;
-            }
-        };
-        let bytes = match fs::read(path) {
-            Ok(bytes) => bytes,
-            Err(_) => {
-                ignored_count += 1;
-                continue;
-            }
-        };
-
-        files.push(FileInventoryEntry {
-            path: relative.clone(),
-            language: language_for_path(&relative).map(str::to_string),
-            role,
-            hash: blake3::hash(&bytes).to_hex().to_string(),
-            size_bytes: metadata.len(),
-            generated,
-            ignored: false,
-        });
-    }
-
-    files.sort_by(|left, right| left.path.cmp(&right.path));
-
-    Ok(RepoInventory {
-        repo_id: repo_id_for_path(&repo_root),
-        repo_root,
-        files,
-        ignored_count,
-        generated_count,
-        sensitive_count,
-    })
-}
-
-pub fn write_inventory(
-    repo_root: impl AsRef<Path>,
-    options: &InventoryOptions,
-) -> Result<InventoryReport, InventoryError> {
-    let inventory = build_inventory(repo_root, options)?;
-    let inventory_path = inventory_path(&inventory.repo_id);
-    if let Some(parent) = inventory_path.parent() {
-        fs::create_dir_all(parent).map_err(|source| InventoryError::CreateDir {
-            path: parent.to_path_buf(),
-            source,
-        })?;
-    }
-
-    let json = serde_json::to_string_pretty(&inventory).map_err(InventoryError::Serialize)?;
-    fs::write(&inventory_path, json).map_err(|source| InventoryError::Write {
-        path: inventory_path.clone(),
-        source,
-    })?;
-
-    Ok(InventoryReport {
-        repo_id: inventory.repo_id,
-        repo_root: inventory.repo_root,
-        inventory_path,
-        file_count: inventory.files.len(),
-        ignored_count: inventory.ignored_count,
-        generated_count: inventory.generated_count,
-        sensitive_count: inventory.sensitive_count,
-    })
-}
-
-pub fn load_inventory(repo_id: &str) -> Result<RepoInventory, InventoryError> {
-    let path = inventory_path(repo_id);
-    let json = fs::read_to_string(&path).map_err(|source| InventoryError::Read {
-        path: path.clone(),
-        source,
-    })?;
-    serde_json::from_str(&json).map_err(|source| InventoryError::Deserialize { path, source })
-}
-
-pub fn load_or_build_inventory(
-    repo_root: impl AsRef<Path>,
-    options: &InventoryOptions,
-) -> Result<RepoInventory, InventoryError> {
-    let repo_root = canonicalize(repo_root.as_ref())?;
-    let repo_id = repo_id_for_path(&repo_root);
-    match load_inventory(&repo_id) {
-        Ok(inventory) => Ok(inventory),
-        Err(InventoryError::Read { .. }) => {
-            write_inventory(&repo_root, options)?;
-            load_inventory(&repo_id)
-        }
-        Err(error) => Err(error),
-    }
-}
-
-pub fn extract_symbols(repo_root: impl AsRef<Path>) -> Result<Vec<CodeSymbol>, InventoryError> {
-    let repo_root = canonicalize(repo_root.as_ref())?;
-    let inventory = load_or_build_inventory(&repo_root, &InventoryOptions::default())?;
-    let mut symbols = Vec::new();
-
-    for file in inventory.files {
-        if file.generated || file.role == FileRole::Sensitive || file.ignored {
-            continue;
-        }
-        if file.language.is_none() {
-            continue;
-        }
-
-        let content = fs::read_to_string(repo_root.join(&file.path)).unwrap_or_default();
-        symbols.extend(symbols_for_file(&file, &content));
-    }
-
-    symbols.sort_by(|left, right| {
-        left.path
-            .cmp(&right.path)
-            .then_with(|| left.start_line.cmp(&right.start_line))
-            .then_with(|| left.name.cmp(&right.name))
-    });
-    Ok(symbols)
-}
-
-pub fn symbol_search(
-    repo_root: impl AsRef<Path>,
-    query: &str,
-    options: &SymbolOptions,
-) -> Result<Vec<SymbolSearchResult>, InventoryError> {
-    let query_terms = query_terms(query);
-    if query_terms.is_empty() {
-        return Ok(Vec::new());
-    }
-
-    let mut results = extract_symbols(repo_root)?
-        .into_iter()
-        .filter_map(|symbol| score_symbol(symbol, &query_terms))
-        .collect::<Vec<_>>();
-    results.sort_by(|left, right| {
-        right
-            .score
-            .total_cmp(&left.score)
-            .then_with(|| left.symbol.path.cmp(&right.symbol.path))
-            .then_with(|| left.symbol.start_line.cmp(&right.symbol.start_line))
-    });
-    results.truncate(options.limit.max(1));
-    Ok(results)
-}
-
-pub fn lexical_search(
-    repo_root: impl AsRef<Path>,
-    query: &str,
-    options: &SearchOptions,
-) -> Result<Vec<SearchResult>, InventoryError> {
-    let repo_root = canonicalize(repo_root.as_ref())?;
-    let query_terms = query_terms(query);
-    if query_terms.is_empty() {
-        return Ok(Vec::new());
-    }
-
-    let inventory = load_or_build_inventory(&repo_root, &InventoryOptions::default())?;
-    let mut results = Vec::new();
-
-    for file in inventory.files {
-        if file.generated || file.role == FileRole::Sensitive || file.ignored {
-            continue;
-        }
-
-        let path = repo_root.join(&file.path);
-        let content = fs::read_to_string(&path).unwrap_or_default();
-        let Some((score, reason)) = score_file(&file, &content, &query_terms) else {
-            continue;
-        };
-
-        results.push(SearchResult {
-            path: file.path,
-            role: file.role,
-            language: file.language,
-            score,
-            reason,
-        });
-    }
-
-    results.sort_by(|left, right| {
-        right
-            .score
-            .total_cmp(&left.score)
-            .then_with(|| left.path.cmp(&right.path))
-    });
-    results.truncate(options.limit.max(1));
-
-    Ok(results)
-}
-
-pub fn related_tests(
-    repo_root: impl AsRef<Path>,
-    source_paths: &[String],
-) -> Result<Vec<RelatedTestResult>, InventoryError> {
-    let repo_root = canonicalize(repo_root.as_ref())?;
-    let inventory = load_or_build_inventory(&repo_root, &InventoryOptions::default())?;
-    let source_keys = source_paths
-        .iter()
-        .map(|path| source_key(path))
-        .collect::<Vec<_>>();
-    if source_keys.is_empty() {
-        return Ok(Vec::new());
-    }
-
-    let mut results = Vec::new();
-    for file in inventory.files {
-        if file.role != FileRole::Test || file.generated || file.ignored {
-            continue;
-        }
-
-        let path = repo_root.join(&file.path);
-        let content = fs::read_to_string(&path).unwrap_or_default();
-        let Some((score, reason)) = score_test_file(&file.path, &content, &source_keys) else {
-            continue;
-        };
-
-        results.push(RelatedTestResult {
-            path: file.path.clone(),
-            command: test_command_for(&repo_root, &file.path),
-            confidence: (score / 20.0).min(0.95),
-            reason,
-        });
-    }
-
-    results.sort_by(|left, right| {
-        right
-            .confidence
-            .total_cmp(&left.confidence)
-            .then_with(|| left.path.cmp(&right.path))
-    });
-
-    Ok(results)
-}
-
-pub fn test_map(repo_root: impl AsRef<Path>) -> Result<Vec<RelatedTestResult>, InventoryError> {
-    let repo_root = canonicalize(repo_root.as_ref())?;
-    let inventory = load_or_build_inventory(&repo_root, &InventoryOptions::default())?;
-    let mut results = inventory
-        .files
-        .into_iter()
-        .filter(|file| file.role == FileRole::Test && !file.generated && !file.ignored)
-        .map(|file| RelatedTestResult {
-            path: file.path.clone(),
-            command: test_command_for(&repo_root, &file.path),
-            confidence: 1.0,
-            reason: "safe test file from inventory".to_string(),
-        })
-        .collect::<Vec<_>>();
-
-    results.sort_by(|left, right| left.path.cmp(&right.path));
-    Ok(results)
-}
-
-pub fn co_change_hints(
-    repo_root: impl AsRef<Path>,
-    anchor_paths: &[String],
-    options: &CoChangeOptions,
-) -> Result<Vec<CoChangeHint>, InventoryError> {
-    let repo_root = canonicalize(repo_root.as_ref())?;
-    let inventory = load_or_build_inventory(&repo_root, &InventoryOptions::default())?;
-    let safe_paths = inventory
-        .files
-        .iter()
-        .filter(|file| {
-            !file.generated
-                && !file.ignored
-                && matches!(
-                    file.role,
-                    FileRole::Source
-                        | FileRole::Test
-                        | FileRole::Config
-                        | FileRole::Schema
-                        | FileRole::Docs
-                )
-        })
-        .map(|file| file.path.clone())
-        .collect::<BTreeSet<_>>();
-    let anchors = anchor_paths
-        .iter()
-        .map(|path| normalize_input_path(&repo_root, path))
-        .collect::<BTreeSet<_>>();
-    if anchors.is_empty() {
-        return Ok(Vec::new());
-    }
-
-    let commits = git_commit_file_sets(&repo_root)?;
-    let mut counts: BTreeMap<String, Vec<String>> = BTreeMap::new();
-
-    for commit in commits {
-        if !commit.files.iter().any(|path| anchors.contains(path)) {
-            continue;
-        }
-
-        for path in commit.files {
-            if anchors.contains(&path) || !safe_paths.contains(&path) {
-                continue;
-            }
-            counts.entry(path).or_default().push(commit.sha.clone());
-        }
-    }
-
-    let mut hints = counts
-        .into_iter()
-        .map(|(path, commits)| {
-            let commit_count = commits.len();
-            CoChangeHint {
-                path: path.clone(),
-                commit_count,
-                confidence: (commit_count as f32 / 5.0).min(0.95),
-                sample_commits: commits.into_iter().take(3).collect(),
-                reason: format!("changed with requested paths in {commit_count} local commit(s)"),
-            }
-        })
-        .collect::<Vec<_>>();
-
-    hints.sort_by(|left, right| {
-        right
-            .commit_count
-            .cmp(&left.commit_count)
-            .then_with(|| left.path.cmp(&right.path))
-    });
-    hints.truncate(options.limit.max(1));
-
-    Ok(hints)
-}
-
-pub fn dependency_edges(
-    repo_root: impl AsRef<Path>,
-    options: &DependencyOptions,
-) -> Result<Vec<DependencyEdge>, InventoryError> {
-    let repo_root = canonicalize(repo_root.as_ref())?;
-    let inventory = load_or_build_inventory(&repo_root, &InventoryOptions::default())?;
-    let safe_files = safe_dependency_files(&inventory);
-    let safe_paths = safe_files
-        .iter()
-        .map(|file| file.path.clone())
-        .collect::<BTreeSet<_>>();
-    let mut seen = BTreeSet::new();
-    let mut edges = Vec::new();
-
-    for file in safe_files {
-        let content = fs::read_to_string(repo_root.join(&file.path)).unwrap_or_default();
-        for import in imports_for_file(file, &content) {
-            let Some(target_path) = resolve_import_target(&file.path, &import.raw, &safe_paths)
-            else {
-                continue;
-            };
-            if target_path == file.path {
-                continue;
-            }
-            if seen.insert((file.path.clone(), target_path.clone(), import.raw.clone())) {
-                edges.push(DependencyEdge {
-                    source_path: file.path.clone(),
-                    target_path,
-                    kind: "imports".to_string(),
-                    confidence: import.confidence,
-                    reason: format!("{} import `{}`", import.language, import.raw),
-                });
-            }
-        }
-    }
-
-    edges.sort_by(|left, right| {
-        left.source_path
-            .cmp(&right.source_path)
-            .then_with(|| left.target_path.cmp(&right.target_path))
-    });
-    edges.truncate(options.limit.max(1));
-    Ok(edges)
-}
-
-pub fn related_dependency_edges(
-    repo_root: impl AsRef<Path>,
-    anchor_paths: &[String],
-    options: &DependencyOptions,
-) -> Result<Vec<DependencyEdge>, InventoryError> {
-    let repo_root = canonicalize(repo_root.as_ref())?;
-    let anchors = anchor_paths
-        .iter()
-        .map(|path| normalize_input_path(&repo_root, path))
-        .filter(|path| !path.is_empty())
-        .collect::<BTreeSet<_>>();
-    if anchors.is_empty() {
-        return Ok(Vec::new());
-    }
-
-    let mut edges = dependency_edges(&repo_root, &DependencyOptions { limit: usize::MAX })?
-        .into_iter()
-        .filter(|edge| anchors.contains(&edge.source_path) || anchors.contains(&edge.target_path))
-        .collect::<Vec<_>>();
-    edges.sort_by(|left, right| {
-        edge_anchor_rank(left, &anchors)
-            .cmp(&edge_anchor_rank(right, &anchors))
-            .then_with(|| left.source_path.cmp(&right.source_path))
-            .then_with(|| left.target_path.cmp(&right.target_path))
-    });
-    edges.truncate(options.limit.max(1));
-    Ok(edges)
-}
-
-pub fn current_diff_summary(
-    repo_root: impl AsRef<Path>,
-    options: &CurrentDiffOptions,
-) -> Result<CurrentDiffSummary, InventoryError> {
-    let repo_root = canonicalize(repo_root.as_ref())?;
-    let unstaged = git_name_only(&repo_root, &["diff", "--name-only"])?;
-    let staged = git_name_only(&repo_root, &["diff", "--cached", "--name-only"])?;
-    let untracked = if options.include_untracked {
-        git_name_only(&repo_root, &["ls-files", "--others", "--exclude-standard"])?
-    } else {
-        Vec::new()
-    };
-
-    let (unstaged, excluded_unstaged) = safe_changed_paths(&repo_root, unstaged)?;
-    let (staged, excluded_staged) = safe_changed_paths(&repo_root, staged)?;
-    let (untracked, excluded_untracked) = safe_changed_paths(&repo_root, untracked)?;
-
-    Ok(CurrentDiffSummary {
-        unstaged,
-        staged,
-        untracked,
-        excluded: CurrentDiffExcluded {
-            unstaged: excluded_unstaged,
-            staged: excluded_staged,
-            untracked: excluded_untracked,
-            reason: "paths excluded by safe inventory policy; source content was not returned"
-                .to_string(),
-        },
-        privacy_status: CurrentDiffPrivacyStatus {
-            local_only: true,
-            source_text_returned: false,
-        },
-    })
-}
-
-pub fn historical_commit_samples(
-    repo_root: impl AsRef<Path>,
-    options: &HistoricalCommitOptions,
-) -> Result<Vec<HistoricalCommitSample>, InventoryError> {
-    let repo_root = canonicalize(repo_root.as_ref())?;
-    let inventory = load_or_build_inventory(&repo_root, &InventoryOptions::default())?;
-    let safe_paths = inventory
-        .files
-        .into_iter()
-        .map(|file| file.path)
-        .collect::<BTreeSet<_>>();
-    let commits = git_commit_subject_file_sets(
-        &repo_root,
-        options.limit.max(1).saturating_mul(5),
-        options.base.as_deref(),
-        options.head.as_deref(),
-    )?;
-    let mut samples = commits
-        .into_iter()
-        .filter_map(|commit| {
-            let mut safe_changed_files = Vec::new();
-            let mut excluded_changed_file_count = 0;
-            for path in commit.files {
-                let path = normalize_input_path(&repo_root, &path);
-                if safe_paths.contains(&path) {
-                    safe_changed_files.push(path);
-                } else {
-                    excluded_changed_file_count += 1;
-                }
-            }
-            safe_changed_files.sort();
-            safe_changed_files.dedup();
-            if safe_changed_files.is_empty() {
-                return None;
-            }
-            Some(HistoricalCommitSample {
-                sha: commit.sha,
-                parent_sha: commit.parent_sha,
-                title: commit.title,
-                safe_changed_files,
-                excluded_changed_file_count,
-            })
-        })
-        .collect::<Vec<_>>();
-
-    samples.truncate(options.limit.max(1));
-    Ok(samples)
-}
-
-pub fn append_eval_trace(
-    repo_root: impl AsRef<Path>,
-    trace: &EvalTrace,
-) -> Result<PathBuf, InventoryError> {
-    let repo_root = canonicalize(repo_root.as_ref())?;
-    let repo_id = repo_id_for_path(&repo_root);
-    let path = trace_path(&repo_id);
-    if let Some(parent) = path.parent() {
-        fs::create_dir_all(parent).map_err(|source| InventoryError::CreateDir {
-            path: parent.to_path_buf(),
-            source,
-        })?;
-    }
-
-    let mut file = OpenOptions::new()
-        .create(true)
-        .append(true)
-        .open(&path)
-        .map_err(|source| InventoryError::Write {
-            path: path.clone(),
-            source,
-        })?;
-    let json = serde_json::to_string(trace).map_err(InventoryError::Serialize)?;
-    writeln!(file, "{json}").map_err(|source| InventoryError::Write {
-        path: path.clone(),
-        source,
-    })?;
-
-    Ok(path)
-}
-
-pub fn list_eval_traces(
-    repo_root: impl AsRef<Path>,
-    limit: usize,
-) -> Result<Vec<EvalTrace>, InventoryError> {
-    let repo_root = canonicalize(repo_root.as_ref())?;
-    let repo_id = repo_id_for_path(&repo_root);
-    let path = trace_path(&repo_id);
-    let content = match fs::read_to_string(&path) {
-        Ok(content) => content,
-        Err(error) if error.kind() == io::ErrorKind::NotFound => return Ok(Vec::new()),
-        Err(source) => {
-            return Err(InventoryError::Read {
-                path: path.clone(),
-                source,
-            })
-        }
-    };
-
-    let mut traces = content
-        .lines()
-        .filter(|line| !line.trim().is_empty())
-        .map(|line| {
-            serde_json::from_str::<EvalTrace>(line).map_err(|source| InventoryError::Deserialize {
-                path: path.clone(),
-                source,
-            })
-        })
-        .collect::<Result<Vec<_>, _>>()?;
-    traces.reverse();
-    traces.truncate(limit.max(1));
-    Ok(traces)
-}
-
-pub fn inventory_path(repo_id: &str) -> PathBuf {
-    ctxpack_home()
-        .join("repos")
-        .join(repo_id)
-        .join("inventory.json")
-}
-
-pub fn trace_path(repo_id: &str) -> PathBuf {
-    ctxpack_home()
-        .join("repos")
-        .join(repo_id)
-        .join("traces.jsonl")
-}
-
-pub fn repo_id_for_path(repo_root: &Path) -> String {
-    Uuid::new_v5(&Uuid::NAMESPACE_URL, repo_root.to_string_lossy().as_bytes()).to_string()
-}
-
-pub fn task_hash(task: &str) -> String {
-    blake3::hash(task.trim().as_bytes()).to_hex().to_string()
-}
-
-fn ctxpack_home() -> PathBuf {
-    std::env::var_os("CTXPACK_HOME")
-        .map(PathBuf::from)
-        .or_else(|| std::env::var_os("HOME").map(|home| PathBuf::from(home).join(".ctxpack")))
-        .unwrap_or_else(|| PathBuf::from(".ctxpack"))
-}
-
-fn canonicalize(path: &Path) -> Result<PathBuf, InventoryError> {
-    fs::canonicalize(path).map_err(|source| InventoryError::Canonicalize {
-        path: path.to_path_buf(),
-        source,
-    })
-}
-
-fn normalize_relative_path(repo_root: &Path, path: &Path) -> String {
-    path.strip_prefix(repo_root)
-        .unwrap_or(path)
-        .components()
-        .filter_map(|component| match component {
-            Component::Normal(part) => Some(part.to_string_lossy()),
-            _ => None,
-        })
-        .collect::<Vec<_>>()
-        .join("/")
-}
-
-fn normalize_input_path(repo_root: &Path, path: &str) -> String {
-    let path = Path::new(path);
-    let path = if path.is_absolute() {
-        path.strip_prefix(repo_root).unwrap_or(path).to_path_buf()
-    } else {
-        path.to_path_buf()
-    };
-    path.components()
-        .filter_map(|component| match component {
-            Component::Normal(part) => Some(part.to_string_lossy()),
-            _ => None,
-        })
-        .collect::<Vec<_>>()
-        .join("/")
-}
-
-fn safe_changed_paths(
-    repo_root: &Path,
-    paths: Vec<String>,
-) -> Result<(Vec<String>, usize), InventoryError> {
-    if paths.is_empty() {
-        return Ok((Vec::new(), 0));
-    }
-    let inventory = build_inventory(repo_root, &InventoryOptions::default())?;
-    let safe_paths = inventory
-        .files
-        .into_iter()
-        .map(|file| file.path)
-        .collect::<BTreeSet<_>>();
-    let mut safe = Vec::new();
-    let mut excluded = 0;
-    for path in paths {
-        let path = normalize_input_path(repo_root, &path);
-        if safe_paths.contains(&path) {
-            safe.push(path);
-        } else {
-            excluded += 1;
-        }
-    }
-    safe.sort();
-    safe.dedup();
-    Ok((safe, excluded))
-}
-
-fn safe_dependency_files(inventory: &RepoInventory) -> Vec<&FileInventoryEntry> {
-    inventory
-        .files
-        .iter()
-        .filter(|file| {
-            !file.generated
-                && !file.ignored
-                && matches!(file.role, FileRole::Source | FileRole::Test)
-                && matches!(
-                    file.language.as_deref(),
-                    Some("typescript" | "javascript" | "python" | "rust")
-                )
-        })
-        .collect()
-}
-
-#[derive(Debug, Clone, PartialEq)]
-struct ImportRef {
-    raw: String,
-    language: &'static str,
-    confidence: f32,
-}
-
-fn imports_for_file(file: &FileInventoryEntry, content: &str) -> Vec<ImportRef> {
-    match file.language.as_deref() {
-        Some("typescript" | "javascript") => js_imports(content),
-        Some("python") => python_imports(content),
-        Some("rust") => rust_imports(content),
-        _ => Vec::new(),
-    }
-}
-
-fn js_imports(content: &str) -> Vec<ImportRef> {
-    let mut imports = Vec::new();
-    for line in content.lines() {
-        let trimmed = line.trim();
-        if trimmed.starts_with("//") {
-            continue;
-        }
-        if trimmed.starts_with("import ") {
-            if let Some((_, after_from)) = trimmed.rsplit_once(" from ") {
-                push_quoted_import(&mut imports, after_from, "javascript/typescript", 0.95);
-            } else {
-                push_quoted_import(&mut imports, trimmed, "javascript/typescript", 0.9);
-            }
-        }
-        for marker in ["require(", "import("] {
-            if let Some((_, rest)) = trimmed.split_once(marker) {
-                push_quoted_import(&mut imports, rest, "javascript/typescript", 0.8);
-            }
-        }
-    }
-    imports
-}
-
-fn python_imports(content: &str) -> Vec<ImportRef> {
-    let mut imports = Vec::new();
-    for line in content.lines() {
-        let trimmed = line.trim();
-        if trimmed.starts_with('#') {
-            continue;
-        }
-        if let Some(rest) = trimmed.strip_prefix("from ") {
-            if let Some((module, _)) = rest.split_once(" import ") {
-                if !module.trim().is_empty() {
-                    imports.push(ImportRef {
-                        raw: python_module_to_path(module.trim()),
-                        language: "python",
-                        confidence: 0.9,
-                    });
-                }
-            }
-        } else if let Some(rest) = trimmed.strip_prefix("import ") {
-            for module in rest.split(',') {
-                let module = module.split_whitespace().next().unwrap_or("");
-                if !module.is_empty() {
-                    imports.push(ImportRef {
-                        raw: python_module_to_path(module),
-                        language: "python",
-                        confidence: 0.75,
-                    });
-                }
-            }
-        }
-    }
-    imports
-}
-
-fn rust_imports(content: &str) -> Vec<ImportRef> {
-    let mut imports = Vec::new();
-    for line in content.lines() {
-        let trimmed = line.trim();
-        if trimmed.starts_with("//") {
-            continue;
-        }
-        let trimmed = trimmed.strip_prefix("pub ").unwrap_or(trimmed);
-        if let Some(module) = trimmed
-            .strip_prefix("mod ")
-            .and_then(|rest| rest.split(';').next())
-        {
-            imports.push(ImportRef {
-                raw: format!("./{}", module.trim()),
-                language: "rust",
-                confidence: 0.9,
-            });
-        } else if let Some(path) = trimmed
-            .strip_prefix("use ")
-            .and_then(|rest| rest.split(';').next())
-            .filter(|path| path.starts_with("crate::") || path.starts_with("super::"))
-        {
-            imports.push(ImportRef {
-                raw: path.trim().to_string(),
-                language: "rust",
-                confidence: 0.7,
-            });
-        }
-    }
-    imports
-}
-
-fn push_quoted_import(
-    imports: &mut Vec<ImportRef>,
-    text: &str,
-    language: &'static str,
-    confidence: f32,
-) {
-    if let Some(raw) = quoted_import_value(text) {
-        imports.push(ImportRef {
-            raw,
-            language,
-            confidence,
-        });
-    }
-}
-
-fn quoted_import_value(text: &str) -> Option<String> {
-    let quote_index = text.find(['"', '\''])?;
-    let quote = text.as_bytes()[quote_index] as char;
-    let rest = &text[quote_index + 1..];
-    let end = rest.find(quote)?;
-    Some(rest[..end].to_string())
-}
-
-fn python_module_to_path(module: &str) -> String {
-    if module.starts_with('.') {
-        let dots = module
-            .chars()
-            .take_while(|character| *character == '.')
-            .count();
-        let rest = module.trim_start_matches('.').replace('.', "/");
-        let mut path = if dots <= 1 {
-            ".".to_string()
-        } else {
-            std::iter::repeat_n("..", dots - 1)
-                .collect::<Vec<_>>()
-                .join("/")
-        };
-        if !rest.is_empty() {
-            path.push('/');
-            path.push_str(&rest);
-        }
-        path
-    } else {
-        module.replace('.', "/")
-    }
-}
-
-fn resolve_import_target(
-    source_path: &str,
-    raw: &str,
-    safe_paths: &BTreeSet<String>,
-) -> Option<String> {
-    let raw = raw.trim();
-    if raw.is_empty() {
-        return None;
-    }
-
-    if raw.starts_with("crate::") {
-        let base = raw.trim_start_matches("crate::").replace("::", "/");
-        return first_existing(&format!("src/{base}"), safe_paths);
-    }
-    if raw.starts_with("super::") {
-        let base = raw.trim_start_matches("super::").replace("::", "/");
-        let parent = Path::new(source_path).parent().and_then(Path::parent)?;
-        return first_existing(&join_normalized(parent, &base)?, safe_paths);
-    }
-
-    let base = if raw.starts_with('.') {
-        let parent = Path::new(source_path)
-            .parent()
-            .unwrap_or_else(|| Path::new(""));
-        join_normalized(parent, raw)?
-    } else {
-        raw.to_string()
-    };
-    first_existing(&base, safe_paths)
-}
-
-fn first_existing(base: &str, safe_paths: &BTreeSet<String>) -> Option<String> {
-    let mut candidates = vec![base.to_string()];
-    for extension in ["ts", "tsx", "js", "jsx", "mjs", "cjs", "py", "rs", "go"] {
-        candidates.push(format!("{base}.{extension}"));
-    }
-    for extension in ["ts", "tsx", "js", "jsx", "py", "rs"] {
-        candidates.push(format!("{base}/index.{extension}"));
-        candidates.push(format!("{base}/mod.{extension}"));
-    }
-    candidates
-        .into_iter()
-        .find(|candidate| safe_paths.contains(candidate))
-}
-
-fn join_normalized(parent: &Path, raw: &str) -> Option<String> {
-    let mut parts = parent
-        .components()
-        .filter_map(|component| match component {
-            Component::Normal(part) => Some(part.to_string_lossy().to_string()),
-            _ => None,
-        })
-        .collect::<Vec<_>>();
-    for component in Path::new(raw).components() {
-        match component {
-            Component::Normal(part) => parts.push(part.to_string_lossy().to_string()),
-            Component::CurDir => {}
-            Component::ParentDir => {
-                parts.pop()?;
-            }
-            _ => return None,
-        }
-    }
-    Some(parts.join("/"))
-}
-
-fn edge_anchor_rank(edge: &DependencyEdge, anchors: &BTreeSet<String>) -> u8 {
-    match (
-        anchors.contains(&edge.source_path),
-        anchors.contains(&edge.target_path),
-    ) {
-        (true, false) => 0,
-        (false, true) => 1,
-        (true, true) => 2,
-        (false, false) => 3,
-    }
-}
-
-fn classify_path(path: &str) -> FileRole {
-    let lower = path.to_ascii_lowercase();
-    let name = lower.rsplit('/').next().unwrap_or(lower.as_str());
-
-    if is_sensitive_path(&lower, name) {
-        return FileRole::Sensitive;
-    }
-    if is_generated_path(&lower, name) {
-        return FileRole::Generated;
-    }
-    if is_test_path(&lower, name) {
-        return FileRole::Test;
-    }
-    if is_schema_path(&lower, name) {
-        return FileRole::Schema;
-    }
-    if is_config_path(&lower, name) {
-        return FileRole::Config;
-    }
-    if is_docs_path(&lower, name) {
-        return FileRole::Docs;
-    }
-    if language_for_path(path).is_some() {
-        return FileRole::Source;
-    }
-
-    FileRole::Unknown
-}
-
-fn is_sensitive_path(lower: &str, name: &str) -> bool {
-    name == ".env"
-        || name.starts_with(".env.")
-        || name.ends_with(".pem")
-        || name.ends_with(".key")
-        || name.ends_with(".p12")
-        || name.ends_with(".pfx")
-        || name.ends_with(".crt")
-        || name.ends_with(".cer")
-        || name.ends_with(".dump")
-        || name.ends_with(".sql.gz")
-        || lower.contains("/.env.")
-        || lower.contains("secret")
-        || lower.contains("credentials")
-}
-
-fn is_generated_path(lower: &str, name: &str) -> bool {
-    lower.contains("/node_modules/")
-        || lower.contains("/.gradle/")
-        || lower.contains("/target/")
-        || lower.contains("/dist/")
-        || lower.contains("/build/")
-        || lower.contains("/build ")
-        || lower.contains("/coverage/")
-        || lower.contains("/vendor/")
-        || lower.contains("/resources/astdiff/")
-        || lower.contains("/resources/mappings/")
-        || lower.contains("/resources/oracle/")
-        || lower.contains("/resources/web/monaco/")
-        || lower.starts_with("node_modules/")
-        || lower.starts_with(".gradle/")
-        || lower.starts_with("target/")
-        || lower.starts_with("dist/")
-        || lower.starts_with("build/")
-        || lower.starts_with("build ")
-        || name.ends_with(".min.js")
-        || name.ends_with(".min.css")
-        || name == "package-lock.json"
-        || name == "pnpm-lock.yaml"
-        || name == "yarn.lock"
-        || name == "cargo.lock"
-}
-
-fn is_test_path(lower: &str, name: &str) -> bool {
-    lower.contains("/tests/")
-        || lower.contains("/test/")
-        || lower.contains("/spec/")
-        || lower.starts_with("tests/")
-        || lower.starts_with("test/")
-        || lower.starts_with("spec/")
-        || name.contains(".test.")
-        || name.contains(".spec.")
-        || name.ends_with("_test.go")
-        || name.ends_with("_test.py")
-        || name.starts_with("test_")
-}
-
-fn is_config_path(lower: &str, name: &str) -> bool {
-    matches!(
-        name,
-        "package.json"
-            | "pyproject.toml"
-            | "cargo.toml"
-            | "go.mod"
-            | "go.sum"
-            | "tsconfig.json"
-            | "vite.config.ts"
-            | "next.config.js"
-            | "dockerfile"
-            | "compose.yaml"
-            | "docker-compose.yml"
-            | "ctxpack.toml"
-    ) || lower.ends_with(".config.js")
-        || lower.ends_with(".config.ts")
-        || lower.ends_with(".toml")
-        || lower.ends_with(".yaml")
-        || lower.ends_with(".yml")
-}
-
-fn is_schema_path(lower: &str, name: &str) -> bool {
-    lower.contains("/migrations/")
-        || lower.contains("/schema/")
-        || name.ends_with(".graphql")
-        || name.ends_with(".graphqls")
-        || name.ends_with(".proto")
-        || name.ends_with(".prisma")
-        || name.ends_with(".sql")
-}
-
-fn is_docs_path(lower: &str, name: &str) -> bool {
-    lower.starts_with("docs/")
-        || name == "readme.md"
-        || name == "agents.md"
-        || name.ends_with(".md")
-        || name.ends_with(".mdx")
-        || name.ends_with(".rst")
-        || name.ends_with(".txt")
-}
-
-fn language_for_path(path: &str) -> Option<&'static str> {
-    let lower = path.to_ascii_lowercase();
-    let name = lower.rsplit('/').next().unwrap_or(lower.as_str());
-    let extension = name.rsplit_once('.').map(|(_, extension)| extension);
-
-    match extension {
-        Some("rs") => Some("rust"),
-        Some("ts") | Some("tsx") => Some("typescript"),
-        Some("js") | Some("jsx") | Some("mjs") | Some("cjs") => Some("javascript"),
-        Some("py") => Some("python"),
-        Some("go") => Some("go"),
-        Some("java") => Some("java"),
-        Some("kt") | Some("kts") => Some("kotlin"),
-        Some("scala") => Some("scala"),
-        Some("cs") => Some("csharp"),
-        Some("rb") => Some("ruby"),
-        Some("php") => Some("php"),
-        Some("dart") => Some("dart"),
-        Some("c") | Some("h") => Some("c"),
-        Some("cc") | Some("cpp") | Some("cxx") | Some("hpp") => Some("cpp"),
-        Some("swift") => Some("swift"),
-        Some("sql") => Some("sql"),
-        _ => None,
-    }
-}
-
-fn query_terms(query: &str) -> Vec<String> {
-    query
-        .split(|character: char| !(character.is_ascii_alphanumeric() || character == '_'))
-        .filter(|term| !term.is_empty())
-        .map(|term| term.to_ascii_lowercase())
-        .collect()
-}
-
-fn score_file(
-    file: &FileInventoryEntry,
-    content: &str,
-    query_terms: &[String],
-) -> Option<(f32, String)> {
-    let path = file.path.to_ascii_lowercase();
-    let file_name = path.rsplit('/').next().unwrap_or(path.as_str());
-    let content = content.to_ascii_lowercase();
-    let mut score = 0.0;
-    let mut reasons = Vec::new();
-
-    for term in query_terms {
-        let weight = query_term_weight(term);
-        if weight == 0.0 {
-            continue;
-        }
-        let mut matched = false;
-
-        if path.contains(term) {
-            score += 8.0 * weight;
-            matched = true;
-            reasons.push(format!("path matched `{term}`"));
-        }
-        if file_name.contains(term) {
-            score += 5.0 * weight;
-            matched = true;
-            reasons.push(format!("file name matched `{term}`"));
-        }
-
-        let occurrences = count_occurrences(&content, term);
-        if occurrences > 0 {
-            score += (2.0 + occurrences.min(10) as f32) * weight;
-            matched = true;
-            reasons.push(format!("content matched `{term}` {occurrences} time(s)"));
-        }
-
-        if !matched {
-            score -= 1.0 * weight;
-        }
-    }
-
-    if score <= 0.0 {
-        return None;
-    }
-
-    score += match file.role {
-        FileRole::Source => 1.0,
-        FileRole::Test => 0.7,
-        FileRole::Config | FileRole::Schema | FileRole::Docs => 0.4,
-        FileRole::Generated | FileRole::Sensitive | FileRole::Unknown => 0.0,
-    };
-
-    reasons.sort();
-    reasons.dedup();
-
-    Some((score, reasons.join("; ")))
-}
-
-fn count_occurrences(haystack: &str, needle: &str) -> usize {
-    if needle.is_empty() {
-        return 0;
-    }
-    haystack.matches(needle).count()
-}
-
-fn query_term_weight(term: &str) -> f32 {
-    if matches!(
-        term,
-        "a" | "an"
-            | "and"
-            | "are"
-            | "as"
-            | "be"
-            | "by"
-            | "for"
-            | "from"
-            | "in"
-            | "is"
-            | "of"
-            | "on"
-            | "or"
-            | "the"
-            | "to"
-            | "with"
-    ) {
-        return 0.0;
-    }
-
-    if matches!(
-        term,
-        "csharp"
-            | "go"
-            | "java"
-            | "javascript"
-            | "js"
-            | "kotlin"
-            | "python"
-            | "rust"
-            | "scala"
-            | "typescript"
-            | "ts"
-    ) {
-        return 0.25;
-    }
-
-    1.0
-}
-
-fn symbols_for_file(file: &FileInventoryEntry, content: &str) -> Vec<CodeSymbol> {
-    match file.language.as_deref() {
-        Some("typescript" | "javascript") => symbols_for_js_like(file, content),
-        Some("python") => symbols_for_python(file, content),
-        Some("rust") => symbols_for_rust(file, content),
-        Some("go") => symbols_for_go(file, content),
-        _ => Vec::new(),
-    }
-}
-
-fn symbols_for_js_like(file: &FileInventoryEntry, content: &str) -> Vec<CodeSymbol> {
-    let mut symbols = Vec::new();
-    for (line_index, line) in content.lines().enumerate() {
-        let line_no = line_number(line_index);
-        let trimmed = line.trim();
-        if trimmed.is_empty() || trimmed.starts_with("//") {
-            continue;
-        }
-        if trimmed.starts_with("import ") {
-            if let Some(name) = import_name(trimmed) {
-                symbols.push(code_symbol(
-                    file,
-                    name,
-                    SymbolKind::Import,
-                    line_no,
-                    trimmed,
-                    false,
-                ));
-            }
-            continue;
-        }
-
-        let exported = trimmed.starts_with("export ");
-        let rest = strip_modifiers(
-            trimmed,
-            &[
-                "export",
-                "default",
-                "declare",
-                "async",
-                "public",
-                "private",
-                "protected",
-                "static",
-                "readonly",
-            ],
-        );
-        if let Some(name) = identifier_after(rest, "function ") {
-            symbols.push(code_symbol(
-                file,
-                name,
-                SymbolKind::Function,
-                line_no,
-                trimmed,
-                exported,
-            ));
-        } else if let Some(name) = identifier_after(rest, "class ") {
-            symbols.push(code_symbol(
-                file,
-                name,
-                SymbolKind::Class,
-                line_no,
-                trimmed,
-                exported,
-            ));
-        } else if let Some(name) = identifier_after(rest, "interface ") {
-            symbols.push(code_symbol(
-                file,
-                name,
-                SymbolKind::Interface,
-                line_no,
-                trimmed,
-                exported,
-            ));
-        } else if let Some(name) = identifier_after(rest, "type ") {
-            symbols.push(code_symbol(
-                file,
-                name,
-                SymbolKind::Type,
-                line_no,
-                trimmed,
-                exported,
-            ));
-        } else if let Some(name) = variable_name(rest) {
-            symbols.push(code_symbol(
-                file,
-                name,
-                SymbolKind::Constant,
-                line_no,
-                trimmed,
-                exported,
-            ));
-        } else if let Some(name) = js_method_name(rest) {
-            symbols.push(code_symbol(
-                file,
-                name,
-                SymbolKind::Method,
-                line_no,
-                trimmed,
-                exported,
-            ));
-        }
-    }
-    symbols
-}
-
-fn symbols_for_python(file: &FileInventoryEntry, content: &str) -> Vec<CodeSymbol> {
-    let mut symbols = Vec::new();
-    for (line_index, line) in content.lines().enumerate() {
-        let line_no = line_number(line_index);
-        let trimmed = line.trim();
-        if trimmed.is_empty() || trimmed.starts_with('#') {
-            continue;
-        }
-        let indent = line.len().saturating_sub(line.trim_start().len());
-        let rest = strip_modifiers(trimmed, &["async"]);
-        if let Some(name) = identifier_after(rest, "def ") {
-            let kind = if indent > 0 {
-                SymbolKind::Method
-            } else {
-                SymbolKind::Function
-            };
-            symbols.push(code_symbol(file, name, kind, line_no, trimmed, false));
-        } else if let Some(name) = identifier_after(rest, "class ") {
-            symbols.push(code_symbol(
-                file,
-                name,
-                SymbolKind::Class,
-                line_no,
-                trimmed,
-                false,
-            ));
-        }
-    }
-    symbols
-}
-
-fn symbols_for_rust(file: &FileInventoryEntry, content: &str) -> Vec<CodeSymbol> {
-    let mut symbols = Vec::new();
-    for (line_index, line) in content.lines().enumerate() {
-        let line_no = line_number(line_index);
-        let trimmed = line.trim();
-        if trimmed.is_empty() || trimmed.starts_with("//") || trimmed.starts_with("#[") {
-            continue;
-        }
-        let exported = trimmed.starts_with("pub ");
-        let rest = strip_modifiers(trimmed, &["pub", "async", "unsafe"]);
-        let candidates = [
-            ("fn ", SymbolKind::Function),
-            ("struct ", SymbolKind::Class),
-            ("enum ", SymbolKind::Type),
-            ("trait ", SymbolKind::Interface),
-            ("type ", SymbolKind::Type),
-            ("const ", SymbolKind::Constant),
-            ("static ", SymbolKind::Constant),
-            ("mod ", SymbolKind::Module),
-        ];
-        for (prefix, kind) in candidates {
-            if let Some(name) = identifier_after(rest, prefix) {
-                symbols.push(code_symbol(file, name, kind, line_no, trimmed, exported));
-                break;
-            }
-        }
-    }
-    symbols
-}
-
-fn symbols_for_go(file: &FileInventoryEntry, content: &str) -> Vec<CodeSymbol> {
-    let mut symbols = Vec::new();
-    for (line_index, line) in content.lines().enumerate() {
-        let line_no = line_number(line_index);
-        let trimmed = line.trim();
-        if trimmed.is_empty() || trimmed.starts_with("//") {
-            continue;
-        }
-        if let Some(name) = go_func_name(trimmed) {
-            symbols.push(code_symbol(
-                file,
-                name,
-                SymbolKind::Function,
-                line_no,
-                trimmed,
-                is_exported_go(name),
-            ));
-        } else if let Some(name) = identifier_after(trimmed, "type ") {
-            let kind = if trimmed.contains(" interface") {
-                SymbolKind::Interface
-            } else {
-                SymbolKind::Type
-            };
-            symbols.push(code_symbol(
-                file,
-                name,
-                kind,
-                line_no,
-                trimmed,
-                is_exported_go(name),
-            ));
-        }
-    }
-    symbols
-}
-
-fn code_symbol(
-    file: &FileInventoryEntry,
-    name: &str,
-    kind: SymbolKind,
-    line_no: u32,
-    signature: &str,
-    exported: bool,
-) -> CodeSymbol {
-    CodeSymbol {
-        name: name.to_string(),
-        kind,
-        path: file.path.clone(),
-        language: file.language.clone(),
-        start_line: line_no,
-        end_line: line_no,
-        signature: signature.chars().take(200).collect(),
-        exported,
-    }
-}
-
-fn score_symbol(symbol: CodeSymbol, query_terms: &[String]) -> Option<SymbolSearchResult> {
-    let name = symbol.name.to_ascii_lowercase();
-    let path = symbol.path.to_ascii_lowercase();
-    let signature = symbol.signature.to_ascii_lowercase();
-    let mut score = 0.0;
-    let mut reasons = Vec::new();
-
-    for term in query_terms {
-        let weight = query_term_weight(term);
-        if weight == 0.0 {
-            continue;
-        }
-        let mut matched = false;
-        if name == *term {
-            score += 24.0 * weight;
-            matched = true;
-            reasons.push(format!("symbol name exactly matched `{term}`"));
-        } else if name.starts_with(term) {
-            score += 16.0 * weight;
-            matched = true;
-            reasons.push(format!("symbol name starts with `{term}`"));
-        } else if name.contains(term) {
-            score += 12.0 * weight;
-            matched = true;
-            reasons.push(format!("symbol name contains `{term}`"));
-        }
-        if path.contains(term) {
-            score += 4.0 * weight;
-            matched = true;
-            reasons.push(format!("path contains `{term}`"));
-        }
-        if signature.contains(term) {
-            score += 2.0 * weight;
-            matched = true;
-            reasons.push(format!("signature contains `{term}`"));
-        }
-        if !matched {
-            score -= 2.0 * weight;
-        }
-    }
-
-    if symbol.exported {
-        score += 1.0;
-    }
-    if score <= 0.0 {
-        return None;
-    }
-
-    reasons.sort();
-    reasons.dedup();
-    Some(SymbolSearchResult {
-        symbol,
-        score,
-        reason: reasons.join("; "),
-    })
-}
-
-fn line_number(line_index: usize) -> u32 {
-    u32::try_from(line_index + 1).unwrap_or(u32::MAX)
-}
-
-fn strip_modifiers<'a>(line: &'a str, modifiers: &[&str]) -> &'a str {
-    let mut rest = line.trim();
-    loop {
-        let mut changed = false;
-        for modifier in modifiers {
-            if let Some(next) = rest.strip_prefix(modifier).and_then(|value| {
-                value
-                    .starts_with(char::is_whitespace)
-                    .then_some(value.trim_start())
-            }) {
-                rest = next;
-                changed = true;
-            }
-        }
-        if !changed {
-            return rest;
-        }
-    }
-}
-
-fn identifier_after<'a>(line: &'a str, prefix: &str) -> Option<&'a str> {
-    let rest = line.strip_prefix(prefix)?;
-    take_identifier(rest)
-}
-
-fn take_identifier(input: &str) -> Option<&str> {
-    let input = input.trim_start();
-    let end = input
-        .char_indices()
-        .find_map(|(index, character)| {
-            (!is_identifier_char(character) && index > 0).then_some(index)
-        })
-        .unwrap_or(input.len());
-    let identifier = &input[..end];
-    (!identifier.is_empty()).then_some(identifier)
-}
-
-fn is_identifier_char(character: char) -> bool {
-    character.is_ascii_alphanumeric() || character == '_' || character == '$'
-}
-
-fn variable_name(line: &str) -> Option<&str> {
-    ["const ", "let ", "var "]
-        .into_iter()
-        .find_map(|prefix| identifier_after(line, prefix))
-}
-
-fn js_method_name(line: &str) -> Option<&str> {
-    let disallowed = [
-        "if ",
-        "for ",
-        "while ",
-        "switch ",
-        "catch ",
-        "return ",
-        "function ",
-    ];
-    if disallowed.iter().any(|prefix| line.starts_with(prefix)) {
-        return None;
-    }
-    let open_paren = line.find('(')?;
-    let before = line[..open_paren].trim();
-    if before.contains('=') || before.contains(' ') || before.is_empty() {
-        return None;
-    }
-    take_identifier(before)
-}
-
-fn import_name(line: &str) -> Option<&str> {
-    if let Some((_, module)) = line.split_once(" from ") {
-        return quoted_value(module);
-    }
-    line.strip_prefix("import ").and_then(quoted_value)
-}
-
-fn quoted_value(input: &str) -> Option<&str> {
-    let start = input.find(['"', '\''])?;
-    let quote = input.as_bytes()[start] as char;
-    let rest = &input[start + 1..];
-    let end = rest.find(quote)?;
-    Some(&rest[..end])
-}
-
-fn go_func_name(line: &str) -> Option<&str> {
-    let rest = line.strip_prefix("func ")?;
-    let rest = if rest.starts_with('(') {
-        let close = rest.find(')')?;
-        rest[close + 1..].trim_start()
-    } else {
-        rest
-    };
-    take_identifier(rest)
-}
-
-fn is_exported_go(name: &str) -> bool {
-    name.chars().next().is_some_and(char::is_uppercase)
-}
-
-#[derive(Debug, Clone)]
-struct SourceKey {
-    path: String,
-    stem: String,
-    directory: String,
-    identifiers: Vec<String>,
-}
-
-fn source_key(path: &str) -> SourceKey {
-    let normalized = path.trim_start_matches("./").replace('\\', "/");
-    let directory = normalized
-        .rsplit_once('/')
-        .map(|(directory, _)| directory.to_ascii_lowercase())
-        .unwrap_or_default();
-    let file_name = normalized.rsplit('/').next().unwrap_or(normalized.as_str());
-    let stem = source_stem(file_name);
-    let mut identifiers = query_terms(&stem);
-    identifiers.extend(query_terms(&normalized));
-    identifiers.sort();
-    identifiers.dedup();
-
-    SourceKey {
-        path: normalized.to_ascii_lowercase(),
-        stem,
-        directory,
-        identifiers,
-    }
-}
-
-fn source_stem(file_name: &str) -> String {
-    let lower = file_name.to_ascii_lowercase();
-    let without_extension = lower
-        .rsplit_once('.')
-        .map(|(stem, _)| stem)
-        .unwrap_or(&lower);
-    without_extension
-        .trim_end_matches(".test")
-        .trim_end_matches(".spec")
-        .trim_start_matches("test_")
-        .trim_end_matches("_test")
-        .to_string()
-}
-
-fn score_test_file(
-    test_path: &str,
-    content: &str,
-    source_keys: &[SourceKey],
-) -> Option<(f32, String)> {
-    let test_path_lower = test_path.to_ascii_lowercase();
-    let test_name = test_path_lower
-        .rsplit('/')
-        .next()
-        .unwrap_or(test_path_lower.as_str());
-    let content = content.to_ascii_lowercase();
-    let mut score = 0.0;
-    let mut reasons = Vec::new();
-
-    for source in source_keys {
-        if !source.stem.is_empty() && test_name.contains(&source.stem) {
-            score += 9.0;
-            reasons.push(format!(
-                "test file name matches source stem `{}`",
-                source.stem
-            ));
-        }
-        if !source.directory.is_empty() && test_path_lower.contains(&source.directory) {
-            score += 4.0;
-            reasons.push(format!("test path shares directory `{}`", source.directory));
-        }
-        if content.contains(&source.path) {
-            score += 8.0;
-            reasons.push(format!(
-                "test content mentions source path `{}`",
-                source.path
-            ));
-        }
-        for identifier in &source.identifiers {
-            if identifier.len() < 3 {
-                continue;
-            }
-            let occurrences = count_occurrences(&content, identifier);
-            if occurrences > 0 {
-                score += 1.5 + occurrences.min(5) as f32;
-                reasons.push(format!(
-                    "test content mentions source term `{identifier}` {occurrences} time(s)"
-                ));
-            }
-        }
-    }
-
-    if score <= 0.0 {
-        return None;
-    }
-
-    reasons.sort();
-    reasons.dedup();
-    Some((score, reasons.join("; ")))
-}
-
-fn test_command_for(repo_root: &Path, path: &str) -> Option<String> {
-    let lower = path.to_ascii_lowercase();
-    if lower.ends_with(".rs") {
-        Some(rust_test_command(path))
-    } else if lower.ends_with(".go") {
-        Some(format!("go test ./{}", package_dir(path)))
-    } else if lower.ends_with(".py") {
-        Some(format!("pytest {path}"))
-    } else if lower.ends_with(".ts")
-        || lower.ends_with(".tsx")
-        || lower.ends_with(".js")
-        || lower.ends_with(".jsx")
-    {
-        Some(javascript_test_command(repo_root, path))
-    } else {
-        None
-    }
-}
-
-fn rust_test_command(path: &str) -> String {
-    if let Some(file_name) = path
-        .strip_prefix("tests/")
-        .and_then(|rest| rest.strip_suffix(".rs"))
-    {
-        if !file_name.contains('/') {
-            return format!("cargo test --test {file_name}");
-        }
-    }
-    "cargo test".to_string()
-}
-
-fn javascript_test_command(repo_root: &Path, path: &str) -> String {
-    let package_root =
-        nearest_package_root(repo_root, path).unwrap_or_else(|| repo_root.to_path_buf());
-    let package_manager = detect_js_package_manager(&package_root);
-    let script = read_test_script(&package_root);
-
-    if let Some(script) = script {
-        let lower_script = script.to_ascii_lowercase();
-        if lower_script.contains("vitest") {
-            return format!("{} vitest run {path}", package_manager.command());
-        }
-        if lower_script.contains("jest") {
-            return format!("{} jest {path}", package_manager.command());
-        }
-        if !is_placeholder_test_script(&lower_script) {
-            return package_manager.run_test_script(path);
-        }
-    }
-
-    format!("{} test {path}", package_manager.command())
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum JsPackageManager {
-    Pnpm,
-    Yarn,
-    Npm,
-    Bun,
-}
-
-impl JsPackageManager {
-    fn command(self) -> &'static str {
-        match self {
-            JsPackageManager::Pnpm => "pnpm",
-            JsPackageManager::Yarn => "yarn",
-            JsPackageManager::Npm => "npm",
-            JsPackageManager::Bun => "bun",
-        }
-    }
-
-    fn run_test_script(self, path: &str) -> String {
-        match self {
-            JsPackageManager::Pnpm => format!("pnpm test -- {path}"),
-            JsPackageManager::Yarn => format!("yarn test {path}"),
-            JsPackageManager::Npm => format!("npm test -- {path}"),
-            JsPackageManager::Bun => format!("bun test {path}"),
-        }
-    }
-}
-
-fn nearest_package_root(repo_root: &Path, path: &str) -> Option<PathBuf> {
-    let mut current = repo_root.join(path).parent()?.to_path_buf();
-    loop {
-        if current.join("package.json").is_file() {
-            return Some(current);
-        }
-        if current == repo_root {
-            break;
-        }
-        if !current.pop() {
-            break;
-        }
-    }
-    if repo_root.join("package.json").is_file() {
-        Some(repo_root.to_path_buf())
-    } else {
-        None
-    }
-}
-
-fn detect_js_package_manager(package_root: &Path) -> JsPackageManager {
-    if package_root.join("pnpm-lock.yaml").is_file() {
-        JsPackageManager::Pnpm
-    } else if package_root.join("yarn.lock").is_file() {
-        JsPackageManager::Yarn
-    } else if package_root.join("package-lock.json").is_file()
-        || package_root.join("npm-shrinkwrap.json").is_file()
-    {
-        JsPackageManager::Npm
-    } else if package_root.join("bun.lock").is_file() || package_root.join("bun.lockb").is_file() {
-        JsPackageManager::Bun
-    } else {
-        JsPackageManager::Pnpm
-    }
-}
-
-fn read_test_script(package_root: &Path) -> Option<String> {
-    let package_json = fs::read_to_string(package_root.join("package.json")).ok()?;
-    let value = serde_json::from_str::<serde_json::Value>(&package_json).ok()?;
-    value
-        .get("scripts")?
-        .get("test")?
-        .as_str()
-        .map(str::trim)
-        .filter(|script| !script.is_empty())
-        .map(str::to_string)
-}
-
-fn is_placeholder_test_script(script: &str) -> bool {
-    script.contains("no test")
-        || script.contains("no tests")
-        || script.contains("missing script")
-        || script.contains("error")
-}
-
-fn package_dir(path: &str) -> String {
-    path.rsplit_once('/')
-        .map(|(directory, _)| directory)
-        .unwrap_or(".")
-        .to_string()
-}
-
-#[derive(Debug)]
-struct GitCommitFiles {
-    sha: String,
-    files: Vec<String>,
-}
-
-#[derive(Debug)]
-struct GitCommitSubjectFiles {
-    sha: String,
-    parent_sha: Option<String>,
-    title: String,
-    files: Vec<String>,
-}
-
-fn git_commit_file_sets(repo_root: &Path) -> Result<Vec<GitCommitFiles>, InventoryError> {
-    let shas = git_stdout_with_timeout(
-        repo_root,
-        &["rev-list", "--max-count=50", "HEAD"],
-        Duration::from_secs(2),
-    )?;
-    let mut commits = Vec::new();
-
-    for sha in shas.lines().map(str::trim).filter(|sha| !sha.is_empty()) {
-        let Ok(output) = git_stdout_with_timeout(
-            repo_root,
-            &[
-                "diff-tree",
-                "--root",
-                "--no-commit-id",
-                "--name-only",
-                "-r",
-                "--diff-filter=ACMRT",
-                "--no-renames",
-                sha,
-            ],
-            Duration::from_millis(250),
-        ) else {
-            continue;
-        };
-        let files = output
-            .lines()
-            .map(str::trim)
-            .filter(|line| !line.is_empty())
-            .map(|line| line.replace('\\', "/"))
-            .collect::<Vec<_>>();
-        commits.push(GitCommitFiles {
-            sha: sha.to_string(),
-            files,
-        });
-    }
-
-    Ok(commits)
-}
-
-fn git_commit_subject_file_sets(
-    repo_root: &Path,
-    max_count: usize,
-    base: Option<&str>,
-    head: Option<&str>,
-) -> Result<Vec<GitCommitSubjectFiles>, InventoryError> {
-    let max_count = format!("--max-count={}", max_count.max(1));
-    let rev = commit_range(base, head);
-    let mut rev_list_args = vec!["rev-list", &max_count];
-    rev_list_args.push(rev.as_deref().unwrap_or("HEAD"));
-    let shas = git_stdout_with_timeout(repo_root, &rev_list_args, Duration::from_secs(2))?;
-    let mut commits = Vec::new();
-
-    for sha in shas.lines().map(str::trim).filter(|sha| !sha.is_empty()) {
-        let title = git_stdout_with_timeout(
-            repo_root,
-            &["log", "-1", "--format=%s", sha],
-            Duration::from_millis(250),
-        )
-        .map(|title| title.trim().to_string())
-        .unwrap_or_default();
-        let parent_sha = git_parent_sha(repo_root, sha)?;
-        let Ok(output) = git_stdout_with_timeout(
-            repo_root,
-            &[
-                "diff-tree",
-                "--root",
-                "--no-commit-id",
-                "--name-only",
-                "-r",
-                "--diff-filter=ACMRT",
-                "--no-renames",
-                sha,
-            ],
-            Duration::from_millis(250),
-        ) else {
-            continue;
-        };
-        let files = output
-            .lines()
-            .map(str::trim)
-            .filter(|line| !line.is_empty())
-            .map(|line| line.replace('\\', "/"))
-            .collect::<Vec<_>>();
-        commits.push(GitCommitSubjectFiles {
-            sha: sha.to_string(),
-            parent_sha,
-            title,
-            files,
-        });
-    }
-
-    Ok(commits)
-}
-
-fn git_parent_sha(repo_root: &Path, sha: &str) -> Result<Option<String>, InventoryError> {
-    let output = git_stdout_with_timeout(
-        repo_root,
-        &["rev-list", "--parents", "-n", "1", sha],
-        Duration::from_millis(250),
-    )?;
-    Ok(output
-        .split_whitespace()
-        .nth(1)
-        .filter(|parent| !parent.is_empty())
-        .map(str::to_string))
-}
-
-fn commit_range(base: Option<&str>, head: Option<&str>) -> Option<String> {
-    match (
-        base.filter(|value| !value.trim().is_empty()),
-        head.filter(|value| !value.trim().is_empty()),
-    ) {
-        (Some(base), Some(head)) => Some(format!("{}..{}", base.trim(), head.trim())),
-        (Some(base), None) => Some(format!("{}..HEAD", base.trim())),
-        (None, Some(head)) => Some(head.trim().to_string()),
-        (None, None) => None,
-    }
-}
-
-fn git_name_only(repo_root: &Path, args: &[&str]) -> Result<Vec<String>, InventoryError> {
-    Ok(git_stdout(repo_root, args)?
-        .lines()
-        .map(str::trim)
-        .filter(|line| !line.is_empty())
-        .map(|line| line.replace('\\', "/"))
-        .collect())
-}
-
-fn git_stdout(repo_root: &Path, args: &[&str]) -> Result<String, InventoryError> {
-    let output = Command::new("git")
-        .arg("-C")
-        .arg(repo_root)
-        .args(args)
-        .output()
-        .map_err(|source| InventoryError::Git {
-            repo_root: repo_root.to_path_buf(),
-            message: source.to_string(),
-        })?;
-
-    if output.status.success() {
-        return Ok(String::from_utf8_lossy(&output.stdout).to_string());
-    }
-
-    let message = String::from_utf8_lossy(&output.stderr).trim().to_string();
-    if matches!(args.first(), Some(&"log") | Some(&"rev-list"))
-        && is_empty_git_history_message(&message)
-    {
-        return Ok(String::new());
-    }
-    Err(InventoryError::Git {
-        repo_root: repo_root.to_path_buf(),
-        message,
-    })
-}
-
-fn git_stdout_with_timeout(
-    repo_root: &Path,
-    args: &[&str],
-    timeout: Duration,
-) -> Result<String, InventoryError> {
-    let mut child = Command::new("git")
-        .arg("-C")
-        .arg(repo_root)
-        .args(args)
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
-        .spawn()
-        .map_err(|source| InventoryError::Git {
-            repo_root: repo_root.to_path_buf(),
-            message: source.to_string(),
-        })?;
-
-    let start = Instant::now();
-    loop {
-        match child.try_wait().map_err(|source| InventoryError::Git {
-            repo_root: repo_root.to_path_buf(),
-            message: source.to_string(),
-        })? {
-            Some(_) => break,
-            None if start.elapsed() >= timeout => {
-                let _ = child.kill();
-                let _ = child.wait();
-                return Err(InventoryError::Git {
-                    repo_root: repo_root.to_path_buf(),
-                    message: format!("git {:?} timed out after {:?}", args, timeout),
-                });
-            }
-            None => thread::sleep(Duration::from_millis(20)),
-        }
-    }
-
-    let output = child
-        .wait_with_output()
-        .map_err(|source| InventoryError::Git {
-            repo_root: repo_root.to_path_buf(),
-            message: source.to_string(),
-        })?;
-
-    if output.status.success() {
-        return Ok(String::from_utf8_lossy(&output.stdout).to_string());
-    }
-
-    let message = String::from_utf8_lossy(&output.stderr).trim().to_string();
-    if matches!(args.first(), Some(&"log") | Some(&"rev-list"))
-        && is_empty_git_history_message(&message)
-    {
-        return Ok(String::new());
-    }
-    Err(InventoryError::Git {
-        repo_root: repo_root.to_path_buf(),
-        message,
-    })
-}
-
-fn is_empty_git_history_message(message: &str) -> bool {
-    message.contains("does not have any commits yet")
-        || message.contains("your current branch") && message.contains("does not have any commits")
-        || message.contains("ambiguous argument 'HEAD'") && message.contains("unknown revision")
-}
-
 #[cfg(test)]
-fn parse_git_log_name_only(output: &str) -> Vec<GitCommitFiles> {
-    let mut commits = Vec::new();
-    let mut current_sha: Option<String> = None;
-    let mut current_files = Vec::new();
 
-    for line in output.lines() {
-        if let Some(sha) = line.strip_prefix("commit:") {
-            if let Some(previous_sha) = current_sha.replace(sha.to_string()) {
-                commits.push(GitCommitFiles {
-                    sha: previous_sha,
-                    files: std::mem::take(&mut current_files),
-                });
-            }
-            continue;
-        }
-
-        let path = line.trim();
-        if path.is_empty() {
-            continue;
-        }
-        current_files.push(path.replace('\\', "/"));
-    }
-
-    if let Some(sha) = current_sha {
-        commits.push(GitCommitFiles {
-            sha,
-            files: current_files,
-        });
-    }
-
-    commits
-}
-
-#[cfg(test)]
-fn parse_git_log_subject_name_only(output: &str) -> Vec<GitCommitSubjectFiles> {
-    let mut commits = Vec::new();
-    let mut current_sha: Option<String> = None;
-    let mut current_title = String::new();
-    let mut current_files = Vec::new();
-
-    for line in output.lines() {
-        if let Some(rest) = line.strip_prefix("commit:") {
-            if let Some(previous_sha) = current_sha.take() {
-                commits.push(GitCommitSubjectFiles {
-                    sha: previous_sha,
-                    parent_sha: None,
-                    title: std::mem::take(&mut current_title),
-                    files: std::mem::take(&mut current_files),
-                });
-            }
-            let (sha, title) = rest.split_once('\0').unwrap_or((rest, ""));
-            current_sha = Some(sha.to_string());
-            current_title = title.trim().to_string();
-            continue;
-        }
-
-        let path = line.trim();
-        if path.is_empty() {
-            continue;
-        }
-        current_files.push(path.replace('\\', "/"));
-    }
-
-    if let Some(sha) = current_sha {
-        commits.push(GitCommitSubjectFiles {
-            sha,
-            parent_sha: None,
-            title: current_title,
-            files: current_files,
-        });
-    }
-
-    commits
-}
-
-#[cfg(test)]
 mod tests {
     use super::*;
     use std::sync::{Mutex, OnceLock};
@@ -2672,6 +335,88 @@ mod tests {
     }
 
     #[test]
+    fn lexical_search_refreshes_stale_inventory_for_created_files() {
+        let _guard = env_lock();
+        let temp = tempfile::tempdir().unwrap();
+        let repo = temp.path().join("repo");
+        let home = temp.path().join("ctxpack-home");
+        fs::create_dir_all(repo.join(".git")).unwrap();
+        fs::create_dir_all(repo.join("src")).unwrap();
+        fs::write(repo.join("src/old.ts"), "export const oldValue = true;\n").unwrap();
+        std::env::set_var("CTXPACK_HOME", &home);
+        write_inventory(&repo, &InventoryOptions::default()).unwrap();
+        fs::write(
+            repo.join("src/new-session.ts"),
+            "export const requireSession = true;\n",
+        )
+        .unwrap();
+
+        let report =
+            lexical_search_report(&repo, "requireSession", &SearchOptions { limit: 5 }).unwrap();
+        let results = lexical_search(&repo, "requireSession", &SearchOptions { limit: 5 }).unwrap();
+
+        assert_eq!(results[0].path, "src/new-session.ts");
+        assert_eq!(report.results[0].path, "src/new-session.ts");
+        assert!(report
+            .diagnostics
+            .iter()
+            .any(|diagnostic| diagnostic.code == "inventory_stale"));
+        assert!(report
+            .diagnostics
+            .iter()
+            .any(|diagnostic| diagnostic.code == "inventory_rebuilt"));
+
+        std::env::remove_var("CTXPACK_HOME");
+    }
+
+    #[test]
+    fn source_read_diagnostics_cover_non_utf8_oversized_and_deleted_inputs() {
+        let _guard = env_lock();
+        let temp = tempfile::tempdir().unwrap();
+        let repo = temp.path().join("repo");
+        let home = temp.path().join("ctxpack-home");
+        fs::create_dir_all(repo.join(".git")).unwrap();
+        fs::create_dir_all(repo.join("src")).unwrap();
+        fs::write(repo.join("src/non_utf8.ts"), [0xff, 0xfe, b'\n']).unwrap();
+        fs::write(repo.join("src/oversized.ts"), "hugeToken\n".repeat(140_000)).unwrap();
+        fs::write(
+            repo.join("src/deleted.ts"),
+            "export const deletedToken = true;\n",
+        )
+        .unwrap();
+        std::env::set_var("CTXPACK_HOME", &home);
+        write_inventory(&repo, &InventoryOptions::default()).unwrap();
+        fs::remove_file(repo.join("src/deleted.ts")).unwrap();
+
+        let deleted =
+            lexical_search_report(&repo, "deletedToken", &SearchOptions { limit: 10 }).unwrap();
+        let non_utf8 =
+            lexical_search_report(&repo, "non_utf8", &SearchOptions { limit: 10 }).unwrap();
+        let oversized =
+            lexical_search_report(&repo, "hugeToken", &SearchOptions { limit: 10 }).unwrap();
+
+        assert!(non_utf8
+            .diagnostics
+            .iter()
+            .any(|diagnostic| diagnostic.code == "source_non_utf8"));
+        assert!(oversized
+            .diagnostics
+            .iter()
+            .any(|diagnostic| diagnostic.code == "source_oversized"));
+        assert!(deleted
+            .diagnostics
+            .iter()
+            .any(|diagnostic| diagnostic.code == "inventory_stale_file_deleted"));
+        assert!(oversized.results.is_empty());
+        assert!(non_utf8
+            .diagnostics
+            .iter()
+            .all(|diagnostic| !diagnostic.message.contains("hugeToken")));
+
+        std::env::remove_var("CTXPACK_HOME");
+    }
+
+    #[test]
     fn lexical_search_prioritizes_specific_terms_over_common_language_mentions() {
         let _guard = env_lock();
         let temp = tempfile::tempdir().unwrap();
@@ -2768,6 +513,39 @@ mod tests {
     }
 
     #[test]
+    fn symbol_extraction_refreshes_stale_inventory_for_created_files() {
+        let _guard = env_lock();
+        let temp = tempfile::tempdir().unwrap();
+        let repo = temp.path().join("repo");
+        let home = temp.path().join("ctxpack-home");
+        fs::create_dir_all(repo.join(".git")).unwrap();
+        fs::create_dir_all(repo.join("src")).unwrap();
+        fs::write(repo.join("src/old.ts"), "export function oldValue() {}\n").unwrap();
+        std::env::set_var("CTXPACK_HOME", &home);
+        write_inventory(&repo, &InventoryOptions::default()).unwrap();
+        fs::write(
+            repo.join("src/session.ts"),
+            "export function requireSession() { return true; }\n",
+        )
+        .unwrap();
+
+        let report = extract_symbols_report(&repo).unwrap();
+        let symbols = extract_symbols(&repo).unwrap();
+        let names = symbols
+            .iter()
+            .map(|symbol| symbol.name.as_str())
+            .collect::<Vec<_>>();
+
+        assert!(names.contains(&"requireSession"));
+        assert!(report
+            .diagnostics
+            .iter()
+            .any(|diagnostic| diagnostic.code == "inventory_stale"));
+
+        std::env::remove_var("CTXPACK_HOME");
+    }
+
+    #[test]
     fn dependency_edges_resolve_safe_local_imports() {
         let _guard = env_lock();
         let temp = tempfile::tempdir().unwrap();
@@ -2814,6 +592,84 @@ mod tests {
         assert!(edges
             .iter()
             .all(|edge| !edge.target_path.contains("express")));
+
+        std::env::remove_var("CTXPACK_HOME");
+    }
+
+    #[test]
+    fn dependency_edges_refresh_stale_inventory_for_created_targets() {
+        let _guard = env_lock();
+        let temp = tempfile::tempdir().unwrap();
+        let repo = temp.path().join("repo");
+        let home = temp.path().join("ctxpack-home");
+        fs::create_dir_all(repo.join(".git")).unwrap();
+        fs::create_dir_all(repo.join("src/auth")).unwrap();
+        fs::write(
+            repo.join("src/auth/session.ts"),
+            "export function requireSession() { return true; }\n",
+        )
+        .unwrap();
+        std::env::set_var("CTXPACK_HOME", &home);
+        write_inventory(&repo, &InventoryOptions::default()).unwrap();
+        fs::write(
+            repo.join("src/auth/session.ts"),
+            "import { parseCookie } from './cookies';\nexport function requireSession() { return parseCookie(); }\n",
+        )
+        .unwrap();
+        fs::write(
+            repo.join("src/auth/cookies.ts"),
+            "export function parseCookie() { return true; }\n",
+        )
+        .unwrap();
+
+        let report = dependency_edges_report(&repo, &DependencyOptions { limit: 10 }).unwrap();
+        let edges = dependency_edges(&repo, &DependencyOptions { limit: 10 }).unwrap();
+        let pairs = edges
+            .iter()
+            .map(|edge| (edge.source_path.as_str(), edge.target_path.as_str()))
+            .collect::<Vec<_>>();
+
+        assert!(pairs.contains(&("src/auth/session.ts", "src/auth/cookies.ts")));
+        assert!(report
+            .diagnostics
+            .iter()
+            .any(|diagnostic| diagnostic.code == "inventory_stale"));
+
+        std::env::remove_var("CTXPACK_HOME");
+    }
+
+    #[test]
+    fn partial_graph_and_test_map_diagnostics_are_source_free() {
+        let _guard = env_lock();
+        let temp = tempfile::tempdir().unwrap();
+        let repo = temp.path().join("repo");
+        let home = temp.path().join("ctxpack-home");
+        fs::create_dir_all(repo.join(".git")).unwrap();
+        fs::create_dir_all(repo.join("src/auth")).unwrap();
+        fs::create_dir_all(repo.join("tests/auth")).unwrap();
+        fs::write(repo.join("src/auth/session.ts"), [0xff, 0xfe, b'\n']).unwrap();
+        fs::write(repo.join("tests/auth/session.test.ts"), [0xff, 0xfe, b'\n']).unwrap();
+        std::env::set_var("CTXPACK_HOME", &home);
+
+        let graph = dependency_edges_report(&repo, &DependencyOptions { limit: 10 }).unwrap();
+        let tests = related_tests_report(&repo, &["src/auth/session.ts".to_string()]).unwrap();
+
+        assert!(graph
+            .diagnostics
+            .iter()
+            .any(|diagnostic| diagnostic.code == "graph_partial"));
+        assert!(tests
+            .diagnostics
+            .iter()
+            .any(|diagnostic| diagnostic.code == "test_map_partial"));
+        assert!(graph
+            .diagnostics
+            .iter()
+            .any(|diagnostic| diagnostic.code == "source_non_utf8"));
+        assert!(tests
+            .diagnostics
+            .iter()
+            .all(|diagnostic| !diagnostic.message.contains("requireSession")));
 
         std::env::remove_var("CTXPACK_HOME");
     }
@@ -2890,6 +746,41 @@ mod tests {
         );
         assert!(results[0].confidence > 0.5);
         assert!(results[0].reason.contains("source stem `session`"));
+
+        std::env::remove_var("CTXPACK_HOME");
+    }
+
+    #[test]
+    fn related_tests_refreshes_stale_inventory_for_created_test_files() {
+        let _guard = env_lock();
+        let temp = tempfile::tempdir().unwrap();
+        let repo = temp.path().join("repo");
+        let home = temp.path().join("ctxpack-home");
+        fs::create_dir_all(repo.join(".git")).unwrap();
+        fs::create_dir_all(repo.join("src/auth")).unwrap();
+        fs::create_dir_all(repo.join("tests/auth")).unwrap();
+        fs::write(
+            repo.join("src/auth/session.ts"),
+            "export function requireSession() {}\n",
+        )
+        .unwrap();
+        std::env::set_var("CTXPACK_HOME", &home);
+        write_inventory(&repo, &InventoryOptions::default()).unwrap();
+        fs::write(
+            repo.join("tests/auth/session.test.ts"),
+            "import { requireSession } from '../../src/auth/session';\n",
+        )
+        .unwrap();
+
+        let report = related_tests_report(&repo, &["src/auth/session.ts".to_string()]).unwrap();
+        let results = related_tests(&repo, &["src/auth/session.ts".to_string()]).unwrap();
+
+        assert_eq!(results[0].path, "tests/auth/session.test.ts");
+        assert_eq!(report.results[0].path, "tests/auth/session.test.ts");
+        assert!(report
+            .diagnostics
+            .iter()
+            .any(|diagnostic| diagnostic.code == "inventory_stale"));
 
         std::env::remove_var("CTXPACK_HOME");
     }
@@ -3088,10 +979,24 @@ mod tests {
         assert_eq!(commits.len(), 2);
         assert_eq!(commits[0].sha, "abc");
         assert_eq!(commits[0].title, "fix auth redirect");
-        assert_eq!(commits[0].files, vec!["src/a.ts", "tests/a.test.ts"]);
+        assert_eq!(
+            commits[0]
+                .files
+                .iter()
+                .map(|file| file.path.as_str())
+                .collect::<Vec<_>>(),
+            vec!["src/a.ts", "tests/a.test.ts"]
+        );
         assert_eq!(commits[1].sha, "def");
         assert_eq!(commits[1].title, "add billing");
-        assert_eq!(commits[1].files, vec!["src/b.ts"]);
+        assert_eq!(
+            commits[1]
+                .files
+                .iter()
+                .map(|file| file.path.as_str())
+                .collect::<Vec<_>>(),
+            vec!["src/b.ts"]
+        );
     }
 
     #[test]
@@ -3141,6 +1046,236 @@ mod tests {
         assert_eq!(samples[0].excluded_changed_file_count, 2);
         assert!(!serde_json::to_string(&samples).unwrap().contains("TOKEN"));
 
+        std::env::remove_var("CTXPACK_HOME");
+    }
+
+    #[test]
+    fn historical_commit_samples_include_rename_records() {
+        let _guard = env_lock();
+        let temp = tempfile::tempdir().unwrap();
+        let repo = temp.path().join("repo");
+        let home = temp.path().join("ctxpack-home");
+        fs::create_dir_all(repo.join("src/auth")).unwrap();
+        run_git(&repo, &["init"]);
+        run_git(&repo, &["config", "user.email", "ctxpack@example.com"]);
+        run_git(&repo, &["config", "user.name", "ctxpack"]);
+        fs::write(
+            repo.join("src/auth/session.ts"),
+            "export const session = 1;\n",
+        )
+        .unwrap();
+        run_git(&repo, &["add", "."]);
+        run_git(&repo, &["commit", "-m", "add session"]);
+        fs::rename(
+            repo.join("src/auth/session.ts"),
+            repo.join("src/auth/session-store.ts"),
+        )
+        .unwrap();
+        run_git(&repo, &["add", "."]);
+        run_git(&repo, &["commit", "-m", "rename session store"]);
+        std::env::set_var("CTXPACK_HOME", &home);
+
+        let samples = historical_commit_samples(
+            &repo,
+            &HistoricalCommitOptions {
+                limit: 1,
+                base: None,
+                head: None,
+            },
+        )
+        .unwrap();
+
+        assert_eq!(samples.len(), 1);
+        assert_eq!(
+            samples[0].safe_changed_files,
+            vec!["src/auth/session-store.ts"]
+        );
+        assert_eq!(samples[0].changed_paths.len(), 1);
+        assert_eq!(samples[0].changed_paths[0].change_kind, ChangeKind::Renamed);
+        assert_eq!(
+            samples[0].changed_paths[0].path,
+            "src/auth/session-store.ts"
+        );
+        assert_eq!(
+            samples[0].changed_paths[0].old_path.as_deref(),
+            Some("src/auth/session.ts")
+        );
+
+        std::env::remove_var("CTXPACK_HOME");
+    }
+
+    #[test]
+    fn historical_commit_samples_include_delete_records() {
+        let _guard = env_lock();
+        let temp = tempfile::tempdir().unwrap();
+        let repo = temp.path().join("repo");
+        let home = temp.path().join("ctxpack-home");
+        fs::create_dir_all(repo.join("src/auth")).unwrap();
+        run_git(&repo, &["init"]);
+        run_git(&repo, &["config", "user.email", "ctxpack@example.com"]);
+        run_git(&repo, &["config", "user.name", "ctxpack"]);
+        fs::write(
+            repo.join("src/auth/session.ts"),
+            "export const session = 1;\n",
+        )
+        .unwrap();
+        run_git(&repo, &["add", "."]);
+        run_git(&repo, &["commit", "-m", "add session"]);
+        fs::remove_file(repo.join("src/auth/session.ts")).unwrap();
+        run_git(&repo, &["add", "."]);
+        run_git(&repo, &["commit", "-m", "delete stale session"]);
+        std::env::set_var("CTXPACK_HOME", &home);
+
+        let samples = historical_commit_samples(
+            &repo,
+            &HistoricalCommitOptions {
+                limit: 1,
+                base: None,
+                head: None,
+            },
+        )
+        .unwrap();
+
+        assert_eq!(samples.len(), 1);
+        assert!(samples[0].safe_changed_files.is_empty());
+        assert_eq!(samples[0].changed_paths.len(), 1);
+        assert_eq!(samples[0].changed_paths[0].change_kind, ChangeKind::Deleted);
+        assert_eq!(samples[0].changed_paths[0].path, "src/auth/session.ts");
+        assert_eq!(
+            samples[0].changed_paths[0].label_scope,
+            LabelScope::HistoricalOnly
+        );
+
+        std::env::remove_var("CTXPACK_HOME");
+    }
+
+    #[test]
+    fn historical_commit_samples_label_generated_and_sensitive_exclusions() {
+        let _guard = env_lock();
+        let temp = tempfile::tempdir().unwrap();
+        let repo = temp.path().join("repo");
+        let home = temp.path().join("ctxpack-home");
+        fs::create_dir_all(repo.join("dist")).unwrap();
+        run_git(&repo, &["init"]);
+        run_git(&repo, &["config", "user.email", "ctxpack@example.com"]);
+        run_git(&repo, &["config", "user.name", "ctxpack"]);
+        fs::write(repo.join("dist/generated.min.js"), "generated\n").unwrap();
+        fs::write(repo.join(".env"), "TOKEN=secret\n").unwrap();
+        run_git(&repo, &["add", "."]);
+        run_git(
+            &repo,
+            &["commit", "-m", "add generated and sensitive files"],
+        );
+        std::env::set_var("CTXPACK_HOME", &home);
+
+        let samples = historical_commit_samples(
+            &repo,
+            &HistoricalCommitOptions {
+                limit: 1,
+                base: None,
+                head: None,
+            },
+        )
+        .unwrap();
+
+        assert_eq!(samples.len(), 1);
+        assert!(samples[0].safe_changed_files.is_empty());
+        assert_eq!(samples[0].excluded_changed_file_count, 2);
+        assert!(samples[0].changed_paths.iter().any(|label| {
+            label.path == "dist/generated.min.js"
+                && label.label_scope == LabelScope::Generated
+                && label.excluded_reason == Some(HistoricalPathExclusionReason::Generated)
+        }));
+        assert!(samples[0].changed_paths.iter().any(|label| {
+            label.path == ".env"
+                && label.label_scope == LabelScope::Sensitive
+                && label.excluded_reason == Some(HistoricalPathExclusionReason::Sensitive)
+        }));
+        let serialized = serde_json::to_string(&samples).unwrap();
+        assert!(!serialized.contains("TOKEN"));
+        assert!(!serialized.contains("generated\\n"));
+
+        std::env::remove_var("CTXPACK_HOME");
+    }
+
+    #[test]
+    fn historical_commit_limit_bounds_revision_scan_before_filtering() {
+        let _guard = env_lock();
+        let temp = tempfile::tempdir().unwrap();
+        let repo = temp.path().join("repo");
+        let home = temp.path().join("ctxpack-home");
+        fs::create_dir_all(repo.join("src")).unwrap();
+        fs::create_dir_all(repo.join("dist")).unwrap();
+        run_git(&repo, &["init"]);
+        run_git(&repo, &["config", "user.email", "ctxpack@example.com"]);
+        run_git(&repo, &["config", "user.name", "ctxpack"]);
+        fs::write(repo.join("src/old.ts"), "export const old = true;\n").unwrap();
+        run_git(&repo, &["add", "."]);
+        run_git(&repo, &["commit", "-m", "old safe change"]);
+        fs::write(repo.join("dist/new.min.js"), "generated\n").unwrap();
+        run_git(&repo, &["add", "."]);
+        run_git(&repo, &["commit", "-m", "new generated change"]);
+        std::env::set_var("CTXPACK_HOME", &home);
+
+        let samples = historical_commit_samples(
+            &repo,
+            &HistoricalCommitOptions {
+                limit: 1,
+                base: None,
+                head: None,
+            },
+        )
+        .unwrap();
+
+        assert_eq!(samples.len(), 1);
+        assert_eq!(samples[0].title, "new generated change");
+        assert!(samples[0].safe_changed_files.is_empty());
+        assert!(samples[0]
+            .changed_paths
+            .iter()
+            .all(|label| label.path != "src/old.ts"));
+
+        std::env::remove_var("CTXPACK_HOME");
+    }
+
+    #[test]
+    fn diagnostics_report_git_missing_as_history_partial() {
+        let _guard = env_lock();
+        let temp = tempfile::tempdir().unwrap();
+        let repo = temp.path().join("repo");
+        let home = temp.path().join("ctxpack-home");
+        fs::create_dir_all(repo.join(".git")).unwrap();
+        fs::create_dir_all(repo.join("src")).unwrap();
+        fs::write(repo.join("src/lib.rs"), "pub fn answer() -> u8 { 42 }\n").unwrap();
+        std::env::set_var("CTXPACK_HOME", &home);
+        let old_path = std::env::var_os("PATH");
+        std::env::set_var("PATH", "");
+
+        let report = historical_commit_samples_report(
+            &repo,
+            &HistoricalCommitOptions {
+                limit: 5,
+                base: None,
+                head: None,
+            },
+        )
+        .unwrap();
+
+        assert!(report.samples.is_empty());
+        assert!(report
+            .diagnostics
+            .iter()
+            .any(|diagnostic| diagnostic.code == "git_missing"));
+        assert!(report
+            .diagnostics
+            .iter()
+            .any(|diagnostic| diagnostic.code == "history_partial"));
+
+        if let Some(path) = old_path {
+            std::env::set_var("PATH", path);
+        } else {
+            std::env::remove_var("PATH");
+        }
         std::env::remove_var("CTXPACK_HOME");
     }
 

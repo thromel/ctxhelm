@@ -1,1725 +1,50 @@
+mod cards;
+mod eval;
+mod packs;
+mod planning;
+mod ranking;
+
+pub use cards::{
+    generate_context_cards, ContextCardsOptions, ContextCardsReport, GeneratedContextCard,
+};
+pub use eval::{
+    eval_trace_for_pack, eval_trace_for_plan, evaluate_historical_commits, EvalComparison,
+    HistoricalChangedPathLabel, HistoricalCommitEval, HistoricalEvalEffectiveFilters,
+    HistoricalEvalOptions, HistoricalEvalRefs, HistoricalEvalReport, HistoricalMissingFileSummary,
+    RankingMetrics, RetrievalGapSummary, RoleRecallMetric, SignalAblationResult,
+};
+pub use packs::{
+    compile_context_pack, compile_context_pack_from_plan, compile_context_pack_from_plan_for_agent,
+    compile_context_pack_with_plan, compile_context_pack_with_plan_and_paths,
+    compile_context_pack_with_plan_and_paths_for_agent, compile_context_pack_with_plan_for_agent,
+    render_pack_markdown,
+};
+pub use planning::{empty_plan_for_task, prepare_context_plan, prepare_context_plan_with_paths};
+
+#[cfg(test)]
 use ctxpack_core::{
-    Command, ContextPack, ContextPlan, EvalTrace, FileRole, LineRange, PackBudget, PackOption,
-    PackSection, PrivacyStatus, RelatedTest, RiskFlag, TargetFile, TaskType,
+    FileRole, PackBudget, PrivacyStatus, RetrievalCandidateKind, RetrievalSignalKind, TaskType,
 };
-use ctxpack_index::{
-    co_change_hints, dependency_edges, extract_symbols, historical_commit_samples, lexical_search,
-    load_or_build_inventory, related_dependency_edges, related_tests, repo_id_for_path,
-    symbol_search, task_hash, test_map, CoChangeOptions, DependencyEdge, DependencyOptions,
-    HistoricalCommitOptions, InventoryError, InventoryOptions, RelatedTestResult, RepoInventory,
-    SearchOptions, SymbolOptions,
-};
-use serde::{Deserialize, Serialize};
-use std::collections::{BTreeMap, BTreeSet};
-use std::fs;
-use std::path::{Component, Path, PathBuf};
-use std::process::{Command as ProcessCommand, Stdio};
-use std::time::{SystemTime, UNIX_EPOCH};
-use uuid::Uuid;
-
-const PREPARE_TASK_TARGET_LIMIT: usize = 8;
-
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-#[serde(rename_all = "camelCase")]
-pub struct HistoricalEvalOptions {
-    pub limit: usize,
-    pub task_type: TaskType,
-    pub target_agent: String,
-    pub base: Option<String>,
-    pub head: Option<String>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-#[serde(rename_all = "camelCase")]
-pub struct HistoricalEvalReport {
-    pub repo_id: String,
-    pub evaluated_commits: usize,
-    pub base: Option<String>,
-    pub head: Option<String>,
-    pub low_information_commit_count: usize,
-    pub file_recall_at_5: f32,
-    pub file_recall_at_10: f32,
-    pub lexical_baseline_recall_at_5: f32,
-    pub lexical_baseline_recall_at_10: f32,
-    pub ctxpack_lift_at_5: f32,
-    pub ctxpack_lift_at_10: f32,
-    pub source_recall_at_5: f32,
-    pub source_recall_at_10: f32,
-    pub test_recall_at_5: f32,
-    pub test_recall_at_10: f32,
-    pub test_recommendation_rate: f32,
-    pub average_recommended_context_files: f32,
-    pub top_missing_files: Vec<HistoricalMissingFileSummary>,
-    pub commits: Vec<HistoricalCommitEval>,
-    pub privacy_status: PrivacyStatus,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-#[serde(rename_all = "camelCase")]
-pub struct HistoricalMissingFileSummary {
-    pub path: String,
-    pub role: FileRole,
-    pub missed_count: usize,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-#[serde(rename_all = "camelCase")]
-pub struct HistoricalCommitEval {
-    pub sha: String,
-    pub task_hash: String,
-    pub task_type: TaskType,
-    pub target_agent: String,
-    pub safe_changed_files: Vec<String>,
-    pub excluded_changed_file_count: usize,
-    pub recommended_files: Vec<String>,
-    pub recommended_tests: Vec<String>,
-    pub recommended_context_files: Vec<String>,
-    pub recommended_commands: Vec<String>,
-    pub lexical_baseline_files: Vec<String>,
-    pub file_hits_at_5: Vec<String>,
-    pub file_hits_at_10: Vec<String>,
-    pub lexical_baseline_hits_at_5: Vec<String>,
-    pub lexical_baseline_hits_at_10: Vec<String>,
-    pub missing_files_at_10: Vec<String>,
-    pub source_files_changed: usize,
-    pub source_hits_at_5: usize,
-    pub source_hits_at_10: usize,
-    pub test_files_changed: usize,
-    pub test_hits_at_5: usize,
-    pub test_hits_at_10: usize,
-    pub low_information_task: bool,
-    pub confidence: f32,
-    pub source_text_logged: bool,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-#[serde(rename_all = "camelCase")]
-pub struct ContextCardsOptions {
-    pub limit: usize,
-}
-
-impl Default for ContextCardsOptions {
-    fn default() -> Self {
-        Self { limit: 40 }
-    }
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-#[serde(rename_all = "camelCase")]
-pub struct GeneratedContextCard {
-    pub name: String,
-    pub path: PathBuf,
-    pub title: String,
-    pub bytes: usize,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-#[serde(rename_all = "camelCase")]
-pub struct ContextCardsReport {
-    pub repo_id: String,
-    pub cards_dir: PathBuf,
-    pub cards: Vec<GeneratedContextCard>,
-    pub privacy_status: PrivacyStatus,
-}
-
-pub fn empty_plan_for_task(task_type: TaskType) -> ContextPlan {
-    base_plan(task_type)
-}
-
-pub fn prepare_context_plan(
-    repo_root: impl AsRef<Path>,
-    task: &str,
-    task_type: TaskType,
-) -> Result<ContextPlan, InventoryError> {
-    prepare_context_plan_with_paths(repo_root, task, task_type, &[])
-}
-
-pub fn evaluate_historical_commits(
-    repo_root: impl AsRef<Path>,
-    options: &HistoricalEvalOptions,
-) -> Result<HistoricalEvalReport, InventoryError> {
-    let repo_root = repo_root.as_ref();
-    let inventory = load_or_build_inventory(repo_root, &InventoryOptions::default())?;
-    let snapshot_paths = inventory
-        .files
-        .iter()
-        .map(|file| file.path.clone())
-        .collect::<Vec<_>>();
-    let roles_by_path = inventory
-        .files
-        .iter()
-        .map(|file| (file.path.clone(), file.role.clone()))
-        .collect::<BTreeMap<_, _>>();
-    let samples = historical_commit_samples(
-        repo_root,
-        &HistoricalCommitOptions {
-            limit: options.limit,
-            base: options.base.clone(),
-            head: options.head.clone(),
-        },
-    )?;
-    let target_agent = normalized_target_agent(&options.target_agent);
-    let mut commits = Vec::new();
-
-    for sample in samples {
-        let task = if sample.title.trim().is_empty() {
-            format!("change {}", sample.sha)
-        } else {
-            sample.title.clone()
-        };
-        let eval_repo = HistoricalEvalWorktree::for_parent(
-            repo_root,
-            sample.parent_sha.as_deref(),
-            &snapshot_paths,
-        )?;
-        let eval_root = eval_repo.path();
-        let plan = prepare_context_plan_with_paths_and_history(
-            eval_root,
-            &task,
-            options.task_type.clone(),
-            &[],
-            false,
-        )?;
-        let recommended_files = plan
-            .target_files
-            .iter()
-            .map(|target| target.path.clone())
-            .collect::<Vec<_>>();
-        let recommended_tests = plan
-            .related_tests
-            .iter()
-            .map(|test| test.path.clone())
-            .collect::<Vec<_>>();
-        let recommended_commands = plan
-            .recommended_commands
-            .iter()
-            .map(|command| command.command.clone())
-            .collect::<Vec<_>>();
-        let recommended_context_files =
-            context_file_ranking(&recommended_files, &recommended_tests);
-        let lexical_baseline_files = lexical_baseline_context_files(eval_root, &task)?;
-        let file_hits_at_5 =
-            changed_file_hits(&sample.safe_changed_files, &recommended_context_files, 5);
-        let file_hits_at_10 =
-            changed_file_hits(&sample.safe_changed_files, &recommended_context_files, 10);
-        let lexical_baseline_hits_at_5 =
-            changed_file_hits(&sample.safe_changed_files, &lexical_baseline_files, 5);
-        let lexical_baseline_hits_at_10 =
-            changed_file_hits(&sample.safe_changed_files, &lexical_baseline_files, 10);
-        let missing_files_at_10 =
-            missing_changed_files(&sample.safe_changed_files, &recommended_context_files, 10);
-        let source_changed_files =
-            filter_changed_files_by_role(&sample.safe_changed_files, &roles_by_path, |role| {
-                matches!(role, FileRole::Source)
-            });
-        let test_changed_files =
-            filter_changed_files_by_role(&sample.safe_changed_files, &roles_by_path, |role| {
-                matches!(role, FileRole::Test)
-            });
-        let source_hits_at_5 =
-            changed_file_hits(&source_changed_files, &recommended_context_files, 5).len();
-        let source_hits_at_10 =
-            changed_file_hits(&source_changed_files, &recommended_context_files, 10).len();
-        let test_hits_at_5 =
-            changed_file_hits(&test_changed_files, &recommended_context_files, 5).len();
-        let test_hits_at_10 =
-            changed_file_hits(&test_changed_files, &recommended_context_files, 10).len();
-
-        commits.push(HistoricalCommitEval {
-            sha: sample.sha,
-            task_hash: task_hash(&task),
-            task_type: options.task_type.clone(),
-            target_agent: target_agent.clone(),
-            safe_changed_files: sample.safe_changed_files,
-            excluded_changed_file_count: sample.excluded_changed_file_count,
-            recommended_files,
-            recommended_tests,
-            recommended_context_files,
-            recommended_commands,
-            lexical_baseline_files,
-            file_hits_at_5,
-            file_hits_at_10,
-            lexical_baseline_hits_at_5,
-            lexical_baseline_hits_at_10,
-            missing_files_at_10,
-            source_files_changed: source_changed_files.len(),
-            source_hits_at_5,
-            source_hits_at_10,
-            test_files_changed: test_changed_files.len(),
-            test_hits_at_5,
-            test_hits_at_10,
-            low_information_task: is_low_information_task(&task),
-            confidence: plan.confidence,
-            source_text_logged: false,
-        });
-    }
-
-    let file_recall_at_5 = average_recall(&commits, 5);
-    let file_recall_at_10 = average_recall(&commits, 10);
-    let lexical_baseline_recall_at_5 = average_lexical_baseline_recall(&commits, 5);
-    let lexical_baseline_recall_at_10 = average_lexical_baseline_recall(&commits, 10);
-
-    Ok(HistoricalEvalReport {
-        repo_id: pack_repo_id(repo_root),
-        evaluated_commits: commits.len(),
-        base: options.base.clone(),
-        head: options.head.clone(),
-        low_information_commit_count: commits
-            .iter()
-            .filter(|commit| commit.low_information_task)
-            .count(),
-        file_recall_at_5,
-        file_recall_at_10,
-        lexical_baseline_recall_at_5,
-        lexical_baseline_recall_at_10,
-        ctxpack_lift_at_5: file_recall_at_5 - lexical_baseline_recall_at_5,
-        ctxpack_lift_at_10: file_recall_at_10 - lexical_baseline_recall_at_10,
-        source_recall_at_5: average_role_recall(&commits, FileRole::Source, 5),
-        source_recall_at_10: average_role_recall(&commits, FileRole::Source, 10),
-        test_recall_at_5: average_role_recall(&commits, FileRole::Test, 5),
-        test_recall_at_10: average_role_recall(&commits, FileRole::Test, 10),
-        test_recommendation_rate: test_recommendation_rate(&commits),
-        average_recommended_context_files: average_recommended_context_files(&commits),
-        top_missing_files: top_missing_files(&commits, &roles_by_path, 10),
-        commits,
-        privacy_status: PrivacyStatus::local_only(),
-    })
-}
-
-pub fn generate_context_cards(
-    repo_root: impl AsRef<Path>,
-    options: &ContextCardsOptions,
-) -> Result<ContextCardsReport, InventoryError> {
-    let repo_root = repo_root.as_ref();
-    let inventory = load_or_build_inventory(repo_root, &InventoryOptions::default())?;
-    let repo_root = inventory.repo_root.clone();
-    let repo_id = inventory.repo_id.clone();
-    let limit = options.limit.max(1);
-    let cards_dir = repo_root.join(".ctxpack").join("cards");
-    fs::create_dir_all(&cards_dir).map_err(|source| InventoryError::CreateDir {
-        path: cards_dir.clone(),
-        source,
-    })?;
-
-    let symbols = extract_symbols(&repo_root)?;
-    let tests = test_map(&repo_root)?;
-    let edges = dependency_edges(&repo_root, &DependencyOptions { limit })?;
-
-    let cards = [
-        (
-            "repo-overview",
-            "Repo Overview",
-            render_repo_overview_card(&repo_id, &inventory, &symbols, limit),
-        ),
-        (
-            "testing",
-            "Testing",
-            render_testing_card(&repo_id, &tests, limit),
-        ),
-        (
-            "dependency-graph",
-            "Dependency Graph",
-            render_dependency_card(&repo_id, &edges, limit),
-        ),
-    ];
-
-    let mut generated = Vec::new();
-    for (name, title, content) in cards {
-        let path = cards_dir.join(format!("{name}.md"));
-        fs::write(&path, &content).map_err(|source| InventoryError::Write {
-            path: path.clone(),
-            source,
-        })?;
-        generated.push(GeneratedContextCard {
-            name: name.to_string(),
-            path,
-            title: title.to_string(),
-            bytes: content.len(),
-        });
-    }
-
-    Ok(ContextCardsReport {
-        repo_id,
-        cards_dir,
-        cards: generated,
-        privacy_status: PrivacyStatus::local_only(),
-    })
-}
-
-struct HistoricalEvalWorktree<'a> {
-    path: PathBuf,
-    _source_repo: &'a Path,
-    _temp_dir: Option<tempfile::TempDir>,
-}
-
-impl<'a> HistoricalEvalWorktree<'a> {
-    fn for_parent(
-        source_repo: &'a Path,
-        parent_sha: Option<&str>,
-        snapshot_paths: &[String],
-    ) -> Result<Self, InventoryError> {
-        let Some(parent_sha) = parent_sha.filter(|sha| !sha.trim().is_empty()) else {
-            return Ok(Self {
-                path: source_repo.to_path_buf(),
-                _source_repo: source_repo,
-                _temp_dir: None,
-            });
-        };
-
-        let temp_dir = tempfile::Builder::new()
-            .prefix("ctxpack-historical-eval-")
-            .tempdir()
-            .map_err(|source| InventoryError::CreateDir {
-                path: std::env::temp_dir(),
-                source,
-            })?;
-        let path = temp_dir.path().join("repo");
-        fs::create_dir_all(&path).map_err(|source| InventoryError::CreateDir {
-            path: path.clone(),
-            source,
-        })?;
-        let revision_paths =
-            git_existing_paths_at_revision(source_repo, parent_sha, snapshot_paths)?;
-        git_extract_revision_paths(source_repo, parent_sha, &revision_paths, &path)?;
-
-        Ok(Self {
-            path,
-            _source_repo: source_repo,
-            _temp_dir: Some(temp_dir),
-        })
-    }
-
-    fn path(&self) -> &Path {
-        &self.path
-    }
-}
-
-fn git_existing_paths_at_revision(
-    source_repo: &Path,
-    revision: &str,
-    candidate_paths: &[String],
-) -> Result<Vec<String>, InventoryError> {
-    if candidate_paths.is_empty() {
-        return Ok(Vec::new());
-    }
-
-    let output = ProcessCommand::new("git")
-        .arg("-C")
-        .arg(source_repo)
-        .args(["ls-tree", "-r", "--name-only", revision])
-        .output()
-        .map_err(|source| InventoryError::Git {
-            repo_root: source_repo.to_path_buf(),
-            message: source.to_string(),
-        })?;
-    if !output.status.success() {
-        return Err(InventoryError::Git {
-            repo_root: source_repo.to_path_buf(),
-            message: String::from_utf8_lossy(&output.stderr).trim().to_string(),
-        });
-    }
-
-    let existing_paths = String::from_utf8_lossy(&output.stdout)
-        .lines()
-        .map(str::to_string)
-        .collect::<BTreeSet<_>>();
-    Ok(candidate_paths
-        .iter()
-        .filter(|path| existing_paths.contains(path.as_str()))
-        .cloned()
-        .collect())
-}
-
-fn git_extract_revision_paths(
-    source_repo: &Path,
-    revision: &str,
-    paths: &[String],
-    destination: &Path,
-) -> Result<(), InventoryError> {
-    for chunk in paths.chunks(200) {
-        if chunk.is_empty() {
-            continue;
-        }
-        let mut archive = ProcessCommand::new("git")
-            .arg("-C")
-            .arg(source_repo)
-            .args(["archive", "--format=tar", revision, "--"])
-            .args(chunk)
-            .stdout(Stdio::piped())
-            .spawn()
-            .map_err(|source| InventoryError::Git {
-                repo_root: source_repo.to_path_buf(),
-                message: source.to_string(),
-            })?;
-        let archive_stdout = archive.stdout.take().ok_or_else(|| InventoryError::Git {
-            repo_root: source_repo.to_path_buf(),
-            message: "failed to capture git archive output".to_string(),
-        })?;
-        let tar_output = ProcessCommand::new("tar")
-            .args(["-xf", "-", "-C"])
-            .arg(destination)
-            .stdin(Stdio::from(archive_stdout))
-            .output()
-            .map_err(|source| InventoryError::Git {
-                repo_root: source_repo.to_path_buf(),
-                message: source.to_string(),
-            })?;
-        let archive_status = archive.wait().map_err(|source| InventoryError::Git {
-            repo_root: source_repo.to_path_buf(),
-            message: source.to_string(),
-        })?;
-        if !archive_status.success() {
-            return Err(InventoryError::Git {
-                repo_root: source_repo.to_path_buf(),
-                message: format!("git archive failed for revision {revision}"),
-            });
-        }
-        if !tar_output.status.success() {
-            return Err(InventoryError::Git {
-                repo_root: source_repo.to_path_buf(),
-                message: String::from_utf8_lossy(&tar_output.stderr)
-                    .trim()
-                    .to_string(),
-            });
-        }
-    }
-    Ok(())
-}
-
-pub fn prepare_context_plan_with_paths(
-    repo_root: impl AsRef<Path>,
-    task: &str,
-    task_type: TaskType,
-    anchor_paths: &[String],
-) -> Result<ContextPlan, InventoryError> {
-    prepare_context_plan_with_paths_and_history(repo_root, task, task_type, anchor_paths, true)
-}
-
-fn prepare_context_plan_with_paths_and_history(
-    repo_root: impl AsRef<Path>,
-    task: &str,
-    task_type: TaskType,
-    anchor_paths: &[String],
-    include_history: bool,
-) -> Result<ContextPlan, InventoryError> {
-    let repo_root = repo_root.as_ref();
-    let mut plan = base_plan(task_type);
-    let task = task.trim();
-    if task.is_empty() {
-        plan.missing_info_questions
-            .push("Describe the code task or failure to prepare repository context.".to_string());
-        return Ok(plan);
-    }
-
-    let symbol_results = symbol_search(
-        repo_root,
-        task,
-        &SymbolOptions {
-            limit: search_limit(&plan.task_type),
-        },
-    )?;
-    let search_results = lexical_search(
-        repo_root,
-        task,
-        &SearchOptions {
-            limit: search_limit(&plan.task_type),
-        },
-    )?;
-    let mut roles = BTreeMap::new();
-    for result in &search_results {
-        roles.insert(result.path.clone(), result.role.clone());
-    }
-    let mut target_files = Vec::new();
-    let mut seen_paths = BTreeSet::new();
-    let (anchor_targets, unavailable_anchors) = anchored_target_files(repo_root, anchor_paths)?;
-    for unavailable in unavailable_anchors {
-        plan.risk_flags.push(RiskFlag {
-            code: "anchor_unavailable".to_string(),
-            message: format!(
-                "Active context path `{unavailable}` was not included because it is ignored, generated, sensitive, outside the repo, or not inventoried."
-            ),
-        });
-    }
-    for (target, role) in anchor_targets {
-        roles.insert(target.path.clone(), role);
-        if seen_paths.insert(target.path.clone()) {
-            target_files.push(target);
-        }
-    }
-    for result in &symbol_results {
-        if target_files.len() >= PREPARE_TASK_TARGET_LIMIT {
-            break;
-        }
-        if seen_paths.insert(result.symbol.path.clone()) {
-            target_files.push(TargetFile {
-                path: result.symbol.path.clone(),
-                reason: format!(
-                    "symbol match `{}` ({:?}): {}",
-                    result.symbol.name, result.symbol.kind, result.reason
-                ),
-                line_range: Some(symbol_line_range(
-                    result.symbol.start_line,
-                    result.symbol.end_line,
-                )),
-                confidence: normalize_score(result.score),
-            });
-        }
-    }
-    for result in &search_results {
-        if target_files.len() >= PREPARE_TASK_TARGET_LIMIT {
-            break;
-        }
-        if seen_paths.insert(result.path.clone()) {
-            target_files.push(TargetFile {
-                path: result.path.clone(),
-                reason: format!("lexical match: {}", result.reason),
-                line_range: None,
-                confidence: normalize_score(result.score),
-            });
-        }
-    }
-    let target_paths = target_files
-        .iter()
-        .map(|target| target.path.clone())
-        .collect::<Vec<_>>();
-    let source_target_paths = target_paths
-        .iter()
-        .filter(|path| {
-            roles
-                .get(*path)
-                .is_none_or(|role| matches!(role, FileRole::Source))
-        })
-        .cloned()
-        .collect::<Vec<_>>();
-
-    plan.target_files = target_files;
-
-    if target_paths.is_empty() {
-        plan.missing_info_questions.push(
-            "No safe inventoried files matched the task. Provide a file path, symbol, or error text."
-                .to_string(),
-        );
-    }
-
-    let test_results = related_tests(repo_root, &source_target_paths)?;
-    let mut command_set = BTreeSet::new();
-    plan.related_tests = test_results
-        .iter()
-        .take(5)
-        .map(|test| {
-            if let Some(command) = &test.command {
-                command_set.insert(command.clone());
-            }
-            RelatedTest {
-                path: test.path.clone(),
-                reason: test.reason.clone(),
-                command: test.command.clone(),
-                confidence: test.confidence,
-            }
-        })
-        .collect();
-
-    plan.recommended_commands = command_set
-        .into_iter()
-        .map(|command| Command {
-            command,
-            reason: "targeted validation for related test".to_string(),
-        })
-        .collect();
-
-    let mut has_history = false;
-    if include_history {
-        match co_change_hints(
-            repo_root,
-            &source_target_paths,
-            &CoChangeOptions {
-                limit: co_change_limit(&plan.task_type),
-            },
-        ) {
-            Ok(co_changes) => {
-                has_history = !co_changes.is_empty();
-                for hint in co_changes.into_iter().take(5) {
-                    plan.risk_flags.push(RiskFlag {
-                        code: "co_change_hint".to_string(),
-                        message: format!(
-                            "{} changed with target files in {} local commit(s): {}",
-                            hint.path, hint.commit_count, hint.reason
-                        ),
-                    });
-                }
-            }
-            Err(error) => {
-                plan.risk_flags.push(RiskFlag {
-                    code: "co_change_unavailable".to_string(),
-                    message: format!(
-                        "Local git co-change hints were unavailable; continuing without history signal: {error}"
-                    ),
-                });
-            }
-        }
-    }
-
-    let mut has_graph = false;
-    match related_dependency_edges(
-        repo_root,
-        &source_target_paths,
-        &DependencyOptions {
-            limit: co_change_limit(&plan.task_type),
-        },
-    ) {
-        Ok(edges) => {
-            has_graph = !edges.is_empty();
-            let source_targets = source_target_paths.iter().cloned().collect::<BTreeSet<_>>();
-            for edge in edges.into_iter().take(5) {
-                let direction = if source_targets.contains(&edge.source_path) {
-                    "target imports"
-                } else {
-                    "imports target"
-                };
-                plan.risk_flags.push(RiskFlag {
-                    code: "dependency_edge".to_string(),
-                    message: format!(
-                        "{} `{}` -> `{}`: {}",
-                        direction, edge.source_path, edge.target_path, edge.reason
-                    ),
-                });
-            }
-        }
-        Err(error) => {
-            plan.risk_flags.push(RiskFlag {
-                code: "dependency_graph_unavailable".to_string(),
-                message: format!(
-                    "Local dependency graph was unavailable; continuing without graph signal: {error}"
-                ),
-            });
-        }
-    }
-
-    plan.confidence = plan_confidence(
-        !plan.target_files.is_empty(),
-        !plan.related_tests.is_empty(),
-        has_history,
-        has_graph,
-    );
-
-    Ok(plan)
-}
-
-pub fn compile_context_pack(
-    repo_root: impl AsRef<Path>,
-    task: &str,
-    task_type: TaskType,
-    budget: PackBudget,
-) -> Result<ContextPack, InventoryError> {
-    let (_, pack) =
-        compile_context_pack_with_plan_for_agent(repo_root, task, task_type, budget, "generic")?;
-    Ok(pack)
-}
-
-pub fn compile_context_pack_with_plan(
-    repo_root: impl AsRef<Path>,
-    task: &str,
-    task_type: TaskType,
-    budget: PackBudget,
-) -> Result<(ContextPlan, ContextPack), InventoryError> {
-    compile_context_pack_with_plan_and_paths_for_agent(
-        repo_root,
-        task,
-        task_type,
-        budget,
-        &[],
-        "generic",
-    )
-}
-
-pub fn compile_context_pack_with_plan_and_paths(
-    repo_root: impl AsRef<Path>,
-    task: &str,
-    task_type: TaskType,
-    budget: PackBudget,
-    anchor_paths: &[String],
-) -> Result<(ContextPlan, ContextPack), InventoryError> {
-    compile_context_pack_with_plan_and_paths_for_agent(
-        repo_root,
-        task,
-        task_type,
-        budget,
-        anchor_paths,
-        "generic",
-    )
-}
-
-pub fn compile_context_pack_with_plan_for_agent(
-    repo_root: impl AsRef<Path>,
-    task: &str,
-    task_type: TaskType,
-    budget: PackBudget,
-    target_agent: &str,
-) -> Result<(ContextPlan, ContextPack), InventoryError> {
-    compile_context_pack_with_plan_and_paths_for_agent(
-        repo_root,
-        task,
-        task_type,
-        budget,
-        &[],
-        target_agent,
-    )
-}
-
-pub fn compile_context_pack_with_plan_and_paths_for_agent(
-    repo_root: impl AsRef<Path>,
-    task: &str,
-    task_type: TaskType,
-    budget: PackBudget,
-    anchor_paths: &[String],
-    target_agent: &str,
-) -> Result<(ContextPlan, ContextPack), InventoryError> {
-    let repo_root = repo_root.as_ref();
-    let plan = prepare_context_plan_with_paths(repo_root, task, task_type, anchor_paths)?;
-    let pack = compile_pack_from_plan(repo_root, task, &plan, budget, target_agent);
-    Ok((plan, pack))
-}
-
-pub fn compile_context_pack_from_plan(
-    repo_root: impl AsRef<Path>,
-    task: &str,
-    plan: &ContextPlan,
-    budget: PackBudget,
-) -> ContextPack {
-    compile_context_pack_from_plan_for_agent(repo_root, task, plan, budget, "generic")
-}
-
-pub fn compile_context_pack_from_plan_for_agent(
-    repo_root: impl AsRef<Path>,
-    task: &str,
-    plan: &ContextPlan,
-    budget: PackBudget,
-    target_agent: &str,
-) -> ContextPack {
-    compile_pack_from_plan(repo_root.as_ref(), task, plan, budget, target_agent)
-}
-
-fn compile_pack_from_plan(
-    repo_root: &Path,
-    task: &str,
-    plan: &ContextPlan,
-    budget: PackBudget,
-    target_agent: &str,
-) -> ContextPack {
-    let limits = pack_limits(&budget);
-
-    let mut sections = vec![
-        section(
-            "Task",
-            "task",
-            format!(
-                "Task: {}\nTask type: {:?}\nPlan confidence: {:.2}",
-                task.trim(),
-                plan.task_type,
-                plan.confidence
-            ),
-        ),
-        section(
-            "High-confidence target files",
-            "target_files",
-            render_target_files(plan),
-        ),
-        section("Validation", "validation", render_validation(plan)),
-    ];
-
-    if !plan.risk_flags.is_empty() {
-        sections.push(section("Risk flags", "risk_flags", render_risk_flags(plan)));
-    }
-
-    let source_snippets =
-        render_target_snippets(repo_root, plan, limits.target_files, limits.lines);
-    if !source_snippets.is_empty() {
-        sections.push(section(
-            "Target snippets",
-            "target_snippets",
-            source_snippets,
-        ));
-    }
-
-    let test_snippets = render_test_snippets(repo_root, plan, limits.test_files, limits.lines);
-    if !test_snippets.is_empty() {
-        sections.push(section("Test snippets", "test_snippets", test_snippets));
-    }
-
-    sections.push(section(
-        "Final checklist",
-        "final_checklist",
-        render_final_checklist(plan),
-    ));
-
-    let mut warnings = plan.missing_info_questions.clone();
-    if plan.target_files.len() > limits.target_files {
-        warnings.push(format!(
-            "Pack budget limited target snippets to {} file(s).",
-            limits.target_files
-        ));
-    }
-    if plan.related_tests.len() > limits.test_files {
-        warnings.push(format!(
-            "Pack budget limited test snippets to {} file(s).",
-            limits.test_files
-        ));
-    }
-
-    let token_estimate = estimate_tokens(&sections);
-    ContextPack {
-        id: Uuid::new_v4(),
-        task_id: plan.task_id,
-        repo_id: pack_repo_id(repo_root),
-        task_hash: task_hash(task),
-        task_type: plan.task_type.clone(),
-        target_agent: normalized_target_agent(target_agent),
-        budget,
-        sections,
-        token_estimate,
-        confidence: plan.confidence,
-        warnings,
-        privacy_status: plan.privacy_status.clone(),
-    }
-}
-
-fn pack_repo_id(repo_root: &Path) -> String {
-    let canonical = fs::canonicalize(repo_root).unwrap_or_else(|_| repo_root.to_path_buf());
-    repo_id_for_path(&canonical)
-}
-
-pub fn render_pack_markdown(pack: &ContextPack) -> String {
-    let mut output = format!(
-        "# Context Pack\n\n- Pack ID: `{}`\n- Task ID: `{}`\n- Repo ID: `{}`\n- Task hash: `{}`\n- Target agent: `{}`\n- Task type: `{:?}`\n- Budget: `{:?}`\n- Confidence: `{:.2}`\n- Estimated tokens: `{}`\n- Privacy: local-only `{}`\n\n",
-        pack.id,
-        pack.task_id,
-        pack.repo_id,
-        pack.task_hash,
-        pack.target_agent,
-        pack.task_type,
-        pack.budget,
-        pack.confidence,
-        pack.token_estimate,
-        pack.privacy_status.local_only
-    );
-
-    if !pack.warnings.is_empty() {
-        output.push_str("## Warnings\n\n");
-        for warning in &pack.warnings {
-            output.push_str(&format!("- {warning}\n"));
-        }
-        output.push('\n');
-    }
-
-    for section in &pack.sections {
-        output.push_str(&format!("## {}\n\n{}\n\n", section.title, section.content));
-    }
-
-    output
-}
-
-pub fn eval_trace_for_plan(
-    repo_root: impl AsRef<Path>,
-    task: &str,
-    target_agent: &str,
-    plan: &ContextPlan,
-) -> EvalTrace {
-    eval_trace(repo_root.as_ref(), task, target_agent, plan, None, None)
-}
-
-pub fn eval_trace_for_pack(
-    repo_root: impl AsRef<Path>,
-    task: &str,
-    target_agent: &str,
-    plan: &ContextPlan,
-    pack: &ContextPack,
-) -> EvalTrace {
-    eval_trace(
-        repo_root.as_ref(),
-        task,
-        target_agent,
-        plan,
-        Some(pack.id),
-        Some(pack.budget.clone()),
-    )
-}
-
-fn base_plan(task_type: TaskType) -> ContextPlan {
-    let task_id = Uuid::new_v4();
-    ContextPlan {
-        task_id,
-        task_type,
-        confidence: 0.0,
-        target_files: Vec::new(),
-        related_tests: Vec::new(),
-        recommended_commands: Vec::new(),
-        pack_options: vec![
-            PackOption {
-                budget: PackBudget::Brief,
-                resource_uri: format!("ctxpack://pack/{task_id}/brief"),
-            },
-            PackOption {
-                budget: PackBudget::Standard,
-                resource_uri: format!("ctxpack://pack/{task_id}/standard"),
-            },
-            PackOption {
-                budget: PackBudget::Deep,
-                resource_uri: format!("ctxpack://pack/{task_id}/deep"),
-            },
-        ],
-        missing_info_questions: Vec::new(),
-        risk_flags: Vec::new(),
-        privacy_status: PrivacyStatus::local_only(),
-    }
-}
-
-fn eval_trace(
-    repo_root: &Path,
-    task: &str,
-    target_agent: &str,
-    plan: &ContextPlan,
-    pack_id: Option<Uuid>,
-    budget: Option<PackBudget>,
-) -> EvalTrace {
-    EvalTrace {
-        id: Uuid::new_v4(),
-        repo_id: repo_id_for_path(repo_root),
-        task_hash: task_hash(task),
-        task_type: plan.task_type.clone(),
-        pack_id,
-        target_agent: normalized_target_agent(target_agent),
-        budget,
-        recommended_files: plan
-            .target_files
-            .iter()
-            .map(|target| target.path.clone())
-            .collect(),
-        recommended_tests: plan
-            .related_tests
-            .iter()
-            .map(|test| test.path.clone())
-            .collect(),
-        recommended_commands: plan
-            .recommended_commands
-            .iter()
-            .map(|command| command.command.clone())
-            .collect(),
-        created_at_unix_seconds: SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .map(|duration| duration.as_secs())
-            .unwrap_or_default(),
-        source_text_logged: false,
-    }
-}
-
-fn normalized_target_agent(target_agent: &str) -> String {
-    let target_agent = target_agent.trim();
-    if target_agent.is_empty() {
-        "generic".to_string()
-    } else {
-        target_agent.to_string()
-    }
-}
-
-fn render_repo_overview_card(
-    repo_id: &str,
-    inventory: &RepoInventory,
-    symbols: &[ctxpack_index::CodeSymbol],
-    limit: usize,
-) -> String {
-    let mut role_counts = BTreeMap::new();
-    let mut language_counts = BTreeMap::new();
-    for file in &inventory.files {
-        *role_counts
-            .entry(format!("{:?}", file.role))
-            .or_insert(0usize) += 1;
-        if let Some(language) = &file.language {
-            *language_counts.entry(language.clone()).or_insert(0usize) += 1;
-        }
-    }
-
-    let mut output = card_header("Repo Overview", repo_id);
-    output.push_str("## File Roles\n\n");
-    push_count_list(&mut output, &role_counts);
-    output.push_str("\n## Languages\n\n");
-    push_count_list(&mut output, &language_counts);
-    output.push_str("\n## Key Files\n\n");
-    let key_files = inventory
-        .files
-        .iter()
-        .filter(|file| {
-            matches!(
-                file.role,
-                FileRole::Source
-                    | FileRole::Test
-                    | FileRole::Config
-                    | FileRole::Schema
-                    | FileRole::Docs
-            )
-        })
-        .take(limit)
-        .map(|file| format!("`{}` ({:?})", file.path, file.role))
-        .collect::<Vec<_>>();
-    push_bullet_items(&mut output, &key_files, "No safe files were inventoried.");
-
-    output.push_str("\n## Symbols\n\n");
-    let symbol_items = symbols
-        .iter()
-        .filter(|symbol| {
-            symbol.exported
-                || matches!(
-                    symbol.kind,
-                    ctxpack_index::SymbolKind::Class
-                        | ctxpack_index::SymbolKind::Interface
-                        | ctxpack_index::SymbolKind::Function
-                )
-        })
-        .take(limit)
-        .map(|symbol| {
-            format!(
-                "`{}` {:?} at `{}`:{}",
-                symbol.name, symbol.kind, symbol.path, symbol.start_line
-            )
-        })
-        .collect::<Vec<_>>();
-    push_bullet_items(&mut output, &symbol_items, "No symbols were extracted.");
-    output
-}
-
-fn render_testing_card(repo_id: &str, tests: &[RelatedTestResult], limit: usize) -> String {
-    let mut output = card_header("Testing", repo_id);
-    output.push_str("## Test Files\n\n");
-    if tests.is_empty() {
-        output.push_str("- No safe test files were detected.\n");
-        return output;
-    }
-
-    for test in tests.iter().take(limit) {
-        output.push_str(&format!("- `{}`\n", test.path));
-        if let Some(command) = &test.command {
-            output.push_str(&format!("  - Command: `{command}`\n"));
-        }
-    }
-    output
-}
-
-fn render_dependency_card(repo_id: &str, edges: &[DependencyEdge], limit: usize) -> String {
-    let mut output = card_header("Dependency Graph", repo_id);
-    output.push_str("## Safe Local Import Edges\n\n");
-    if edges.is_empty() {
-        output.push_str("- No safe local dependency edges were detected.\n");
-        return output;
-    }
-
-    for edge in edges.iter().take(limit) {
-        output.push_str(&format!(
-            "- `{}` -> `{}` ({}, confidence {:.2})\n",
-            edge.source_path, edge.target_path, edge.kind, edge.confidence
-        ));
-    }
-    output
-}
-
-fn card_header(title: &str, repo_id: &str) -> String {
-    format!(
-        "# {title}\n\n- Generated by: `ctxpack cards generate`\n- Repo ID: `{repo_id}`\n- Privacy: local-only `true`\n- Source snippets included: `false`\n\n"
-    )
-}
-
-fn push_count_list(output: &mut String, counts: &BTreeMap<String, usize>) {
-    if counts.is_empty() {
-        output.push_str("- None detected.\n");
-        return;
-    }
-    for (name, count) in counts {
-        output.push_str(&format!("- `{name}`: `{count}`\n"));
-    }
-}
-
-fn push_bullet_items(output: &mut String, items: &[String], empty_message: &str) {
-    if items.is_empty() {
-        output.push_str(&format!("- {empty_message}\n"));
-        return;
-    }
-    for item in items {
-        output.push_str(&format!("- {item}\n"));
-    }
-}
-
-fn context_file_ranking(recommended_files: &[String], recommended_tests: &[String]) -> Vec<String> {
-    let mut seen = BTreeSet::new();
-    recommended_files
-        .iter()
-        .chain(recommended_tests.iter())
-        .filter_map(|path| seen.insert(path.clone()).then_some(path.clone()))
-        .collect()
-}
-
-fn lexical_baseline_context_files(
-    repo_root: &Path,
-    task: &str,
-) -> Result<Vec<String>, InventoryError> {
-    let results = lexical_search(repo_root, task, &SearchOptions { limit: 10 })?;
-    Ok(results
-        .into_iter()
-        .map(|result| result.path)
-        .collect::<Vec<_>>())
-}
-
-fn changed_file_hits(
-    safe_changed_files: &[String],
-    recommended_context_files: &[String],
-    limit: usize,
-) -> Vec<String> {
-    let recommended = recommended_context_files
-        .iter()
-        .take(limit)
-        .cloned()
-        .collect::<BTreeSet<_>>();
-    safe_changed_files
-        .iter()
-        .filter(|path| recommended.contains(*path))
-        .cloned()
-        .collect()
-}
-
-fn missing_changed_files(
-    safe_changed_files: &[String],
-    recommended_context_files: &[String],
-    limit: usize,
-) -> Vec<String> {
-    let recommended = recommended_context_files
-        .iter()
-        .take(limit)
-        .cloned()
-        .collect::<BTreeSet<_>>();
-    safe_changed_files
-        .iter()
-        .filter(|path| !recommended.contains(*path))
-        .cloned()
-        .collect()
-}
-
-fn filter_changed_files_by_role(
-    safe_changed_files: &[String],
-    roles_by_path: &BTreeMap<String, FileRole>,
-    predicate: impl Fn(&FileRole) -> bool,
-) -> Vec<String> {
-    safe_changed_files
-        .iter()
-        .filter(|path| roles_by_path.get(*path).is_some_and(&predicate))
-        .cloned()
-        .collect()
-}
-
-fn average_recall(commits: &[HistoricalCommitEval], limit: usize) -> f32 {
-    if commits.is_empty() {
-        return 0.0;
-    }
-
-    let total = commits
-        .iter()
-        .map(|commit| {
-            if commit.safe_changed_files.is_empty() {
-                0.0
-            } else {
-                let hit_count = if limit <= 5 {
-                    commit.file_hits_at_5.len()
-                } else {
-                    commit.file_hits_at_10.len()
-                };
-                hit_count as f32 / commit.safe_changed_files.len() as f32
-            }
-        })
-        .sum::<f32>();
-
-    total / commits.len() as f32
-}
-
-fn average_lexical_baseline_recall(commits: &[HistoricalCommitEval], limit: usize) -> f32 {
-    if commits.is_empty() {
-        return 0.0;
-    }
-
-    let total = commits
-        .iter()
-        .map(|commit| {
-            if commit.safe_changed_files.is_empty() {
-                0.0
-            } else {
-                let hit_count = if limit <= 5 {
-                    commit.lexical_baseline_hits_at_5.len()
-                } else {
-                    commit.lexical_baseline_hits_at_10.len()
-                };
-                hit_count as f32 / commit.safe_changed_files.len() as f32
-            }
-        })
-        .sum::<f32>();
-
-    total / commits.len() as f32
-}
-
-fn is_low_information_task(task: &str) -> bool {
-    let information_score = task
-        .split(|character: char| !(character.is_ascii_alphanumeric() || character == '_'))
-        .filter_map(|term| {
-            let term = term.trim();
-            let normalized = term.to_ascii_lowercase();
-            if normalized.len() < 3
-                || normalized
-                    .chars()
-                    .all(|character| character.is_ascii_digit())
-            {
-                return None;
-            }
-            if matches!(
-                normalized.as_str(),
-                "fix"
-                    | "fixes"
-                    | "fixed"
-                    | "close"
-                    | "closes"
-                    | "closed"
-                    | "issue"
-                    | "bug"
-                    | "for"
-                    | "the"
-                    | "and"
-                    | "with"
-                    | "from"
-            ) {
-                return None;
-            }
-            let has_lower = term.chars().any(|character| character.is_ascii_lowercase());
-            let has_upper = term.chars().any(|character| character.is_ascii_uppercase());
-            let identifier_like = term.contains('_') || has_lower && has_upper;
-            Some(if identifier_like { 2 } else { 1 })
-        })
-        .sum::<usize>();
-
-    information_score < 2
-}
-
-fn average_role_recall(commits: &[HistoricalCommitEval], role: FileRole, limit: usize) -> f32 {
-    let mut total = 0.0;
-    let mut count = 0usize;
-    for commit in commits {
-        let (changed, hits) = match role {
-            FileRole::Source => (
-                commit.source_files_changed,
-                if limit <= 5 {
-                    commit.source_hits_at_5
-                } else {
-                    commit.source_hits_at_10
-                },
-            ),
-            FileRole::Test => (
-                commit.test_files_changed,
-                if limit <= 5 {
-                    commit.test_hits_at_5
-                } else {
-                    commit.test_hits_at_10
-                },
-            ),
-            _ => (0, 0),
-        };
-        if changed == 0 {
-            continue;
-        }
-        total += hits as f32 / changed as f32;
-        count += 1;
-    }
-
-    if count == 0 {
-        0.0
-    } else {
-        total / count as f32
-    }
-}
-
-fn test_recommendation_rate(commits: &[HistoricalCommitEval]) -> f32 {
-    if commits.is_empty() {
-        return 0.0;
-    }
-    let with_tests = commits
-        .iter()
-        .filter(|commit| !commit.recommended_tests.is_empty())
-        .count();
-    with_tests as f32 / commits.len() as f32
-}
-
-fn average_recommended_context_files(commits: &[HistoricalCommitEval]) -> f32 {
-    if commits.is_empty() {
-        return 0.0;
-    }
-    let total = commits
-        .iter()
-        .map(|commit| commit.recommended_context_files.len())
-        .sum::<usize>();
-    total as f32 / commits.len() as f32
-}
-
-fn top_missing_files(
-    commits: &[HistoricalCommitEval],
-    roles_by_path: &BTreeMap<String, FileRole>,
-    limit: usize,
-) -> Vec<HistoricalMissingFileSummary> {
-    let mut counts = BTreeMap::<String, usize>::new();
-    for commit in commits {
-        for path in &commit.missing_files_at_10 {
-            *counts.entry(path.clone()).or_insert(0) += 1;
-        }
-    }
-
-    let mut missing = counts
-        .into_iter()
-        .map(|(path, missed_count)| HistoricalMissingFileSummary {
-            role: roles_by_path
-                .get(&path)
-                .cloned()
-                .unwrap_or(FileRole::Unknown),
-            path,
-            missed_count,
-        })
-        .collect::<Vec<_>>();
-    missing.sort_by(|left, right| {
-        right
-            .missed_count
-            .cmp(&left.missed_count)
-            .then_with(|| left.path.cmp(&right.path))
-    });
-    missing.truncate(limit.max(1));
-    missing
-}
-
-fn search_limit(task_type: &TaskType) -> usize {
-    match task_type {
-        TaskType::Explain => 8,
-        TaskType::Review | TaskType::Refactor => 12,
-        TaskType::BugFix | TaskType::Feature | TaskType::Test => 10,
-    }
-}
-
-fn co_change_limit(task_type: &TaskType) -> usize {
-    match task_type {
-        TaskType::BugFix | TaskType::Refactor | TaskType::Review => 8,
-        TaskType::Feature | TaskType::Test | TaskType::Explain => 5,
-    }
-}
-
-fn normalize_score(score: f32) -> f32 {
-    (score / 20.0).clamp(0.15, 0.95)
-}
-
-fn symbol_line_range(start_line: u32, end_line: u32) -> LineRange {
-    LineRange {
-        start: start_line,
-        end: end_line.max(start_line),
-    }
-}
-
-fn plan_confidence(has_targets: bool, has_tests: bool, has_history: bool, has_graph: bool) -> f32 {
-    let mut confidence: f32 = if has_targets { 0.45 } else { 0.05 };
-    if has_tests {
-        confidence += 0.25;
-    }
-    if has_history {
-        confidence += 0.15;
-    }
-    if has_graph {
-        confidence += 0.10;
-    }
-    confidence.min(0.95)
-}
-
-type AnchoredTarget = (TargetFile, FileRole);
-
-fn anchored_target_files(
-    repo_root: &Path,
-    anchor_paths: &[String],
-) -> Result<(Vec<AnchoredTarget>, Vec<String>), InventoryError> {
-    if anchor_paths.is_empty() {
-        return Ok((Vec::new(), Vec::new()));
-    }
-
-    let inventory = load_or_build_inventory(repo_root, &InventoryOptions::default())?;
-    let files_by_path = inventory
-        .files
-        .into_iter()
-        .filter(|file| !file.ignored && !file.generated && file.role != FileRole::Sensitive)
-        .map(|file| (file.path.clone(), file.role))
-        .collect::<BTreeMap<_, _>>();
-    let mut seen = BTreeSet::new();
-    let mut targets = Vec::new();
-    let mut unavailable = Vec::new();
-
-    for input in anchor_paths {
-        let Some(path) = normalize_anchor_path(repo_root, input) else {
-            unavailable.push(input.clone());
-            continue;
-        };
-        let Some(role) = files_by_path.get(&path) else {
-            unavailable.push(input.clone());
-            continue;
-        };
-        if seen.insert(path.clone()) {
-            targets.push((
-                TargetFile {
-                    path,
-                    reason: "explicit path anchor from active context".to_string(),
-                    line_range: None,
-                    confidence: 0.98,
-                },
-                role.clone(),
-            ));
-        }
-    }
-
-    Ok((targets, unavailable))
-}
-
-fn normalize_anchor_path(repo_root: &Path, input: &str) -> Option<String> {
-    let input = input.trim();
-    if input.is_empty() {
-        return None;
-    }
-
-    let path = Path::new(input);
-    let relative = if path.is_absolute() {
-        path.strip_prefix(repo_root).ok()?
-    } else {
-        path
-    };
-    let mut parts = Vec::new();
-    for component in relative.components() {
-        match component {
-            Component::Normal(part) => parts.push(part.to_string_lossy().to_string()),
-            Component::CurDir => {}
-            _ => return None,
-        }
-    }
-    if parts.is_empty() {
-        None
-    } else {
-        Some(parts.join("/"))
-    }
-}
-
-struct PackLimits {
-    target_files: usize,
-    test_files: usize,
-    lines: usize,
-}
-
-fn pack_limits(budget: &PackBudget) -> PackLimits {
-    match budget {
-        PackBudget::Brief => PackLimits {
-            target_files: 3,
-            test_files: 2,
-            lines: 80,
-        },
-        PackBudget::Standard => PackLimits {
-            target_files: 5,
-            test_files: 4,
-            lines: 180,
-        },
-        PackBudget::Deep => PackLimits {
-            target_files: 8,
-            test_files: 6,
-            lines: 320,
-        },
-    }
-}
-
-fn section(title: &str, kind: &str, content: String) -> PackSection {
-    PackSection {
-        title: title.to_string(),
-        kind: kind.to_string(),
-        content,
-    }
-}
-
-fn render_target_files(plan: &ContextPlan) -> String {
-    if plan.target_files.is_empty() {
-        return "No high-confidence target files were found.".to_string();
-    }
-
-    plan.target_files
-        .iter()
-        .enumerate()
-        .map(|(index, file)| {
-            let line_hint = file
-                .line_range
-                .as_ref()
-                .map(|range| format!("\n   - Lines: {}-{}", range.start, range.end))
-                .unwrap_or_default();
-            format!(
-                "{}. `{}`\n   - Reason: {}\n   - Confidence: {:.2}",
-                index + 1,
-                file.path,
-                file.reason,
-                file.confidence
-            ) + &line_hint
-        })
-        .collect::<Vec<_>>()
-        .join("\n")
-}
-
-fn render_validation(plan: &ContextPlan) -> String {
-    if plan.recommended_commands.is_empty() {
-        return "No targeted validation command was inferred.".to_string();
-    }
-
-    plan.recommended_commands
-        .iter()
-        .map(|command| format!("- `{}`\n  - Reason: {}", command.command, command.reason))
-        .collect::<Vec<_>>()
-        .join("\n")
-}
-
-fn render_risk_flags(plan: &ContextPlan) -> String {
-    plan.risk_flags
-        .iter()
-        .map(|flag| format!("- `{}`: {}", flag.code, flag.message))
-        .collect::<Vec<_>>()
-        .join("\n")
-}
-
-fn render_target_snippets(
-    repo_root: &Path,
-    plan: &ContextPlan,
-    max_files: usize,
-    max_lines: usize,
-) -> String {
-    plan.target_files
-        .iter()
-        .take(max_files)
-        .filter_map(|file| {
-            render_file_snippet(repo_root, &file.path, file.line_range.as_ref(), max_lines)
-        })
-        .collect::<Vec<_>>()
-        .join("\n\n")
-}
-
-fn render_test_snippets(
-    repo_root: &Path,
-    plan: &ContextPlan,
-    max_files: usize,
-    max_lines: usize,
-) -> String {
-    let mut seen = BTreeSet::new();
-    plan.related_tests
-        .iter()
-        .take(max_files)
-        .filter(|test| seen.insert(test.path.clone()))
-        .filter_map(|test| render_file_snippet(repo_root, &test.path, None, max_lines))
-        .collect::<Vec<_>>()
-        .join("\n\n")
-}
-
-fn render_file_snippet(
-    repo_root: &Path,
-    path: &str,
-    line_range: Option<&LineRange>,
-    max_lines: usize,
-) -> Option<String> {
-    let absolute_path = repo_root.join(path);
-    let content = fs::read_to_string(absolute_path).ok()?;
-    let total_lines = content.lines().count();
-    let (start_line, end_line) = snippet_bounds(line_range, max_lines, total_lines);
-    let mut snippet = String::new();
-    for (index, line) in content
-        .lines()
-        .enumerate()
-        .skip(start_line.saturating_sub(1))
-        .take(end_line.saturating_sub(start_line).saturating_add(1))
-    {
-        snippet.push_str(&format!("{:>4}: {}\n", index + 1, line));
-    }
-    if start_line > 1 {
-        snippet.insert_str(0, &format!("... omitted lines 1-{}\n", start_line - 1));
-    }
-    if end_line < total_lines {
-        snippet.push_str(&format!(
-            "... omitted lines {}-{}\n",
-            end_line + 1,
-            total_lines
-        ));
-    }
-
-    Some(format!("### `{path}`\n\n```text\n{snippet}```"))
-}
-
-fn snippet_bounds(
-    line_range: Option<&LineRange>,
-    max_lines: usize,
-    total_lines: usize,
-) -> (usize, usize) {
-    let max_lines = max_lines.max(1);
-    if total_lines == 0 {
-        return (1, 0);
-    }
-    let Some(range) = line_range else {
-        return (1, total_lines.min(max_lines));
-    };
-    let requested_start = usize::try_from(range.start).unwrap_or(1).max(1);
-    let requested_end = usize::try_from(range.end).unwrap_or(requested_start);
-    let context_before = 5usize;
-    let mut start = requested_start.saturating_sub(context_before).max(1);
-    let mut end = requested_end.min(total_lines);
-    if end < start {
-        end = start;
-    }
-    let current_len = end.saturating_sub(start).saturating_add(1);
-    if current_len < max_lines {
-        end = (end + (max_lines - current_len)).min(total_lines);
-    }
-    if end.saturating_sub(start).saturating_add(1) > max_lines {
-        start = end.saturating_sub(max_lines).saturating_add(1);
-    }
-    (start, end)
-}
-
-fn render_final_checklist(plan: &ContextPlan) -> String {
-    let mut lines = vec![
-        "- Read the high-confidence target files before editing.".to_string(),
-        "- Keep changes scoped to the task and preserve existing public behavior unless evidence says otherwise.".to_string(),
-    ];
-
-    if !plan.related_tests.is_empty() {
-        lines.push("- Use the related tests as the first validation path.".to_string());
-    }
-    if !plan.risk_flags.is_empty() {
-        lines.push("- Review risk flags before broadening the edit scope.".to_string());
-    }
-    if !plan.missing_info_questions.is_empty() {
-        lines.push("- Resolve missing information before making a broad change.".to_string());
-    }
-
-    lines.join("\n")
-}
-
-fn estimate_tokens(sections: &[PackSection]) -> usize {
-    let words = sections
-        .iter()
-        .map(|section| {
-            section.title.split_whitespace().count() + section.content.split_whitespace().count()
-        })
-        .sum::<usize>();
-    words.saturating_mul(4).div_ceil(3)
-}
+#[cfg(test)]
+use ctxpack_index::{repo_id_for_path, task_hash, write_inventory, InventoryOptions};
+#[cfg(test)]
+use eval::HistoricalEvalWorktree;
+#[cfg(test)]
+use planning::{is_low_information_task, plan_confidence, PREPARE_TASK_TARGET_LIMIT};
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use std::fs;
+    use std::path::Path;
     use std::process::Command as ProcessCommand;
     use std::sync::{Mutex, OnceLock};
 
     fn env_lock() -> std::sync::MutexGuard<'static, ()> {
         static LOCK: OnceLock<Mutex<()>> = OnceLock::new();
-        LOCK.get_or_init(|| Mutex::new(())).lock().unwrap()
+        LOCK.get_or_init(|| Mutex::new(()))
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
     }
 
     #[test]
@@ -1892,6 +217,14 @@ mod tests {
             .risk_flags
             .iter()
             .all(|flag| flag.code != "co_change_hint"));
+        assert!(plan
+            .diagnostics
+            .iter()
+            .any(|diagnostic| diagnostic.code == "git_unavailable"));
+        assert!(plan
+            .diagnostics
+            .iter()
+            .any(|diagnostic| diagnostic.code == "history_partial"));
         assert_eq!(plan.confidence, plan_confidence(true, true, false, true));
 
         std::env::remove_var("CTXPACK_HOME");
@@ -1929,6 +262,215 @@ mod tests {
             flag.code == "dependency_edge" && flag.message.contains("src/auth/cookies.ts")
         }));
         assert_eq!(plan.confidence, plan_confidence(true, true, false, true));
+
+        std::env::remove_var("CTXPACK_HOME");
+    }
+
+    #[test]
+    fn prepare_context_plan_can_select_dependency_neighbor_without_lexical_match() {
+        let _guard = env_lock();
+        let temp = tempfile::tempdir().unwrap();
+        let repo = temp.path().join("repo");
+        let home = temp.path().join("ctxpack-home");
+        fs::create_dir_all(repo.join("src/auth")).unwrap();
+        fs::write(
+            repo.join("src/auth/session.ts"),
+            "import { parseCookie } from './cookies';\nexport function requireSession() { return parseCookie(); }\n",
+        )
+        .unwrap();
+        fs::write(
+            repo.join("src/auth/cookies.ts"),
+            "export function parseCookie() { return true; }\n",
+        )
+        .unwrap();
+        std::env::set_var("CTXPACK_HOME", &home);
+
+        let plan = prepare_context_plan(&repo, "fix requireSession bug", TaskType::BugFix).unwrap();
+        let dependency_target = plan
+            .target_files
+            .iter()
+            .find(|target| target.path == "src/auth/cookies.ts")
+            .expect("dependency neighbor should consume target budget");
+
+        assert!(dependency_target
+            .attribution
+            .iter()
+            .any(|evidence| evidence.signal == RetrievalSignalKind::Dependency));
+
+        std::env::remove_var("CTXPACK_HOME");
+    }
+
+    #[test]
+    fn prepare_context_plan_recommends_related_test_with_attribution_and_command() {
+        let _guard = env_lock();
+        let temp = tempfile::tempdir().unwrap();
+        let repo = temp.path().join("repo");
+        let home = temp.path().join("ctxpack-home");
+        fs::create_dir_all(repo.join("src/auth")).unwrap();
+        fs::create_dir_all(repo.join("tests/auth")).unwrap();
+        fs::write(
+            repo.join("src/auth/session.ts"),
+            "export function requireSession() { return true; }\n",
+        )
+        .unwrap();
+        fs::write(
+            repo.join("tests/auth/session.test.ts"),
+            "import { requireSession } from '../../src/auth/session';\n",
+        )
+        .unwrap();
+        std::env::set_var("CTXPACK_HOME", &home);
+
+        let plan = prepare_context_plan(&repo, "fix requireSession bug", TaskType::BugFix).unwrap();
+        let related_test = plan
+            .related_tests
+            .iter()
+            .find(|test| test.path == "tests/auth/session.test.ts")
+            .expect("related test should be projected separately from target files");
+
+        assert!(!plan
+            .target_files
+            .iter()
+            .any(|target| target.path == "tests/auth/session.test.ts"));
+        assert_eq!(
+            related_test.command.as_deref(),
+            Some("pnpm test tests/auth/session.test.ts")
+        );
+        assert!(related_test
+            .attribution
+            .iter()
+            .any(|evidence| evidence.signal == RetrievalSignalKind::RelatedTest));
+        assert!(plan
+            .recommended_commands
+            .iter()
+            .any(|command| command.command == "pnpm test tests/auth/session.test.ts"));
+
+        std::env::remove_var("CTXPACK_HOME");
+    }
+
+    #[test]
+    fn prepare_context_plan_attributes_current_diff_anchors() {
+        let _guard = env_lock();
+        let temp = tempfile::tempdir().unwrap();
+        let repo = temp.path().join("repo");
+        let home = temp.path().join("ctxpack-home");
+        fs::create_dir_all(repo.join("src/auth")).unwrap();
+        run_git(&repo, &["init"]);
+        run_git(&repo, &["config", "user.email", "ctxpack@example.com"]);
+        run_git(&repo, &["config", "user.name", "ctxpack"]);
+        fs::write(
+            repo.join("src/auth/session.ts"),
+            "export function requireSession() { return true; }\n",
+        )
+        .unwrap();
+        run_git(&repo, &["add", "."]);
+        run_git(&repo, &["commit", "-m", "add session"]);
+        fs::write(
+            repo.join("src/auth/session.ts"),
+            "export function requireSession() { return false; }\n",
+        )
+        .unwrap();
+        std::env::set_var("CTXPACK_HOME", &home);
+
+        let anchors = vec!["src/auth/session.ts".to_string()];
+        let plan = prepare_context_plan_with_paths(
+            &repo,
+            "fix unrelated behavior",
+            TaskType::BugFix,
+            &anchors,
+        )
+        .unwrap();
+
+        assert_eq!(plan.target_files[0].path, "src/auth/session.ts");
+        assert!(plan.target_files[0]
+            .attribution
+            .iter()
+            .any(|evidence| evidence.signal == RetrievalSignalKind::CurrentDiff));
+
+        std::env::remove_var("CTXPACK_HOME");
+    }
+
+    #[test]
+    fn prepare_context_plan_projects_all_typed_candidates_source_free() {
+        let _guard = env_lock();
+        let temp = tempfile::tempdir().unwrap();
+        let repo = temp.path().join("repo");
+        let home = temp.path().join("ctxpack-home");
+        fs::create_dir_all(repo.join("src/auth")).unwrap();
+        fs::create_dir_all(repo.join("tests/auth")).unwrap();
+        run_git(&repo, &["init"]);
+        run_git(&repo, &["config", "user.email", "ctxpack@example.com"]);
+        run_git(&repo, &["config", "user.name", "ctxpack"]);
+        fs::write(
+            repo.join("src/auth/session.ts"),
+            "export function requireSession() { return true; }\n",
+        )
+        .unwrap();
+        fs::write(
+            repo.join("tests/auth/session.test.ts"),
+            "import { requireSession } from '../../src/auth/session';\n",
+        )
+        .unwrap();
+        fs::write(
+            repo.join("README.md"),
+            "requireSession documentation should stay source free\n",
+        )
+        .unwrap();
+        fs::write(
+            repo.join("Cargo.toml"),
+            "[package]\nname = \"requireSession-config\"\n",
+        )
+        .unwrap();
+        run_git(&repo, &["add", "."]);
+        run_git(&repo, &["commit", "-m", "add session docs and config"]);
+        fs::write(
+            repo.join("src/auth/session.ts"),
+            "export function requireSession() { return false; }\n",
+        )
+        .unwrap();
+        fs::write(repo.join("README.md"), "requireSession docs updated\n").unwrap();
+        run_git(&repo, &["add", "."]);
+        run_git(&repo, &["commit", "-m", "update session docs"]);
+        std::env::set_var("CTXPACK_HOME", &home);
+
+        let first = prepare_context_plan(
+            &repo,
+            "fix requireSession documentation config",
+            TaskType::BugFix,
+        )
+        .unwrap();
+        let second = prepare_context_plan(
+            &repo,
+            "fix requireSession documentation config",
+            TaskType::BugFix,
+        )
+        .unwrap();
+        let kinds = first
+            .retrieval_candidates
+            .iter()
+            .map(|candidate| candidate.kind.clone())
+            .collect::<Vec<_>>();
+        let serialized = serde_json::to_string(&first.retrieval_candidates).unwrap();
+
+        assert!(kinds.contains(&RetrievalCandidateKind::File));
+        assert!(kinds.contains(&RetrievalCandidateKind::Test));
+        assert!(kinds.contains(&RetrievalCandidateKind::Symbol));
+        assert!(kinds.contains(&RetrievalCandidateKind::Doc));
+        assert!(kinds.contains(&RetrievalCandidateKind::Commit));
+        assert!(kinds.contains(&RetrievalCandidateKind::Config));
+        assert_eq!(
+            serialized,
+            serde_json::to_string(&second.retrieval_candidates).unwrap()
+        );
+        assert!(!serialized.contains("export function requireSession"));
+        assert!(!serialized.contains("documentation should stay source free"));
+        assert!(first
+            .risk_flags
+            .iter()
+            .any(|flag| flag.code == "co_change_hint"));
+        assert!(first
+            .risk_flags
+            .iter()
+            .any(|flag| flag.code == "dependency_edge"));
 
         std::env::remove_var("CTXPACK_HOME");
     }
@@ -2025,6 +567,13 @@ mod tests {
             .risk_flags
             .iter()
             .any(|flag| flag.message.contains("dist/generated.js")));
+        assert_eq!(
+            plan.diagnostics
+                .iter()
+                .filter(|diagnostic| diagnostic.code == "anchor_unavailable")
+                .count(),
+            2
+        );
 
         std::env::remove_var("CTXPACK_HOME");
     }
@@ -2037,6 +586,73 @@ mod tests {
         assert_eq!(plan.confidence, 0.0);
         assert!(plan.target_files.is_empty());
         assert_eq!(plan.missing_info_questions.len(), 1);
+    }
+
+    #[test]
+    fn prepare_context_plan_reports_low_information_task_diagnostics() {
+        let _guard = env_lock();
+        let temp = tempfile::tempdir().unwrap();
+        let repo = temp.path().join("repo");
+        let home = temp.path().join("ctxpack-home");
+        fs::create_dir_all(repo.join("src")).unwrap();
+        fs::write(
+            repo.join("src/session.ts"),
+            "export const session = true;\n",
+        )
+        .unwrap();
+        std::env::set_var("CTXPACK_HOME", &home);
+
+        let plan = prepare_context_plan(&repo, "Fixes #1061", TaskType::BugFix).unwrap();
+
+        assert!(plan
+            .diagnostics
+            .iter()
+            .any(|diagnostic| diagnostic.code == "low_information_task"));
+        assert!(plan
+            .risk_flags
+            .iter()
+            .any(|flag| flag.code == "low_information_task"));
+        assert!(plan.missing_info_questions.iter().any(|question| {
+            question.contains("file path")
+                || question.contains("symbol")
+                || question.contains("error")
+        }));
+
+        std::env::remove_var("CTXPACK_HOME");
+    }
+
+    #[test]
+    fn prepare_context_plan_diagnostics_stay_source_free_for_unreadable_inputs() {
+        let _guard = env_lock();
+        let temp = tempfile::tempdir().unwrap();
+        let repo = temp.path().join("repo");
+        let home = temp.path().join("ctxpack-home");
+        fs::create_dir_all(repo.join("src")).unwrap();
+        fs::write(
+            repo.join("src/broken.ts"),
+            [
+                0xff, b'u', b'n', b's', b'a', b'f', b'e', b'_', b'p', b'a', b'y', b'l', b'o', b'a',
+                b'd',
+            ],
+        )
+        .unwrap();
+        std::env::set_var("CTXPACK_HOME", &home);
+
+        let plan = prepare_context_plan(&repo, "broken", TaskType::BugFix).unwrap();
+        let diagnostics_json = serde_json::to_string(&plan.diagnostics).unwrap();
+
+        assert!(plan
+            .diagnostics
+            .iter()
+            .any(|diagnostic| diagnostic.code == "source_non_utf8"));
+        assert!(plan
+            .diagnostics
+            .iter()
+            .any(|diagnostic| diagnostic.code == "parse_gap"));
+        assert!(!diagnostics_json.contains("unsafe_payload"));
+        assert!(diagnostics_json.contains("src/broken.ts"));
+
+        std::env::remove_var("CTXPACK_HOME");
     }
 
     #[test]
@@ -2081,6 +697,123 @@ mod tests {
         assert!(markdown.contains("tests/auth/session.test.ts"));
         assert!(markdown.contains("pnpm test tests/auth/session.test.ts"));
         assert!(markdown.contains("Final checklist"));
+
+        std::env::remove_var("CTXPACK_HOME");
+    }
+
+    #[test]
+    fn pack_revalidates_plan_snippet_paths_against_current_inventory() {
+        let _guard = env_lock();
+        let temp = tempfile::tempdir().unwrap();
+        let repo = temp.path().join("repo");
+        let home = temp.path().join("ctxpack-home");
+        fs::create_dir_all(repo.join("src/auth")).unwrap();
+        fs::write(
+            repo.join("src/auth/session.ts"),
+            "export function requireSession() {\n  return 'safe';\n}\n",
+        )
+        .unwrap();
+        std::env::set_var("CTXPACK_HOME", &home);
+
+        let mut plan =
+            prepare_context_plan(&repo, "fix requireSession bug", TaskType::BugFix).unwrap();
+        plan.target_files[0].path = ".env".to_string();
+        fs::write(repo.join(".env"), "TOKEN=secret\n").unwrap();
+
+        let pack = compile_context_pack_from_plan(
+            &repo,
+            "fix requireSession bug",
+            &plan,
+            PackBudget::Brief,
+        );
+        let markdown = render_pack_markdown(&pack);
+
+        assert!(!markdown.contains("TOKEN=secret"));
+        assert!(pack
+            .diagnostics
+            .iter()
+            .any(|diagnostic| diagnostic.code == "source_policy_excluded"));
+        assert!(pack
+            .warnings
+            .iter()
+            .any(|warning| warning.contains(".env") && warning.contains("skipped")));
+
+        std::env::remove_var("CTXPACK_HOME");
+    }
+
+    #[test]
+    fn pack_reports_deleted_generated_oversized_and_non_utf8_snippet_candidates() {
+        let _guard = env_lock();
+        let temp = tempfile::tempdir().unwrap();
+        let repo = temp.path().join("repo");
+        let home = temp.path().join("ctxpack-home");
+        fs::create_dir_all(repo.join("src")).unwrap();
+        fs::create_dir_all(repo.join("dist")).unwrap();
+        fs::write(
+            repo.join("src/deleted.ts"),
+            "export const deleted = true;\n",
+        )
+        .unwrap();
+        fs::write(
+            repo.join("dist/generated.ts"),
+            "export const generated = true;\n",
+        )
+        .unwrap();
+        fs::write(
+            repo.join("src/binary.ts"),
+            [0xff, b'u', b'n', b's', b'a', b'f', b'e'],
+        )
+        .unwrap();
+        fs::write(repo.join("src/huge.ts"), "x".repeat(1_000_001)).unwrap();
+        std::env::set_var("CTXPACK_HOME", &home);
+
+        let mut plan = empty_plan_for_task(TaskType::BugFix);
+        plan.target_files = vec![
+            ctxpack_core::TargetFile {
+                path: "src/deleted.ts".to_string(),
+                reason: "fixture".to_string(),
+                line_range: None,
+                confidence: 0.9,
+                attribution: Vec::new(),
+            },
+            ctxpack_core::TargetFile {
+                path: "dist/generated.ts".to_string(),
+                reason: "fixture".to_string(),
+                line_range: None,
+                confidence: 0.9,
+                attribution: Vec::new(),
+            },
+            ctxpack_core::TargetFile {
+                path: "src/binary.ts".to_string(),
+                reason: "fixture".to_string(),
+                line_range: None,
+                confidence: 0.9,
+                attribution: Vec::new(),
+            },
+            ctxpack_core::TargetFile {
+                path: "src/huge.ts".to_string(),
+                reason: "fixture".to_string(),
+                line_range: None,
+                confidence: 0.9,
+                attribution: Vec::new(),
+            },
+        ];
+        fs::remove_file(repo.join("src/deleted.ts")).unwrap();
+
+        let pack = compile_context_pack_from_plan(&repo, "fix snippets", &plan, PackBudget::Deep);
+        let markdown = render_pack_markdown(&pack);
+        let diagnostic_codes = pack
+            .diagnostics
+            .iter()
+            .map(|diagnostic| diagnostic.code.as_str())
+            .collect::<Vec<_>>();
+
+        assert!(!markdown.contains("generated = true"));
+        assert!(!markdown.contains("unsafe"));
+        assert!(!markdown.contains(&"x".repeat(80)));
+        assert!(diagnostic_codes.contains(&"source_policy_excluded"));
+        assert!(diagnostic_codes.contains(&"source_non_utf8"));
+        assert!(diagnostic_codes.contains(&"source_oversized"));
 
         std::env::remove_var("CTXPACK_HOME");
     }
@@ -2140,7 +873,7 @@ mod tests {
     }
 
     #[test]
-    fn evaluate_historical_commits_reports_recall_without_source_text() {
+    fn ranking_metrics_historical_eval_reports_fixed_budget_without_source_text() {
         let _guard = env_lock();
         let temp = tempfile::tempdir().unwrap();
         let repo = temp.path().join("repo");
@@ -2170,6 +903,7 @@ mod tests {
             &repo,
             &HistoricalEvalOptions {
                 limit: 5,
+                ranking_budget: 10,
                 task_type: TaskType::BugFix,
                 target_agent: "codex".to_string(),
                 base: None,
@@ -2180,6 +914,32 @@ mod tests {
         let value = serde_json::to_value(&report).unwrap();
 
         assert_eq!(report.evaluated_commits, 1);
+        assert_eq!(report.eval_range_id.len(), 64);
+        assert_eq!(report.budget, PackBudget::Standard);
+        assert_eq!(report.effective_filters.limit, 5);
+        assert_eq!(report.effective_filters.ranking_budget, 10);
+        assert_eq!(report.effective_filters.mode, TaskType::BugFix);
+        assert_eq!(report.effective_filters.budget, PackBudget::Standard);
+        assert_eq!(report.ranking_comparison.k, 10);
+        assert_eq!(report.ranking_comparison.combined.recall_at_k, 1.0);
+        assert_eq!(report.ranking_comparison.combined.precision_at_k, 0.2);
+        assert_eq!(report.ranking_comparison.combined.mrr_at_k, 1.0);
+        assert_eq!(report.ranking_comparison.lexical_baseline.recall_at_k, 1.0);
+        assert_eq!(report.ranking_comparison.recall_lift_at_k, 0.0);
+        assert_eq!(
+            report
+                .ranking_comparison
+                .combined
+                .role_recall
+                .iter()
+                .find(|metric| metric.role == FileRole::Source)
+                .unwrap()
+                .recall_at_k,
+            1.0
+        );
+        assert!(report.commits[0].recommended_context_files.len() <= report.ranking_comparison.k);
+        assert_eq!(report.refs.base, None);
+        assert_eq!(report.refs.head, None);
         assert_eq!(report.base, None);
         assert_eq!(report.head, None);
         assert_eq!(report.low_information_commit_count, 0);
@@ -2217,10 +977,49 @@ mod tests {
         assert_eq!(report.commits[0].test_files_changed, 1);
         assert_eq!(report.commits[0].test_hits_at_5, 1);
         assert_eq!(report.commits[0].test_hits_at_10, 1);
+        assert!(report.commits[0].changed_path_labels.iter().any(|label| {
+            label.path == "src/auth/session.ts"
+                && label.role == FileRole::Source
+                && label.change_kind == ctxpack_index::ChangeKind::Added
+                && label.label_scope == ctxpack_index::LabelScope::Safe
+                && label.excluded_reason.is_none()
+        }));
+        assert!(report.commits[0].changed_path_labels.iter().any(|label| {
+            label.path == "dist/generated.min.js"
+                && label.role == FileRole::Generated
+                && label.change_kind == ctxpack_index::ChangeKind::Added
+                && label.label_scope == ctxpack_index::LabelScope::Generated
+                && label.excluded_reason
+                    == Some(ctxpack_index::HistoricalPathExclusionReason::Generated)
+        }));
         assert!(!report.commits[0].low_information_task);
         assert!(report.test_recommendation_rate > 0.0);
         assert!(!report.commits[0].source_text_logged);
         assert!(value.get("commits").is_some());
+        assert!(value.get("evalRangeId").is_some());
+        assert_eq!(value["budget"], "standard");
+        assert_eq!(value["effectiveFilters"]["limit"], 5);
+        assert_eq!(value["effectiveFilters"]["rankingBudget"], 10);
+        assert_eq!(value["effectiveFilters"]["mode"], "bug_fix");
+        assert_eq!(value["effectiveFilters"]["budget"], "standard");
+        assert_eq!(value["rankingComparison"]["k"], 10);
+        assert_eq!(value["rankingComparison"]["combined"]["recallAtK"], 1.0);
+        assert!(
+            (value["rankingComparison"]["combined"]["precisionAtK"]
+                .as_f64()
+                .unwrap()
+                - 0.2)
+                .abs()
+                < 0.000001
+        );
+        assert_eq!(value["rankingComparison"]["combined"]["mrrAtK"], 1.0);
+        assert_eq!(value["rankingComparison"]["recallLiftAtK"], 0.0);
+        assert_eq!(value["refs"]["base"], serde_json::Value::Null);
+        assert_eq!(value["refs"]["head"], serde_json::Value::Null);
+        assert_eq!(
+            value["commits"][0]["changedPathLabels"][0]["changeKind"],
+            "added"
+        );
         assert_eq!(value["lexicalBaselineRecallAt5"], 1.0);
         assert_eq!(value["ctxpackLiftAt10"], 0.0);
         assert_eq!(value["sourceRecallAt5"], 1.0);
@@ -2236,7 +1035,188 @@ mod tests {
     }
 
     #[test]
-    fn evaluate_historical_commits_uses_parent_snapshot_without_future_context() {
+    fn historical_eval_report_public_json_shape_is_stable() {
+        let report = HistoricalEvalReport {
+            eval_range_id: "range-1".to_string(),
+            repo_id: "repo-1".to_string(),
+            evaluated_commits: 1,
+            budget: PackBudget::Standard,
+            effective_filters: HistoricalEvalEffectiveFilters {
+                limit: 1,
+                ranking_budget: 10,
+                mode: TaskType::BugFix,
+                target_agent: "codex".to_string(),
+                budget: PackBudget::Standard,
+            },
+            refs: HistoricalEvalRefs {
+                base: Some("base".to_string()),
+                head: Some("head".to_string()),
+            },
+            base: Some("base".to_string()),
+            head: Some("head".to_string()),
+            ranking_comparison: EvalComparison {
+                k: 10,
+                combined: RankingMetrics {
+                    k: 10,
+                    recall_at_k: 1.0,
+                    precision_at_k: 0.1,
+                    mrr_at_k: 1.0,
+                    role_recall: vec![RoleRecallMetric {
+                        role: FileRole::Source,
+                        recall_at_k: 1.0,
+                        changed_file_count: 1,
+                        hit_count: 1,
+                    }],
+                    test_recommendation_rate: 0.0,
+                    average_recommended_context_files: 1.0,
+                },
+                lexical_baseline: RankingMetrics {
+                    k: 10,
+                    recall_at_k: 1.0,
+                    precision_at_k: 0.1,
+                    mrr_at_k: 1.0,
+                    role_recall: vec![RoleRecallMetric {
+                        role: FileRole::Source,
+                        recall_at_k: 1.0,
+                        changed_file_count: 1,
+                        hit_count: 1,
+                    }],
+                    test_recommendation_rate: 0.0,
+                    average_recommended_context_files: 1.0,
+                },
+                recall_lift_at_k: 0.0,
+                precision_lift_at_k: 0.0,
+                mrr_lift_at_k: 0.0,
+            },
+            signal_ablations: Vec::new(),
+            retrieval_gap_summaries: Vec::new(),
+            low_information_commit_count: 0,
+            file_recall_at_5: 0.5,
+            file_recall_at_10: 1.0,
+            lexical_baseline_recall_at_5: 0.25,
+            lexical_baseline_recall_at_10: 0.75,
+            ctxpack_lift_at_5: 0.25,
+            ctxpack_lift_at_10: 0.25,
+            source_recall_at_5: 1.0,
+            source_recall_at_10: 1.0,
+            test_recall_at_5: 0.0,
+            test_recall_at_10: 0.0,
+            test_recommendation_rate: 0.0,
+            average_recommended_context_files: 3.0,
+            top_missing_files: vec![HistoricalMissingFileSummary {
+                path: "src/missing.rs".to_string(),
+                role: FileRole::Source,
+                missed_count: 2,
+            }],
+            commits: vec![HistoricalCommitEval {
+                sha: "abc123".to_string(),
+                task_hash: "hash-1".to_string(),
+                task_type: TaskType::BugFix,
+                target_agent: "codex".to_string(),
+                changed_path_labels: vec![HistoricalChangedPathLabel {
+                    path: "src/lib.rs".to_string(),
+                    old_path: None,
+                    role: FileRole::Source,
+                    change_kind: ctxpack_index::ChangeKind::Modified,
+                    label_scope: ctxpack_index::LabelScope::Safe,
+                    excluded_reason: None,
+                }],
+                safe_changed_files: vec!["src/lib.rs".to_string()],
+                excluded_changed_file_count: 0,
+                recommended_files: vec!["src/lib.rs".to_string()],
+                recommended_tests: Vec::new(),
+                recommended_context_files: vec!["src/lib.rs".to_string()],
+                recommended_commands: Vec::new(),
+                lexical_baseline_files: vec!["src/lib.rs".to_string()],
+                file_hits_at_5: vec!["src/lib.rs".to_string()],
+                file_hits_at_10: vec!["src/lib.rs".to_string()],
+                lexical_baseline_hits_at_5: vec!["src/lib.rs".to_string()],
+                lexical_baseline_hits_at_10: vec!["src/lib.rs".to_string()],
+                missing_files_at_10: Vec::new(),
+                source_files_changed: 1,
+                source_hits_at_5: 1,
+                source_hits_at_10: 1,
+                test_files_changed: 0,
+                test_hits_at_5: 0,
+                test_hits_at_10: 0,
+                low_information_task: false,
+                confidence: 0.8,
+                source_text_logged: false,
+            }],
+            privacy_status: PrivacyStatus::local_only(),
+        };
+
+        let value = serde_json::to_value(&report).unwrap();
+        let object = value.as_object().unwrap();
+
+        for key in [
+            "evalRangeId",
+            "repoId",
+            "evaluatedCommits",
+            "budget",
+            "effectiveFilters",
+            "refs",
+            "base",
+            "head",
+            "rankingComparison",
+            "signalAblations",
+            "retrievalGapSummaries",
+            "lowInformationCommitCount",
+            "fileRecallAt5",
+            "fileRecallAt10",
+            "lexicalBaselineRecallAt5",
+            "lexicalBaselineRecallAt10",
+            "ctxpackLiftAt5",
+            "ctxpackLiftAt10",
+            "sourceRecallAt5",
+            "sourceRecallAt10",
+            "testRecallAt5",
+            "testRecallAt10",
+            "testRecommendationRate",
+            "averageRecommendedContextFiles",
+            "topMissingFiles",
+            "commits",
+            "privacyStatus",
+        ] {
+            assert!(object.contains_key(key), "missing public field {key}");
+        }
+        assert_eq!(value["evaluatedCommits"], 1);
+        assert_eq!(value["evalRangeId"], "range-1");
+        assert_eq!(value["budget"], "standard");
+        assert_eq!(value["effectiveFilters"]["targetAgent"], "codex");
+        assert_eq!(value["refs"]["base"], "base");
+        assert_eq!(value["rankingComparison"]["combined"]["mrrAtK"], 1.0);
+        assert!(value["signalAblations"].as_array().unwrap().is_empty());
+        assert!(value["retrievalGapSummaries"]
+            .as_array()
+            .unwrap()
+            .is_empty());
+        assert_eq!(value["fileRecallAt5"], 0.5);
+        assert_eq!(value["lexicalBaselineRecallAt5"], 0.25);
+        assert_eq!(value["sourceRecallAt5"], 1.0);
+        assert_eq!(value["testRecallAt5"], 0.0);
+        assert_eq!(value["topMissingFiles"][0]["path"], "src/missing.rs");
+        assert_eq!(value["privacyStatus"]["localOnly"], true);
+        assert_eq!(value["commits"][0]["sourceTextLogged"], false);
+        assert_eq!(
+            value["commits"][0]["changedPathLabels"][0]["changeKind"],
+            "modified"
+        );
+
+        assert!(value.get("repo_id").is_none());
+        assert!(value.get("evaluated_commits").is_none());
+        assert!(value.get("eval_range_id").is_none());
+        assert!(value.get("file_recall_at_5").is_none());
+        assert!(value.get("lexical_baseline_recall_at_5").is_none());
+        assert!(value.get("top_missing_files").is_none());
+        assert!(value.get("privacy_status").is_none());
+        assert!(serde_json::to_string(&report)
+            .unwrap()
+            .contains("\"sourceTextLogged\":false"));
+    }
+
+    #[test]
+    fn historical_eval_uses_parent_snapshot_without_future_context() {
         let _guard = env_lock();
         let temp = tempfile::tempdir().unwrap();
         let repo = temp.path().join("repo");
@@ -2261,6 +1241,7 @@ mod tests {
             &repo,
             &HistoricalEvalOptions {
                 limit: 1,
+                ranking_budget: 10,
                 task_type: TaskType::Feature,
                 target_agent: "codex".to_string(),
                 base: None,
@@ -2274,12 +1255,165 @@ mod tests {
             report.commits[0].safe_changed_files,
             vec!["src/future/widget.ts"]
         );
+        assert_eq!(
+            report.commits[0].changed_path_labels[0].label_scope,
+            ctxpack_index::LabelScope::Safe
+        );
         assert!(!report.commits[0]
             .recommended_context_files
             .contains(&"src/future/widget.ts".to_string()));
         assert_eq!(report.file_recall_at_10, 0.0);
         assert_eq!(report.lexical_baseline_recall_at_10, 0.0);
         assert_eq!(report.top_missing_files[0].path, "src/future/widget.ts");
+
+        std::env::remove_var("CTXPACK_HOME");
+    }
+
+    #[test]
+    fn ablation_historical_eval_groups_source_free_retrieval_gaps() {
+        let report = HistoricalEvalReport {
+            eval_range_id: "range-1".to_string(),
+            repo_id: "repo-1".to_string(),
+            evaluated_commits: 1,
+            budget: PackBudget::Standard,
+            effective_filters: HistoricalEvalEffectiveFilters {
+                limit: 1,
+                ranking_budget: 2,
+                mode: TaskType::BugFix,
+                target_agent: "codex".to_string(),
+                budget: PackBudget::Standard,
+            },
+            refs: HistoricalEvalRefs {
+                base: None,
+                head: None,
+            },
+            base: None,
+            head: None,
+            ranking_comparison: EvalComparison {
+                k: 2,
+                combined: RankingMetrics {
+                    k: 2,
+                    recall_at_k: 0.0,
+                    precision_at_k: 0.0,
+                    mrr_at_k: 0.0,
+                    role_recall: Vec::new(),
+                    test_recommendation_rate: 0.0,
+                    average_recommended_context_files: 1.0,
+                },
+                lexical_baseline: RankingMetrics {
+                    k: 2,
+                    recall_at_k: 1.0,
+                    precision_at_k: 0.5,
+                    mrr_at_k: 1.0,
+                    role_recall: Vec::new(),
+                    test_recommendation_rate: 0.0,
+                    average_recommended_context_files: 1.0,
+                },
+                recall_lift_at_k: -1.0,
+                precision_lift_at_k: -0.5,
+                mrr_lift_at_k: -1.0,
+            },
+            signal_ablations: vec![SignalAblationResult {
+                eval_range_id: "range-1".to_string(),
+                disabled_signal: RetrievalSignalKind::Symbol,
+                evaluated_commits: 1,
+                metrics: RankingMetrics {
+                    k: 2,
+                    recall_at_k: 0.0,
+                    precision_at_k: 0.0,
+                    mrr_at_k: 0.0,
+                    role_recall: Vec::new(),
+                    test_recommendation_rate: 0.0,
+                    average_recommended_context_files: 1.0,
+                },
+                recall_lift_vs_lexical_at_k: -1.0,
+            }],
+            retrieval_gap_summaries: vec![RetrievalGapSummary {
+                role: FileRole::Source,
+                signal_gap: "lexical_only_miss".to_string(),
+                path_family: "src/auth/*.ts".to_string(),
+                missed_count: 2,
+                example_paths: vec!["src/auth/session.ts".to_string()],
+            }],
+            low_information_commit_count: 0,
+            file_recall_at_5: 0.0,
+            file_recall_at_10: 0.0,
+            lexical_baseline_recall_at_5: 1.0,
+            lexical_baseline_recall_at_10: 1.0,
+            ctxpack_lift_at_5: -1.0,
+            ctxpack_lift_at_10: -1.0,
+            source_recall_at_5: 0.0,
+            source_recall_at_10: 0.0,
+            test_recall_at_5: 0.0,
+            test_recall_at_10: 0.0,
+            test_recommendation_rate: 0.0,
+            average_recommended_context_files: 1.0,
+            top_missing_files: Vec::new(),
+            commits: Vec::new(),
+            privacy_status: PrivacyStatus::local_only(),
+        };
+        let value = serde_json::to_value(&report).unwrap();
+
+        assert_eq!(value["signalAblations"][0]["evalRangeId"], "range-1");
+        assert_eq!(value["signalAblations"][0]["evaluatedCommits"], 1);
+        assert_eq!(value["signalAblations"][0]["disabledSignal"], "symbol");
+        assert_eq!(
+            value["retrievalGapSummaries"][0]["signalGap"],
+            "lexical_only_miss"
+        );
+        assert_eq!(
+            value["retrievalGapSummaries"][0]["pathFamily"],
+            "src/auth/*.ts"
+        );
+        assert!(!serde_json::to_string(&report).unwrap().contains("fix auth"));
+    }
+
+    #[test]
+    fn historical_eval_labels_deletes_as_historical_only() {
+        let _guard = env_lock();
+        let temp = tempfile::tempdir().unwrap();
+        let repo = temp.path().join("repo");
+        let home = temp.path().join("ctxpack-home");
+        fs::create_dir_all(repo.join("src")).unwrap();
+        run_git(&repo, &["init"]);
+        run_git(&repo, &["config", "user.email", "ctxpack@example.com"]);
+        run_git(&repo, &["config", "user.name", "ctxpack"]);
+        fs::write(repo.join("src/legacy.ts"), "export const legacy = true;\n").unwrap();
+        run_git(&repo, &["add", "."]);
+        run_git(&repo, &["commit", "-m", "add legacy file"]);
+        fs::remove_file(repo.join("src/legacy.ts")).unwrap();
+        run_git(&repo, &["add", "."]);
+        run_git(&repo, &["commit", "-m", "delete legacy file"]);
+        std::env::set_var("CTXPACK_HOME", &home);
+
+        let report = evaluate_historical_commits(
+            &repo,
+            &HistoricalEvalOptions {
+                limit: 1,
+                ranking_budget: 10,
+                task_type: TaskType::BugFix,
+                target_agent: "codex".to_string(),
+                base: None,
+                head: None,
+            },
+        )
+        .unwrap();
+
+        assert_eq!(report.evaluated_commits, 1);
+        assert!(report.commits[0].safe_changed_files.is_empty());
+        assert_eq!(report.commits[0].changed_path_labels.len(), 1);
+        assert_eq!(
+            report.commits[0].changed_path_labels[0].change_kind,
+            ctxpack_index::ChangeKind::Deleted
+        );
+        assert_eq!(
+            report.commits[0].changed_path_labels[0].label_scope,
+            ctxpack_index::LabelScope::HistoricalOnly
+        );
+        assert_eq!(report.file_recall_at_10, 0.0);
+        assert!(!serde_json::to_string(&report)
+            .unwrap()
+            .contains("export const legacy"));
 
         std::env::remove_var("CTXPACK_HOME");
     }
@@ -2371,6 +1505,47 @@ mod tests {
             assert!(!content.contains("TOKEN=secret"));
             assert!(!content.contains("generated.min.js"));
         }
+
+        std::env::remove_var("CTXPACK_HOME");
+    }
+
+    #[test]
+    fn cards_use_fresh_inventory_and_report_degraded_inputs_without_source() {
+        let _guard = env_lock();
+        let temp = tempfile::tempdir().unwrap();
+        let repo = temp.path().join("repo");
+        let home = temp.path().join("ctxpack-home");
+        fs::create_dir_all(repo.join("src")).unwrap();
+        fs::write(
+            repo.join("src/session.ts"),
+            "export function requireSession() { return 'do-not-copy'; }\n",
+        )
+        .unwrap();
+        std::env::set_var("CTXPACK_HOME", &home);
+        write_inventory(&repo, &InventoryOptions::default()).unwrap();
+        fs::rename(repo.join("src/session.ts"), repo.join(".env")).unwrap();
+        fs::write(
+            repo.join("src/broken.ts"),
+            [0xff, b'b', b'r', b'o', b'k', b'e', b'n'],
+        )
+        .unwrap();
+
+        let report = generate_context_cards(&repo, &ContextCardsOptions { limit: 20 }).unwrap();
+        let overview = fs::read_to_string(repo.join(".ctxpack/cards/repo-overview.md")).unwrap();
+        let report_json = serde_json::to_string(&report).unwrap();
+
+        assert!(!overview.contains("src/session.ts"));
+        assert!(!overview.contains("do-not-copy"));
+        assert!(!overview.contains("TOKEN"));
+        assert!(report
+            .diagnostics
+            .iter()
+            .any(|diagnostic| diagnostic.code == "inventory_stale"));
+        assert!(report
+            .diagnostics
+            .iter()
+            .any(|diagnostic| diagnostic.code == "source_non_utf8"));
+        assert!(!report_json.contains("do-not-copy"));
 
         std::env::remove_var("CTXPACK_HOME");
     }

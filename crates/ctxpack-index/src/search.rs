@@ -1,0 +1,225 @@
+use crate::freshness::load_or_refresh_inventory;
+use crate::inventory::{canonicalize, FileInventoryEntry, InventoryError, InventoryOptions};
+use crate::policy::{read_safe_source, SourceReadStatus, SOURCE_READ_MAX_BYTES};
+use ctxpack_core::{CacheStatus, Diagnostic, FileRole};
+use serde::{Deserialize, Serialize};
+use std::path::Path;
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct SearchOptions {
+    pub limit: usize,
+}
+
+impl Default for SearchOptions {
+    fn default() -> Self {
+        Self { limit: 10 }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct SearchResult {
+    pub path: String,
+    pub role: FileRole,
+    pub language: Option<String>,
+    pub score: f32,
+    pub reason: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct SearchReport {
+    pub results: Vec<SearchResult>,
+    #[serde(default)]
+    pub diagnostics: Vec<Diagnostic>,
+    pub cache_status: CacheStatus,
+}
+
+pub fn lexical_search(
+    repo_root: impl AsRef<Path>,
+    query: &str,
+    options: &SearchOptions,
+) -> Result<Vec<SearchResult>, InventoryError> {
+    Ok(lexical_search_report(repo_root, query, options)?.results)
+}
+
+pub fn lexical_search_report(
+    repo_root: impl AsRef<Path>,
+    query: &str,
+    options: &SearchOptions,
+) -> Result<SearchReport, InventoryError> {
+    let repo_root = canonicalize(repo_root.as_ref())?;
+    let query_terms = query_terms(query);
+    let inventory_report = load_or_refresh_inventory(&repo_root, &InventoryOptions::default())?;
+    let mut diagnostics = inventory_report.diagnostics.clone();
+    let cache_status = inventory_report.cache_status.clone();
+    if query_terms.is_empty() {
+        return Ok(SearchReport {
+            results: Vec::new(),
+            diagnostics,
+            cache_status,
+        });
+    }
+
+    let mut results = Vec::new();
+
+    for file in &inventory_report.inventory.files {
+        if file.generated || file.role == FileRole::Sensitive || file.ignored {
+            continue;
+        }
+
+        let source = read_safe_source(
+            &repo_root,
+            &inventory_report.inventory,
+            &file.path,
+            SOURCE_READ_MAX_BYTES,
+        )?;
+        diagnostics.extend(source.diagnostics);
+        let SourceReadStatus::Read = source.status else {
+            continue;
+        };
+        let content = source.text.unwrap_or_default();
+        let Some((score, reason)) = score_file(&file, &content, &query_terms) else {
+            continue;
+        };
+
+        results.push(SearchResult {
+            path: file.path.clone(),
+            role: file.role.clone(),
+            language: file.language.clone(),
+            score,
+            reason,
+        });
+    }
+
+    results.sort_by(|left, right| {
+        right
+            .score
+            .total_cmp(&left.score)
+            .then_with(|| left.path.cmp(&right.path))
+    });
+    results.truncate(options.limit.max(1));
+
+    Ok(SearchReport {
+        results,
+        diagnostics,
+        cache_status,
+    })
+}
+
+pub(crate) fn query_terms(query: &str) -> Vec<String> {
+    query
+        .split(|character: char| !(character.is_ascii_alphanumeric() || character == '_'))
+        .filter(|term| !term.is_empty())
+        .map(|term| term.to_ascii_lowercase())
+        .collect()
+}
+
+fn score_file(
+    file: &FileInventoryEntry,
+    content: &str,
+    query_terms: &[String],
+) -> Option<(f32, String)> {
+    let path = file.path.to_ascii_lowercase();
+    let file_name = path.rsplit('/').next().unwrap_or(path.as_str());
+    let content = content.to_ascii_lowercase();
+    let mut score = 0.0;
+    let mut reasons = Vec::new();
+
+    for term in query_terms {
+        let weight = query_term_weight(term);
+        if weight == 0.0 {
+            continue;
+        }
+        let mut matched = false;
+
+        if path.contains(term) {
+            score += 8.0 * weight;
+            matched = true;
+            reasons.push(format!("path matched `{term}`"));
+        }
+        if file_name.contains(term) {
+            score += 5.0 * weight;
+            matched = true;
+            reasons.push(format!("file name matched `{term}`"));
+        }
+
+        let occurrences = count_occurrences(&content, term);
+        if occurrences > 0 {
+            score += (2.0 + occurrences.min(10) as f32) * weight;
+            matched = true;
+            reasons.push(format!("content matched `{term}` {occurrences} time(s)"));
+        }
+
+        if !matched {
+            score -= 1.0 * weight;
+        }
+    }
+
+    if score <= 0.0 {
+        return None;
+    }
+
+    score += match file.role {
+        FileRole::Source => 1.0,
+        FileRole::Test => 0.7,
+        FileRole::Config | FileRole::Schema | FileRole::Docs => 0.4,
+        FileRole::Generated | FileRole::Sensitive | FileRole::Unknown => 0.0,
+    };
+
+    reasons.sort();
+    reasons.dedup();
+
+    Some((score, reasons.join("; ")))
+}
+
+pub(crate) fn count_occurrences(haystack: &str, needle: &str) -> usize {
+    if needle.is_empty() {
+        return 0;
+    }
+    haystack.matches(needle).count()
+}
+
+pub(crate) fn query_term_weight(term: &str) -> f32 {
+    if matches!(
+        term,
+        "a" | "an"
+            | "and"
+            | "are"
+            | "as"
+            | "be"
+            | "by"
+            | "for"
+            | "from"
+            | "in"
+            | "is"
+            | "of"
+            | "on"
+            | "or"
+            | "the"
+            | "to"
+            | "with"
+    ) {
+        return 0.0;
+    }
+
+    if matches!(
+        term,
+        "csharp"
+            | "go"
+            | "java"
+            | "javascript"
+            | "js"
+            | "kotlin"
+            | "python"
+            | "rust"
+            | "scala"
+            | "typescript"
+            | "ts"
+    ) {
+        return 0.25;
+    }
+
+    1.0
+}

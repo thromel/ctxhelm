@@ -7,14 +7,14 @@ use ctxpack_compiler::{
     HistoricalEvalReport,
 };
 use ctxpack_core::{
-    run_init, AgentAdapter, EvalTrace, InitAction, InitOptions, InitReport, PackBudget, RepoRoot,
-    TaskType,
+    run_init, AgentAdapter, Diagnostic, DiagnosticSeverity, EvalTrace, InitAction, InitOptions,
+    InitReport, PackBudget, RepoRoot, TaskType,
 };
 use ctxpack_index::{
-    append_eval_trace, co_change_hints, current_diff_summary, dependency_edges, extract_symbols,
-    lexical_search, list_eval_traces, related_dependency_edges, related_tests, symbol_search,
-    write_inventory, CoChangeOptions, CurrentDiffOptions, DependencyOptions, InventoryOptions,
-    InventoryReport, SearchOptions, SymbolOptions,
+    co_change_hints, current_diff_summary, dependency_edges, extract_symbols, lexical_search,
+    list_eval_traces, related_dependency_edges, related_tests, symbol_search,
+    try_append_eval_trace, write_inventory, CoChangeOptions, CurrentDiffOptions, DependencyOptions,
+    InventoryOptions, InventoryReport, SearchOptions, SymbolOptions,
 };
 use std::collections::BTreeSet;
 use std::path::Path;
@@ -152,6 +152,11 @@ struct PrepareTaskArgs {
     include_current_diff: bool,
     #[arg(long, default_value = "generic")]
     target_agent: String,
+    #[arg(
+        long,
+        help = "Disable local eval trace recording for this read command."
+    )]
+    no_trace: bool,
 }
 
 #[derive(Debug, Args)]
@@ -177,6 +182,11 @@ struct GetPackArgs {
     include_current_diff: bool,
     #[arg(long, default_value = "generic")]
     target_agent: String,
+    #[arg(
+        long,
+        help = "Disable local eval trace recording for this read command."
+    )]
+    no_trace: bool,
 }
 
 #[derive(Debug, Args)]
@@ -206,6 +216,12 @@ struct EvalHistoryArgs {
     repo: Option<PathBuf>,
     #[arg(long, default_value_t = 20)]
     limit: usize,
+    #[arg(
+        long,
+        default_value_t = 10,
+        help = "Fixed context-file ranking budget used for combined, lexical, and ablation metrics."
+    )]
+    budget: usize,
     #[arg(long, help = "Start revision for a stable historical eval range.")]
     base: Option<String>,
     #[arg(long, help = "End revision for a stable historical eval range.")]
@@ -289,17 +305,22 @@ fn main() -> Result<()> {
             let start = args.repo.clone().unwrap_or(std::env::current_dir()?);
             let repo = RepoRoot::discover_from(&start)?;
             let paths = context_anchor_paths(&repo.path, args.paths, args.include_current_diff)?;
-            let plan =
+            let mut plan =
                 prepare_context_plan_with_paths(&repo.path, &args.task, args.mode.into(), &paths)?;
-            let trace = eval_trace_for_plan(&repo.path, &args.task, &args.target_agent, &plan);
-            append_eval_trace(&repo.path, &trace)?;
+            if args.no_trace {
+                plan.diagnostics.push(trace_disabled_diagnostic());
+            } else {
+                let trace = eval_trace_for_plan(&repo.path, &args.task, &args.target_agent, &plan);
+                plan.diagnostics
+                    .extend(try_append_eval_trace(&repo.path, &trace).diagnostics);
+            }
             println!("{}", serde_json::to_string_pretty(&plan)?);
         }
         Command::GetPack(args) => {
             let start = args.repo.clone().unwrap_or(std::env::current_dir()?);
             let repo = RepoRoot::discover_from(&start)?;
             let paths = context_anchor_paths(&repo.path, args.paths, args.include_current_diff)?;
-            let (plan, pack) = compile_context_pack_with_plan_and_paths_for_agent(
+            let (plan, mut pack) = compile_context_pack_with_plan_and_paths_for_agent(
                 &repo.path,
                 &args.task,
                 args.mode.into(),
@@ -307,9 +328,14 @@ fn main() -> Result<()> {
                 &paths,
                 &args.target_agent,
             )?;
-            let trace =
-                eval_trace_for_pack(&repo.path, &args.task, &args.target_agent, &plan, &pack);
-            append_eval_trace(&repo.path, &trace)?;
+            if args.no_trace {
+                pack.diagnostics.push(trace_disabled_diagnostic());
+            } else {
+                let trace =
+                    eval_trace_for_pack(&repo.path, &args.task, &args.target_agent, &plan, &pack);
+                pack.diagnostics
+                    .extend(try_append_eval_trace(&repo.path, &trace).diagnostics);
+            }
             match args.format {
                 PackFormat::Markdown => println!("{}", render_pack_markdown(&pack)),
                 PackFormat::Json => println!("{}", serde_json::to_string_pretty(&pack)?),
@@ -384,7 +410,23 @@ fn main() -> Result<()> {
                 let start = args.repo.clone().unwrap_or(std::env::current_dir()?);
                 let repo = RepoRoot::discover_from(&start)?;
                 let traces = list_eval_traces(&repo.path, args.limit)?;
-                println!("{}", render_eval_checklist(&traces));
+                let retrieval_gap_summaries = evaluate_historical_commits(
+                    &repo.path,
+                    &HistoricalEvalOptions {
+                        limit: args.limit,
+                        ranking_budget: 10,
+                        task_type: TaskType::BugFix,
+                        target_agent: "generic".to_string(),
+                        base: None,
+                        head: None,
+                    },
+                )
+                .map(|report| report.retrieval_gap_summaries)
+                .unwrap_or_default();
+                println!(
+                    "{}",
+                    render_eval_checklist_with_gaps(&traces, &retrieval_gap_summaries)
+                );
             }
             EvalCommand::History(args) => {
                 let start = args.repo.clone().unwrap_or(std::env::current_dir()?);
@@ -393,6 +435,7 @@ fn main() -> Result<()> {
                     &repo.path,
                     &HistoricalEvalOptions {
                         limit: args.limit,
+                        ranking_budget: args.budget,
                         task_type: args.mode.into(),
                         target_agent: args.target_agent,
                         base: args.base,
@@ -489,11 +532,28 @@ fn context_anchor_paths(
     Ok(paths)
 }
 
-fn render_eval_checklist(traces: &[EvalTrace]) -> String {
+fn trace_disabled_diagnostic() -> Diagnostic {
+    Diagnostic {
+        code: "trace_recording_disabled".to_string(),
+        severity: DiagnosticSeverity::Info,
+        message: "Eval trace recording was disabled for this command.".to_string(),
+        paths: Vec::new(),
+        count: 1,
+    }
+}
+
+fn render_eval_checklist_with_gaps(
+    traces: &[EvalTrace],
+    retrieval_gap_summaries: &[ctxpack_compiler::RetrievalGapSummary],
+) -> String {
     let mut output = String::from("# ctxpack Dogfood Checklist\n\n");
     output.push_str(
         "Use this checklist after an agent session to compare ctxpack recommendations with what the agent actually read, edited, and validated.\n\n",
     );
+
+    output.push_str("## Grouped Retrieval Failures\n\n");
+    push_retrieval_gap_summaries(&mut output, retrieval_gap_summaries);
+    output.push('\n');
 
     if traces.is_empty() {
         output.push_str("No eval traces found for this repository.\n");
@@ -568,9 +628,15 @@ fn render_historical_eval_report(report: &HistoricalEvalReport) -> String {
     let mut output = String::from("# ctxpack Historical Retrieval Eval\n\n");
     output.push_str("This source-free report replays recent commit subjects through `prepare_task` and compares recommended context paths with the safe files changed by each commit.\n\n");
     output.push_str(&format!(
-        "- Repo ID: `{}`\n- Evaluated commits: `{}`\n- Base: `{}`\n- Head: `{}`\n- File Recall@5: `{:.2}`\n- File Recall@10: `{:.2}`\n- Lexical Baseline Recall@5: `{:.2}`\n- Lexical Baseline Recall@10: `{:.2}`\n- ctxpack Lift@5: `{:+.2}`\n- ctxpack Lift@10: `{:+.2}`\n- Source Recall@5: `{:.2}`\n- Source Recall@10: `{:.2}`\n- Test Recall@5: `{:.2}`\n- Test Recall@10: `{:.2}`\n- Test recommendation rate: `{:.2}`\n- Average recommended context files: `{:.2}`\n- Low-information commits: `{}`\n- Privacy: local-only `{}`\n\n",
+        "- Eval range ID: `{}`\n- Repo ID: `{}`\n- Evaluated commits: `{}`\n- Budget: `{:?}`\n- Effective limit: `{}`\n- Ranking budget K: `{}`\n- Effective mode: `{:?}`\n- Effective target agent: `{}`\n- Base: `{}`\n- Head: `{}`\n- File Recall@5: `{:.2}`\n- File Recall@10: `{:.2}`\n- Lexical Baseline Recall@5: `{:.2}`\n- Lexical Baseline Recall@10: `{:.2}`\n- ctxpack Lift@5: `{:+.2}`\n- ctxpack Lift@10: `{:+.2}`\n- Recall@K: `{:.2}`\n- Precision@K: `{:.2}`\n- MRR@K: `{:.2}`\n- Lexical Recall@K: `{:.2}`\n- ctxpack Lift@K: `{:+.2}`\n- Source Recall@5: `{:.2}`\n- Source Recall@10: `{:.2}`\n- Test Recall@5: `{:.2}`\n- Test Recall@10: `{:.2}`\n- Test recommendation rate: `{:.2}`\n- Average recommended context files: `{:.2}`\n- Low-information commits: `{}`\n- Privacy: local-only `{}`\n\n",
+        report.eval_range_id,
         report.repo_id,
         report.evaluated_commits,
+        report.budget,
+        report.effective_filters.limit,
+        report.effective_filters.ranking_budget,
+        report.effective_filters.mode,
+        report.effective_filters.target_agent,
         report.base.as_deref().unwrap_or("HEAD history"),
         report.head.as_deref().unwrap_or("HEAD"),
         report.file_recall_at_5,
@@ -579,6 +645,11 @@ fn render_historical_eval_report(report: &HistoricalEvalReport) -> String {
         report.lexical_baseline_recall_at_10,
         report.ctxpack_lift_at_5,
         report.ctxpack_lift_at_10,
+        report.ranking_comparison.combined.recall_at_k,
+        report.ranking_comparison.combined.precision_at_k,
+        report.ranking_comparison.combined.mrr_at_k,
+        report.ranking_comparison.lexical_baseline.recall_at_k,
+        report.ranking_comparison.recall_lift_at_k,
         report.source_recall_at_5,
         report.source_recall_at_10,
         report.test_recall_at_5,
@@ -606,6 +677,28 @@ fn render_historical_eval_report(report: &HistoricalEvalReport) -> String {
         }
         output.push('\n');
     }
+
+    output.push_str("## Signal Ablations\n\n");
+    for ablation in &report.signal_ablations {
+        output.push_str(&format!(
+            "- Disabled `{:?}` over range `{}` / `{}` commit(s): Recall@K `{:.2}`, Precision@K `{:.2}`, MRR@K `{:.2}`, lift vs lexical `{:+.2}`\n",
+            ablation.disabled_signal,
+            ablation.eval_range_id,
+            ablation.evaluated_commits,
+            ablation.metrics.recall_at_k,
+            ablation.metrics.precision_at_k,
+            ablation.metrics.mrr_at_k,
+            ablation.recall_lift_vs_lexical_at_k
+        ));
+    }
+    if report.signal_ablations.is_empty() {
+        output.push_str("- No signal ablations available.\n");
+    }
+    output.push('\n');
+
+    output.push_str("## Grouped Retrieval Failures\n\n");
+    push_retrieval_gap_summaries(&mut output, &report.retrieval_gap_summaries);
+    output.push('\n');
 
     output.push_str("## Commits\n\n");
     for commit in &report.commits {
@@ -651,6 +744,32 @@ fn render_historical_eval_report(report: &HistoricalEvalReport) -> String {
     }
 
     output
+}
+
+fn push_retrieval_gap_summaries(
+    output: &mut String,
+    retrieval_gap_summaries: &[ctxpack_compiler::RetrievalGapSummary],
+) {
+    if retrieval_gap_summaries.is_empty() {
+        output.push_str("- No grouped retrieval failures at 10.\n");
+        return;
+    }
+    for gap in retrieval_gap_summaries {
+        output.push_str(&format!(
+            "- Role `{:?}`, signal gap `{}`, family `{}`: `{}` miss(es)",
+            gap.role, gap.signal_gap, gap.path_family, gap.missed_count
+        ));
+        if !gap.example_paths.is_empty() {
+            output.push_str(" examples ");
+            for (index, path) in gap.example_paths.iter().enumerate() {
+                if index > 0 {
+                    output.push_str(", ");
+                }
+                output.push_str(&format!("`{path}`"));
+            }
+        }
+        output.push('\n');
+    }
 }
 
 fn render_cards_report(report: &ContextCardsReport) -> String {
@@ -707,7 +826,7 @@ mod tests {
             source_text_logged: false,
         };
 
-        let checklist = render_eval_checklist(&[trace]);
+        let checklist = render_eval_checklist_with_gaps(&[trace], &[]);
 
         assert!(checklist.contains("# ctxpack Dogfood Checklist"));
         assert!(checklist.contains("- [ ] `src/auth.ts`"));
@@ -720,12 +839,82 @@ mod tests {
     }
 
     #[test]
+    fn eval_checklist_includes_source_free_retrieval_gap_summaries() {
+        let checklist = render_eval_checklist_with_gaps(
+            &[],
+            &[ctxpack_compiler::RetrievalGapSummary {
+                role: ctxpack_core::FileRole::Test,
+                signal_gap: "no_candidate_signal".to_string(),
+                path_family: "tests/auth/*.ts".to_string(),
+                missed_count: 2,
+                example_paths: vec!["tests/auth/session.test.ts".to_string()],
+            }],
+        );
+
+        assert!(checklist.contains("Grouped Retrieval Failures"));
+        assert!(checklist.contains("Role `Test`, signal gap `no_candidate_signal`"));
+        assert!(checklist.contains("family `tests/auth/*.ts`"));
+        assert!(checklist.contains("`tests/auth/session.test.ts`"));
+        assert!(!checklist.contains("commit subject"));
+        assert!(!checklist.contains("source code"));
+    }
+
+    #[test]
     fn historical_eval_report_renders_source_free_metrics() {
         let report = HistoricalEvalReport {
+            eval_range_id: "range-1".to_string(),
             repo_id: "repo-1".to_string(),
             evaluated_commits: 1,
+            budget: PackBudget::Standard,
+            effective_filters: ctxpack_compiler::HistoricalEvalEffectiveFilters {
+                limit: 5,
+                ranking_budget: 10,
+                mode: TaskType::BugFix,
+                target_agent: "codex".to_string(),
+                budget: PackBudget::Standard,
+            },
+            refs: ctxpack_compiler::HistoricalEvalRefs {
+                base: Some("abc000".to_string()),
+                head: Some("def111".to_string()),
+            },
             base: Some("abc000".to_string()),
             head: Some("def111".to_string()),
+            ranking_comparison: ctxpack_compiler::EvalComparison {
+                k: 10,
+                combined: ctxpack_compiler::RankingMetrics {
+                    k: 10,
+                    recall_at_k: 1.0,
+                    precision_at_k: 0.1,
+                    mrr_at_k: 1.0,
+                    role_recall: vec![ctxpack_compiler::RoleRecallMetric {
+                        role: ctxpack_core::FileRole::Source,
+                        recall_at_k: 1.0,
+                        changed_file_count: 1,
+                        hit_count: 1,
+                    }],
+                    test_recommendation_rate: 1.0,
+                    average_recommended_context_files: 2.0,
+                },
+                lexical_baseline: ctxpack_compiler::RankingMetrics {
+                    k: 10,
+                    recall_at_k: 0.0,
+                    precision_at_k: 0.0,
+                    mrr_at_k: 0.0,
+                    role_recall: vec![ctxpack_compiler::RoleRecallMetric {
+                        role: ctxpack_core::FileRole::Source,
+                        recall_at_k: 0.0,
+                        changed_file_count: 1,
+                        hit_count: 0,
+                    }],
+                    test_recommendation_rate: 1.0,
+                    average_recommended_context_files: 1.0,
+                },
+                recall_lift_at_k: 1.0,
+                precision_lift_at_k: 0.1,
+                mrr_lift_at_k: 1.0,
+            },
+            signal_ablations: Vec::new(),
+            retrieval_gap_summaries: Vec::new(),
             low_information_commit_count: 1,
             file_recall_at_5: 1.0,
             file_recall_at_10: 1.0,
@@ -749,6 +938,14 @@ mod tests {
                 task_hash: "hash-1".to_string(),
                 task_type: TaskType::BugFix,
                 target_agent: "codex".to_string(),
+                changed_path_labels: vec![ctxpack_compiler::HistoricalChangedPathLabel {
+                    path: "src/auth.ts".to_string(),
+                    old_path: None,
+                    change_kind: ctxpack_index::ChangeKind::Modified,
+                    role: ctxpack_core::FileRole::Source,
+                    label_scope: ctxpack_index::LabelScope::Safe,
+                    excluded_reason: None,
+                }],
                 safe_changed_files: vec!["src/auth.ts".to_string()],
                 excluded_changed_file_count: 1,
                 recommended_files: vec!["src/auth.ts".to_string()],
@@ -780,6 +977,10 @@ mod tests {
         let markdown = render_historical_eval_report(&report);
 
         assert!(markdown.contains("# ctxpack Historical Retrieval Eval"));
+        assert!(markdown.contains("Eval range ID: `range-1`"));
+        assert!(markdown.contains("Budget: `Standard`"));
+        assert!(markdown.contains("Effective limit: `5`"));
+        assert!(markdown.contains("Effective target agent: `codex`"));
         assert!(markdown.contains("Base: `abc000`"));
         assert!(markdown.contains("Head: `def111`"));
         assert!(markdown.contains("Low-information commits: `1`"));
@@ -800,6 +1001,32 @@ mod tests {
     }
 
     #[test]
+    fn historical_eval_report_history_budget_arg_parses() {
+        let cli = Cli::try_parse_from([
+            "ctxpack", "eval", "history", "--limit", "3", "--budget", "4", "--format", "json",
+        ])
+        .unwrap();
+
+        let Command::Eval(EvalArgs {
+            command: EvalCommand::History(args),
+        }) = cli.command
+        else {
+            panic!("expected eval history command");
+        };
+        assert_eq!(args.limit, 3);
+        assert_eq!(args.budget, 4);
+
+        let default_cli = Cli::try_parse_from(["ctxpack", "eval", "history"]).unwrap();
+        let Command::Eval(EvalArgs {
+            command: EvalCommand::History(default_args),
+        }) = default_cli.command
+        else {
+            panic!("expected eval history command");
+        };
+        assert_eq!(default_args.budget, 10);
+    }
+
+    #[test]
     fn cards_report_renders_generated_paths() {
         let report = ContextCardsReport {
             repo_id: "repo-1".to_string(),
@@ -810,6 +1037,7 @@ mod tests {
                 title: "Repo Overview".to_string(),
                 bytes: 123,
             }],
+            diagnostics: Vec::new(),
             privacy_status: PrivacyStatus::local_only(),
         };
 
