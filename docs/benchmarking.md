@@ -57,9 +57,10 @@ Fields:
 ```bash
 ctxpack eval benchmark --config .ctxpack/benchmarks/retrieval-quality.json --format markdown
 ctxpack eval benchmark --config .ctxpack/benchmarks/retrieval-quality.json --format json
+ctxpack eval compare --base-report previous.json --head-report current.json --threshold fileRecallAt10=0.05
 ```
 
-The Markdown report is meant for local inspection. The JSON report is the stable contract for future release gates, portfolio tables, and regression comparison.
+The Markdown report is meant for local inspection. The JSON report is the stable contract for future release gates, portfolio tables, and regression comparison. `ctxpack eval compare` consumes two benchmark JSON reports and emits source-free metric deltas, retrieval-gap family deltas, and threshold pass/fail checks.
 
 ## Privacy Boundary
 
@@ -100,3 +101,5 @@ For large-history proof, RefactoringMiner is the primary v1.2 target. Add a seco
 - `signalAblations`: source-free lift checks after removing one retrieval signal family.
 - `tokenRoi`: brief, standard, and deep budget estimates showing useful changed-file targets per 1k estimated context tokens.
 - `largerPackAddsLittleValue`: true when a larger budget adds no additional useful changed-file targets over the previous budget in the current fixed ranking.
+- `retrievalGapSummaries`: source-free failure families grouped by role, signal gap, package, path family, target status, and recommendation area.
+- `ctxpack eval compare`: compares two benchmark reports across recall, token ROI, skipped paths, and gap families; configured thresholds fail when a metric drops more than the allowed amount.

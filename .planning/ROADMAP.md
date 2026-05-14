@@ -16,7 +16,7 @@ The milestone uses RefactoringMiner as the primary large-history proof target an
 
 - [x] **Phase 9: Benchmark Harness & Corpus Contracts** - Maintainers can define reproducible, source-free benchmark suites over real repositories.
 - [x] **Phase 10: Fixed-Budget Retrieval Metrics & Baselines** - Maintainers can compare ctxpack retrieval against lexical and no-context baselines with stable metrics.
-- [ ] **Phase 11: Retrieval Gap Taxonomy & Regression Trends** - Maintainers can turn repeated misses into source-free failure families and trend reports.
+- [x] **Phase 11: Retrieval Gap Taxonomy & Regression Trends** - Maintainers can turn repeated misses into source-free failure families and trend reports.
 - [ ] **Phase 12: Product Proof Report & Adoption Gate** - Users can see why ctxpack is useful through reproducible reports, docs, and release-gate proof.
 
 ## Phase Details
@@ -67,10 +67,10 @@ Plans:
   5. Gap and regression outputs are source-free and suitable for planning v1.3, v1.4, and v1.5 scope.
 **Plans**: 4 plans
 Plans:
-- [ ] 11-retrieval-gap-taxonomy-regression-trends-01-PLAN.md — Normalize source-free gap families across benchmark suites.
-- [ ] 11-retrieval-gap-taxonomy-regression-trends-02-PLAN.md — Map gap families to future milestone recommendations.
-- [ ] 11-retrieval-gap-taxonomy-regression-trends-03-PLAN.md — Add benchmark run comparison and regression thresholds.
-- [ ] 11-retrieval-gap-taxonomy-regression-trends-04-PLAN.md — Validate trend reports on repeated real-repo benchmark runs.
+- [x] 11-retrieval-gap-taxonomy-regression-trends-01-PLAN.md — Normalize source-free gap families across benchmark suites.
+- [x] 11-retrieval-gap-taxonomy-regression-trends-02-PLAN.md — Map gap families to future milestone recommendations.
+- [x] 11-retrieval-gap-taxonomy-regression-trends-03-PLAN.md — Add benchmark run comparison and regression thresholds.
+- [x] 11-retrieval-gap-taxonomy-regression-trends-04-PLAN.md — Validate trend reports on repeated real-repo benchmark runs.
 
 ### Phase 12: Product Proof Report & Adoption Gate
 **Goal**: Users can see a credible, reproducible answer to "why use ctxpack instead of the agent's native search?"
@@ -127,5 +127,5 @@ Phases execute in numeric order: 9 -> 10 -> 11 -> 12
 |-------|----------------|--------|-----------|
 | 9. Benchmark Harness & Corpus Contracts | 4/4 | Complete | 2026-05-14 |
 | 10. Fixed-Budget Retrieval Metrics & Baselines | 5/5 | Complete | 2026-05-14 |
-| 11. Retrieval Gap Taxonomy & Regression Trends | 0/4 | Pending | — |
+| 11. Retrieval Gap Taxonomy & Regression Trends | 4/4 | Complete | 2026-05-14 |
 | 12. Product Proof Report & Adoption Gate | 0/4 | Pending | — |

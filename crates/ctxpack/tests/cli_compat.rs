@@ -782,6 +782,89 @@ fn eval_benchmark_runs_named_suite_source_free() {
 }
 
 #[test]
+fn eval_compare_reports_source_free_metric_and_gap_deltas() {
+    let fixture = fixture_repo();
+    let suite_path = fixture.temp.path().join("ctxpack-benchmark.json");
+    fs::write(
+        &suite_path,
+        serde_json::to_string_pretty(&json!({
+            "name": "phase-eleven-cli-smoke",
+            "defaults": {
+                "limit": 1,
+                "rankingBudget": 4,
+                "mode": "bug_fix",
+                "targetAgent": "codex"
+            },
+            "repositories": [
+                {
+                    "name": "fixture-a",
+                    "path": fixture.repo
+                }
+            ]
+        }))
+        .unwrap(),
+    )
+    .unwrap();
+    let base = json_stdout(
+        Command::cargo_bin("ctxpack")
+            .unwrap()
+            .env(
+                CTXPACK_HOME_ENV,
+                fixture.temp.path().join("ctxpack-home-compare"),
+            )
+            .args(["eval", "benchmark", "--config"])
+            .arg(&suite_path)
+            .args(["--format", "json"])
+            .assert(),
+    );
+    let mut base = base;
+    base["repositories"][0]["report"]["fileRecallAt10"] = json!(1.0);
+    let mut head = base.clone();
+    head["suiteId"] = json!("head-suite");
+    head["repositories"][0]["report"]["fileRecallAt10"] = json!(0.0);
+    let base_path = fixture.temp.path().join("base-report.json");
+    let head_path = fixture.temp.path().join("head-report.json");
+    fs::write(&base_path, serde_json::to_string_pretty(&base).unwrap()).unwrap();
+    fs::write(&head_path, serde_json::to_string_pretty(&head).unwrap()).unwrap();
+
+    let value = json_stdout(
+        Command::cargo_bin("ctxpack")
+            .unwrap()
+            .args(["eval", "compare", "--base-report"])
+            .arg(&base_path)
+            .args(["--head-report"])
+            .arg(&head_path)
+            .args(["--threshold", "fileRecallAt10=0.01", "--format", "json"])
+            .assert(),
+    );
+
+    assert_eq!(value["headSuiteId"], "head-suite");
+    assert_eq!(value["passed"], false);
+    assert_eq!(value["thresholdChecks"][0]["metric"], "fileRecallAt10");
+    assert_eq!(value["thresholdChecks"][0]["passed"], false);
+    assert!(value["metricDeltas"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .any(|delta| delta["metric"] == "tokenRoiBrief"));
+    assert!(value["gapFamilyDeltas"].is_array());
+    assert_no_source_or_prompt_text(&value);
+
+    Command::cargo_bin("ctxpack")
+        .unwrap()
+        .args(["eval", "compare", "--base-report"])
+        .arg(&base_path)
+        .args(["--head-report"])
+        .arg(&head_path)
+        .args(["--threshold", "fileRecallAt10=0.01"])
+        .assert()
+        .success()
+        .stdout(contains("# ctxpack Benchmark Comparison"))
+        .stdout(contains("Threshold Checks"))
+        .stdout(contains("fileRecallAt10"));
+}
+
+#[test]
 fn serve_mcp_speaks_json_rpc_over_stdio() {
     let fixture = fixture_repo();
     let input = br#"{"jsonrpc":"2.0","id":1,"method":"initialize","params":{}}

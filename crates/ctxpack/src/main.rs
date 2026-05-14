@@ -1,10 +1,12 @@
 use anyhow::Result;
 use clap::{Args, Parser, Subcommand, ValueEnum};
 use ctxpack_compiler::{
-    compile_context_pack_with_plan_and_paths_for_agent, eval_trace_for_pack, eval_trace_for_plan,
-    evaluate_historical_commits, generate_context_cards, prepare_context_plan_with_paths,
-    render_pack_markdown, run_benchmark_suite, BenchmarkSuiteReport, ContextCardsOptions,
-    ContextCardsReport, HistoricalEvalOptions, HistoricalEvalReport,
+    compare_benchmark_suite_reports, compile_context_pack_with_plan_and_paths_for_agent,
+    eval_trace_for_pack, eval_trace_for_plan, evaluate_historical_commits, generate_context_cards,
+    load_benchmark_suite_report, prepare_context_plan_with_paths, render_pack_markdown,
+    run_benchmark_suite, BenchmarkComparisonReport, BenchmarkRegressionThreshold,
+    BenchmarkSuiteReport, ContextCardsOptions, ContextCardsReport, HistoricalEvalOptions,
+    HistoricalEvalReport,
 };
 use ctxpack_core::{
     run_init, run_setup_check, AgentAdapter, Diagnostic, DiagnosticSeverity, EvalTrace, InitAction,
@@ -219,6 +221,7 @@ enum EvalCommand {
     Checklist(EvalTracesArgs),
     History(EvalHistoryArgs),
     Benchmark(EvalBenchmarkArgs),
+    Compare(EvalCompareArgs),
 }
 
 #[derive(Debug, Args)]
@@ -260,6 +263,22 @@ struct EvalBenchmarkArgs {
         help = "Path to a JSON benchmark suite file containing named repositories and eval budgets."
     )]
     config: PathBuf,
+    #[arg(long, value_enum, default_value_t = PackFormat::Markdown)]
+    format: PackFormat,
+}
+
+#[derive(Debug, Args)]
+struct EvalCompareArgs {
+    #[arg(long, help = "Path to the baseline benchmark JSON report.")]
+    base_report: PathBuf,
+    #[arg(long, help = "Path to the head benchmark JSON report.")]
+    head_report: PathBuf,
+    #[arg(
+        long,
+        value_parser = parse_regression_threshold,
+        help = "Regression threshold as metric=max_drop, e.g. fileRecallAt10=0.05"
+    )]
+    threshold: Vec<BenchmarkRegressionThreshold>,
     #[arg(long, value_enum, default_value_t = PackFormat::Markdown)]
     format: PackFormat,
 }
@@ -494,6 +513,17 @@ fn main() -> Result<()> {
                     PackFormat::Json => println!("{}", serde_json::to_string_pretty(&report)?),
                 }
             }
+            EvalCommand::Compare(args) => {
+                let base = load_benchmark_suite_report(&args.base_report)?;
+                let head = load_benchmark_suite_report(&args.head_report)?;
+                let report = compare_benchmark_suite_reports(&base, &head, &args.threshold);
+                match args.format {
+                    PackFormat::Markdown => {
+                        println!("{}", render_benchmark_comparison_report(&report))
+                    }
+                    PackFormat::Json => println!("{}", serde_json::to_string_pretty(&report)?),
+                }
+            }
         },
         Command::ServeMcp => {
             ctxpack_mcp::run_stdio_server()?;
@@ -508,6 +538,29 @@ fn init_options(args: &InitArgs) -> InitOptions {
 
 fn setup_check_options(args: &SetupCheckArgs) -> InitOptions {
     adapter_options(args.cursor, args.claude, args.opencode)
+}
+
+fn parse_regression_threshold(
+    input: &str,
+) -> std::result::Result<BenchmarkRegressionThreshold, String> {
+    let Some((metric, max_drop)) = input.split_once('=') else {
+        return Err("expected metric=max_drop".to_string());
+    };
+    let metric = metric.trim();
+    if metric.is_empty() {
+        return Err("metric name cannot be empty".to_string());
+    }
+    let max_drop = max_drop
+        .trim()
+        .parse::<f32>()
+        .map_err(|_| "max_drop must be a number".to_string())?;
+    if max_drop < 0.0 {
+        return Err("max_drop must be non-negative".to_string());
+    }
+    Ok(BenchmarkRegressionThreshold {
+        metric: metric.to_string(),
+        max_drop,
+    })
 }
 
 fn adapter_options(cursor: bool, claude: bool, opencode: bool) -> InitOptions {
@@ -875,8 +928,14 @@ fn push_retrieval_gap_summaries(
     }
     for gap in retrieval_gap_summaries {
         output.push_str(&format!(
-            "- Role `{:?}`, signal gap `{}`, family `{}`: `{}` miss(es)",
-            gap.role, gap.signal_gap, gap.path_family, gap.missed_count
+            "- Role `{:?}`, signal gap `{}`, package `{}`, family `{}`, status `{:?}`, area `{:?}`: `{}` miss(es)",
+            gap.role,
+            gap.signal_gap,
+            gap.package,
+            gap.path_family,
+            gap.target_status,
+            gap.recommendation_area,
+            gap.missed_count
         ));
         if !gap.example_paths.is_empty() {
             output.push_str(" examples ");
@@ -986,6 +1045,69 @@ fn render_benchmark_suite_report(report: &BenchmarkSuiteReport) -> String {
     output
 }
 
+fn render_benchmark_comparison_report(report: &BenchmarkComparisonReport) -> String {
+    let mut output = String::from("# ctxpack Benchmark Comparison\n\n");
+    output.push_str(
+        "This source-free report compares two benchmark JSON reports and flags configured metric regressions.\n\n",
+    );
+    output.push_str(&format!(
+        "- Base suite ID: `{}`\n- Head suite ID: `{}`\n- Repositories compared: `{}`\n- Passed thresholds: `{}`\n- Privacy: local-only `{}`\n\n",
+        report.base_suite_id,
+        report.head_suite_id,
+        report.repository_count,
+        report.passed,
+        report.privacy_status.local_only
+    ));
+
+    output.push_str("## Metric Deltas\n\n");
+    if report.metric_deltas.is_empty() {
+        output.push_str("- No matching repository metrics to compare.\n\n");
+    } else {
+        for delta in &report.metric_deltas {
+            output.push_str(&format!(
+                "- `{}` `{}`: `{:.3}` -> `{:.3}` ({:+.3})\n",
+                delta.repository, delta.metric, delta.base_value, delta.head_value, delta.delta
+            ));
+        }
+        output.push('\n');
+    }
+
+    output.push_str("## Threshold Checks\n\n");
+    if report.threshold_checks.is_empty() {
+        output.push_str("- No thresholds configured.\n\n");
+    } else {
+        for check in &report.threshold_checks {
+            output.push_str(&format!(
+                "- `{}` `{}`: delta `{:+.3}`, max drop `{:.3}`, passed `{}`\n",
+                check.repository, check.metric, check.delta, check.max_drop, check.passed
+            ));
+        }
+        output.push('\n');
+    }
+
+    output.push_str("## Gap Family Deltas\n\n");
+    if report.gap_family_deltas.is_empty() {
+        output.push_str("- No grouped retrieval gap deltas.\n");
+    } else {
+        for gap in &report.gap_family_deltas {
+            output.push_str(&format!(
+                "- `{}` role `{:?}`, signal `{}`, package `{}`, family `{}`, status `{:?}`, area `{:?}`: `{}` -> `{}` ({:+})\n",
+                gap.repository,
+                gap.role,
+                gap.signal_gap,
+                gap.package,
+                gap.path_family,
+                gap.target_status,
+                gap.recommendation_area,
+                gap.base_missed_count,
+                gap.head_missed_count,
+                gap.delta
+            ));
+        }
+    }
+    output
+}
+
 fn role_filter_label(filters: &[ctxpack_core::FileRole]) -> String {
     if filters.is_empty() {
         return "all safe roles".to_string();
@@ -1070,7 +1192,10 @@ mod tests {
             &[ctxpack_compiler::RetrievalGapSummary {
                 role: ctxpack_core::FileRole::Test,
                 signal_gap: "no_candidate_signal".to_string(),
+                package: "tests".to_string(),
                 path_family: "tests/auth/*.ts".to_string(),
+                target_status: ctxpack_compiler::RetrievalGapTargetStatus::CurrentReachable,
+                recommendation_area: ctxpack_compiler::RetrievalGapRecommendationArea::TestMapping,
                 missed_count: 2,
                 example_paths: vec!["tests/auth/session.test.ts".to_string()],
             }],
@@ -1078,6 +1203,7 @@ mod tests {
 
         assert!(checklist.contains("Grouped Retrieval Failures"));
         assert!(checklist.contains("Role `Test`, signal gap `no_candidate_signal`"));
+        assert!(checklist.contains("area `TestMapping`"));
         assert!(checklist.contains("family `tests/auth/*.ts`"));
         assert!(checklist.contains("`tests/auth/session.test.ts`"));
         assert!(!checklist.contains("commit subject"));

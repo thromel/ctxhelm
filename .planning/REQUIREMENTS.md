@@ -30,15 +30,15 @@ Requirements for proving ctxpack's product value through repeatable, source-free
 
 ### Gap Analysis
 
-- [ ] **GAP-01**: Repeated missing files and tests are grouped into source-free families by role, path pattern, package, status, and missing signal.
-- [ ] **GAP-02**: Gap reports identify whether failures point to storage, semantic retrieval, parser precision, test mapping, history ranking, or policy exclusions.
-- [ ] **GAP-03**: Gap reports distinguish deleted/renamed historical labels from current reachable targets so evals do not punish impossible retrieval.
-- [ ] **GAP-04**: Gap reports can be consumed by future milestone planning without needing access to source snippets.
+- [x] **GAP-01**: Repeated missing files and tests are grouped into source-free families by role, path pattern, package, status, and missing signal.
+- [x] **GAP-02**: Gap reports identify whether failures point to storage, semantic retrieval, parser precision, test mapping, history ranking, or policy exclusions.
+- [x] **GAP-03**: Gap reports distinguish deleted/renamed historical labels from current reachable targets so evals do not punish impossible retrieval.
+- [x] **GAP-04**: Gap reports can be consumed by future milestone planning without needing access to source snippets.
 
 ### Regression Trends
 
-- [ ] **REG-01**: Maintainer can compare two benchmark runs and see deltas for recall, token ROI, signal ablations, skipped files, and gap families.
-- [ ] **REG-02**: Maintainer can configure threshold checks that fail when selected retrieval metrics regress beyond allowed tolerances.
+- [x] **REG-01**: Maintainer can compare two benchmark runs and see deltas for recall, token ROI, signal ablations, skipped files, and gap families.
+- [x] **REG-02**: Maintainer can configure threshold checks that fail when selected retrieval metrics regress beyond allowed tolerances.
 
 ### Product Proof
 
@@ -127,12 +127,12 @@ Explicitly excluded from v1.2 to prevent scope creep.
 | METR-05 | Phase 10 | Complete |
 | ROI-01 | Phase 10 | Complete |
 | ROI-02 | Phase 10 | Complete |
-| GAP-01 | Phase 11 | Pending |
-| GAP-02 | Phase 11 | Pending |
-| GAP-03 | Phase 11 | Pending |
-| GAP-04 | Phase 11 | Pending |
-| REG-01 | Phase 11 | Pending |
-| REG-02 | Phase 11 | Pending |
+| GAP-01 | Phase 11 | Complete |
+| GAP-02 | Phase 11 | Complete |
+| GAP-03 | Phase 11 | Complete |
+| GAP-04 | Phase 11 | Complete |
+| REG-01 | Phase 11 | Complete |
+| REG-02 | Phase 11 | Complete |
 | PROOF-01 | Phase 12 | Pending |
 | PROOF-02 | Phase 12 | Pending |
 | PROOF-03 | Phase 12 | Pending |
@@ -146,4 +146,4 @@ Explicitly excluded from v1.2 to prevent scope creep.
 
 ---
 *Requirements defined: 2026-05-14*
-*Last updated: 2026-05-14 after Phase 10 completion*
+*Last updated: 2026-05-14 after Phase 11 completion*

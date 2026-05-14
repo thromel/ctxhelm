@@ -8,13 +8,16 @@ pub use cards::{
     generate_context_cards, ContextCardsOptions, ContextCardsReport, GeneratedContextCard,
 };
 pub use eval::{
-    eval_trace_for_pack, eval_trace_for_plan, evaluate_historical_commits,
-    load_benchmark_suite_config, run_benchmark_suite, run_benchmark_suite_config,
-    BenchmarkDefaults, BenchmarkRepoConfig, BenchmarkRepoEffectiveConfig, BenchmarkRepoReport,
-    BenchmarkSuiteConfig, BenchmarkSuiteReport, EvalComparison, HistoricalChangedPathLabel,
+    compare_benchmark_suite_reports, eval_trace_for_pack, eval_trace_for_plan,
+    evaluate_historical_commits, load_benchmark_suite_config, load_benchmark_suite_report,
+    run_benchmark_suite, run_benchmark_suite_config, BenchmarkComparisonReport, BenchmarkDefaults,
+    BenchmarkGapFamilyDelta, BenchmarkMetricDelta, BenchmarkRegressionThreshold,
+    BenchmarkRepoConfig, BenchmarkRepoEffectiveConfig, BenchmarkRepoReport, BenchmarkSuiteConfig,
+    BenchmarkSuiteReport, BenchmarkThresholdCheck, EvalComparison, HistoricalChangedPathLabel,
     HistoricalCommitEval, HistoricalEvalEffectiveFilters, HistoricalEvalOptions,
     HistoricalEvalRefs, HistoricalEvalReport, HistoricalMissingFileSummary, RankingMetrics,
-    RetrievalGapSummary, RoleRecallMetric, SignalAblationResult, TokenRoiMetric,
+    RetrievalGapRecommendationArea, RetrievalGapSummary, RetrievalGapTargetStatus,
+    RoleRecallMetric, SignalAblationResult, TokenRoiMetric,
 };
 pub use packs::{
     compile_context_pack, compile_context_pack_from_plan, compile_context_pack_from_plan_for_agent,
@@ -1429,7 +1432,10 @@ mod tests {
             retrieval_gap_summaries: vec![RetrievalGapSummary {
                 role: FileRole::Source,
                 signal_gap: "lexical_only_miss".to_string(),
+                package: "src".to_string(),
                 path_family: "src/auth/*.ts".to_string(),
+                target_status: RetrievalGapTargetStatus::CurrentReachable,
+                recommendation_area: RetrievalGapRecommendationArea::LexicalRanking,
                 missed_count: 2,
                 example_paths: vec!["src/auth/session.ts".to_string()],
             }],
@@ -1458,6 +1464,15 @@ mod tests {
         assert_eq!(
             value["retrievalGapSummaries"][0]["signalGap"],
             "lexical_only_miss"
+        );
+        assert_eq!(value["retrievalGapSummaries"][0]["package"], "src");
+        assert_eq!(
+            value["retrievalGapSummaries"][0]["targetStatus"],
+            "currentReachable"
+        );
+        assert_eq!(
+            value["retrievalGapSummaries"][0]["recommendationArea"],
+            "lexicalRanking"
         );
         assert_eq!(
             value["retrievalGapSummaries"][0]["pathFamily"],

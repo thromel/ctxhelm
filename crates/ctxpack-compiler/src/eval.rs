@@ -114,9 +114,90 @@ pub struct TokenRoiMetric {
 pub struct RetrievalGapSummary {
     pub role: FileRole,
     pub signal_gap: String,
+    pub package: String,
     pub path_family: String,
+    pub target_status: RetrievalGapTargetStatus,
+    pub recommendation_area: RetrievalGapRecommendationArea,
     pub missed_count: usize,
     pub example_paths: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
+#[serde(rename_all = "camelCase")]
+pub enum RetrievalGapTargetStatus {
+    CurrentReachable,
+    HistoricalRenamed,
+    HistoricalDeleted,
+    PolicyExcluded,
+    Unknown,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
+#[serde(rename_all = "camelCase")]
+pub enum RetrievalGapRecommendationArea {
+    Storage,
+    SemanticRetrieval,
+    ParserPrecision,
+    TestMapping,
+    HistoryRanking,
+    PolicyExclusion,
+    LexicalRanking,
+    Unknown,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct BenchmarkComparisonReport {
+    pub base_suite_id: String,
+    pub head_suite_id: String,
+    pub repository_count: usize,
+    pub metric_deltas: Vec<BenchmarkMetricDelta>,
+    pub gap_family_deltas: Vec<BenchmarkGapFamilyDelta>,
+    pub threshold_checks: Vec<BenchmarkThresholdCheck>,
+    pub passed: bool,
+    pub privacy_status: PrivacyStatus,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct BenchmarkMetricDelta {
+    pub repository: String,
+    pub metric: String,
+    pub base_value: f32,
+    pub head_value: f32,
+    pub delta: f32,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct BenchmarkGapFamilyDelta {
+    pub repository: String,
+    pub role: FileRole,
+    pub signal_gap: String,
+    pub package: String,
+    pub path_family: String,
+    pub target_status: RetrievalGapTargetStatus,
+    pub recommendation_area: RetrievalGapRecommendationArea,
+    pub base_missed_count: usize,
+    pub head_missed_count: usize,
+    pub delta: isize,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct BenchmarkRegressionThreshold {
+    pub metric: String,
+    pub max_drop: f32,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct BenchmarkThresholdCheck {
+    pub repository: String,
+    pub metric: String,
+    pub max_drop: f32,
+    pub delta: f32,
+    pub passed: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -305,6 +386,20 @@ pub fn load_benchmark_suite_config(
     })
 }
 
+pub fn load_benchmark_suite_report(
+    report_path: impl AsRef<Path>,
+) -> Result<BenchmarkSuiteReport, InventoryError> {
+    let report_path = report_path.as_ref();
+    let content = fs::read_to_string(report_path).map_err(|source| InventoryError::Read {
+        path: report_path.to_path_buf(),
+        source,
+    })?;
+    serde_json::from_str(&content).map_err(|source| InventoryError::Deserialize {
+        path: report_path.to_path_buf(),
+        source,
+    })
+}
+
 pub fn run_benchmark_suite(
     config_path: impl AsRef<Path>,
 ) -> Result<BenchmarkSuiteReport, InventoryError> {
@@ -312,6 +407,55 @@ pub fn run_benchmark_suite(
     let config = load_benchmark_suite_config(config_path)?;
     let config_dir = config_path.parent().unwrap_or_else(|| Path::new("."));
     run_benchmark_suite_config(&config, config_dir)
+}
+
+pub fn compare_benchmark_suite_reports(
+    base: &BenchmarkSuiteReport,
+    head: &BenchmarkSuiteReport,
+    thresholds: &[BenchmarkRegressionThreshold],
+) -> BenchmarkComparisonReport {
+    let mut metric_deltas = Vec::new();
+    let mut gap_family_deltas = Vec::new();
+    let mut threshold_checks = Vec::new();
+
+    for head_repo in &head.repositories {
+        let Some(base_repo) = base
+            .repositories
+            .iter()
+            .find(|repo| repo.name == head_repo.name)
+        else {
+            continue;
+        };
+        metric_deltas.extend(repo_metric_deltas(base_repo, head_repo));
+        gap_family_deltas.extend(repo_gap_family_deltas(base_repo, head_repo));
+    }
+
+    for threshold in thresholds {
+        for delta in metric_deltas
+            .iter()
+            .filter(|delta| delta.metric == threshold.metric)
+        {
+            threshold_checks.push(BenchmarkThresholdCheck {
+                repository: delta.repository.clone(),
+                metric: threshold.metric.clone(),
+                max_drop: threshold.max_drop,
+                delta: delta.delta,
+                passed: delta.delta >= -threshold.max_drop,
+            });
+        }
+    }
+
+    let passed = threshold_checks.iter().all(|check| check.passed);
+    BenchmarkComparisonReport {
+        base_suite_id: base.suite_id.clone(),
+        head_suite_id: head.suite_id.clone(),
+        repository_count: head.repositories.len(),
+        metric_deltas,
+        gap_family_deltas,
+        threshold_checks,
+        passed,
+        privacy_status: PrivacyStatus::local_only(),
+    }
 }
 
 pub fn run_benchmark_suite_config(
@@ -428,6 +572,145 @@ fn run_benchmark_repo(
             privacy_status: PrivacyStatus::local_only(),
         },
     }
+}
+
+fn repo_metric_deltas(
+    base_repo: &BenchmarkRepoReport,
+    head_repo: &BenchmarkRepoReport,
+) -> Vec<BenchmarkMetricDelta> {
+    let repository = head_repo.name.clone();
+    let mut deltas = Vec::new();
+    deltas.push(metric_delta(
+        &repository,
+        "skippedPathCount",
+        base_repo.skipped_path_count as f32,
+        head_repo.skipped_path_count as f32,
+    ));
+    deltas.push(metric_delta(
+        &repository,
+        "excludedChangedFileCount",
+        base_repo.excluded_changed_file_count as f32,
+        head_repo.excluded_changed_file_count as f32,
+    ));
+
+    let (Some(base), Some(head)) = (&base_repo.report, &head_repo.report) else {
+        return deltas;
+    };
+    for (metric, base_value, head_value) in [
+        (
+            "fileRecallAt10",
+            base.file_recall_at_10,
+            head.file_recall_at_10,
+        ),
+        (
+            "testRecallAt10",
+            base.test_recall_at_10,
+            head.test_recall_at_10,
+        ),
+        (
+            "ctxpackLiftAt10",
+            base.ctxpack_lift_at_10,
+            head.ctxpack_lift_at_10,
+        ),
+        (
+            "recallLiftVsNoContextAtK",
+            base.ranking_comparison.recall_lift_vs_no_context_at_k,
+            head.ranking_comparison.recall_lift_vs_no_context_at_k,
+        ),
+    ] {
+        deltas.push(metric_delta(&repository, metric, base_value, head_value));
+    }
+    for budget in [PackBudget::Brief, PackBudget::Standard, PackBudget::Deep] {
+        let metric = format!("tokenRoi{:?}", budget);
+        deltas.push(metric_delta(
+            &repository,
+            &metric,
+            token_roi_value(base, &budget),
+            token_roi_value(head, &budget),
+        ));
+    }
+    deltas
+}
+
+fn metric_delta(
+    repository: &str,
+    metric: &str,
+    base_value: f32,
+    head_value: f32,
+) -> BenchmarkMetricDelta {
+    BenchmarkMetricDelta {
+        repository: repository.to_string(),
+        metric: metric.to_string(),
+        base_value,
+        head_value,
+        delta: head_value - base_value,
+    }
+}
+
+fn token_roi_value(report: &HistoricalEvalReport, budget: &PackBudget) -> f32 {
+    report
+        .token_roi
+        .iter()
+        .find(|row| &row.budget == budget)
+        .map(|row| row.useful_targets_per_1k_tokens)
+        .unwrap_or_default()
+}
+
+fn repo_gap_family_deltas(
+    base_repo: &BenchmarkRepoReport,
+    head_repo: &BenchmarkRepoReport,
+) -> Vec<BenchmarkGapFamilyDelta> {
+    let repository = head_repo.name.clone();
+    let base = gap_family_counts(base_repo);
+    let head = gap_family_counts(head_repo);
+    let mut keys = base.keys().cloned().collect::<BTreeSet<_>>();
+    keys.extend(head.keys().cloned());
+    keys.into_iter()
+        .map(|key| {
+            let gap = base
+                .get(&key)
+                .map(|entry| &entry.0)
+                .or_else(|| head.get(&key).map(|entry| &entry.0))
+                .expect("gap family key should come from base or head");
+            let base_missed_count = base.get(&key).map(|entry| entry.1).unwrap_or(0);
+            let head_missed_count = head.get(&key).map(|entry| entry.1).unwrap_or(0);
+            BenchmarkGapFamilyDelta {
+                repository: repository.clone(),
+                role: gap.role.clone(),
+                signal_gap: gap.signal_gap.clone(),
+                package: gap.package.clone(),
+                path_family: gap.path_family.clone(),
+                target_status: gap.target_status.clone(),
+                recommendation_area: gap.recommendation_area.clone(),
+                base_missed_count,
+                head_missed_count,
+                delta: head_missed_count as isize - base_missed_count as isize,
+            }
+        })
+        .collect()
+}
+
+fn gap_family_counts(repo: &BenchmarkRepoReport) -> BTreeMap<String, (RetrievalGapSummary, usize)> {
+    let Some(report) = &repo.report else {
+        return BTreeMap::new();
+    };
+    report
+        .retrieval_gap_summaries
+        .iter()
+        .map(|gap| (gap_family_key(gap), (gap.clone(), gap.missed_count)))
+        .collect()
+}
+
+fn gap_family_key(gap: &RetrievalGapSummary) -> String {
+    format!(
+        "{:?}|{}|{}|{}|{:?}|{:?}",
+        gap.role,
+        gap.signal_gap,
+        gap.package,
+        gap.path_family,
+        gap.target_status,
+        gap.recommendation_area
+    )
 }
 
 fn resolve_benchmark_repo_path(config_dir: &Path, repo_path: &Path) -> PathBuf {
@@ -641,6 +924,7 @@ pub fn evaluate_historical_commits(
     };
     let eval_range_id = historical_eval_range_id(&repo_id, &effective_filters, &refs);
     let roles_by_label_path = roles_by_path_from_labels(&commits, &roles_by_path);
+    let labels_by_path = labels_by_path_from_commits(&commits);
 
     let ranking_comparison = eval_comparison(&commits, ranking_budget);
     let signal_ablations = signal_ablation_results(
@@ -651,8 +935,13 @@ pub fn evaluate_historical_commits(
         ranking_budget,
     );
     let token_roi = token_roi_metrics(&commits, ranking_budget);
-    let retrieval_gap_summaries =
-        retrieval_gap_summaries(&commits, &gap_reasons_by_commit, &roles_by_label_path, 10);
+    let retrieval_gap_summaries = retrieval_gap_summaries(
+        &commits,
+        &gap_reasons_by_commit,
+        &roles_by_label_path,
+        &labels_by_path,
+        10,
+    );
 
     Ok(HistoricalEvalReport {
         eval_range_id,
@@ -1461,6 +1750,7 @@ fn retrieval_gap_summaries(
     commits: &[HistoricalCommitEval],
     gap_reasons_by_commit: &[BTreeMap<String, String>],
     roles_by_path: &BTreeMap<String, FileRole>,
+    labels_by_path: &BTreeMap<String, HistoricalChangedPathLabel>,
     limit: usize,
 ) -> Vec<RetrievalGapSummary> {
     let mut summaries = Vec::<RetrievalGapSummary>::new();
@@ -1474,11 +1764,20 @@ fn retrieval_gap_summaries(
                 .get(path)
                 .cloned()
                 .unwrap_or_else(|| "no_candidate_signal".to_string());
+            let package = package_family(path);
             let path_family = path_family(path);
+            let target_status = labels_by_path
+                .get(path)
+                .map(gap_target_status)
+                .unwrap_or(RetrievalGapTargetStatus::Unknown);
+            let recommendation_area = recommendation_area_for_gap(&signal_gap, role.clone());
             if let Some(summary) = summaries.iter_mut().find(|summary| {
                 summary.role == role
                     && summary.signal_gap == signal_gap
+                    && summary.package == package
                     && summary.path_family == path_family
+                    && summary.target_status == target_status
+                    && summary.recommendation_area == recommendation_area
             }) {
                 summary.missed_count += 1;
                 if summary.example_paths.len() < 3 && !summary.example_paths.contains(path) {
@@ -1488,7 +1787,10 @@ fn retrieval_gap_summaries(
                 summaries.push(RetrievalGapSummary {
                     role,
                     signal_gap,
+                    package,
                     path_family,
+                    target_status,
+                    recommendation_area,
                     missed_count: 1,
                     example_paths: vec![path.clone()],
                 });
@@ -1502,10 +1804,68 @@ fn retrieval_gap_summaries(
             .cmp(&left.missed_count)
             .then_with(|| format!("{:?}", left.role).cmp(&format!("{:?}", right.role)))
             .then_with(|| left.signal_gap.cmp(&right.signal_gap))
+            .then_with(|| left.package.cmp(&right.package))
             .then_with(|| left.path_family.cmp(&right.path_family))
     });
     summaries.truncate(limit.max(1));
     summaries
+}
+
+fn labels_by_path_from_commits(
+    commits: &[HistoricalCommitEval],
+) -> BTreeMap<String, HistoricalChangedPathLabel> {
+    let mut labels = BTreeMap::new();
+    for commit in commits {
+        for label in &commit.changed_path_labels {
+            labels
+                .entry(label.path.clone())
+                .or_insert_with(|| label.clone());
+        }
+    }
+    labels
+}
+
+fn package_family(path: &str) -> String {
+    Path::new(path)
+        .components()
+        .next()
+        .and_then(|component| component.as_os_str().to_str())
+        .filter(|component| !component.is_empty())
+        .unwrap_or(".")
+        .to_string()
+}
+
+fn gap_target_status(label: &HistoricalChangedPathLabel) -> RetrievalGapTargetStatus {
+    if label.label_scope != LabelScope::Safe {
+        return RetrievalGapTargetStatus::PolicyExcluded;
+    }
+    match label.change_kind {
+        ctxpack_index::ChangeKind::Renamed => RetrievalGapTargetStatus::HistoricalRenamed,
+        ctxpack_index::ChangeKind::Deleted => RetrievalGapTargetStatus::HistoricalDeleted,
+        _ => RetrievalGapTargetStatus::CurrentReachable,
+    }
+}
+
+fn recommendation_area_for_gap(signal_gap: &str, role: FileRole) -> RetrievalGapRecommendationArea {
+    if matches!(role, FileRole::Test) {
+        return RetrievalGapRecommendationArea::TestMapping;
+    }
+    if signal_gap == "lexical_only_miss" {
+        return RetrievalGapRecommendationArea::LexicalRanking;
+    }
+    if signal_gap.contains("history") || signal_gap.contains("co_change") {
+        return RetrievalGapRecommendationArea::HistoryRanking;
+    }
+    if signal_gap.contains("symbol") || signal_gap.contains("dependency") {
+        return RetrievalGapRecommendationArea::ParserPrecision;
+    }
+    if signal_gap.contains("generated") || signal_gap.contains("sensitive") {
+        return RetrievalGapRecommendationArea::PolicyExclusion;
+    }
+    if signal_gap == "no_candidate_signal" {
+        return RetrievalGapRecommendationArea::Storage;
+    }
+    RetrievalGapRecommendationArea::SemanticRetrieval
 }
 
 fn signal_family_code(signals: &[RetrievalSignalKind]) -> String {

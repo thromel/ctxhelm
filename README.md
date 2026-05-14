@@ -270,7 +270,13 @@ Run a named source-free benchmark suite over multiple local repositories:
 ctxpack eval benchmark --config .ctxpack/benchmarks/retrieval-quality.json
 ```
 
-See [docs/benchmarking.md](docs/benchmarking.md) for the suite JSON contract and RefactoringMiner-style setup.
+Compare two benchmark JSON reports and flag configured regression thresholds in the report:
+
+```bash
+ctxpack eval compare --base-report previous.json --head-report current.json --threshold fileRecallAt10=0.05
+```
+
+See [docs/benchmarking.md](docs/benchmarking.md) for the suite JSON contract, RefactoringMiner-style setup, token ROI interpretation, gap families, and regression comparison.
 
 ```bash
 ctxpack eval history --repo /path/to/repo --limit 20 --mode bug-fix
