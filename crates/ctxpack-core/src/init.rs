@@ -257,7 +257,12 @@ pub fn run_setup_check(
     let repo_root = repo_root.as_ref();
     let mut items = Vec::new();
 
-    check_setup_file(repo_root, "AGENTS.md", SetupFileKind::Guidance(1_400), &mut items);
+    check_setup_file(
+        repo_root,
+        "AGENTS.md",
+        SetupFileKind::Guidance(1_400),
+        &mut items,
+    );
     check_setup_file(
         repo_root,
         ".ctxpack/ctxpack.toml",
@@ -361,7 +366,9 @@ fn validate_setup_content(
         SetupFileKind::Config => {
             for required in ["version = 1", "local_only = true", "[adapters]"] {
                 if !content.contains(required) {
-                    return Err(format!("generated config is missing required setting `{required}`"));
+                    return Err(format!(
+                        "generated config is missing required setting `{required}`"
+                    ));
                 }
             }
         }
@@ -401,7 +408,9 @@ fn validate_thin_guidance(
     }
 
     if !(content.contains("session-scoped") || content.contains("same-session")) {
-        return Err("generated guidance is missing MCP pack resource session-scope caveat".to_string());
+        return Err(
+            "generated guidance is missing MCP pack resource session-scope caveat".to_string(),
+        );
     }
 
     Ok(())

@@ -190,7 +190,10 @@ fn release_gate_script_contract() {
         "tar -xzf",
         "release gate passed",
     ] {
-        assert!(script_text.contains(required), "release gate missing {required}");
+        assert!(
+            script_text.contains(required),
+            "release gate missing {required}"
+        );
     }
 
     assert!(
