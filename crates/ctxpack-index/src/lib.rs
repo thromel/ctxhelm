@@ -43,9 +43,13 @@ pub use search::{
     lexical_search, lexical_search_report, SearchOptions, SearchReport, SearchResult,
 };
 pub use storage::{
-    initialize_store, inspect_store_schema, open_store_report, required_table_names,
-    StorageCompatibility, StorageError, StorageMetadata, StoragePrivacyMode, StorageReport,
-    StorageSchemaReport, StoreConfig, StorePaths, STORAGE_SCHEMA_VERSION,
+    initialize_store, inspect_store_schema, open_store_report, persist_benchmark_run_record,
+    persist_context_pack_record, persist_proof_report_record, required_table_names,
+    storage_status_for_path, storage_status_for_repo, sync_inventory_to_store, vacuum_store,
+    StorageBenchmarkRunRecord, StorageCompatibility, StorageContextPackRecord, StorageError,
+    StorageGapRecord, StorageIndexReport, StorageMetadata, StorageMetricRecord, StoragePrivacyMode,
+    StorageProofReportRecord, StorageReport, StorageSchemaReport, StorageStatusReport, StoreConfig,
+    StorePaths, STORAGE_SCHEMA_VERSION,
 };
 pub use symbols::{
     extract_symbols, extract_symbols_report, symbol_search, symbol_search_report, CodeSymbol,

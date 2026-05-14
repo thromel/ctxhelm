@@ -1,7 +1,10 @@
+use crate::inventory::{build_inventory, InventoryOptions};
 use crate::inventory::{canonicalize, ctxpack_home, repo_id_for_path};
+use ctxpack_core::FileRole;
 use ctxpack_core::{Diagnostic, DiagnosticSeverity};
 use rusqlite::{params, Connection, OptionalExtension};
 use serde::{Deserialize, Serialize};
+use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -140,6 +143,97 @@ pub struct StorageSchemaReport {
     pub diagnostics: Vec<Diagnostic>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct StorageIndexReport {
+    pub repo_id: String,
+    pub repo_root: PathBuf,
+    pub database_path: PathBuf,
+    pub schema_version: u32,
+    pub reused_records: usize,
+    pub created_records: usize,
+    pub updated_records: usize,
+    pub deleted_records: usize,
+    pub skipped_files: usize,
+    pub ignored_paths: usize,
+    pub generated_paths: usize,
+    pub sensitive_paths: usize,
+    pub compatibility: StorageCompatibility,
+    #[serde(default)]
+    pub diagnostics: Vec<Diagnostic>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct StorageStatusReport {
+    pub repo_id: Option<String>,
+    pub repo_root: Option<PathBuf>,
+    pub database_path: PathBuf,
+    pub schema_version: Option<u32>,
+    pub file_records: usize,
+    pub symbol_records: usize,
+    pub context_pack_records: usize,
+    pub benchmark_run_records: usize,
+    pub proof_report_records: usize,
+    pub compatibility: StorageCompatibility,
+    #[serde(default)]
+    pub diagnostics: Vec<Diagnostic>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct StorageMetricRecord {
+    pub name: String,
+    pub value: f32,
+    pub budget: Option<String>,
+    pub target_kind: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct StorageGapRecord {
+    pub family: String,
+    pub recommendation_area: Option<String>,
+    pub target_status: Option<String>,
+    pub safe_path: Option<String>,
+    pub count: usize,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct StorageBenchmarkRunRecord {
+    pub run_id: String,
+    pub suite_id: String,
+    pub revision_id: Option<String>,
+    pub budget: Option<String>,
+    pub privacy_status: String,
+    pub metrics: Vec<StorageMetricRecord>,
+    pub gaps: Vec<StorageGapRecord>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct StorageContextPackRecord {
+    pub pack_id: String,
+    pub task_hash: String,
+    pub budget: String,
+    pub target_agent: String,
+    pub confidence: f32,
+    pub selected_candidate_ids: Vec<String>,
+    pub warnings: Vec<String>,
+    pub privacy_status: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct StorageProofReportRecord {
+    pub proof_id: String,
+    pub run_id: Option<String>,
+    pub headline_metrics_json: String,
+    pub limitations_json: String,
+    pub privacy_status: String,
+}
+
 pub fn required_table_names() -> &'static [&'static str] {
     REQUIRED_TABLES
 }
@@ -239,6 +333,338 @@ pub fn open_store_report(database_path: impl AsRef<Path>) -> Result<StorageRepor
     })
 }
 
+pub fn sync_inventory_to_store(
+    repo_root: impl AsRef<Path>,
+    inventory_options: &InventoryOptions,
+    config: &StoreConfig,
+) -> Result<StorageIndexReport, StorageError> {
+    let repo_root = canonicalize_storage(repo_root.as_ref())?;
+    let storage = initialize_store(&repo_root, config)?;
+    let inventory = build_inventory(&repo_root, inventory_options).map_err(|error| {
+        StorageError::Canonicalize {
+            path: repo_root.clone(),
+            source: std::io::Error::new(std::io::ErrorKind::Other, error.to_string()),
+        }
+    })?;
+    let connection = open_connection(&storage.database_path)?;
+    enable_foreign_keys(&connection, &storage.database_path)?;
+
+    let existing = existing_file_records(&connection, &storage.database_path, &storage.repo_id)?;
+    let mut seen_paths = BTreeSet::new();
+    let mut reused_records = 0;
+    let mut created_records = 0;
+    let mut updated_records = 0;
+
+    for file in &inventory.files {
+        seen_paths.insert(file.path.clone());
+        let file_id = file_id_for_path(&storage.repo_id, &file.path);
+        let role = role_name(&file.role);
+        let stored = existing.get(&file.path);
+        let unchanged = stored.is_some_and(|stored| {
+            stored.file_id == file_id
+                && stored.language == file.language
+                && stored.role == role
+                && stored.content_hash == file.hash
+                && stored.size_bytes == file.size_bytes
+                && stored.generated == file.generated
+                && stored.ignored == file.ignored
+        });
+        if unchanged {
+            reused_records += 1;
+            continue;
+        }
+
+        sqlite(
+            &storage.database_path,
+            connection.execute(
+                r#"
+INSERT INTO files (
+  file_id, repo_id, path, language, role, content_hash, size_bytes,
+  generated, ignored, updated_at_unix_seconds
+)
+VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)
+ON CONFLICT(repo_id, path) DO UPDATE SET
+  file_id = excluded.file_id,
+  language = excluded.language,
+  role = excluded.role,
+  content_hash = excluded.content_hash,
+  size_bytes = excluded.size_bytes,
+  generated = excluded.generated,
+  ignored = excluded.ignored,
+  updated_at_unix_seconds = excluded.updated_at_unix_seconds
+"#,
+                params![
+                    file_id,
+                    storage.repo_id,
+                    file.path,
+                    file.language,
+                    role,
+                    file.hash,
+                    as_i64(file.size_bytes),
+                    bool_as_i64(file.generated),
+                    bool_as_i64(file.ignored),
+                    as_i64(current_unix_seconds())
+                ],
+            ),
+        )?;
+        if stored.is_some() {
+            updated_records += 1;
+        } else {
+            created_records += 1;
+        }
+    }
+
+    let mut deleted_records = 0;
+    for path in existing.keys().filter(|path| !seen_paths.contains(*path)) {
+        deleted_records += sqlite(
+            &storage.database_path,
+            connection.execute(
+                "DELETE FROM files WHERE repo_id = ?1 AND path = ?2",
+                params![storage.repo_id, path],
+            ),
+        )?;
+    }
+
+    Ok(StorageIndexReport {
+        repo_id: storage.repo_id,
+        repo_root,
+        database_path: storage.database_path,
+        schema_version: storage.schema_version,
+        reused_records,
+        created_records,
+        updated_records,
+        deleted_records,
+        skipped_files: inventory.ignored_count,
+        ignored_paths: inventory.ignored_count,
+        generated_paths: inventory.generated_count,
+        sensitive_paths: inventory.sensitive_count,
+        compatibility: storage.compatibility,
+        diagnostics: storage.diagnostics,
+    })
+}
+
+pub fn storage_status_for_repo(
+    repo_root: impl AsRef<Path>,
+    config: &StoreConfig,
+) -> Result<StorageStatusReport, StorageError> {
+    let repo_root = canonicalize_storage(repo_root.as_ref())?;
+    let repo_id = repo_id_for_path(&repo_root);
+    let paths = store_paths_for_repo_id(&repo_id, config);
+    storage_status_for_path(&paths.database_path)
+}
+
+pub fn storage_status_for_path(
+    database_path: impl AsRef<Path>,
+) -> Result<StorageStatusReport, StorageError> {
+    let database_path = database_path.as_ref().to_path_buf();
+    let schema = inspect_store_schema(&database_path)?;
+    if !database_path.exists() || schema.compatibility != StorageCompatibility::Compatible {
+        return Ok(StorageStatusReport {
+            repo_id: None,
+            repo_root: None,
+            database_path,
+            schema_version: schema.schema_version,
+            file_records: 0,
+            symbol_records: 0,
+            context_pack_records: 0,
+            benchmark_run_records: 0,
+            proof_report_records: 0,
+            compatibility: schema.compatibility,
+            diagnostics: schema.diagnostics,
+        });
+    }
+
+    let connection = open_connection(&database_path)?;
+    let repo = read_repo_identity(&connection, &database_path).ok();
+    Ok(StorageStatusReport {
+        repo_id: repo.as_ref().map(|repo| repo.0.clone()),
+        repo_root: repo.map(|repo| repo.1),
+        database_path: database_path.clone(),
+        schema_version: schema.schema_version,
+        file_records: count_rows(&connection, &database_path, "files")?,
+        symbol_records: count_rows(&connection, &database_path, "symbols")?,
+        context_pack_records: count_rows(&connection, &database_path, "context_packs")?,
+        benchmark_run_records: count_rows(&connection, &database_path, "benchmark_runs")?,
+        proof_report_records: count_rows(&connection, &database_path, "proof_reports")?,
+        compatibility: schema.compatibility,
+        diagnostics: schema.diagnostics,
+    })
+}
+
+pub fn vacuum_store(database_path: impl AsRef<Path>) -> Result<(), StorageError> {
+    let database_path = database_path.as_ref().to_path_buf();
+    let connection = open_connection(&database_path)?;
+    sqlite(&database_path, connection.execute_batch("VACUUM"))
+}
+
+pub fn persist_context_pack_record(
+    repo_root: impl AsRef<Path>,
+    config: &StoreConfig,
+    record: &StorageContextPackRecord,
+) -> Result<StorageStatusReport, StorageError> {
+    let storage = initialize_store(repo_root, config)?;
+    let connection = open_connection(&storage.database_path)?;
+    sqlite(
+        &storage.database_path,
+        connection.execute(
+            r#"
+INSERT INTO context_packs (
+  pack_id, repo_id, task_hash, budget, target_agent, confidence,
+  selected_candidate_ids_json, warnings_json, privacy_status, created_at_unix_seconds
+)
+VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)
+ON CONFLICT(pack_id) DO UPDATE SET
+  task_hash = excluded.task_hash,
+  budget = excluded.budget,
+  target_agent = excluded.target_agent,
+  confidence = excluded.confidence,
+  selected_candidate_ids_json = excluded.selected_candidate_ids_json,
+  warnings_json = excluded.warnings_json,
+  privacy_status = excluded.privacy_status
+"#,
+            params![
+                record.pack_id,
+                storage.repo_id,
+                record.task_hash,
+                record.budget,
+                record.target_agent,
+                record.confidence,
+                json_string(&record.selected_candidate_ids)?,
+                json_string(&record.warnings)?,
+                record.privacy_status,
+                as_i64(current_unix_seconds())
+            ],
+        ),
+    )?;
+    storage_status_for_path(&storage.database_path)
+}
+
+pub fn persist_benchmark_run_record(
+    repo_root: impl AsRef<Path>,
+    config: &StoreConfig,
+    record: &StorageBenchmarkRunRecord,
+) -> Result<StorageStatusReport, StorageError> {
+    let storage = initialize_store(repo_root, config)?;
+    let connection = open_connection(&storage.database_path)?;
+    sqlite(
+        &storage.database_path,
+        connection.execute(
+            r#"
+INSERT INTO benchmark_runs (
+  run_id, repo_id, suite_id, revision_id, budget, privacy_status, created_at_unix_seconds
+)
+VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)
+ON CONFLICT(run_id) DO UPDATE SET
+  suite_id = excluded.suite_id,
+  revision_id = excluded.revision_id,
+  budget = excluded.budget,
+  privacy_status = excluded.privacy_status
+"#,
+            params![
+                record.run_id,
+                storage.repo_id,
+                record.suite_id,
+                record.revision_id,
+                record.budget,
+                record.privacy_status,
+                as_i64(current_unix_seconds())
+            ],
+        ),
+    )?;
+    sqlite(
+        &storage.database_path,
+        connection.execute(
+            "DELETE FROM benchmark_metrics WHERE run_id = ?1",
+            params![record.run_id],
+        ),
+    )?;
+    sqlite(
+        &storage.database_path,
+        connection.execute(
+            "DELETE FROM retrieval_gaps WHERE run_id = ?1",
+            params![record.run_id],
+        ),
+    )?;
+    for metric in &record.metrics {
+        sqlite(
+            &storage.database_path,
+            connection.execute(
+                r#"
+INSERT INTO benchmark_metrics (metric_id, run_id, metric_name, metric_value, budget, target_kind)
+VALUES (?1, ?2, ?3, ?4, ?5, ?6)
+"#,
+                params![
+                    metric_id(&record.run_id, &metric.name, metric.budget.as_deref()),
+                    record.run_id,
+                    metric.name,
+                    metric.value,
+                    metric.budget,
+                    metric.target_kind
+                ],
+            ),
+        )?;
+    }
+    for gap in &record.gaps {
+        sqlite(
+            &storage.database_path,
+            connection.execute(
+                r#"
+INSERT INTO retrieval_gaps (
+  gap_id, run_id, family, recommendation_area, target_status, safe_path, count
+)
+VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)
+"#,
+                params![
+                    gap_id(&record.run_id, gap),
+                    record.run_id,
+                    gap.family,
+                    gap.recommendation_area,
+                    gap.target_status,
+                    gap.safe_path,
+                    as_i64(gap.count as u64)
+                ],
+            ),
+        )?;
+    }
+    storage_status_for_path(&storage.database_path)
+}
+
+pub fn persist_proof_report_record(
+    repo_root: impl AsRef<Path>,
+    config: &StoreConfig,
+    record: &StorageProofReportRecord,
+) -> Result<StorageStatusReport, StorageError> {
+    let storage = initialize_store(repo_root, config)?;
+    let connection = open_connection(&storage.database_path)?;
+    sqlite(
+        &storage.database_path,
+        connection.execute(
+            r#"
+INSERT INTO proof_reports (
+  proof_id, repo_id, run_id, headline_metrics_json, limitations_json,
+  privacy_status, created_at_unix_seconds
+)
+VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)
+ON CONFLICT(proof_id) DO UPDATE SET
+  run_id = excluded.run_id,
+  headline_metrics_json = excluded.headline_metrics_json,
+  limitations_json = excluded.limitations_json,
+  privacy_status = excluded.privacy_status
+"#,
+            params![
+                record.proof_id,
+                storage.repo_id,
+                record.run_id,
+                record.headline_metrics_json,
+                record.limitations_json,
+                record.privacy_status,
+                as_i64(current_unix_seconds())
+            ],
+        ),
+    )?;
+    storage_status_for_path(&storage.database_path)
+}
+
 fn store_paths_for_repo_id(repo_id: &str, config: &StoreConfig) -> StorePaths {
     let database_path = config.path_override.clone().unwrap_or_else(|| {
         ctxpack_home()
@@ -250,6 +676,107 @@ fn store_paths_for_repo_id(repo_id: &str, config: &StoreConfig) -> StorePaths {
         repo_id: repo_id.to_string(),
         database_path,
     }
+}
+
+#[derive(Debug, Clone)]
+struct StoredFileRecord {
+    file_id: String,
+    language: Option<String>,
+    role: String,
+    content_hash: String,
+    size_bytes: u64,
+    generated: bool,
+    ignored: bool,
+}
+
+fn existing_file_records(
+    connection: &Connection,
+    path: &Path,
+    repo_id: &str,
+) -> Result<BTreeMap<String, StoredFileRecord>, StorageError> {
+    let mut statement = sqlite(
+        path,
+        connection.prepare(
+            r#"
+SELECT path, file_id, language, role, content_hash, size_bytes, generated, ignored
+FROM files WHERE repo_id = ?1
+"#,
+        ),
+    )?;
+    let rows = sqlite(
+        path,
+        statement.query_map(params![repo_id], |row| {
+            Ok((
+                row.get::<_, String>(0)?,
+                StoredFileRecord {
+                    file_id: row.get(1)?,
+                    language: row.get(2)?,
+                    role: row.get(3)?,
+                    content_hash: row.get(4)?,
+                    size_bytes: as_u64(row.get::<_, i64>(5)?),
+                    generated: row.get::<_, i64>(6)? != 0,
+                    ignored: row.get::<_, i64>(7)? != 0,
+                },
+            ))
+        }),
+    )?;
+    let mut records = BTreeMap::new();
+    for row in rows {
+        let (path, record) = sqlite(path, row)?;
+        records.insert(path, record);
+    }
+    Ok(records)
+}
+
+fn count_rows(connection: &Connection, path: &Path, table: &str) -> Result<usize, StorageError> {
+    let query = format!("SELECT COUNT(*) FROM {table}");
+    let count = sqlite(
+        path,
+        connection.query_row(&query, [], |row| row.get::<_, i64>(0)),
+    )?;
+    Ok(as_u64(count) as usize)
+}
+
+fn file_id_for_path(repo_id: &str, path: &str) -> String {
+    let hash = blake3::hash(format!("{repo_id}:{path}").as_bytes())
+        .to_hex()
+        .to_string();
+    format!("file:{hash}")
+}
+
+fn role_name(role: &FileRole) -> String {
+    format!("{:?}", role).to_lowercase()
+}
+
+fn json_string<T: Serialize>(value: &T) -> Result<String, StorageError> {
+    serde_json::to_string(value).map_err(|source| StorageError::Sqlite {
+        path: PathBuf::from("serde_json"),
+        source: rusqlite::Error::ToSqlConversionFailure(Box::new(source)),
+    })
+}
+
+fn metric_id(run_id: &str, name: &str, budget: Option<&str>) -> String {
+    let hash = blake3::hash(format!("{run_id}:{name}:{}", budget.unwrap_or("")).as_bytes())
+        .to_hex()
+        .to_string();
+    format!("metric:{hash}")
+}
+
+fn gap_id(run_id: &str, gap: &StorageGapRecord) -> String {
+    let hash = blake3::hash(
+        format!(
+            "{}:{}:{}:{}:{}",
+            run_id,
+            gap.family,
+            gap.recommendation_area.as_deref().unwrap_or(""),
+            gap.target_status.as_deref().unwrap_or(""),
+            gap.safe_path.as_deref().unwrap_or("")
+        )
+        .as_bytes(),
+    )
+    .to_hex()
+    .to_string();
+    format!("gap:{hash}")
 }
 
 fn canonicalize_storage(path: &Path) -> Result<PathBuf, StorageError> {
@@ -720,6 +1247,14 @@ fn as_u64(value: i64) -> u64 {
     u64::try_from(value).unwrap_or(0)
 }
 
+fn bool_as_i64(value: bool) -> i64 {
+    if value {
+        1
+    } else {
+        0
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1013,6 +1548,145 @@ mod tests {
         assert!(!database_text.contains("CTXPACK_SHOULD_NOT_STORE_PROMPT_TEXT"));
 
         std::env::remove_var("CTXPACK_HOME");
+    }
+
+    #[test]
+    fn sync_inventory_reports_reused_updated_created_and_deleted_records() {
+        let temp = tempfile::tempdir().unwrap();
+        let repo = temp.path().join("repo");
+        let config = StoreConfig {
+            path_override: Some(temp.path().join("store.sqlite3")),
+        };
+        fs::create_dir_all(repo.join(".git")).unwrap();
+        fs::create_dir_all(repo.join("src")).unwrap();
+        fs::write(repo.join("src/lib.rs"), "pub fn demo() {}\n").unwrap();
+        fs::write(repo.join("src/old.rs"), "pub fn old() {}\n").unwrap();
+
+        let first = sync_inventory_to_store(&repo, &InventoryOptions::default(), &config).unwrap();
+        assert_eq!(first.created_records, 2);
+        assert_eq!(first.reused_records, 0);
+        assert_eq!(first.updated_records, 0);
+        assert_eq!(first.deleted_records, 0);
+
+        let second = sync_inventory_to_store(&repo, &InventoryOptions::default(), &config).unwrap();
+        assert_eq!(second.reused_records, 2);
+        assert_eq!(second.created_records, 0);
+        assert_eq!(second.updated_records, 0);
+        assert_eq!(second.deleted_records, 0);
+
+        fs::write(repo.join("src/lib.rs"), "pub fn changed() {}\n").unwrap();
+        fs::remove_file(repo.join("src/old.rs")).unwrap();
+        fs::write(repo.join("src/new.rs"), "pub fn new() {}\n").unwrap();
+        let third = sync_inventory_to_store(&repo, &InventoryOptions::default(), &config).unwrap();
+        assert_eq!(third.reused_records, 0);
+        assert_eq!(third.created_records, 1);
+        assert_eq!(third.updated_records, 1);
+        assert_eq!(third.deleted_records, 1);
+
+        let status = storage_status_for_repo(&repo, &config).unwrap();
+        assert_eq!(status.file_records, 2);
+        assert_eq!(status.compatibility, StorageCompatibility::Compatible);
+
+        drop(temp);
+    }
+
+    #[test]
+    fn sync_inventory_keeps_source_content_out_of_storage() {
+        let temp = tempfile::tempdir().unwrap();
+        let repo = temp.path().join("repo");
+        let config = StoreConfig {
+            path_override: Some(temp.path().join("store.sqlite3")),
+        };
+        fs::create_dir_all(repo.join(".git")).unwrap();
+        fs::create_dir_all(repo.join("src")).unwrap();
+        fs::write(
+            repo.join("src/lib.rs"),
+            "pub fn leak() { /* CTXPACK_INCREMENTAL_SOURCE_SENTINEL */ }\n",
+        )
+        .unwrap();
+
+        let report = sync_inventory_to_store(&repo, &InventoryOptions::default(), &config).unwrap();
+        let bytes = fs::read(&report.database_path).unwrap();
+        let database_text = String::from_utf8_lossy(&bytes);
+
+        assert!(!database_text.contains("CTXPACK_INCREMENTAL_SOURCE_SENTINEL"));
+
+        drop(temp);
+    }
+
+    #[test]
+    fn persists_pack_benchmark_and_proof_metadata_without_source_text() {
+        let temp = tempfile::tempdir().unwrap();
+        let repo = temp.path().join("repo");
+        fs::create_dir_all(repo.join(".git")).unwrap();
+        fs::write(repo.join("README.md"), "# Repo\n").unwrap();
+        let config = StoreConfig {
+            path_override: Some(temp.path().join("store.sqlite3")),
+        };
+
+        let pack_status = persist_context_pack_record(
+            &repo,
+            &config,
+            &StorageContextPackRecord {
+                pack_id: "pack-1".to_string(),
+                task_hash: "task-hash".to_string(),
+                budget: "brief".to_string(),
+                target_agent: "codex".to_string(),
+                confidence: 0.7,
+                selected_candidate_ids: vec!["file:src/lib.rs".to_string()],
+                warnings: vec!["CTXPACK_SHOULD_NOT_STORE_PROMPT_TEXT".to_string()],
+                privacy_status: "local_only".to_string(),
+            },
+        )
+        .unwrap();
+        assert_eq!(pack_status.context_pack_records, 1);
+
+        let benchmark_status = persist_benchmark_run_record(
+            &repo,
+            &config,
+            &StorageBenchmarkRunRecord {
+                run_id: "run-1".to_string(),
+                suite_id: "suite-1".to_string(),
+                revision_id: Some("rev".to_string()),
+                budget: Some("10".to_string()),
+                privacy_status: "local_only".to_string(),
+                metrics: vec![StorageMetricRecord {
+                    name: "fileRecallAt10".to_string(),
+                    value: 0.9,
+                    budget: Some("10".to_string()),
+                    target_kind: Some("file".to_string()),
+                }],
+                gaps: vec![StorageGapRecord {
+                    family: "docs".to_string(),
+                    recommendation_area: Some("storage".to_string()),
+                    target_status: Some("currentReachable".to_string()),
+                    safe_path: Some("README.md".to_string()),
+                    count: 1,
+                }],
+            },
+        )
+        .unwrap();
+        assert_eq!(benchmark_status.benchmark_run_records, 1);
+
+        let proof_status = persist_proof_report_record(
+            &repo,
+            &config,
+            &StorageProofReportRecord {
+                proof_id: "proof-1".to_string(),
+                run_id: Some("run-1".to_string()),
+                headline_metrics_json: r#"[{"label":"Recall","value":0.9}]"#.to_string(),
+                limitations_json: r#"["large repos need more coverage"]"#.to_string(),
+                privacy_status: "local_only".to_string(),
+            },
+        )
+        .unwrap();
+        assert_eq!(proof_status.proof_report_records, 1);
+
+        let bytes = fs::read(&proof_status.database_path).unwrap();
+        let database_text = String::from_utf8_lossy(&bytes);
+        assert!(!database_text.contains("CTXPACK_SHOULD_NOT_STORE_SOURCE_BODY"));
+
+        drop(temp);
     }
 
     #[test]

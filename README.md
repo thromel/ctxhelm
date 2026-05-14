@@ -75,6 +75,7 @@ For the longer walkthrough, including setup validation, deterministic MCP proof 
 - [Release and install guide](docs/release.md)
 - [Agent setup matrix](docs/agent-setup.md)
 - [Retrieval benchmarking](docs/benchmarking.md)
+- [Storage](docs/storage.md)
 - [Troubleshooting](docs/troubleshooting.md)
 
 ## MCP Runtime
@@ -123,6 +124,16 @@ ctxpack index --repo /path/to/repo
 ```
 
 The inventory respects `.gitignore`, `.ctxpackignore`, and `.cursorignore`, excludes sensitive/generated files by default, and writes JSON under `~/.ctxpack/repos/<repo-id>/inventory.json`.
+
+To also sync source-free file metadata into the local SQLite store:
+
+```bash
+ctxpack index --repo /path/to/repo --store
+ctxpack storage status --repo /path/to/repo
+```
+
+See [docs/storage.md](docs/storage.md) for storage location, privacy guarantees,
+repair/reset commands, and release-gate smoke coverage.
 
 Generated and sensitive files require explicit opt-in:
 

@@ -109,6 +109,7 @@ The release gate runs these required checks:
 - selected or extracted binary `ctxpack --version`
 - selected or extracted binary `ctxpack --help`
 - `scripts/smoke-first-pack.sh`
+- `scripts/smoke-storage.sh`
 - `scripts/smoke-mcp-protocol.sh` from a wrong cwd with an explicit `--repo`/MCP `repo` argument
 - optional `ctxpack eval proof` benchmark product proof when `CTXPACK_BENCHMARK_CONFIG` is set
 
@@ -117,7 +118,7 @@ The optional real-client evidence wrappers are:
 - `scripts/smoke-codex-mcp.sh`
 - `scripts/smoke-claude-mcp.sh`
 
-The gate passes the same selected or extracted `CTXPACK_BIN` into the first-pack smoke, MCP protocol smoke, and optional real-client wrappers. Real-client proof is not required by default. Use these environment variables when needed:
+The gate passes the same selected or extracted `CTXPACK_BIN` into the first-pack smoke, storage smoke, MCP protocol smoke, and optional real-client wrappers. Real-client proof is not required by default. Use these environment variables when needed:
 
 - `CTXPACK_SKIP_REAL_CLIENT=1` keeps Codex and Claude checks deterministic-only after the protocol proof.
 - `CTXPACK_REQUIRE_REAL_CLIENT=1` makes missing Codex or Claude tool-call evidence fail the gate.

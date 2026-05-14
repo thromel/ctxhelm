@@ -6,6 +6,7 @@ repo_root="$(cd "$script_dir/.." && pwd -P)"
 release_package_script="$repo_root/scripts/release-package.sh"
 check_release_docs_script="$repo_root/scripts/check-release-docs.sh"
 smoke_first_pack_script="$repo_root/scripts/smoke-first-pack.sh"
+smoke_storage_script="$repo_root/scripts/smoke-storage.sh"
 smoke_mcp_protocol_script="$repo_root/scripts/smoke-mcp-protocol.sh"
 smoke_codex_mcp_script="$repo_root/scripts/smoke-codex-mcp.sh"
 smoke_claude_mcp_script="$repo_root/scripts/smoke-claude-mcp.sh"
@@ -102,6 +103,9 @@ log_step "selected binary identity"
 
 log_step "first-pack smoke"
 CTXPACK_BIN="$ctxpack_bin" bash "$smoke_first_pack_script"
+
+log_step "storage smoke"
+CTXPACK_BIN="$ctxpack_bin" bash "$smoke_storage_script"
 
 log_step "wrong-cwd MCP protocol smoke"
 CTXPACK_BIN="$ctxpack_bin" \

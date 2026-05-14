@@ -2,6 +2,26 @@
 
 ## Shipped
 
+### v1.3 Production Storage (Shipped: 2026-05-14)
+
+**Delivered:** Durable, source-free SQLite storage for repository intelligence, incremental inventory sync, pack/eval/proof metadata persistence, storage operations, docs, and release-gate smoke coverage.
+
+**Phases completed:** Phases 13-16, 16 plans total
+
+**Key accomplishments:**
+
+- Added a versioned source-free SQLite schema with metadata, migration history, and privacy labels.
+- Added `ctxpack index --store` with reused/created/updated/deleted safe file record counts.
+- Added source-free pack, historical eval, benchmark, retrieval-gap, and proof metadata persistence.
+- Added `ctxpack storage init/status/repair/vacuum/reset` with reset dry-run behavior.
+- Added `docs/storage.md` and `scripts/smoke-storage.sh`, wired into release docs and release gate.
+
+**Archive:**
+
+- Roadmap: `.planning/milestones/v1.3-ROADMAP.md`
+- Requirements: `.planning/milestones/v1.3-REQUIREMENTS.md`
+- Audit: `.planning/milestones/v1.3-MILESTONE-AUDIT.md`
+
 ### v1.2 Retrieval Quality Proof (Shipped: 2026-05-14)
 
 **Delivered:** Repeatable, source-free retrieval-quality proof with benchmark suites, fixed-budget metrics, baseline comparisons, gap taxonomy, trend comparison, and product proof generation.
@@ -42,23 +62,6 @@
 - Roadmap: `.planning/milestones/v1.1-ROADMAP.md`
 - Requirements: `.planning/milestones/v1.1-REQUIREMENTS.md`
 - Audit: `.planning/milestones/v1.1-MILESTONE-AUDIT.md`
-
-## Active
-
-### v1.3 Production Storage
-
-**Goal:** Replace ad hoc JSON/cache behavior with durable, fast, local storage for inventory, symbols, history, traces, packs, benchmark results, and schema/version metadata.
-
-**Why now:** v1.2 proved ctxpack's value with source-free benchmark evidence. The next adoption and scaling blocker is making repository intelligence, proof reports, and repeated benchmark comparisons durable and fast without weakening the local-first privacy contract.
-
-**Planned phases:** Phases 13-16
-
-**Definition of done:**
-
-- Maintainer can initialize and inspect a versioned local SQLite store for repo metadata, symbols, chunks, edges, tests, git history, traces, packs, and benchmark results.
-- Re-indexing a changed repo updates only stale records when possible and reports clear freshness, migration, and repair diagnostics.
-- Benchmark, eval, pack, and proof metadata can be persisted and compared without storing source snippets or prompt text.
-- Storage repair, cleanup, and release-gate checks preserve the source-free, read-only product contract.
 
 ## Planned Product Vision
 

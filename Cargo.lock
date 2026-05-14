@@ -251,6 +251,7 @@ dependencies = [
  "ctxpack-index",
  "ctxpack-mcp",
  "predicates",
+ "serde",
  "serde_json",
  "tempfile",
  "uuid",

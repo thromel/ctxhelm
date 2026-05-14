@@ -3,23 +3,28 @@ use clap::{Args, Parser, Subcommand, ValueEnum};
 use ctxpack_compiler::{
     build_product_proof_report, compare_benchmark_suite_reports,
     compile_context_pack_with_plan_and_paths_for_agent, eval_trace_for_pack, eval_trace_for_plan,
-    evaluate_historical_commits, generate_context_cards, load_benchmark_suite_report,
-    prepare_context_plan_with_paths, render_pack_markdown, run_benchmark_suite,
-    BenchmarkComparisonReport, BenchmarkRegressionThreshold, BenchmarkSuiteReport,
-    ContextCardsOptions, ContextCardsReport, HistoricalEvalOptions, HistoricalEvalReport,
-    ProductProofReport,
+    evaluate_historical_commits, generate_context_cards, load_benchmark_suite_config,
+    load_benchmark_suite_report, prepare_context_plan_with_paths, render_pack_markdown,
+    run_benchmark_suite, BenchmarkComparisonReport, BenchmarkRegressionThreshold,
+    BenchmarkSuiteReport, ContextCardsOptions, ContextCardsReport, HistoricalEvalOptions,
+    HistoricalEvalReport, ProductProofReport,
 };
 use ctxpack_core::{
     run_init, run_setup_check, AgentAdapter, Diagnostic, DiagnosticSeverity, EvalTrace, InitAction,
-    InitOptions, InitReport, PackBudget, RepoRoot, SetupCheckReport, SetupCheckStatus, TaskType,
+    InitOptions, InitReport, PackBudget, PrivacyStatus, RepoRoot, SetupCheckReport,
+    SetupCheckStatus, TaskType,
 };
 use ctxpack_index::{
     co_change_hints, current_diff_summary, dependency_edges, extract_symbols, lexical_search,
-    list_eval_traces, related_dependency_edges, related_tests, symbol_search,
-    try_append_eval_trace, write_inventory, CoChangeOptions, CurrentDiffOptions, DependencyOptions,
-    InventoryOptions, InventoryReport, SearchOptions, SymbolOptions,
+    list_eval_traces, related_dependency_edges, related_tests, storage_status_for_repo,
+    symbol_search, sync_inventory_to_store, try_append_eval_trace, vacuum_store, write_inventory,
+    CoChangeOptions, CurrentDiffOptions, DependencyOptions, InventoryOptions, InventoryReport,
+    SearchOptions, StorageBenchmarkRunRecord, StorageContextPackRecord, StorageGapRecord,
+    StorageIndexReport, StorageMetricRecord, StorageProofReportRecord, StorageReport,
+    StorageStatusReport, StoreConfig, SymbolOptions,
 };
 use std::collections::BTreeSet;
+use std::fs;
 use std::path::Path;
 use std::path::PathBuf;
 
@@ -51,6 +56,7 @@ enum Command {
     RelatedTests(RelatedTestsArgs),
     CoChanges(CoChangesArgs),
     Dependencies(DependenciesArgs),
+    Storage(StorageArgs),
     Cards(CardsArgs),
     Eval(EvalArgs),
     ServeMcp,
@@ -91,6 +97,50 @@ struct IndexArgs {
     include_generated: bool,
     #[arg(long)]
     include_sensitive: bool,
+    #[arg(long, help = "Also sync safe inventory records into SQLite storage.")]
+    store: bool,
+    #[arg(long, help = "Override the SQLite storage database path.")]
+    store_path: Option<PathBuf>,
+}
+
+#[derive(Debug, Args)]
+struct StorageArgs {
+    #[command(subcommand)]
+    command: StorageCommand,
+}
+
+#[derive(Debug, Subcommand)]
+enum StorageCommand {
+    Init(StoragePathArgs),
+    Status(StoragePathArgs),
+    Repair(StoragePathArgs),
+    Vacuum(StoragePathArgs),
+    Reset(StorageResetArgs),
+}
+
+#[derive(Debug, Args)]
+struct StoragePathArgs {
+    #[arg(long)]
+    repo: Option<PathBuf>,
+    #[arg(long, help = "Override the SQLite storage database path.")]
+    path: Option<PathBuf>,
+    #[arg(long, value_enum, default_value_t = PackFormat::Markdown)]
+    format: PackFormat,
+}
+
+#[derive(Debug, Args)]
+struct StorageResetArgs {
+    #[arg(long)]
+    repo: Option<PathBuf>,
+    #[arg(long, help = "Override the SQLite storage database path.")]
+    path: Option<PathBuf>,
+    #[arg(
+        long,
+        help = "Actually delete the storage database. Without this, reset is a dry run."
+    )]
+    yes: bool,
+    #[arg(long, value_enum, default_value_t = PackFormat::Markdown)]
+    format: PackFormat,
 }
 
 #[derive(Debug, Args)]
@@ -208,6 +258,10 @@ struct GetPackArgs {
         help = "Disable local eval trace recording for this read command."
     )]
     no_trace: bool,
+    #[arg(long, help = "Persist source-free pack metadata into SQLite storage.")]
+    store: bool,
+    #[arg(long, help = "Override the SQLite storage database path.")]
+    store_path: Option<PathBuf>,
 }
 
 #[derive(Debug, Args)]
@@ -256,6 +310,10 @@ struct EvalHistoryArgs {
     target_agent: String,
     #[arg(long, value_enum, default_value_t = PackFormat::Markdown)]
     format: PackFormat,
+    #[arg(long, help = "Persist source-free eval metrics into SQLite storage.")]
+    store: bool,
+    #[arg(long, help = "Override the SQLite storage database path.")]
+    store_path: Option<PathBuf>,
 }
 
 #[derive(Debug, Args)]
@@ -267,6 +325,11 @@ struct EvalBenchmarkArgs {
     config: PathBuf,
     #[arg(long, value_enum, default_value_t = PackFormat::Markdown)]
     format: PackFormat,
+    #[arg(
+        long,
+        help = "Persist source-free benchmark metadata into each repo's SQLite storage."
+    )]
+    store: bool,
 }
 
 #[derive(Debug, Args)]
@@ -294,6 +357,11 @@ struct EvalProofArgs {
     config: PathBuf,
     #[arg(long, value_enum, default_value_t = PackFormat::Markdown)]
     format: PackFormat,
+    #[arg(
+        long,
+        help = "Persist source-free product-proof metadata into each repo's SQLite storage."
+    )]
+    store: bool,
 }
 
 #[derive(Debug, Clone, ValueEnum)]
@@ -372,6 +440,19 @@ fn main() -> Result<()> {
                 },
             )?;
             print_inventory_report(&report);
+            if args.store {
+                let storage = sync_inventory_to_store(
+                    &repo.path,
+                    &InventoryOptions {
+                        include_generated: args.include_generated,
+                        include_sensitive: args.include_sensitive,
+                    },
+                    &StoreConfig {
+                        path_override: args.store_path,
+                    },
+                )?;
+                print_storage_index_report(&storage);
+            }
         }
         Command::PrepareTask(args) => {
             let start = args.repo.clone().unwrap_or(std::env::current_dir()?);
@@ -407,6 +488,39 @@ fn main() -> Result<()> {
                     eval_trace_for_pack(&repo.path, &args.task, &args.target_agent, &plan, &pack);
                 pack.diagnostics
                     .extend(try_append_eval_trace(&repo.path, &trace).diagnostics);
+            }
+            if args.store {
+                let selected_candidate_ids = plan
+                    .retrieval_candidates
+                    .iter()
+                    .filter_map(|candidate| candidate.path.clone())
+                    .collect::<Vec<_>>();
+                let storage = ctxpack_index::persist_context_pack_record(
+                    &repo.path,
+                    &StoreConfig {
+                        path_override: args.store_path,
+                    },
+                    &StorageContextPackRecord {
+                        pack_id: pack.id.to_string(),
+                        task_hash: pack.task_hash.clone(),
+                        budget: json_label(&pack.budget),
+                        target_agent: pack.target_agent.clone(),
+                        confidence: pack.confidence,
+                        selected_candidate_ids,
+                        warnings: pack.warnings.clone(),
+                        privacy_status: privacy_status_label(&pack.privacy_status),
+                    },
+                )?;
+                pack.diagnostics.push(Diagnostic {
+                    code: "storage_pack_metadata_persisted".to_string(),
+                    severity: DiagnosticSeverity::Info,
+                    message: format!(
+                        "Stored source-free pack metadata in {}",
+                        storage.database_path.display()
+                    ),
+                    count: 1,
+                    paths: vec![storage.database_path.display().to_string()],
+                });
             }
             match args.format {
                 PackFormat::Markdown => println!("{}", render_pack_markdown(&pack)),
@@ -458,6 +572,121 @@ fn main() -> Result<()> {
                 related_dependency_edges(&repo.path, &args.paths, &options)?
             };
             println!("{}", serde_json::to_string_pretty(&results)?);
+        }
+        Command::Storage(args) => {
+            match args.command {
+                StorageCommand::Init(args) => {
+                    let start = args.repo.clone().unwrap_or(std::env::current_dir()?);
+                    let repo = RepoRoot::discover_from(&start)?;
+                    let report = ctxpack_index::initialize_store(
+                        &repo.path,
+                        &StoreConfig {
+                            path_override: args.path,
+                        },
+                    )?;
+                    match args.format {
+                        PackFormat::Markdown => print_storage_report(&report),
+                        PackFormat::Json => println!("{}", serde_json::to_string_pretty(&report)?),
+                    }
+                }
+                StorageCommand::Status(args) => {
+                    let start = args.repo.clone().unwrap_or(std::env::current_dir()?);
+                    let repo = RepoRoot::discover_from(&start)?;
+                    let report = storage_status_for_repo(
+                        &repo.path,
+                        &StoreConfig {
+                            path_override: args.path,
+                        },
+                    )?;
+                    match args.format {
+                        PackFormat::Markdown => print_storage_status_report(&report),
+                        PackFormat::Json => println!("{}", serde_json::to_string_pretty(&report)?),
+                    }
+                }
+                StorageCommand::Repair(args) => {
+                    let start = args.repo.clone().unwrap_or(std::env::current_dir()?);
+                    let repo = RepoRoot::discover_from(&start)?;
+                    let report = ctxpack_index::initialize_store(
+                        &repo.path,
+                        &StoreConfig {
+                            path_override: args.path,
+                        },
+                    )?;
+                    match args.format {
+                        PackFormat::Markdown => print_storage_report(&report),
+                        PackFormat::Json => println!("{}", serde_json::to_string_pretty(&report)?),
+                    }
+                }
+                StorageCommand::Vacuum(args) => {
+                    let start = args.repo.clone().unwrap_or(std::env::current_dir()?);
+                    let repo = RepoRoot::discover_from(&start)?;
+                    let status = storage_status_for_repo(
+                        &repo.path,
+                        &StoreConfig {
+                            path_override: args.path,
+                        },
+                    )?;
+                    vacuum_store(&status.database_path)?;
+                    let report = storage_status_for_repo(
+                        &repo.path,
+                        &StoreConfig {
+                            path_override: Some(status.database_path),
+                        },
+                    )?;
+                    match args.format {
+                        PackFormat::Markdown => print_storage_status_report(&report),
+                        PackFormat::Json => println!("{}", serde_json::to_string_pretty(&report)?),
+                    }
+                }
+                StorageCommand::Reset(args) => {
+                    let start = args.repo.clone().unwrap_or(std::env::current_dir()?);
+                    let repo = RepoRoot::discover_from(&start)?;
+                    let status = storage_status_for_repo(
+                        &repo.path,
+                        &StoreConfig {
+                            path_override: args.path,
+                        },
+                    )?;
+                    if args.yes && status.database_path.exists() {
+                        fs::remove_file(&status.database_path)?;
+                    }
+                    let report = StorageStatusReport {
+                        file_records: if args.yes { 0 } else { status.file_records },
+                        symbol_records: if args.yes { 0 } else { status.symbol_records },
+                        context_pack_records: if args.yes {
+                            0
+                        } else {
+                            status.context_pack_records
+                        },
+                        benchmark_run_records: if args.yes {
+                            0
+                        } else {
+                            status.benchmark_run_records
+                        },
+                        proof_report_records: if args.yes {
+                            0
+                        } else {
+                            status.proof_report_records
+                        },
+                        diagnostics: if args.yes {
+                            Vec::new()
+                        } else {
+                            vec![Diagnostic {
+                            code: "storage_reset_dry_run".to_string(),
+                            severity: DiagnosticSeverity::Warning,
+                            message: "Storage reset was a dry run; pass --yes to delete the database.".to_string(),
+                            count: 1,
+                            paths: vec![status.database_path.display().to_string()],
+                        }]
+                        },
+                        ..status
+                    };
+                    match args.format {
+                        PackFormat::Markdown => print_storage_status_report(&report),
+                        PackFormat::Json => println!("{}", serde_json::to_string_pretty(&report)?),
+                    }
+                }
+            }
         }
         Command::Cards(args) => match args.command {
             CardsCommand::Generate(args) => {
@@ -514,13 +743,34 @@ fn main() -> Result<()> {
                         head: args.head,
                     },
                 )?;
+                if args.store {
+                    let status = persist_historical_eval_report(
+                        &repo.path,
+                        &StoreConfig {
+                            path_override: args.store_path,
+                        },
+                        &report,
+                    )?;
+                    eprintln!(
+                        "Stored source-free eval metadata in {}",
+                        status.database_path.display()
+                    );
+                }
                 match args.format {
                     PackFormat::Markdown => println!("{}", render_historical_eval_report(&report)),
                     PackFormat::Json => println!("{}", serde_json::to_string_pretty(&report)?),
                 }
             }
             EvalCommand::Benchmark(args) => {
+                let config = if args.store {
+                    Some(load_benchmark_suite_config(&args.config)?)
+                } else {
+                    None
+                };
                 let report = run_benchmark_suite(&args.config)?;
+                if let Some(config) = config.as_ref() {
+                    persist_benchmark_suite_report(config, &report, &args.config)?;
+                }
                 match args.format {
                     PackFormat::Markdown => println!("{}", render_benchmark_suite_report(&report)),
                     PackFormat::Json => println!("{}", serde_json::to_string_pretty(&report)?),
@@ -538,8 +788,16 @@ fn main() -> Result<()> {
                 }
             }
             EvalCommand::Proof(args) => {
+                let config = if args.store {
+                    Some(load_benchmark_suite_config(&args.config)?)
+                } else {
+                    None
+                };
                 let benchmark = run_benchmark_suite(&args.config)?;
                 let report = build_product_proof_report(benchmark);
+                if let Some(config) = config.as_ref() {
+                    persist_product_proof_report(config, &report, &args.config)?;
+                }
                 match args.format {
                     PackFormat::Markdown => println!("{}", render_product_proof_report(&report)),
                     PackFormat::Json => println!("{}", serde_json::to_string_pretty(&report)?),
@@ -666,6 +924,223 @@ fn print_inventory_report(report: &InventoryReport) {
         report.sensitive_count
     );
     println!("- inventory: {}", report.inventory_path.display());
+}
+
+fn print_storage_index_report(report: &StorageIndexReport) {
+    println!("Storage sync {}", report.repo_root.display());
+    println!("- repo id: {}", report.repo_id);
+    println!("- database: {}", report.database_path.display());
+    println!("- schema version: {}", report.schema_version);
+    println!("- compatibility: {:?}", report.compatibility);
+    println!("- reused records: {}", report.reused_records);
+    println!("- created records: {}", report.created_records);
+    println!("- updated records: {}", report.updated_records);
+    println!("- deleted records: {}", report.deleted_records);
+    println!("- skipped files: {}", report.skipped_files);
+    println!("- generated paths: {}", report.generated_paths);
+    println!("- sensitive paths: {}", report.sensitive_paths);
+    print_diagnostics(&report.diagnostics);
+}
+
+fn print_storage_report(report: &StorageReport) {
+    println!("# ctxpack Storage");
+    println!();
+    println!("- Repo ID: `{}`", report.repo_id);
+    println!("- Repo root: `{}`", report.repo_root.display());
+    println!("- Database: `{}`", report.database_path.display());
+    println!("- Schema version: `{}`", report.schema_version);
+    println!("- ctxpack version: `{}`", report.ctxpack_version);
+    println!("- Ranking version: `{}`", report.ranking_version);
+    println!("- Compiler version: `{}`", report.compiler_version);
+    println!("- Privacy: `{:?}`", report.privacy_mode);
+    println!("- Compatibility: `{:?}`", report.compatibility);
+    print_diagnostics(&report.diagnostics);
+}
+
+fn print_storage_status_report(report: &StorageStatusReport) {
+    println!("# ctxpack Storage Status");
+    println!();
+    if let Some(repo_id) = &report.repo_id {
+        println!("- Repo ID: `{repo_id}`");
+    }
+    if let Some(repo_root) = &report.repo_root {
+        println!("- Repo root: `{}`", repo_root.display());
+    }
+    println!("- Database: `{}`", report.database_path.display());
+    println!("- Schema version: `{:?}`", report.schema_version);
+    println!("- Compatibility: `{:?}`", report.compatibility);
+    println!("- File records: `{}`", report.file_records);
+    println!("- Symbol records: `{}`", report.symbol_records);
+    println!("- Context pack records: `{}`", report.context_pack_records);
+    println!(
+        "- Benchmark run records: `{}`",
+        report.benchmark_run_records
+    );
+    println!("- Proof report records: `{}`", report.proof_report_records);
+    print_diagnostics(&report.diagnostics);
+}
+
+fn print_diagnostics(diagnostics: &[Diagnostic]) {
+    if diagnostics.is_empty() {
+        return;
+    }
+    println!();
+    println!("## Diagnostics");
+    for diagnostic in diagnostics {
+        println!(
+            "- `{:?}` `{}`: {}",
+            diagnostic.severity, diagnostic.code, diagnostic.message
+        );
+    }
+}
+
+fn persist_historical_eval_report(
+    repo: &Path,
+    config: &StoreConfig,
+    report: &HistoricalEvalReport,
+) -> Result<StorageStatusReport> {
+    Ok(ctxpack_index::persist_benchmark_run_record(
+        repo,
+        config,
+        &StorageBenchmarkRunRecord {
+            run_id: report.eval_range_id.clone(),
+            suite_id: "historical-eval".to_string(),
+            revision_id: report.head.clone().or_else(|| report.base.clone()),
+            budget: Some(report.effective_filters.ranking_budget.to_string()),
+            privacy_status: privacy_status_label(&report.privacy_status),
+            metrics: historical_eval_metrics(report),
+            gaps: retrieval_gap_records(&report.retrieval_gap_summaries),
+        },
+    )?)
+}
+
+fn persist_benchmark_suite_report(
+    config: &ctxpack_compiler::BenchmarkSuiteConfig,
+    report: &BenchmarkSuiteReport,
+    config_path: &Path,
+) -> Result<()> {
+    let config_dir = config_path.parent().unwrap_or_else(|| Path::new("."));
+    for repo_report in &report.repositories {
+        let Some(repo_config) = config
+            .repositories
+            .iter()
+            .find(|candidate| candidate.name == repo_report.name)
+        else {
+            continue;
+        };
+        let repo_path = if repo_config.path.is_absolute() {
+            repo_config.path.clone()
+        } else {
+            config_dir.join(&repo_config.path)
+        };
+        let Some(history) = repo_report.report.as_ref() else {
+            continue;
+        };
+        let _status = ctxpack_index::persist_benchmark_run_record(
+            &repo_path,
+            &StoreConfig::default(),
+            &StorageBenchmarkRunRecord {
+                run_id: format!("{}:{}", report.suite_id, repo_report.name),
+                suite_id: report.suite_id.clone(),
+                revision_id: history.head.clone().or_else(|| history.base.clone()),
+                budget: Some(repo_report.effective_config.ranking_budget.to_string()),
+                privacy_status: privacy_status_label(&repo_report.privacy_status),
+                metrics: historical_eval_metrics(history),
+                gaps: retrieval_gap_records(&history.retrieval_gap_summaries),
+            },
+        )?;
+    }
+    Ok(())
+}
+
+fn persist_product_proof_report(
+    config: &ctxpack_compiler::BenchmarkSuiteConfig,
+    report: &ProductProofReport,
+    config_path: &Path,
+) -> Result<()> {
+    persist_benchmark_suite_report(config, &report.benchmark_report, config_path)?;
+    let config_dir = config_path.parent().unwrap_or_else(|| Path::new("."));
+    for repo_report in &report.benchmark_report.repositories {
+        let Some(repo_config) = config
+            .repositories
+            .iter()
+            .find(|candidate| candidate.name == repo_report.name)
+        else {
+            continue;
+        };
+        let repo_path = if repo_config.path.is_absolute() {
+            repo_config.path.clone()
+        } else {
+            config_dir.join(&repo_config.path)
+        };
+        let _status = ctxpack_index::persist_proof_report_record(
+            &repo_path,
+            &StoreConfig::default(),
+            &StorageProofReportRecord {
+                proof_id: format!("{}:{}", report.suite_id, repo_report.name),
+                run_id: Some(format!("{}:{}", report.suite_id, repo_report.name)),
+                headline_metrics_json: serde_json::to_string(&report.headline_metrics)?,
+                limitations_json: serde_json::to_string(&report.limitations)?,
+                privacy_status: privacy_status_label(&report.privacy_status),
+            },
+        )?;
+    }
+    Ok(())
+}
+
+fn historical_eval_metrics(report: &HistoricalEvalReport) -> Vec<StorageMetricRecord> {
+    vec![
+        metric("fileRecallAt5", report.file_recall_at_5),
+        metric("fileRecallAt10", report.file_recall_at_10),
+        metric(
+            "lexicalBaselineRecallAt10",
+            report.lexical_baseline_recall_at_10,
+        ),
+        metric("ctxpackLiftAt10", report.ctxpack_lift_at_10),
+        metric("sourceRecallAt10", report.source_recall_at_10),
+        metric("testRecallAt10", report.test_recall_at_10),
+        metric("testRecommendationRate", report.test_recommendation_rate),
+        metric(
+            "averageRecommendedContextFiles",
+            report.average_recommended_context_files,
+        ),
+    ]
+}
+
+fn metric(name: &str, value: f32) -> StorageMetricRecord {
+    StorageMetricRecord {
+        name: name.to_string(),
+        value,
+        budget: None,
+        target_kind: None,
+    }
+}
+
+fn retrieval_gap_records(gaps: &[ctxpack_compiler::RetrievalGapSummary]) -> Vec<StorageGapRecord> {
+    gaps.iter()
+        .map(|gap| StorageGapRecord {
+            family: format!(
+                "{}:{}:{}",
+                json_label(&gap.role),
+                gap.signal_gap,
+                gap.path_family
+            ),
+            recommendation_area: Some(json_label(&gap.recommendation_area)),
+            target_status: Some(json_label(&gap.target_status)),
+            safe_path: gap.example_paths.first().cloned(),
+            count: gap.missed_count,
+        })
+        .collect()
+}
+
+fn privacy_status_label(status: &PrivacyStatus) -> String {
+    serde_json::to_string(status).unwrap_or_else(|_| "local_only".to_string())
+}
+
+fn json_label<T: serde::Serialize>(value: &T) -> String {
+    serde_json::to_string(value)
+        .map(|json| json.trim_matches('"').to_string())
+        .unwrap_or_else(|_| "unknown".to_string())
 }
 
 fn context_anchor_paths(

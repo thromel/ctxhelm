@@ -6,15 +6,15 @@ Repo Context Packer is a local-first, read-only context broker that helps existi
 
 The current codebase is a Rust workspace with a CLI, MCP server, safe repository inventory, lexical and symbol retrieval, related-test inference, dependency hints, current-diff anchors, context packs, generated context cards, local eval traces, historical retrieval evaluation, benchmark suites, source-free retrieval gap reporting, and product proof generation.
 
-## Current State: v1.3 Production Storage Started
+## Current State: v1.3 Production Storage Complete
 
-The v1.2 milestone is complete and archived. ctxpack can now prove, from source-free benchmark artifacts, whether its task-conditioned context plans outperform lexical and no-context baselines under fixed budgets. v1.3 starts from that evidence and focuses on durable local storage for repository intelligence, benchmark/proof artifacts, and repeated comparisons.
+The v1.3 milestone is complete and archived. ctxpack now has durable source-free SQLite storage for repository metadata, incremental safe file record sync, pack/eval/proof metadata persistence, storage operations, documentation, and release-gate smoke coverage.
 
 ## Current Milestone: v1.3 Production Storage
 
 **Goal:** Replace ad hoc JSON/cache behavior with durable, fast, local storage for inventory, symbols, history, traces, packs, benchmark results, and schema/version metadata.
 
-**Why next:** v1.2 created the evidence layer. v1.3 should make that evidence and repository intelligence faster, more durable, and easier to compare across repeated runs without weakening the local-first privacy contract.
+**Status:** Complete.
 
 **Target features:**
 
@@ -55,10 +55,8 @@ Given a coding task, ctxpack should return the smallest safe evidence set that m
 
 ### Active
 
-- Build versioned SQLite-backed storage for repository metadata, symbols, chunks, edges, traces, packs, and benchmark results.
-- Add incremental indexing and cache invalidation that makes repeated runs faster and more explainable on large repositories.
-- Persist benchmark, eval, pack, and proof metadata without storing source snippets or prompt text.
-- Add migration, repair, cleanup, and diagnostic commands that preserve the local-first, source-free contract.
+- Start v1.4 Local Semantic Retrieval from the original product vision.
+- Keep v1.4 optional, local-first, and eval-gated before making semantic retrieval prominent.
 
 ### Out of Scope
 
@@ -80,7 +78,7 @@ The codebase map in `.planning/codebase/` documents the current system:
 - `crates/ctxpack-mcp/src/lib.rs` is the stable facade for JSON-RPC/MCP protocol, tools, resources, prompts, diagnostics, session-scoped pack cache, and tool/resource response shaping implemented in focused MCP modules.
 - `crates/ctxpack/src/main.rs` owns the user-facing CLI and command output.
 
-v1 through v1.1 proved the local context broker, source-free safety model, agent-native protocol surface, packaging path, and setup/release gates. v1.2 proved the adoption claim with measured retrieval-quality evidence. v1.3 converts those measured needs into production-grade local storage.
+v1 through v1.1 proved the local context broker, source-free safety model, agent-native protocol surface, packaging path, and setup/release gates. v1.2 proved the adoption claim with measured retrieval-quality evidence. v1.3 converted those measured needs into production-grade local storage.
 
 Milestone strategy from the original product vision:
 
@@ -135,4 +133,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-05-14 after v1.3 milestone start*
+*Last updated: 2026-05-14 after v1.3 milestone completion*

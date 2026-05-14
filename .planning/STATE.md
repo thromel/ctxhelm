@@ -2,25 +2,25 @@
 gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: Production Storage
-status: Phase 13 complete
-last_updated: "2026-05-14T06:03:41Z"
-last_activity: 2026-05-14 — Phase 13 complete
+status: v1.3 complete
+last_updated: "2026-05-14T07:40:00Z"
+last_activity: 2026-05-14 — v1.3 Production Storage complete
 progress:
   total_phases: 4
-  completed_phases: 1
+  completed_phases: 4
   total_plans: 16
-  completed_plans: 4
-  percent: 25
+  completed_plans: 16
+  percent: 100
 ---
 
 # Project State
 
 ## Current Position
 
-Phase: 13 — Storage Foundation & Schema Contracts
-Plan: 4 plans complete
-Status: Phase complete
-Last activity: 2026-05-14 — Phase 13 complete
+Phase: 16 — Storage Operations, Safety, and Release Gates
+Plan: 16 plans complete
+Status: Milestone complete
+Last activity: 2026-05-14 — v1.3 Production Storage complete
 
 ## Project Reference
 
@@ -28,11 +28,11 @@ See: `.planning/PROJECT.md`
 
 **Core value:** Given a coding task, ctxpack should return the smallest safe evidence set that makes an existing coding agent more likely to inspect the right files, run the right tests, and avoid irrelevant context.
 
-**Current focus:** Continue v1.3 with Phase 14 incremental indexing and cache rebuilds on top of the new SQLite storage foundation.
+**Current focus:** v1.3 completed; next planned milestone is v1.4 Local Semantic Retrieval.
 
 ## Active Milestone
 
-v1.3 should turn ctxpack's measured proof layer into durable local infrastructure:
+v1.3 turned ctxpack's measured proof layer into durable local infrastructure:
 
 - initialize and version a local SQLite store;
 - persist source-free repository intelligence and benchmark/proof metadata;
@@ -42,9 +42,8 @@ v1.3 should turn ctxpack's measured proof layer into durable local infrastructur
 
 ## Next Step
 
-Discuss or plan Phase 14: Incremental Indexing & Cache Rebuilds.
+Start v1.4 Local Semantic Retrieval.
 
 ## Operator Next Steps
 
-- Run `$gsd-discuss-phase 14` to clarify Phase 14 trade-offs.
-- Run `$gsd-plan-phase 14` to create the executable Phase 14 plan.
+- Run `$gsd-new-milestone` for v1.4 Local Semantic Retrieval.
