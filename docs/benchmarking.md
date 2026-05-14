@@ -58,9 +58,10 @@ Fields:
 ctxpack eval benchmark --config .ctxpack/benchmarks/retrieval-quality.json --format markdown
 ctxpack eval benchmark --config .ctxpack/benchmarks/retrieval-quality.json --format json
 ctxpack eval compare --base-report previous.json --head-report current.json --threshold fileRecallAt10=0.05
+ctxpack eval proof --config .ctxpack/benchmarks/retrieval-quality.json
 ```
 
-The Markdown report is meant for local inspection. The JSON report is the stable contract for future release gates, portfolio tables, and regression comparison. `ctxpack eval compare` consumes two benchmark JSON reports and emits source-free metric deltas, retrieval-gap family deltas, and threshold pass/fail checks.
+The Markdown report is meant for local inspection. The JSON report is the stable contract for future release gates, portfolio tables, and regression comparison. `ctxpack eval compare` consumes two benchmark JSON reports and emits source-free metric deltas, retrieval-gap family deltas, and threshold pass/fail checks. `ctxpack eval proof` runs the configured benchmark suite and emits the adoption-facing proof report with headline metrics, limitations, when ctxpack helps, when it does not, and future work from measured gaps.
 
 ## Privacy Boundary
 
@@ -103,3 +104,24 @@ For large-history proof, RefactoringMiner is the primary v1.2 target. Add a seco
 - `largerPackAddsLittleValue`: true when a larger budget adds no additional useful changed-file targets over the previous budget in the current fixed ranking.
 - `retrievalGapSummaries`: source-free failure families grouped by role, signal gap, package, path family, target status, and recommendation area.
 - `ctxpack eval compare`: compares two benchmark reports across recall, token ROI, skipped paths, and gap families; configured thresholds fail when a metric drops more than the allowed amount.
+- `ctxpack eval proof`: generates a concise product proof report from a local suite and embeds the underlying source-free benchmark report in JSON output.
+
+## Product Proof
+
+The product proof is intentionally narrow. It does not claim universal agent improvement. It answers:
+
+- what local benchmark suite was run;
+- how many repositories and commits were evaluated;
+- headline recall, baseline lift, test recall, and token ROI metrics;
+- when ctxpack helps;
+- when ctxpack does not help;
+- limitations in the benchmark design;
+- which future milestone should address repeated gap families.
+
+The release gate can run this proof optionally:
+
+```bash
+CTXPACK_BENCHMARK_CONFIG=/absolute/path/to/retrieval-quality.json bash scripts/release-gate.sh
+```
+
+When enabled, the gate fails if the proof cannot be generated or if the proof/embedded benchmark privacy status is not local-only.

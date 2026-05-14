@@ -8,15 +8,16 @@ pub use cards::{
     generate_context_cards, ContextCardsOptions, ContextCardsReport, GeneratedContextCard,
 };
 pub use eval::{
-    compare_benchmark_suite_reports, eval_trace_for_pack, eval_trace_for_plan,
-    evaluate_historical_commits, load_benchmark_suite_config, load_benchmark_suite_report,
-    run_benchmark_suite, run_benchmark_suite_config, BenchmarkComparisonReport, BenchmarkDefaults,
-    BenchmarkGapFamilyDelta, BenchmarkMetricDelta, BenchmarkRegressionThreshold,
-    BenchmarkRepoConfig, BenchmarkRepoEffectiveConfig, BenchmarkRepoReport, BenchmarkSuiteConfig,
-    BenchmarkSuiteReport, BenchmarkThresholdCheck, EvalComparison, HistoricalChangedPathLabel,
-    HistoricalCommitEval, HistoricalEvalEffectiveFilters, HistoricalEvalOptions,
-    HistoricalEvalRefs, HistoricalEvalReport, HistoricalMissingFileSummary, RankingMetrics,
-    RetrievalGapRecommendationArea, RetrievalGapSummary, RetrievalGapTargetStatus,
+    build_product_proof_report, compare_benchmark_suite_reports, eval_trace_for_pack,
+    eval_trace_for_plan, evaluate_historical_commits, load_benchmark_suite_config,
+    load_benchmark_suite_report, run_benchmark_suite, run_benchmark_suite_config,
+    BenchmarkComparisonReport, BenchmarkDefaults, BenchmarkGapFamilyDelta, BenchmarkMetricDelta,
+    BenchmarkRegressionThreshold, BenchmarkRepoConfig, BenchmarkRepoEffectiveConfig,
+    BenchmarkRepoReport, BenchmarkSuiteConfig, BenchmarkSuiteReport, BenchmarkThresholdCheck,
+    EvalComparison, HistoricalChangedPathLabel, HistoricalCommitEval,
+    HistoricalEvalEffectiveFilters, HistoricalEvalOptions, HistoricalEvalRefs,
+    HistoricalEvalReport, HistoricalMissingFileSummary, ProductProofMetric, ProductProofReport,
+    RankingMetrics, RetrievalGapRecommendationArea, RetrievalGapSummary, RetrievalGapTargetStatus,
     RoleRecallMetric, SignalAblationResult, TokenRoiMetric,
 };
 pub use packs::{

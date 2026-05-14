@@ -112,6 +112,27 @@ CTXPACK_BIN="$ctxpack_bin" \
   CTXPACK_SMOKE_QUERY="prepare_task" \
   bash "$smoke_mcp_protocol_script"
 
+log_step "optional benchmark product proof"
+if [[ -n "${CTXPACK_BENCHMARK_CONFIG:-}" ]]; then
+  proof_report="$work_dir/product-proof.json"
+  "$ctxpack_bin" eval proof --config "$CTXPACK_BENCHMARK_CONFIG" --format json >"$proof_report"
+  python3 - "$proof_report" <<'PY'
+import json
+import pathlib
+import sys
+
+report = json.loads(pathlib.Path(sys.argv[1]).read_text())
+if not report.get("privacyStatus", {}).get("localOnly"):
+    raise SystemExit("product proof privacyStatus.localOnly was not true")
+if not report.get("benchmarkReport", {}).get("privacyStatus", {}).get("localOnly"):
+    raise SystemExit("embedded benchmark privacyStatus.localOnly was not true")
+if not report.get("headlineMetrics"):
+    raise SystemExit("product proof headlineMetrics were empty")
+PY
+else
+  echo "benchmark product proof skipped: set CTXPACK_BENCHMARK_CONFIG=/path/to/suite.json"
+fi
+
 log_step "optional Codex real-client evidence"
 CTXPACK_BIN="$ctxpack_bin" \
   CTXPACK_ROOT="$repo_root" \

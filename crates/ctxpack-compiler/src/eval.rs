@@ -202,6 +202,30 @@ pub struct BenchmarkThresholdCheck {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
+pub struct ProductProofReport {
+    pub suite_name: String,
+    pub suite_id: String,
+    pub evaluated_repository_count: usize,
+    pub evaluated_commit_count: usize,
+    pub headline_metrics: Vec<ProductProofMetric>,
+    pub limitations: Vec<String>,
+    pub helps_when: Vec<String>,
+    pub does_not_help_when: Vec<String>,
+    pub future_work: Vec<String>,
+    pub benchmark_report: BenchmarkSuiteReport,
+    pub privacy_status: PrivacyStatus,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct ProductProofMetric {
+    pub label: String,
+    pub value: f32,
+    pub unit: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
 pub struct HistoricalEvalReport {
     pub eval_range_id: String,
     pub repo_id: String,
@@ -454,6 +478,98 @@ pub fn compare_benchmark_suite_reports(
         gap_family_deltas,
         threshold_checks,
         passed,
+        privacy_status: PrivacyStatus::local_only(),
+    }
+}
+
+pub fn build_product_proof_report(benchmark_report: BenchmarkSuiteReport) -> ProductProofReport {
+    let evaluated_reports = benchmark_report
+        .repositories
+        .iter()
+        .filter_map(|repo| repo.report.as_ref())
+        .collect::<Vec<_>>();
+    let repo_count = evaluated_reports.len().max(1) as f32;
+    let average_file_recall_at_10 = evaluated_reports
+        .iter()
+        .map(|report| report.file_recall_at_10)
+        .sum::<f32>()
+        / repo_count;
+    let average_lexical_recall_at_10 = evaluated_reports
+        .iter()
+        .map(|report| report.lexical_baseline_recall_at_10)
+        .sum::<f32>()
+        / repo_count;
+    let average_lift_at_10 = evaluated_reports
+        .iter()
+        .map(|report| report.ctxpack_lift_at_10)
+        .sum::<f32>()
+        / repo_count;
+    let average_test_recall_at_10 = evaluated_reports
+        .iter()
+        .map(|report| report.test_recall_at_10)
+        .sum::<f32>()
+        / repo_count;
+    let average_brief_token_roi = evaluated_reports
+        .iter()
+        .map(|report| token_roi_value(report, &PackBudget::Brief))
+        .sum::<f32>()
+        / repo_count;
+
+    ProductProofReport {
+        suite_name: benchmark_report.suite_name.clone(),
+        suite_id: benchmark_report.suite_id.clone(),
+        evaluated_repository_count: benchmark_report.evaluated_repository_count,
+        evaluated_commit_count: benchmark_report.evaluated_commit_count,
+        headline_metrics: vec![
+            ProductProofMetric {
+                label: "averageFileRecallAt10".to_string(),
+                value: average_file_recall_at_10,
+                unit: "ratio".to_string(),
+            },
+            ProductProofMetric {
+                label: "averageLexicalBaselineRecallAt10".to_string(),
+                value: average_lexical_recall_at_10,
+                unit: "ratio".to_string(),
+            },
+            ProductProofMetric {
+                label: "averageCtxpackLiftAt10".to_string(),
+                value: average_lift_at_10,
+                unit: "ratio".to_string(),
+            },
+            ProductProofMetric {
+                label: "averageTestRecallAt10".to_string(),
+                value: average_test_recall_at_10,
+                unit: "ratio".to_string(),
+            },
+            ProductProofMetric {
+                label: "averageBriefTokenRoi".to_string(),
+                value: average_brief_token_roi,
+                unit: "useful_targets_per_1k_tokens".to_string(),
+            },
+        ],
+        limitations: vec![
+            "Historical commit subjects are only proxies for real developer prompts.".to_string(),
+            "No-context baseline is zero-file until editor anchor traces are available."
+                .to_string(),
+            "Token ROI is estimated from budget presets, not measured model billing.".to_string(),
+        ],
+        helps_when: vec![
+            "Tasks require choosing target files and tests across a repository.".to_string(),
+            "Exact identifiers, related tests, history, and graph signals can reinforce each other."
+                .to_string(),
+            "Maintainers need source-free evidence for context quality over time.".to_string(),
+        ],
+        does_not_help_when: vec![
+            "The task is a trivial single-file edit with an explicit path.".to_string(),
+            "The right target file is absent from the safe local inventory.".to_string(),
+            "The benchmark range contains low-information commit messages.".to_string(),
+        ],
+        future_work: vec![
+            "v1.3: persist benchmark results in local storage for trend history.".to_string(),
+            "v1.4: add optional local semantic retrieval where gaps justify it.".to_string(),
+            "v1.5: add parser and SCIP/LSP precision where gap families point to it.".to_string(),
+        ],
+        benchmark_report,
         privacy_status: PrivacyStatus::local_only(),
     }
 }

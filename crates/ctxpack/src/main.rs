@@ -1,12 +1,13 @@
 use anyhow::Result;
 use clap::{Args, Parser, Subcommand, ValueEnum};
 use ctxpack_compiler::{
-    compare_benchmark_suite_reports, compile_context_pack_with_plan_and_paths_for_agent,
-    eval_trace_for_pack, eval_trace_for_plan, evaluate_historical_commits, generate_context_cards,
-    load_benchmark_suite_report, prepare_context_plan_with_paths, render_pack_markdown,
-    run_benchmark_suite, BenchmarkComparisonReport, BenchmarkRegressionThreshold,
-    BenchmarkSuiteReport, ContextCardsOptions, ContextCardsReport, HistoricalEvalOptions,
-    HistoricalEvalReport,
+    build_product_proof_report, compare_benchmark_suite_reports,
+    compile_context_pack_with_plan_and_paths_for_agent, eval_trace_for_pack, eval_trace_for_plan,
+    evaluate_historical_commits, generate_context_cards, load_benchmark_suite_report,
+    prepare_context_plan_with_paths, render_pack_markdown, run_benchmark_suite,
+    BenchmarkComparisonReport, BenchmarkRegressionThreshold, BenchmarkSuiteReport,
+    ContextCardsOptions, ContextCardsReport, HistoricalEvalOptions, HistoricalEvalReport,
+    ProductProofReport,
 };
 use ctxpack_core::{
     run_init, run_setup_check, AgentAdapter, Diagnostic, DiagnosticSeverity, EvalTrace, InitAction,
@@ -222,6 +223,7 @@ enum EvalCommand {
     History(EvalHistoryArgs),
     Benchmark(EvalBenchmarkArgs),
     Compare(EvalCompareArgs),
+    Proof(EvalProofArgs),
 }
 
 #[derive(Debug, Args)]
@@ -279,6 +281,17 @@ struct EvalCompareArgs {
         help = "Regression threshold as metric=max_drop, e.g. fileRecallAt10=0.05"
     )]
     threshold: Vec<BenchmarkRegressionThreshold>,
+    #[arg(long, value_enum, default_value_t = PackFormat::Markdown)]
+    format: PackFormat,
+}
+
+#[derive(Debug, Args)]
+struct EvalProofArgs {
+    #[arg(
+        long,
+        help = "Path to a JSON benchmark suite file used to generate the product proof report."
+    )]
+    config: PathBuf,
     #[arg(long, value_enum, default_value_t = PackFormat::Markdown)]
     format: PackFormat,
 }
@@ -521,6 +534,14 @@ fn main() -> Result<()> {
                     PackFormat::Markdown => {
                         println!("{}", render_benchmark_comparison_report(&report))
                     }
+                    PackFormat::Json => println!("{}", serde_json::to_string_pretty(&report)?),
+                }
+            }
+            EvalCommand::Proof(args) => {
+                let benchmark = run_benchmark_suite(&args.config)?;
+                let report = build_product_proof_report(benchmark);
+                match args.format {
+                    PackFormat::Markdown => println!("{}", render_product_proof_report(&report)),
                     PackFormat::Json => println!("{}", serde_json::to_string_pretty(&report)?),
                 }
             }
@@ -1105,6 +1126,60 @@ fn render_benchmark_comparison_report(report: &BenchmarkComparisonReport) -> Str
             ));
         }
     }
+    output
+}
+
+fn render_product_proof_report(report: &ProductProofReport) -> String {
+    let mut output = String::from("# ctxpack Product Proof\n\n");
+    output.push_str(
+        "This source-free report summarizes whether ctxpack improves repository context selection over fixed-budget baselines for a configured benchmark suite.\n\n",
+    );
+    output.push_str(&format!(
+        "- Suite: `{}`\n- Suite ID: `{}`\n- Evaluated repositories: `{}`\n- Evaluated commits: `{}`\n- Privacy: local-only `{}`\n\n",
+        report.suite_name,
+        report.suite_id,
+        report.evaluated_repository_count,
+        report.evaluated_commit_count,
+        report.privacy_status.local_only
+    ));
+
+    output.push_str("## Headline Metrics\n\n");
+    for metric in &report.headline_metrics {
+        output.push_str(&format!(
+            "- `{}`: `{:.3}` `{}`\n",
+            metric.label, metric.value, metric.unit
+        ));
+    }
+    output.push('\n');
+
+    output.push_str("## When It Helps\n\n");
+    for item in &report.helps_when {
+        output.push_str(&format!("- {item}\n"));
+    }
+    output.push('\n');
+
+    output.push_str("## When It Does Not Help\n\n");
+    for item in &report.does_not_help_when {
+        output.push_str(&format!("- {item}\n"));
+    }
+    output.push('\n');
+
+    output.push_str("## Limitations\n\n");
+    for item in &report.limitations {
+        output.push_str(&format!("- {item}\n"));
+    }
+    output.push('\n');
+
+    output.push_str("## Future Work From Gaps\n\n");
+    for item in &report.future_work {
+        output.push_str(&format!("- {item}\n"));
+    }
+    output.push('\n');
+
+    output.push_str("## Reproduce\n\n");
+    output.push_str(
+        "Run `ctxpack eval proof --config <suite.json>` or inspect the embedded source-free benchmark report in JSON output.\n",
+    );
     output
 }
 

@@ -865,6 +865,74 @@ fn eval_compare_reports_source_free_metric_and_gap_deltas() {
 }
 
 #[test]
+fn eval_proof_generates_source_free_product_report() {
+    let fixture = fixture_repo();
+    let suite_path = fixture.temp.path().join("ctxpack-proof.json");
+    fs::write(
+        &suite_path,
+        serde_json::to_string_pretty(&json!({
+            "name": "phase-twelve-proof-smoke",
+            "defaults": {
+                "limit": 1,
+                "rankingBudget": 4,
+                "mode": "bug_fix",
+                "targetAgent": "codex"
+            },
+            "repositories": [
+                {
+                    "name": "fixture-a",
+                    "path": fixture.repo
+                }
+            ]
+        }))
+        .unwrap(),
+    )
+    .unwrap();
+
+    let value = json_stdout(
+        Command::cargo_bin("ctxpack")
+            .unwrap()
+            .env(
+                CTXPACK_HOME_ENV,
+                fixture.temp.path().join("ctxpack-home-proof"),
+            )
+            .args(["eval", "proof", "--config"])
+            .arg(&suite_path)
+            .args(["--format", "json"])
+            .assert(),
+    );
+    assert_eq!(value["suiteName"], "phase-twelve-proof-smoke");
+    assert_eq!(value["privacyStatus"]["localOnly"], true);
+    assert!(value["headlineMetrics"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .any(|metric| metric["label"] == "averageCtxpackLiftAt10"));
+    assert!(value["limitations"].is_array());
+    assert!(value["helpsWhen"].is_array());
+    assert!(value["doesNotHelpWhen"].is_array());
+    assert!(value["futureWork"].is_array());
+    assert!(value["benchmarkReport"]["repositories"].is_array());
+    assert_no_source_or_prompt_text(&value);
+
+    Command::cargo_bin("ctxpack")
+        .unwrap()
+        .env(
+            CTXPACK_HOME_ENV,
+            fixture.temp.path().join("ctxpack-home-proof-md"),
+        )
+        .args(["eval", "proof", "--config"])
+        .arg(&suite_path)
+        .assert()
+        .success()
+        .stdout(contains("# ctxpack Product Proof"))
+        .stdout(contains("When It Helps"))
+        .stdout(contains("When It Does Not Help"))
+        .stdout(contains("Limitations"))
+        .stdout(contains("Future Work From Gaps"));
+}
+
+#[test]
 fn serve_mcp_speaks_json_rpc_over_stdio() {
     let fixture = fixture_repo();
     let input = br#"{"jsonrpc":"2.0","id":1,"method":"initialize","params":{}}

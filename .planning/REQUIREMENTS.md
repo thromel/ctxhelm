@@ -42,15 +42,15 @@ Requirements for proving ctxpack's product value through repeatable, source-free
 
 ### Product Proof
 
-- [ ] **PROOF-01**: README or docs include a concise source-free proof report explaining benchmark setup, headline metrics, baseline deltas, and limitations.
-- [ ] **PROOF-02**: `ctxpack eval` exposes a maintainer-friendly command path that reproduces the proof report on configured local repos.
-- [ ] **PROOF-03**: Release or adoption gates can optionally run a bounded benchmark smoke and fail on report-generation or privacy regressions.
-- [ ] **PROOF-04**: Product documentation clearly states when ctxpack helps, when it does not, and how agents should use the evidence.
-- [ ] **PROOF-05**: Future milestone requirements for v1.3-v2.1 are updated from measured retrieval gaps rather than speculative feature desire.
+- [x] **PROOF-01**: README or docs include a concise source-free proof report explaining benchmark setup, headline metrics, baseline deltas, and limitations.
+- [x] **PROOF-02**: `ctxpack eval` exposes a maintainer-friendly command path that reproduces the proof report on configured local repos.
+- [x] **PROOF-03**: Release or adoption gates can optionally run a bounded benchmark smoke and fail on report-generation or privacy regressions.
+- [x] **PROOF-04**: Product documentation clearly states when ctxpack helps, when it does not, and how agents should use the evidence.
+- [x] **PROOF-05**: Future milestone requirements for v1.3-v2.1 are updated from measured retrieval gaps rather than speculative feature desire.
 
 ## Future Requirements
 
-Deferred to future milestones from the original product vision.
+Deferred to future milestones from the original product vision and refined by the v1.2 gap taxonomy fields (`recommendationArea`, `targetStatus`, token ROI, and benchmark comparison deltas).
 
 ### v1.3 Production Storage
 
@@ -133,11 +133,11 @@ Explicitly excluded from v1.2 to prevent scope creep.
 | GAP-04 | Phase 11 | Complete |
 | REG-01 | Phase 11 | Complete |
 | REG-02 | Phase 11 | Complete |
-| PROOF-01 | Phase 12 | Pending |
-| PROOF-02 | Phase 12 | Pending |
-| PROOF-03 | Phase 12 | Pending |
-| PROOF-04 | Phase 12 | Pending |
-| PROOF-05 | Phase 12 | Pending |
+| PROOF-01 | Phase 12 | Complete |
+| PROOF-02 | Phase 12 | Complete |
+| PROOF-03 | Phase 12 | Complete |
+| PROOF-04 | Phase 12 | Complete |
+| PROOF-05 | Phase 12 | Complete |
 
 **Coverage:**
 - v1.2 requirements: 22 total
@@ -146,4 +146,4 @@ Explicitly excluded from v1.2 to prevent scope creep.
 
 ---
 *Requirements defined: 2026-05-14*
-*Last updated: 2026-05-14 after Phase 11 completion*
+*Last updated: 2026-05-14 after v1.2 completion*

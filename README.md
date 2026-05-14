@@ -276,6 +276,12 @@ Compare two benchmark JSON reports and flag configured regression thresholds in 
 ctxpack eval compare --base-report previous.json --head-report current.json --threshold fileRecallAt10=0.05
 ```
 
+Generate the source-free product proof report:
+
+```bash
+ctxpack eval proof --config .ctxpack/benchmarks/retrieval-quality.json
+```
+
 See [docs/benchmarking.md](docs/benchmarking.md) for the suite JSON contract, RefactoringMiner-style setup, token ROI interpretation, gap families, and regression comparison.
 
 ```bash

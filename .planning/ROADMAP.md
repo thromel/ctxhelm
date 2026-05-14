@@ -17,7 +17,7 @@ The milestone uses RefactoringMiner as the primary large-history proof target an
 - [x] **Phase 9: Benchmark Harness & Corpus Contracts** - Maintainers can define reproducible, source-free benchmark suites over real repositories.
 - [x] **Phase 10: Fixed-Budget Retrieval Metrics & Baselines** - Maintainers can compare ctxpack retrieval against lexical and no-context baselines with stable metrics.
 - [x] **Phase 11: Retrieval Gap Taxonomy & Regression Trends** - Maintainers can turn repeated misses into source-free failure families and trend reports.
-- [ ] **Phase 12: Product Proof Report & Adoption Gate** - Users can see why ctxpack is useful through reproducible reports, docs, and release-gate proof.
+- [x] **Phase 12: Product Proof Report & Adoption Gate** - Users can see why ctxpack is useful through reproducible reports, docs, and release-gate proof.
 
 ## Phase Details
 
@@ -84,10 +84,10 @@ Plans:
   5. Planning docs for v1.3-v2.1 are updated from measured gaps instead of speculative feature desire.
 **Plans**: 4 plans
 Plans:
-- [ ] 12-product-proof-report-adoption-gate-01-PLAN.md — Generate a source-free product proof report from benchmark artifacts.
-- [ ] 12-product-proof-report-adoption-gate-02-PLAN.md — Document benchmark setup, interpretation, limitations, and "why ctxpack" messaging.
-- [ ] 12-product-proof-report-adoption-gate-03-PLAN.md — Add optional benchmark smoke to release/adoption gates.
-- [ ] 12-product-proof-report-adoption-gate-04-PLAN.md — Update future milestone requirements from measured gap evidence.
+- [x] 12-product-proof-report-adoption-gate-01-PLAN.md — Generate a source-free product proof report from benchmark artifacts.
+- [x] 12-product-proof-report-adoption-gate-02-PLAN.md — Document benchmark setup, interpretation, limitations, and "why ctxpack" messaging.
+- [x] 12-product-proof-report-adoption-gate-03-PLAN.md — Add optional benchmark smoke to release/adoption gates.
+- [x] 12-product-proof-report-adoption-gate-04-PLAN.md — Update future milestone requirements from measured gap evidence.
 
 ## Requirement Coverage
 
@@ -128,4 +128,4 @@ Phases execute in numeric order: 9 -> 10 -> 11 -> 12
 | 9. Benchmark Harness & Corpus Contracts | 4/4 | Complete | 2026-05-14 |
 | 10. Fixed-Budget Retrieval Metrics & Baselines | 5/5 | Complete | 2026-05-14 |
 | 11. Retrieval Gap Taxonomy & Regression Trends | 4/4 | Complete | 2026-05-14 |
-| 12. Product Proof Report & Adoption Gate | 0/4 | Pending | — |
+| 12. Product Proof Report & Adoption Gate | 4/4 | Complete | 2026-05-14 |
