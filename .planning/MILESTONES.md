@@ -2,6 +2,26 @@
 
 ## Shipped
 
+### v1.2 Retrieval Quality Proof (Shipped: 2026-05-14)
+
+**Delivered:** Repeatable, source-free retrieval-quality proof with benchmark suites, fixed-budget metrics, baseline comparisons, gap taxonomy, trend comparison, and product proof generation.
+
+**Phases completed:** Phases 9-12, 17 plans total
+
+**Key accomplishments:**
+
+- Added named benchmark suite contracts and bounded multi-repo historical evaluation with reproducibility and privacy metadata.
+- Added fixed-budget file/test recall, lexical and no-context baselines, signal ablations, and token ROI reporting.
+- Added source-free retrieval gap taxonomy, future-milestone recommendations, benchmark comparison, and regression thresholds.
+- Added `ctxpack eval proof` plus optional `CTXPACK_BENCHMARK_CONFIG` release-gate proof.
+- Kept benchmark, comparison, and proof artifacts source-free and local-only by default.
+
+**Archive:**
+
+- Roadmap: `.planning/milestones/v1.2-ROADMAP.md`
+- Requirements: `.planning/milestones/v1.2-REQUIREMENTS.md`
+- Audit: `.planning/milestones/v1.2-MILESTONE-AUDIT.md`
+
 ### v1.1 Packaging & Adoption (Shipped: 2026-05-13)
 
 **Delivered:** A packaged, documented, smoke-testable ctxpack release path for agent-native adoption.
@@ -25,35 +45,22 @@
 
 ## Active
 
-### v1.2 Retrieval Quality Proof
+### v1.3 Production Storage
 
-**Goal:** Prove ctxpack's value with repeatable, source-free real-repo benchmarks that show retrieval lift, token ROI, failure modes, and regression trends.
+**Goal:** Replace ad hoc JSON/cache behavior with durable, fast, local storage for inventory, symbols, history, traces, packs, benchmark results, and schema/version metadata.
 
-**Why now:** The product already works as a local context broker. The next adoption blocker is evidence: why an agent should call ctxpack instead of only using native grep/indexing.
+**Why now:** v1.2 proved ctxpack's value with source-free benchmark evidence. The next adoption and scaling blocker is making repository intelligence, proof reports, and repeated benchmark comparisons durable and fast without weakening the local-first privacy contract.
 
-**Planned phases:** Phases 9-12
+**Planned phases:** Phases 13-16
 
 **Definition of done:**
 
-- Maintainer can run benchmark suites over RefactoringMiner and at least one additional real repository with reproducible revisions and bounded budgets.
-- Reports compare ctxpack retrieval against lexical/no-context baselines using fixed metrics such as Recall@K, test recall, token ROI, and signal ablation deltas.
-- Repeated retrieval gaps are grouped into actionable failure families that feed future storage, semantic retrieval, and parser precision milestones.
-- Benchmark and regression artifacts are source-free and suitable to share in docs, portfolio updates, or release notes.
+- Maintainer can initialize and inspect a versioned local SQLite store for repo metadata, symbols, chunks, edges, tests, git history, traces, packs, and benchmark results.
+- Re-indexing a changed repo updates only stale records when possible and reports clear freshness, migration, and repair diagnostics.
+- Benchmark, eval, pack, and proof metadata can be persisted and compared without storing source snippets or prompt text.
+- Storage repair, cleanup, and release-gate checks preserve the source-free, read-only product contract.
 
 ## Planned Product Vision
-
-### v1.3 Production Storage
-
-**Goal:** Replace ad hoc JSON/cache behavior with durable, fast, local storage for inventory, symbols, history, traces, and pack metadata.
-
-**Depends on:** v1.2 retrieval-quality evidence proving which data needs to be persisted and queried faster.
-
-**Expected capabilities:**
-
-- SQLite-backed repository metadata, symbols, edges, traces, historical eval results, and pack metadata.
-- Faster incremental indexing and cache invalidation for large repositories.
-- Migration/version metadata for inventory schema, ranking schema, and trace schema.
-- Local cleanup/repair commands that preserve source-free privacy guarantees.
 
 ### v1.4 Local Semantic Retrieval
 

@@ -2,130 +2,142 @@
 
 ## Overview
 
-This roadmap opens v1.2 Retrieval Quality Proof. v1 and v1.1 proved that ctxpack can safely generate task-conditioned plans, packs, cards, traces, MCP resources, and release artifacts. v1.2 must prove why the product matters: agents should get better context, with fewer irrelevant reads and better validation guidance, on real repositories under fixed budgets.
+This roadmap opens v1.3 Production Storage. v1.2 proved ctxpack's retrieval value with source-free benchmark suites, baseline comparisons, token ROI, gap taxonomy, and product proof reporting. v1.3 turns those repeated-run and scale needs into durable local storage while preserving the read-only, source-free product contract.
 
-The milestone uses RefactoringMiner as the primary large-history proof target and adds at least one more real repository to avoid overfitting. All benchmark artifacts must remain source-free.
-
-## v1.2 Retrieval Quality Proof
+## v1.3 Production Storage
 
 ## Phases
 
 **Phase Numbering:**
-- Integer phases (9, 10, 11, 12): Planned v1.2 work
-- Decimal phases (10.1, 10.2): Urgent insertions if needed
+- Integer phases (13, 14, 15, 16): Planned v1.3 work
+- Decimal phases (14.1, 14.2): Urgent insertions if needed
 
-- [x] **Phase 9: Benchmark Harness & Corpus Contracts** - Maintainers can define reproducible, source-free benchmark suites over real repositories.
-- [x] **Phase 10: Fixed-Budget Retrieval Metrics & Baselines** - Maintainers can compare ctxpack retrieval against lexical and no-context baselines with stable metrics.
-- [x] **Phase 11: Retrieval Gap Taxonomy & Regression Trends** - Maintainers can turn repeated misses into source-free failure families and trend reports.
-- [x] **Phase 12: Product Proof Report & Adoption Gate** - Users can see why ctxpack is useful through reproducible reports, docs, and release-gate proof.
+- [ ] **Phase 13: Storage Foundation & Schema Contracts** - Maintainers can initialize a versioned SQLite store that captures source-free repository intelligence and migration metadata.
+- [ ] **Phase 14: Incremental Indexing & Cache Rebuilds** - Re-indexing large repositories reuses unchanged records, updates stale records, and reports freshness diagnostics.
+- [ ] **Phase 15: Evaluation, Pack, and Proof Persistence** - Benchmark, eval, comparison, product-proof, and pack metadata can be persisted and reused without storing source snippets.
+- [ ] **Phase 16: Storage Operations, Safety, and Release Gates** - Users can inspect, migrate, repair, clean, and validate storage while preserving privacy and fallback behavior.
 
 ## Phase Details
 
-### Phase 9: Benchmark Harness & Corpus Contracts
-**Goal**: Maintainers can define reproducible, source-free benchmark suites over RefactoringMiner and at least one additional real repository.
-**Depends on**: v1.1 Packaging & Adoption
-**Requirements**: BENCH-01, BENCH-02, BENCH-03, BENCH-04
-**Success Criteria** (what must be TRUE):
-  1. Maintainer can define named benchmark suites with repo path, revision range, max commits, budgets, and role filters without storing source text.
-  2. Maintainer can run a bounded historical eval over RefactoringMiner and another configured real repo using reproducible revision ranges.
-  3. Benchmark outputs include source-free task labels, changed-file/test labels, privacy status, skipped-path counts, and reproducibility metadata.
-  4. Fixtures and docs explain how to add another local repo benchmark without cloud services or global machine assumptions.
-**Plans**: 4 plans
-Plans:
-- [x] 09-benchmark-harness-corpus-contracts-01-PLAN.md — Define benchmark suite configuration and source-free corpus contracts.
-- [x] 09-benchmark-harness-corpus-contracts-02-PLAN.md — Implement multi-repo bounded benchmark execution.
-- [x] 09-benchmark-harness-corpus-contracts-03-PLAN.md — Persist reproducibility metadata and privacy diagnostics.
-- [x] 09-benchmark-harness-corpus-contracts-04-PLAN.md — Document RefactoringMiner and second-repo benchmark setup.
+### Phase 13: Storage Foundation & Schema Contracts
 
-### Phase 10: Fixed-Budget Retrieval Metrics & Baselines
-**Goal**: Maintainers can measure whether ctxpack improves target-file/test retrieval over lexical and no-context baselines at fixed budgets.
-**Depends on**: Phase 9
-**Requirements**: METR-01, METR-02, METR-03, METR-04, METR-05, ROI-01, ROI-02
-**Success Criteria** (what must be TRUE):
-  1. Benchmark reports include file Recall@K, test Recall@K, precision-like useful-target ratios, and missing-label summaries for every suite.
-  2. Reports compare ctxpack hybrid ranking against lexical-only and no-context/anchor-only baselines under the same candidate and token budgets.
-  3. Signal ablations quantify lift from symbols, dependencies, tests, git history, current diff, and docs/cards without leaking source snippets.
-  4. Token ROI estimates show useful targets per 1k estimated tokens and pack budget efficiency for brief, standard, and deep options.
-  5. CLI and JSON output stay stable enough to feed portfolio/docs tables and future release gates.
-**Plans**: 5 plans
-Plans:
-- [x] 10-fixed-budget-retrieval-metrics-baselines-01-PLAN.md — Add baseline runners and stable benchmark metric contracts.
-- [x] 10-fixed-budget-retrieval-metrics-baselines-02-PLAN.md — Add fixed-budget recall, useful-target, and missing-label metrics.
-- [x] 10-fixed-budget-retrieval-metrics-baselines-03-PLAN.md — Add signal ablation and token ROI reporting.
-- [x] 10-fixed-budget-retrieval-metrics-baselines-04-PLAN.md — Expose benchmark reports through CLI JSON and Markdown outputs.
-- [x] 10-fixed-budget-retrieval-metrics-baselines-05-PLAN.md — Validate metrics against RefactoringMiner and the second real repo.
+**Goal**: Maintainers can initialize a versioned SQLite store that captures source-free repository intelligence and migration metadata.
 
-### Phase 11: Retrieval Gap Taxonomy & Regression Trends
-**Goal**: Maintainers can understand repeated retrieval misses and track whether changes improve or regress context quality over time.
-**Depends on**: Phase 10
-**Requirements**: GAP-01, GAP-02, GAP-03, GAP-04, REG-01, REG-02
-**Success Criteria** (what must be TRUE):
-  1. Repeated missing files/tests are grouped by source-free families such as role, package, path pattern, signal gap, rename/delete status, and generated/sensitive policy.
-  2. Reports identify which missing families point to storage, semantic retrieval, parser precision, test mapping, or history-ranking gaps.
-  3. Maintainer can compare two benchmark runs and see deltas for recall, token ROI, signal ablations, skipped files, and repeated failure families.
-  4. Regression summaries can fail a check when selected metrics drop beyond configured thresholds.
-  5. Gap and regression outputs are source-free and suitable for planning v1.3, v1.4, and v1.5 scope.
-**Plans**: 4 plans
-Plans:
-- [x] 11-retrieval-gap-taxonomy-regression-trends-01-PLAN.md — Normalize source-free gap families across benchmark suites.
-- [x] 11-retrieval-gap-taxonomy-regression-trends-02-PLAN.md — Map gap families to future milestone recommendations.
-- [x] 11-retrieval-gap-taxonomy-regression-trends-03-PLAN.md — Add benchmark run comparison and regression thresholds.
-- [x] 11-retrieval-gap-taxonomy-regression-trends-04-PLAN.md — Validate trend reports on repeated real-repo benchmark runs.
+**Depends on**: v1.2 Retrieval Quality Proof
 
-### Phase 12: Product Proof Report & Adoption Gate
-**Goal**: Users can see a credible, reproducible answer to "why use ctxpack instead of the agent's native search?"
-**Depends on**: Phase 11
-**Requirements**: PROOF-01, PROOF-02, PROOF-03, PROOF-04, PROOF-05
+**Requirements**: STORE-01, STORE-02, STORE-03, STORE-04
+
 **Success Criteria** (what must be TRUE):
-  1. README or docs include a concise source-free proof report with benchmark setup, baseline comparison, headline metrics, and limitations.
-  2. `ctxpack eval` exposes a maintainer-friendly command path that reproduces the product proof on configured local repos.
-  3. Release gate can optionally run a bounded benchmark smoke and fail on report-generation or privacy regressions.
-  4. The proof report states when ctxpack helps, when it does not, and what future milestones address remaining gaps.
-  5. Planning docs for v1.3-v2.1 are updated from measured gaps instead of speculative feature desire.
+1. `ctxpack` can initialize and locate a repo-local or user-local SQLite store with explicit path, schema version, ctxpack version, and privacy metadata.
+2. The schema represents repos, files, symbols, chunks, edges, tests, git-history summaries, traces, packs, benchmark runs, and proof reports without raw source text.
+3. Storage code has typed contracts and migration/version metadata that are testable without relying on ad hoc JSON files.
+4. Privacy tests prove source snippets, prompt text, secrets, and raw file contents are not persisted by default.
+
 **Plans**: 4 plans
+
 Plans:
-- [x] 12-product-proof-report-adoption-gate-01-PLAN.md — Generate a source-free product proof report from benchmark artifacts.
-- [x] 12-product-proof-report-adoption-gate-02-PLAN.md — Document benchmark setup, interpretation, limitations, and "why ctxpack" messaging.
-- [x] 12-product-proof-report-adoption-gate-03-PLAN.md — Add optional benchmark smoke to release/adoption gates.
-- [x] 12-product-proof-report-adoption-gate-04-PLAN.md — Update future milestone requirements from measured gap evidence.
+- [ ] 13-storage-foundation-schema-contracts-01-PLAN.md — Define typed storage contracts, module boundaries, and SQLite store initialization.
+- [ ] 13-storage-foundation-schema-contracts-02-PLAN.md — Implement source-free schema tables and metadata records.
+- [ ] 13-storage-foundation-schema-contracts-03-PLAN.md — Add schema version, ctxpack version, and migration-history tracking.
+- [ ] 13-storage-foundation-schema-contracts-04-PLAN.md — Add privacy tests and fixtures proving source-free persistence defaults.
+
+### Phase 14: Incremental Indexing & Cache Rebuilds
+
+**Goal**: Re-indexing large repositories reuses unchanged records, updates stale records, and reports freshness diagnostics.
+
+**Depends on**: Phase 13
+
+**Requirements**: INCR-01, INCR-02, INCR-03, INCR-04
+
+**Success Criteria** (what must be TRUE):
+1. Re-indexing updates changed safe files based on content hash, git blob hash, role classification, ignore policy, and schema version.
+2. Search, symbol, test, dependency, history, and card metadata can reuse storage records when source files are unchanged.
+3. Stale, missing, corrupted, or policy-incompatible records produce actionable diagnostics instead of silently lowering context quality.
+4. Large-repo indexing reports source-free counts for reused, updated, skipped, ignored, generated, and sensitive paths.
+
+**Plans**: 4 plans
+
+Plans:
+- [ ] 14-incremental-indexing-cache-rebuilds-01-PLAN.md — Add file fingerprinting and stale-record detection against storage.
+- [ ] 14-incremental-indexing-cache-rebuilds-02-PLAN.md — Persist and reuse inventory, symbol, test, dependency, history, and card metadata.
+- [ ] 14-incremental-indexing-cache-rebuilds-03-PLAN.md — Add corruption, policy-drift, and partial-store diagnostics.
+- [ ] 14-incremental-indexing-cache-rebuilds-04-PLAN.md — Validate incremental behavior on RefactoringMiner-scale fixtures.
+
+### Phase 15: Evaluation, Pack, and Proof Persistence
+
+**Goal**: Benchmark, eval, comparison, product-proof, and pack metadata can be persisted and reused without storing source snippets.
+
+**Depends on**: Phase 14
+
+**Requirements**: PERSIST-01, PERSIST-02, PERSIST-03, PERSIST-04
+
+**Success Criteria** (what must be TRUE):
+1. Historical eval, benchmark, comparison, and product-proof runs can be stored with suite, revision, budget, metric, gap, and privacy metadata.
+2. Users can compare current benchmark output against stored prior runs without manually passing old artifact paths.
+3. Context plan and pack metadata can be stored with task hash, repo snapshot hash, budget, target agent, selected candidate IDs, warnings, and confidence.
+4. Stored metadata remains source-free and useful for later semantic retrieval and parser-precision planning.
+
+**Plans**: 4 plans
+
+Plans:
+- [ ] 15-evaluation-pack-proof-persistence-01-PLAN.md — Persist source-free eval, benchmark, comparison, and proof run metadata.
+- [ ] 15-evaluation-pack-proof-persistence-02-PLAN.md — Add storage-backed benchmark comparison and trend lookup.
+- [ ] 15-evaluation-pack-proof-persistence-03-PLAN.md — Persist context plan and pack metadata without snippets by default.
+- [ ] 15-evaluation-pack-proof-persistence-04-PLAN.md — Add compatibility tests for future v1.4/v1.5 planning consumers.
+
+### Phase 16: Storage Operations, Safety, and Release Gates
+
+**Goal**: Users can inspect, migrate, repair, clean, and validate storage while preserving privacy and fallback behavior.
+
+**Depends on**: Phase 15
+
+**Requirements**: OPS-01, OPS-02, OPS-03, OPS-04
+
+**Success Criteria** (what must be TRUE):
+1. CLI exposes storage status, migration, repair, vacuum/cleanup, and reset commands with dry-run or confirmation behavior for destructive actions.
+2. MCP and CLI diagnostics include storage freshness, migration status, privacy status, and degradation warnings when results depend on stale or partial storage.
+3. Release/adoption gates verify schema compatibility, migration behavior, source-free storage guarantees, and fallback behavior when storage is unavailable.
+4. Documentation explains storage location, privacy guarantees, repair/reset flows, and repeated-workflow benefits.
+
+**Plans**: 4 plans
+
+Plans:
+- [ ] 16-storage-operations-safety-release-gates-01-PLAN.md — Add storage status, migrate, repair, cleanup, and reset CLI commands.
+- [ ] 16-storage-operations-safety-release-gates-02-PLAN.md — Surface storage diagnostics through CLI and MCP outputs.
+- [ ] 16-storage-operations-safety-release-gates-03-PLAN.md — Extend release gates for schema, migration, privacy, and fallback checks.
+- [ ] 16-storage-operations-safety-release-gates-04-PLAN.md — Document storage behavior, privacy guarantees, and recovery workflows.
 
 ## Requirement Coverage
 
 | Requirement | Phase |
 |-------------|-------|
-| BENCH-01 | Phase 9 |
-| BENCH-02 | Phase 9 |
-| BENCH-03 | Phase 9 |
-| BENCH-04 | Phase 9 |
-| METR-01 | Phase 10 |
-| METR-02 | Phase 10 |
-| METR-03 | Phase 10 |
-| METR-04 | Phase 10 |
-| METR-05 | Phase 10 |
-| ROI-01 | Phase 10 |
-| ROI-02 | Phase 10 |
-| GAP-01 | Phase 11 |
-| GAP-02 | Phase 11 |
-| GAP-03 | Phase 11 |
-| GAP-04 | Phase 11 |
-| REG-01 | Phase 11 |
-| REG-02 | Phase 11 |
-| PROOF-01 | Phase 12 |
-| PROOF-02 | Phase 12 |
-| PROOF-03 | Phase 12 |
-| PROOF-04 | Phase 12 |
-| PROOF-05 | Phase 12 |
+| STORE-01 | Phase 13 |
+| STORE-02 | Phase 13 |
+| STORE-03 | Phase 13 |
+| STORE-04 | Phase 13 |
+| INCR-01 | Phase 14 |
+| INCR-02 | Phase 14 |
+| INCR-03 | Phase 14 |
+| INCR-04 | Phase 14 |
+| PERSIST-01 | Phase 15 |
+| PERSIST-02 | Phase 15 |
+| PERSIST-03 | Phase 15 |
+| PERSIST-04 | Phase 15 |
+| OPS-01 | Phase 16 |
+| OPS-02 | Phase 16 |
+| OPS-03 | Phase 16 |
+| OPS-04 | Phase 16 |
 
-**Coverage:** 22/22 v1.2 requirements mapped. No orphaned requirements.
+**Coverage:** 16/16 v1.3 requirements mapped. No orphaned requirements.
 
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 9 -> 10 -> 11 -> 12
+Phases execute in numeric order: 13 -> 14 -> 15 -> 16
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 9. Benchmark Harness & Corpus Contracts | 4/4 | Complete | 2026-05-14 |
-| 10. Fixed-Budget Retrieval Metrics & Baselines | 5/5 | Complete | 2026-05-14 |
-| 11. Retrieval Gap Taxonomy & Regression Trends | 4/4 | Complete | 2026-05-14 |
-| 12. Product Proof Report & Adoption Gate | 4/4 | Complete | 2026-05-14 |
+| 13. Storage Foundation & Schema Contracts | 0/4 | Not started | — |
+| 14. Incremental Indexing & Cache Rebuilds | 0/4 | Blocked on Phase 13 | — |
+| 15. Evaluation, Pack, and Proof Persistence | 0/4 | Blocked on Phase 14 | — |
+| 16. Storage Operations, Safety, and Release Gates | 0/4 | Blocked on Phase 15 | — |

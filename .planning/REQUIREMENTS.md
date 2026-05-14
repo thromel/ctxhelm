@@ -1,63 +1,44 @@
-# Requirements: Repo Context Packer v1.2 Retrieval Quality Proof
+# Requirements: Repo Context Packer v1.3 Production Storage
 
 **Defined:** 2026-05-14
-**Milestone:** v1.2 Retrieval Quality Proof
+**Milestone:** v1.3 Production Storage
 **Core Value:** Given a coding task, ctxpack should return the smallest safe evidence set that makes an existing coding agent more likely to inspect the right files, run the right tests, and avoid irrelevant context.
 
-## v1.2 Requirements
+## v1.3 Requirements
 
-Requirements for proving ctxpack's product value through repeatable, source-free real-repo retrieval benchmarks.
+Requirements for replacing ad hoc JSON/cache behavior with durable, fast, local, source-free storage.
 
-### Benchmark Corpus
+### Storage Foundation
 
-- [x] **BENCH-01**: Maintainer can define named benchmark suites with repo path, revision range, max commits, retrieval budgets, and role filters.
-- [x] **BENCH-02**: Maintainer can run bounded historical evals over RefactoringMiner and at least one additional real repository using reproducible revisions.
-- [x] **BENCH-03**: Benchmark artifacts include source-free labels for changed files, related tests, skipped paths, privacy status, and run metadata.
-- [x] **BENCH-04**: Maintainer has documentation for adding another local real-repo benchmark without cloud services or global machine assumptions.
+- [ ] **STORE-01**: Maintainer can initialize a repo-local or user-local SQLite store with explicit path, version, and privacy metadata.
+- [ ] **STORE-02**: Store schema captures source-free repository metadata for repos, files, symbols, chunks, dependency edges, tests, git history summaries, traces, packs, benchmark runs, and proof reports.
+- [ ] **STORE-03**: Store records schema version, ctxpack version, ranking/compiler version, and migration history so stale or incompatible storage can be diagnosed.
+- [ ] **STORE-04**: Store defaults never persist source snippets, prompt text, secrets, or raw file contents; any future source-bearing storage must be explicit and privacy-labeled.
 
-### Retrieval Metrics And Baselines
+### Incremental Indexing
 
-- [x] **METR-01**: Benchmark reports include file Recall@K, test Recall@K, useful-target ratios, and missing-label summaries for each suite.
-- [x] **METR-02**: Benchmark reports compare ctxpack hybrid ranking against lexical-only and no-context or anchor-only baselines under fixed budgets.
-- [x] **METR-03**: Benchmark reports include signal ablations for symbols, dependencies, tests, git history, current diff, and docs/cards.
-- [x] **METR-04**: Benchmark reports are available as stable JSON and human-readable Markdown without source snippets or prompt text.
-- [x] **METR-05**: Benchmark reports include enough metadata to reproduce the same suite, budget, and revision selection.
+- [ ] **INCR-01**: Maintainer can re-index a repository and update only changed safe files when content hashes, git blob hashes, role classification, or ignore policy changed.
+- [ ] **INCR-02**: Search, symbol, test, dependency, history, and card metadata can be rebuilt from the durable store without reparsing unchanged files.
+- [ ] **INCR-03**: ctxpack reports stale, missing, corrupted, or policy-incompatible store records with actionable diagnostics instead of silently returning low-confidence context.
+- [ ] **INCR-04**: Large-repo indexing reports source-free counts for reused records, updated records, skipped files, ignored paths, generated files, and sensitive exclusions.
 
-### Token ROI
+### Evaluation And Pack Persistence
 
-- [x] **ROI-01**: Benchmark reports estimate useful targets per 1k context tokens for brief, standard, and deep budget options.
-- [x] **ROI-02**: Benchmark reports identify when larger packs add little or negative value compared with smaller plans or brief packs.
+- [ ] **PERSIST-01**: Historical eval, benchmark, comparison, and product-proof runs can be persisted as source-free records with suite, revision, budget, metric, gap, and privacy metadata.
+- [ ] **PERSIST-02**: Maintainer can compare current benchmark output against stored prior runs without manually managing JSON artifact paths.
+- [ ] **PERSIST-03**: Context plan and pack metadata can be persisted with task hash, repo snapshot hash, budget, target agent, selected candidate IDs, warnings, and confidence without storing snippets by default.
+- [ ] **PERSIST-04**: Stored benchmark and pack metadata remains usable for future v1.4/v1.5 planning without requiring access to original source snippets.
 
-### Gap Analysis
+### Operations And Safety
 
-- [x] **GAP-01**: Repeated missing files and tests are grouped into source-free families by role, path pattern, package, status, and missing signal.
-- [x] **GAP-02**: Gap reports identify whether failures point to storage, semantic retrieval, parser precision, test mapping, history ranking, or policy exclusions.
-- [x] **GAP-03**: Gap reports distinguish deleted/renamed historical labels from current reachable targets so evals do not punish impossible retrieval.
-- [x] **GAP-04**: Gap reports can be consumed by future milestone planning without needing access to source snippets.
-
-### Regression Trends
-
-- [x] **REG-01**: Maintainer can compare two benchmark runs and see deltas for recall, token ROI, signal ablations, skipped files, and gap families.
-- [x] **REG-02**: Maintainer can configure threshold checks that fail when selected retrieval metrics regress beyond allowed tolerances.
-
-### Product Proof
-
-- [x] **PROOF-01**: README or docs include a concise source-free proof report explaining benchmark setup, headline metrics, baseline deltas, and limitations.
-- [x] **PROOF-02**: `ctxpack eval` exposes a maintainer-friendly command path that reproduces the proof report on configured local repos.
-- [x] **PROOF-03**: Release or adoption gates can optionally run a bounded benchmark smoke and fail on report-generation or privacy regressions.
-- [x] **PROOF-04**: Product documentation clearly states when ctxpack helps, when it does not, and how agents should use the evidence.
-- [x] **PROOF-05**: Future milestone requirements for v1.3-v2.1 are updated from measured retrieval gaps rather than speculative feature desire.
+- [ ] **OPS-01**: CLI exposes storage status, migration, repair, vacuum/cleanup, and reset commands with dry-run or confirmation behavior for destructive actions.
+- [ ] **OPS-02**: MCP and CLI diagnostics include storage freshness, migration status, privacy status, and degradation warnings when context results depend on stale or partial storage.
+- [ ] **OPS-03**: Release/adoption gates can verify schema compatibility, migration behavior, source-free storage guarantees, and fallback behavior when the store is unavailable.
+- [ ] **OPS-04**: Documentation explains storage location, privacy guarantees, repair/reset flows, and how storage improves repeated agent workflows without becoming a cloud sync layer.
 
 ## Future Requirements
 
-Deferred to future milestones from the original product vision and refined by the v1.2 gap taxonomy fields (`recommendationArea`, `targetStatus`, token ROI, and benchmark comparison deltas).
-
-### v1.3 Production Storage
-
-- **STORE-01**: Add SQLite-backed local storage for repository metadata, symbols, chunks, edges, traces, packs, and benchmark results.
-- **STORE-02**: Add faster incremental indexing and cache invalidation for large repositories.
-- **STORE-03**: Add schema versioning, migrations, repair, and cleanup commands for local ctxpack state.
-- **STORE-04**: Preserve local-first, source-free defaults through storage, migration, and repair paths.
+Deferred to future milestones from the original product vision and refined by v1.2-v1.3 evidence.
 
 ### v1.4 Local Semantic Retrieval
 
@@ -89,61 +70,53 @@ Deferred to future milestones from the original product vision and refined by th
 
 ## Completed Requirements
 
-v1 and v1.1 are complete and archived. They validated:
+v1, v1.1, and v1.2 are complete and archived. They validated:
 
 - CLI, MCP, and public JSON compatibility guardrails.
 - Safe inventory, diagnostics, privacy/source-read policy, and source-free local traces.
 - Typed attributed retrieval candidates, context plans, context packs, historical evals, signal ablations, and gap reports.
 - Codex CLI and Claude Code MCP smoke proof with explicit repo arguments.
 - v1.1 binary packaging, checksums, artifact audit, install docs, setup validation, first-pack smoke, and release gates.
+- v1.2 named benchmark suites, fixed-budget baseline comparisons, token ROI, gap taxonomy, benchmark comparison, and product proof reporting.
 
 ## Out of Scope
 
-Explicitly excluded from v1.2 to prevent scope creep.
+Explicitly excluded from v1.3 to prevent scope creep.
 
 | Feature | Reason |
 |---------|--------|
-| New autonomous editing behavior | ctxpack remains a read-only context broker; agents own edits and permissions. |
-| Production storage migration | v1.2 should prove which data deserves durable storage before building v1.3. |
-| Embeddings or vector retrieval | v1.2 should measure existing retrieval gaps first; semantic retrieval belongs in v1.4. |
-| SCIP/LSP precision integration | Parser precision belongs in v1.5 and should follow measured gap evidence. |
-| Hosted team backend or source sync | Team/workspace capabilities belong in v2 and must preserve local-first trust. |
-| GUI or pack inspector | UI belongs in v2.1 after benchmark/report artifacts exist. |
-| Cloud embeddings, cloud reranking, telemetry, or remote source upload | Local-first privacy remains the product contract. |
-| Claiming universal agent improvement | v1.2 must report limitations and failure cases honestly. |
+| Embeddings or vector retrieval | Semantic retrieval belongs in v1.4 after durable storage exists. |
+| SCIP/LSP precision integration | Parser precision belongs in v1.5 and should follow measured storage/retrieval gaps. |
+| Hosted sync, remote database, or team backend | v1.3 must stay local-first and source-free. |
+| Autonomous code editing | ctxpack remains a read-only context broker; agents own edits and permissions. |
+| Storing raw source snippets by default | Source-free persistence is the trust contract for evals, packs, and proof. |
+| Full UI or pack inspector | UI belongs in v2.1 after storage-backed diagnostics exist. |
 
 ## Traceability
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| BENCH-01 | Phase 9 | Complete |
-| BENCH-02 | Phase 9 | Complete |
-| BENCH-03 | Phase 9 | Complete |
-| BENCH-04 | Phase 9 | Complete |
-| METR-01 | Phase 10 | Complete |
-| METR-02 | Phase 10 | Complete |
-| METR-03 | Phase 10 | Complete |
-| METR-04 | Phase 10 | Complete |
-| METR-05 | Phase 10 | Complete |
-| ROI-01 | Phase 10 | Complete |
-| ROI-02 | Phase 10 | Complete |
-| GAP-01 | Phase 11 | Complete |
-| GAP-02 | Phase 11 | Complete |
-| GAP-03 | Phase 11 | Complete |
-| GAP-04 | Phase 11 | Complete |
-| REG-01 | Phase 11 | Complete |
-| REG-02 | Phase 11 | Complete |
-| PROOF-01 | Phase 12 | Complete |
-| PROOF-02 | Phase 12 | Complete |
-| PROOF-03 | Phase 12 | Complete |
-| PROOF-04 | Phase 12 | Complete |
-| PROOF-05 | Phase 12 | Complete |
+| STORE-01 | Phase 13 | Planned |
+| STORE-02 | Phase 13 | Planned |
+| STORE-03 | Phase 13 | Planned |
+| STORE-04 | Phase 13 | Planned |
+| INCR-01 | Phase 14 | Planned |
+| INCR-02 | Phase 14 | Planned |
+| INCR-03 | Phase 14 | Planned |
+| INCR-04 | Phase 14 | Planned |
+| PERSIST-01 | Phase 15 | Planned |
+| PERSIST-02 | Phase 15 | Planned |
+| PERSIST-03 | Phase 15 | Planned |
+| PERSIST-04 | Phase 15 | Planned |
+| OPS-01 | Phase 16 | Planned |
+| OPS-02 | Phase 16 | Planned |
+| OPS-03 | Phase 16 | Planned |
+| OPS-04 | Phase 16 | Planned |
 
 **Coverage:**
-- v1.2 requirements: 22 total
-- Mapped to phases: 22
+- v1.3 requirements: 16 total
+- Mapped to phases: 16
 - Unmapped: 0
 
 ---
 *Requirements defined: 2026-05-14*
-*Last updated: 2026-05-14 after v1.2 completion*

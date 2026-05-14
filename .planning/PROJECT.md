@@ -4,22 +4,24 @@
 
 Repo Context Packer is a local-first, read-only context broker that helps existing coding agents choose better repository context. It does not replace Codex, Claude Code, Cursor, OpenCode, Aider, or similar tools; it exposes task-conditioned file, test, graph, history, and pack guidance through agent-native surfaces such as MCP, AGENTS.md, and thin adapter files.
 
-The current codebase is a Rust workspace with a CLI, MCP server, safe repository inventory, lexical and symbol retrieval, related-test inference, dependency hints, current-diff anchors, context packs, generated context cards, local eval traces, and historical retrieval evaluation.
+The current codebase is a Rust workspace with a CLI, MCP server, safe repository inventory, lexical and symbol retrieval, related-test inference, dependency hints, current-diff anchors, context packs, generated context cards, local eval traces, historical retrieval evaluation, benchmark suites, source-free retrieval gap reporting, and product proof generation.
 
-## Current State: v1.1 Packaging & Adoption Shipped
+## Current State: v1.3 Production Storage Started
 
-The v1.1 milestone is complete. ctxpack is now installable from audited local release artifacts, documented for first-pack adoption, and guarded by release smokes that prove selected-binary behavior, deterministic MCP protocol behavior, and optional Codex/Claude client wrapper paths.
+The v1.2 milestone is complete and archived. ctxpack can now prove, from source-free benchmark artifacts, whether its task-conditioned context plans outperform lexical and no-context baselines under fixed budgets. v1.3 starts from that evidence and focuses on durable local storage for repository intelligence, benchmark/proof artifacts, and repeated comparisons.
 
-## Current Milestone: v1.2 Retrieval Quality Proof
+## Current Milestone: v1.3 Production Storage
 
-**Goal:** Prove ctxpack's value with repeatable, source-free real-repo benchmarks that show retrieval lift, token ROI, failure modes, and regression trends.
+**Goal:** Replace ad hoc JSON/cache behavior with durable, fast, local storage for inventory, symbols, history, traces, packs, benchmark results, and schema/version metadata.
+
+**Why next:** v1.2 created the evidence layer. v1.3 should make that evidence and repository intelligence faster, more durable, and easier to compare across repeated runs without weakening the local-first privacy contract.
 
 **Target features:**
 
-- Named benchmark suites for RefactoringMiner and at least one additional real repository.
-- Fixed-budget retrieval metrics, lexical/no-context baselines, signal ablations, and token ROI.
-- Source-free retrieval-gap taxonomy and benchmark regression trend reports.
-- Product proof documentation and optional benchmark smoke gates that explain when ctxpack helps and where it still fails.
+- SQLite-backed repository metadata, symbols, chunks, edges, traces, packs, and benchmark results.
+- Faster incremental indexing and cache invalidation for large repositories.
+- Schema versioning, migrations, repair, and cleanup commands for local ctxpack state.
+- Source-free privacy guarantees across storage, repair, migration, and reporting paths.
 
 ## Core Value
 
@@ -46,14 +48,17 @@ Given a coding task, ctxpack should return the smallest safe evidence set that m
 - ✓ v1.1 validated repo-local agent setup, actionable `ctxpack init` reporting, read-only `setup-check`, and first-pack smoke through deterministic MCP proof.
 - ✓ v1.1 validated installed-binary quickstart docs, agent setup matrix, troubleshooting docs, and proof-boundary documentation for Codex, Claude Code, Cursor, and OpenCode.
 - ✓ v1.1 validated a local release gate covering workspace tests, docs consistency, packaging/audit, selected-binary behavior, first-pack smoke, wrong-cwd MCP proof, and optional Codex/Claude wrappers.
+- ✓ v1.2 validated named benchmark suites for RefactoringMiner and additional real repositories with reproducible, source-free revision and budget metadata.
+- ✓ v1.2 validated fixed-budget file/test recall, lexical and no-context baseline deltas, signal ablations, and token ROI reporting.
+- ✓ v1.2 validated source-free retrieval gap taxonomy, future milestone recommendations, benchmark comparison, and regression thresholds.
+- ✓ v1.2 validated product proof generation, benchmark proof documentation, and optional release-gate benchmark smoke via `CTXPACK_BENCHMARK_CONFIG`.
 
 ### Active
 
-- Broaden real-repo historical evals into named benchmark suites with reproducible revisions and fixed budgets.
-- Report file/test recall, lexical and no-context baseline deltas, signal ablations, token ROI, failure modes, and regression trends from source-free artifacts.
-- Use RefactoringMiner and at least one additional real repository as bounded proof targets.
-- Convert repeated retrieval gaps into measurable requirements for v1.3 storage, v1.4 semantic retrieval, and v1.5 parser precision.
-- Publish concise product proof that explains why agents should call ctxpack, when ctxpack helps, and when native agent search is enough.
+- Build versioned SQLite-backed storage for repository metadata, symbols, chunks, edges, traces, packs, and benchmark results.
+- Add incremental indexing and cache invalidation that makes repeated runs faster and more explainable on large repositories.
+- Persist benchmark, eval, pack, and proof metadata without storing source snippets or prompt text.
+- Add migration, repair, cleanup, and diagnostic commands that preserve the local-first, source-free contract.
 
 ### Out of Scope
 
@@ -67,22 +72,18 @@ Given a coding task, ctxpack should return the smallest safe evidence set that m
 
 The product started from the thesis that code agents do not need another generic repo chat app; they need a context compiler that decides which files, tests, examples, constraints, and snippets belong in the model context for a specific task. The existing implementation follows that shape: a Rust workspace separates contracts, indexing/retrieval, context compilation, MCP transport, and CLI rendering.
 
-The codebase map in `.planning/codebase/` documents the current system. Phase 1 completed compatibility guardrails and module-boundary hardening, Phase 2 completed trust-layer freshness, privacy/source-read policy, diagnostics, and constrained local write handling, Phase 3 completed measured retrieval quality gates, and Phase 4 completed agent-native client durability:
+The codebase map in `.planning/codebase/` documents the current system:
 
 - `crates/ctxpack-core/src/contracts.rs` defines the stable typed contracts consumed by CLI and MCP.
 - `crates/ctxpack-index/src/lib.rs` is the stable facade for safe inventory, freshness, source-read policy, search, symbols, test mapping, dependency edges, git history, current diff, status-aware historical samples, and eval traces implemented in focused index modules.
-- `crates/ctxpack-compiler/src/lib.rs` is the stable facade for diagnostic-aware context-plan fusion, typed retrieval ranking, pack compilation, source revalidation, context-card generation, Markdown rendering, provenance, and fixed-budget historical eval implemented in focused compiler modules.
+- `crates/ctxpack-compiler/src/lib.rs` is the stable facade for diagnostic-aware context-plan fusion, typed retrieval ranking, pack compilation, source revalidation, context-card generation, Markdown rendering, provenance, fixed-budget historical eval, benchmark suite execution, gap taxonomy, comparison, and proof reporting.
 - `crates/ctxpack-mcp/src/lib.rs` is the stable facade for JSON-RPC/MCP protocol, tools, resources, prompts, diagnostics, session-scoped pack cache, and tool/resource response shaping implemented in focused MCP modules.
 - `crates/ctxpack/src/main.rs` owns the user-facing CLI and command output.
 
-The current proof point is a complete v1 local context broker. The product can provide attributed context recommendations, fixed-budget eval reports, signal ablations, grouped retrieval gaps, source-free large-repo smoke validation, deterministic MCP protocol checks, and real-client Codex CLI / Claude Code smoke proof with explicit repo arguments.
-
-v1.1 Packaging & Adoption shipped the install, setup, documentation, and release-gate layer around the completed v1 context broker without expanding ctxpack into a standalone app, autonomous editor, or cloud service. v1.2 Retrieval Quality Proof now focuses on the key adoption objection: agents can already grep, search, and inspect files, so ctxpack must prove it gives better context, better validation hints, and better token efficiency under repeatable real-repo evaluation.
+v1 through v1.1 proved the local context broker, source-free safety model, agent-native protocol surface, packaging path, and setup/release gates. v1.2 proved the adoption claim with measured retrieval-quality evidence. v1.3 converts those measured needs into production-grade local storage.
 
 Milestone strategy from the original product vision:
 
-- **v1.2 Retrieval Quality Proof**: broaden real-repo evals, benchmark reports, ROI metrics, baseline deltas, failure analysis, and adoption proof.
-- **v1.3 Production Storage**: add durable local storage, faster incremental indexing, migration/versioning, repair, and disciplined cache behavior.
 - **v1.4 Local Semantic Retrieval**: add optional local embeddings/vector retrieval with hybrid fusion and explicit privacy controls.
 - **v1.5 Parser/Semantic Precision**: expand Tree-sitter coverage and add optional SCIP/LSP precision only where measured gaps justify it.
 - **v2.0 Workspace & Team Layer**: support multi-repo workspaces, shared source-free context cards, benchmark reports, and team policy files.
@@ -90,11 +91,11 @@ Milestone strategy from the original product vision:
 
 ## Constraints
 
-- **Privacy**: Default behavior must stay local-only and source-safe for inventory, plans, traces, historical eval reports, and generated cards. Packs may contain safe snippets, but every snippet path must remain filtered through the safe inventory policy.
+- **Privacy**: Default behavior must stay local-only and source-safe for inventory, plans, traces, historical eval reports, benchmark reports, generated cards, and product proof. Packs may contain safe snippets, but every snippet path must remain filtered through the safe inventory policy.
 - **Product surface**: AGENTS.md, MCP, and thin native rules/adapters remain the primary surfaces. CLI exists for setup, debugging, and automation, not as the daily product center.
 - **Read-only scope**: ctxpack should not edit source code, run user project tests, install dependencies, or auto-commit user work. It can write its own local caches, traces, generated cards, adapter files, and planning/docs artifacts.
 - **Implementation stack**: Keep the current Rust workspace architecture and typed contracts unless there is a clear measured reason to change.
-- **Evaluation**: New retrieval work should be checked against source-free historical evals, with RefactoringMiner as a large-history external smoke target when practical.
+- **Evaluation**: New retrieval and storage work should be checked against source-free historical evals, with RefactoringMiner as a large-history external smoke target when practical.
 - **Validation**: Run `cargo test --workspace` before claiming implementation work complete, and `cargo run -p ctxpack -- --help` after CLI changes.
 
 ## Key Decisions
@@ -106,7 +107,7 @@ Milestone strategy from the original product vision:
 | Rust workspace core | The product needs fast local filesystem/git work, deterministic CLI behavior, and small distributable binaries. | ✓ Good |
 | Small MCP tool surface | Too many MCP tools increase context overhead and client decision complexity. | ✓ Good |
 | Source-free eval traces and historical reports | Retrieval quality should be measured without storing prompt text or source snippets. | ✓ Good |
-| Use real repositories for proof | RefactoringMiner exposes scale, history, and retrieval-quality failures that synthetic fixtures miss. | ✓ Validated in Phase 3 smoke |
+| Use real repositories for proof | RefactoringMiner exposes scale, history, and retrieval-quality failures that synthetic fixtures miss. | ✓ Validated in Phase 3 smoke and v1.2 benchmark proof |
 | Compatibility guardrails before refactors | Binary CLI, JSON contract, and MCP compatibility tests should fail before internal module changes drift public behavior. | ✓ Validated in Phase 1 |
 | Trust diagnostics before retrieval lift | Measured retrieval work should build on fresh inventory, safe source reads, and explicit degraded-result diagnostics. | ✓ Validated in Phase 2 |
 | Measured retrieval before client durability | Real clients should consume ranked, attributed, source-free context surfaces, not unstable heuristic output. | ✓ Validated in Phase 3 |
@@ -114,7 +115,7 @@ Milestone strategy from the original product vision:
 | Release artifacts must preserve clean-checkout semantics | Publication gates should not silently package dirty source unless maintainers explicitly opt into an in-flight validation override. | ✓ Validated in v1.1 audit |
 | Deterministic smokes must not write into target repos | ctxpack's read-only product contract applies to release validation as well as runtime agent use. | ✓ Validated in v1.1 audit |
 | Deterministic protocol proof is the required gate | Real Codex/Claude client proof is valuable but remains optional and environment-gated; deterministic MCP proof is the portable release blocker. | ✓ Validated in Phase 8 |
-| Retrieval proof before bigger architecture | Storage, embeddings, parser precision, team features, and UI should be justified by measured retrieval gaps instead of speculative architecture desire. | — Pending |
+| Retrieval proof before bigger architecture | Storage, embeddings, parser precision, team features, and UI should be justified by measured retrieval gaps instead of speculative architecture desire. | ✓ Validated in v1.2 |
 
 ## Evolution
 
@@ -134,4 +135,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-05-14 after v1.2 milestone initialization*
+*Last updated: 2026-05-14 after v1.3 milestone start*
