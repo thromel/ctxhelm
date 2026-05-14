@@ -5,6 +5,7 @@ mod inventory;
 mod policy;
 mod related_tests;
 mod search;
+mod storage;
 mod symbols;
 mod traces;
 
@@ -40,6 +41,11 @@ pub use related_tests::{
 };
 pub use search::{
     lexical_search, lexical_search_report, SearchOptions, SearchReport, SearchResult,
+};
+pub use storage::{
+    initialize_store, inspect_store_schema, open_store_report, required_table_names,
+    StorageCompatibility, StorageError, StorageMetadata, StoragePrivacyMode, StorageReport,
+    StorageSchemaReport, StoreConfig, StorePaths, STORAGE_SCHEMA_VERSION,
 };
 pub use symbols::{
     extract_symbols, extract_symbols_report, symbol_search, symbol_search_report, CodeSymbol,

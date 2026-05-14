@@ -2,7 +2,7 @@
 phase: 13
 plan: 4
 title: Add source-free storage privacy tests and fixtures
-status: planned
+status: complete
 wave: 4
 depends_on: [13-storage-foundation-schema-contracts-03]
 requirements_addressed: [STORE-04]

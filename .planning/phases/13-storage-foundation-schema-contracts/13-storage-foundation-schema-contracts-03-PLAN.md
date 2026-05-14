@@ -2,7 +2,7 @@
 phase: 13
 plan: 3
 title: Add schema version and migration history tracking
-status: planned
+status: complete
 wave: 3
 depends_on: [13-storage-foundation-schema-contracts-02]
 requirements_addressed: [STORE-03]

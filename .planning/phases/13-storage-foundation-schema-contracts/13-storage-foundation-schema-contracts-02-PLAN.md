@@ -2,7 +2,7 @@
 phase: 13
 plan: 2
 title: Create source-free schema tables and record contracts
-status: planned
+status: complete
 wave: 2
 depends_on: [13-storage-foundation-schema-contracts-01]
 requirements_addressed: [STORE-02, STORE-04]

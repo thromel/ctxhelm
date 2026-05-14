@@ -2,7 +2,7 @@
 phase: 13
 plan: 1
 title: Define storage contracts and initialize SQLite store
-status: planned
+status: complete
 wave: 1
 depends_on: []
 requirements_addressed: [STORE-01, STORE-03]

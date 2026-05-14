@@ -12,7 +12,7 @@ This roadmap opens v1.3 Production Storage. v1.2 proved ctxpack's retrieval valu
 - Integer phases (13, 14, 15, 16): Planned v1.3 work
 - Decimal phases (14.1, 14.2): Urgent insertions if needed
 
-- [ ] **Phase 13: Storage Foundation & Schema Contracts** - Maintainers can initialize a versioned SQLite store that captures source-free repository intelligence and migration metadata.
+- [x] **Phase 13: Storage Foundation & Schema Contracts** - Maintainers can initialize a versioned SQLite store that captures source-free repository intelligence and migration metadata.
 - [ ] **Phase 14: Incremental Indexing & Cache Rebuilds** - Re-indexing large repositories reuses unchanged records, updates stale records, and reports freshness diagnostics.
 - [ ] **Phase 15: Evaluation, Pack, and Proof Persistence** - Benchmark, eval, comparison, product-proof, and pack metadata can be persisted and reused without storing source snippets.
 - [ ] **Phase 16: Storage Operations, Safety, and Release Gates** - Users can inspect, migrate, repair, clean, and validate storage while preserving privacy and fallback behavior.
@@ -137,7 +137,7 @@ Phases execute in numeric order: 13 -> 14 -> 15 -> 16
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 13. Storage Foundation & Schema Contracts | 4/4 | Planned | — |
+| 13. Storage Foundation & Schema Contracts | 4/4 | Complete | 2026-05-14 |
 | 14. Incremental Indexing & Cache Rebuilds | 0/4 | Blocked on Phase 13 | — |
 | 15. Evaluation, Pack, and Proof Persistence | 0/4 | Blocked on Phase 14 | — |
 | 16. Storage Operations, Safety, and Release Gates | 0/4 | Blocked on Phase 15 | — |

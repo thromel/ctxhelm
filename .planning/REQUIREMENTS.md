@@ -10,10 +10,10 @@ Requirements for replacing ad hoc JSON/cache behavior with durable, fast, local,
 
 ### Storage Foundation
 
-- [ ] **STORE-01**: Maintainer can initialize a repo-local or user-local SQLite store with explicit path, version, and privacy metadata.
-- [ ] **STORE-02**: Store schema captures source-free repository metadata for repos, files, symbols, chunks, dependency edges, tests, git history summaries, traces, packs, benchmark runs, and proof reports.
-- [ ] **STORE-03**: Store records schema version, ctxpack version, ranking/compiler version, and migration history so stale or incompatible storage can be diagnosed.
-- [ ] **STORE-04**: Store defaults never persist source snippets, prompt text, secrets, or raw file contents; any future source-bearing storage must be explicit and privacy-labeled.
+- [x] **STORE-01**: Maintainer can initialize a repo-local or user-local SQLite store with explicit path, version, and privacy metadata.
+- [x] **STORE-02**: Store schema captures source-free repository metadata for repos, files, symbols, chunks, dependency edges, tests, git history summaries, traces, packs, benchmark runs, and proof reports.
+- [x] **STORE-03**: Store records schema version, ctxpack version, ranking/compiler version, and migration history so stale or incompatible storage can be diagnosed.
+- [x] **STORE-04**: Store defaults never persist source snippets, prompt text, secrets, or raw file contents; any future source-bearing storage must be explicit and privacy-labeled.
 
 ### Incremental Indexing
 
@@ -96,10 +96,10 @@ Explicitly excluded from v1.3 to prevent scope creep.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| STORE-01 | Phase 13 | Planned |
-| STORE-02 | Phase 13 | Planned |
-| STORE-03 | Phase 13 | Planned |
-| STORE-04 | Phase 13 | Planned |
+| STORE-01 | Phase 13 | Complete |
+| STORE-02 | Phase 13 | Complete |
+| STORE-03 | Phase 13 | Complete |
+| STORE-04 | Phase 13 | Complete |
 | INCR-01 | Phase 14 | Planned |
 | INCR-02 | Phase 14 | Planned |
 | INCR-03 | Phase 14 | Planned |
