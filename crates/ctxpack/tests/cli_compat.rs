@@ -606,6 +606,7 @@ fn search_related_tests_dependencies_and_eval_history_emit_json_shapes() {
             "refs",
             "rankingComparison",
             "signalAblations",
+            "tokenRoi",
             "retrievalGapSummaries",
             "privacyStatus",
         ],
@@ -613,7 +614,19 @@ fn search_related_tests_dependencies_and_eval_history_emit_json_shapes() {
     assert_eq!(history["privacyStatus"]["localOnly"], true);
     assert_eq!(history["effectiveFilters"]["rankingBudget"], 10);
     assert_eq!(history["rankingComparison"]["k"], 10);
+    assert_eq!(
+        history["rankingComparison"]["noContextBaseline"]["recallAtK"],
+        0.0
+    );
+    assert!(
+        history["rankingComparison"]["recallLiftVsNoContextAtK"]
+            .as_f64()
+            .unwrap()
+            >= 0.0
+    );
     assert!(history["signalAblations"].is_array());
+    assert!(history["tokenRoi"].is_array());
+    assert_eq!(history["tokenRoi"][0]["budget"], "brief");
     assert!(history["retrievalGapSummaries"].is_array());
     assert_no_source_or_prompt_text(&history);
     if let Some(commit) = history["commits"].as_array().unwrap().first() {
@@ -742,6 +755,11 @@ fn eval_benchmark_runs_named_suite_source_free() {
         value["repositories"][1]["effectiveConfig"]["roleFilters"],
         json!(["source"])
     );
+    assert!(value["repositories"][0]["report"]["tokenRoi"].is_array());
+    assert_eq!(
+        value["repositories"][0]["report"]["rankingComparison"]["noContextBaseline"]["recallAtK"],
+        0.0
+    );
     assert_no_source_or_prompt_text(&value);
 
     Command::cargo_bin("ctxpack")
@@ -758,6 +776,8 @@ fn eval_benchmark_runs_named_suite_source_free() {
         .stdout(contains("Suite: `phase-nine-cli-smoke`"))
         .stdout(contains("Repository Results"))
         .stdout(contains("Role filters: `Source, Test`"))
+        .stdout(contains("Token ROI"))
+        .stdout(contains("No-context Recall@K"))
         .stdout(contains("ctxpack Lift@10"));
 }
 

@@ -724,7 +724,7 @@ fn render_historical_eval_report(report: &HistoricalEvalReport) -> String {
     let mut output = String::from("# ctxpack Historical Retrieval Eval\n\n");
     output.push_str("This source-free report replays recent commit subjects through `prepare_task` and compares recommended context paths with the safe files changed by each commit.\n\n");
     output.push_str(&format!(
-        "- Eval range ID: `{}`\n- Repo ID: `{}`\n- Evaluated commits: `{}`\n- Budget: `{:?}`\n- Effective limit: `{}`\n- Ranking budget K: `{}`\n- Effective mode: `{:?}`\n- Effective target agent: `{}`\n- Base: `{}`\n- Head: `{}`\n- File Recall@5: `{:.2}`\n- File Recall@10: `{:.2}`\n- Lexical Baseline Recall@5: `{:.2}`\n- Lexical Baseline Recall@10: `{:.2}`\n- ctxpack Lift@5: `{:+.2}`\n- ctxpack Lift@10: `{:+.2}`\n- Recall@K: `{:.2}`\n- Precision@K: `{:.2}`\n- MRR@K: `{:.2}`\n- Lexical Recall@K: `{:.2}`\n- ctxpack Lift@K: `{:+.2}`\n- Source Recall@5: `{:.2}`\n- Source Recall@10: `{:.2}`\n- Test Recall@5: `{:.2}`\n- Test Recall@10: `{:.2}`\n- Test recommendation rate: `{:.2}`\n- Average recommended context files: `{:.2}`\n- Low-information commits: `{}`\n- Privacy: local-only `{}`\n\n",
+        "- Eval range ID: `{}`\n- Repo ID: `{}`\n- Evaluated commits: `{}`\n- Budget: `{:?}`\n- Effective limit: `{}`\n- Ranking budget K: `{}`\n- Effective mode: `{:?}`\n- Effective target agent: `{}`\n- Base: `{}`\n- Head: `{}`\n- File Recall@5: `{:.2}`\n- File Recall@10: `{:.2}`\n- Lexical Baseline Recall@5: `{:.2}`\n- Lexical Baseline Recall@10: `{:.2}`\n- ctxpack Lift@5: `{:+.2}`\n- ctxpack Lift@10: `{:+.2}`\n- Recall@K: `{:.2}`\n- Precision@K: `{:.2}`\n- MRR@K: `{:.2}`\n- Lexical Recall@K: `{:.2}`\n- No-context Recall@K: `{:.2}`\n- ctxpack Lift@K: `{:+.2}`\n- ctxpack Lift vs No-context@K: `{:+.2}`\n- Source Recall@5: `{:.2}`\n- Source Recall@10: `{:.2}`\n- Test Recall@5: `{:.2}`\n- Test Recall@10: `{:.2}`\n- Test recommendation rate: `{:.2}`\n- Average recommended context files: `{:.2}`\n- Low-information commits: `{}`\n- Privacy: local-only `{}`\n\n",
         report.eval_range_id,
         report.repo_id,
         report.evaluated_commits,
@@ -745,7 +745,9 @@ fn render_historical_eval_report(report: &HistoricalEvalReport) -> String {
         report.ranking_comparison.combined.precision_at_k,
         report.ranking_comparison.combined.mrr_at_k,
         report.ranking_comparison.lexical_baseline.recall_at_k,
+        report.ranking_comparison.no_context_baseline.recall_at_k,
         report.ranking_comparison.recall_lift_at_k,
+        report.ranking_comparison.recall_lift_vs_no_context_at_k,
         report.source_recall_at_5,
         report.source_recall_at_10,
         report.test_recall_at_5,
@@ -769,6 +771,27 @@ fn render_historical_eval_report(report: &HistoricalEvalReport) -> String {
             output.push_str(&format!(
                 "- `{}` ({:?}) missed `{}` time(s)\n",
                 gap.path, gap.role, gap.missed_count
+            ));
+        }
+        output.push('\n');
+    }
+
+    output.push_str("## Token ROI\n\n");
+    if report.token_roi.is_empty() {
+        output.push_str("- No token ROI rows available.\n\n");
+    } else {
+        for row in &report.token_roi {
+            output.push_str(&format!(
+                "- `{:?}`: cutoff `{}`, estimated tokens `{}`, useful targets `{}/{}`, useful targets per 1k tokens `{:.2}`, recall `{:.2}`, marginal useful targets `{:+}`, larger pack adds little value `{}`\n",
+                row.budget,
+                row.ranking_cutoff,
+                row.estimated_tokens,
+                row.useful_targets,
+                row.safe_targets,
+                row.useful_targets_per_1k_tokens,
+                row.recall_at_cutoff,
+                row.marginal_useful_targets_vs_previous_budget,
+                row.larger_pack_adds_little_value
             ));
         }
         output.push('\n');
@@ -921,18 +944,39 @@ fn render_benchmark_suite_report(report: &BenchmarkSuiteReport) -> String {
             continue;
         };
         output.push_str(&format!(
-            "- File Recall@5: `{:.2}`\n- File Recall@10: `{:.2}`\n- Lexical Baseline Recall@5: `{:.2}`\n- Lexical Baseline Recall@10: `{:.2}`\n- ctxpack Lift@5: `{:+.2}`\n- ctxpack Lift@10: `{:+.2}`\n- Source Recall@10: `{:.2}`\n- Test Recall@10: `{:.2}`\n- Test recommendation rate: `{:.2}`\n- Average recommended context files: `{:.2}`\n\n",
+            "- File Recall@5: `{:.2}`\n- File Recall@10: `{:.2}`\n- Lexical Baseline Recall@5: `{:.2}`\n- Lexical Baseline Recall@10: `{:.2}`\n- No-context Recall@K: `{:.2}`\n- ctxpack Lift@5: `{:+.2}`\n- ctxpack Lift@10: `{:+.2}`\n- ctxpack Lift vs No-context@K: `{:+.2}`\n- Source Recall@10: `{:.2}`\n- Test Recall@10: `{:.2}`\n- Test recommendation rate: `{:.2}`\n- Average recommended context files: `{:.2}`\n\n",
             eval.file_recall_at_5,
             eval.file_recall_at_10,
             eval.lexical_baseline_recall_at_5,
             eval.lexical_baseline_recall_at_10,
+            eval.ranking_comparison.no_context_baseline.recall_at_k,
             eval.ctxpack_lift_at_5,
             eval.ctxpack_lift_at_10,
+            eval.ranking_comparison.recall_lift_vs_no_context_at_k,
             eval.source_recall_at_10,
             eval.test_recall_at_10,
             eval.test_recommendation_rate,
             eval.average_recommended_context_files
         ));
+
+        output.push_str("#### Token ROI\n\n");
+        if eval.token_roi.is_empty() {
+            output.push_str("- No token ROI rows available.\n\n");
+        } else {
+            for row in &eval.token_roi {
+                output.push_str(&format!(
+                    "- `{:?}`: cutoff `{}`, estimated tokens `{}`, useful targets `{}/{}`, useful targets per 1k tokens `{:.2}`, larger pack adds little value `{}`\n",
+                    row.budget,
+                    row.ranking_cutoff,
+                    row.estimated_tokens,
+                    row.useful_targets,
+                    row.safe_targets,
+                    row.useful_targets_per_1k_tokens,
+                    row.larger_pack_adds_little_value
+                ));
+            }
+            output.push('\n');
+        }
 
         output.push_str("#### Grouped Retrieval Failures\n\n");
         push_retrieval_gap_summaries(&mut output, &eval.retrieval_gap_summaries);
@@ -1090,11 +1134,63 @@ mod tests {
                     test_recommendation_rate: 1.0,
                     average_recommended_context_files: 1.0,
                 },
+                no_context_baseline: ctxpack_compiler::RankingMetrics {
+                    k: 10,
+                    recall_at_k: 0.0,
+                    precision_at_k: 0.0,
+                    mrr_at_k: 0.0,
+                    role_recall: vec![ctxpack_compiler::RoleRecallMetric {
+                        role: ctxpack_core::FileRole::Source,
+                        recall_at_k: 0.0,
+                        changed_file_count: 1,
+                        hit_count: 0,
+                    }],
+                    test_recommendation_rate: 0.0,
+                    average_recommended_context_files: 0.0,
+                },
                 recall_lift_at_k: 1.0,
                 precision_lift_at_k: 0.1,
                 mrr_lift_at_k: 1.0,
+                recall_lift_vs_no_context_at_k: 1.0,
+                precision_lift_vs_no_context_at_k: 0.1,
+                mrr_lift_vs_no_context_at_k: 1.0,
             },
             signal_ablations: Vec::new(),
+            token_roi: vec![
+                ctxpack_compiler::TokenRoiMetric {
+                    budget: PackBudget::Brief,
+                    ranking_cutoff: 5,
+                    estimated_tokens: 4_000,
+                    useful_targets: 1,
+                    safe_targets: 1,
+                    useful_targets_per_1k_tokens: 0.25,
+                    recall_at_cutoff: 1.0,
+                    marginal_useful_targets_vs_previous_budget: 1,
+                    larger_pack_adds_little_value: false,
+                },
+                ctxpack_compiler::TokenRoiMetric {
+                    budget: PackBudget::Standard,
+                    ranking_cutoff: 10,
+                    estimated_tokens: 24_000,
+                    useful_targets: 1,
+                    safe_targets: 1,
+                    useful_targets_per_1k_tokens: 0.041666668,
+                    recall_at_cutoff: 1.0,
+                    marginal_useful_targets_vs_previous_budget: 0,
+                    larger_pack_adds_little_value: true,
+                },
+                ctxpack_compiler::TokenRoiMetric {
+                    budget: PackBudget::Deep,
+                    ranking_cutoff: 10,
+                    estimated_tokens: 100_000,
+                    useful_targets: 1,
+                    safe_targets: 1,
+                    useful_targets_per_1k_tokens: 0.01,
+                    recall_at_cutoff: 1.0,
+                    marginal_useful_targets_vs_previous_budget: 0,
+                    larger_pack_adds_little_value: true,
+                },
+            ],
             retrieval_gap_summaries: Vec::new(),
             low_information_commit_count: 1,
             file_recall_at_5: 1.0,
@@ -1167,9 +1263,14 @@ mod tests {
         assert!(markdown.contains("Low-information commits: `1`"));
         assert!(markdown.contains("File Recall@5: `1.00`"));
         assert!(markdown.contains("Lexical Baseline Recall@5: `0.50`"));
+        assert!(markdown.contains("No-context Recall@K: `0.00`"));
         assert!(markdown.contains("ctxpack Lift@10: `+0.50`"));
+        assert!(markdown.contains("ctxpack Lift vs No-context@K: `+1.00`"));
         assert!(markdown.contains("Source Recall@10: `1.00`"));
         assert!(markdown.contains("Test Recall@10: `0.00`"));
+        assert!(markdown.contains("Token ROI"));
+        assert!(markdown.contains("`Brief`: cutoff `5`, estimated tokens `4000`"));
+        assert!(markdown.contains("larger pack adds little value `true`"));
         assert!(markdown.contains("Top Retrieval Gaps"));
         assert!(markdown.contains("`README.md` (Docs) missed `1` time"));
         assert!(markdown.contains("Lexical baseline hits@5/10: `0/0`"));

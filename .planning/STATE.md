@@ -3,25 +3,25 @@ gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Retrieval Quality Proof
 status: in_progress
-stopped_at: phase 9 complete; phase 10 next
-last_updated: "2026-05-14T07:24:29+06:00"
+stopped_at: phase 10 complete; phase 11 next
+last_updated: "2026-05-14T07:45:26+06:00"
 last_activity: 2026-05-14
 progress:
   total_phases: 4
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 17
-  completed_plans: 4
-  percent: 25
+  completed_plans: 9
+  percent: 50
 ---
 
 # Project State
 
 ## Current Position
 
-Phase: 10 - Fixed-Budget Retrieval Metrics & Baselines
+Phase: 11 - Retrieval Gap Taxonomy & Regression Trends
 Plan: —
-Status: Phase 9 complete; Phase 10 ready for discuss/plan/execute
-Last activity: 2026-05-14 — Benchmark suite contracts and multi-repo execution added.
+Status: Phase 10 complete; Phase 11 ready for discuss/plan/execute
+Last activity: 2026-05-14 — Fixed-budget metrics, no-context baseline comparison, and token ROI added.
 
 ## Project Reference
 
@@ -43,8 +43,8 @@ v1.2 should turn ctxpack from "working local broker" into "measurably useful pro
 
 ## Next Step
 
-Continue with Phase 10:
+Continue with Phase 11:
 
 ```bash
-$gsd-discuss-phase 10
+$gsd-discuss-phase 11
 ```

@@ -17,16 +17,16 @@ Requirements for proving ctxpack's product value through repeatable, source-free
 
 ### Retrieval Metrics And Baselines
 
-- [ ] **METR-01**: Benchmark reports include file Recall@K, test Recall@K, useful-target ratios, and missing-label summaries for each suite.
-- [ ] **METR-02**: Benchmark reports compare ctxpack hybrid ranking against lexical-only and no-context or anchor-only baselines under fixed budgets.
-- [ ] **METR-03**: Benchmark reports include signal ablations for symbols, dependencies, tests, git history, current diff, and docs/cards.
-- [ ] **METR-04**: Benchmark reports are available as stable JSON and human-readable Markdown without source snippets or prompt text.
-- [ ] **METR-05**: Benchmark reports include enough metadata to reproduce the same suite, budget, and revision selection.
+- [x] **METR-01**: Benchmark reports include file Recall@K, test Recall@K, useful-target ratios, and missing-label summaries for each suite.
+- [x] **METR-02**: Benchmark reports compare ctxpack hybrid ranking against lexical-only and no-context or anchor-only baselines under fixed budgets.
+- [x] **METR-03**: Benchmark reports include signal ablations for symbols, dependencies, tests, git history, current diff, and docs/cards.
+- [x] **METR-04**: Benchmark reports are available as stable JSON and human-readable Markdown without source snippets or prompt text.
+- [x] **METR-05**: Benchmark reports include enough metadata to reproduce the same suite, budget, and revision selection.
 
 ### Token ROI
 
-- [ ] **ROI-01**: Benchmark reports estimate useful targets per 1k context tokens for brief, standard, and deep budget options.
-- [ ] **ROI-02**: Benchmark reports identify when larger packs add little or negative value compared with smaller plans or brief packs.
+- [x] **ROI-01**: Benchmark reports estimate useful targets per 1k context tokens for brief, standard, and deep budget options.
+- [x] **ROI-02**: Benchmark reports identify when larger packs add little or negative value compared with smaller plans or brief packs.
 
 ### Gap Analysis
 
@@ -120,13 +120,13 @@ Explicitly excluded from v1.2 to prevent scope creep.
 | BENCH-02 | Phase 9 | Complete |
 | BENCH-03 | Phase 9 | Complete |
 | BENCH-04 | Phase 9 | Complete |
-| METR-01 | Phase 10 | Pending |
-| METR-02 | Phase 10 | Pending |
-| METR-03 | Phase 10 | Pending |
-| METR-04 | Phase 10 | Pending |
-| METR-05 | Phase 10 | Pending |
-| ROI-01 | Phase 10 | Pending |
-| ROI-02 | Phase 10 | Pending |
+| METR-01 | Phase 10 | Complete |
+| METR-02 | Phase 10 | Complete |
+| METR-03 | Phase 10 | Complete |
+| METR-04 | Phase 10 | Complete |
+| METR-05 | Phase 10 | Complete |
+| ROI-01 | Phase 10 | Complete |
+| ROI-02 | Phase 10 | Complete |
 | GAP-01 | Phase 11 | Pending |
 | GAP-02 | Phase 11 | Pending |
 | GAP-03 | Phase 11 | Pending |
@@ -146,4 +146,4 @@ Explicitly excluded from v1.2 to prevent scope creep.
 
 ---
 *Requirements defined: 2026-05-14*
-*Last updated: 2026-05-14 after v1.2 milestone initialization*
+*Last updated: 2026-05-14 after Phase 10 completion*

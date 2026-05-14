@@ -14,7 +14,7 @@ pub use eval::{
     BenchmarkSuiteConfig, BenchmarkSuiteReport, EvalComparison, HistoricalChangedPathLabel,
     HistoricalCommitEval, HistoricalEvalEffectiveFilters, HistoricalEvalOptions,
     HistoricalEvalRefs, HistoricalEvalReport, HistoricalMissingFileSummary, RankingMetrics,
-    RetrievalGapSummary, RoleRecallMetric, SignalAblationResult,
+    RetrievalGapSummary, RoleRecallMetric, SignalAblationResult, TokenRoiMetric,
 };
 pub use packs::{
     compile_context_pack, compile_context_pack_from_plan, compile_context_pack_from_plan_for_agent,
@@ -928,7 +928,15 @@ mod tests {
         assert_eq!(report.ranking_comparison.combined.precision_at_k, 0.2);
         assert_eq!(report.ranking_comparison.combined.mrr_at_k, 1.0);
         assert_eq!(report.ranking_comparison.lexical_baseline.recall_at_k, 1.0);
+        assert_eq!(
+            report.ranking_comparison.no_context_baseline.recall_at_k,
+            0.0
+        );
         assert_eq!(report.ranking_comparison.recall_lift_at_k, 0.0);
+        assert_eq!(
+            report.ranking_comparison.recall_lift_vs_no_context_at_k,
+            1.0
+        );
         assert_eq!(
             report
                 .ranking_comparison
@@ -997,6 +1005,12 @@ mod tests {
         }));
         assert!(!report.commits[0].low_information_task);
         assert!(report.test_recommendation_rate > 0.0);
+        assert_eq!(report.token_roi.len(), 3);
+        assert_eq!(report.token_roi[0].budget, PackBudget::Brief);
+        assert_eq!(report.token_roi[0].ranking_cutoff, 5);
+        assert_eq!(report.token_roi[0].useful_targets, 2);
+        assert!(report.token_roi[0].useful_targets_per_1k_tokens > 0.0);
+        assert!(report.token_roi[2].larger_pack_adds_little_value);
         assert!(!report.commits[0].source_text_logged);
         assert!(value.get("commits").is_some());
         assert!(value.get("evalRangeId").is_some());
@@ -1007,6 +1021,14 @@ mod tests {
         assert_eq!(value["effectiveFilters"]["budget"], "standard");
         assert_eq!(value["rankingComparison"]["k"], 10);
         assert_eq!(value["rankingComparison"]["combined"]["recallAtK"], 1.0);
+        assert_eq!(
+            value["rankingComparison"]["noContextBaseline"]["recallAtK"],
+            0.0
+        );
+        assert_eq!(value["rankingComparison"]["recallLiftVsNoContextAtK"], 1.0);
+        assert_eq!(value["tokenRoi"][0]["budget"], "brief");
+        assert_eq!(value["tokenRoi"][0]["rankingCutoff"], 5);
+        assert_eq!(value["tokenRoi"][0]["usefulTargets"], 2);
         assert!(
             (value["rankingComparison"]["combined"]["precisionAtK"]
                 .as_f64()
@@ -1087,11 +1109,63 @@ mod tests {
                     test_recommendation_rate: 0.0,
                     average_recommended_context_files: 1.0,
                 },
+                no_context_baseline: RankingMetrics {
+                    k: 10,
+                    recall_at_k: 0.0,
+                    precision_at_k: 0.0,
+                    mrr_at_k: 0.0,
+                    role_recall: vec![RoleRecallMetric {
+                        role: FileRole::Source,
+                        recall_at_k: 0.0,
+                        changed_file_count: 1,
+                        hit_count: 0,
+                    }],
+                    test_recommendation_rate: 0.0,
+                    average_recommended_context_files: 0.0,
+                },
                 recall_lift_at_k: 0.0,
                 precision_lift_at_k: 0.0,
                 mrr_lift_at_k: 0.0,
+                recall_lift_vs_no_context_at_k: 1.0,
+                precision_lift_vs_no_context_at_k: 0.1,
+                mrr_lift_vs_no_context_at_k: 1.0,
             },
             signal_ablations: Vec::new(),
+            token_roi: vec![
+                TokenRoiMetric {
+                    budget: PackBudget::Brief,
+                    ranking_cutoff: 5,
+                    estimated_tokens: 4_000,
+                    useful_targets: 1,
+                    safe_targets: 1,
+                    useful_targets_per_1k_tokens: 0.25,
+                    recall_at_cutoff: 1.0,
+                    marginal_useful_targets_vs_previous_budget: 1,
+                    larger_pack_adds_little_value: false,
+                },
+                TokenRoiMetric {
+                    budget: PackBudget::Standard,
+                    ranking_cutoff: 10,
+                    estimated_tokens: 24_000,
+                    useful_targets: 1,
+                    safe_targets: 1,
+                    useful_targets_per_1k_tokens: 0.041666668,
+                    recall_at_cutoff: 1.0,
+                    marginal_useful_targets_vs_previous_budget: 0,
+                    larger_pack_adds_little_value: true,
+                },
+                TokenRoiMetric {
+                    budget: PackBudget::Deep,
+                    ranking_cutoff: 10,
+                    estimated_tokens: 100_000,
+                    useful_targets: 1,
+                    safe_targets: 1,
+                    useful_targets_per_1k_tokens: 0.01,
+                    recall_at_cutoff: 1.0,
+                    marginal_useful_targets_vs_previous_budget: 0,
+                    larger_pack_adds_little_value: true,
+                },
+            ],
             retrieval_gap_summaries: Vec::new(),
             low_information_commit_count: 0,
             file_recall_at_5: 0.5,
@@ -1163,6 +1237,7 @@ mod tests {
             "head",
             "rankingComparison",
             "signalAblations",
+            "tokenRoi",
             "retrievalGapSummaries",
             "lowInformationCommitCount",
             "fileRecallAt5",
@@ -1189,7 +1264,14 @@ mod tests {
         assert_eq!(value["effectiveFilters"]["targetAgent"], "codex");
         assert_eq!(value["refs"]["base"], "base");
         assert_eq!(value["rankingComparison"]["combined"]["mrrAtK"], 1.0);
+        assert_eq!(
+            value["rankingComparison"]["noContextBaseline"]["recallAtK"],
+            0.0
+        );
+        assert_eq!(value["rankingComparison"]["recallLiftVsNoContextAtK"], 1.0);
         assert!(value["signalAblations"].as_array().unwrap().is_empty());
+        assert_eq!(value["tokenRoi"][0]["budget"], "brief");
+        assert_eq!(value["tokenRoi"][1]["largerPackAddsLittleValue"], true);
         assert!(value["retrievalGapSummaries"]
             .as_array()
             .unwrap()
@@ -1312,9 +1394,21 @@ mod tests {
                     test_recommendation_rate: 0.0,
                     average_recommended_context_files: 1.0,
                 },
+                no_context_baseline: RankingMetrics {
+                    k: 2,
+                    recall_at_k: 0.0,
+                    precision_at_k: 0.0,
+                    mrr_at_k: 0.0,
+                    role_recall: Vec::new(),
+                    test_recommendation_rate: 0.0,
+                    average_recommended_context_files: 0.0,
+                },
                 recall_lift_at_k: -1.0,
                 precision_lift_at_k: -0.5,
                 mrr_lift_at_k: -1.0,
+                recall_lift_vs_no_context_at_k: 0.0,
+                precision_lift_vs_no_context_at_k: 0.0,
+                mrr_lift_vs_no_context_at_k: 0.0,
             },
             signal_ablations: vec![SignalAblationResult {
                 eval_range_id: "range-1".to_string(),
@@ -1331,6 +1425,7 @@ mod tests {
                 },
                 recall_lift_vs_lexical_at_k: -1.0,
             }],
+            token_roi: Vec::new(),
             retrieval_gap_summaries: vec![RetrievalGapSummary {
                 role: FileRole::Source,
                 signal_gap: "lexical_only_miss".to_string(),

@@ -4,7 +4,7 @@ ctxpack v1.2 uses source-free benchmark suites to answer the product question:
 
 > Does ctxpack help an agent choose better files and tests than native search alone?
 
-The benchmark runner reuses `ctxpack eval history` for each configured repository. It records file/test recall, lexical baseline comparison, signal ablations, grouped retrieval gaps, skipped path counts, and privacy status without storing source snippets, prompt text, or commit subjects.
+The benchmark runner reuses `ctxpack eval history` for each configured repository. It records file/test recall, lexical and no-context baseline comparison, signal ablations, token ROI, grouped retrieval gaps, skipped path counts, and privacy status without storing source snippets, prompt text, or commit subjects.
 
 ## Suite File
 
@@ -69,6 +69,8 @@ Benchmark reports include:
 - repo IDs;
 - revision range metadata;
 - recall and baseline metrics;
+- no-context baseline metrics under the same fixed K budget;
+- token ROI rows for brief, standard, and deep pack options;
 - source-free file paths and role labels;
 - skipped path counts and privacy status.
 
@@ -89,3 +91,12 @@ Benchmark reports do not include:
 5. Run Markdown first to inspect metrics, then JSON for machine checks.
 
 For large-history proof, RefactoringMiner is the primary v1.2 target. Add a second real repository to avoid overfitting retrieval decisions to one project.
+
+## Interpreting Metrics
+
+- `rankingComparison.combined`: ctxpack's hybrid context-file ranking at the configured K budget.
+- `rankingComparison.lexicalBaseline`: exact/BM25-style local search baseline under the same K budget.
+- `rankingComparison.noContextBaseline`: a zero-file baseline that represents an agent starting without ctxpack-provided repository context.
+- `signalAblations`: source-free lift checks after removing one retrieval signal family.
+- `tokenRoi`: brief, standard, and deep budget estimates showing useful changed-file targets per 1k estimated context tokens.
+- `largerPackAddsLittleValue`: true when a larger budget adds no additional useful changed-file targets over the previous budget in the current fixed ranking.

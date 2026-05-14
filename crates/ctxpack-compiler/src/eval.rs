@@ -55,9 +55,13 @@ pub struct EvalComparison {
     pub k: usize,
     pub combined: RankingMetrics,
     pub lexical_baseline: RankingMetrics,
+    pub no_context_baseline: RankingMetrics,
     pub recall_lift_at_k: f32,
     pub precision_lift_at_k: f32,
     pub mrr_lift_at_k: f32,
+    pub recall_lift_vs_no_context_at_k: f32,
+    pub precision_lift_vs_no_context_at_k: f32,
+    pub mrr_lift_vs_no_context_at_k: f32,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -91,6 +95,20 @@ pub struct SignalAblationResult {
     pub recall_lift_vs_lexical_at_k: f32,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct TokenRoiMetric {
+    pub budget: PackBudget,
+    pub ranking_cutoff: usize,
+    pub estimated_tokens: usize,
+    pub useful_targets: usize,
+    pub safe_targets: usize,
+    pub useful_targets_per_1k_tokens: f32,
+    pub recall_at_cutoff: f32,
+    pub marginal_useful_targets_vs_previous_budget: isize,
+    pub larger_pack_adds_little_value: bool,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct RetrievalGapSummary {
@@ -114,6 +132,7 @@ pub struct HistoricalEvalReport {
     pub head: Option<String>,
     pub ranking_comparison: EvalComparison,
     pub signal_ablations: Vec<SignalAblationResult>,
+    pub token_roi: Vec<TokenRoiMetric>,
     pub retrieval_gap_summaries: Vec<RetrievalGapSummary>,
     pub low_information_commit_count: usize,
     pub file_recall_at_5: f32,
@@ -631,6 +650,7 @@ pub fn evaluate_historical_commits(
         &eval_range_id,
         ranking_budget,
     );
+    let token_roi = token_roi_metrics(&commits, ranking_budget);
     let retrieval_gap_summaries =
         retrieval_gap_summaries(&commits, &gap_reasons_by_commit, &roles_by_label_path, 10);
 
@@ -645,6 +665,7 @@ pub fn evaluate_historical_commits(
         head: options.head.clone(),
         ranking_comparison,
         signal_ablations,
+        token_roi,
         retrieval_gap_summaries,
         low_information_commit_count: commits
             .iter()
@@ -1223,13 +1244,19 @@ fn eval_comparison(commits: &[HistoricalCommitEval], k: usize) -> EvalComparison
     let k = k.max(1);
     let combined = ranking_metrics(commits, k, RankingFamily::Combined);
     let lexical_baseline = ranking_metrics(commits, k, RankingFamily::LexicalBaseline);
+    let no_context_baseline = ranking_metrics(commits, k, RankingFamily::NoContextBaseline);
     EvalComparison {
         k,
         recall_lift_at_k: combined.recall_at_k - lexical_baseline.recall_at_k,
         precision_lift_at_k: combined.precision_at_k - lexical_baseline.precision_at_k,
         mrr_lift_at_k: combined.mrr_at_k - lexical_baseline.mrr_at_k,
+        recall_lift_vs_no_context_at_k: combined.recall_at_k - no_context_baseline.recall_at_k,
+        precision_lift_vs_no_context_at_k: combined.precision_at_k
+            - no_context_baseline.precision_at_k,
+        mrr_lift_vs_no_context_at_k: combined.mrr_at_k - no_context_baseline.mrr_at_k,
         combined,
         lexical_baseline,
+        no_context_baseline,
     }
 }
 
@@ -1237,6 +1264,7 @@ fn eval_comparison(commits: &[HistoricalCommitEval], k: usize) -> EvalComparison
 enum RankingFamily {
     Combined,
     LexicalBaseline,
+    NoContextBaseline,
 }
 
 fn ranking_metrics(
@@ -1299,7 +1327,57 @@ fn ranking_for_family(commit: &HistoricalCommitEval, family: RankingFamily) -> &
     match family {
         RankingFamily::Combined => &commit.recommended_context_files,
         RankingFamily::LexicalBaseline => &commit.lexical_baseline_files,
+        RankingFamily::NoContextBaseline => &[],
     }
+}
+
+fn token_roi_metrics(
+    commits: &[HistoricalCommitEval],
+    ranking_budget: usize,
+) -> Vec<TokenRoiMetric> {
+    let k = ranking_budget.max(1);
+    let specs = [
+        (PackBudget::Brief, k.min(5), 4_000usize),
+        (PackBudget::Standard, k, 24_000usize),
+        (PackBudget::Deep, k, 100_000usize),
+    ];
+    let safe_targets = commits
+        .iter()
+        .map(|commit| commit.safe_changed_files.len())
+        .sum::<usize>();
+    let mut previous_useful_targets = 0usize;
+    specs
+        .into_iter()
+        .map(|(budget, ranking_cutoff, estimated_tokens)| {
+            let useful_targets = commits
+                .iter()
+                .map(|commit| ranking_hits(commit, ranking_cutoff, RankingFamily::Combined).len())
+                .sum::<usize>();
+            let marginal = useful_targets as isize - previous_useful_targets as isize;
+            let larger_pack_adds_little_value =
+                !matches!(budget, PackBudget::Brief) && marginal <= 0;
+            previous_useful_targets = useful_targets;
+            TokenRoiMetric {
+                budget,
+                ranking_cutoff,
+                estimated_tokens,
+                useful_targets,
+                safe_targets,
+                useful_targets_per_1k_tokens: if estimated_tokens == 0 {
+                    0.0
+                } else {
+                    useful_targets as f32 / (estimated_tokens as f32 / 1000.0)
+                },
+                recall_at_cutoff: if safe_targets == 0 {
+                    0.0
+                } else {
+                    useful_targets as f32 / safe_targets as f32
+                },
+                marginal_useful_targets_vs_previous_budget: marginal,
+                larger_pack_adds_little_value,
+            }
+        })
+        .collect()
 }
 
 fn ranking_hits(commit: &HistoricalCommitEval, k: usize, family: RankingFamily) -> Vec<String> {

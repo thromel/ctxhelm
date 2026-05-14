@@ -15,7 +15,7 @@ The milestone uses RefactoringMiner as the primary large-history proof target an
 - Decimal phases (10.1, 10.2): Urgent insertions if needed
 
 - [x] **Phase 9: Benchmark Harness & Corpus Contracts** - Maintainers can define reproducible, source-free benchmark suites over real repositories.
-- [ ] **Phase 10: Fixed-Budget Retrieval Metrics & Baselines** - Maintainers can compare ctxpack retrieval against lexical and no-context baselines with stable metrics.
+- [x] **Phase 10: Fixed-Budget Retrieval Metrics & Baselines** - Maintainers can compare ctxpack retrieval against lexical and no-context baselines with stable metrics.
 - [ ] **Phase 11: Retrieval Gap Taxonomy & Regression Trends** - Maintainers can turn repeated misses into source-free failure families and trend reports.
 - [ ] **Phase 12: Product Proof Report & Adoption Gate** - Users can see why ctxpack is useful through reproducible reports, docs, and release-gate proof.
 
@@ -49,11 +49,11 @@ Plans:
   5. CLI and JSON output stay stable enough to feed portfolio/docs tables and future release gates.
 **Plans**: 5 plans
 Plans:
-- [ ] 10-fixed-budget-retrieval-metrics-baselines-01-PLAN.md — Add baseline runners and stable benchmark metric contracts.
-- [ ] 10-fixed-budget-retrieval-metrics-baselines-02-PLAN.md — Add fixed-budget recall, useful-target, and missing-label metrics.
-- [ ] 10-fixed-budget-retrieval-metrics-baselines-03-PLAN.md — Add signal ablation and token ROI reporting.
-- [ ] 10-fixed-budget-retrieval-metrics-baselines-04-PLAN.md — Expose benchmark reports through CLI JSON and Markdown outputs.
-- [ ] 10-fixed-budget-retrieval-metrics-baselines-05-PLAN.md — Validate metrics against RefactoringMiner and the second real repo.
+- [x] 10-fixed-budget-retrieval-metrics-baselines-01-PLAN.md — Add baseline runners and stable benchmark metric contracts.
+- [x] 10-fixed-budget-retrieval-metrics-baselines-02-PLAN.md — Add fixed-budget recall, useful-target, and missing-label metrics.
+- [x] 10-fixed-budget-retrieval-metrics-baselines-03-PLAN.md — Add signal ablation and token ROI reporting.
+- [x] 10-fixed-budget-retrieval-metrics-baselines-04-PLAN.md — Expose benchmark reports through CLI JSON and Markdown outputs.
+- [x] 10-fixed-budget-retrieval-metrics-baselines-05-PLAN.md — Validate metrics against RefactoringMiner and the second real repo.
 
 ### Phase 11: Retrieval Gap Taxonomy & Regression Trends
 **Goal**: Maintainers can understand repeated retrieval misses and track whether changes improve or regress context quality over time.
@@ -126,6 +126,6 @@ Phases execute in numeric order: 9 -> 10 -> 11 -> 12
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 9. Benchmark Harness & Corpus Contracts | 4/4 | Complete | 2026-05-14 |
-| 10. Fixed-Budget Retrieval Metrics & Baselines | 0/5 | Pending | — |
+| 10. Fixed-Budget Retrieval Metrics & Baselines | 5/5 | Complete | 2026-05-14 |
 | 11. Retrieval Gap Taxonomy & Regression Trends | 0/4 | Pending | — |
 | 12. Product Proof Report & Adoption Gate | 0/4 | Pending | — |
