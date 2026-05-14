@@ -10,6 +10,17 @@ The current codebase is a Rust workspace with a CLI, MCP server, safe repository
 
 The v1.1 milestone is complete. ctxpack is now installable from audited local release artifacts, documented for first-pack adoption, and guarded by release smokes that prove selected-binary behavior, deterministic MCP protocol behavior, and optional Codex/Claude client wrapper paths.
 
+## Current Milestone: v1.2 Retrieval Quality Proof
+
+**Goal:** Prove ctxpack's value with repeatable, source-free real-repo benchmarks that show retrieval lift, token ROI, failure modes, and regression trends.
+
+**Target features:**
+
+- Named benchmark suites for RefactoringMiner and at least one additional real repository.
+- Fixed-budget retrieval metrics, lexical/no-context baselines, signal ablations, and token ROI.
+- Source-free retrieval-gap taxonomy and benchmark regression trend reports.
+- Product proof documentation and optional benchmark smoke gates that explain when ctxpack helps and where it still fails.
+
 ## Core Value
 
 Given a coding task, ctxpack should return the smallest safe evidence set that makes an existing coding agent more likely to inspect the right files, run the right tests, and avoid irrelevant context.
@@ -38,10 +49,11 @@ Given a coding task, ctxpack should return the smallest safe evidence set that m
 
 ### Active
 
-- Broaden real-repo historical evals and benchmark reports for retrieval quality proof.
-- Report token ROI, retrieval deltas, failure modes, and regression trends from source-free eval artifacts.
-- Use RefactoringMiner and additional real repositories as bounded proof targets.
-- Convert repeated retrieval gaps into measurable requirements for future storage, semantic retrieval, and parser precision milestones.
+- Broaden real-repo historical evals into named benchmark suites with reproducible revisions and fixed budgets.
+- Report file/test recall, lexical and no-context baseline deltas, signal ablations, token ROI, failure modes, and regression trends from source-free artifacts.
+- Use RefactoringMiner and at least one additional real repository as bounded proof targets.
+- Convert repeated retrieval gaps into measurable requirements for v1.3 storage, v1.4 semantic retrieval, and v1.5 parser precision.
+- Publish concise product proof that explains why agents should call ctxpack, when ctxpack helps, and when native agent search is enough.
 
 ### Out of Scope
 
@@ -65,16 +77,16 @@ The codebase map in `.planning/codebase/` documents the current system. Phase 1 
 
 The current proof point is a complete v1 local context broker. The product can provide attributed context recommendations, fixed-budget eval reports, signal ablations, grouped retrieval gaps, source-free large-repo smoke validation, deterministic MCP protocol checks, and real-client Codex CLI / Claude Code smoke proof with explicit repo arguments.
 
-v1.1 Packaging & Adoption shipped the install, setup, documentation, and release-gate layer around the completed v1 context broker without expanding ctxpack into a standalone app, autonomous editor, or cloud service. The next high-leverage milestone is retrieval quality proof: making the product's value measurable across more real repositories and historical tasks.
+v1.1 Packaging & Adoption shipped the install, setup, documentation, and release-gate layer around the completed v1 context broker without expanding ctxpack into a standalone app, autonomous editor, or cloud service. v1.2 Retrieval Quality Proof now focuses on the key adoption objection: agents can already grep, search, and inspect files, so ctxpack must prove it gives better context, better validation hints, and better token efficiency under repeatable real-repo evaluation.
 
-Future milestone strategy:
+Milestone strategy from the original product vision:
 
-- **v1.2 Retrieval Quality Proof**: broaden real-repo evals, benchmark reports, ROI metrics, and failure analysis.
-- **v1.3 Production Storage**: add durable local storage, faster incremental indexing, and disciplined cache behavior.
+- **v1.2 Retrieval Quality Proof**: broaden real-repo evals, benchmark reports, ROI metrics, baseline deltas, failure analysis, and adoption proof.
+- **v1.3 Production Storage**: add durable local storage, faster incremental indexing, migration/versioning, repair, and disciplined cache behavior.
 - **v1.4 Local Semantic Retrieval**: add optional local embeddings/vector retrieval with hybrid fusion and explicit privacy controls.
 - **v1.5 Parser/Semantic Precision**: expand Tree-sitter coverage and add optional SCIP/LSP precision only where measured gaps justify it.
-- **v2.0 Workspace & Team Layer**: support multi-repo workspaces, shared source-free context cards, and team policy files.
-- **v2.1 UI / Pack Inspector**: add optional diagnostics UI for packs, retrieval gaps, evals, and context health.
+- **v2.0 Workspace & Team Layer**: support multi-repo workspaces, shared source-free context cards, benchmark reports, and team policy files.
+- **v2.1 UI / Pack Inspector**: add optional diagnostics UI for packs, retrieval gaps, evals, context health, and adapter previews.
 
 ## Constraints
 
@@ -102,6 +114,7 @@ Future milestone strategy:
 | Release artifacts must preserve clean-checkout semantics | Publication gates should not silently package dirty source unless maintainers explicitly opt into an in-flight validation override. | ✓ Validated in v1.1 audit |
 | Deterministic smokes must not write into target repos | ctxpack's read-only product contract applies to release validation as well as runtime agent use. | ✓ Validated in v1.1 audit |
 | Deterministic protocol proof is the required gate | Real Codex/Claude client proof is valuable but remains optional and environment-gated; deterministic MCP proof is the portable release blocker. | ✓ Validated in Phase 8 |
+| Retrieval proof before bigger architecture | Storage, embeddings, parser precision, team features, and UI should be justified by measured retrieval gaps instead of speculative architecture desire. | — Pending |
 
 ## Evolution
 
@@ -121,4 +134,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-05-14 after v1.1 milestone completion*
+*Last updated: 2026-05-14 after v1.2 milestone initialization*

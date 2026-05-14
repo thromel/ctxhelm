@@ -1,44 +1,50 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.1
-milestone_name: Packaging & Adoption
-status: complete
-stopped_at: v1.1 milestone archived and ready for next milestone planning
-last_updated: "2026-05-14T01:53:18+06:00"
-last_activity: 2026-05-13
+milestone: v1.2
+milestone_name: Retrieval Quality Proof
+status: planning
+stopped_at: requirements and roadmap initialized
+last_updated: "2026-05-14T07:24:29+06:00"
+last_activity: 2026-05-14
 progress:
-  total_phases: 8
-  completed_phases: 8
-  total_plans: 32
-  completed_plans: 32
-  percent: 100
+  total_phases: 4
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
 
 ## Current Position
 
-v1.1 Packaging & Adoption is complete and archived.
+Phase: Not started (defining phase context)
+Plan: —
+Status: Milestone v1.2 initialized
+Last activity: 2026-05-14 — Retrieval Quality Proof milestone started from the original product vision.
 
-Artifacts:
+## Project Reference
 
-- `.planning/MILESTONES.md`
-- `.planning/milestones/v1.1-ROADMAP.md`
-- `.planning/milestones/v1.1-REQUIREMENTS.md`
-- `.planning/milestones/v1.1-MILESTONE-AUDIT.md`
+See: `.planning/PROJECT.md`
 
-## Verification
+**Core value:** Given a coding task, ctxpack should return the smallest safe evidence set that makes an existing coding agent more likely to inspect the right files, run the right tests, and avoid irrelevant context.
 
-Milestone audit status: passed.
+**Current focus:** Prove that ctxpack gives measurable retrieval lift and token ROI over agent-native search/indexing baselines on real repositories.
 
-Final release-gate verification passed with:
+## Active Milestone
 
-```bash
-CTXPACK_ALLOW_DIRTY=1 CTXPACK_BIN="$(pwd)/target/debug/ctxpack" CTXPACK_SKIP_REAL_CLIENT=1 bash scripts/release-gate.sh
-```
+v1.2 should turn ctxpack from "working local broker" into "measurably useful product." The work should be evidence-first:
 
-The gate covered workspace tests, release docs consistency, package and artifact audit, selected binary identity, first-pack smoke, wrong-cwd MCP protocol proof, and deterministic Codex/Claude wrapper paths.
+- benchmark real repos, especially RefactoringMiner;
+- compare against lexical/no-context baselines under fixed budgets;
+- report token ROI and signal ablations;
+- classify repeated retrieval gaps into future milestone requirements;
+- keep all benchmark reports source-free.
 
 ## Next Step
 
-Start the next milestone with `$gsd-new-milestone` so fresh requirements and a new roadmap can replace the archived v1.1 scope.
+Start Phase 9:
+
+```bash
+$gsd-discuss-phase 9
+```
