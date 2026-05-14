@@ -10,10 +10,10 @@ Requirements for proving ctxpack's product value through repeatable, source-free
 
 ### Benchmark Corpus
 
-- [ ] **BENCH-01**: Maintainer can define named benchmark suites with repo path, revision range, max commits, retrieval budgets, and role filters.
-- [ ] **BENCH-02**: Maintainer can run bounded historical evals over RefactoringMiner and at least one additional real repository using reproducible revisions.
-- [ ] **BENCH-03**: Benchmark artifacts include source-free labels for changed files, related tests, skipped paths, privacy status, and run metadata.
-- [ ] **BENCH-04**: Maintainer has documentation for adding another local real-repo benchmark without cloud services or global machine assumptions.
+- [x] **BENCH-01**: Maintainer can define named benchmark suites with repo path, revision range, max commits, retrieval budgets, and role filters.
+- [x] **BENCH-02**: Maintainer can run bounded historical evals over RefactoringMiner and at least one additional real repository using reproducible revisions.
+- [x] **BENCH-03**: Benchmark artifacts include source-free labels for changed files, related tests, skipped paths, privacy status, and run metadata.
+- [x] **BENCH-04**: Maintainer has documentation for adding another local real-repo benchmark without cloud services or global machine assumptions.
 
 ### Retrieval Metrics And Baselines
 
@@ -116,10 +116,10 @@ Explicitly excluded from v1.2 to prevent scope creep.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| BENCH-01 | Phase 9 | Pending |
-| BENCH-02 | Phase 9 | Pending |
-| BENCH-03 | Phase 9 | Pending |
-| BENCH-04 | Phase 9 | Pending |
+| BENCH-01 | Phase 9 | Complete |
+| BENCH-02 | Phase 9 | Complete |
+| BENCH-03 | Phase 9 | Complete |
+| BENCH-04 | Phase 9 | Complete |
 | METR-01 | Phase 10 | Pending |
 | METR-02 | Phase 10 | Pending |
 | METR-03 | Phase 10 | Pending |

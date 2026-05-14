@@ -3,13 +3,12 @@ use clap::{Args, Parser, Subcommand, ValueEnum};
 use ctxpack_compiler::{
     compile_context_pack_with_plan_and_paths_for_agent, eval_trace_for_pack, eval_trace_for_plan,
     evaluate_historical_commits, generate_context_cards, prepare_context_plan_with_paths,
-    render_pack_markdown, ContextCardsOptions, ContextCardsReport, HistoricalEvalOptions,
-    HistoricalEvalReport,
+    render_pack_markdown, run_benchmark_suite, BenchmarkSuiteReport, ContextCardsOptions,
+    ContextCardsReport, HistoricalEvalOptions, HistoricalEvalReport,
 };
 use ctxpack_core::{
-    run_init, run_setup_check, AgentAdapter, Diagnostic, DiagnosticSeverity, EvalTrace,
-    InitAction, InitOptions, InitReport, PackBudget, RepoRoot, SetupCheckReport,
-    SetupCheckStatus, TaskType,
+    run_init, run_setup_check, AgentAdapter, Diagnostic, DiagnosticSeverity, EvalTrace, InitAction,
+    InitOptions, InitReport, PackBudget, RepoRoot, SetupCheckReport, SetupCheckStatus, TaskType,
 };
 use ctxpack_index::{
     co_change_hints, current_diff_summary, dependency_edges, extract_symbols, lexical_search,
@@ -72,7 +71,10 @@ struct SetupCheckArgs {
     repo: Option<PathBuf>,
     #[arg(long, help = "Validate the generated Cursor rule file.")]
     cursor: bool,
-    #[arg(long, help = "Validate generated Claude command and MCP snippet files.")]
+    #[arg(
+        long,
+        help = "Validate generated Claude command and MCP snippet files."
+    )]
     claude: bool,
     #[arg(long, help = "Validate the generated OpenCode MCP snippet file.")]
     opencode: bool,
@@ -216,6 +218,7 @@ enum EvalCommand {
     Traces(EvalTracesArgs),
     Checklist(EvalTracesArgs),
     History(EvalHistoryArgs),
+    Benchmark(EvalBenchmarkArgs),
 }
 
 #[derive(Debug, Args)]
@@ -246,6 +249,17 @@ struct EvalHistoryArgs {
     mode: Mode,
     #[arg(long, default_value = "generic")]
     target_agent: String,
+    #[arg(long, value_enum, default_value_t = PackFormat::Markdown)]
+    format: PackFormat,
+}
+
+#[derive(Debug, Args)]
+struct EvalBenchmarkArgs {
+    #[arg(
+        long,
+        help = "Path to a JSON benchmark suite file containing named repositories and eval budgets."
+    )]
+    config: PathBuf,
     #[arg(long, value_enum, default_value_t = PackFormat::Markdown)]
     format: PackFormat,
 }
@@ -470,6 +484,13 @@ fn main() -> Result<()> {
                 )?;
                 match args.format {
                     PackFormat::Markdown => println!("{}", render_historical_eval_report(&report)),
+                    PackFormat::Json => println!("{}", serde_json::to_string_pretty(&report)?),
+                }
+            }
+            EvalCommand::Benchmark(args) => {
+                let report = run_benchmark_suite(&args.config)?;
+                match args.format {
+                    PackFormat::Markdown => println!("{}", render_benchmark_suite_report(&report)),
                     PackFormat::Json => println!("{}", serde_json::to_string_pretty(&report)?),
                 }
             }
@@ -845,6 +866,91 @@ fn push_retrieval_gap_summaries(
         }
         output.push('\n');
     }
+}
+
+fn render_benchmark_suite_report(report: &BenchmarkSuiteReport) -> String {
+    let mut output = String::from("# ctxpack Benchmark Suite\n\n");
+    output.push_str(
+        "This source-free report runs named real-repo historical eval suites and compares ctxpack retrieval against configured baselines without storing task text or source snippets.\n\n",
+    );
+    output.push_str(&format!(
+        "- Suite: `{}`\n- Suite ID: `{}`\n- Repositories: `{}`\n- Evaluated repositories: `{}`\n- Evaluated commits: `{}`\n- Generated at: `{}`\n- Privacy: local-only `{}`\n\n",
+        report.suite_name,
+        report.suite_id,
+        report.repository_count,
+        report.evaluated_repository_count,
+        report.evaluated_commit_count,
+        report.generated_at_unix_seconds,
+        report.privacy_status.local_only
+    ));
+    if let Some(description) = &report.description {
+        output.push_str(&format!("## Description\n\n{description}\n\n"));
+    }
+
+    output.push_str("## Repository Results\n\n");
+    if report.repositories.is_empty() {
+        output.push_str("- No repositories configured.\n");
+        return output;
+    }
+
+    for repo in &report.repositories {
+        output.push_str(&format!("### `{}`\n\n", repo.name));
+        output.push_str(&format!(
+            "- Repo ID: `{}`\n- Evaluated commits: `{}`\n- Excluded changed files: `{}`\n- Skipped path labels: `{}`\n- Limit: `{}`\n- Ranking budget K: `{}`\n- Mode: `{:?}`\n- Target agent: `{}`\n- Base: `{}`\n- Head: `{}`\n- Role filters: `{}`\n- Privacy: local-only `{}`\n",
+            repo.repo_id.as_deref().unwrap_or("unavailable"),
+            repo.evaluated_commits,
+            repo.excluded_changed_file_count,
+            repo.skipped_path_count,
+            repo.effective_config.limit,
+            repo.effective_config.ranking_budget,
+            repo.effective_config.mode,
+            repo.effective_config.target_agent,
+            repo.effective_config.base.as_deref().unwrap_or("HEAD history"),
+            repo.effective_config.head.as_deref().unwrap_or("HEAD"),
+            role_filter_label(&repo.effective_config.role_filters),
+            repo.privacy_status.local_only
+        ));
+
+        if let Some(error) = &repo.error {
+            output.push_str(&format!("- Error: `{error}`\n\n"));
+            continue;
+        }
+
+        let Some(eval) = &repo.report else {
+            output.push_str("- No historical eval report available.\n\n");
+            continue;
+        };
+        output.push_str(&format!(
+            "- File Recall@5: `{:.2}`\n- File Recall@10: `{:.2}`\n- Lexical Baseline Recall@5: `{:.2}`\n- Lexical Baseline Recall@10: `{:.2}`\n- ctxpack Lift@5: `{:+.2}`\n- ctxpack Lift@10: `{:+.2}`\n- Source Recall@10: `{:.2}`\n- Test Recall@10: `{:.2}`\n- Test recommendation rate: `{:.2}`\n- Average recommended context files: `{:.2}`\n\n",
+            eval.file_recall_at_5,
+            eval.file_recall_at_10,
+            eval.lexical_baseline_recall_at_5,
+            eval.lexical_baseline_recall_at_10,
+            eval.ctxpack_lift_at_5,
+            eval.ctxpack_lift_at_10,
+            eval.source_recall_at_10,
+            eval.test_recall_at_10,
+            eval.test_recommendation_rate,
+            eval.average_recommended_context_files
+        ));
+
+        output.push_str("#### Grouped Retrieval Failures\n\n");
+        push_retrieval_gap_summaries(&mut output, &eval.retrieval_gap_summaries);
+        output.push('\n');
+    }
+
+    output
+}
+
+fn role_filter_label(filters: &[ctxpack_core::FileRole]) -> String {
+    if filters.is_empty() {
+        return "all safe roles".to_string();
+    }
+    filters
+        .iter()
+        .map(|role| format!("{role:?}"))
+        .collect::<Vec<_>>()
+        .join(", ")
 }
 
 fn render_cards_report(report: &ContextCardsReport) -> String {

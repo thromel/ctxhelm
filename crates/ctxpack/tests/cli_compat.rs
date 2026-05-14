@@ -40,7 +40,9 @@ fn workspace_packages_have_release_identity() {
         assert_eq!(package["version"], "1.1.0", "{name} version");
         assert_eq!(package["license"], "MIT", "{name} license");
         assert!(
-            package["repository"].as_str().is_some_and(|value| !value.is_empty()),
+            package["repository"]
+                .as_str()
+                .is_some_and(|value| !value.is_empty()),
             "{name} repository metadata missing"
         );
         assert!(
@@ -141,7 +143,10 @@ fn init_with_adapters_reports_repo_local_outputs_only() {
         .stdout(contains(".ctxpack/adapters/opencode.jsonc.snippet"))
         .stdout(contains("does not mutate global agent config"))
         .stdout(contains("Copy/paste"))
-        .stdout(predicates::str::contains("mutate global Codex, Claude, Cursor, or OpenCode config").not());
+        .stdout(
+            predicates::str::contains("mutate global Codex, Claude, Cursor, or OpenCode config")
+                .not(),
+        );
 }
 
 #[test]
@@ -662,6 +667,101 @@ fn search_related_tests_dependencies_and_eval_history_emit_json_shapes() {
 }
 
 #[test]
+fn eval_benchmark_runs_named_suite_source_free() {
+    let first = fixture_repo();
+    let second = fixture_repo();
+    let suite_path = first.temp.path().join("ctxpack-benchmark.json");
+    fs::write(
+        &suite_path,
+        serde_json::to_string_pretty(&json!({
+            "name": "phase-nine-cli-smoke",
+            "description": "CLI benchmark smoke",
+            "defaults": {
+                "limit": 1,
+                "rankingBudget": 4,
+                "mode": "bug_fix",
+                "targetAgent": "codex",
+                "roleFilters": ["source", "test"]
+            },
+            "repositories": [
+                {
+                    "name": "fixture-a",
+                    "path": first.repo
+                },
+                {
+                    "name": "fixture-b",
+                    "path": second.repo,
+                    "limit": 1,
+                    "rankingBudget": 3,
+                    "roleFilters": ["source"]
+                }
+            ]
+        }))
+        .unwrap(),
+    )
+    .unwrap();
+
+    let value = json_stdout(
+        Command::cargo_bin("ctxpack")
+            .unwrap()
+            .env(CTXPACK_HOME_ENV, first.temp.path().join("ctxpack-home"))
+            .args(["eval", "benchmark", "--config"])
+            .arg(&suite_path)
+            .args(["--format", "json"])
+            .assert(),
+    );
+
+    assert_object_has_keys(
+        &value,
+        &[
+            "suiteName",
+            "suiteId",
+            "repositoryCount",
+            "evaluatedRepositoryCount",
+            "evaluatedCommitCount",
+            "repositories",
+            "privacyStatus",
+        ],
+    );
+    assert_eq!(value["suiteName"], "phase-nine-cli-smoke");
+    assert_eq!(value["repositoryCount"], 2);
+    assert_eq!(value["privacyStatus"]["localOnly"], true);
+    assert_eq!(
+        value["repositories"][0]["effectiveConfig"]["rankingBudget"],
+        4
+    );
+    assert_eq!(
+        value["repositories"][0]["effectiveConfig"]["roleFilters"][0],
+        "source"
+    );
+    assert_eq!(
+        value["repositories"][1]["effectiveConfig"]["rankingBudget"],
+        3
+    );
+    assert_eq!(
+        value["repositories"][1]["effectiveConfig"]["roleFilters"],
+        json!(["source"])
+    );
+    assert_no_source_or_prompt_text(&value);
+
+    Command::cargo_bin("ctxpack")
+        .unwrap()
+        .env(
+            CTXPACK_HOME_ENV,
+            first.temp.path().join("ctxpack-home-markdown"),
+        )
+        .args(["eval", "benchmark", "--config"])
+        .arg(&suite_path)
+        .assert()
+        .success()
+        .stdout(contains("# ctxpack Benchmark Suite"))
+        .stdout(contains("Suite: `phase-nine-cli-smoke`"))
+        .stdout(contains("Repository Results"))
+        .stdout(contains("Role filters: `Source, Test`"))
+        .stdout(contains("ctxpack Lift@10"));
+}
+
+#[test]
 fn serve_mcp_speaks_json_rpc_over_stdio() {
     let fixture = fixture_repo();
     let input = br#"{"jsonrpc":"2.0","id":1,"method":"initialize","params":{}}
@@ -1015,7 +1115,10 @@ fn real_client_smoke_scripts_have_contract_guards() {
             "{script} must capture ctxpack version from the selected binary"
         );
         assert!(
-            content.contains("\"$ctxpack_bin\" serve-mcp") || content.contains("'tee -a \"$CTXPACK_REAL_CLIENT_REQUEST_LOG\" | \"$ctxpack_bin\" serve-mcp'"),
+            content.contains("\"$ctxpack_bin\" serve-mcp")
+                || content.contains(
+                    "'tee -a \"$CTXPACK_REAL_CLIENT_REQUEST_LOG\" | \"$ctxpack_bin\" serve-mcp'"
+                ),
             "{script} must launch the MCP server through the selected binary"
         );
         assert!(
@@ -1044,7 +1147,10 @@ fn mcp_protocol_smoke_script_supports_selected_binary() {
         .arg(&script_path)
         .status()
         .unwrap();
-    assert!(syntax.success(), "scripts/smoke-mcp-protocol.sh failed bash -n");
+    assert!(
+        syntax.success(),
+        "scripts/smoke-mcp-protocol.sh failed bash -n"
+    );
 
     assert!(content.contains("CTXPACK_BIN"));
     assert!(content.contains("serve-mcp"));
@@ -1083,7 +1189,10 @@ fn first_pack_smoke_script_contract_and_execution() {
         .arg(&script_path)
         .status()
         .unwrap();
-    assert!(syntax.success(), "scripts/smoke-first-pack.sh failed bash -n");
+    assert!(
+        syntax.success(),
+        "scripts/smoke-first-pack.sh failed bash -n"
+    );
 
     for needle in [
         "CTXPACK_BIN",
@@ -1100,7 +1209,10 @@ fn first_pack_smoke_script_contract_and_execution() {
         "repoId",
         "sections",
     ] {
-        assert!(content.contains(needle), "smoke-first-pack missing {needle}");
+        assert!(
+            content.contains(needle),
+            "smoke-first-pack missing {needle}"
+        );
     }
 
     let output = StdCommand::new("bash")

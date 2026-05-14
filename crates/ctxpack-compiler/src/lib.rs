@@ -8,10 +8,13 @@ pub use cards::{
     generate_context_cards, ContextCardsOptions, ContextCardsReport, GeneratedContextCard,
 };
 pub use eval::{
-    eval_trace_for_pack, eval_trace_for_plan, evaluate_historical_commits, EvalComparison,
-    HistoricalChangedPathLabel, HistoricalCommitEval, HistoricalEvalEffectiveFilters,
-    HistoricalEvalOptions, HistoricalEvalRefs, HistoricalEvalReport, HistoricalMissingFileSummary,
-    RankingMetrics, RetrievalGapSummary, RoleRecallMetric, SignalAblationResult,
+    eval_trace_for_pack, eval_trace_for_plan, evaluate_historical_commits,
+    load_benchmark_suite_config, run_benchmark_suite, run_benchmark_suite_config,
+    BenchmarkDefaults, BenchmarkRepoConfig, BenchmarkRepoEffectiveConfig, BenchmarkRepoReport,
+    BenchmarkSuiteConfig, BenchmarkSuiteReport, EvalComparison, HistoricalChangedPathLabel,
+    HistoricalCommitEval, HistoricalEvalEffectiveFilters, HistoricalEvalOptions,
+    HistoricalEvalRefs, HistoricalEvalReport, HistoricalMissingFileSummary, RankingMetrics,
+    RetrievalGapSummary, RoleRecallMetric, SignalAblationResult,
 };
 pub use packs::{
     compile_context_pack, compile_context_pack_from_plan, compile_context_pack_from_plan_for_agent,
@@ -1592,6 +1595,119 @@ mod tests {
         assert!(!markdown.contains("sourceText"));
 
         std::env::remove_var("CTXPACK_HOME");
+    }
+
+    #[test]
+    fn benchmark_suite_runs_multiple_repos_with_source_free_metadata() {
+        let _guard = env_lock();
+        let temp = tempfile::tempdir().unwrap();
+        let home = temp.path().join("ctxpack-home");
+        let first_repo = temp.path().join("first");
+        let second_repo = temp.path().join("second");
+        make_benchmark_fixture_repo(&first_repo, "requireSession");
+        make_benchmark_fixture_repo(&second_repo, "refreshSession");
+        std::env::set_var("CTXPACK_HOME", &home);
+
+        let config = BenchmarkSuiteConfig {
+            name: "phase-nine-smoke".to_string(),
+            description: Some("source-free benchmark contract smoke".to_string()),
+            defaults: BenchmarkDefaults {
+                limit: 2,
+                ranking_budget: 5,
+                mode: TaskType::BugFix,
+                target_agent: "codex".to_string(),
+                role_filters: vec![FileRole::Source, FileRole::Test],
+            },
+            repositories: vec![
+                BenchmarkRepoConfig {
+                    name: "first".to_string(),
+                    path: first_repo.clone(),
+                    base: None,
+                    head: None,
+                    limit: None,
+                    ranking_budget: None,
+                    mode: None,
+                    target_agent: None,
+                    role_filters: Vec::new(),
+                },
+                BenchmarkRepoConfig {
+                    name: "second".to_string(),
+                    path: second_repo.clone(),
+                    base: None,
+                    head: None,
+                    limit: Some(1),
+                    ranking_budget: Some(3),
+                    mode: Some(TaskType::Feature),
+                    target_agent: Some("claude-code".to_string()),
+                    role_filters: vec![FileRole::Source],
+                },
+            ],
+        };
+
+        let report = run_benchmark_suite_config(&config, temp.path()).unwrap();
+        let json = serde_json::to_string(&report).unwrap();
+
+        assert_eq!(report.suite_name, "phase-nine-smoke");
+        assert_eq!(report.repository_count, 2);
+        assert_eq!(report.evaluated_repository_count, 2);
+        assert!(report.evaluated_commit_count >= 2);
+        assert_eq!(report.repositories[0].effective_config.ranking_budget, 5);
+        assert_eq!(
+            report.repositories[0].effective_config.target_agent,
+            "codex"
+        );
+        assert_eq!(
+            report.repositories[0].effective_config.role_filters,
+            vec![FileRole::Source, FileRole::Test]
+        );
+        assert_eq!(report.repositories[1].effective_config.ranking_budget, 3);
+        assert_eq!(
+            report.repositories[1].effective_config.mode,
+            TaskType::Feature
+        );
+        assert_eq!(
+            report.repositories[1].effective_config.role_filters,
+            vec![FileRole::Source]
+        );
+        assert!(report.repositories.iter().all(|repo| repo.error.is_none()));
+        assert!(report
+            .repositories
+            .iter()
+            .all(|repo| repo.privacy_status.local_only));
+        assert!(!report.suite_id.is_empty());
+        assert!(!json.contains("return true"));
+        assert!(!json.contains("source code"));
+
+        std::env::remove_var("CTXPACK_HOME");
+    }
+
+    fn make_benchmark_fixture_repo(repo: &Path, function_name: &str) {
+        fs::create_dir_all(repo.join("src/auth")).unwrap();
+        fs::create_dir_all(repo.join("tests/auth")).unwrap();
+        run_git(repo, &["init"]);
+        run_git(repo, &["config", "user.email", "ctxpack@example.com"]);
+        run_git(repo, &["config", "user.name", "ctxpack"]);
+        fs::write(
+            repo.join("src/auth/session.ts"),
+            format!("export function {function_name}() {{ return true; }}\n"),
+        )
+        .unwrap();
+        fs::write(
+            repo.join("tests/auth/session.test.ts"),
+            format!(
+                "import {{ {function_name} }} from '../../src/auth/session';\ntest('{function_name}', () => expect({function_name}()).toBe(true));\n"
+            ),
+        )
+        .unwrap();
+        run_git(repo, &["add", "."]);
+        run_git(repo, &["commit", "-m", "add auth session"]);
+        fs::write(
+            repo.join("src/auth/session.ts"),
+            format!("export function {function_name}() {{ return false; }}\n"),
+        )
+        .unwrap();
+        run_git(repo, &["add", "."]);
+        run_git(repo, &["commit", "-m", "fix auth session behavior"]);
     }
 
     fn run_git(repo: &Path, args: &[&str]) {

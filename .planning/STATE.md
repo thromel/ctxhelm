@@ -2,26 +2,26 @@
 gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Retrieval Quality Proof
-status: planning
-stopped_at: requirements and roadmap initialized
+status: in_progress
+stopped_at: phase 9 complete; phase 10 next
 last_updated: "2026-05-14T07:24:29+06:00"
 last_activity: 2026-05-14
 progress:
   total_phases: 4
-  completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
-  percent: 0
+  completed_phases: 1
+  total_plans: 17
+  completed_plans: 4
+  percent: 25
 ---
 
 # Project State
 
 ## Current Position
 
-Phase: Not started (defining phase context)
+Phase: 10 - Fixed-Budget Retrieval Metrics & Baselines
 Plan: —
-Status: Milestone v1.2 initialized
-Last activity: 2026-05-14 — Retrieval Quality Proof milestone started from the original product vision.
+Status: Phase 9 complete; Phase 10 ready for discuss/plan/execute
+Last activity: 2026-05-14 — Benchmark suite contracts and multi-repo execution added.
 
 ## Project Reference
 
@@ -33,7 +33,7 @@ See: `.planning/PROJECT.md`
 
 ## Active Milestone
 
-v1.2 should turn ctxpack from "working local broker" into "measurably useful product." The work should be evidence-first:
+v1.2 should turn ctxpack from "working local broker" into "measurably useful product." The work is evidence-first:
 
 - benchmark real repos, especially RefactoringMiner;
 - compare against lexical/no-context baselines under fixed budgets;
@@ -43,8 +43,8 @@ v1.2 should turn ctxpack from "working local broker" into "measurably useful pro
 
 ## Next Step
 
-Start Phase 9:
+Continue with Phase 10:
 
 ```bash
-$gsd-discuss-phase 9
+$gsd-discuss-phase 10
 ```

@@ -135,6 +135,106 @@ pub struct HistoricalEvalReport {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
+pub struct BenchmarkSuiteConfig {
+    pub name: String,
+    #[serde(default)]
+    pub description: Option<String>,
+    #[serde(default)]
+    pub defaults: BenchmarkDefaults,
+    pub repositories: Vec<BenchmarkRepoConfig>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct BenchmarkDefaults {
+    #[serde(default = "default_benchmark_limit")]
+    pub limit: usize,
+    #[serde(default = "default_benchmark_ranking_budget")]
+    pub ranking_budget: usize,
+    #[serde(default = "default_benchmark_task_type")]
+    pub mode: TaskType,
+    #[serde(default = "default_benchmark_target_agent")]
+    pub target_agent: String,
+    #[serde(default)]
+    pub role_filters: Vec<FileRole>,
+}
+
+impl Default for BenchmarkDefaults {
+    fn default() -> Self {
+        Self {
+            limit: default_benchmark_limit(),
+            ranking_budget: default_benchmark_ranking_budget(),
+            mode: default_benchmark_task_type(),
+            target_agent: default_benchmark_target_agent(),
+            role_filters: Vec::new(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct BenchmarkRepoConfig {
+    pub name: String,
+    pub path: PathBuf,
+    #[serde(default)]
+    pub base: Option<String>,
+    #[serde(default)]
+    pub head: Option<String>,
+    #[serde(default)]
+    pub limit: Option<usize>,
+    #[serde(default)]
+    pub ranking_budget: Option<usize>,
+    #[serde(default)]
+    pub mode: Option<TaskType>,
+    #[serde(default)]
+    pub target_agent: Option<String>,
+    #[serde(default)]
+    pub role_filters: Vec<FileRole>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct BenchmarkSuiteReport {
+    pub suite_name: String,
+    pub suite_id: String,
+    pub description: Option<String>,
+    pub generated_at_unix_seconds: u64,
+    pub repository_count: usize,
+    pub evaluated_repository_count: usize,
+    pub evaluated_commit_count: usize,
+    pub repositories: Vec<BenchmarkRepoReport>,
+    pub privacy_status: PrivacyStatus,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct BenchmarkRepoReport {
+    pub name: String,
+    pub repo_id: Option<String>,
+    pub effective_config: BenchmarkRepoEffectiveConfig,
+    pub evaluated_commits: usize,
+    pub excluded_changed_file_count: usize,
+    pub skipped_path_count: usize,
+    pub report: Option<HistoricalEvalReport>,
+    pub error: Option<String>,
+    pub privacy_status: PrivacyStatus,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct BenchmarkRepoEffectiveConfig {
+    pub base: Option<String>,
+    pub head: Option<String>,
+    pub limit: usize,
+    pub ranking_budget: usize,
+    pub mode: TaskType,
+    pub target_agent: String,
+    #[serde(default)]
+    pub role_filters: Vec<FileRole>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
 pub struct HistoricalMissingFileSummary {
     pub path: String,
     pub role: FileRole,
@@ -170,6 +270,193 @@ pub struct HistoricalCommitEval {
     pub low_information_task: bool,
     pub confidence: f32,
     pub source_text_logged: bool,
+}
+
+pub fn load_benchmark_suite_config(
+    config_path: impl AsRef<Path>,
+) -> Result<BenchmarkSuiteConfig, InventoryError> {
+    let config_path = config_path.as_ref();
+    let content = fs::read_to_string(config_path).map_err(|source| InventoryError::Read {
+        path: config_path.to_path_buf(),
+        source,
+    })?;
+    serde_json::from_str(&content).map_err(|source| InventoryError::Deserialize {
+        path: config_path.to_path_buf(),
+        source,
+    })
+}
+
+pub fn run_benchmark_suite(
+    config_path: impl AsRef<Path>,
+) -> Result<BenchmarkSuiteReport, InventoryError> {
+    let config_path = config_path.as_ref();
+    let config = load_benchmark_suite_config(config_path)?;
+    let config_dir = config_path.parent().unwrap_or_else(|| Path::new("."));
+    run_benchmark_suite_config(&config, config_dir)
+}
+
+pub fn run_benchmark_suite_config(
+    config: &BenchmarkSuiteConfig,
+    config_dir: &Path,
+) -> Result<BenchmarkSuiteReport, InventoryError> {
+    let mut repositories = Vec::new();
+
+    for repo_config in &config.repositories {
+        repositories.push(run_benchmark_repo(
+            config_dir,
+            &config.defaults,
+            repo_config,
+        ));
+    }
+
+    let evaluated_repository_count = repositories
+        .iter()
+        .filter(|repo| repo.error.is_none())
+        .count();
+    let evaluated_commit_count = repositories
+        .iter()
+        .map(|repo| repo.evaluated_commits)
+        .sum::<usize>();
+    let suite_id = benchmark_suite_id(config, &repositories);
+
+    Ok(BenchmarkSuiteReport {
+        suite_name: config.name.clone(),
+        suite_id,
+        description: config.description.clone(),
+        generated_at_unix_seconds: SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .map(|duration| duration.as_secs())
+            .unwrap_or_default(),
+        repository_count: config.repositories.len(),
+        evaluated_repository_count,
+        evaluated_commit_count,
+        repositories,
+        privacy_status: PrivacyStatus::local_only(),
+    })
+}
+
+fn run_benchmark_repo(
+    config_dir: &Path,
+    defaults: &BenchmarkDefaults,
+    repo_config: &BenchmarkRepoConfig,
+) -> BenchmarkRepoReport {
+    let effective_config = BenchmarkRepoEffectiveConfig {
+        base: repo_config.base.clone(),
+        head: repo_config.head.clone(),
+        limit: repo_config.limit.unwrap_or(defaults.limit).max(1),
+        ranking_budget: repo_config
+            .ranking_budget
+            .unwrap_or(defaults.ranking_budget)
+            .max(1),
+        mode: repo_config
+            .mode
+            .clone()
+            .unwrap_or_else(|| defaults.mode.clone()),
+        target_agent: repo_config
+            .target_agent
+            .clone()
+            .unwrap_or_else(|| defaults.target_agent.clone()),
+        role_filters: if repo_config.role_filters.is_empty() {
+            defaults.role_filters.clone()
+        } else {
+            repo_config.role_filters.clone()
+        },
+    };
+    let repo_path = resolve_benchmark_repo_path(config_dir, &repo_config.path);
+    let options = HistoricalEvalOptions {
+        limit: effective_config.limit,
+        ranking_budget: effective_config.ranking_budget,
+        task_type: effective_config.mode.clone(),
+        target_agent: effective_config.target_agent.clone(),
+        base: effective_config.base.clone(),
+        head: effective_config.head.clone(),
+    };
+
+    match evaluate_historical_commits(&repo_path, &options) {
+        Ok(report) => {
+            let excluded_changed_file_count = report
+                .commits
+                .iter()
+                .map(|commit| commit.excluded_changed_file_count)
+                .sum::<usize>();
+            let skipped_path_count = report
+                .commits
+                .iter()
+                .flat_map(|commit| commit.changed_path_labels.iter())
+                .filter(|label| label.label_scope != LabelScope::Safe)
+                .count();
+            BenchmarkRepoReport {
+                name: repo_config.name.clone(),
+                repo_id: Some(report.repo_id.clone()),
+                effective_config,
+                evaluated_commits: report.evaluated_commits,
+                excluded_changed_file_count,
+                skipped_path_count,
+                report: Some(report),
+                error: None,
+                privacy_status: PrivacyStatus::local_only(),
+            }
+        }
+        Err(error) => BenchmarkRepoReport {
+            name: repo_config.name.clone(),
+            repo_id: None,
+            effective_config,
+            evaluated_commits: 0,
+            excluded_changed_file_count: 0,
+            skipped_path_count: 0,
+            report: None,
+            error: Some(error.to_string()),
+            privacy_status: PrivacyStatus::local_only(),
+        },
+    }
+}
+
+fn resolve_benchmark_repo_path(config_dir: &Path, repo_path: &Path) -> PathBuf {
+    if repo_path.is_absolute() {
+        repo_path.to_path_buf()
+    } else {
+        config_dir.join(repo_path)
+    }
+}
+
+fn benchmark_suite_id(
+    config: &BenchmarkSuiteConfig,
+    repositories: &[BenchmarkRepoReport],
+) -> String {
+    let mut input = format!("suite={}\n", config.name);
+    for repo in repositories {
+        input.push_str(&format!(
+            "repo={}\nrepoId={}\nbase={}\nhead={}\nlimit={}\nrankingBudget={}\nmode={:?}\ntarget={}\nroles={:?}\ncommits={}\nerror={}\n",
+            repo.name,
+            repo.repo_id.as_deref().unwrap_or(""),
+            repo.effective_config.base.as_deref().unwrap_or(""),
+            repo.effective_config.head.as_deref().unwrap_or(""),
+            repo.effective_config.limit,
+            repo.effective_config.ranking_budget,
+            repo.effective_config.mode,
+            repo.effective_config.target_agent,
+            repo.effective_config.role_filters,
+            repo.evaluated_commits,
+            repo.error.as_deref().unwrap_or("")
+        ));
+    }
+    task_hash(&input)
+}
+
+fn default_benchmark_limit() -> usize {
+    20
+}
+
+fn default_benchmark_ranking_budget() -> usize {
+    10
+}
+
+fn default_benchmark_task_type() -> TaskType {
+    TaskType::BugFix
+}
+
+fn default_benchmark_target_agent() -> String {
+    "generic".to_string()
 }
 
 pub fn evaluate_historical_commits(

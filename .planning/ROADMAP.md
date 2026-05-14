@@ -14,7 +14,7 @@ The milestone uses RefactoringMiner as the primary large-history proof target an
 - Integer phases (9, 10, 11, 12): Planned v1.2 work
 - Decimal phases (10.1, 10.2): Urgent insertions if needed
 
-- [ ] **Phase 9: Benchmark Harness & Corpus Contracts** - Maintainers can define reproducible, source-free benchmark suites over real repositories.
+- [x] **Phase 9: Benchmark Harness & Corpus Contracts** - Maintainers can define reproducible, source-free benchmark suites over real repositories.
 - [ ] **Phase 10: Fixed-Budget Retrieval Metrics & Baselines** - Maintainers can compare ctxpack retrieval against lexical and no-context baselines with stable metrics.
 - [ ] **Phase 11: Retrieval Gap Taxonomy & Regression Trends** - Maintainers can turn repeated misses into source-free failure families and trend reports.
 - [ ] **Phase 12: Product Proof Report & Adoption Gate** - Users can see why ctxpack is useful through reproducible reports, docs, and release-gate proof.
@@ -32,10 +32,10 @@ The milestone uses RefactoringMiner as the primary large-history proof target an
   4. Fixtures and docs explain how to add another local repo benchmark without cloud services or global machine assumptions.
 **Plans**: 4 plans
 Plans:
-- [ ] 09-benchmark-harness-corpus-contracts-01-PLAN.md — Define benchmark suite configuration and source-free corpus contracts.
-- [ ] 09-benchmark-harness-corpus-contracts-02-PLAN.md — Implement multi-repo bounded benchmark execution.
-- [ ] 09-benchmark-harness-corpus-contracts-03-PLAN.md — Persist reproducibility metadata and privacy diagnostics.
-- [ ] 09-benchmark-harness-corpus-contracts-04-PLAN.md — Document RefactoringMiner and second-repo benchmark setup.
+- [x] 09-benchmark-harness-corpus-contracts-01-PLAN.md — Define benchmark suite configuration and source-free corpus contracts.
+- [x] 09-benchmark-harness-corpus-contracts-02-PLAN.md — Implement multi-repo bounded benchmark execution.
+- [x] 09-benchmark-harness-corpus-contracts-03-PLAN.md — Persist reproducibility metadata and privacy diagnostics.
+- [x] 09-benchmark-harness-corpus-contracts-04-PLAN.md — Document RefactoringMiner and second-repo benchmark setup.
 
 ### Phase 10: Fixed-Budget Retrieval Metrics & Baselines
 **Goal**: Maintainers can measure whether ctxpack improves target-file/test retrieval over lexical and no-context baselines at fixed budgets.
@@ -125,7 +125,7 @@ Phases execute in numeric order: 9 -> 10 -> 11 -> 12
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 9. Benchmark Harness & Corpus Contracts | 0/4 | Pending | — |
+| 9. Benchmark Harness & Corpus Contracts | 4/4 | Complete | 2026-05-14 |
 | 10. Fixed-Budget Retrieval Metrics & Baselines | 0/5 | Pending | — |
 | 11. Retrieval Gap Taxonomy & Regression Trends | 0/4 | Pending | — |
 | 12. Product Proof Report & Adoption Gate | 0/4 | Pending | — |

@@ -74,6 +74,7 @@ For the longer walkthrough, including setup validation, deterministic MCP proof 
 - [First-pack quickstart](docs/quickstart.md)
 - [Release and install guide](docs/release.md)
 - [Agent setup matrix](docs/agent-setup.md)
+- [Retrieval benchmarking](docs/benchmarking.md)
 - [Troubleshooting](docs/troubleshooting.md)
 
 ## MCP Runtime
@@ -258,6 +259,18 @@ ctxpack eval checklist --repo /path/to/repo --limit 5
 Traces store task hashes, task type, target agent label, recommended files/tests/commands, optional pack id, optional budget, and created time. They do not store task text or source snippets.
 
 Run a source-free historical retrieval eval over recent local commits:
+
+```bash
+ctxpack eval history --repo /path/to/repo --limit 20 --budget 10
+```
+
+Run a named source-free benchmark suite over multiple local repositories:
+
+```bash
+ctxpack eval benchmark --config .ctxpack/benchmarks/retrieval-quality.json
+```
+
+See [docs/benchmarking.md](docs/benchmarking.md) for the suite JSON contract and RefactoringMiner-style setup.
 
 ```bash
 ctxpack eval history --repo /path/to/repo --limit 20 --mode bug-fix
