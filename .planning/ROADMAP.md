@@ -36,10 +36,10 @@ This roadmap opens v1.3 Production Storage. v1.2 proved ctxpack's retrieval valu
 **Plans**: 4 plans
 
 Plans:
-- [ ] 13-storage-foundation-schema-contracts-01-PLAN.md — Define typed storage contracts, module boundaries, and SQLite store initialization.
-- [ ] 13-storage-foundation-schema-contracts-02-PLAN.md — Implement source-free schema tables and metadata records.
-- [ ] 13-storage-foundation-schema-contracts-03-PLAN.md — Add schema version, ctxpack version, and migration-history tracking.
-- [ ] 13-storage-foundation-schema-contracts-04-PLAN.md — Add privacy tests and fixtures proving source-free persistence defaults.
+- [x] 13-storage-foundation-schema-contracts-01-PLAN.md — Define typed storage contracts, module boundaries, and SQLite store initialization.
+- [x] 13-storage-foundation-schema-contracts-02-PLAN.md — Implement source-free schema tables and metadata records.
+- [x] 13-storage-foundation-schema-contracts-03-PLAN.md — Add schema version, ctxpack version, and migration-history tracking.
+- [x] 13-storage-foundation-schema-contracts-04-PLAN.md — Add privacy tests and fixtures proving source-free persistence defaults.
 
 ### Phase 14: Incremental Indexing & Cache Rebuilds
 
@@ -137,7 +137,7 @@ Phases execute in numeric order: 13 -> 14 -> 15 -> 16
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 13. Storage Foundation & Schema Contracts | 0/4 | Not started | — |
+| 13. Storage Foundation & Schema Contracts | 4/4 | Planned | — |
 | 14. Incremental Indexing & Cache Rebuilds | 0/4 | Blocked on Phase 13 | — |
 | 15. Evaluation, Pack, and Proof Persistence | 0/4 | Blocked on Phase 14 | — |
 | 16. Storage Operations, Safety, and Release Gates | 0/4 | Blocked on Phase 15 | — |
