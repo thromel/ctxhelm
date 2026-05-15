@@ -87,6 +87,8 @@ Milestone strategy from the original product vision:
 
 - **v1.4 Local Semantic Retrieval**: add optional local embeddings/vector retrieval with hybrid fusion and explicit privacy controls.
 - **v1.5 Parser/Semantic Precision**: expand Tree-sitter coverage and add optional SCIP/LSP precision only where measured gaps justify it.
+- **v1.6 Repo Memory & Experience Cards**: turn generated repo summaries and prior agent-run lessons into source-free memory that agents can reuse selectively.
+- **v1.7 Adaptive Retrieval Policy & Feedback Loop**: use benchmark results and real session traces to tune retrieval policy and prove agent-outcome lift.
 - **v2.0 Workspace & Team Layer**: support multi-repo workspaces, shared source-free context cards, benchmark reports, and team policy files.
 - **v2.1 UI / Pack Inspector**: add optional diagnostics UI for packs, retrieval gaps, evals, context health, and adapter previews.
 

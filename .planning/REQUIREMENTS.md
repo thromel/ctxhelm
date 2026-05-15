@@ -47,6 +47,20 @@ Deferred to future milestones from the original product vision and refined by v1
 - **PARS-06**: Prove precision lift without recursive graph/context explosion.
 - **PARS-07**: Degrade safely when language tooling or project setup is unavailable.
 
+### v1.6 Repo Memory And Experience Cards
+
+- **MEM-01**: Generate domain cards for important subsystems with freshness metadata, source links, and regeneration triggers.
+- **MEM-02**: Store source-free experience cards from prior agent sessions, test failures, accepted fixes, and user corrections.
+- **MEM-03**: Select relevant repo memory during `prepare_task` and `get_pack` with explicit evidence, confidence, and token-budget caps.
+- **MEM-04**: Provide human review, redaction, and disable controls so generated memory stays trustworthy and editable.
+
+### v1.7 Adaptive Retrieval Policy And Feedback Loop
+
+- **LEARN-01**: Ingest source-free session feedback for recommended, read, edited, tested, passed, failed, and user-corrected files.
+- **LEARN-02**: Report policy-level context precision, signal weight contribution, token ROI, and repeated missing-file families.
+- **LEARN-03**: Tune retrieval policy from benchmark and session evidence with rollback when a signal regresses.
+- **LEARN-04**: Compare agent outcomes across plan-only, brief, standard, and deep packs on fixed tasks.
+
 ### v2.0 Workspace And Team Layer
 
 - **TEAM-01**: Support multi-repo workspace inventory and task context planning.

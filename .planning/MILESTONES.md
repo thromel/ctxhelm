@@ -95,11 +95,37 @@
 - Precision evals showing better target-file/test recall without context explosion.
 - Safe degradation when language tooling is unavailable or project setup is incomplete.
 
+### v1.6 Repo Memory & Experience Cards
+
+**Goal:** Turn generated repo summaries and prior agent-run lessons into durable, source-linked, source-free memory that agents can reuse without bloating every context pack.
+
+**Depends on:** v1.3 durable storage, v1.4/v1.5 retrieval and precision signals.
+
+**Expected capabilities:**
+
+- Domain cards for key subsystems with freshness metadata, source links, and regeneration triggers.
+- Experience cards from prior agent sessions, test failures, accepted fixes, and user corrections.
+- Memory selection in `prepare_task` and `get_pack` with explicit evidence and token-budget caps.
+- Review and redaction workflow that keeps generated memory source-free by default and editable by humans.
+
+### v1.7 Adaptive Retrieval Policy & Feedback Loop
+
+**Goal:** Use benchmark results and real agent-session traces to tune retrieval policy, identify repeated gaps, and prove whether context choices improve agent outcomes.
+
+**Depends on:** v1.2 benchmark proof, v1.3 storage, v1.4 semantic retrieval, v1.6 memory cards.
+
+**Expected capabilities:**
+
+- Session feedback ingestion for recommended, read, edited, tested, passed, failed, and user-corrected files.
+- Source-free policy statistics for signal weights, context precision, token ROI, and repeated missing-file families.
+- Eval-driven retrieval-policy tuning with rollback when semantic, graph, history, or memory signals regress.
+- Agent outcome reports comparing plan-only, brief, standard, and deep packs across fixed tasks.
+
 ### v2.0 Workspace & Team Layer
 
 **Goal:** Support multi-repo and team workflows while keeping source code local and agent-native surfaces primary.
 
-**Depends on:** v1.3 storage and stable source-free reporting.
+**Depends on:** v1.3 storage, v1.6 source-free memory, and v1.7 feedback reporting.
 
 **Expected capabilities:**
 
