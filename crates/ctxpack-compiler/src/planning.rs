@@ -6,8 +6,9 @@ use ctxpack_core::{
 use ctxpack_index::{
     co_change_hints_report, current_diff_summary_report, lexical_search_report,
     load_or_refresh_inventory, related_dependency_edges_report, related_tests_report,
-    symbol_search_report, CoChangeOptions, CurrentDiffOptions, DependencyOptions, InventoryError,
-    InventoryOptions, SearchOptions, SymbolOptions,
+    semantic_search_report, symbol_search_report, CoChangeOptions, CurrentDiffOptions,
+    DependencyOptions, InventoryError, InventoryOptions, SearchOptions, SemanticOptions,
+    SymbolOptions,
 };
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::{Component, Path};
@@ -36,12 +37,47 @@ pub fn prepare_context_plan_with_paths(
     prepare_context_plan_with_paths_and_history(repo_root, task, task_type, anchor_paths, true)
 }
 
+pub fn prepare_context_plan_with_paths_and_semantic(
+    repo_root: impl AsRef<Path>,
+    task: &str,
+    task_type: TaskType,
+    anchor_paths: &[String],
+    semantic_enabled: bool,
+) -> Result<ContextPlan, InventoryError> {
+    prepare_context_plan_with_paths_history_and_semantic(
+        repo_root,
+        task,
+        task_type,
+        anchor_paths,
+        true,
+        semantic_enabled,
+    )
+}
+
 pub(crate) fn prepare_context_plan_with_paths_and_history(
     repo_root: impl AsRef<Path>,
     task: &str,
     task_type: TaskType,
     anchor_paths: &[String],
     include_history: bool,
+) -> Result<ContextPlan, InventoryError> {
+    prepare_context_plan_with_paths_history_and_semantic(
+        repo_root,
+        task,
+        task_type,
+        anchor_paths,
+        include_history,
+        false,
+    )
+}
+
+pub(crate) fn prepare_context_plan_with_paths_history_and_semantic(
+    repo_root: impl AsRef<Path>,
+    task: &str,
+    task_type: TaskType,
+    anchor_paths: &[String],
+    include_history: bool,
+    semantic_enabled: bool,
 ) -> Result<ContextPlan, InventoryError> {
     let repo_root = repo_root.as_ref();
     let mut plan = base_plan(task_type);
@@ -104,6 +140,24 @@ pub(crate) fn prepare_context_plan_with_paths_and_history(
     for result in &search_results {
         roles.insert(result.path.clone(), result.role.clone());
     }
+    let semantic_results = if semantic_enabled {
+        let semantic_report = semantic_search_report(
+            repo_root,
+            task,
+            &SemanticOptions {
+                limit: search_limit(&plan.task_type),
+                enabled: true,
+                ..SemanticOptions::default()
+            },
+        )?;
+        extend_plan_diagnostics(&mut plan, semantic_report.diagnostics);
+        for result in &semantic_report.results {
+            roles.insert(result.path.clone(), result.role.clone());
+        }
+        semantic_report.results
+    } else {
+        Vec::new()
+    };
     let (anchor_targets, unavailable_anchors, anchor_diagnostics) =
         anchored_target_files(repo_root, anchor_paths)?;
     extend_plan_diagnostics(&mut plan, anchor_diagnostics);
@@ -133,7 +187,12 @@ pub(crate) fn prepare_context_plan_with_paths_and_history(
             }
         })
         .collect::<Vec<_>>();
-    let expansion_seed_paths = expansion_seed_paths(&anchors, &symbol_results, &search_results);
+    let expansion_seed_paths = expansion_seed_paths(
+        &anchors,
+        &symbol_results,
+        &search_results,
+        &semantic_results,
+    );
     let source_seed_paths = expansion_seed_paths
         .iter()
         .filter(|path| {
@@ -215,6 +274,7 @@ pub(crate) fn prepare_context_plan_with_paths_and_history(
     let ranked_candidates = rank_candidates(RankingInput {
         anchors,
         lexical_results: search_results,
+        semantic_results,
         symbol_results,
         related_tests: test_results,
         co_change_hints,
@@ -416,6 +476,7 @@ fn expansion_seed_paths(
     anchors: &[AnchorCandidate],
     symbol_results: &[ctxpack_index::SymbolSearchResult],
     search_results: &[ctxpack_index::SearchResult],
+    semantic_results: &[ctxpack_index::SemanticSearchResult],
 ) -> Vec<String> {
     let mut seen = BTreeSet::new();
     let mut paths = Vec::new();
@@ -428,6 +489,7 @@ fn expansion_seed_paths(
                 .map(|result| result.symbol.path.clone()),
         )
         .chain(search_results.iter().map(|result| result.path.clone()))
+        .chain(semantic_results.iter().map(|result| result.path.clone()))
     {
         if seen.insert(path.clone()) {
             paths.push(path);

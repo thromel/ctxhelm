@@ -42,6 +42,17 @@ language, role, content hash, size, generated/ignored status, and policy-derived
 inventory state. The output reports source-free counts for reused, created,
 updated, deleted, skipped, generated, and sensitive paths.
 
+## Semantic Vector Metadata
+
+```bash
+ctxpack index --repo "$REPO" --semantic
+```
+
+Semantic indexing is explicit and local-only. It stores provider name, model,
+dimensions, distance metric, safe file hash, privacy label, and numeric vector
+metadata. It uses the same safe inventory and source-read policy as packs, and it
+does not store raw file contents, prompt text, secrets, or cloud payloads.
+
 ## Pack And Eval Metadata
 
 ```bash
@@ -74,6 +85,6 @@ The storage schema stores hashes, paths that passed ctxpack policy, roles,
 counts, metrics, IDs, and JSON metadata. It does not store raw file contents,
 source snippets, prompt text, secrets, or cloud embedding data by default.
 
-The release gate runs `scripts/smoke-storage.sh`, which checks that repeated
-indexing reuses records and that source bodies are not persisted into
-`CTXPACK_HOME`.
+The release gate runs `scripts/smoke-storage.sh` and `scripts/smoke-semantic.sh`,
+which check repeated indexing, source-free vector metadata, and that source or
+secret sentinels are not persisted into `CTXPACK_HOME`.

@@ -5,6 +5,7 @@ mod inventory;
 mod policy;
 mod related_tests;
 mod search;
+mod semantic;
 mod storage;
 mod symbols;
 mod traces;
@@ -42,14 +43,21 @@ pub use related_tests::{
 pub use search::{
     lexical_search, lexical_search_report, SearchOptions, SearchReport, SearchResult,
 };
+pub use semantic::{
+    semantic_search, semantic_search_report, semantic_vector_records, sync_semantic_index_to_store,
+    SemanticOptions, SemanticProviderConfig, SemanticSearchReport, SemanticSearchResult,
+    SemanticVectorRecord, DEFAULT_SEMANTIC_DIMENSIONS, DEFAULT_SEMANTIC_DISTANCE,
+    DEFAULT_SEMANTIC_MODEL, DEFAULT_SEMANTIC_PROVIDER,
+};
 pub use storage::{
     initialize_store, inspect_store_schema, open_store_report, persist_benchmark_run_record,
-    persist_context_pack_record, persist_proof_report_record, required_table_names,
-    storage_status_for_path, storage_status_for_repo, sync_inventory_to_store, vacuum_store,
-    StorageBenchmarkRunRecord, StorageCompatibility, StorageContextPackRecord, StorageError,
-    StorageGapRecord, StorageIndexReport, StorageMetadata, StorageMetricRecord, StoragePrivacyMode,
-    StorageProofReportRecord, StorageReport, StorageSchemaReport, StorageStatusReport, StoreConfig,
-    StorePaths, STORAGE_SCHEMA_VERSION,
+    persist_context_pack_record, persist_proof_report_record, persist_semantic_vector_records,
+    required_table_names, storage_status_for_path, storage_status_for_repo,
+    sync_inventory_to_store, vacuum_store, StorageBenchmarkRunRecord, StorageCompatibility,
+    StorageContextPackRecord, StorageError, StorageGapRecord, StorageIndexReport, StorageMetadata,
+    StorageMetricRecord, StoragePrivacyMode, StorageProofReportRecord, StorageReport,
+    StorageSchemaReport, StorageSemanticIndexReport, StorageSemanticVectorRecord,
+    StorageStatusReport, StoreConfig, StorePaths, STORAGE_SCHEMA_VERSION,
 };
 pub use symbols::{
     extract_symbols, extract_symbols_report, symbol_search, symbol_search_report, CodeSymbol,

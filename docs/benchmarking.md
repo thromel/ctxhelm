@@ -19,6 +19,7 @@ Benchmark suites are JSON files. Paths may be absolute or relative to the suite 
     "rankingBudget": 10,
     "mode": "bug_fix",
     "targetAgent": "codex",
+    "semanticEnabled": false,
     "roleFilters": ["source", "test"]
   },
   "repositories": [
@@ -46,17 +47,19 @@ Fields:
 - `defaults.rankingBudget`: fixed context-file budget K used for combined, lexical, and ablation metrics.
 - `defaults.mode`: task type used when replaying commit titles.
 - `defaults.targetAgent`: source-free agent label in eval metadata.
+- `defaults.semanticEnabled`: explicit opt-in for local semantic retrieval during historical eval.
 - `defaults.roleFilters`: documented target roles for this benchmark scope. Phase 9 records these filters in source-free metadata; later v1.2 phases use them for deeper metric segmentation.
 - `repositories[*].name`: source-free repo label.
 - `repositories[*].path`: local repository path.
 - `repositories[*].base` / `head`: optional stable revision range.
-- `repositories[*].limit`, `rankingBudget`, `mode`, `targetAgent`, `roleFilters`: per-repo overrides.
+- `repositories[*].limit`, `rankingBudget`, `mode`, `targetAgent`, `semanticEnabled`, `roleFilters`: per-repo overrides.
 
 ## Run
 
 ```bash
 ctxpack eval benchmark --config .ctxpack/benchmarks/retrieval-quality.json --format markdown
 ctxpack eval benchmark --config .ctxpack/benchmarks/retrieval-quality.json --format json
+ctxpack eval history --repo /path/to/repo --semantic --format json
 ctxpack eval compare --base-report previous.json --head-report current.json --threshold fileRecallAt10=0.05
 ctxpack eval proof --config .ctxpack/benchmarks/retrieval-quality.json
 ```

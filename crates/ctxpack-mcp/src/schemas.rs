@@ -114,6 +114,10 @@ pub(crate) fn tools_list_result() -> Value {
                             "type": "string",
                             "description": "Optional host agent label for local eval traces."
                         },
+                        "semantic": {
+                            "type": "boolean",
+                            "description": "Explicitly enable local-only semantic retrieval for this task."
+                        },
                         "recordTrace": {
                             "type": "boolean",
                             "description": "When false, skip local eval trace recording for this read call."
@@ -143,6 +147,10 @@ pub(crate) fn tools_list_result() -> Value {
                             "minimum": 1,
                             "maximum": 50,
                             "description": "Maximum result count."
+                        },
+                        "semantic": {
+                            "type": "boolean",
+                            "description": "When true, use the explicit local semantic provider for file results."
                         },
                         "kinds": {
                             "type": "array",
@@ -240,6 +248,10 @@ pub(crate) fn tools_list_result() -> Value {
                         "targetAgent": {
                             "type": "string",
                             "description": "Optional host agent label for local eval traces."
+                        },
+                        "semantic": {
+                            "type": "boolean",
+                            "description": "Explicitly enable local-only semantic retrieval while compiling the pack."
                         },
                         "recordTrace": {
                             "type": "boolean",

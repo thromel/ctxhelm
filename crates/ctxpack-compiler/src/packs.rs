@@ -1,4 +1,7 @@
-use crate::planning::{normalized_target_agent, prepare_context_plan_with_paths};
+use crate::planning::{
+    normalized_target_agent, prepare_context_plan_with_paths,
+    prepare_context_plan_with_paths_and_semantic,
+};
 use ctxpack_core::{
     ContextPack, ContextPlan, Diagnostic, DiagnosticSeverity, LineRange, PackBudget, PackSection,
     TaskType,
@@ -81,8 +84,38 @@ pub fn compile_context_pack_with_plan_and_paths_for_agent(
     anchor_paths: &[String],
     target_agent: &str,
 ) -> Result<(ContextPlan, ContextPack), InventoryError> {
+    compile_context_pack_with_plan_and_paths_for_agent_and_semantic(
+        repo_root,
+        task,
+        task_type,
+        budget,
+        anchor_paths,
+        target_agent,
+        false,
+    )
+}
+
+pub fn compile_context_pack_with_plan_and_paths_for_agent_and_semantic(
+    repo_root: impl AsRef<Path>,
+    task: &str,
+    task_type: TaskType,
+    budget: PackBudget,
+    anchor_paths: &[String],
+    target_agent: &str,
+    semantic_enabled: bool,
+) -> Result<(ContextPlan, ContextPack), InventoryError> {
     let repo_root = repo_root.as_ref();
-    let plan = prepare_context_plan_with_paths(repo_root, task, task_type, anchor_paths)?;
+    let plan = if semantic_enabled {
+        prepare_context_plan_with_paths_and_semantic(
+            repo_root,
+            task,
+            task_type,
+            anchor_paths,
+            true,
+        )?
+    } else {
+        prepare_context_plan_with_paths(repo_root, task, task_type, anchor_paths)?
+    };
     let pack = compile_pack_from_plan(repo_root, task, &plan, budget, target_agent);
     Ok((plan, pack))
 }

@@ -10,12 +10,14 @@ use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
 use thiserror::Error;
 
-pub const STORAGE_SCHEMA_VERSION: u32 = 1;
+pub const STORAGE_SCHEMA_VERSION: u32 = 2;
 pub const RANKING_STORAGE_VERSION: u32 = 1;
 pub const COMPILER_STORAGE_VERSION: u32 = 1;
 
 const INITIAL_MIGRATION_NAME: &str = "initial_source_free_storage_schema";
 const INITIAL_MIGRATION_CHECKSUM: &str = "ctxpack-storage-v1-source-free";
+const SEMANTIC_MIGRATION_NAME: &str = "local_semantic_vector_metadata";
+const SEMANTIC_MIGRATION_CHECKSUM: &str = "ctxpack-storage-v2-local-semantic";
 
 const REQUIRED_TABLES: &[&str] = &[
     "storage_metadata",
@@ -34,6 +36,7 @@ const REQUIRED_TABLES: &[&str] = &[
     "benchmark_metrics",
     "retrieval_gaps",
     "proof_reports",
+    "semantic_vectors",
 ];
 
 #[derive(Debug, Error)]
@@ -175,6 +178,24 @@ pub struct StorageStatusReport {
     pub context_pack_records: usize,
     pub benchmark_run_records: usize,
     pub proof_report_records: usize,
+    pub semantic_vector_records: usize,
+    pub compatibility: StorageCompatibility,
+    #[serde(default)]
+    pub diagnostics: Vec<Diagnostic>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct StorageSemanticIndexReport {
+    pub repo_id: String,
+    pub repo_root: PathBuf,
+    pub database_path: PathBuf,
+    pub schema_version: u32,
+    pub reused_records: usize,
+    pub created_records: usize,
+    pub updated_records: usize,
+    pub deleted_records: usize,
+    pub semantic_vector_records: usize,
     pub compatibility: StorageCompatibility,
     #[serde(default)]
     pub diagnostics: Vec<Diagnostic>,
@@ -234,6 +255,19 @@ pub struct StorageProofReportRecord {
     pub privacy_status: String,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct StorageSemanticVectorRecord {
+    pub path: String,
+    pub safe_hash: String,
+    pub provider: String,
+    pub model: String,
+    pub dimensions: usize,
+    pub distance_metric: String,
+    pub vector: Vec<f32>,
+    pub privacy_status: String,
+}
+
 pub fn required_table_names() -> &'static [&'static str] {
     REQUIRED_TABLES
 }
@@ -258,6 +292,7 @@ pub fn initialize_store(
     upsert_repo(&connection, &paths.database_path, &repo_id, &repo_root)?;
     let metadata = upsert_metadata(&connection, &paths.database_path, &repo_id)?;
     insert_initial_migration(&connection, &paths.database_path)?;
+    insert_semantic_migration(&connection, &paths.database_path)?;
     let schema_report = inspect_connection_schema(&connection, &paths.database_path)?;
 
     Ok(StorageReport {
@@ -469,6 +504,7 @@ pub fn storage_status_for_path(
             context_pack_records: 0,
             benchmark_run_records: 0,
             proof_report_records: 0,
+            semantic_vector_records: 0,
             compatibility: schema.compatibility,
             diagnostics: schema.diagnostics,
         });
@@ -486,8 +522,105 @@ pub fn storage_status_for_path(
         context_pack_records: count_rows(&connection, &database_path, "context_packs")?,
         benchmark_run_records: count_rows(&connection, &database_path, "benchmark_runs")?,
         proof_report_records: count_rows(&connection, &database_path, "proof_reports")?,
+        semantic_vector_records: count_rows(&connection, &database_path, "semantic_vectors")?,
         compatibility: schema.compatibility,
         diagnostics: schema.diagnostics,
+    })
+}
+
+pub fn persist_semantic_vector_records(
+    repo_root: impl AsRef<Path>,
+    config: &StoreConfig,
+    records: &[StorageSemanticVectorRecord],
+) -> Result<StorageSemanticIndexReport, StorageError> {
+    let storage = initialize_store(repo_root, config)?;
+    let connection = open_connection(&storage.database_path)?;
+    enable_foreign_keys(&connection, &storage.database_path)?;
+    let existing =
+        existing_semantic_records(&connection, &storage.database_path, &storage.repo_id)?;
+    let mut retained_vector_ids = BTreeSet::new();
+    let mut reused_records = 0;
+    let mut created_records = 0;
+    let mut updated_records = 0;
+    for record in records {
+        let file_id = file_id_for_path(&storage.repo_id, &record.path);
+        let vector_id = semantic_vector_id(&storage.repo_id, record);
+        retained_vector_ids.insert(vector_id.clone());
+        let vector_json = json_string(&record.vector)?;
+        if existing
+            .get(&vector_id)
+            .is_some_and(|existing| existing.matches(record, &vector_json))
+        {
+            reused_records += 1;
+            continue;
+        }
+        if existing.contains_key(&vector_id) {
+            updated_records += 1;
+        } else {
+            created_records += 1;
+        }
+        sqlite(
+            &storage.database_path,
+            connection.execute(
+                r#"
+INSERT INTO semantic_vectors (
+  vector_id, repo_id, file_id, path, safe_hash, provider, model, dimensions,
+  distance_metric, vector_json, privacy_status, updated_at_unix_seconds
+)
+VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12)
+ON CONFLICT(vector_id) DO UPDATE SET
+  safe_hash = excluded.safe_hash,
+  provider = excluded.provider,
+  model = excluded.model,
+  dimensions = excluded.dimensions,
+  distance_metric = excluded.distance_metric,
+  vector_json = excluded.vector_json,
+  privacy_status = excluded.privacy_status,
+  updated_at_unix_seconds = excluded.updated_at_unix_seconds
+"#,
+                params![
+                    vector_id,
+                    storage.repo_id,
+                    file_id,
+                    record.path,
+                    record.safe_hash,
+                    record.provider,
+                    record.model,
+                    as_i64(record.dimensions as u64),
+                    record.distance_metric,
+                    vector_json,
+                    record.privacy_status,
+                    as_i64(current_unix_seconds()),
+                ],
+            ),
+        )?;
+    }
+    let mut deleted_records = 0;
+    for vector_id in existing
+        .keys()
+        .filter(|id| !retained_vector_ids.contains(*id))
+    {
+        deleted_records += sqlite(
+            &storage.database_path,
+            connection.execute(
+                "DELETE FROM semantic_vectors WHERE repo_id = ?1 AND vector_id = ?2",
+                params![storage.repo_id, vector_id],
+            ),
+        )?;
+    }
+    let status = storage_status_for_path(&storage.database_path)?;
+    Ok(StorageSemanticIndexReport {
+        repo_id: storage.repo_id,
+        repo_root: storage.repo_root,
+        database_path: storage.database_path,
+        schema_version: storage.schema_version,
+        reused_records,
+        created_records,
+        updated_records,
+        deleted_records,
+        semantic_vector_records: status.semantic_vector_records,
+        compatibility: status.compatibility,
+        diagnostics: status.diagnostics,
     })
 }
 
@@ -728,6 +861,62 @@ FROM files WHERE repo_id = ?1
     Ok(records)
 }
 
+#[derive(Debug, Clone)]
+struct StoredSemanticRecord {
+    safe_hash: String,
+    dimensions: usize,
+    distance_metric: String,
+    vector_json: String,
+    privacy_status: String,
+}
+
+impl StoredSemanticRecord {
+    fn matches(&self, record: &StorageSemanticVectorRecord, vector_json: &str) -> bool {
+        self.safe_hash == record.safe_hash
+            && self.dimensions == record.dimensions
+            && self.distance_metric == record.distance_metric
+            && self.vector_json == vector_json
+            && self.privacy_status == record.privacy_status
+    }
+}
+
+fn existing_semantic_records(
+    connection: &Connection,
+    path: &Path,
+    repo_id: &str,
+) -> Result<BTreeMap<String, StoredSemanticRecord>, StorageError> {
+    let mut statement = sqlite(
+        path,
+        connection.prepare(
+            r#"
+SELECT vector_id, safe_hash, dimensions, distance_metric, vector_json, privacy_status
+FROM semantic_vectors WHERE repo_id = ?1
+"#,
+        ),
+    )?;
+    let rows = sqlite(
+        path,
+        statement.query_map(params![repo_id], |row| {
+            Ok((
+                row.get::<_, String>(0)?,
+                StoredSemanticRecord {
+                    safe_hash: row.get(1)?,
+                    dimensions: as_u64(row.get::<_, i64>(2)?) as usize,
+                    distance_metric: row.get(3)?,
+                    vector_json: row.get(4)?,
+                    privacy_status: row.get(5)?,
+                },
+            ))
+        }),
+    )?;
+    let mut records = BTreeMap::new();
+    for row in rows {
+        let (vector_id, record) = sqlite(path, row)?;
+        records.insert(vector_id, record);
+    }
+    Ok(records)
+}
+
 fn count_rows(connection: &Connection, path: &Path, table: &str) -> Result<usize, StorageError> {
     let query = format!("SELECT COUNT(*) FROM {table}");
     let count = sqlite(
@@ -742,6 +931,19 @@ fn file_id_for_path(repo_id: &str, path: &str) -> String {
         .to_hex()
         .to_string();
     format!("file:{hash}")
+}
+
+fn semantic_vector_id(repo_id: &str, record: &StorageSemanticVectorRecord) -> String {
+    let hash = blake3::hash(
+        format!(
+            "{}:{}:{}:{}:{}",
+            repo_id, record.path, record.safe_hash, record.provider, record.model
+        )
+        .as_bytes(),
+    )
+    .to_hex()
+    .to_string();
+    format!("semantic:{hash}")
 }
 
 fn role_name(role: &FileRole) -> String {
@@ -984,6 +1186,22 @@ CREATE TABLE IF NOT EXISTS proof_reports (
   privacy_status TEXT NOT NULL,
   created_at_unix_seconds INTEGER NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS semantic_vectors (
+  vector_id TEXT PRIMARY KEY,
+  repo_id TEXT NOT NULL REFERENCES repos(repo_id) ON DELETE CASCADE,
+  file_id TEXT REFERENCES files(file_id) ON DELETE CASCADE,
+  path TEXT NOT NULL,
+  safe_hash TEXT NOT NULL,
+  provider TEXT NOT NULL,
+  model TEXT NOT NULL,
+  dimensions INTEGER NOT NULL,
+  distance_metric TEXT NOT NULL,
+  vector_json TEXT NOT NULL,
+  privacy_status TEXT NOT NULL,
+  updated_at_unix_seconds INTEGER NOT NULL,
+  UNIQUE(repo_id, path, provider, model)
+);
 "#,
         ),
     )
@@ -1077,10 +1295,30 @@ VALUES (?1, ?2, ?3, ?4)
 ON CONFLICT(version) DO NOTHING
 "#,
             params![
-                STORAGE_SCHEMA_VERSION,
+                1_u32,
                 INITIAL_MIGRATION_NAME,
                 as_i64(current_unix_seconds()),
                 INITIAL_MIGRATION_CHECKSUM
+            ],
+        ),
+    )?;
+    Ok(())
+}
+
+fn insert_semantic_migration(connection: &Connection, path: &Path) -> Result<(), StorageError> {
+    sqlite(
+        path,
+        connection.execute(
+            r#"
+INSERT INTO schema_migrations (version, name, applied_at_unix_seconds, checksum)
+VALUES (?1, ?2, ?3, ?4)
+ON CONFLICT(version) DO NOTHING
+"#,
+            params![
+                2_u32,
+                SEMANTIC_MIGRATION_NAME,
+                as_i64(current_unix_seconds()),
+                SEMANTIC_MIGRATION_CHECKSUM
             ],
         ),
     )?;
@@ -1610,6 +1848,67 @@ mod tests {
         let database_text = String::from_utf8_lossy(&bytes);
 
         assert!(!database_text.contains("CTXPACK_INCREMENTAL_SOURCE_SENTINEL"));
+
+        drop(temp);
+    }
+
+    #[test]
+    fn persists_semantic_vectors_without_source_text() {
+        let temp = tempfile::tempdir().unwrap();
+        let repo = temp.path().join("repo");
+        let config = StoreConfig {
+            path_override: Some(temp.path().join("store.sqlite3")),
+        };
+        fs::create_dir_all(repo.join(".git")).unwrap();
+        fs::create_dir_all(repo.join("src")).unwrap();
+        fs::write(
+            repo.join("src/lib.rs"),
+            "pub fn leak() { /* CTXPACK_SEMANTIC_SOURCE_SENTINEL */ }\n",
+        )
+        .unwrap();
+
+        sync_inventory_to_store(&repo, &InventoryOptions::default(), &config).unwrap();
+        let status = persist_semantic_vector_records(
+            &repo,
+            &config,
+            &[StorageSemanticVectorRecord {
+                path: "src/lib.rs".to_string(),
+                safe_hash: "safe-hash".to_string(),
+                provider: "local_hash".to_string(),
+                model: "ctxpack-local-hash-v1".to_string(),
+                dimensions: 3,
+                distance_metric: "cosine".to_string(),
+                vector: vec![0.1, 0.2, 0.3],
+                privacy_status: "local_only".to_string(),
+            }],
+        )
+        .unwrap();
+
+        assert_eq!(status.semantic_vector_records, 1);
+        assert_eq!(status.created_records, 1);
+        assert_eq!(status.reused_records, 0);
+        let reused = persist_semantic_vector_records(
+            &repo,
+            &config,
+            &[StorageSemanticVectorRecord {
+                path: "src/lib.rs".to_string(),
+                safe_hash: "safe-hash".to_string(),
+                provider: "local_hash".to_string(),
+                model: "ctxpack-local-hash-v1".to_string(),
+                dimensions: 3,
+                distance_metric: "cosine".to_string(),
+                vector: vec![0.1, 0.2, 0.3],
+                privacy_status: "local_only".to_string(),
+            }],
+        )
+        .unwrap();
+        assert_eq!(reused.semantic_vector_records, 1);
+        assert_eq!(reused.created_records, 0);
+        assert_eq!(reused.updated_records, 0);
+        assert_eq!(reused.reused_records, 1);
+        let bytes = fs::read(&status.database_path).unwrap();
+        let database_text = String::from_utf8_lossy(&bytes);
+        assert!(!database_text.contains("CTXPACK_SEMANTIC_SOURCE_SENTINEL"));
 
         drop(temp);
     }

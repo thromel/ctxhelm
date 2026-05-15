@@ -62,6 +62,7 @@ pub enum RetrievalSignalKind {
     Symbol,
     Dependency,
     RelatedTest,
+    Semantic,
     CoChange,
     CurrentDiff,
     History,

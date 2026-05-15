@@ -23,10 +23,14 @@ pub use eval::{
 pub use packs::{
     compile_context_pack, compile_context_pack_from_plan, compile_context_pack_from_plan_for_agent,
     compile_context_pack_with_plan, compile_context_pack_with_plan_and_paths,
-    compile_context_pack_with_plan_and_paths_for_agent, compile_context_pack_with_plan_for_agent,
-    render_pack_markdown,
+    compile_context_pack_with_plan_and_paths_for_agent,
+    compile_context_pack_with_plan_and_paths_for_agent_and_semantic,
+    compile_context_pack_with_plan_for_agent, render_pack_markdown,
 };
-pub use planning::{empty_plan_for_task, prepare_context_plan, prepare_context_plan_with_paths};
+pub use planning::{
+    empty_plan_for_task, prepare_context_plan, prepare_context_plan_with_paths,
+    prepare_context_plan_with_paths_and_semantic,
+};
 
 #[cfg(test)]
 use ctxpack_core::{
@@ -915,6 +919,7 @@ mod tests {
                 target_agent: "codex".to_string(),
                 base: None,
                 head: None,
+                semantic_enabled: false,
             },
         )
         .unwrap();
@@ -1076,6 +1081,7 @@ mod tests {
                 mode: TaskType::BugFix,
                 target_agent: "codex".to_string(),
                 budget: PackBudget::Standard,
+                semantic_enabled: false,
             },
             refs: HistoricalEvalRefs {
                 base: Some("base".to_string()),
@@ -1335,6 +1341,7 @@ mod tests {
                 target_agent: "codex".to_string(),
                 base: None,
                 head: None,
+                semantic_enabled: false,
             },
         )
         .unwrap();
@@ -1371,6 +1378,7 @@ mod tests {
                 mode: TaskType::BugFix,
                 target_agent: "codex".to_string(),
                 budget: PackBudget::Standard,
+                semantic_enabled: false,
             },
             refs: HistoricalEvalRefs {
                 base: None,
@@ -1509,6 +1517,7 @@ mod tests {
                 target_agent: "codex".to_string(),
                 base: None,
                 head: None,
+                semantic_enabled: false,
             },
         )
         .unwrap();
@@ -1727,6 +1736,7 @@ mod tests {
                 ranking_budget: 5,
                 mode: TaskType::BugFix,
                 target_agent: "codex".to_string(),
+                semantic_enabled: false,
                 role_filters: vec![FileRole::Source, FileRole::Test],
             },
             repositories: vec![
@@ -1739,6 +1749,7 @@ mod tests {
                     ranking_budget: None,
                     mode: None,
                     target_agent: None,
+                    semantic_enabled: None,
                     role_filters: Vec::new(),
                 },
                 BenchmarkRepoConfig {
@@ -1750,6 +1761,7 @@ mod tests {
                     ranking_budget: Some(3),
                     mode: Some(TaskType::Feature),
                     target_agent: Some("claude-code".to_string()),
+                    semantic_enabled: Some(false),
                     role_filters: vec![FileRole::Source],
                 },
             ],

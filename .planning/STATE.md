@@ -1,26 +1,26 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.4
-milestone_name: Local Semantic Retrieval
-status: Roadmap ready
-last_updated: "2026-05-15T18:49:10.489Z"
-last_activity: 2026-05-16
+milestone: none
+milestone_name: Awaiting next milestone
+status: Awaiting next milestone
+last_updated: "2026-05-15T19:16:44.209Z"
+last_activity: 2026-05-15 — Milestone v1.4 completed and archived
 progress:
   total_phases: 4
-  completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
-  percent: 0
+  completed_phases: 4
+  total_plans: 16
+  completed_plans: 16
+  percent: 100
 ---
 
 # Project State
 
 ## Current Position
 
-Phase: 17 — Semantic Provider & Privacy Contracts
-Plan: Ready for phase discussion/planning
-Status: Roadmap ready
-Last activity: 2026-05-16 — Milestone v1.4 initialized with requirements and roadmap
+Phase: Milestone v1.4 complete
+Plan: —
+Status: Awaiting next milestone
+Last activity: 2026-05-15 — Milestone v1.4 completed and archived
 
 ## Project Reference
 
@@ -28,23 +28,16 @@ See: `.planning/PROJECT.md`
 
 **Core value:** Given a coding task, ctxpack should return the smallest safe evidence set that makes an existing coding agent more likely to inspect the right files, run the right tests, and avoid irrelevant context.
 
-**Current focus:** v1.4 Local Semantic Retrieval.
+**Current focus:** Awaiting next milestone.
 
 ## Active Milestone
 
-v1.4 adds optional local semantic retrieval as a measured signal inside the existing context compiler:
-
-- configure local embedding providers explicitly while keeping semantic retrieval disabled by default;
-- store vector metadata locally with privacy labels and no raw source snippets;
-- generate vector candidates for conceptual tasks and fuse them with lexical, graph, test, history, and active-context signals;
-- prove semantic lift or regression through fixed-budget, source-free benchmark reports;
-- keep cloud embeddings and reranking visibly opt-in and disabled by default.
+No active milestone. v1.4 Local Semantic Retrieval is complete and archived.
 
 ## Next Step
 
-Start Phase 17: Semantic Provider & Privacy Contracts.
+Activate v1.5 Parser/Semantic Precision when ready.
 
 ## Operator Next Steps
 
-- Run `$gsd-discuss-phase 17` to clarify implementation approach.
-- Then run `$gsd-plan-phase 17` to create the first execution plan.
+- Start the next milestone with /gsd-new-milestone

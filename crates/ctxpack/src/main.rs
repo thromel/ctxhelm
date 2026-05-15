@@ -2,12 +2,13 @@ use anyhow::Result;
 use clap::{Args, Parser, Subcommand, ValueEnum};
 use ctxpack_compiler::{
     build_product_proof_report, compare_benchmark_suite_reports,
-    compile_context_pack_with_plan_and_paths_for_agent, eval_trace_for_pack, eval_trace_for_plan,
-    evaluate_historical_commits, generate_context_cards, load_benchmark_suite_config,
-    load_benchmark_suite_report, prepare_context_plan_with_paths, render_pack_markdown,
-    run_benchmark_suite, BenchmarkComparisonReport, BenchmarkRegressionThreshold,
-    BenchmarkSuiteReport, ContextCardsOptions, ContextCardsReport, HistoricalEvalOptions,
-    HistoricalEvalReport, ProductProofReport,
+    compile_context_pack_with_plan_and_paths_for_agent_and_semantic, eval_trace_for_pack,
+    eval_trace_for_plan, evaluate_historical_commits, generate_context_cards,
+    load_benchmark_suite_config, load_benchmark_suite_report,
+    prepare_context_plan_with_paths_and_semantic, render_pack_markdown, run_benchmark_suite,
+    BenchmarkComparisonReport, BenchmarkRegressionThreshold, BenchmarkSuiteReport,
+    ContextCardsOptions, ContextCardsReport, HistoricalEvalOptions, HistoricalEvalReport,
+    ProductProofReport,
 };
 use ctxpack_core::{
     run_init, run_setup_check, AgentAdapter, Diagnostic, DiagnosticSeverity, EvalTrace, InitAction,
@@ -16,11 +17,12 @@ use ctxpack_core::{
 };
 use ctxpack_index::{
     co_change_hints, current_diff_summary, dependency_edges, extract_symbols, lexical_search,
-    list_eval_traces, related_dependency_edges, related_tests, storage_status_for_repo,
-    symbol_search, sync_inventory_to_store, try_append_eval_trace, vacuum_store, write_inventory,
-    CoChangeOptions, CurrentDiffOptions, DependencyOptions, InventoryOptions, InventoryReport,
-    SearchOptions, StorageBenchmarkRunRecord, StorageContextPackRecord, StorageGapRecord,
-    StorageIndexReport, StorageMetricRecord, StorageProofReportRecord, StorageReport,
+    list_eval_traces, related_dependency_edges, related_tests, semantic_search,
+    storage_status_for_repo, symbol_search, sync_inventory_to_store, sync_semantic_index_to_store,
+    try_append_eval_trace, vacuum_store, write_inventory, CoChangeOptions, CurrentDiffOptions,
+    DependencyOptions, InventoryOptions, InventoryReport, SearchOptions, SemanticOptions,
+    StorageBenchmarkRunRecord, StorageContextPackRecord, StorageGapRecord, StorageIndexReport,
+    StorageMetricRecord, StorageProofReportRecord, StorageReport, StorageSemanticIndexReport,
     StorageStatusReport, StoreConfig, SymbolOptions,
 };
 use std::collections::BTreeSet;
@@ -51,6 +53,11 @@ enum Command {
         repo: Option<PathBuf>,
         #[arg(long, default_value_t = 10)]
         limit: usize,
+        #[arg(
+            long,
+            help = "Use explicit local semantic retrieval instead of lexical search."
+        )]
+        semantic: bool,
     },
     Symbols(SymbolsArgs),
     RelatedTests(RelatedTestsArgs),
@@ -99,6 +106,11 @@ struct IndexArgs {
     include_sensitive: bool,
     #[arg(long, help = "Also sync safe inventory records into SQLite storage.")]
     store: bool,
+    #[arg(
+        long,
+        help = "Also build local source-free semantic vector metadata in SQLite storage."
+    )]
+    semantic: bool,
     #[arg(long, help = "Override the SQLite storage database path.")]
     store_path: Option<PathBuf>,
 }
@@ -225,6 +237,11 @@ struct PrepareTaskArgs {
     target_agent: String,
     #[arg(
         long,
+        help = "Enable explicit local semantic retrieval in the context planner."
+    )]
+    semantic: bool,
+    #[arg(
+        long,
         help = "Disable local eval trace recording for this read command."
     )]
     no_trace: bool,
@@ -253,6 +270,11 @@ struct GetPackArgs {
     include_current_diff: bool,
     #[arg(long, default_value = "generic")]
     target_agent: String,
+    #[arg(
+        long,
+        help = "Enable explicit local semantic retrieval in the context pack planner."
+    )]
+    semantic: bool,
     #[arg(
         long,
         help = "Disable local eval trace recording for this read command."
@@ -308,6 +330,11 @@ struct EvalHistoryArgs {
     mode: Mode,
     #[arg(long, default_value = "generic")]
     target_agent: String,
+    #[arg(
+        long,
+        help = "Enable explicit local semantic retrieval during historical eval."
+    )]
+    semantic: bool,
     #[arg(long, value_enum, default_value_t = PackFormat::Markdown)]
     format: PackFormat,
     #[arg(long, help = "Persist source-free eval metrics into SQLite storage.")]
@@ -440,7 +467,7 @@ fn main() -> Result<()> {
                 },
             )?;
             print_inventory_report(&report);
-            if args.store {
+            if args.store || args.semantic {
                 let storage = sync_inventory_to_store(
                     &repo.path,
                     &InventoryOptions {
@@ -448,18 +475,37 @@ fn main() -> Result<()> {
                         include_sensitive: args.include_sensitive,
                     },
                     &StoreConfig {
-                        path_override: args.store_path,
+                        path_override: args.store_path.clone(),
                     },
                 )?;
                 print_storage_index_report(&storage);
+            }
+            if args.semantic {
+                let storage = sync_semantic_index_to_store(
+                    &repo.path,
+                    &SemanticOptions {
+                        enabled: true,
+                        limit: usize::MAX,
+                        ..SemanticOptions::default()
+                    },
+                    &StoreConfig {
+                        path_override: args.store_path.clone(),
+                    },
+                )?;
+                print_semantic_storage_report(&storage);
             }
         }
         Command::PrepareTask(args) => {
             let start = args.repo.clone().unwrap_or(std::env::current_dir()?);
             let repo = RepoRoot::discover_from(&start)?;
             let paths = context_anchor_paths(&repo.path, args.paths, args.include_current_diff)?;
-            let mut plan =
-                prepare_context_plan_with_paths(&repo.path, &args.task, args.mode.into(), &paths)?;
+            let mut plan = prepare_context_plan_with_paths_and_semantic(
+                &repo.path,
+                &args.task,
+                args.mode.into(),
+                &paths,
+                args.semantic,
+            )?;
             if args.no_trace {
                 plan.diagnostics.push(trace_disabled_diagnostic());
             } else {
@@ -473,13 +519,14 @@ fn main() -> Result<()> {
             let start = args.repo.clone().unwrap_or(std::env::current_dir()?);
             let repo = RepoRoot::discover_from(&start)?;
             let paths = context_anchor_paths(&repo.path, args.paths, args.include_current_diff)?;
-            let (plan, mut pack) = compile_context_pack_with_plan_and_paths_for_agent(
+            let (plan, mut pack) = compile_context_pack_with_plan_and_paths_for_agent_and_semantic(
                 &repo.path,
                 &args.task,
                 args.mode.into(),
                 args.budget.into(),
                 &paths,
                 &args.target_agent,
+                args.semantic,
             )?;
             if args.no_trace {
                 pack.diagnostics.push(trace_disabled_diagnostic());
@@ -527,11 +574,29 @@ fn main() -> Result<()> {
                 PackFormat::Json => println!("{}", serde_json::to_string_pretty(&pack)?),
             }
         }
-        Command::Search { query, repo, limit } => {
+        Command::Search {
+            query,
+            repo,
+            limit,
+            semantic,
+        } => {
             let start = repo.unwrap_or(std::env::current_dir()?);
             let repo = RepoRoot::discover_from(&start)?;
-            let results = lexical_search(&repo.path, &query, &SearchOptions { limit })?;
-            println!("{}", serde_json::to_string_pretty(&results)?);
+            if semantic {
+                let results = semantic_search(
+                    &repo.path,
+                    &query,
+                    &SemanticOptions {
+                        enabled: true,
+                        limit,
+                        ..SemanticOptions::default()
+                    },
+                )?;
+                println!("{}", serde_json::to_string_pretty(&results)?);
+            } else {
+                let results = lexical_search(&repo.path, &query, &SearchOptions { limit })?;
+                println!("{}", serde_json::to_string_pretty(&results)?);
+            }
         }
         Command::Symbols(args) => {
             let start = args.repo.clone().unwrap_or(std::env::current_dir()?);
@@ -668,6 +733,11 @@ fn main() -> Result<()> {
                         } else {
                             status.proof_report_records
                         },
+                        semantic_vector_records: if args.yes {
+                            0
+                        } else {
+                            status.semantic_vector_records
+                        },
                         diagnostics: if args.yes {
                             Vec::new()
                         } else {
@@ -720,6 +790,7 @@ fn main() -> Result<()> {
                         target_agent: "generic".to_string(),
                         base: None,
                         head: None,
+                        semantic_enabled: false,
                     },
                 )
                 .map(|report| report.retrieval_gap_summaries)
@@ -741,6 +812,7 @@ fn main() -> Result<()> {
                         target_agent: args.target_agent,
                         base: args.base,
                         head: args.head,
+                        semantic_enabled: args.semantic,
                     },
                 )?;
                 if args.store {
@@ -942,6 +1014,23 @@ fn print_storage_index_report(report: &StorageIndexReport) {
     print_diagnostics(&report.diagnostics);
 }
 
+fn print_semantic_storage_report(report: &StorageSemanticIndexReport) {
+    println!("Semantic storage sync");
+    println!("- repo id: {}", report.repo_id);
+    println!("- database: {}", report.database_path.display());
+    println!("- schema version: {}", report.schema_version);
+    println!("- reused records: {}", report.reused_records);
+    println!("- created records: {}", report.created_records);
+    println!("- updated records: {}", report.updated_records);
+    println!("- deleted records: {}", report.deleted_records);
+    println!(
+        "- semantic vector records: {}",
+        report.semantic_vector_records
+    );
+    println!("- compatibility: {:?}", report.compatibility);
+    print_diagnostics(&report.diagnostics);
+}
+
 fn print_storage_report(report: &StorageReport) {
     println!("# ctxpack Storage");
     println!();
@@ -977,6 +1066,10 @@ fn print_storage_status_report(report: &StorageStatusReport) {
         report.benchmark_run_records
     );
     println!("- Proof report records: `{}`", report.proof_report_records);
+    println!(
+        "- Semantic vector records: `{}`",
+        report.semantic_vector_records
+    );
     print_diagnostics(&report.diagnostics);
 }
 
@@ -1273,7 +1366,7 @@ fn render_historical_eval_report(report: &HistoricalEvalReport) -> String {
     let mut output = String::from("# ctxpack Historical Retrieval Eval\n\n");
     output.push_str("This source-free report replays recent commit subjects through `prepare_task` and compares recommended context paths with the safe files changed by each commit.\n\n");
     output.push_str(&format!(
-        "- Eval range ID: `{}`\n- Repo ID: `{}`\n- Evaluated commits: `{}`\n- Budget: `{:?}`\n- Effective limit: `{}`\n- Ranking budget K: `{}`\n- Effective mode: `{:?}`\n- Effective target agent: `{}`\n- Base: `{}`\n- Head: `{}`\n- File Recall@5: `{:.2}`\n- File Recall@10: `{:.2}`\n- Lexical Baseline Recall@5: `{:.2}`\n- Lexical Baseline Recall@10: `{:.2}`\n- ctxpack Lift@5: `{:+.2}`\n- ctxpack Lift@10: `{:+.2}`\n- Recall@K: `{:.2}`\n- Precision@K: `{:.2}`\n- MRR@K: `{:.2}`\n- Lexical Recall@K: `{:.2}`\n- No-context Recall@K: `{:.2}`\n- ctxpack Lift@K: `{:+.2}`\n- ctxpack Lift vs No-context@K: `{:+.2}`\n- Source Recall@5: `{:.2}`\n- Source Recall@10: `{:.2}`\n- Test Recall@5: `{:.2}`\n- Test Recall@10: `{:.2}`\n- Test recommendation rate: `{:.2}`\n- Average recommended context files: `{:.2}`\n- Low-information commits: `{}`\n- Privacy: local-only `{}`\n\n",
+        "- Eval range ID: `{}`\n- Repo ID: `{}`\n- Evaluated commits: `{}`\n- Budget: `{:?}`\n- Effective limit: `{}`\n- Ranking budget K: `{}`\n- Effective mode: `{:?}`\n- Effective target agent: `{}`\n- Semantic enabled: `{}`\n- Base: `{}`\n- Head: `{}`\n- File Recall@5: `{:.2}`\n- File Recall@10: `{:.2}`\n- Lexical Baseline Recall@5: `{:.2}`\n- Lexical Baseline Recall@10: `{:.2}`\n- ctxpack Lift@5: `{:+.2}`\n- ctxpack Lift@10: `{:+.2}`\n- Recall@K: `{:.2}`\n- Precision@K: `{:.2}`\n- MRR@K: `{:.2}`\n- Lexical Recall@K: `{:.2}`\n- No-context Recall@K: `{:.2}`\n- ctxpack Lift@K: `{:+.2}`\n- ctxpack Lift vs No-context@K: `{:+.2}`\n- Source Recall@5: `{:.2}`\n- Source Recall@10: `{:.2}`\n- Test Recall@5: `{:.2}`\n- Test Recall@10: `{:.2}`\n- Test recommendation rate: `{:.2}`\n- Average recommended context files: `{:.2}`\n- Low-information commits: `{}`\n- Privacy: local-only `{}`\n\n",
         report.eval_range_id,
         report.repo_id,
         report.evaluated_commits,
@@ -1282,6 +1375,7 @@ fn render_historical_eval_report(report: &HistoricalEvalReport) -> String {
         report.effective_filters.ranking_budget,
         report.effective_filters.mode,
         report.effective_filters.target_agent,
+        report.effective_filters.semantic_enabled,
         report.base.as_deref().unwrap_or("HEAD history"),
         report.head.as_deref().unwrap_or("HEAD"),
         report.file_recall_at_5,
@@ -1773,6 +1867,7 @@ mod tests {
                 mode: TaskType::BugFix,
                 target_agent: "codex".to_string(),
                 budget: PackBudget::Standard,
+                semantic_enabled: false,
             },
             refs: ctxpack_compiler::HistoricalEvalRefs {
                 base: Some("abc000".to_string()),

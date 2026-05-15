@@ -3,7 +3,8 @@ use ctxpack_core::{
     RetrievalEvidence, RetrievalSignalKind, RetrievalSignalScore, TargetFile,
 };
 use ctxpack_index::{
-    CoChangeHint, DependencyEdge, RelatedTestResult, SearchResult, SymbolSearchResult,
+    CoChangeHint, DependencyEdge, RelatedTestResult, SearchResult, SemanticSearchResult,
+    SymbolSearchResult,
 };
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -18,6 +19,7 @@ pub(crate) struct AnchorCandidate {
 pub(crate) struct RankingInput {
     pub anchors: Vec<AnchorCandidate>,
     pub lexical_results: Vec<SearchResult>,
+    pub semantic_results: Vec<SemanticSearchResult>,
     pub symbol_results: Vec<SymbolSearchResult>,
     pub related_tests: Vec<RelatedTestResult>,
     pub co_change_hints: Vec<CoChangeHint>,
@@ -80,6 +82,27 @@ pub(crate) fn rank_candidates(input: RankingInput) -> Vec<RankedCandidate> {
             weight: signal_weight(&RetrievalSignalKind::Lexical),
             reason_code: "lexical_match",
             edge_label: None,
+            commit_ids: Vec::new(),
+            commit_count: 0,
+            line_range: None,
+            command: None,
+        });
+    }
+
+    for result in input.semantic_results {
+        let kind = candidate_kind_for_role(&result.role);
+        candidates.add_path_signal(PathSignal {
+            kind,
+            path: result.path,
+            role: result.role,
+            signal: RetrievalSignalKind::Semantic,
+            score: result.score.clamp(0.05, 0.95),
+            weight: signal_weight(&RetrievalSignalKind::Semantic),
+            reason_code: "semantic_match",
+            edge_label: Some(format!(
+                "{}:{}:{}",
+                result.provider.provider, result.provider.model, result.provider.distance_metric
+            )),
             commit_ids: Vec::new(),
             commit_count: 0,
             line_range: None,
@@ -579,6 +602,7 @@ fn signal_weight(signal: &RetrievalSignalKind) -> f32 {
         RetrievalSignalKind::CurrentDiff => 2.00,
         RetrievalSignalKind::Symbol => 1.05,
         RetrievalSignalKind::Lexical => 1.00,
+        RetrievalSignalKind::Semantic => 0.45,
         RetrievalSignalKind::Dependency => 0.85,
         RetrievalSignalKind::RelatedTest => 0.90,
         RetrievalSignalKind::CoChange => 0.75,
@@ -605,12 +629,13 @@ fn signal_rank(signal: &RetrievalSignalKind) -> u8 {
         RetrievalSignalKind::CurrentDiff => 1,
         RetrievalSignalKind::Symbol => 2,
         RetrievalSignalKind::Lexical => 3,
-        RetrievalSignalKind::Dependency => 4,
-        RetrievalSignalKind::RelatedTest => 5,
-        RetrievalSignalKind::CoChange => 6,
-        RetrievalSignalKind::History => 7,
-        RetrievalSignalKind::Config => 8,
-        RetrievalSignalKind::Docs => 9,
+        RetrievalSignalKind::Semantic => 4,
+        RetrievalSignalKind::Dependency => 5,
+        RetrievalSignalKind::RelatedTest => 6,
+        RetrievalSignalKind::CoChange => 7,
+        RetrievalSignalKind::History => 8,
+        RetrievalSignalKind::Config => 9,
+        RetrievalSignalKind::Docs => 10,
     }
 }
 
@@ -619,6 +644,7 @@ fn target_reason(reason_code: &str) -> &str {
         "path_anchor" | "current_diff_anchor" => "explicit path anchor from active context",
         "symbol_match" => "symbol match",
         "lexical_match" => "lexical match",
+        "semantic_match" => "local semantic match",
         "dependency_neighbor" => "dependency neighbor",
         "co_change_neighbor" => "co-change neighbor",
         _ => reason_code,
@@ -647,7 +673,7 @@ fn evidence_signals(candidate: &RetrievalCandidate) -> Vec<RetrievalSignalKind> 
 mod tests {
     use super::*;
     use ctxpack_core::{RetrievalCandidateKind, RetrievalSignalKind, RetrievalSignalScore};
-    use ctxpack_index::{CodeSymbol, SymbolKind};
+    use ctxpack_index::{CodeSymbol, SemanticProviderConfig, SymbolKind};
 
     #[test]
     fn ranking_merges_multiple_signals_for_same_path() {
@@ -751,6 +777,33 @@ mod tests {
         assert!(candidate_paths(&candidates).contains(&"tests/a.test.ts"));
         assert!(candidate_paths(&candidates).contains(&"src/history.ts"));
         assert!(!candidate_paths(&candidates).contains(&"src/c.ts"));
+    }
+
+    #[test]
+    fn ranking_keeps_semantic_as_secondary_signal() {
+        let candidates = rank_candidates(RankingInput {
+            lexical_results: vec![lexical("src/auth/session.ts", 10.0)],
+            semantic_results: vec![SemanticSearchResult {
+                path: "src/auth/session.ts".to_string(),
+                role: FileRole::Source,
+                language: Some("typescript".to_string()),
+                score: 0.91,
+                reason: "local semantic similarity".to_string(),
+                provider: SemanticProviderConfig::default(),
+            }],
+            roles: roles([("src/auth/session.ts", FileRole::Source)]),
+            ..RankingInput::default()
+        });
+
+        let file = candidates
+            .iter()
+            .find(|candidate| candidate.candidate.path.as_deref() == Some("src/auth/session.ts"))
+            .unwrap();
+
+        assert_signals(
+            &file.candidate.signal_scores,
+            &[RetrievalSignalKind::Lexical, RetrievalSignalKind::Semantic],
+        );
     }
 
     #[test]

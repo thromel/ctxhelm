@@ -990,6 +990,51 @@ mod tests {
     }
 
     #[test]
+    fn semantic_mcp_calls_are_additive_and_source_free() {
+        let _guard = env_lock();
+        let repo = fixture_repo();
+        std::env::set_var("CTXPACK_HOME", &repo.home);
+
+        let search = handle_line(&format!(
+            r#"{{"jsonrpc":"2.0","id":86,"method":"tools/call","params":{{"name":"search","arguments":{{"query":"auth required","repo":"{}","limit":10,"semantic":true}}}}}}"#,
+            repo.repo.display()
+        ))
+        .unwrap();
+        assert!(!search["result"]["structuredContent"]["semanticFiles"]
+            .as_array()
+            .unwrap()
+            .is_empty());
+        assert_eq!(
+            search["result"]["structuredContent"]["semanticProvider"]["provider"],
+            "local_hash"
+        );
+        assert_eq!(
+            search["result"]["structuredContent"]["privacyStatus"]["sourceTextReturned"],
+            false
+        );
+
+        let prepare = handle_line(&format!(
+            r#"{{"jsonrpc":"2.0","id":87,"method":"tools/call","params":{{"name":"prepare_task","arguments":{{"task":"fix auth required flow","repo":"{}","mode":"bug_fix","semantic":true,"recordTrace":false}}}}}}"#,
+            repo.repo.display()
+        ))
+        .unwrap();
+        let has_semantic = prepare["result"]["structuredContent"]["retrievalCandidates"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|candidate| {
+                candidate["signalScores"]
+                    .as_array()
+                    .unwrap()
+                    .iter()
+                    .any(|signal| signal["signal"] == "semantic")
+            });
+        assert!(has_semantic);
+
+        std::env::remove_var("CTXPACK_HOME");
+    }
+
+    #[test]
     fn search_call_filters_to_symbol_kind() {
         let _guard = env_lock();
         let repo = fixture_repo();

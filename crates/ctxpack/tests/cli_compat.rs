@@ -223,14 +223,16 @@ fn read_command_help_lists_no_trace_control() {
         .args(["prepare-task", "--help"])
         .assert()
         .success()
-        .stdout(contains("--no-trace"));
+        .stdout(contains("--no-trace"))
+        .stdout(contains("--semantic"));
 
     Command::cargo_bin("ctxpack")
         .unwrap()
         .args(["get-pack", "--help"])
         .assert()
         .success()
-        .stdout(contains("--no-trace"));
+        .stdout(contains("--no-trace"))
+        .stdout(contains("--semantic"));
 }
 
 #[test]
@@ -265,6 +267,29 @@ fn index_writes_inventory_under_command_home() {
     assert!(paths.contains(&"tests/auth/session.test.ts"));
     assert!(!paths.contains(&".env"));
     assert!(!paths.contains(&"dist/generated.min.js"));
+}
+
+#[test]
+fn index_semantic_persists_source_free_vector_metadata() {
+    let fixture = fixture_repo();
+    let store = fixture.home.join("semantic.sqlite3");
+
+    Command::cargo_bin("ctxpack")
+        .unwrap()
+        .env(CTXPACK_HOME_ENV, &fixture.home)
+        .args(["index", "--repo"])
+        .arg(&fixture.repo)
+        .args(["--semantic", "--store-path"])
+        .arg(&store)
+        .assert()
+        .success()
+        .stdout(contains("Semantic storage sync"))
+        .stdout(contains("semantic vector records"));
+
+    let bytes = fs::read(&store).unwrap();
+    let database_text = String::from_utf8_lossy(&bytes);
+    assert!(!database_text.contains("auth required"));
+    assert!(!database_text.contains("do-not-index"));
 }
 
 #[test]
@@ -540,6 +565,23 @@ fn search_related_tests_dependencies_and_eval_history_emit_json_shapes() {
         &["path", "role", "language", "score", "reason"],
     );
     assert_path_present(&search, "src/auth/session.ts");
+
+    let semantic = json_stdout(
+        Command::cargo_bin("ctxpack")
+            .unwrap()
+            .env(CTXPACK_HOME_ENV, &fixture.home)
+            .args(["search", "auth required", "--repo"])
+            .arg(&fixture.repo)
+            .args(["--limit", "3", "--semantic"])
+            .assert(),
+    );
+    let first_semantic = first_array_item(&semantic);
+    assert_object_has_keys(
+        first_semantic,
+        &["path", "role", "language", "score", "reason", "provider"],
+    );
+    assert_path_present(&semantic, "src/auth/session.ts");
+    assert_no_source_or_prompt_text(&semantic);
 
     let related_tests = json_stdout(
         Command::cargo_bin("ctxpack")

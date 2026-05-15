@@ -2,20 +2,30 @@
 
 ## Active
 
-### v1.4 Local Semantic Retrieval (Started: 2026-05-16)
-
-**Goal:** Add optional local embedding/vector retrieval and hybrid fusion only after lexical/graph/history/test gaps justify it.
-
-**Planned phases:** Phases 17-20, 16 plans total
-
-**Expected capabilities:**
-
-- Local embedding provider interface with explicit privacy status.
-- Vector candidate generation fused with lexical, graph, test, history, and active-context signals.
-- Fixed-budget evals proving semantic lift over lexical/graph baselines.
-- Cloud embeddings or reranking remain opt-in, visibly labeled, and disabled by default.
+No active milestone. Next planned milestone is `v1.5 Parser/Semantic Precision`.
 
 ## Shipped
+
+### v1.4 Local Semantic Retrieval (Shipped: 2026-05-16)
+
+**Delivered:** Optional local semantic retrieval as a measured, source-free, local-only signal inside the context compiler.
+
+**Phases completed:** Phases 17-20, 16 plans total
+
+**Key accomplishments:**
+
+- Added typed semantic provider metadata with disabled-by-default invocation flags.
+- Added schema v2 source-free semantic vector metadata with incremental reuse counts.
+- Added local semantic search, `--semantic` CLI support, and additive MCP `semantic` arguments for existing workflows.
+- Fused semantic candidates as a secondary retrieval signal behind exact path, active diff, symbol, lexical, graph, and test evidence.
+- Added semantic-enabled historical eval metadata, `docs/semantic.md`, and deterministic semantic release-gate smoke coverage.
+
+**Archive:**
+
+- Roadmap: `.planning/milestones/v1.4-ROADMAP.md`
+- Requirements: `.planning/milestones/v1.4-REQUIREMENTS.md`
+- Audit: `.planning/milestones/v1.4-MILESTONE-AUDIT.md`
+- Phases: `.planning/milestones/v1.4-phases/`
 
 ### v1.3 Production Storage (Shipped: 2026-05-14)
 

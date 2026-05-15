@@ -10,31 +10,31 @@ Requirements for adding optional local embedding/vector retrieval as a measured 
 
 ### Local Semantic Foundation
 
-- [ ] **SEM-01**: Maintainer can enable or disable local semantic retrieval per repository or invocation, and the default remains disabled until a local provider is configured.
-- [ ] **SEM-02**: Maintainer can configure a local embedding provider through a typed provider interface that records provider name, model/version, dimensions, distance metric, and privacy status.
-- [ ] **SEM-03**: Semantic index metadata and vectors are stored locally with explicit privacy labels and without persisting raw source snippets, prompt text, secrets, or cloud request payloads.
-- [ ] **SEM-04**: Semantic indexing only processes files and chunks allowed by the safe inventory policy, including ignore, generated-file, sensitive-file, and source-read revalidation rules.
+- [x] **SEM-01**: Maintainer can enable or disable local semantic retrieval per repository or invocation, and the default remains disabled until a local provider is configured.
+- [x] **SEM-02**: Maintainer can configure a local embedding provider through a typed provider interface that records provider name, model/version, dimensions, distance metric, and privacy status.
+- [x] **SEM-03**: Semantic index metadata and vectors are stored locally with explicit privacy labels and without persisting raw source snippets, prompt text, secrets, or cloud request payloads.
+- [x] **SEM-04**: Semantic indexing only processes files and chunks allowed by the safe inventory policy, including ignore, generated-file, sensitive-file, and source-read revalidation rules.
 
 ### Vector Candidate Retrieval
 
-- [ ] **SEM-05**: Agent or CLI user can request semantic candidate generation for conceptual tasks and receive vector candidates with stable IDs, scores, source attribution, and human-readable reasons.
-- [ ] **SEM-06**: Re-indexing reuses unchanged semantic records and only refreshes vectors when safe chunk hashes, provider configuration, model version, or privacy policy changes.
-- [ ] **SEM-07**: CLI and MCP surfaces expose semantic retrieval through existing task/search/pack workflows without adding a broad new MCP tool surface.
-- [ ] **SEM-08**: Missing, disabled, incompatible, or failed local embedding providers degrade to lexical/graph/history/test retrieval with explicit non-fatal diagnostics.
+- [x] **SEM-05**: Agent or CLI user can request semantic candidate generation for conceptual tasks and receive vector candidates with stable IDs, scores, source attribution, and human-readable reasons.
+- [x] **SEM-06**: Re-indexing reuses unchanged semantic records and only refreshes vectors when safe chunk hashes, provider configuration, model version, or privacy policy changes.
+- [x] **SEM-07**: CLI and MCP surfaces expose semantic retrieval through existing task/search/pack workflows without adding a broad new MCP tool surface.
+- [x] **SEM-08**: Missing, disabled, incompatible, or failed local embedding providers degrade to lexical/graph/history/test retrieval with explicit non-fatal diagnostics.
 
 ### Hybrid Fusion And Pack Behavior
 
-- [ ] **SEM-09**: Context planning fuses vector candidates with lexical, symbol, graph, test, history, and active-context signals using task-specific weights and exact-match safeguards.
-- [ ] **SEM-10**: Context plans, packs, eval traces, and MCP responses expose semantic signal provenance and privacy status without logging source text by default.
-- [ ] **SEM-11**: Budget allocation and diversification prevent vector near-duplicates from crowding out target files, related tests, direct dependencies, or exact identifier matches.
-- [ ] **SEM-12**: Existing CLI JSON and MCP contracts remain backward compatible, with additive semantic fields covered by compatibility tests and source-free snapshots.
+- [x] **SEM-09**: Context planning fuses vector candidates with lexical, symbol, graph, test, history, and active-context signals using task-specific weights and exact-match safeguards.
+- [x] **SEM-10**: Context plans, packs, eval traces, and MCP responses expose semantic signal provenance and privacy status without logging source text by default.
+- [x] **SEM-11**: Budget allocation and diversification prevent vector near-duplicates from crowding out target files, related tests, direct dependencies, or exact identifier matches.
+- [x] **SEM-12**: Existing CLI JSON and MCP contracts remain backward compatible, with additive semantic fields covered by compatibility tests and source-free snapshots.
 
 ### Semantic Evaluation And Release Proof
 
-- [ ] **SEM-13**: Historical eval and benchmark suites can compare semantic-enabled retrieval against lexical/graph/history/test baselines at fixed budgets.
-- [ ] **SEM-14**: Benchmark comparison and product-proof reports show semantic lift, regressions, token ROI, missing-file gaps, and privacy status in source-free output.
-- [ ] **SEM-15**: Release/adoption gates include deterministic local semantic smoke coverage when a fixture provider is available and prove cloud embeddings/reranking stay disabled by default.
-- [ ] **SEM-16**: Documentation explains local semantic setup, provider configuration, privacy boundaries, failure modes, reset/repair behavior, and when semantic retrieval should be avoided.
+- [x] **SEM-13**: Historical eval and benchmark suites can compare semantic-enabled retrieval against lexical/graph/history/test baselines at fixed budgets.
+- [x] **SEM-14**: Benchmark comparison and product-proof reports show semantic lift, regressions, token ROI, missing-file gaps, and privacy status in source-free output.
+- [x] **SEM-15**: Release/adoption gates include deterministic local semantic smoke coverage when a fixture provider is available and prove cloud embeddings/reranking stay disabled by default.
+- [x] **SEM-16**: Documentation explains local semantic setup, provider configuration, privacy boundaries, failure modes, reset/repair behavior, and when semantic retrieval should be avoided.
 
 ## Future Requirements
 
@@ -77,7 +77,7 @@ Deferred to future milestones from the original product vision and refined by v1
 
 ## Completed Requirements
 
-v1 through v1.3 are complete and archived. They validated:
+v1 through v1.4 are complete and archived or ready to archive. They validated:
 
 - CLI, MCP, and public JSON compatibility guardrails.
 - Safe inventory, diagnostics, privacy/source-read policy, and source-free local traces.
@@ -86,6 +86,7 @@ v1 through v1.3 are complete and archived. They validated:
 - v1.1 binary packaging, checksums, artifact audit, install docs, setup validation, first-pack smoke, and release gates.
 - v1.2 named benchmark suites, fixed-budget baseline comparisons, token ROI, gap taxonomy, benchmark comparison, and product proof reporting.
 - v1.3 durable source-free SQLite storage, incremental indexing metadata, pack/eval/proof persistence, storage operations, and storage release gates.
+- v1.4 optional local semantic retrieval, source-free vector metadata, semantic fusion, semantic eval flags, documentation, and release-gate smoke coverage.
 
 ## Out of Scope
 
@@ -104,22 +105,22 @@ Explicitly excluded from v1.4 to prevent scope creep.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| SEM-01 | Phase 17 | Planned |
-| SEM-02 | Phase 17 | Planned |
-| SEM-03 | Phase 17 | Planned |
-| SEM-04 | Phase 17 | Planned |
-| SEM-05 | Phase 18 | Planned |
-| SEM-06 | Phase 18 | Planned |
-| SEM-07 | Phase 18 | Planned |
-| SEM-08 | Phase 18 | Planned |
-| SEM-09 | Phase 19 | Planned |
-| SEM-10 | Phase 19 | Planned |
-| SEM-11 | Phase 19 | Planned |
-| SEM-12 | Phase 19 | Planned |
-| SEM-13 | Phase 20 | Planned |
-| SEM-14 | Phase 20 | Planned |
-| SEM-15 | Phase 20 | Planned |
-| SEM-16 | Phase 20 | Planned |
+| SEM-01 | Phase 17 | Complete |
+| SEM-02 | Phase 17 | Complete |
+| SEM-03 | Phase 17 | Complete |
+| SEM-04 | Phase 17 | Complete |
+| SEM-05 | Phase 18 | Complete |
+| SEM-06 | Phase 18 | Complete |
+| SEM-07 | Phase 18 | Complete |
+| SEM-08 | Phase 18 | Complete |
+| SEM-09 | Phase 19 | Complete |
+| SEM-10 | Phase 19 | Complete |
+| SEM-11 | Phase 19 | Complete |
+| SEM-12 | Phase 19 | Complete |
+| SEM-13 | Phase 20 | Complete |
+| SEM-14 | Phase 20 | Complete |
+| SEM-15 | Phase 20 | Complete |
+| SEM-16 | Phase 20 | Complete |
 
 **Coverage:**
 - v1.4 requirements: 16 total

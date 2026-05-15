@@ -1,6 +1,7 @@
 use crate::packs::pack_repo_id;
 use crate::planning::{
-    is_low_information_task, normalized_target_agent, prepare_context_plan_with_paths_and_history,
+    is_low_information_task, normalized_target_agent,
+    prepare_context_plan_with_paths_history_and_semantic,
 };
 use ctxpack_core::{
     ContextPack, ContextPlan, EvalTrace, FileRole, PackBudget, PrivacyStatus, RetrievalSignalKind,
@@ -28,6 +29,8 @@ pub struct HistoricalEvalOptions {
     pub target_agent: String,
     pub base: Option<String>,
     pub head: Option<String>,
+    #[serde(default)]
+    pub semantic_enabled: bool,
 }
 
 pub type HistoricalChangedPathLabel = HistoricalChangedPath;
@@ -47,6 +50,7 @@ pub struct HistoricalEvalEffectiveFilters {
     pub mode: TaskType,
     pub target_agent: String,
     pub budget: PackBudget,
+    pub semantic_enabled: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -280,6 +284,8 @@ pub struct BenchmarkDefaults {
     #[serde(default = "default_benchmark_target_agent")]
     pub target_agent: String,
     #[serde(default)]
+    pub semantic_enabled: bool,
+    #[serde(default)]
     pub role_filters: Vec<FileRole>,
 }
 
@@ -290,6 +296,7 @@ impl Default for BenchmarkDefaults {
             ranking_budget: default_benchmark_ranking_budget(),
             mode: default_benchmark_task_type(),
             target_agent: default_benchmark_target_agent(),
+            semantic_enabled: false,
             role_filters: Vec::new(),
         }
     }
@@ -312,6 +319,8 @@ pub struct BenchmarkRepoConfig {
     pub mode: Option<TaskType>,
     #[serde(default)]
     pub target_agent: Option<String>,
+    #[serde(default)]
+    pub semantic_enabled: Option<bool>,
     #[serde(default)]
     pub role_filters: Vec<FileRole>,
 }
@@ -353,6 +362,7 @@ pub struct BenchmarkRepoEffectiveConfig {
     pub ranking_budget: usize,
     pub mode: TaskType,
     pub target_agent: String,
+    pub semantic_enabled: bool,
     #[serde(default)]
     pub role_filters: Vec<FileRole>,
 }
@@ -635,6 +645,9 @@ fn run_benchmark_repo(
             .target_agent
             .clone()
             .unwrap_or_else(|| defaults.target_agent.clone()),
+        semantic_enabled: repo_config
+            .semantic_enabled
+            .unwrap_or(defaults.semantic_enabled),
         role_filters: if repo_config.role_filters.is_empty() {
             defaults.role_filters.clone()
         } else {
@@ -649,6 +662,7 @@ fn run_benchmark_repo(
         target_agent: effective_config.target_agent.clone(),
         base: effective_config.base.clone(),
         head: effective_config.head.clone(),
+        semantic_enabled: effective_config.semantic_enabled,
     };
 
     match evaluate_historical_commits(&repo_path, &options) {
@@ -922,12 +936,13 @@ pub fn evaluate_historical_commits(
             &snapshot_paths,
         )?;
         let eval_root = eval_repo.path();
-        let plan = prepare_context_plan_with_paths_and_history(
+        let plan = prepare_context_plan_with_paths_history_and_semantic(
             eval_root,
             &task,
             options.task_type.clone(),
             &[],
             false,
+            options.semantic_enabled,
         )?;
         let signals_by_path = signals_by_path(&plan);
         let recommended_files = plan
@@ -1037,6 +1052,7 @@ pub fn evaluate_historical_commits(
         mode: options.task_type.clone(),
         target_agent: target_agent.clone(),
         budget: budget.clone(),
+        semantic_enabled: options.semantic_enabled,
     };
     let eval_range_id = historical_eval_range_id(&repo_id, &effective_filters, &refs);
     let roles_by_label_path = roles_by_path_from_labels(&commits, &roles_by_path);
@@ -1403,12 +1419,13 @@ fn historical_eval_range_id(
     refs: &HistoricalEvalRefs,
 ) -> String {
     task_hash(&format!(
-        "repo={repo_id}\nlimit={}\nrankingBudget={}\nmode={:?}\ntarget={}\nbudget={:?}\nbase={}\nhead={}",
+        "repo={repo_id}\nlimit={}\nrankingBudget={}\nmode={:?}\ntarget={}\nbudget={:?}\nsemantic={}\nbase={}\nhead={}",
         filters.limit,
         filters.ranking_budget,
         filters.mode,
         filters.target_agent,
         filters.budget,
+        filters.semantic_enabled,
         refs.base.as_deref().unwrap_or(""),
         refs.head.as_deref().unwrap_or("")
     ))
@@ -1433,6 +1450,7 @@ fn initial_ablation_rankings() -> Vec<SignalAblationRankings> {
 fn ablation_signals() -> Vec<RetrievalSignalKind> {
     vec![
         RetrievalSignalKind::Lexical,
+        RetrievalSignalKind::Semantic,
         RetrievalSignalKind::Symbol,
         RetrievalSignalKind::Dependency,
         RetrievalSignalKind::RelatedTest,
@@ -1998,6 +2016,7 @@ fn signal_family_code(signals: &[RetrievalSignalKind]) -> String {
 fn signal_code(signal: &RetrievalSignalKind) -> &'static str {
     match signal {
         RetrievalSignalKind::Lexical => "lexical",
+        RetrievalSignalKind::Semantic => "semantic",
         RetrievalSignalKind::Symbol => "symbol",
         RetrievalSignalKind::Dependency => "dependency",
         RetrievalSignalKind::RelatedTest => "related_test",

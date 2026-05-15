@@ -76,6 +76,7 @@ For the longer walkthrough, including setup validation, deterministic MCP proof 
 - [Agent setup matrix](docs/agent-setup.md)
 - [Retrieval benchmarking](docs/benchmarking.md)
 - [Storage](docs/storage.md)
+- [Local semantic retrieval](docs/semantic.md)
 - [Troubleshooting](docs/troubleshooting.md)
 
 ## MCP Runtime
@@ -95,7 +96,7 @@ Implemented MCP tools:
 - `related_tests`
 - `current_diff`
 
-`search` returns compact, source-free local matches from safe inventoried files and symbols. Use `kinds: ["file"]` or `kinds: ["symbol"]` to narrow the result set when an agent needs a specific evidence type.
+`search` returns compact, source-free local matches from safe inventoried files and symbols. Use `kinds: ["file"]` or `kinds: ["symbol"]` to narrow the result set when an agent needs a specific evidence type. Pass `semantic: true` only when the agent explicitly wants local semantic file candidates for a conceptual query.
 
 `current_diff` returns safe changed path lists only. Paths excluded by ignore, generated, sensitive, or other safe-inventory policy are summarized by count and source text is never returned.
 `prepare_task` and `get_pack` can also accept `includeCurrentDiff: true` to add those safe changed paths as context anchors without returning source text.
@@ -132,8 +133,14 @@ ctxpack index --repo /path/to/repo --store
 ctxpack storage status --repo /path/to/repo
 ```
 
-See [docs/storage.md](docs/storage.md) for storage location, privacy guarantees,
-repair/reset commands, and release-gate smoke coverage.
+To also build local source-free semantic vector metadata:
+
+```bash
+ctxpack index --repo /path/to/repo --semantic
+ctxpack search "payment webhook validation" --repo /path/to/repo --semantic
+```
+
+See [docs/storage.md](docs/storage.md) and [docs/semantic.md](docs/semantic.md) for storage location, privacy guarantees, semantic provider details, repair/reset commands, and release-gate smoke coverage.
 
 Generated and sensitive files require explicit opt-in:
 

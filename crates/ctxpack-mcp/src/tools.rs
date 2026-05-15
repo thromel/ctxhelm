@@ -1,8 +1,8 @@
 use crate::protocol::RpcError;
 use crate::resources::{cache_pack_resources, discover_repo};
 use ctxpack_compiler::{
-    compile_context_pack_with_plan_and_paths_for_agent, eval_trace_for_pack, eval_trace_for_plan,
-    prepare_context_plan_with_paths, render_pack_markdown,
+    compile_context_pack_with_plan_and_paths_for_agent_and_semantic, eval_trace_for_pack,
+    eval_trace_for_plan, prepare_context_plan_with_paths_and_semantic, render_pack_markdown,
 };
 use ctxpack_core::{CacheStatus, Diagnostic, PackBudget, TaskType};
 use ctxpack_index::{
@@ -39,6 +39,8 @@ struct PrepareTaskArgs {
     include_current_diff: bool,
     #[serde(default)]
     target_agent: Option<String>,
+    #[serde(default)]
+    semantic: bool,
     #[serde(default = "default_record_trace")]
     record_trace: bool,
 }
@@ -61,6 +63,8 @@ struct GetPackArgs {
     include_current_diff: bool,
     #[serde(default)]
     target_agent: Option<String>,
+    #[serde(default)]
+    semantic: bool,
     #[serde(default = "default_record_trace")]
     record_trace: bool,
 }
@@ -73,6 +77,8 @@ struct SearchArgs {
     repo: Option<PathBuf>,
     #[serde(default)]
     limit: Option<usize>,
+    #[serde(default)]
+    semantic: bool,
     #[serde(default)]
     kinds: Vec<SearchKind>,
 }
@@ -161,11 +167,12 @@ fn call_prepare_task(arguments: Value) -> Result<Value, RpcError> {
 
     let repo = discover_repo(args.repo)?;
     let paths = context_anchor_paths(&repo.path, args.paths, args.include_current_diff)?;
-    let mut plan = prepare_context_plan_with_paths(
+    let mut plan = prepare_context_plan_with_paths_and_semantic(
         &repo.path,
         &args.task,
         args.mode.unwrap_or(TaskType::Explain),
         &paths,
+        args.semantic,
     )
     .map_err(|error| RpcError::invalid_params(format!("failed to prepare task: {error}")))?;
     if args.record_trace {
@@ -212,16 +219,42 @@ fn call_search(arguments: Value) -> Result<Value, RpcError> {
     let include_files = args.kinds.is_empty() || args.kinds.contains(&SearchKind::File);
     let include_symbols = args.kinds.is_empty() || args.kinds.contains(&SearchKind::Symbol);
 
-    let (files, mut diagnostics, cache_status) = if include_files {
-        let report = lexical_search_report(&repo.path, &args.query, &SearchOptions { limit })
-            .map_err(|error| RpcError::invalid_params(format!("failed to search repo: {error}")))?;
-        (
-            report.results,
-            report.diagnostics,
-            Some(report.cache_status),
-        )
+    let (files, semantic_files, mut diagnostics, cache_status, semantic_status) = if include_files {
+        if args.semantic {
+            let report = ctxpack_index::semantic_search_report(
+                &repo.path,
+                &args.query,
+                &ctxpack_index::SemanticOptions {
+                    enabled: true,
+                    limit,
+                    ..ctxpack_index::SemanticOptions::default()
+                },
+            )
+            .map_err(|error| {
+                RpcError::invalid_params(format!("failed to search repo semantically: {error}"))
+            })?;
+            (
+                Vec::new(),
+                report.results,
+                report.diagnostics,
+                Some(report.cache_status),
+                Some(report.provider),
+            )
+        } else {
+            let report = lexical_search_report(&repo.path, &args.query, &SearchOptions { limit })
+                .map_err(|error| {
+                RpcError::invalid_params(format!("failed to search repo: {error}"))
+            })?;
+            (
+                report.results,
+                Vec::new(),
+                report.diagnostics,
+                Some(report.cache_status),
+                None,
+            )
+        }
     } else {
-        (Vec::new(), Vec::new(), None)
+        (Vec::new(), Vec::new(), Vec::new(), None, None)
     };
     let (symbols, symbol_cache_status) = if include_symbols {
         let report = symbol_search_report(&repo.path, &args.query, &SymbolOptions { limit })
@@ -238,9 +271,11 @@ fn call_search(arguments: Value) -> Result<Value, RpcError> {
     tool_json_result(json!({
         "query": args.query.trim(),
         "files": files,
+        "semanticFiles": semantic_files,
         "symbols": symbols,
         "diagnostics": diagnostics,
         "cacheStatus": cache_status,
+        "semanticProvider": semantic_status,
         "privacyStatus": {
             "localOnly": true,
             "sourceTextReturned": false
@@ -448,13 +483,14 @@ fn call_get_pack(arguments: Value) -> Result<Value, RpcError> {
     let paths = context_anchor_paths(&repo.path, args.paths, args.include_current_diff)?;
     let budget = args.budget.unwrap_or(PackBudget::Brief);
     let target_agent = args.target_agent.as_deref().unwrap_or("generic");
-    let (plan, mut pack) = compile_context_pack_with_plan_and_paths_for_agent(
+    let (plan, mut pack) = compile_context_pack_with_plan_and_paths_for_agent_and_semantic(
         &repo.path,
         &args.task,
         args.mode.unwrap_or(TaskType::Explain),
         budget,
         &paths,
         target_agent,
+        args.semantic,
     )
     .map_err(|error| RpcError::invalid_params(format!("failed to compile pack: {error}")))?;
     if args.record_trace {
