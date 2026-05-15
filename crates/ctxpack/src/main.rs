@@ -16,11 +16,12 @@ use ctxpack_core::{
     SetupCheckStatus, TaskType,
 };
 use ctxpack_index::{
-    co_change_hints, current_diff_summary, dependency_edges, extract_symbols, lexical_search,
-    list_eval_traces, related_dependency_edges, related_tests, semantic_search,
-    storage_status_for_repo, symbol_search, sync_inventory_to_store, sync_semantic_index_to_store,
-    try_append_eval_trace, vacuum_store, write_inventory, CoChangeOptions, CurrentDiffOptions,
-    DependencyOptions, InventoryOptions, InventoryReport, SearchOptions, SemanticOptions,
+    co_change_hints, current_diff_summary, dependency_edges, extract_symbols,
+    import_precision_edges, lexical_search, list_eval_traces, related_dependency_edges,
+    related_tests, semantic_search, storage_status_for_repo, symbol_search,
+    sync_inventory_to_store, sync_semantic_index_to_store, try_append_eval_trace, vacuum_store,
+    write_inventory, CoChangeOptions, CurrentDiffOptions, DependencyOptions, InventoryOptions,
+    InventoryReport, PrecisionImportReport, SearchOptions, SemanticOptions,
     StorageBenchmarkRunRecord, StorageContextPackRecord, StorageGapRecord, StorageIndexReport,
     StorageMetricRecord, StorageProofReportRecord, StorageReport, StorageSemanticIndexReport,
     StorageStatusReport, StoreConfig, SymbolOptions,
@@ -63,6 +64,7 @@ enum Command {
     RelatedTests(RelatedTestsArgs),
     CoChanges(CoChangesArgs),
     Dependencies(DependenciesArgs),
+    Precision(PrecisionArgs),
     Storage(StorageArgs),
     Cards(CardsArgs),
     Eval(EvalArgs),
@@ -193,6 +195,28 @@ struct DependenciesArgs {
         help = "Return all safe local dependency edges instead of anchor-related edges."
     )]
     all: bool,
+}
+
+#[derive(Debug, Args)]
+struct PrecisionArgs {
+    #[command(subcommand)]
+    command: PrecisionCommand,
+}
+
+#[derive(Debug, Subcommand)]
+enum PrecisionCommand {
+    #[command(about = "Import source-free precision edges from a local SCIP/LSP bridge JSON file")]
+    Import(PrecisionImportArgs),
+}
+
+#[derive(Debug, Args)]
+struct PrecisionImportArgs {
+    #[arg(long)]
+    repo: Option<PathBuf>,
+    #[arg(long, help = "Path to a source-free precision edge JSON file.")]
+    input: PathBuf,
+    #[arg(long, value_enum, default_value_t = PackFormat::Markdown)]
+    format: PackFormat,
 }
 
 #[derive(Debug, Args)]
@@ -638,6 +662,17 @@ fn main() -> Result<()> {
             };
             println!("{}", serde_json::to_string_pretty(&results)?);
         }
+        Command::Precision(args) => match args.command {
+            PrecisionCommand::Import(args) => {
+                let start = args.repo.clone().unwrap_or(std::env::current_dir()?);
+                let repo = RepoRoot::discover_from(&start)?;
+                let report = import_precision_edges(&repo.path, &args.input)?;
+                match args.format {
+                    PackFormat::Markdown => print_precision_import_report(&report),
+                    PackFormat::Json => println!("{}", serde_json::to_string_pretty(&report)?),
+                }
+            }
+        },
         Command::Storage(args) => {
             match args.command {
                 StorageCommand::Init(args) => {
@@ -1028,6 +1063,15 @@ fn print_semantic_storage_report(report: &StorageSemanticIndexReport) {
         report.semantic_vector_records
     );
     println!("- compatibility: {:?}", report.compatibility);
+    print_diagnostics(&report.diagnostics);
+}
+
+fn print_precision_import_report(report: &PrecisionImportReport) {
+    println!("Precision edge import");
+    println!("- provider: {}", report.provider);
+    println!("- overlay: {}", report.path);
+    println!("- accepted edges: {}", report.accepted_edges);
+    println!("- rejected edges: {}", report.rejected_edges);
     print_diagnostics(&report.diagnostics);
 }
 

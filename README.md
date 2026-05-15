@@ -77,6 +77,7 @@ For the longer walkthrough, including setup validation, deterministic MCP proof 
 - [Retrieval benchmarking](docs/benchmarking.md)
 - [Storage](docs/storage.md)
 - [Local semantic retrieval](docs/semantic.md)
+- [Parser and precision edges](docs/precision.md)
 - [Troubleshooting](docs/troubleshooting.md)
 
 ## MCP Runtime
@@ -140,7 +141,7 @@ ctxpack index --repo /path/to/repo --semantic
 ctxpack search "payment webhook validation" --repo /path/to/repo --semantic
 ```
 
-See [docs/storage.md](docs/storage.md) and [docs/semantic.md](docs/semantic.md) for storage location, privacy guarantees, semantic provider details, repair/reset commands, and release-gate smoke coverage.
+See [docs/storage.md](docs/storage.md), [docs/semantic.md](docs/semantic.md), and [docs/precision.md](docs/precision.md) for storage location, privacy guarantees, semantic provider details, parser/precision-edge support, repair/reset commands, and release-gate smoke coverage.
 
 Generated and sensitive files require explicit opt-in:
 
@@ -172,7 +173,7 @@ Search symbols by name, path, or signature:
 ctxpack symbols --repo /path/to/repo --query requireSession --limit 5
 ```
 
-The current local extractor covers TypeScript/JavaScript, Python, Rust, and Go definitions. MCP symbol resources use the same symbol search path through `ctxpack://symbol/<query>`.
+The current local extractor covers TypeScript/JavaScript, Python, Rust, Go, Java, and Kotlin definitions. MCP symbol resources use the same symbol search path through `ctxpack://symbol/<query>`.
 
 ## Related Tests
 
@@ -211,7 +212,14 @@ Return the current safe dependency graph:
 ctxpack dependencies --all --repo /path/to/repo --limit 50
 ```
 
-Dependency edges are inferred from local TypeScript/JavaScript, Python, and Rust imports in safe source/test files. External packages, generated files, sensitive files, and ignored files are excluded by default. MCP clients can request dependency expansion through `related` with `include: ["dependencies"]`, and can read the repository graph resource at `ctxpack://repo/dependency-graph`.
+Dependency edges are inferred from local TypeScript/JavaScript, Python, Rust, Java, and Kotlin imports in safe source/test files. External packages, generated files, sensitive files, and ignored files are excluded by default. MCP clients can request dependency expansion through `related` with `include: ["dependencies"]`, and can read the repository graph resource at `ctxpack://repo/dependency-graph`.
+
+Repositories with local SCIP/LSP-derived edge exports can import source-free precision edges:
+
+```bash
+ctxpack precision import --repo /path/to/repo --input /path/to/precision-edges.json
+ctxpack dependencies src/auth/middleware.ts --repo /path/to/repo
+```
 
 ## Context Plan
 

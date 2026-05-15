@@ -77,6 +77,7 @@ fn help_lists_core_commands() {
         .stdout(contains("search"))
         .stdout(contains("related-tests"))
         .stdout(contains("dependencies"))
+        .stdout(contains("precision"))
         .stdout(contains("setup-check"))
         .stdout(contains("eval"))
         .stdout(contains("serve-mcp"));
@@ -611,6 +612,66 @@ fn search_related_tests_dependencies_and_eval_history_emit_json_shapes() {
     assert_eq!(first_edge["sourcePath"], "src/auth/session.ts");
     assert_eq!(first_edge["targetPath"], "src/auth/token.ts");
     assert_eq!(first_edge["kind"], "imports");
+
+    let precision_input = fixture.home.join("precision.json");
+    fs::write(
+        &precision_input,
+        r#"{
+  "schemaVersion": 1,
+  "provider": "scip-json-fixture",
+  "edges": [
+    {
+      "sourcePath": "src/auth/session.ts",
+      "targetPath": "src/auth/token.ts",
+      "edgeType": "calls",
+      "symbol": "issueToken",
+      "confidence": 0.99,
+      "reason": "local precision fixture"
+    },
+    {
+      "sourcePath": ".env",
+      "targetPath": "src/auth/token.ts",
+      "edgeType": "calls",
+      "reason": "do-not-index"
+    }
+  ]
+}
+"#,
+    )
+    .unwrap();
+    let precision = json_stdout(
+        Command::cargo_bin("ctxpack")
+            .unwrap()
+            .env(CTXPACK_HOME_ENV, &fixture.home)
+            .args(["precision", "import", "--repo"])
+            .arg(&fixture.repo)
+            .args(["--input"])
+            .arg(&precision_input)
+            .args(["--format", "json"])
+            .assert(),
+    );
+    assert_eq!(precision["provider"], "scip-json-fixture");
+    assert_eq!(precision["acceptedEdges"], 1);
+    assert_eq!(precision["rejectedEdges"], 1);
+    assert_no_source_or_prompt_text(&precision);
+
+    let precision_dependencies = json_stdout(
+        Command::cargo_bin("ctxpack")
+            .unwrap()
+            .env(CTXPACK_HOME_ENV, &fixture.home)
+            .args(["dependencies", "src/auth/session.ts", "--repo"])
+            .arg(&fixture.repo)
+            .args(["--limit", "10"])
+            .assert(),
+    );
+    assert!(precision_dependencies
+        .as_array()
+        .unwrap()
+        .iter()
+        .any(
+            |edge| edge["kind"] == "precision:calls" && edge["reason"] == "local precision fixture"
+        ));
+    assert_no_source_or_prompt_text(&precision_dependencies);
 
     let history = json_stdout(
         Command::cargo_bin("ctxpack")

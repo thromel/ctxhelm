@@ -2,9 +2,31 @@
 
 ## Active
 
-No active milestone. Next planned milestone is `v1.5 Parser/Semantic Precision`.
+No active milestone. Next planned milestone is `v1.6 Repo Memory & Experience Cards`.
 
 ## Shipped
+
+### v1.5 Parser/Semantic Precision (Shipped: 2026-05-16)
+
+**Delivered:** Java/Kotlin parser precision plus source-free precision edge import for local SCIP/LSP bridge outputs.
+
+**Phases completed:** Phases 21-24, 4 plans total
+
+**Key accomplishments:**
+
+- Added Java/Kotlin symbol extraction for safe inventoried source/test files.
+- Added Java/Kotlin dependency graph inference for safe local package imports and common source-root layouts.
+- Added `ctxpack precision import` with source-free edge validation and `.ctxpack/precision-edges.json` persistence.
+- Added additive `precision:<edgeType>` dependency output without changing existing graph contracts.
+- Added `docs/precision.md`, `scripts/smoke-precision.sh`, release-doc checks, and release-gate coverage.
+- Verified parser precision on the RefactoringMiner repository.
+
+**Archive:**
+
+- Roadmap: `.planning/milestones/v1.5-ROADMAP.md`
+- Requirements: `.planning/milestones/v1.5-REQUIREMENTS.md`
+- Audit: `.planning/milestones/v1.5-MILESTONE-AUDIT.md`
+- Phases: `.planning/milestones/v1.5-phases/`
 
 ### v1.4 Local Semantic Retrieval (Shipped: 2026-05-16)
 
@@ -92,24 +114,11 @@ No active milestone. Next planned milestone is `v1.5 Parser/Semantic Precision`.
 
 ## Planned Product Vision
 
-### v1.5 Parser/Semantic Precision
-
-**Goal:** Improve symbol, dependency, and reference precision where measured failures show Tree-sitter/heuristics are insufficient.
-
-**Depends on:** v1.2 gap taxonomy and v1.4 hybrid retrieval results.
-
-**Expected capabilities:**
-
-- Broader Tree-sitter language coverage where real repos need it.
-- Optional SCIP/LSP import for precise definitions/references/call edges.
-- Precision evals showing better target-file/test recall without context explosion.
-- Safe degradation when language tooling is unavailable or project setup is incomplete.
-
 ### v1.6 Repo Memory & Experience Cards
 
 **Goal:** Turn generated repo summaries and prior agent-run lessons into durable, source-linked, source-free memory that agents can reuse without bloating every context pack.
 
-**Depends on:** v1.3 durable storage, v1.4/v1.5 retrieval and precision signals.
+**Depends on:** v1.3 durable storage, v1.4 semantic retrieval, and v1.5 precision signals.
 
 **Expected capabilities:**
 
@@ -122,13 +131,13 @@ No active milestone. Next planned milestone is `v1.5 Parser/Semantic Precision`.
 
 **Goal:** Use benchmark results and real agent-session traces to tune retrieval policy, identify repeated gaps, and prove whether context choices improve agent outcomes.
 
-**Depends on:** v1.2 benchmark proof, v1.3 storage, v1.4 semantic retrieval, v1.6 memory cards.
+**Depends on:** v1.2 benchmark proof, v1.3 storage, v1.4 semantic retrieval, v1.5 precision, and v1.6 memory cards.
 
 **Expected capabilities:**
 
 - Session feedback ingestion for recommended, read, edited, tested, passed, failed, and user-corrected files.
 - Source-free policy statistics for signal weights, context precision, token ROI, and repeated missing-file families.
-- Eval-driven retrieval-policy tuning with rollback when semantic, graph, history, or memory signals regress.
+- Eval-driven retrieval-policy tuning with rollback when semantic, graph, history, precision, or memory signals regress.
 - Agent outcome reports comparing plan-only, brief, standard, and deep packs across fixed tasks.
 
 ### v2.0 Workspace & Team Layer
@@ -141,7 +150,7 @@ No active milestone. Next planned milestone is `v1.5 Parser/Semantic Precision`.
 
 - Multi-repo workspace inventory and cross-repo context planning.
 - Source-free shared context cards, policy files, and benchmark reports.
-- Team-level privacy policy and adapter guidance templates.
+- Team-level privacy policy templates without hosted source indexing.
 - No hosted source indexing requirement.
 
 ### v2.1 UI / Pack Inspector

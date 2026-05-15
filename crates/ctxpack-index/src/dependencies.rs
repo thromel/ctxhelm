@@ -7,7 +7,10 @@ use crate::policy::{read_safe_source, SourceReadStatus, SOURCE_READ_MAX_BYTES};
 use ctxpack_core::{CacheStatus, Diagnostic, DiagnosticSeverity, FileRole};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeSet;
-use std::path::{Component, Path};
+use std::fs;
+use std::path::{Component, Path, PathBuf};
+
+pub const PRECISION_EDGES_SCHEMA_VERSION: u32 = 1;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
@@ -38,6 +41,45 @@ pub struct DependencyEdgesReport {
     #[serde(default)]
     pub diagnostics: Vec<Diagnostic>,
     pub cache_status: CacheStatus,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct PrecisionEdgeRecord {
+    pub source_path: String,
+    pub target_path: String,
+    #[serde(default = "default_precision_edge_type")]
+    pub edge_type: String,
+    #[serde(default)]
+    pub symbol: Option<String>,
+    #[serde(default)]
+    pub confidence: Option<f32>,
+    #[serde(default)]
+    pub reason: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct PrecisionEdgesFile {
+    pub schema_version: u32,
+    pub provider: String,
+    #[serde(default)]
+    pub edges: Vec<PrecisionEdgeRecord>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct PrecisionImportReport {
+    pub path: String,
+    pub provider: String,
+    pub accepted_edges: usize,
+    pub rejected_edges: usize,
+    #[serde(default)]
+    pub diagnostics: Vec<Diagnostic>,
+}
+
+fn default_precision_edge_type() -> String {
+    "references".to_string()
 }
 
 pub fn dependency_edges(
@@ -99,6 +141,35 @@ pub fn dependency_edges_report(
                     reason: format!("{} import `{}`", import.language, import.raw),
                 });
             }
+        }
+    }
+    let overlay = load_precision_overlay(&repo_root, &safe_paths);
+    diagnostics.extend(overlay.diagnostics);
+    for record in overlay.edges {
+        let kind = format!("precision:{}", record.edge_type);
+        if seen.insert((
+            record.source_path.clone(),
+            record.target_path.clone(),
+            kind.clone(),
+        )) {
+            let symbol = record
+                .symbol
+                .as_deref()
+                .map(|symbol| format!(" for `{symbol}`"))
+                .unwrap_or_default();
+            let reason = record.reason.unwrap_or_else(|| {
+                format!(
+                    "source-free precision edge `{}`{}",
+                    record.edge_type, symbol
+                )
+            });
+            edges.push(DependencyEdge {
+                source_path: record.source_path,
+                target_path: record.target_path,
+                kind,
+                confidence: record.confidence.unwrap_or(0.95).clamp(0.0, 1.0),
+                reason,
+            });
         }
     }
 
@@ -174,6 +245,179 @@ pub fn related_dependency_edges_report(
     })
 }
 
+pub fn precision_edges_path(repo_root: impl AsRef<Path>) -> Result<PathBuf, InventoryError> {
+    let repo_root = canonicalize(repo_root.as_ref())?;
+    Ok(repo_root.join(".ctxpack").join("precision-edges.json"))
+}
+
+pub fn import_precision_edges(
+    repo_root: impl AsRef<Path>,
+    input_path: impl AsRef<Path>,
+) -> Result<PrecisionImportReport, InventoryError> {
+    let repo_root = canonicalize(repo_root.as_ref())?;
+    let input_path = input_path.as_ref();
+    let raw = fs::read_to_string(input_path).map_err(|source| InventoryError::Read {
+        path: input_path.to_path_buf(),
+        source,
+    })?;
+    let parsed: PrecisionEdgesFile =
+        serde_json::from_str(&raw).map_err(|source| InventoryError::Deserialize {
+            path: input_path.to_path_buf(),
+            source,
+        })?;
+    let inventory_report = load_or_refresh_inventory(&repo_root, &InventoryOptions::default())?;
+    let safe_paths = safe_dependency_files(&inventory_report.inventory)
+        .into_iter()
+        .map(|file| file.path.clone())
+        .collect::<BTreeSet<_>>();
+    let mut diagnostics = inventory_report.diagnostics;
+    let mut accepted = Vec::new();
+    let mut rejected_edges = 0;
+
+    for record in parsed.edges {
+        let source_path = normalize_input_path(&repo_root, &record.source_path);
+        let target_path = normalize_input_path(&repo_root, &record.target_path);
+        if safe_paths.contains(&source_path) && safe_paths.contains(&target_path) {
+            accepted.push(PrecisionEdgeRecord {
+                source_path,
+                target_path,
+                edge_type: precision_edge_type(&record.edge_type),
+                symbol: record.symbol.filter(|value| !value.trim().is_empty()),
+                confidence: record.confidence.map(|value| value.clamp(0.0, 1.0)),
+                reason: record.reason.filter(|value| !value.trim().is_empty()),
+            });
+        } else {
+            rejected_edges += 1;
+        }
+    }
+
+    if rejected_edges > 0 {
+        diagnostics.push(Diagnostic {
+            code: "precision_edges_rejected".to_string(),
+            severity: DiagnosticSeverity::Warning,
+            message: "Precision edge import rejected records whose source or target path was not in the safe local inventory.".to_string(),
+            count: rejected_edges,
+            paths: Vec::new(),
+        });
+    }
+
+    let output = PrecisionEdgesFile {
+        schema_version: PRECISION_EDGES_SCHEMA_VERSION,
+        provider: parsed.provider,
+        edges: accepted,
+    };
+    let path = precision_edges_path(&repo_root)?;
+    if let Some(parent) = path.parent() {
+        fs::create_dir_all(parent).map_err(|source| InventoryError::CreateDir {
+            path: parent.to_path_buf(),
+            source,
+        })?;
+    }
+    let json = serde_json::to_string_pretty(&output).map_err(InventoryError::Serialize)?;
+    fs::write(&path, format!("{json}\n")).map_err(|source| InventoryError::Write {
+        path: path.clone(),
+        source,
+    })?;
+
+    Ok(PrecisionImportReport {
+        path: path.display().to_string(),
+        provider: output.provider,
+        accepted_edges: output.edges.len(),
+        rejected_edges,
+        diagnostics,
+    })
+}
+
+#[derive(Debug, Default)]
+struct PrecisionOverlay {
+    edges: Vec<PrecisionEdgeRecord>,
+    diagnostics: Vec<Diagnostic>,
+}
+
+fn load_precision_overlay(repo_root: &Path, safe_paths: &BTreeSet<String>) -> PrecisionOverlay {
+    let path = repo_root.join(".ctxpack").join("precision-edges.json");
+    if !path.exists() {
+        return PrecisionOverlay::default();
+    }
+    let raw = match fs::read_to_string(&path) {
+        Ok(raw) => raw,
+        Err(_) => {
+            return PrecisionOverlay {
+                edges: Vec::new(),
+                diagnostics: vec![Diagnostic {
+                    code: "precision_edges_unreadable".to_string(),
+                    severity: DiagnosticSeverity::Warning,
+                    message: "Precision edge overlay exists but could not be read; falling back to inferred dependency edges.".to_string(),
+                    count: 1,
+                    paths: vec![path.display().to_string()],
+                }],
+            };
+        }
+    };
+    let parsed: PrecisionEdgesFile = match serde_json::from_str(&raw) {
+        Ok(parsed) => parsed,
+        Err(_) => {
+            return PrecisionOverlay {
+                edges: Vec::new(),
+                diagnostics: vec![Diagnostic {
+                    code: "precision_edges_invalid".to_string(),
+                    severity: DiagnosticSeverity::Warning,
+                    message: "Precision edge overlay is invalid JSON or does not match the source-free edge schema; falling back to inferred dependency edges.".to_string(),
+                    count: 1,
+                    paths: vec![path.display().to_string()],
+                }],
+            };
+        }
+    };
+    let mut rejected_edges = 0;
+    let mut edges = Vec::new();
+    for record in parsed.edges {
+        let source_path = normalize_input_path(repo_root, &record.source_path);
+        let target_path = normalize_input_path(repo_root, &record.target_path);
+        if safe_paths.contains(&source_path) && safe_paths.contains(&target_path) {
+            edges.push(PrecisionEdgeRecord {
+                source_path,
+                target_path,
+                edge_type: precision_edge_type(&record.edge_type),
+                symbol: record.symbol,
+                confidence: record.confidence.map(|value| value.clamp(0.0, 1.0)),
+                reason: record.reason,
+            });
+        } else {
+            rejected_edges += 1;
+        }
+    }
+    let diagnostics = if rejected_edges > 0 {
+        vec![Diagnostic {
+            code: "precision_edges_rejected".to_string(),
+            severity: DiagnosticSeverity::Warning,
+            message: "Precision edge overlay ignored records whose source or target path was not in the safe local inventory.".to_string(),
+            count: rejected_edges,
+            paths: Vec::new(),
+        }]
+    } else {
+        Vec::new()
+    };
+    PrecisionOverlay { edges, diagnostics }
+}
+
+fn precision_edge_type(value: &str) -> String {
+    let value = value.trim();
+    if value.is_empty() {
+        return default_precision_edge_type();
+    }
+    value
+        .chars()
+        .map(|character| {
+            if character.is_ascii_alphanumeric() || character == '_' || character == '-' {
+                character.to_ascii_lowercase()
+            } else {
+                '_'
+            }
+        })
+        .collect()
+}
+
 fn safe_dependency_files(inventory: &RepoInventory) -> Vec<&FileInventoryEntry> {
     inventory
         .files
@@ -184,7 +428,7 @@ fn safe_dependency_files(inventory: &RepoInventory) -> Vec<&FileInventoryEntry> 
                 && matches!(file.role, FileRole::Source | FileRole::Test)
                 && matches!(
                     file.language.as_deref(),
-                    Some("typescript" | "javascript" | "python" | "rust")
+                    Some("typescript" | "javascript" | "python" | "rust" | "java" | "kotlin")
                 )
         })
         .collect()
@@ -202,6 +446,8 @@ fn imports_for_file(file: &FileInventoryEntry, content: &str) -> Vec<ImportRef> 
         Some("typescript" | "javascript") => js_imports(content),
         Some("python") => python_imports(content),
         Some("rust") => rust_imports(content),
+        Some("java") => java_imports(content),
+        Some("kotlin") => kotlin_imports(content),
         _ => Vec::new(),
     }
 }
@@ -294,6 +540,55 @@ fn rust_imports(content: &str) -> Vec<ImportRef> {
     imports
 }
 
+fn java_imports(content: &str) -> Vec<ImportRef> {
+    let mut imports = Vec::new();
+    for line in content.lines() {
+        let trimmed = line.trim();
+        if trimmed.starts_with("//") {
+            continue;
+        }
+        let Some(rest) = trimmed.strip_prefix("import ") else {
+            continue;
+        };
+        let rest = rest.strip_prefix("static ").unwrap_or(rest);
+        let Some(module) = rest.split(';').next().map(str::trim) else {
+            continue;
+        };
+        if module.is_empty() || module.ends_with(".*") {
+            continue;
+        }
+        imports.push(ImportRef {
+            raw: module.replace('.', "/"),
+            language: "java",
+            confidence: 0.9,
+        });
+    }
+    imports
+}
+
+fn kotlin_imports(content: &str) -> Vec<ImportRef> {
+    let mut imports = Vec::new();
+    for line in content.lines() {
+        let trimmed = line.trim();
+        if trimmed.starts_with("//") {
+            continue;
+        }
+        let Some(rest) = trimmed.strip_prefix("import ") else {
+            continue;
+        };
+        let module = rest.split_whitespace().next().unwrap_or("").trim();
+        if module.is_empty() || module.ends_with(".*") {
+            continue;
+        }
+        imports.push(ImportRef {
+            raw: module.replace('.', "/"),
+            language: "kotlin",
+            confidence: 0.9,
+        });
+    }
+    imports
+}
+
 fn push_quoted_import(
     imports: &mut Vec<ImportRef>,
     text: &str,
@@ -374,16 +669,25 @@ fn resolve_import_target(
 
 fn first_existing(base: &str, safe_paths: &BTreeSet<String>) -> Option<String> {
     let mut candidates = vec![base.to_string()];
-    for extension in ["ts", "tsx", "js", "jsx", "mjs", "cjs", "py", "rs", "go"] {
+    for extension in [
+        "ts", "tsx", "js", "jsx", "mjs", "cjs", "py", "rs", "go", "java", "kt", "kts",
+    ] {
         candidates.push(format!("{base}.{extension}"));
     }
-    for extension in ["ts", "tsx", "js", "jsx", "py", "rs"] {
+    for extension in ["ts", "tsx", "js", "jsx", "py", "rs", "kt", "kts"] {
         candidates.push(format!("{base}/index.{extension}"));
         candidates.push(format!("{base}/mod.{extension}"));
     }
-    candidates
-        .into_iter()
-        .find(|candidate| safe_paths.contains(candidate))
+    for candidate in candidates {
+        if safe_paths.contains(&candidate) {
+            return Some(candidate);
+        }
+        let suffix = format!("/{candidate}");
+        if let Some(path) = safe_paths.iter().find(|path| path.ends_with(&suffix)) {
+            return Some(path.clone());
+        }
+    }
+    None
 }
 
 fn join_normalized(parent: &Path, raw: &str) -> Option<String> {

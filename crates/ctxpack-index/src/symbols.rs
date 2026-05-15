@@ -184,6 +184,8 @@ fn symbols_for_file(file: &FileInventoryEntry, content: &str) -> Vec<CodeSymbol>
         Some("python") => symbols_for_python(file, content),
         Some("rust") => symbols_for_rust(file, content),
         Some("go") => symbols_for_go(file, content),
+        Some("java") => symbols_for_java(file, content),
+        Some("kotlin") => symbols_for_kotlin(file, content),
         _ => Vec::new(),
     }
 }
@@ -381,6 +383,184 @@ fn symbols_for_go(file: &FileInventoryEntry, content: &str) -> Vec<CodeSymbol> {
     symbols
 }
 
+fn symbols_for_java(file: &FileInventoryEntry, content: &str) -> Vec<CodeSymbol> {
+    let mut symbols = Vec::new();
+    for (line_index, line) in content.lines().enumerate() {
+        let line_no = line_number(line_index);
+        let trimmed = line.trim();
+        if trimmed.is_empty() || trimmed.starts_with("//") || trimmed.starts_with('@') {
+            continue;
+        }
+        let exported = java_is_public(trimmed);
+        let rest = strip_modifiers(
+            trimmed,
+            &[
+                "public",
+                "protected",
+                "private",
+                "abstract",
+                "static",
+                "final",
+                "sealed",
+                "non-sealed",
+                "strictfp",
+                "synchronized",
+                "native",
+                "default",
+            ],
+        );
+        if let Some(name) = identifier_after(rest, "class ") {
+            symbols.push(code_symbol(
+                file,
+                name,
+                SymbolKind::Class,
+                line_no,
+                trimmed,
+                exported,
+            ));
+        } else if let Some(name) = identifier_after(rest, "interface ") {
+            symbols.push(code_symbol(
+                file,
+                name,
+                SymbolKind::Interface,
+                line_no,
+                trimmed,
+                exported,
+            ));
+        } else if let Some(name) = identifier_after(rest, "enum ") {
+            symbols.push(code_symbol(
+                file,
+                name,
+                SymbolKind::Type,
+                line_no,
+                trimmed,
+                exported,
+            ));
+        } else if let Some(name) = identifier_after(rest, "record ") {
+            symbols.push(code_symbol(
+                file,
+                name,
+                SymbolKind::Type,
+                line_no,
+                trimmed,
+                exported,
+            ));
+        } else if let Some(name) = java_constant_name(trimmed) {
+            symbols.push(code_symbol(
+                file,
+                name,
+                SymbolKind::Constant,
+                line_no,
+                trimmed,
+                exported,
+            ));
+        } else if let Some(name) = java_method_name(rest) {
+            symbols.push(code_symbol(
+                file,
+                name,
+                SymbolKind::Method,
+                line_no,
+                trimmed,
+                exported,
+            ));
+        }
+    }
+    symbols
+}
+
+fn symbols_for_kotlin(file: &FileInventoryEntry, content: &str) -> Vec<CodeSymbol> {
+    let mut symbols = Vec::new();
+    for (line_index, line) in content.lines().enumerate() {
+        let line_no = line_number(line_index);
+        let trimmed = line.trim();
+        if trimmed.is_empty()
+            || trimmed.starts_with("//")
+            || trimmed.starts_with('@')
+            || trimmed == "}"
+        {
+            continue;
+        }
+        let exported = !trimmed.starts_with("private ");
+        let rest = strip_modifiers(
+            trimmed,
+            &[
+                "public",
+                "internal",
+                "private",
+                "protected",
+                "open",
+                "abstract",
+                "sealed",
+                "data",
+                "value",
+                "inner",
+                "companion",
+                "inline",
+                "suspend",
+                "operator",
+                "override",
+                "tailrec",
+            ],
+        );
+        if let Some(name) = identifier_after(rest, "class ") {
+            symbols.push(code_symbol(
+                file,
+                name,
+                SymbolKind::Class,
+                line_no,
+                trimmed,
+                exported,
+            ));
+        } else if let Some(name) = identifier_after(rest, "interface ") {
+            symbols.push(code_symbol(
+                file,
+                name,
+                SymbolKind::Interface,
+                line_no,
+                trimmed,
+                exported,
+            ));
+        } else if let Some(name) = identifier_after(rest, "object ") {
+            symbols.push(code_symbol(
+                file,
+                name,
+                SymbolKind::Module,
+                line_no,
+                trimmed,
+                exported,
+            ));
+        } else if let Some(name) = identifier_after(rest, "typealias ") {
+            symbols.push(code_symbol(
+                file,
+                name,
+                SymbolKind::Type,
+                line_no,
+                trimmed,
+                exported,
+            ));
+        } else if let Some(name) = identifier_after(rest, "fun ") {
+            symbols.push(code_symbol(
+                file,
+                name,
+                SymbolKind::Function,
+                line_no,
+                trimmed,
+                exported,
+            ));
+        } else if let Some(name) = kotlin_value_name(rest) {
+            symbols.push(code_symbol(
+                file,
+                name,
+                SymbolKind::Constant,
+                line_no,
+                trimmed,
+                exported,
+            ));
+        }
+    }
+    symbols
+}
+
 fn code_symbol(
     file: &FileInventoryEntry,
     name: &str,
@@ -558,4 +738,39 @@ fn go_func_name(line: &str) -> Option<&str> {
 
 fn is_exported_go(name: &str) -> bool {
     name.chars().next().is_some_and(char::is_uppercase)
+}
+
+fn java_is_public(line: &str) -> bool {
+    line.starts_with("public ") || line.contains(" public ")
+}
+
+fn java_constant_name(line: &str) -> Option<&str> {
+    if !line.contains(" static ") && !line.starts_with("static ") {
+        return None;
+    }
+    let before_equals = line.split('=').next()?.trim();
+    let name = before_equals.split_whitespace().last()?;
+    take_identifier(name)
+}
+
+fn java_method_name(line: &str) -> Option<&str> {
+    let disallowed = [
+        "if ", "for ", "while ", "switch ", "catch ", "return ", "throw ", "new ", "else ", "do ",
+    ];
+    if disallowed.iter().any(|prefix| line.starts_with(prefix)) {
+        return None;
+    }
+    let open_paren = line.find('(')?;
+    let before = line[..open_paren].trim();
+    if before.is_empty() || before.contains('=') || before.ends_with('.') {
+        return None;
+    }
+    let name = before.split_whitespace().last()?;
+    take_identifier(name)
+}
+
+fn kotlin_value_name(line: &str) -> Option<&str> {
+    ["val ", "var "]
+        .into_iter()
+        .find_map(|prefix| identifier_after(line, prefix))
 }

@@ -11,8 +11,10 @@ mod symbols;
 mod traces;
 
 pub use dependencies::{
-    dependency_edges, dependency_edges_report, related_dependency_edges,
-    related_dependency_edges_report, DependencyEdge, DependencyEdgesReport, DependencyOptions,
+    dependency_edges, dependency_edges_report, import_precision_edges, precision_edges_path,
+    related_dependency_edges, related_dependency_edges_report, DependencyEdge,
+    DependencyEdgesReport, DependencyOptions, PrecisionEdgeRecord, PrecisionEdgesFile,
+    PrecisionImportReport, PRECISION_EDGES_SCHEMA_VERSION,
 };
 pub use freshness::{
     check_inventory_freshness, load_or_refresh_inventory, InventoryFreshness, InventoryLoadReport,
@@ -531,6 +533,62 @@ mod tests {
     }
 
     #[test]
+    fn extract_symbols_finds_java_and_kotlin_definitions() {
+        let _guard = env_lock();
+        let temp = tempfile::tempdir().unwrap();
+        let repo = temp.path().join("repo");
+        let home = temp.path().join("ctxpack-home");
+        fs::create_dir_all(repo.join(".git")).unwrap();
+        fs::create_dir_all(repo.join("src/main/java/org/example")).unwrap();
+        fs::create_dir_all(repo.join("src/main/kotlin/org/example")).unwrap();
+        fs::write(
+            repo.join("src/main/java/org/example/AuthService.java"),
+            "package org.example;\npublic class AuthService {\n  public static final String COOKIE = \"sid\";\n  public Session requireSession(Request request) { return null; }\n}\n",
+        )
+        .unwrap();
+        fs::write(
+            repo.join("src/main/kotlin/org/example/AuthController.kt"),
+            "package org.example\nclass AuthController {\n  fun redirectToLogin(): String = \"/login\"\n}\n",
+        )
+        .unwrap();
+        std::env::set_var("CTXPACK_HOME", &home);
+
+        let symbols = extract_symbols(&repo).unwrap();
+        let names = symbols
+            .iter()
+            .map(|symbol| (symbol.name.as_str(), &symbol.kind, symbol.path.as_str()))
+            .collect::<Vec<_>>();
+
+        assert!(names.contains(&(
+            "AuthService",
+            &SymbolKind::Class,
+            "src/main/java/org/example/AuthService.java"
+        )));
+        assert!(names.contains(&(
+            "COOKIE",
+            &SymbolKind::Constant,
+            "src/main/java/org/example/AuthService.java"
+        )));
+        assert!(names.contains(&(
+            "requireSession",
+            &SymbolKind::Method,
+            "src/main/java/org/example/AuthService.java"
+        )));
+        assert!(names.contains(&(
+            "AuthController",
+            &SymbolKind::Class,
+            "src/main/kotlin/org/example/AuthController.kt"
+        )));
+        assert!(names.contains(&(
+            "redirectToLogin",
+            &SymbolKind::Function,
+            "src/main/kotlin/org/example/AuthController.kt"
+        )));
+
+        std::env::remove_var("CTXPACK_HOME");
+    }
+
+    #[test]
     fn symbol_extraction_refreshes_stale_inventory_for_created_files() {
         let _guard = env_lock();
         let temp = tempfile::tempdir().unwrap();
@@ -610,6 +668,51 @@ mod tests {
         assert!(edges
             .iter()
             .all(|edge| !edge.target_path.contains("express")));
+
+        std::env::remove_var("CTXPACK_HOME");
+    }
+
+    #[test]
+    fn dependency_edges_resolve_java_and_kotlin_package_imports() {
+        let _guard = env_lock();
+        let temp = tempfile::tempdir().unwrap();
+        let repo = temp.path().join("repo");
+        let home = temp.path().join("ctxpack-home");
+        fs::create_dir_all(repo.join(".git")).unwrap();
+        fs::create_dir_all(repo.join("src/main/java/org/example/auth")).unwrap();
+        fs::create_dir_all(repo.join("src/main/java/org/example/user")).unwrap();
+        fs::create_dir_all(repo.join("src/main/kotlin/org/example/web")).unwrap();
+        fs::write(
+            repo.join("src/main/java/org/example/auth/AuthService.java"),
+            "package org.example.auth;\nimport org.example.user.UserRepository;\npublic class AuthService { private UserRepository users; }\n",
+        )
+        .unwrap();
+        fs::write(
+            repo.join("src/main/java/org/example/user/UserRepository.java"),
+            "package org.example.user;\npublic class UserRepository {}\n",
+        )
+        .unwrap();
+        fs::write(
+            repo.join("src/main/kotlin/org/example/web/AuthController.kt"),
+            "package org.example.web\nimport org.example.auth.AuthService\nclass AuthController(private val auth: AuthService)\n",
+        )
+        .unwrap();
+        std::env::set_var("CTXPACK_HOME", &home);
+
+        let edges = dependency_edges(&repo, &DependencyOptions { limit: 10 }).unwrap();
+        let pairs = edges
+            .iter()
+            .map(|edge| (edge.source_path.as_str(), edge.target_path.as_str()))
+            .collect::<Vec<_>>();
+
+        assert!(pairs.contains(&(
+            "src/main/java/org/example/auth/AuthService.java",
+            "src/main/java/org/example/user/UserRepository.java"
+        )));
+        assert!(pairs.contains(&(
+            "src/main/kotlin/org/example/web/AuthController.kt",
+            "src/main/java/org/example/auth/AuthService.java"
+        )));
 
         std::env::remove_var("CTXPACK_HOME");
     }
@@ -730,6 +833,71 @@ mod tests {
 
         assert!(pairs.contains(&("src/auth/session.ts", "src/auth/cookies.ts")));
         assert!(pairs.contains(&("src/app.ts", "src/auth/session.ts")));
+
+        std::env::remove_var("CTXPACK_HOME");
+    }
+
+    #[test]
+    fn precision_edge_import_is_source_free_and_additive() {
+        let _guard = env_lock();
+        let temp = tempfile::tempdir().unwrap();
+        let repo = temp.path().join("repo");
+        let home = temp.path().join("ctxpack-home");
+        fs::create_dir_all(repo.join(".git")).unwrap();
+        fs::create_dir_all(repo.join("src/auth")).unwrap();
+        fs::create_dir_all(repo.join("src/routes")).unwrap();
+        fs::write(
+            repo.join("src/routes/login.ts"),
+            "export function loginRoute() { return '/login'; }\n",
+        )
+        .unwrap();
+        fs::write(
+            repo.join("src/auth/middleware.ts"),
+            "export function authMiddleware() { return true; }\n",
+        )
+        .unwrap();
+        let input = temp.path().join("precision.json");
+        fs::write(
+            &input,
+            r#"{
+  "schemaVersion": 1,
+  "provider": "scip-json-fixture",
+  "edges": [
+    {
+      "sourcePath": "src/auth/middleware.ts",
+      "targetPath": "src/routes/login.ts",
+      "edgeType": "calls",
+      "symbol": "loginRoute",
+      "confidence": 0.98,
+      "reason": "local SCIP fixture edge"
+    },
+    {
+      "sourcePath": ".env",
+      "targetPath": "src/routes/login.ts",
+      "edgeType": "calls",
+      "reason": "SHOULD_NOT_PERSIST_SECRET"
+    }
+  ]
+}
+"#,
+        )
+        .unwrap();
+        std::env::set_var("CTXPACK_HOME", &home);
+
+        let report = import_precision_edges(&repo, &input).unwrap();
+        let overlay_path = precision_edges_path(&repo).unwrap();
+        let overlay = fs::read_to_string(overlay_path).unwrap();
+        let edges = dependency_edges(&repo, &DependencyOptions { limit: 10 }).unwrap();
+
+        assert_eq!(report.accepted_edges, 1);
+        assert_eq!(report.rejected_edges, 1);
+        assert!(!overlay.contains("SHOULD_NOT_PERSIST_SECRET"));
+        assert!(edges.iter().any(|edge| {
+            edge.kind == "precision:calls"
+                && edge.source_path == "src/auth/middleware.ts"
+                && edge.target_path == "src/routes/login.ts"
+                && edge.reason == "local SCIP fixture edge"
+        }));
 
         std::env::remove_var("CTXPACK_HOME");
     }

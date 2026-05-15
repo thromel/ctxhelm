@@ -4,26 +4,26 @@
 
 Repo Context Packer is a local-first, read-only context broker that helps existing coding agents choose better repository context. It does not replace Codex, Claude Code, Cursor, OpenCode, Aider, or similar tools; it exposes task-conditioned file, test, graph, history, and pack guidance through agent-native surfaces such as MCP, AGENTS.md, and thin adapter files.
 
-The current codebase is a Rust workspace with a CLI, MCP server, safe repository inventory, lexical and symbol retrieval, related-test inference, dependency hints, current-diff anchors, context packs, generated context cards, local eval traces, historical retrieval evaluation, benchmark suites, source-free retrieval gap reporting, and product proof generation.
+The current codebase is a Rust workspace with a CLI, MCP server, safe repository inventory, lexical, symbol, semantic, and precision-edge retrieval, related-test inference, dependency hints, current-diff anchors, context packs, generated context cards, local eval traces, historical retrieval evaluation, benchmark suites, source-free retrieval gap reporting, and product proof generation.
 
-## Current State: v1.4 Local Semantic Retrieval Planning
+## Current State: v1.5 Parser/Semantic Precision Closeout
 
-The v1.3 milestone is complete and archived. ctxpack now has durable source-free SQLite storage for repository metadata, incremental safe file record sync, pack/eval/proof metadata persistence, storage operations, documentation, and release-gate smoke coverage.
+The v1.4 milestone is complete and archived. ctxpack now has optional local semantic retrieval, source-free semantic vector metadata, semantic fusion, semantic-enabled eval metadata, documentation, and release-gate smoke coverage.
 
-The v1.4 milestone is active. Its job is to add optional local semantic retrieval only where measured lexical/graph/history/test gaps justify it, while preserving local-first privacy defaults and the small agent-native product surface.
+The v1.5 milestone is implementation-complete. Its job was to improve parser/semantic precision where real repository evidence showed gaps, especially Java-heavy repositories such as RefactoringMiner.
 
-## Current Milestone: v1.4 Local Semantic Retrieval
+## Current Milestone: v1.5 Parser/Semantic Precision
 
-**Goal:** Add optional local embedding/vector retrieval with hybrid fusion and fixed-budget proof, without making cloud retrieval or vector search part of the default trust contract.
+**Goal:** Improve symbol, dependency, and reference precision where measured failures show heuristics are insufficient, while preserving source-free local defaults.
 
-**Status:** Requirements and roadmap ready.
+**Status:** Implementation complete; validation and archive closeout pending.
 
 **Target features:**
 
-- Local embedding provider interface and vector storage that are disabled by default, privacy-labeled, and limited to safe inventory records.
-- Incremental semantic indexing that reuses unchanged embeddings and degrades cleanly when no local provider is configured.
-- Vector candidate generation fused with lexical, symbol, graph, test, history, and active-context signals without letting semantic matches override exact identifiers.
-- Fixed-budget benchmark and product-proof reports that show whether semantic retrieval improves file/test recall and token ROI over existing baselines.
+- Java/Kotlin symbol extraction for common classes, methods, constants, functions, and types.
+- Java/Kotlin dependency graph inference for safe local package imports and common source-root layouts.
+- Source-free precision edge overlay import for local SCIP/LSP bridge outputs.
+- Deterministic precision tests, documentation, and release-gate smoke coverage.
 
 ## Core Value
 
@@ -54,11 +54,14 @@ Given a coding task, ctxpack should return the smallest safe evidence set that m
 - ✓ v1.2 validated fixed-budget file/test recall, lexical and no-context baseline deltas, signal ablations, and token ROI reporting.
 - ✓ v1.2 validated source-free retrieval gap taxonomy, future milestone recommendations, benchmark comparison, and regression thresholds.
 - ✓ v1.2 validated product proof generation, benchmark proof documentation, and optional release-gate benchmark smoke via `CTXPACK_BENCHMARK_CONFIG`.
+- ✓ v1.3 validated durable source-free SQLite storage, incremental indexing metadata, pack/eval/proof persistence, storage operations, and storage release gates.
+- ✓ v1.4 validated optional local semantic retrieval, source-free vector metadata, semantic fusion, semantic eval flags, documentation, and release-gate smoke coverage.
+- ✓ v1.5 validated Java/Kotlin symbol and dependency precision plus source-free SCIP/LSP bridge edge import.
 
 ### Active
 
-- Build v1.4 Local Semantic Retrieval from the original product vision.
-- Keep semantic retrieval optional, local-first, privacy-labeled, and eval-gated before making it prominent in plans or packs.
+- Validate and archive v1.5 Parser/Semantic Precision.
+- Keep precision edge import source-free and additive; do not imply full SCIP protobuf or always-on LSP support.
 - Preserve the existing CLI/MCP contracts unless a compatibility test and release note justify an additive field.
 
 ### Out of Scope
@@ -81,7 +84,7 @@ The codebase map in `.planning/codebase/` documents the current system:
 - `crates/ctxpack-mcp/src/lib.rs` is the stable facade for JSON-RPC/MCP protocol, tools, resources, prompts, diagnostics, session-scoped pack cache, and tool/resource response shaping implemented in focused MCP modules.
 - `crates/ctxpack/src/main.rs` owns the user-facing CLI and command output.
 
-v1 through v1.1 proved the local context broker, source-free safety model, agent-native protocol surface, packaging path, and setup/release gates. v1.2 proved the adoption claim with measured retrieval-quality evidence. v1.3 converted those measured needs into production-grade local storage. v1.4 now uses that storage foundation to add local semantic retrieval only as a measured, optional signal inside the existing context compiler.
+v1 through v1.1 proved the local context broker, source-free safety model, agent-native protocol surface, packaging path, and setup/release gates. v1.2 proved the adoption claim with measured retrieval-quality evidence. v1.3 converted those measured needs into production-grade local storage. v1.4 used that storage foundation to add local semantic retrieval only as a measured, optional signal inside the existing context compiler. v1.5 adds parser and precision-edge coverage where Java-heavy real repos exposed structural gaps.
 
 Milestone strategy from the original product vision:
 
@@ -119,6 +122,7 @@ Milestone strategy from the original product vision:
 | Deterministic smokes must not write into target repos | ctxpack's read-only product contract applies to release validation as well as runtime agent use. | ✓ Validated in v1.1 audit |
 | Deterministic protocol proof is the required gate | Real Codex/Claude client proof is valuable but remains optional and environment-gated; deterministic MCP proof is the portable release blocker. | ✓ Validated in Phase 8 |
 | Retrieval proof before bigger architecture | Storage, embeddings, parser precision, team features, and UI should be justified by measured retrieval gaps instead of speculative architecture desire. | ✓ Validated in v1.2 |
+| Precision overlays should be source-free bridges first | Direct SCIP/LSP project setup is fragile; a source-free edge overlay gives agents precise structure without making language tooling mandatory. | ✓ Validated in v1.5 |
 
 ## Evolution
 
@@ -138,4 +142,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-05-16 after v1.4 milestone initialization*
+*Last updated: 2026-05-16 after v1.5 parser/precision implementation*
