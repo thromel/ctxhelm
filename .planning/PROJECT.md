@@ -6,22 +6,24 @@ Repo Context Packer is a local-first, read-only context broker that helps existi
 
 The current codebase is a Rust workspace with a CLI, MCP server, safe repository inventory, lexical and symbol retrieval, related-test inference, dependency hints, current-diff anchors, context packs, generated context cards, local eval traces, historical retrieval evaluation, benchmark suites, source-free retrieval gap reporting, and product proof generation.
 
-## Current State: v1.3 Production Storage Complete
+## Current State: v1.4 Local Semantic Retrieval Planning
 
 The v1.3 milestone is complete and archived. ctxpack now has durable source-free SQLite storage for repository metadata, incremental safe file record sync, pack/eval/proof metadata persistence, storage operations, documentation, and release-gate smoke coverage.
 
-## Current Milestone: v1.3 Production Storage
+The v1.4 milestone is active. Its job is to add optional local semantic retrieval only where measured lexical/graph/history/test gaps justify it, while preserving local-first privacy defaults and the small agent-native product surface.
 
-**Goal:** Replace ad hoc JSON/cache behavior with durable, fast, local storage for inventory, symbols, history, traces, packs, benchmark results, and schema/version metadata.
+## Current Milestone: v1.4 Local Semantic Retrieval
 
-**Status:** Complete.
+**Goal:** Add optional local embedding/vector retrieval with hybrid fusion and fixed-budget proof, without making cloud retrieval or vector search part of the default trust contract.
+
+**Status:** Requirements and roadmap ready.
 
 **Target features:**
 
-- SQLite-backed repository metadata, symbols, chunks, edges, traces, packs, and benchmark results.
-- Faster incremental indexing and cache invalidation for large repositories.
-- Schema versioning, migrations, repair, and cleanup commands for local ctxpack state.
-- Source-free privacy guarantees across storage, repair, migration, and reporting paths.
+- Local embedding provider interface and vector storage that are disabled by default, privacy-labeled, and limited to safe inventory records.
+- Incremental semantic indexing that reuses unchanged embeddings and degrades cleanly when no local provider is configured.
+- Vector candidate generation fused with lexical, symbol, graph, test, history, and active-context signals without letting semantic matches override exact identifiers.
+- Fixed-budget benchmark and product-proof reports that show whether semantic retrieval improves file/test recall and token ROI over existing baselines.
 
 ## Core Value
 
@@ -55,8 +57,9 @@ Given a coding task, ctxpack should return the smallest safe evidence set that m
 
 ### Active
 
-- Start v1.4 Local Semantic Retrieval from the original product vision.
-- Keep v1.4 optional, local-first, and eval-gated before making semantic retrieval prominent.
+- Build v1.4 Local Semantic Retrieval from the original product vision.
+- Keep semantic retrieval optional, local-first, privacy-labeled, and eval-gated before making it prominent in plans or packs.
+- Preserve the existing CLI/MCP contracts unless a compatibility test and release note justify an additive field.
 
 ### Out of Scope
 
@@ -78,7 +81,7 @@ The codebase map in `.planning/codebase/` documents the current system:
 - `crates/ctxpack-mcp/src/lib.rs` is the stable facade for JSON-RPC/MCP protocol, tools, resources, prompts, diagnostics, session-scoped pack cache, and tool/resource response shaping implemented in focused MCP modules.
 - `crates/ctxpack/src/main.rs` owns the user-facing CLI and command output.
 
-v1 through v1.1 proved the local context broker, source-free safety model, agent-native protocol surface, packaging path, and setup/release gates. v1.2 proved the adoption claim with measured retrieval-quality evidence. v1.3 converted those measured needs into production-grade local storage.
+v1 through v1.1 proved the local context broker, source-free safety model, agent-native protocol surface, packaging path, and setup/release gates. v1.2 proved the adoption claim with measured retrieval-quality evidence. v1.3 converted those measured needs into production-grade local storage. v1.4 now uses that storage foundation to add local semantic retrieval only as a measured, optional signal inside the existing context compiler.
 
 Milestone strategy from the original product vision:
 
@@ -133,4 +136,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-05-14 after v1.3 milestone completion*
+*Last updated: 2026-05-16 after v1.4 milestone initialization*

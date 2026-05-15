@@ -1,5 +1,20 @@
 # Milestones
 
+## Active
+
+### v1.4 Local Semantic Retrieval (Started: 2026-05-16)
+
+**Goal:** Add optional local embedding/vector retrieval and hybrid fusion only after lexical/graph/history/test gaps justify it.
+
+**Planned phases:** Phases 17-20, 16 plans total
+
+**Expected capabilities:**
+
+- Local embedding provider interface with explicit privacy status.
+- Vector candidate generation fused with lexical, graph, test, history, and active-context signals.
+- Fixed-budget evals proving semantic lift over lexical/graph baselines.
+- Cloud embeddings or reranking remain opt-in, visibly labeled, and disabled by default.
+
 ## Shipped
 
 ### v1.3 Production Storage (Shipped: 2026-05-14)
@@ -21,6 +36,8 @@
 - Roadmap: `.planning/milestones/v1.3-ROADMAP.md`
 - Requirements: `.planning/milestones/v1.3-REQUIREMENTS.md`
 - Audit: `.planning/milestones/v1.3-MILESTONE-AUDIT.md`
+- Phases: `.planning/milestones/v1.3-phases/`
+- Research: `.planning/milestones/v1.3-research/`
 
 ### v1.2 Retrieval Quality Proof (Shipped: 2026-05-14)
 
@@ -64,19 +81,6 @@
 - Audit: `.planning/milestones/v1.1-MILESTONE-AUDIT.md`
 
 ## Planned Product Vision
-
-### v1.4 Local Semantic Retrieval
-
-**Goal:** Add optional local embedding/vector retrieval and hybrid fusion only after lexical/graph/history/test gaps justify it.
-
-**Depends on:** v1.2 gap reports and v1.3 durable storage.
-
-**Expected capabilities:**
-
-- Local embedding provider interface with explicit privacy status.
-- Vector candidate generation fused with lexical, graph, test, history, and active-context signals.
-- Fixed-budget evals proving semantic lift over lexical/graph baselines.
-- Cloud embeddings or reranking remain opt-in, visibly labeled, and disabled by default.
 
 ### v1.5 Parser/Semantic Precision
 

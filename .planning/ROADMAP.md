@@ -2,142 +2,145 @@
 
 ## Overview
 
-This roadmap opens v1.3 Production Storage. v1.2 proved ctxpack's retrieval value with source-free benchmark suites, baseline comparisons, token ROI, gap taxonomy, and product proof reporting. v1.3 turns those repeated-run and scale needs into durable local storage while preserving the read-only, source-free product contract.
+This roadmap opens v1.4 Local Semantic Retrieval. v1.2 proved retrieval-quality measurement with fixed-budget baselines, gap taxonomy, and product proof. v1.3 made the proof layer durable through source-free local storage. v1.4 adds optional local vector retrieval as another signal inside the context compiler, gated by privacy controls, compatibility tests, and measured semantic lift over the existing lexical/graph/history/test baseline.
 
-## v1.3 Production Storage
+## v1.4 Local Semantic Retrieval
 
 ## Phases
 
 **Phase Numbering:**
-- Integer phases (13, 14, 15, 16): Planned v1.3 work
-- Decimal phases (14.1, 14.2): Urgent insertions if needed
+- Integer phases (17, 18, 19, 20): Planned v1.4 work
+- Decimal phases (18.1, 18.2): Urgent insertions if needed
 
-- [x] **Phase 13: Storage Foundation & Schema Contracts** - Maintainers can initialize a versioned SQLite store that captures source-free repository intelligence and migration metadata.
-- [x] **Phase 14: Incremental Indexing & Cache Rebuilds** - Re-indexing large repositories reuses unchanged records, updates stale records, and reports freshness diagnostics.
-- [x] **Phase 15: Evaluation, Pack, and Proof Persistence** - Benchmark, eval, comparison, product-proof, and pack metadata can be persisted and reused without storing source snippets.
-- [x] **Phase 16: Storage Operations, Safety, and Release Gates** - Users can inspect, migrate, repair, clean, and validate storage while preserving privacy and fallback behavior.
+- [ ] **Phase 17: Semantic Provider & Privacy Contracts** - Maintainers can configure local-only semantic retrieval with typed provider metadata, privacy labels, safe-inventory filtering, and source-free storage guarantees.
+- [ ] **Phase 18: Vector Indexing & Candidate Retrieval** - Safe chunks can be embedded incrementally and returned as vector candidates through existing CLI/MCP workflows with graceful degradation.
+- [ ] **Phase 19: Hybrid Fusion, Budgeting, and Agent Contracts** - Vector candidates are fused with lexical, symbol, graph, test, history, and active-context signals without breaking agent-facing contracts or budget discipline.
+- [ ] **Phase 20: Semantic Evaluation, Documentation, and Release Gates** - Benchmarks, proof reports, docs, and release gates show whether local semantic retrieval improves ctxpack without changing cloud-default privacy.
 
 ## Phase Details
 
-### Phase 13: Storage Foundation & Schema Contracts
+### Phase 17: Semantic Provider & Privacy Contracts
 
-**Goal**: Maintainers can initialize a versioned SQLite store that captures source-free repository intelligence and migration metadata.
+**Goal**: Maintainers can configure local-only semantic retrieval with typed provider metadata, privacy labels, safe-inventory filtering, and source-free storage guarantees.
 
-**Depends on**: v1.2 Retrieval Quality Proof
+**Depends on**: v1.3 Production Storage
 
-**Requirements**: STORE-01, STORE-02, STORE-03, STORE-04
+**Requirements**: SEM-01, SEM-02, SEM-03, SEM-04
 
 **Success Criteria** (what must be TRUE):
-1. `ctxpack` can initialize and locate a repo-local or user-local SQLite store with explicit path, schema version, ctxpack version, and privacy metadata.
-2. The schema represents repos, files, symbols, chunks, edges, tests, git-history summaries, traces, packs, benchmark runs, and proof reports without raw source text.
-3. Storage code has typed contracts and migration/version metadata that are testable without relying on ad hoc JSON files.
-4. Privacy tests prove source snippets, prompt text, secrets, and raw file contents are not persisted by default.
+1. Semantic retrieval is disabled by default and can be enabled explicitly per repo or invocation.
+2. A typed provider contract records provider name, model/version, dimensions, distance metric, and privacy status.
+3. Semantic metadata and vectors are stored locally without raw source snippets, prompt text, secrets, or cloud payloads.
+4. Semantic indexing uses the same safe inventory, generated-file, sensitive-file, ignore, and source-read revalidation rules as packs.
 
 **Plans**: 4 plans
 
 Plans:
-- [x] 13-storage-foundation-schema-contracts-01-PLAN.md — Define typed storage contracts, module boundaries, and SQLite store initialization.
-- [x] 13-storage-foundation-schema-contracts-02-PLAN.md — Implement source-free schema tables and metadata records.
-- [x] 13-storage-foundation-schema-contracts-03-PLAN.md — Add schema version, ctxpack version, and migration-history tracking.
-- [x] 13-storage-foundation-schema-contracts-04-PLAN.md — Add privacy tests and fixtures proving source-free persistence defaults.
+- [ ] 17-semantic-provider-privacy-contracts-01-PLAN.md — Define semantic provider contracts, configuration flags, and disabled-by-default behavior.
+- [ ] 17-semantic-provider-privacy-contracts-02-PLAN.md — Extend storage contracts for source-free vector metadata and privacy labels.
+- [ ] 17-semantic-provider-privacy-contracts-03-PLAN.md — Gate semantic chunk selection through safe inventory and source-read policy.
+- [ ] 17-semantic-provider-privacy-contracts-04-PLAN.md — Add provider/privacy compatibility tests and diagnostics.
 
-### Phase 14: Incremental Indexing & Cache Rebuilds
+### Phase 18: Vector Indexing & Candidate Retrieval
 
-**Goal**: Re-indexing large repositories reuses unchanged records, updates stale records, and reports freshness diagnostics.
+**Goal**: Safe chunks can be embedded incrementally and returned as vector candidates through existing CLI/MCP workflows with graceful degradation.
 
-**Depends on**: Phase 13
+**Depends on**: Phase 17
 
-**Requirements**: INCR-01, INCR-02, INCR-03, INCR-04
+**Requirements**: SEM-05, SEM-06, SEM-07, SEM-08
 
 **Success Criteria** (what must be TRUE):
-1. Re-indexing updates changed safe files based on content hash, git blob hash, role classification, ignore policy, and schema version.
-2. Search, symbol, test, dependency, history, and card metadata can reuse storage records when source files are unchanged.
-3. Stale, missing, corrupted, or policy-incompatible records produce actionable diagnostics instead of silently lowering context quality.
-4. Large-repo indexing reports source-free counts for reused, updated, skipped, ignored, generated, and sensitive paths.
+1. Conceptual tasks can request vector candidates with stable IDs, scores, source attribution, and readable reasons.
+2. Re-indexing reuses unchanged semantic records and refreshes only when chunk hash, provider, model version, or privacy policy changes.
+3. Existing `prepare-task`, `search`, `get-pack`, and MCP workflows can surface semantic candidates without adding a broad new MCP tool.
+4. Missing, disabled, incompatible, or failed providers produce non-fatal diagnostics and fall back to lexical/graph/history/test retrieval.
 
 **Plans**: 4 plans
 
 Plans:
-- [x] 14-incremental-indexing-cache-rebuilds-01-PLAN.md — Add file fingerprinting and stale-record detection against storage.
-- [x] 14-incremental-indexing-cache-rebuilds-02-PLAN.md — Persist and reuse inventory, symbol, test, dependency, history, and card metadata.
-- [x] 14-incremental-indexing-cache-rebuilds-03-PLAN.md — Add corruption, policy-drift, and partial-store diagnostics.
-- [x] 14-incremental-indexing-cache-rebuilds-04-PLAN.md — Validate incremental behavior on RefactoringMiner-scale fixtures.
+- [ ] 18-vector-indexing-candidate-retrieval-01-PLAN.md — Implement local semantic indexing over safe chunks with incremental reuse.
+- [ ] 18-vector-indexing-candidate-retrieval-02-PLAN.md — Add vector candidate search and typed semantic source scores.
+- [ ] 18-vector-indexing-candidate-retrieval-03-PLAN.md — Wire semantic candidates into existing CLI and MCP workflows.
+- [ ] 18-vector-indexing-candidate-retrieval-04-PLAN.md — Add provider failure, disabled-state, and fallback diagnostics.
 
-### Phase 15: Evaluation, Pack, and Proof Persistence
+### Phase 19: Hybrid Fusion, Budgeting, and Agent Contracts
 
-**Goal**: Benchmark, eval, comparison, product-proof, and pack metadata can be persisted and reused without storing source snippets.
+**Goal**: Vector candidates are fused with lexical, symbol, graph, test, history, and active-context signals without breaking agent-facing contracts or budget discipline.
 
-**Depends on**: Phase 14
+**Depends on**: Phase 18
 
-**Requirements**: PERSIST-01, PERSIST-02, PERSIST-03, PERSIST-04
+**Requirements**: SEM-09, SEM-10, SEM-11, SEM-12
 
 **Success Criteria** (what must be TRUE):
-1. Historical eval, benchmark, comparison, and product-proof runs can be stored with suite, revision, budget, metric, gap, and privacy metadata.
-2. Users can compare current benchmark output against stored prior runs without manually passing old artifact paths.
-3. Context plan and pack metadata can be stored with task hash, repo snapshot hash, budget, target agent, selected candidate IDs, warnings, and confidence.
-4. Stored metadata remains source-free and useful for later semantic retrieval and parser-precision planning.
+1. Task-specific fusion uses vector signals without letting semantic similarity override exact path, symbol, stack-trace, or test matches.
+2. Context plans, packs, eval traces, and MCP responses expose semantic provenance and privacy status in source-free form.
+3. Budgeting and diversification prevent vector near-duplicates from crowding out target files, related tests, direct dependencies, or validation commands.
+4. Existing CLI JSON and MCP compatibility tests pass with only documented additive semantic fields.
 
 **Plans**: 4 plans
 
 Plans:
-- [x] 15-evaluation-pack-proof-persistence-01-PLAN.md — Persist source-free eval, benchmark, comparison, and proof run metadata.
-- [x] 15-evaluation-pack-proof-persistence-02-PLAN.md — Add storage-backed benchmark comparison and trend lookup.
-- [x] 15-evaluation-pack-proof-persistence-03-PLAN.md — Persist context plan and pack metadata without snippets by default.
-- [x] 15-evaluation-pack-proof-persistence-04-PLAN.md — Add compatibility tests for future v1.4/v1.5 planning consumers.
+- [ ] 19-hybrid-fusion-budgeting-agent-contracts-01-PLAN.md — Add task-specific vector fusion weights and exact-match safeguards.
+- [ ] 19-hybrid-fusion-budgeting-agent-contracts-02-PLAN.md — Surface semantic provenance in plans, packs, traces, and MCP responses.
+- [ ] 19-hybrid-fusion-budgeting-agent-contracts-03-PLAN.md — Add vector-aware diversity, budget caps, and duplicate suppression.
+- [ ] 19-hybrid-fusion-budgeting-agent-contracts-04-PLAN.md — Extend compatibility tests for additive semantic contract fields.
 
-### Phase 16: Storage Operations, Safety, and Release Gates
+### Phase 20: Semantic Evaluation, Documentation, and Release Gates
 
-**Goal**: Users can inspect, migrate, repair, clean, and validate storage while preserving privacy and fallback behavior.
+**Goal**: Benchmarks, proof reports, docs, and release gates show whether local semantic retrieval improves ctxpack without changing cloud-default privacy.
 
-**Depends on**: Phase 15
+**Depends on**: Phase 19
 
-**Requirements**: OPS-01, OPS-02, OPS-03, OPS-04
+**Requirements**: SEM-13, SEM-14, SEM-15, SEM-16
 
 **Success Criteria** (what must be TRUE):
-1. CLI exposes storage status, migration, repair, vacuum/cleanup, and reset commands with dry-run or confirmation behavior for destructive actions.
-2. MCP and CLI diagnostics include storage freshness, migration status, privacy status, and degradation warnings when results depend on stale or partial storage.
-3. Release/adoption gates verify schema compatibility, migration behavior, source-free storage guarantees, and fallback behavior when storage is unavailable.
-4. Documentation explains storage location, privacy guarantees, repair/reset flows, and repeated-workflow benefits.
+1. Historical evals and benchmark suites compare semantic-enabled retrieval against existing lexical/graph/history/test baselines at fixed budgets.
+2. Product-proof and benchmark comparison reports show semantic lift, regressions, token ROI, missing-file gap families, and privacy status.
+3. Release gates include deterministic local semantic smoke coverage when the fixture provider is available and prove cloud retrieval is disabled by default.
+4. Documentation explains local semantic setup, provider configuration, privacy boundaries, degradation modes, reset/repair behavior, and cases where semantic retrieval should be avoided.
 
 **Plans**: 4 plans
 
 Plans:
-- [x] 16-storage-operations-safety-release-gates-01-PLAN.md — Add storage status, migrate, repair, cleanup, and reset CLI commands.
-- [x] 16-storage-operations-safety-release-gates-02-PLAN.md — Surface storage diagnostics through CLI and MCP outputs.
-- [x] 16-storage-operations-safety-release-gates-03-PLAN.md — Extend release gates for schema, migration, privacy, and fallback checks.
-- [x] 16-storage-operations-safety-release-gates-04-PLAN.md — Document storage behavior, privacy guarantees, and recovery workflows.
+- [ ] 20-semantic-evaluation-docs-release-gates-01-PLAN.md — Add fixed-budget semantic baseline comparisons to historical eval and benchmarks.
+- [ ] 20-semantic-evaluation-docs-release-gates-02-PLAN.md — Extend product proof and gap reports with semantic lift and regression evidence.
+- [ ] 20-semantic-evaluation-docs-release-gates-03-PLAN.md — Add deterministic semantic release-gate smoke and cloud-disabled checks.
+- [ ] 20-semantic-evaluation-docs-release-gates-04-PLAN.md — Document local semantic retrieval setup, privacy, operations, and anti-patterns.
 
 ## Requirement Coverage
 
 | Requirement | Phase |
 |-------------|-------|
-| STORE-01 | Phase 13 |
-| STORE-02 | Phase 13 |
-| STORE-03 | Phase 13 |
-| STORE-04 | Phase 13 |
-| INCR-01 | Phase 14 |
-| INCR-02 | Phase 14 |
-| INCR-03 | Phase 14 |
-| INCR-04 | Phase 14 |
-| PERSIST-01 | Phase 15 |
-| PERSIST-02 | Phase 15 |
-| PERSIST-03 | Phase 15 |
-| PERSIST-04 | Phase 15 |
-| OPS-01 | Phase 16 |
-| OPS-02 | Phase 16 |
-| OPS-03 | Phase 16 |
-| OPS-04 | Phase 16 |
+| SEM-01 | Phase 17 |
+| SEM-02 | Phase 17 |
+| SEM-03 | Phase 17 |
+| SEM-04 | Phase 17 |
+| SEM-05 | Phase 18 |
+| SEM-06 | Phase 18 |
+| SEM-07 | Phase 18 |
+| SEM-08 | Phase 18 |
+| SEM-09 | Phase 19 |
+| SEM-10 | Phase 19 |
+| SEM-11 | Phase 19 |
+| SEM-12 | Phase 19 |
+| SEM-13 | Phase 20 |
+| SEM-14 | Phase 20 |
+| SEM-15 | Phase 20 |
+| SEM-16 | Phase 20 |
 
-**Coverage:** 16/16 v1.3 requirements mapped. No orphaned requirements.
+**Coverage:** 16/16 v1.4 requirements mapped. No orphaned requirements.
 
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 13 -> 14 -> 15 -> 16
+Phases execute in numeric order: 17 -> 18 -> 19 -> 20
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 13. Storage Foundation & Schema Contracts | 4/4 | Complete | 2026-05-14 |
-| 14. Incremental Indexing & Cache Rebuilds | 4/4 | Complete | 2026-05-14 |
-| 15. Evaluation, Pack, and Proof Persistence | 4/4 | Complete | 2026-05-14 |
-| 16. Storage Operations, Safety, and Release Gates | 4/4 | Complete | 2026-05-14 |
+| 17. Semantic Provider & Privacy Contracts | 0/4 | Planned | — |
+| 18. Vector Indexing & Candidate Retrieval | 0/4 | Planned | — |
+| 19. Hybrid Fusion, Budgeting, and Agent Contracts | 0/4 | Planned | — |
+| 20. Semantic Evaluation, Documentation, and Release Gates | 0/4 | Planned | — |
+
+---
+*Roadmap created: 2026-05-16*

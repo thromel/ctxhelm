@@ -1,51 +1,44 @@
-# Requirements: Repo Context Packer v1.3 Production Storage
+# Requirements: Repo Context Packer v1.4 Local Semantic Retrieval
 
-**Defined:** 2026-05-14
-**Milestone:** v1.3 Production Storage
+**Defined:** 2026-05-16
+**Milestone:** v1.4 Local Semantic Retrieval
 **Core Value:** Given a coding task, ctxpack should return the smallest safe evidence set that makes an existing coding agent more likely to inspect the right files, run the right tests, and avoid irrelevant context.
 
-## v1.3 Requirements
+## v1.4 Requirements
 
-Requirements for replacing ad hoc JSON/cache behavior with durable, fast, local, source-free storage.
+Requirements for adding optional local embedding/vector retrieval as a measured signal inside the existing context compiler.
 
-### Storage Foundation
+### Local Semantic Foundation
 
-- [x] **STORE-01**: Maintainer can initialize a repo-local or user-local SQLite store with explicit path, version, and privacy metadata.
-- [x] **STORE-02**: Store schema captures source-free repository metadata for repos, files, symbols, chunks, dependency edges, tests, git history summaries, traces, packs, benchmark runs, and proof reports.
-- [x] **STORE-03**: Store records schema version, ctxpack version, ranking/compiler version, and migration history so stale or incompatible storage can be diagnosed.
-- [x] **STORE-04**: Store defaults never persist source snippets, prompt text, secrets, or raw file contents; any future source-bearing storage must be explicit and privacy-labeled.
+- [ ] **SEM-01**: Maintainer can enable or disable local semantic retrieval per repository or invocation, and the default remains disabled until a local provider is configured.
+- [ ] **SEM-02**: Maintainer can configure a local embedding provider through a typed provider interface that records provider name, model/version, dimensions, distance metric, and privacy status.
+- [ ] **SEM-03**: Semantic index metadata and vectors are stored locally with explicit privacy labels and without persisting raw source snippets, prompt text, secrets, or cloud request payloads.
+- [ ] **SEM-04**: Semantic indexing only processes files and chunks allowed by the safe inventory policy, including ignore, generated-file, sensitive-file, and source-read revalidation rules.
 
-### Incremental Indexing
+### Vector Candidate Retrieval
 
-- [x] **INCR-01**: Maintainer can re-index a repository and update only changed safe files when content hashes, git blob hashes, role classification, or ignore policy changed.
-- [x] **INCR-02**: Search, symbol, test, dependency, history, and card metadata can be rebuilt from the durable store without reparsing unchanged files.
-- [x] **INCR-03**: ctxpack reports stale, missing, corrupted, or policy-incompatible store records with actionable diagnostics instead of silently returning low-confidence context.
-- [x] **INCR-04**: Large-repo indexing reports source-free counts for reused records, updated records, skipped files, ignored paths, generated files, and sensitive exclusions.
+- [ ] **SEM-05**: Agent or CLI user can request semantic candidate generation for conceptual tasks and receive vector candidates with stable IDs, scores, source attribution, and human-readable reasons.
+- [ ] **SEM-06**: Re-indexing reuses unchanged semantic records and only refreshes vectors when safe chunk hashes, provider configuration, model version, or privacy policy changes.
+- [ ] **SEM-07**: CLI and MCP surfaces expose semantic retrieval through existing task/search/pack workflows without adding a broad new MCP tool surface.
+- [ ] **SEM-08**: Missing, disabled, incompatible, or failed local embedding providers degrade to lexical/graph/history/test retrieval with explicit non-fatal diagnostics.
 
-### Evaluation And Pack Persistence
+### Hybrid Fusion And Pack Behavior
 
-- [x] **PERSIST-01**: Historical eval, benchmark, comparison, and product-proof runs can be persisted as source-free records with suite, revision, budget, metric, gap, and privacy metadata.
-- [x] **PERSIST-02**: Maintainer can compare current benchmark output against stored prior runs without manually managing JSON artifact paths.
-- [x] **PERSIST-03**: Context plan and pack metadata can be persisted with task hash, repo snapshot hash, budget, target agent, selected candidate IDs, warnings, and confidence without storing snippets by default.
-- [x] **PERSIST-04**: Stored benchmark and pack metadata remains usable for future v1.4/v1.5 planning without requiring access to original source snippets.
+- [ ] **SEM-09**: Context planning fuses vector candidates with lexical, symbol, graph, test, history, and active-context signals using task-specific weights and exact-match safeguards.
+- [ ] **SEM-10**: Context plans, packs, eval traces, and MCP responses expose semantic signal provenance and privacy status without logging source text by default.
+- [ ] **SEM-11**: Budget allocation and diversification prevent vector near-duplicates from crowding out target files, related tests, direct dependencies, or exact identifier matches.
+- [ ] **SEM-12**: Existing CLI JSON and MCP contracts remain backward compatible, with additive semantic fields covered by compatibility tests and source-free snapshots.
 
-### Operations And Safety
+### Semantic Evaluation And Release Proof
 
-- [x] **OPS-01**: CLI exposes storage status, migration, repair, vacuum/cleanup, and reset commands with dry-run or confirmation behavior for destructive actions.
-- [x] **OPS-02**: MCP and CLI diagnostics include storage freshness, migration status, privacy status, and degradation warnings when context results depend on stale or partial storage.
-- [x] **OPS-03**: Release/adoption gates can verify schema compatibility, migration behavior, source-free storage guarantees, and fallback behavior when the store is unavailable.
-- [x] **OPS-04**: Documentation explains storage location, privacy guarantees, repair/reset flows, and how storage improves repeated agent workflows without becoming a cloud sync layer.
+- [ ] **SEM-13**: Historical eval and benchmark suites can compare semantic-enabled retrieval against lexical/graph/history/test baselines at fixed budgets.
+- [ ] **SEM-14**: Benchmark comparison and product-proof reports show semantic lift, regressions, token ROI, missing-file gaps, and privacy status in source-free output.
+- [ ] **SEM-15**: Release/adoption gates include deterministic local semantic smoke coverage when a fixture provider is available and prove cloud embeddings/reranking stay disabled by default.
+- [ ] **SEM-16**: Documentation explains local semantic setup, provider configuration, privacy boundaries, failure modes, reset/repair behavior, and when semantic retrieval should be avoided.
 
 ## Future Requirements
 
-Deferred to future milestones from the original product vision and refined by v1.2-v1.3 evidence.
-
-### v1.4 Local Semantic Retrieval
-
-- **SEM-01**: Add an optional local embedding provider interface with explicit privacy status.
-- **SEM-02**: Fuse vector candidates with lexical, symbol, graph, test, history, and active-context signals.
-- **SEM-03**: Prove semantic lift through fixed-budget evals before making semantic retrieval prominent.
-- **SEM-04**: Keep cloud embeddings and reranking opt-in, visibly labeled, and disabled by default.
+Deferred to future milestones from the original product vision and refined by v1.2-v1.4 evidence.
 
 ### v1.5 Parser/Semantic Precision
 
@@ -70,7 +63,7 @@ Deferred to future milestones from the original product vision and refined by v1
 
 ## Completed Requirements
 
-v1, v1.1, and v1.2 are complete and archived. They validated:
+v1 through v1.3 are complete and archived. They validated:
 
 - CLI, MCP, and public JSON compatibility guardrails.
 - Safe inventory, diagnostics, privacy/source-read policy, and source-free local traces.
@@ -78,45 +71,46 @@ v1, v1.1, and v1.2 are complete and archived. They validated:
 - Codex CLI and Claude Code MCP smoke proof with explicit repo arguments.
 - v1.1 binary packaging, checksums, artifact audit, install docs, setup validation, first-pack smoke, and release gates.
 - v1.2 named benchmark suites, fixed-budget baseline comparisons, token ROI, gap taxonomy, benchmark comparison, and product proof reporting.
+- v1.3 durable source-free SQLite storage, incremental indexing metadata, pack/eval/proof persistence, storage operations, and storage release gates.
 
 ## Out of Scope
 
-Explicitly excluded from v1.3 to prevent scope creep.
+Explicitly excluded from v1.4 to prevent scope creep.
 
 | Feature | Reason |
 |---------|--------|
-| Embeddings or vector retrieval | Semantic retrieval belongs in v1.4 after durable storage exists. |
-| SCIP/LSP precision integration | Parser precision belongs in v1.5 and should follow measured storage/retrieval gaps. |
-| Hosted sync, remote database, or team backend | v1.3 must stay local-first and source-free. |
+| Cloud embeddings, hosted vector search, or cloud reranking by default | v1.4 must preserve local-first trust; any cloud path remains future opt-in policy work. |
 | Autonomous code editing | ctxpack remains a read-only context broker; agents own edits and permissions. |
-| Storing raw source snippets by default | Source-free persistence is the trust contract for evals, packs, and proof. |
-| Full UI or pack inspector | UI belongs in v2.1 after storage-backed diagnostics exist. |
+| SCIP/LSP precision integration | Parser precision belongs in v1.5 after semantic retrieval produces measured gaps. |
+| Broad parser or Tree-sitter language expansion | v1.4 focuses on semantic retrieval as a retrieval signal, not syntax precision. |
+| New standalone daily app or UI | Agent-native CLI/MCP/rules remain the product surface; diagnostics UI belongs in v2.1. |
+| Storing raw source snippets, prompt text, or cloud request payloads by default | Source-free persistence remains the trust contract for evals, packs, and proof. |
 
 ## Traceability
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| STORE-01 | Phase 13 | Complete |
-| STORE-02 | Phase 13 | Complete |
-| STORE-03 | Phase 13 | Complete |
-| STORE-04 | Phase 13 | Complete |
-| INCR-01 | Phase 14 | Complete |
-| INCR-02 | Phase 14 | Complete |
-| INCR-03 | Phase 14 | Complete |
-| INCR-04 | Phase 14 | Complete |
-| PERSIST-01 | Phase 15 | Complete |
-| PERSIST-02 | Phase 15 | Complete |
-| PERSIST-03 | Phase 15 | Complete |
-| PERSIST-04 | Phase 15 | Complete |
-| OPS-01 | Phase 16 | Complete |
-| OPS-02 | Phase 16 | Complete |
-| OPS-03 | Phase 16 | Complete |
-| OPS-04 | Phase 16 | Complete |
+| SEM-01 | Phase 17 | Planned |
+| SEM-02 | Phase 17 | Planned |
+| SEM-03 | Phase 17 | Planned |
+| SEM-04 | Phase 17 | Planned |
+| SEM-05 | Phase 18 | Planned |
+| SEM-06 | Phase 18 | Planned |
+| SEM-07 | Phase 18 | Planned |
+| SEM-08 | Phase 18 | Planned |
+| SEM-09 | Phase 19 | Planned |
+| SEM-10 | Phase 19 | Planned |
+| SEM-11 | Phase 19 | Planned |
+| SEM-12 | Phase 19 | Planned |
+| SEM-13 | Phase 20 | Planned |
+| SEM-14 | Phase 20 | Planned |
+| SEM-15 | Phase 20 | Planned |
+| SEM-16 | Phase 20 | Planned |
 
 **Coverage:**
-- v1.3 requirements: 16 total
+- v1.4 requirements: 16 total
 - Mapped to phases: 16
 - Unmapped: 0
 
 ---
-*Requirements defined: 2026-05-14*
+*Requirements defined: 2026-05-16*
