@@ -1526,7 +1526,6 @@ mod tests {
         let (temp, repo) = fixture_repo();
         let home = temp.path().join("home");
         std::env::set_var("CTXPACK_HOME", &home);
-        std::env::remove_var("HOME");
 
         let report = initialize_store(&repo, &StoreConfig::default()).unwrap();
 
