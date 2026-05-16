@@ -1,51 +1,51 @@
-# Requirements: Repo Context Packer v1.5 Parser/Semantic Precision
+# Requirements: Repo Context Packer v1.6 Repo Memory & Experience Cards
 
 **Defined:** 2026-05-16
-**Milestone:** v1.5 Parser/Semantic Precision
+**Milestone:** v1.6 Repo Memory & Experience Cards
 **Core Value:** Given a coding task, ctxpack should return the smallest safe evidence set that makes an existing coding agent more likely to inspect the right files, run the right tests, and avoid irrelevant context.
 
-## v1.5 Requirements
+## v1.6 Requirements
 
-Requirements for improving parser coverage and adding optional source-free precision edges where measured repository gaps justify stronger structure.
+Requirements for durable, source-linked, source-free memory that agents can reuse selectively without bloating every pack.
 
-### Language Precision
+### Memory Contracts and Storage
 
-- [x] **PARS-01**: Maintainer can extract Java symbols from safe inventoried source/test files, including classes, interfaces, records, methods, and constants.
-- [x] **PARS-02**: Maintainer can extract Kotlin symbols from safe inventoried source/test files, including classes, interfaces, objects, functions, type aliases, and values.
-- [x] **PARS-03**: Java and Kotlin parser coverage uses the existing safe inventory, source-read, generated-file, sensitive-file, and ignore policy without storing source snippets.
-- [x] **PARS-04**: Symbol search and MCP symbol resources benefit from Java/Kotlin extraction without changing existing public symbol contracts.
+- [ ] **MEM-01**: Maintainer can store source-free memory card metadata in local SQLite with schema versioning, migration history, privacy labels, timestamps, and compatibility diagnostics.
+- [ ] **MEM-02**: Maintainer can represent domain cards and experience cards through stable typed contracts with IDs, kinds, titles, summaries, source links, input hashes, freshness status, review status, and disable status.
+- [ ] **MEM-03**: Memory storage excludes raw source snippets, prompt text, terminal logs, secrets, cloud payloads, and unredacted user freeform text by default.
+- [ ] **MEM-04**: Existing storage commands report memory-card counts and compatibility without breaking older stores.
 
-### Dependency Precision
+### Domain Cards
 
-- [x] **PARS-05**: Local dependency graph inference resolves Java package imports to safe local `.java` files even when files live under common source roots such as `src/main/java`.
-- [x] **PARS-06**: Local dependency graph inference resolves Kotlin package imports to safe local `.kt`/`.kts` files and Java targets where applicable.
-- [x] **PARS-07**: Java/Kotlin dependency inference excludes external packages, wildcard package imports, ignored paths, generated paths, sensitive paths, and unreadable source files.
-- [x] **PARS-08**: Related dependency expansion surfaces Java/Kotlin incoming and outgoing edges without recursive context explosion.
+- [ ] **MEM-05**: Maintainer can generate domain cards for important subsystems using safe inventory, symbols, tests, dependency edges, docs, and existing context-card summaries.
+- [ ] **MEM-06**: Generated domain cards include source links, input hashes, freshness metadata, and regeneration reasons.
+- [ ] **MEM-07**: Stale, degraded, or unreviewed domain cards are surfaced with source-free diagnostics instead of silently entering packs.
+- [ ] **MEM-08**: Domain card generation remains deterministic and local-only unless a future explicit provider is added.
 
-### Precision Edge Overlay
+### Experience Cards
 
-- [x] **PARS-09**: Maintainer can import a source-free local SCIP/LSP bridge JSON file containing precise reference/call edges.
-- [x] **PARS-10**: Precision edge import validates every source and target path against safe local inventory before writing `.ctxpack/precision-edges.json`.
-- [x] **PARS-11**: Invalid, unreadable, sensitive, generated, or unknown precision edges are rejected with source-free diagnostics and do not block inferred dependency edges.
-- [x] **PARS-12**: Imported precision edges appear additively in dependency and MCP graph outputs with explicit `precision:<edgeType>` provenance.
+- [ ] **MEM-09**: Maintainer can derive source-free experience card candidates from local eval traces, pack metadata, test failures recorded as structured events, accepted fixes, and explicit user corrections.
+- [ ] **MEM-10**: Experience cards capture reusable lessons as source-linked summaries with evidence paths and event metadata, not raw transcripts.
+- [ ] **MEM-11**: Experience card ingestion deduplicates repeated lessons and records provenance so humans can audit why a lesson exists.
+- [ ] **MEM-12**: Experience cards default to pending review before pack inclusion unless created from deterministic source-free events.
 
-### Evaluation, Docs, and Release Gates
+### Memory Selection
 
-- [x] **PARS-13**: Focused tests prove Java/Kotlin symbol and dependency behavior on realistic package layouts.
-- [x] **PARS-14**: Focused tests prove precision edge import is source-free, additive, and rejects sensitive paths.
-- [x] **PARS-15**: Release documentation and release-gate smokes cover parser precision, precision-edge import, and source-free guarantees.
-- [x] **PARS-16**: RefactoringMiner can be used as a Java-heavy external smoke target for future retrieval-quality comparisons.
+- [ ] **MEM-13**: `prepare_task` can select relevant memory cards as a bounded retrieval signal with explicit evidence, confidence, source scores, and diagnostics.
+- [ ] **MEM-14**: `get_pack` can include selected memory under a separate token budget cap without crowding out target files, tests, or critical constraints.
+- [ ] **MEM-15**: MCP tools and resources expose selected memory additively through existing plan/pack flows and stable URI shapes without adding a large new tool surface.
+- [ ] **MEM-16**: Historical eval and product proof can report memory-enabled metadata and compare memory-on versus memory-off behavior without storing source text.
+
+### Review, Redaction, Docs, and Gates
+
+- [ ] **MEM-17**: Maintainer can list, show, approve, disable, and regenerate memory cards through CLI commands with JSON and Markdown output.
+- [ ] **MEM-18**: Maintainer can redact or reject unsafe generated memory before it becomes pack-eligible.
+- [ ] **MEM-19**: Documentation explains memory card schema, freshness, review workflow, privacy guarantees, MCP behavior, and when memory should not be used.
+- [ ] **MEM-20**: Release gate includes deterministic memory smoke coverage proving local-only storage, source-free persistence, stale-card diagnostics, selected-memory pack output, and review controls.
 
 ## Future Requirements
 
-Deferred to future milestones from the original product vision and refined by v1.2-v1.5 evidence.
-
-### v1.6 Repo Memory And Experience Cards
-
-- **MEM-01**: Generate domain cards for important subsystems with freshness metadata, source links, and regeneration triggers.
-- **MEM-02**: Store source-free experience cards from prior agent sessions, test failures, accepted fixes, and user corrections.
-- **MEM-03**: Select relevant repo memory during `prepare_task` and `get_pack` with explicit evidence, confidence, and token-budget caps.
-- **MEM-04**: Provide human review, redaction, and disable controls so generated memory stays trustworthy and editable.
+Deferred to future milestones from the original product vision and refined by v1.2-v1.6 evidence.
 
 ### v1.7 Adaptive Retrieval Policy And Feedback Loop
 
@@ -70,7 +70,7 @@ Deferred to future milestones from the original product vision and refined by v1
 
 ## Completed Requirements
 
-v1 through v1.5 are complete or in closeout. They validated:
+v1 through v1.5 are complete. They validated:
 
 - CLI, MCP, and public JSON compatibility guardrails.
 - Safe inventory, diagnostics, privacy/source-read policy, and source-free local traces.
@@ -84,41 +84,42 @@ v1 through v1.5 are complete or in closeout. They validated:
 
 ## Out of Scope
 
-Explicitly excluded from v1.5 to prevent scope creep.
+Explicitly excluded from v1.6 to prevent scope creep.
 
 | Feature | Reason |
 |---------|--------|
-| Full SCIP protobuf parsing | The milestone introduces a source-free precision edge bridge; direct SCIP binary parsing can land after the bridge proves useful. |
-| Always-on LSP project setup | Project-specific language server setup is fragile and should remain opt-in until eval evidence justifies it. |
-| Recursive call graph traversal | Precision edges must remain budgeted and additive; recursive graph expansion would reintroduce context explosion. |
-| Cloud code-intelligence services | v1.5 preserves local-first trust and source-free persistence. |
-| Parser-perfect AST extraction | The goal is useful context precision, not language-complete parsing for every grammar edge case. |
+| Adaptive retrieval-policy tuning | v1.7 owns feedback-driven policy changes and rollback. v1.6 only surfaces memory as a bounded signal. |
+| Cloud memory generation | v1.6 preserves local-first trust and source-free persistence. |
+| Raw chat transcript ingestion | Prompt text and freeform session logs are too privacy-sensitive for default memory storage. |
+| Always-injected memory | Memory must be selected by task and budgeted; dumping all cards harms context quality. |
+| Team/shared memory sync | v2.0 owns team and workspace sharing. |
+| UI pack inspector | v2.1 owns diagnostics UI. |
 | Autonomous code editing | ctxpack remains a read-only context broker; agents own edits and permissions. |
 
 ## Traceability
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| PARS-01 | Phase 21 | Complete |
-| PARS-02 | Phase 21 | Complete |
-| PARS-03 | Phase 21 | Complete |
-| PARS-04 | Phase 21 | Complete |
-| PARS-05 | Phase 22 | Complete |
-| PARS-06 | Phase 22 | Complete |
-| PARS-07 | Phase 22 | Complete |
-| PARS-08 | Phase 22 | Complete |
-| PARS-09 | Phase 23 | Complete |
-| PARS-10 | Phase 23 | Complete |
-| PARS-11 | Phase 23 | Complete |
-| PARS-12 | Phase 23 | Complete |
-| PARS-13 | Phase 24 | Complete |
-| PARS-14 | Phase 24 | Complete |
-| PARS-15 | Phase 24 | Complete |
-| PARS-16 | Phase 24 | Complete |
-| MEM-01 | Future v1.6 | Deferred |
-| MEM-02 | Future v1.6 | Deferred |
-| MEM-03 | Future v1.6 | Deferred |
-| MEM-04 | Future v1.6 | Deferred |
+| MEM-01 | Phase 25 | Planned |
+| MEM-02 | Phase 25 | Planned |
+| MEM-03 | Phase 25 | Planned |
+| MEM-04 | Phase 25 | Planned |
+| MEM-05 | Phase 26 | Planned |
+| MEM-06 | Phase 26 | Planned |
+| MEM-07 | Phase 26 | Planned |
+| MEM-08 | Phase 26 | Planned |
+| MEM-09 | Phase 27 | Planned |
+| MEM-10 | Phase 27 | Planned |
+| MEM-11 | Phase 27 | Planned |
+| MEM-12 | Phase 27 | Planned |
+| MEM-13 | Phase 28 | Planned |
+| MEM-14 | Phase 28 | Planned |
+| MEM-15 | Phase 28 | Planned |
+| MEM-16 | Phase 28 | Planned |
+| MEM-17 | Phase 29 | Planned |
+| MEM-18 | Phase 29 | Planned |
+| MEM-19 | Phase 29 | Planned |
+| MEM-20 | Phase 29 | Planned |
 | LEARN-01 | Future v1.7 | Deferred |
 | LEARN-02 | Future v1.7 | Deferred |
 | LEARN-03 | Future v1.7 | Deferred |
@@ -133,8 +134,8 @@ Explicitly excluded from v1.5 to prevent scope creep.
 | UI-04 | Future v2.1 | Deferred |
 
 **Coverage:**
-- v1.5 requirements: 16 total
-- Mapped to phases: 16
+- v1.6 requirements: 20 total
+- Mapped to phases: 20
 - Unmapped: 0
 
 ---

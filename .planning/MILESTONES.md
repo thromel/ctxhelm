@@ -2,7 +2,13 @@
 
 ## Active
 
-No active milestone. Next planned milestone is `v1.6 Repo Memory & Experience Cards`.
+### v1.6 Repo Memory & Experience Cards
+
+**Goal:** Turn generated repo summaries and prior agent-run lessons into durable, source-linked, source-free memory that agents can reuse selectively without bloating context packs.
+
+**Status:** Requirements and roadmap ready. Next phase is `25 Memory Contracts & Storage Schema`.
+
+**Planned phases:** 25-29
 
 ## Shipped
 
@@ -113,19 +119,6 @@ No active milestone. Next planned milestone is `v1.6 Repo Memory & Experience Ca
 - Audit: `.planning/milestones/v1.1-MILESTONE-AUDIT.md`
 
 ## Planned Product Vision
-
-### v1.6 Repo Memory & Experience Cards
-
-**Goal:** Turn generated repo summaries and prior agent-run lessons into durable, source-linked, source-free memory that agents can reuse without bloating every context pack.
-
-**Depends on:** v1.3 durable storage, v1.4 semantic retrieval, and v1.5 precision signals.
-
-**Expected capabilities:**
-
-- Domain cards for key subsystems with freshness metadata, source links, and regeneration triggers.
-- Experience cards from prior agent sessions, test failures, accepted fixes, and user corrections.
-- Memory selection in `prepare_task` and `get_pack` with explicit evidence and token-budget caps.
-- Review and redaction workflow that keeps generated memory source-free by default and editable by humans.
 
 ### v1.7 Adaptive Retrieval Policy & Feedback Loop
 

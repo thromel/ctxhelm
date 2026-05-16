@@ -2,133 +2,158 @@
 
 ## Overview
 
-This roadmap opens and completes v1.5 Parser/Semantic Precision. v1.2 proved retrieval-quality measurement, v1.3 made proof metadata durable, and v1.4 added opt-in local semantic retrieval. v1.5 improves precision where the current implementation had a concrete measured weakness: Java-heavy repositories such as RefactoringMiner were inventoried but not structurally understood by symbol extraction or dependency graph inference.
+This roadmap opens v1.6 Repo Memory & Experience Cards. v1.3 made source-free local storage durable, v1.4 added optional local semantic retrieval, and v1.5 added parser/precision graph signals. v1.6 uses those foundations to add durable repo memory that is source-linked, source-free, freshness-aware, human-reviewable, and selectively included in task plans and packs.
 
-## v1.5 Parser/Semantic Precision
+## v1.6 Repo Memory & Experience Cards
 
 ## Phases
 
 **Phase Numbering:**
-- Integer phases (21, 22, 23, 24): Planned v1.5 work
-- Decimal phases (22.1, 22.2): Urgent insertions if needed
+- Integer phases (25, 26, 27, 28, 29): Planned v1.6 work
+- Decimal phases (26.1, 28.1): Urgent insertions if needed
 
-- [x] **Phase 21: Java/Kotlin Symbol Precision** - Safe Java/Kotlin files produce useful source-free symbol records for classes, methods, constants, functions, and types. (completed 2026-05-16)
-- [x] **Phase 22: Java/Kotlin Dependency Precision** - Safe Java/Kotlin package imports resolve into local dependency edges without including external packages, generated files, or sensitive paths. (completed 2026-05-16)
-- [x] **Phase 23: Source-Free Precision Edge Overlay** - Maintainers can import SCIP/LSP-derived source-free edge JSON as an additive precision graph overlay. (completed 2026-05-16)
-- [x] **Phase 24: Precision Evaluation, Documentation, and Release Gates** - Tests, docs, and release smokes prove parser/precision behavior and degradation boundaries. (completed 2026-05-16)
+- [ ] **Phase 25: Memory Contracts & Storage Schema** - Source-free memory card contracts and SQLite persistence are stable, versioned, and compatible with existing stores.
+- [ ] **Phase 26: Freshness-Aware Domain Cards** - Maintainers can generate subsystem/domain cards with source links, input hashes, freshness metadata, and degradation diagnostics.
+- [ ] **Phase 27: Source-Free Experience Cards** - Maintainers can derive reusable lessons from local traces and explicit structured events without storing raw prompts, logs, or source.
+- [ ] **Phase 28: Memory Selection in Plans and Packs** - `prepare_task`, `get_pack`, and MCP pack resources select relevant memory under explicit evidence and token-budget caps.
+- [ ] **Phase 29: Memory Review, Documentation, and Release Gates** - Maintainers can review/redact/disable/regenerate memory, and release gates prove memory safety and usefulness.
 
 ## Phase Details
 
-### Phase 21: Java/Kotlin Symbol Precision
+### Phase 25: Memory Contracts & Storage Schema
 
-**Goal**: Safe Java/Kotlin files produce useful source-free symbol records for classes, methods, constants, functions, and types.
+**Goal**: Source-free memory card contracts and SQLite persistence are stable, versioned, and compatible with existing stores.
 
-**Depends on**: v1.4 Local Semantic Retrieval
+**Depends on**: v1.3 Production Storage, v1.4 Local Semantic Retrieval, v1.5 Parser/Semantic Precision
 
-**Requirements**: PARS-01, PARS-02, PARS-03, PARS-04
+**Requirements**: MEM-01, MEM-02, MEM-03, MEM-04
 
 **Success Criteria** (what must be TRUE):
-1. Java symbol extraction returns classes, interfaces, records, methods, and constants from safe files.
-2. Kotlin symbol extraction returns classes, interfaces, objects, functions, type aliases, and values from safe files.
-3. Extraction follows the existing safe inventory and source-read policy.
-4. Public symbol contracts remain backward-compatible.
+1. Memory card contracts serialize with stable source-free public JSON shapes.
+2. SQLite storage has a versioned memory-card schema with migration history and compatibility diagnostics.
+3. Memory storage tests prove raw source, prompt text, terminal logs, secrets, and cloud payloads are not persisted.
+4. `ctxpack storage status` reports memory-card counts without breaking older stores.
 
 **Plans**: 1 plan
 
 Plans:
-- [x] 21-java-kotlin-symbol-precision-01-PLAN.md — Extend Java/Kotlin symbol parsing and focused tests.
+- [ ] 25-memory-contracts-storage-schema-01-PLAN.md — Add memory contracts, storage schema, and source-free persistence tests.
 
-### Phase 22: Java/Kotlin Dependency Precision
+### Phase 26: Freshness-Aware Domain Cards
 
-**Goal**: Safe Java/Kotlin package imports resolve into local dependency edges without including external packages, generated files, or sensitive paths.
+**Goal**: Maintainers can generate subsystem/domain cards with source links, input hashes, freshness metadata, and degradation diagnostics.
 
-**Depends on**: Phase 21
+**Depends on**: Phase 25
 
-**Requirements**: PARS-05, PARS-06, PARS-07, PARS-08
+**Requirements**: MEM-05, MEM-06, MEM-07, MEM-08
 
 **Success Criteria** (what must be TRUE):
-1. Java imports resolve to safe local `.java` targets under common source roots.
-2. Kotlin imports resolve to safe local `.kt`/`.kts` and Java targets.
-3. External and wildcard package imports are ignored.
-4. Related dependency expansion includes Java/Kotlin incoming and outgoing edges without recursion.
+1. Domain card generation groups safe files into useful subsystem cards using inventory, symbols, tests, dependencies, docs, and existing context-card summaries.
+2. Generated cards include source links, input hashes, freshness status, and regeneration reasons.
+3. Stale, degraded, or unreviewed cards produce source-free diagnostics instead of silently entering packs.
+4. Generation remains deterministic and local-only.
 
 **Plans**: 1 plan
 
 Plans:
-- [x] 22-java-kotlin-dependency-precision-01-PLAN.md — Resolve Java/Kotlin package imports and focused graph tests.
+- [ ] 26-freshness-aware-domain-cards-01-PLAN.md — Extend card generation with domain grouping, freshness, and deterministic diagnostics.
 
-### Phase 23: Source-Free Precision Edge Overlay
+### Phase 27: Source-Free Experience Cards
 
-**Goal**: Maintainers can import SCIP/LSP-derived source-free edge JSON as an additive precision graph overlay.
+**Goal**: Maintainers can derive reusable lessons from local traces and explicit structured events without storing raw prompts, logs, or source.
 
-**Depends on**: Phase 22
+**Depends on**: Phase 26
 
-**Requirements**: PARS-09, PARS-10, PARS-11, PARS-12
+**Requirements**: MEM-09, MEM-10, MEM-11, MEM-12
 
 **Success Criteria** (what must be TRUE):
-1. `ctxpack precision import` accepts a local source-free edge JSON file.
-2. Imported edges are validated against safe local inventory before being stored.
-3. Rejected or invalid overlays degrade with source-free diagnostics.
-4. Dependency graph output includes additive `precision:<edgeType>` edges.
+1. Experience card ingestion accepts only source-free trace/event metadata and explicit structured corrections.
+2. Experience cards contain reusable lessons, source links, provenance, and review status without raw transcript data.
+3. Duplicate lessons are merged or reported with source-free provenance.
+4. Pending-review behavior prevents unsafe experience cards from pack inclusion by default.
 
 **Plans**: 1 plan
 
 Plans:
-- [x] 23-source-free-precision-edge-overlay-01-PLAN.md — Import source-free precision edges and merge them into graph output.
+- [ ] 27-source-free-experience-cards-01-PLAN.md — Add experience card ingestion, dedupe, provenance, and review gating.
 
-### Phase 24: Precision Evaluation, Documentation, and Release Gates
+### Phase 28: Memory Selection in Plans and Packs
 
-**Goal**: Tests, docs, and release smokes prove parser/precision behavior and degradation boundaries.
+**Goal**: `prepare_task`, `get_pack`, and MCP pack resources select relevant memory under explicit evidence and token-budget caps.
 
-**Depends on**: Phase 23
+**Depends on**: Phase 27
 
-**Requirements**: PARS-13, PARS-14, PARS-15, PARS-16
+**Requirements**: MEM-13, MEM-14, MEM-15, MEM-16
 
 **Success Criteria** (what must be TRUE):
-1. Focused tests cover Java/Kotlin symbols and package import edges.
-2. Focused tests cover source-free precision edge import and rejected sensitive paths.
-3. Docs explain parser coverage, precision edge schema, SCIP/LSP bridge expectations, and anti-patterns.
-4. Release gate runs deterministic parser/precision smoke coverage.
+1. `prepare_task` returns selected memory candidates with evidence, confidence, source scores, and diagnostics.
+2. `get_pack` includes memory in a separate capped section that cannot crowd out target files, tests, or constraints.
+3. MCP tools/resources expose memory additively through existing plan/pack flows and stable URI shapes.
+4. Historical eval and product proof can compare memory-on and memory-off metadata without source text.
 
 **Plans**: 1 plan
 
 Plans:
-- [x] 24-precision-evaluation-docs-release-gates-01-PLAN.md — Add focused tests, docs, and deterministic precision release smoke.
+- [ ] 28-memory-selection-plans-packs-01-PLAN.md — Fuse memory candidates into plans, packs, MCP resources, and eval metadata.
+
+### Phase 29: Memory Review, Documentation, and Release Gates
+
+**Goal**: Maintainers can review/redact/disable/regenerate memory, and release gates prove memory safety and usefulness.
+
+**Depends on**: Phase 28
+
+**Requirements**: MEM-17, MEM-18, MEM-19, MEM-20
+
+**Success Criteria** (what must be TRUE):
+1. CLI commands list, show, approve, disable, redact, and regenerate memory cards with Markdown and JSON output.
+2. Unsafe generated memory can be rejected before it becomes pack-eligible.
+3. Docs explain memory schema, freshness, review workflow, privacy guarantees, MCP behavior, and anti-patterns.
+4. Release gate runs deterministic memory smoke coverage for local-only storage, source-free persistence, stale-card diagnostics, selected-memory pack output, and review controls.
+
+**Plans**: 1 plan
+
+Plans:
+- [ ] 29-memory-review-docs-release-gates-01-PLAN.md — Add review controls, docs, smoke scripts, and release-gate integration.
 
 ## Requirement Coverage
 
 | Requirement | Phase |
 |-------------|-------|
-| PARS-01 | Phase 21 |
-| PARS-02 | Phase 21 |
-| PARS-03 | Phase 21 |
-| PARS-04 | Phase 21 |
-| PARS-05 | Phase 22 |
-| PARS-06 | Phase 22 |
-| PARS-07 | Phase 22 |
-| PARS-08 | Phase 22 |
-| PARS-09 | Phase 23 |
-| PARS-10 | Phase 23 |
-| PARS-11 | Phase 23 |
-| PARS-12 | Phase 23 |
-| PARS-13 | Phase 24 |
-| PARS-14 | Phase 24 |
-| PARS-15 | Phase 24 |
-| PARS-16 | Phase 24 |
+| MEM-01 | Phase 25 |
+| MEM-02 | Phase 25 |
+| MEM-03 | Phase 25 |
+| MEM-04 | Phase 25 |
+| MEM-05 | Phase 26 |
+| MEM-06 | Phase 26 |
+| MEM-07 | Phase 26 |
+| MEM-08 | Phase 26 |
+| MEM-09 | Phase 27 |
+| MEM-10 | Phase 27 |
+| MEM-11 | Phase 27 |
+| MEM-12 | Phase 27 |
+| MEM-13 | Phase 28 |
+| MEM-14 | Phase 28 |
+| MEM-15 | Phase 28 |
+| MEM-16 | Phase 28 |
+| MEM-17 | Phase 29 |
+| MEM-18 | Phase 29 |
+| MEM-19 | Phase 29 |
+| MEM-20 | Phase 29 |
 
-**Coverage:** 16/16 v1.5 requirements mapped. No orphaned requirements.
+**Coverage:** 20/20 v1.6 requirements mapped. No orphaned requirements.
 
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 21 -> 22 -> 23 -> 24
+Phases execute in numeric order: 25 -> 26 -> 27 -> 28 -> 29
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 21. Java/Kotlin Symbol Precision | 1/1 | Complete    | 2026-05-16 |
-| 22. Java/Kotlin Dependency Precision | 1/1 | Complete    | 2026-05-16 |
-| 23. Source-Free Precision Edge Overlay | 1/1 | Complete    | 2026-05-16 |
-| 24. Precision Evaluation, Documentation, and Release Gates | 1/1 | Complete    | 2026-05-16 |
+| 25. Memory Contracts & Storage Schema | 0/1 | Not Started | — |
+| 26. Freshness-Aware Domain Cards | 0/1 | Not Started | — |
+| 27. Source-Free Experience Cards | 0/1 | Not Started | — |
+| 28. Memory Selection in Plans and Packs | 0/1 | Not Started | — |
+| 29. Memory Review, Documentation, and Release Gates | 0/1 | Not Started | — |
 
 ---
 *Roadmap created: 2026-05-16*

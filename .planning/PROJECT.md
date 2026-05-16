@@ -6,24 +6,25 @@ Repo Context Packer is a local-first, read-only context broker that helps existi
 
 The current codebase is a Rust workspace with a CLI, MCP server, safe repository inventory, lexical, symbol, semantic, and precision-edge retrieval, related-test inference, dependency hints, current-diff anchors, context packs, generated context cards, local eval traces, historical retrieval evaluation, benchmark suites, source-free retrieval gap reporting, and product proof generation.
 
-## Current State: v1.5 Parser/Semantic Precision Closeout
+## Current State: v1.6 Repo Memory & Experience Cards Planning
 
-The v1.4 milestone is complete and archived. ctxpack now has optional local semantic retrieval, source-free semantic vector metadata, semantic fusion, semantic-enabled eval metadata, documentation, and release-gate smoke coverage.
+The v1.5 milestone is complete and archived. ctxpack now has Java/Kotlin symbol extraction, Java/Kotlin dependency graph inference, source-free precision edge import, precision documentation, and release-gate smoke coverage. A strict E2E gate also verified workspace tests, packaging, release smokes, real Codex MCP evidence, real Claude MCP evidence, product proof, and RefactoringMiner Java-heavy planning behavior.
 
-The v1.5 milestone is implementation-complete. Its job was to improve parser/semantic precision where real repository evidence showed gaps, especially Java-heavy repositories such as RefactoringMiner.
+The v1.6 milestone starts the repo memory layer: durable, source-linked, source-free memory cards that agents can reuse selectively without turning every context pack into a static memory dump.
 
-## Current Milestone: v1.5 Parser/Semantic Precision
+## Current Milestone: v1.6 Repo Memory & Experience Cards
 
-**Goal:** Improve symbol, dependency, and reference precision where measured failures show heuristics are insufficient, while preserving source-free local defaults.
+**Goal:** Turn generated repo summaries and prior agent-run lessons into durable, source-linked, source-free memory that agents can reuse selectively under budget.
 
-**Status:** Implementation complete; validation and archive closeout pending.
+**Status:** Requirements and roadmap definition.
 
 **Target features:**
 
-- Java/Kotlin symbol extraction for common classes, methods, constants, functions, and types.
-- Java/Kotlin dependency graph inference for safe local package imports and common source-root layouts.
-- Source-free precision edge overlay import for local SCIP/LSP bridge outputs.
-- Deterministic precision tests, documentation, and release-gate smoke coverage.
+- Freshness-aware domain cards for key subsystems with source links and regeneration triggers.
+- Source-free experience cards from local traces, accepted fixes, test failures, and explicit user corrections.
+- Memory selection in `prepare_task` and `get_pack` with explicit evidence, confidence, and token-budget caps.
+- Human review, redaction, disable, and regeneration controls for generated memory.
+- Deterministic tests, docs, and release-gate smoke coverage for memory safety and usefulness.
 
 ## Core Value
 
@@ -60,9 +61,9 @@ Given a coding task, ctxpack should return the smallest safe evidence set that m
 
 ### Active
 
-- Validate and archive v1.5 Parser/Semantic Precision.
-- Keep precision edge import source-free and additive; do not imply full SCIP protobuf or always-on LSP support.
-- Preserve the existing CLI/MCP contracts unless a compatibility test and release note justify an additive field.
+- Define and implement v1.6 Repo Memory & Experience Cards.
+- Keep memory source-free by default: no prompt text, raw terminal logs, source snippets, secrets, or cloud payloads in stored memory metadata.
+- Make memory selective and budgeted inside existing `prepare_task` and `get_pack` flows rather than always injecting every card.
 
 ### Out of Scope
 
@@ -84,13 +85,13 @@ The codebase map in `.planning/codebase/` documents the current system:
 - `crates/ctxpack-mcp/src/lib.rs` is the stable facade for JSON-RPC/MCP protocol, tools, resources, prompts, diagnostics, session-scoped pack cache, and tool/resource response shaping implemented in focused MCP modules.
 - `crates/ctxpack/src/main.rs` owns the user-facing CLI and command output.
 
-v1 through v1.1 proved the local context broker, source-free safety model, agent-native protocol surface, packaging path, and setup/release gates. v1.2 proved the adoption claim with measured retrieval-quality evidence. v1.3 converted those measured needs into production-grade local storage. v1.4 used that storage foundation to add local semantic retrieval only as a measured, optional signal inside the existing context compiler. v1.5 adds parser and precision-edge coverage where Java-heavy real repos exposed structural gaps.
+v1 through v1.1 proved the local context broker, source-free safety model, agent-native protocol surface, packaging path, and setup/release gates. v1.2 proved the adoption claim with measured retrieval-quality evidence. v1.3 converted those measured needs into production-grade local storage. v1.4 used that storage foundation to add local semantic retrieval only as a measured, optional signal inside the existing context compiler. v1.5 added parser and precision-edge coverage where Java-heavy real repos exposed structural gaps. v1.6 now turns durable repo summaries and session lessons into selective, source-free memory.
 
 Milestone strategy from the original product vision:
 
 - **v1.4 Local Semantic Retrieval**: add optional local embeddings/vector retrieval with hybrid fusion and explicit privacy controls.
 - **v1.5 Parser/Semantic Precision**: expand Tree-sitter coverage and add optional SCIP/LSP precision only where measured gaps justify it.
-- **v1.6 Repo Memory & Experience Cards**: turn generated repo summaries and prior agent-run lessons into source-free memory that agents can reuse selectively.
+- **v1.6 Repo Memory & Experience Cards**: active milestone; turn generated repo summaries and prior agent-run lessons into source-free memory that agents can reuse selectively.
 - **v1.7 Adaptive Retrieval Policy & Feedback Loop**: use benchmark results and real session traces to tune retrieval policy and prove agent-outcome lift.
 - **v2.0 Workspace & Team Layer**: support multi-repo workspaces, shared source-free context cards, benchmark reports, and team policy files.
 - **v2.1 UI / Pack Inspector**: add optional diagnostics UI for packs, retrieval gaps, evals, context health, and adapter previews.
@@ -142,4 +143,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-05-16 after v1.5 parser/precision implementation*
+*Last updated: 2026-05-16 for v1.6 repo memory planning*

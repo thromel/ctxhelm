@@ -1,26 +1,26 @@
 ---
 gsd_state_version: 1.0
-milestone: none
-milestone_name: Awaiting next milestone
-status: Awaiting next milestone
-last_updated: "2026-05-16T00:00:00.000Z"
-last_activity: 2026-05-16 — Milestone v1.5 completed and archived
+milestone: v1.6
+milestone_name: Repo Memory & Experience Cards
+status: planning
+last_updated: "2026-05-16T06:18:33.056Z"
+last_activity: 2026-05-16 — Milestone v1.6 requirements and roadmap created
 progress:
-  total_phases: 4
-  completed_phases: 4
-  total_plans: 4
-  completed_plans: 4
-  percent: 100
+  total_phases: 5
+  completed_phases: 0
+  total_plans: 5
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
 
 ## Current Position
 
-Phase: Milestone v1.5 complete
+Phase: 25 Memory Contracts & Storage Schema
 Plan: —
-Status: Awaiting next milestone
-Last activity: 2026-05-16 — Milestone v1.5 completed and archived
+Status: Ready for phase discussion
+Last activity: 2026-05-16 — Milestone v1.6 requirements and roadmap created
 
 ## Project Reference
 
@@ -28,16 +28,17 @@ See: `.planning/PROJECT.md`
 
 **Core value:** Given a coding task, ctxpack should return the smallest safe evidence set that makes an existing coding agent more likely to inspect the right files, run the right tests, and avoid irrelevant context.
 
-**Current focus:** Awaiting the next milestone.
+**Current focus:** Build v1.6 Repo Memory & Experience Cards, starting with memory contracts and source-free storage.
 
 ## Active Milestone
 
-No active milestone. v1.5 Parser/Semantic Precision is complete and archived.
+v1.6 Repo Memory & Experience Cards is active.
 
 ## Next Step
 
-Activate v1.6 Repo Memory & Experience Cards when ready.
+Run `$gsd-discuss-phase 25` or `$gsd-autonomous --from 25`.
 
 ## Operator Next Steps
 
-- Start the next milestone with /gsd-new-milestone
+- Discuss Phase 25 with /gsd-discuss-phase 25
+- Or run the remaining milestone phases with /gsd-autonomous --from 25
