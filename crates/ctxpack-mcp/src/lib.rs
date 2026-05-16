@@ -199,11 +199,12 @@ mod tests {
         .unwrap();
         let resources = response["result"]["resources"].as_array().unwrap();
 
-        assert_eq!(resources.len(), 4);
+        assert_eq!(resources.len(), 5);
         assert_eq!(resources[0]["uri"], "ctxpack://repo/summary");
         assert_eq!(resources[1]["uri"], "ctxpack://repo/test-map");
         assert_eq!(resources[2]["uri"], "ctxpack://repo/dependency-graph");
-        assert_eq!(resources[3]["uri"], "ctxpack://pack/guide");
+        assert_eq!(resources[3]["uri"], "ctxpack://repo/memory");
+        assert_eq!(resources[4]["uri"], "ctxpack://pack/guide");
     }
 
     #[test]
@@ -231,6 +232,7 @@ mod tests {
                 "ctxpack://repo/summary",
                 "ctxpack://repo/test-map",
                 "ctxpack://repo/dependency-graph",
+                "ctxpack://repo/memory",
                 "ctxpack://pack/guide",
             ]
         );
@@ -249,6 +251,10 @@ mod tests {
         .unwrap();
         let guide = handle_line(
             r#"{"jsonrpc":"2.0","id":33,"method":"resources/read","params":{"uri":"ctxpack://pack/guide"}}"#,
+        )
+        .unwrap();
+        let memory = handle_line(
+            r#"{"jsonrpc":"2.0","id":36,"method":"resources/read","params":{"uri":"ctxpack://repo/memory"}}"#,
         )
         .unwrap();
         let file = handle_line(
@@ -273,6 +279,10 @@ mod tests {
             "ctxpack://repo/dependency-graph"
         );
         assert_eq!(guide["result"]["contents"][0]["mimeType"], "text/markdown");
+        assert_eq!(
+            memory["result"]["contents"][0]["uri"],
+            "ctxpack://repo/memory"
+        );
         assert!(file["result"]["contents"][0]["text"]
             .as_str()
             .unwrap()

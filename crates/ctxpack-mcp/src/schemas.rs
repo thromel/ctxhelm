@@ -44,6 +44,12 @@ pub(crate) fn resources_list_result() -> Value {
                 "mimeType": "application/json"
             },
             {
+                "uri": "ctxpack://repo/memory",
+                "name": "Repository Memory Cards",
+                "description": "Fresh approved or deterministic source-free memory cards for the current repository.",
+                "mimeType": "application/json"
+            },
+            {
                 "uri": "ctxpack://pack/guide",
                 "name": "Context Pack Guide",
                 "description": "How to request task-conditioned context packs with ctxpack.get_pack.",

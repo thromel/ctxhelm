@@ -66,6 +66,19 @@ These commands persist only source-free metadata: task hashes, pack IDs, budgets
 target agents, confidence, benchmark metrics, gap families, proof headlines, and
 privacy status. They do not persist prompt text or source snippets by default.
 
+## Memory Card Metadata
+
+```bash
+ctxpack cards generate --repo "$REPO"
+ctxpack memory generate-experience --repo "$REPO"
+ctxpack memory list --repo "$REPO"
+```
+
+Repo memory records store card IDs, kinds, titles, summaries, source-link paths,
+input hashes, freshness, review status, disable state, confidence, reason, and
+privacy labels. They remain source-free: no raw file contents, source snippets,
+raw prompts, terminal logs, or model transcripts are persisted.
+
 ## Repair, Cleanup, And Reset
 
 ```bash
@@ -85,6 +98,7 @@ The storage schema stores hashes, paths that passed ctxpack policy, roles,
 counts, metrics, IDs, and JSON metadata. It does not store raw file contents,
 source snippets, prompt text, secrets, or cloud embedding data by default.
 
-The release gate runs `scripts/smoke-storage.sh` and `scripts/smoke-semantic.sh`,
-which check repeated indexing, source-free vector metadata, and that source or
-secret sentinels are not persisted into `CTXPACK_HOME`.
+The release gate runs `scripts/smoke-storage.sh`, `scripts/smoke-memory.sh`, and
+`scripts/smoke-semantic.sh`, which check repeated indexing, source-free memory
+and vector metadata, and that source or secret sentinels are not persisted into
+`CTXPACK_HOME`.

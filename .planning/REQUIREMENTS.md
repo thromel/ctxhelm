@@ -10,38 +10,38 @@ Requirements for durable, source-linked, source-free memory that agents can reus
 
 ### Memory Contracts and Storage
 
-- [ ] **MEM-01**: Maintainer can store source-free memory card metadata in local SQLite with schema versioning, migration history, privacy labels, timestamps, and compatibility diagnostics.
-- [ ] **MEM-02**: Maintainer can represent domain cards and experience cards through stable typed contracts with IDs, kinds, titles, summaries, source links, input hashes, freshness status, review status, and disable status.
-- [ ] **MEM-03**: Memory storage excludes raw source snippets, prompt text, terminal logs, secrets, cloud payloads, and unredacted user freeform text by default.
-- [ ] **MEM-04**: Existing storage commands report memory-card counts and compatibility without breaking older stores.
+- [x] **MEM-01**: Maintainer can store source-free memory card metadata in local SQLite with schema versioning, migration history, privacy labels, timestamps, and compatibility diagnostics.
+- [x] **MEM-02**: Maintainer can represent domain cards and experience cards through stable typed contracts with IDs, kinds, titles, summaries, source links, input hashes, freshness status, review status, and disable status.
+- [x] **MEM-03**: Memory storage excludes raw source snippets, prompt text, terminal logs, secrets, cloud payloads, and unredacted user freeform text by default.
+- [x] **MEM-04**: Existing storage commands report memory-card counts and compatibility without breaking older stores.
 
 ### Domain Cards
 
-- [ ] **MEM-05**: Maintainer can generate domain cards for important subsystems using safe inventory, symbols, tests, dependency edges, docs, and existing context-card summaries.
-- [ ] **MEM-06**: Generated domain cards include source links, input hashes, freshness metadata, and regeneration reasons.
-- [ ] **MEM-07**: Stale, degraded, or unreviewed domain cards are surfaced with source-free diagnostics instead of silently entering packs.
-- [ ] **MEM-08**: Domain card generation remains deterministic and local-only unless a future explicit provider is added.
+- [x] **MEM-05**: Maintainer can generate domain cards for important subsystems using safe inventory, symbols, tests, dependency edges, docs, and existing context-card summaries.
+- [x] **MEM-06**: Generated domain cards include source links, input hashes, freshness metadata, and regeneration reasons.
+- [x] **MEM-07**: Stale, degraded, or unreviewed domain cards are surfaced with source-free diagnostics instead of silently entering packs.
+- [x] **MEM-08**: Domain card generation remains deterministic and local-only unless a future explicit provider is added.
 
 ### Experience Cards
 
-- [ ] **MEM-09**: Maintainer can derive source-free experience card candidates from local eval traces, pack metadata, test failures recorded as structured events, accepted fixes, and explicit user corrections.
-- [ ] **MEM-10**: Experience cards capture reusable lessons as source-linked summaries with evidence paths and event metadata, not raw transcripts.
-- [ ] **MEM-11**: Experience card ingestion deduplicates repeated lessons and records provenance so humans can audit why a lesson exists.
-- [ ] **MEM-12**: Experience cards default to pending review before pack inclusion unless created from deterministic source-free events.
+- [x] **MEM-09**: Maintainer can derive source-free experience card candidates from local eval traces, pack metadata, test failures recorded as structured events, accepted fixes, and explicit user corrections.
+- [x] **MEM-10**: Experience cards capture reusable lessons as source-linked summaries with evidence paths and event metadata, not raw transcripts.
+- [x] **MEM-11**: Experience card ingestion deduplicates repeated lessons and records provenance so humans can audit why a lesson exists.
+- [x] **MEM-12**: Experience cards default to pending review before pack inclusion unless created from deterministic source-free events.
 
 ### Memory Selection
 
-- [ ] **MEM-13**: `prepare_task` can select relevant memory cards as a bounded retrieval signal with explicit evidence, confidence, source scores, and diagnostics.
-- [ ] **MEM-14**: `get_pack` can include selected memory under a separate token budget cap without crowding out target files, tests, or critical constraints.
-- [ ] **MEM-15**: MCP tools and resources expose selected memory additively through existing plan/pack flows and stable URI shapes without adding a large new tool surface.
-- [ ] **MEM-16**: Historical eval and product proof can report memory-enabled metadata and compare memory-on versus memory-off behavior without storing source text.
+- [x] **MEM-13**: `prepare_task` can select relevant memory cards as a bounded retrieval signal with explicit evidence, confidence, source scores, and diagnostics.
+- [x] **MEM-14**: `get_pack` can include selected memory under a separate token budget cap without crowding out target files, tests, or critical constraints.
+- [x] **MEM-15**: MCP tools and resources expose selected memory additively through existing plan/pack flows and stable URI shapes without adding a large new tool surface.
+- [x] **MEM-16**: Historical eval and product proof can report memory-enabled metadata and compare memory-on versus memory-off behavior without storing source text.
 
 ### Review, Redaction, Docs, and Gates
 
-- [ ] **MEM-17**: Maintainer can list, show, approve, disable, and regenerate memory cards through CLI commands with JSON and Markdown output.
-- [ ] **MEM-18**: Maintainer can redact or reject unsafe generated memory before it becomes pack-eligible.
-- [ ] **MEM-19**: Documentation explains memory card schema, freshness, review workflow, privacy guarantees, MCP behavior, and when memory should not be used.
-- [ ] **MEM-20**: Release gate includes deterministic memory smoke coverage proving local-only storage, source-free persistence, stale-card diagnostics, selected-memory pack output, and review controls.
+- [x] **MEM-17**: Maintainer can list, show, approve, disable, and regenerate memory cards through CLI commands with JSON and Markdown output.
+- [x] **MEM-18**: Maintainer can redact or reject unsafe generated memory before it becomes pack-eligible.
+- [x] **MEM-19**: Documentation explains memory card schema, freshness, review workflow, privacy guarantees, MCP behavior, and when memory should not be used.
+- [x] **MEM-20**: Release gate includes deterministic memory smoke coverage proving local-only storage, source-free persistence, stale-card diagnostics, selected-memory pack output, and review controls.
 
 ## Future Requirements
 

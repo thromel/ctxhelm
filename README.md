@@ -76,6 +76,7 @@ For the longer walkthrough, including setup validation, deterministic MCP proof 
 - [Agent setup matrix](docs/agent-setup.md)
 - [Retrieval benchmarking](docs/benchmarking.md)
 - [Storage](docs/storage.md)
+- [Repo memory](docs/memory.md)
 - [Local semantic retrieval](docs/semantic.md)
 - [Parser and precision edges](docs/precision.md)
 - [Troubleshooting](docs/troubleshooting.md)
@@ -264,7 +265,17 @@ Generate optional repo-committable cards for cloud or disconnected agent context
 ctxpack cards generate --repo /path/to/repo
 ```
 
-This writes `.ctxpack/cards/repo-overview.md`, `.ctxpack/cards/testing.md`, and `.ctxpack/cards/dependency-graph.md`. Cards are deterministic, local-only, and source-snippet-free; they summarize safe inventory paths, roles, symbols, test commands, and local dependency edges.
+This writes `.ctxpack/cards/repo-overview.md`, `.ctxpack/cards/testing.md`, `.ctxpack/cards/dependency-graph.md`, and domain cards. Cards are deterministic, local-only, and source-snippet-free; they summarize safe inventory paths, roles, symbols, test commands, and local dependency edges. `cards generate` also stores matching source-free memory metadata for task-conditioned selection.
+
+Generate and review experience cards from source-free local traces:
+
+```bash
+ctxpack memory generate-experience --repo /path/to/repo
+ctxpack memory list --repo /path/to/repo
+ctxpack memory approve experience:<task-hash> --repo /path/to/repo
+```
+
+`prepare-task`, `get-pack`, and MCP pack resources can include fresh approved or deterministic memory under `selectedMemory` and a separate `Selected memory` pack section. MCP also exposes `ctxpack://repo/memory`. See [docs/memory.md](docs/memory.md).
 
 ## Local Eval Traces
 

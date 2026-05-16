@@ -2026,6 +2026,7 @@ fn signal_code(signal: &RetrievalSignalKind) -> &'static str {
         RetrievalSignalKind::Docs => "docs",
         RetrievalSignalKind::Config => "config",
         RetrievalSignalKind::Anchor => "anchor",
+        RetrievalSignalKind::Memory => "memory",
     }
 }
 

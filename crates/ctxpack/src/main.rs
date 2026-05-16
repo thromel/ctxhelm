@@ -4,27 +4,28 @@ use ctxpack_compiler::{
     build_product_proof_report, compare_benchmark_suite_reports,
     compile_context_pack_with_plan_and_paths_for_agent_and_semantic, eval_trace_for_pack,
     eval_trace_for_plan, evaluate_historical_commits, generate_context_cards,
-    load_benchmark_suite_config, load_benchmark_suite_report,
+    generate_experience_cards, load_benchmark_suite_config, load_benchmark_suite_report,
     prepare_context_plan_with_paths_and_semantic, render_pack_markdown, run_benchmark_suite,
     BenchmarkComparisonReport, BenchmarkRegressionThreshold, BenchmarkSuiteReport,
-    ContextCardsOptions, ContextCardsReport, HistoricalEvalOptions, HistoricalEvalReport,
-    ProductProofReport,
+    ContextCardsOptions, ContextCardsReport, ExperienceCardsOptions, ExperienceCardsReport,
+    HistoricalEvalOptions, HistoricalEvalReport, ProductProofReport,
 };
 use ctxpack_core::{
     run_init, run_setup_check, AgentAdapter, Diagnostic, DiagnosticSeverity, EvalTrace, InitAction,
-    InitOptions, InitReport, PackBudget, PrivacyStatus, RepoRoot, SetupCheckReport,
-    SetupCheckStatus, TaskType,
+    InitOptions, InitReport, MemoryReviewStatus, PackBudget, PrivacyStatus, RepoRoot,
+    SetupCheckReport, SetupCheckStatus, TaskType,
 };
 use ctxpack_index::{
     co_change_hints, current_diff_summary, dependency_edges, extract_symbols,
-    import_precision_edges, lexical_search, list_eval_traces, related_dependency_edges,
-    related_tests, semantic_search, storage_status_for_repo, symbol_search,
-    sync_inventory_to_store, sync_semantic_index_to_store, try_append_eval_trace, vacuum_store,
-    write_inventory, CoChangeOptions, CurrentDiffOptions, DependencyOptions, InventoryOptions,
-    InventoryReport, PrecisionImportReport, SearchOptions, SemanticOptions,
-    StorageBenchmarkRunRecord, StorageContextPackRecord, StorageGapRecord, StorageIndexReport,
-    StorageMetricRecord, StorageProofReportRecord, StorageReport, StorageSemanticIndexReport,
-    StorageStatusReport, StoreConfig, SymbolOptions,
+    import_precision_edges, lexical_search, list_eval_traces, list_memory_cards,
+    related_dependency_edges, related_tests, semantic_search, storage_status_for_repo,
+    symbol_search, sync_inventory_to_store, sync_semantic_index_to_store, try_append_eval_trace,
+    update_memory_card_review_status, vacuum_store, write_inventory, CoChangeOptions,
+    CurrentDiffOptions, DependencyOptions, InventoryOptions, InventoryReport,
+    PrecisionImportReport, SearchOptions, SemanticOptions, StorageBenchmarkRunRecord,
+    StorageContextPackRecord, StorageGapRecord, StorageIndexReport, StorageMetricRecord,
+    StorageProofReportRecord, StorageReport, StorageSemanticIndexReport, StorageStatusReport,
+    StoreConfig, SymbolOptions,
 };
 use std::collections::BTreeSet;
 use std::fs;
@@ -67,6 +68,7 @@ enum Command {
     Precision(PrecisionArgs),
     Storage(StorageArgs),
     Cards(CardsArgs),
+    Memory(MemoryArgs),
     Eval(EvalArgs),
     ServeMcp,
 }
@@ -236,6 +238,59 @@ struct CardsGenerateArgs {
     repo: Option<PathBuf>,
     #[arg(long, default_value_t = 40)]
     limit: usize,
+    #[arg(long, value_enum, default_value_t = PackFormat::Markdown)]
+    format: PackFormat,
+}
+
+#[derive(Debug, Args)]
+struct MemoryArgs {
+    #[command(subcommand)]
+    command: MemoryCommand,
+}
+
+#[derive(Debug, Subcommand)]
+enum MemoryCommand {
+    #[command(about = "List source-free local memory cards.")]
+    List(MemoryListArgs),
+    #[command(about = "Show one source-free local memory card.")]
+    Show(MemoryCardActionArgs),
+    #[command(about = "Generate pending source-free experience cards from local eval traces.")]
+    GenerateExperience(MemoryExperienceArgs),
+    #[command(about = "Regenerate deterministic domain cards and pending experience cards.")]
+    Regenerate(MemoryExperienceArgs),
+    #[command(about = "Approve a pending memory card for pack inclusion.")]
+    Approve(MemoryCardActionArgs),
+    #[command(about = "Reject a memory card before pack inclusion.")]
+    Reject(MemoryCardActionArgs),
+    #[command(about = "Disable a memory card without deleting it.")]
+    Disable(MemoryCardActionArgs),
+}
+
+#[derive(Debug, Args)]
+struct MemoryListArgs {
+    #[arg(long)]
+    repo: Option<PathBuf>,
+    #[arg(long)]
+    include_disabled: bool,
+    #[arg(long, value_enum, default_value_t = PackFormat::Markdown)]
+    format: PackFormat,
+}
+
+#[derive(Debug, Args)]
+struct MemoryExperienceArgs {
+    #[arg(long)]
+    repo: Option<PathBuf>,
+    #[arg(long, default_value_t = 20)]
+    limit: usize,
+    #[arg(long, value_enum, default_value_t = PackFormat::Markdown)]
+    format: PackFormat,
+}
+
+#[derive(Debug, Args)]
+struct MemoryCardActionArgs {
+    card_id: String,
+    #[arg(long)]
+    repo: Option<PathBuf>,
     #[arg(long, value_enum, default_value_t = PackFormat::Markdown)]
     format: PackFormat,
 }
@@ -773,6 +828,11 @@ fn main() -> Result<()> {
                         } else {
                             status.semantic_vector_records
                         },
+                        memory_card_records: if args.yes {
+                            0
+                        } else {
+                            status.memory_card_records
+                        },
                         diagnostics: if args.yes {
                             Vec::new()
                         } else {
@@ -801,6 +861,110 @@ fn main() -> Result<()> {
                     generate_context_cards(&repo.path, &ContextCardsOptions { limit: args.limit })?;
                 match args.format {
                     PackFormat::Markdown => println!("{}", render_cards_report(&report)),
+                    PackFormat::Json => println!("{}", serde_json::to_string_pretty(&report)?),
+                }
+            }
+        },
+        Command::Memory(args) => match args.command {
+            MemoryCommand::List(args) => {
+                let start = args.repo.clone().unwrap_or(std::env::current_dir()?);
+                let repo = RepoRoot::discover_from(&start)?;
+                let cards =
+                    list_memory_cards(&repo.path, &StoreConfig::default(), args.include_disabled)?;
+                match args.format {
+                    PackFormat::Markdown => println!("{}", render_memory_cards(&cards)),
+                    PackFormat::Json => println!("{}", serde_json::to_string_pretty(&cards)?),
+                }
+            }
+            MemoryCommand::GenerateExperience(args) => {
+                let start = args.repo.clone().unwrap_or(std::env::current_dir()?);
+                let repo = RepoRoot::discover_from(&start)?;
+                let report = generate_experience_cards(
+                    &repo.path,
+                    &ExperienceCardsOptions { limit: args.limit },
+                )?;
+                match args.format {
+                    PackFormat::Markdown => println!("{}", render_experience_cards_report(&report)),
+                    PackFormat::Json => println!("{}", serde_json::to_string_pretty(&report)?),
+                }
+            }
+            MemoryCommand::Show(args) => {
+                let start = args.repo.clone().unwrap_or(std::env::current_dir()?);
+                let repo = RepoRoot::discover_from(&start)?;
+                let cards = list_memory_cards(&repo.path, &StoreConfig::default(), true)?;
+                let Some(card) = cards.into_iter().find(|card| card.id == args.card_id) else {
+                    anyhow::bail!("memory card not found: {}", args.card_id);
+                };
+                match args.format {
+                    PackFormat::Markdown => println!("{}", render_memory_cards(&[card])),
+                    PackFormat::Json => println!("{}", serde_json::to_string_pretty(&card)?),
+                }
+            }
+            MemoryCommand::Regenerate(args) => {
+                let start = args.repo.clone().unwrap_or(std::env::current_dir()?);
+                let repo = RepoRoot::discover_from(&start)?;
+                let cards =
+                    generate_context_cards(&repo.path, &ContextCardsOptions { limit: args.limit })?;
+                let experience = generate_experience_cards(
+                    &repo.path,
+                    &ExperienceCardsOptions { limit: args.limit },
+                )?;
+                match args.format {
+                    PackFormat::Markdown => {
+                        println!("{}", render_cards_report(&cards));
+                        println!("{}", render_experience_cards_report(&experience));
+                    }
+                    PackFormat::Json => println!(
+                        "{}",
+                        serde_json::to_string_pretty(&serde_json::json!({
+                            "domainCards": cards,
+                            "experienceCards": experience,
+                        }))?
+                    ),
+                }
+            }
+            MemoryCommand::Approve(args) => {
+                let start = args.repo.clone().unwrap_or(std::env::current_dir()?);
+                let repo = RepoRoot::discover_from(&start)?;
+                let report = update_memory_card_review_status(
+                    &repo.path,
+                    &StoreConfig::default(),
+                    &args.card_id,
+                    MemoryReviewStatus::Approved,
+                    false,
+                )?;
+                match args.format {
+                    PackFormat::Markdown => print_storage_status_report(&report),
+                    PackFormat::Json => println!("{}", serde_json::to_string_pretty(&report)?),
+                }
+            }
+            MemoryCommand::Reject(args) => {
+                let start = args.repo.clone().unwrap_or(std::env::current_dir()?);
+                let repo = RepoRoot::discover_from(&start)?;
+                let report = update_memory_card_review_status(
+                    &repo.path,
+                    &StoreConfig::default(),
+                    &args.card_id,
+                    MemoryReviewStatus::Rejected,
+                    true,
+                )?;
+                match args.format {
+                    PackFormat::Markdown => print_storage_status_report(&report),
+                    PackFormat::Json => println!("{}", serde_json::to_string_pretty(&report)?),
+                }
+            }
+            MemoryCommand::Disable(args) => {
+                let start = args.repo.clone().unwrap_or(std::env::current_dir()?);
+                let repo = RepoRoot::discover_from(&start)?;
+                let report = update_memory_card_review_status(
+                    &repo.path,
+                    &StoreConfig::default(),
+                    &args.card_id,
+                    MemoryReviewStatus::Disabled,
+                    true,
+                )?;
+                match args.format {
+                    PackFormat::Markdown => print_storage_status_report(&report),
                     PackFormat::Json => println!("{}", serde_json::to_string_pretty(&report)?),
                 }
             }
@@ -1114,6 +1278,7 @@ fn print_storage_status_report(report: &StorageStatusReport) {
         "- Semantic vector records: `{}`",
         report.semantic_vector_records
     );
+    println!("- Memory card records: `{}`", report.memory_card_records);
     print_diagnostics(&report.diagnostics);
 }
 
@@ -1818,13 +1983,70 @@ fn render_cards_report(report: &ContextCardsReport) -> String {
     ));
     for card in &report.cards {
         output.push_str(&format!(
-            "- `{}`: `{}` ({} bytes)\n",
+            "- `{}`: `{}` ({} bytes, memory `{}`)\n",
             card.name,
             card.path.display(),
-            card.bytes
+            card.bytes,
+            card.memory_card_id
         ));
     }
+    print_diagnostics_to_string(&mut output, &report.diagnostics);
     output
+}
+
+fn render_memory_cards(cards: &[ctxpack_core::MemoryCard]) -> String {
+    let mut output = String::from("# ctxpack Memory Cards\n\n");
+    output.push_str(&format!("- Cards: `{}`\n\n", cards.len()));
+    if cards.is_empty() {
+        output.push_str("- No source-free memory cards are stored for this repo.\n");
+        return output;
+    }
+    for card in cards {
+        output.push_str(&format!(
+            "- `{}` {:?} {:?} {:?} disabled `{}` confidence `{:.2}`\n",
+            card.id, card.kind, card.freshness, card.review_status, card.disabled, card.confidence
+        ));
+        output.push_str(&format!("  - {}\n", card.summary));
+        if !card.source_links.is_empty() {
+            output.push_str(&format!(
+                "  - Links: {}\n",
+                card.source_links
+                    .iter()
+                    .take(6)
+                    .map(|link| format!("`{link}`"))
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            ));
+        }
+    }
+    output
+}
+
+fn render_experience_cards_report(report: &ExperienceCardsReport) -> String {
+    let mut output = String::from("# ctxpack Experience Cards\n\n");
+    output.push_str(&format!(
+        "- Repo ID: `{}`\n- Cards generated: `{}`\n- Stored records: `{}`\n- Privacy: local-only `{}`\n\n",
+        report.repo_id,
+        report.cards.len(),
+        report.stored_records,
+        report.privacy_status.local_only
+    ));
+    output.push_str(&render_memory_cards(&report.cards));
+    print_diagnostics_to_string(&mut output, &report.diagnostics);
+    output
+}
+
+fn print_diagnostics_to_string(output: &mut String, diagnostics: &[Diagnostic]) {
+    if diagnostics.is_empty() {
+        return;
+    }
+    output.push_str("\n## Diagnostics\n");
+    for diagnostic in diagnostics {
+        output.push_str(&format!(
+            "- `{:?}` `{}`: {}\n",
+            diagnostic.severity, diagnostic.code, diagnostic.message
+        ));
+    }
 }
 
 fn push_plain_path_list(output: &mut String, items: &[String], empty_message: &str) {
@@ -2133,6 +2355,7 @@ mod tests {
                 path: PathBuf::from("/tmp/repo/.ctxpack/cards/repo-overview.md"),
                 title: "Repo Overview".to_string(),
                 bytes: 123,
+                memory_card_id: "domain:repo-overview".to_string(),
             }],
             diagnostics: Vec::new(),
             privacy_status: PrivacyStatus::local_only(),

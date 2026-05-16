@@ -170,6 +170,13 @@ fn compile_pack_from_plan(
     if !plan.risk_flags.is_empty() {
         sections.push(section("Risk flags", "risk_flags", render_risk_flags(plan)));
     }
+    if !plan.selected_memory.is_empty() {
+        sections.push(section(
+            "Selected memory",
+            "selected_memory",
+            render_selected_memory(plan, memory_limit(&budget)),
+        ));
+    }
 
     let mut diagnostics = plan.diagnostics.clone();
     let inventory_report = match load_or_refresh_inventory(repo_root, &InventoryOptions::default())
@@ -375,6 +382,45 @@ fn render_risk_flags(plan: &ContextPlan) -> String {
         .map(|flag| format!("- `{}`: {}", flag.code, flag.message))
         .collect::<Vec<_>>()
         .join("\n")
+}
+
+fn render_selected_memory(plan: &ContextPlan, limit: usize) -> String {
+    plan.selected_memory
+        .iter()
+        .take(limit)
+        .map(|memory| {
+            let links = if memory.card.source_links.is_empty() {
+                "none".to_string()
+            } else {
+                memory
+                    .card
+                    .source_links
+                    .iter()
+                    .take(6)
+                    .map(|link| format!("`{link}`"))
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            };
+            format!(
+                "- `{}` ({:?}, score {:.2})\n  - Summary: {}\n  - Reason: {}\n  - Source links: {}",
+                memory.card.title,
+                memory.card.kind,
+                memory.score,
+                memory.card.summary,
+                memory.reason,
+                links
+            )
+        })
+        .collect::<Vec<_>>()
+        .join("\n")
+}
+
+fn memory_limit(budget: &PackBudget) -> usize {
+    match budget {
+        PackBudget::Brief => 1,
+        PackBudget::Standard => 2,
+        PackBudget::Deep => 3,
+    }
 }
 
 fn render_target_snippets(

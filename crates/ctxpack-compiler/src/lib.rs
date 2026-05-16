@@ -5,7 +5,8 @@ mod planning;
 mod ranking;
 
 pub use cards::{
-    generate_context_cards, ContextCardsOptions, ContextCardsReport, GeneratedContextCard,
+    generate_context_cards, generate_experience_cards, ContextCardsOptions, ContextCardsReport,
+    ExperienceCardsOptions, ExperienceCardsReport, GeneratedContextCard,
 };
 pub use eval::{
     build_product_proof_report, compare_benchmark_suite_reports, eval_trace_for_pack,
@@ -1604,7 +1605,7 @@ mod tests {
 
         let report = generate_context_cards(&repo, &ContextCardsOptions { limit: 20 }).unwrap();
 
-        assert_eq!(report.cards.len(), 3);
+        assert_eq!(report.cards.len(), 5);
         assert_eq!(
             report.cards_dir,
             fs::canonicalize(&repo).unwrap().join(".ctxpack/cards")
@@ -1613,6 +1614,7 @@ mod tests {
         let testing = fs::read_to_string(repo.join(".ctxpack/cards/testing.md")).unwrap();
         let dependencies =
             fs::read_to_string(repo.join(".ctxpack/cards/dependency-graph.md")).unwrap();
+        let domain_src = fs::read_to_string(repo.join(".ctxpack/cards/domain-src.md")).unwrap();
 
         assert!(overview.contains("# Repo Overview"));
         assert!(overview.contains("`src/auth/session.ts`"));
@@ -1622,12 +1624,53 @@ mod tests {
         assert!(testing.contains("pnpm test tests/auth/session.test.ts"));
         assert!(dependencies.contains("# Dependency Graph"));
         assert!(dependencies.contains("`src/auth/session.ts` -> `src/auth/cookies.ts`"));
-        for content in [&overview, &testing, &dependencies] {
+        assert!(domain_src.contains("Memory card ID"));
+        assert!(report
+            .diagnostics
+            .iter()
+            .any(|diagnostic| diagnostic.code == "memory_cards_persisted"));
+        for content in [&overview, &testing, &dependencies, &domain_src] {
             assert!(content.contains("Source snippets included: `false`"));
             assert!(!content.contains("return parseCookie"));
             assert!(!content.contains("TOKEN=secret"));
             assert!(!content.contains("generated.min.js"));
         }
+
+        std::env::remove_var("CTXPACK_HOME");
+    }
+
+    #[test]
+    fn prepare_and_pack_select_fresh_memory_cards() {
+        let _guard = env_lock();
+        let temp = tempfile::tempdir().unwrap();
+        let repo = temp.path().join("repo");
+        let home = temp.path().join("ctxpack-home");
+        fs::create_dir_all(repo.join("src/auth")).unwrap();
+        fs::write(
+            repo.join("src/auth/session.ts"),
+            "export function requireSession() { return true; }\n",
+        )
+        .unwrap();
+        std::env::set_var("CTXPACK_HOME", &home);
+
+        generate_context_cards(&repo, &ContextCardsOptions { limit: 20 }).unwrap();
+        let (plan, pack) = compile_context_pack_with_plan(
+            &repo,
+            "fix requireSession auth session bug",
+            TaskType::BugFix,
+            PackBudget::Brief,
+        )
+        .unwrap();
+        let markdown = render_pack_markdown(&pack);
+
+        assert!(!plan.selected_memory.is_empty());
+        assert!(plan
+            .retrieval_candidates
+            .iter()
+            .any(|candidate| candidate.kind == RetrievalCandidateKind::Memory));
+        assert!(markdown.contains("## Selected memory"));
+        assert!(markdown.contains("Source links"));
+        assert!(!markdown.contains("sourceText"));
 
         std::env::remove_var("CTXPACK_HOME");
     }

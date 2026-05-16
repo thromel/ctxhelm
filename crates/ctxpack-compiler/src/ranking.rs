@@ -609,6 +609,7 @@ fn signal_weight(signal: &RetrievalSignalKind) -> f32 {
         RetrievalSignalKind::History => 0.65,
         RetrievalSignalKind::Config => 0.25,
         RetrievalSignalKind::Docs => 0.20,
+        RetrievalSignalKind::Memory => 0.25,
     }
 }
 
@@ -620,6 +621,7 @@ fn kind_rank(kind: &RetrievalCandidateKind) -> u8 {
         RetrievalCandidateKind::Config => 3,
         RetrievalCandidateKind::Doc => 4,
         RetrievalCandidateKind::Commit => 5,
+        RetrievalCandidateKind::Memory => 6,
     }
 }
 
@@ -636,6 +638,7 @@ fn signal_rank(signal: &RetrievalSignalKind) -> u8 {
         RetrievalSignalKind::History => 8,
         RetrievalSignalKind::Config => 9,
         RetrievalSignalKind::Docs => 10,
+        RetrievalSignalKind::Memory => 11,
     }
 }
 

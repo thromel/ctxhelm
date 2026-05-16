@@ -110,6 +110,7 @@ The release gate runs these required checks:
 - selected or extracted binary `ctxpack --help`
 - `scripts/smoke-first-pack.sh`
 - `scripts/smoke-storage.sh`
+- `scripts/smoke-memory.sh`
 - `scripts/smoke-semantic.sh`
 - `scripts/smoke-precision.sh`
 - `scripts/smoke-mcp-protocol.sh` from a wrong cwd with an explicit `--repo`/MCP `repo` argument

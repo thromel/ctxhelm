@@ -12,11 +12,11 @@ This roadmap opens v1.6 Repo Memory & Experience Cards. v1.3 made source-free lo
 - Integer phases (25, 26, 27, 28, 29): Planned v1.6 work
 - Decimal phases (26.1, 28.1): Urgent insertions if needed
 
-- [ ] **Phase 25: Memory Contracts & Storage Schema** - Source-free memory card contracts and SQLite persistence are stable, versioned, and compatible with existing stores.
-- [ ] **Phase 26: Freshness-Aware Domain Cards** - Maintainers can generate subsystem/domain cards with source links, input hashes, freshness metadata, and degradation diagnostics.
-- [ ] **Phase 27: Source-Free Experience Cards** - Maintainers can derive reusable lessons from local traces and explicit structured events without storing raw prompts, logs, or source.
-- [ ] **Phase 28: Memory Selection in Plans and Packs** - `prepare_task`, `get_pack`, and MCP pack resources select relevant memory under explicit evidence and token-budget caps.
-- [ ] **Phase 29: Memory Review, Documentation, and Release Gates** - Maintainers can review/redact/disable/regenerate memory, and release gates prove memory safety and usefulness.
+- [x] **Phase 25: Memory Contracts & Storage Schema** - Source-free memory card contracts and SQLite persistence are stable, versioned, and compatible with existing stores.
+- [x] **Phase 26: Freshness-Aware Domain Cards** - Maintainers can generate subsystem/domain cards with source links, input hashes, freshness metadata, and degradation diagnostics.
+- [x] **Phase 27: Source-Free Experience Cards** - Maintainers can derive reusable lessons from local traces and explicit structured events without storing raw prompts, logs, or source.
+- [x] **Phase 28: Memory Selection in Plans and Packs** - `prepare_task`, `get_pack`, and MCP pack resources select relevant memory under explicit evidence and token-budget caps.
+- [x] **Phase 29: Memory Review, Documentation, and Release Gates** - Maintainers can review/redact/disable/regenerate memory, and release gates prove memory safety and usefulness.
 
 ## Phase Details
 
@@ -37,7 +37,7 @@ This roadmap opens v1.6 Repo Memory & Experience Cards. v1.3 made source-free lo
 **Plans**: 1 plan
 
 Plans:
-- [ ] 25-memory-contracts-storage-schema-01-PLAN.md — Add memory contracts, storage schema, and source-free persistence tests.
+- [x] 25-memory-contracts-storage-schema-01-PLAN.md — Add memory contracts, storage schema, and source-free persistence tests.
 
 ### Phase 26: Freshness-Aware Domain Cards
 
@@ -56,7 +56,7 @@ Plans:
 **Plans**: 1 plan
 
 Plans:
-- [ ] 26-freshness-aware-domain-cards-01-PLAN.md — Extend card generation with domain grouping, freshness, and deterministic diagnostics.
+- [x] 26-freshness-aware-domain-cards-01-PLAN.md — Extend card generation with domain grouping, freshness, and deterministic diagnostics.
 
 ### Phase 27: Source-Free Experience Cards
 
@@ -75,7 +75,7 @@ Plans:
 **Plans**: 1 plan
 
 Plans:
-- [ ] 27-source-free-experience-cards-01-PLAN.md — Add experience card ingestion, dedupe, provenance, and review gating.
+- [x] 27-source-free-experience-cards-01-PLAN.md — Add experience card ingestion, dedupe, provenance, and review gating.
 
 ### Phase 28: Memory Selection in Plans and Packs
 
@@ -94,7 +94,7 @@ Plans:
 **Plans**: 1 plan
 
 Plans:
-- [ ] 28-memory-selection-plans-packs-01-PLAN.md — Fuse memory candidates into plans, packs, MCP resources, and eval metadata.
+- [x] 28-memory-selection-plans-packs-01-PLAN.md — Fuse memory candidates into plans, packs, MCP resources, and eval metadata.
 
 ### Phase 29: Memory Review, Documentation, and Release Gates
 
@@ -113,7 +113,7 @@ Plans:
 **Plans**: 1 plan
 
 Plans:
-- [ ] 29-memory-review-docs-release-gates-01-PLAN.md — Add review controls, docs, smoke scripts, and release-gate integration.
+- [x] 29-memory-review-docs-release-gates-01-PLAN.md — Add review controls, docs, smoke scripts, and release-gate integration.
 
 ## Requirement Coverage
 

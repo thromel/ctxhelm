@@ -1,7 +1,9 @@
 use crate::inventory::{build_inventory, InventoryOptions};
 use crate::inventory::{canonicalize, ctxpack_home, repo_id_for_path};
-use ctxpack_core::FileRole;
-use ctxpack_core::{Diagnostic, DiagnosticSeverity};
+use ctxpack_core::{
+    Diagnostic, DiagnosticSeverity, FileRole, MemoryCard, MemoryCardKind, MemoryFreshness,
+    MemoryReviewStatus, PrivacyStatus,
+};
 use rusqlite::{params, Connection, OptionalExtension};
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet};
@@ -10,7 +12,7 @@ use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
 use thiserror::Error;
 
-pub const STORAGE_SCHEMA_VERSION: u32 = 2;
+pub const STORAGE_SCHEMA_VERSION: u32 = 3;
 pub const RANKING_STORAGE_VERSION: u32 = 1;
 pub const COMPILER_STORAGE_VERSION: u32 = 1;
 
@@ -18,6 +20,8 @@ const INITIAL_MIGRATION_NAME: &str = "initial_source_free_storage_schema";
 const INITIAL_MIGRATION_CHECKSUM: &str = "ctxpack-storage-v1-source-free";
 const SEMANTIC_MIGRATION_NAME: &str = "local_semantic_vector_metadata";
 const SEMANTIC_MIGRATION_CHECKSUM: &str = "ctxpack-storage-v2-local-semantic";
+const MEMORY_MIGRATION_NAME: &str = "repo_memory_cards";
+const MEMORY_MIGRATION_CHECKSUM: &str = "ctxpack-storage-v3-source-free-memory";
 
 const REQUIRED_TABLES: &[&str] = &[
     "storage_metadata",
@@ -37,6 +41,7 @@ const REQUIRED_TABLES: &[&str] = &[
     "retrieval_gaps",
     "proof_reports",
     "semantic_vectors",
+    "memory_cards",
 ];
 
 #[derive(Debug, Error)]
@@ -179,6 +184,7 @@ pub struct StorageStatusReport {
     pub benchmark_run_records: usize,
     pub proof_report_records: usize,
     pub semantic_vector_records: usize,
+    pub memory_card_records: usize,
     pub compatibility: StorageCompatibility,
     #[serde(default)]
     pub diagnostics: Vec<Diagnostic>,
@@ -268,6 +274,12 @@ pub struct StorageSemanticVectorRecord {
     pub privacy_status: String,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct StorageMemoryCardRecord {
+    pub card: MemoryCard,
+}
+
 pub fn required_table_names() -> &'static [&'static str] {
     REQUIRED_TABLES
 }
@@ -293,6 +305,7 @@ pub fn initialize_store(
     let metadata = upsert_metadata(&connection, &paths.database_path, &repo_id)?;
     insert_initial_migration(&connection, &paths.database_path)?;
     insert_semantic_migration(&connection, &paths.database_path)?;
+    insert_memory_migration(&connection, &paths.database_path)?;
     let schema_report = inspect_connection_schema(&connection, &paths.database_path)?;
 
     Ok(StorageReport {
@@ -505,6 +518,7 @@ pub fn storage_status_for_path(
             benchmark_run_records: 0,
             proof_report_records: 0,
             semantic_vector_records: 0,
+            memory_card_records: 0,
             compatibility: schema.compatibility,
             diagnostics: schema.diagnostics,
         });
@@ -523,6 +537,7 @@ pub fn storage_status_for_path(
         benchmark_run_records: count_rows(&connection, &database_path, "benchmark_runs")?,
         proof_report_records: count_rows(&connection, &database_path, "proof_reports")?,
         semantic_vector_records: count_rows(&connection, &database_path, "semantic_vectors")?,
+        memory_card_records: count_rows(&connection, &database_path, "memory_cards")?,
         compatibility: schema.compatibility,
         diagnostics: schema.diagnostics,
     })
@@ -622,6 +637,143 @@ ON CONFLICT(vector_id) DO UPDATE SET
         compatibility: status.compatibility,
         diagnostics: status.diagnostics,
     })
+}
+
+pub fn persist_memory_card_records(
+    repo_root: impl AsRef<Path>,
+    config: &StoreConfig,
+    records: &[StorageMemoryCardRecord],
+) -> Result<StorageStatusReport, StorageError> {
+    let storage = initialize_store(repo_root, config)?;
+    let connection = open_connection(&storage.database_path)?;
+    enable_foreign_keys(&connection, &storage.database_path)?;
+    for record in records {
+        let card = &record.card;
+        sqlite(
+            &storage.database_path,
+            connection.execute(
+                r#"
+INSERT INTO memory_cards (
+  card_id, repo_id, kind, title, summary_text, link_paths_json, input_hashes_json,
+  freshness, review_status, disabled, confidence, reason, privacy_status,
+  created_at_unix_seconds, updated_at_unix_seconds
+)
+VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?14)
+ON CONFLICT(card_id) DO UPDATE SET
+  kind = excluded.kind,
+  title = excluded.title,
+  summary_text = excluded.summary_text,
+  link_paths_json = excluded.link_paths_json,
+  input_hashes_json = excluded.input_hashes_json,
+  freshness = excluded.freshness,
+  review_status = excluded.review_status,
+  disabled = excluded.disabled,
+  confidence = excluded.confidence,
+  reason = excluded.reason,
+  privacy_status = excluded.privacy_status,
+  updated_at_unix_seconds = excluded.updated_at_unix_seconds
+"#,
+                params![
+                    card.id,
+                    storage.repo_id,
+                    memory_kind_label(&card.kind),
+                    card.title,
+                    card.summary,
+                    json_string(&card.source_links)?,
+                    json_string(&card.input_hashes)?,
+                    memory_freshness_label(&card.freshness),
+                    memory_review_label(&card.review_status),
+                    bool_as_i64(card.disabled),
+                    card.confidence,
+                    card.reason,
+                    json_string(&card.privacy_status)?,
+                    as_i64(current_unix_seconds()),
+                ],
+            ),
+        )?;
+    }
+    storage_status_for_path(&storage.database_path)
+}
+
+pub fn list_memory_cards(
+    repo_root: impl AsRef<Path>,
+    config: &StoreConfig,
+    include_disabled: bool,
+) -> Result<Vec<MemoryCard>, StorageError> {
+    let storage = initialize_store(repo_root, config)?;
+    let connection = open_connection(&storage.database_path)?;
+    let where_clause = if include_disabled {
+        "repo_id = ?1"
+    } else {
+        "repo_id = ?1 AND disabled = 0"
+    };
+    let mut statement = sqlite(
+        &storage.database_path,
+        connection.prepare(&format!(
+            r#"
+SELECT card_id, kind, title, summary_text, link_paths_json, input_hashes_json,
+       freshness, review_status, disabled, confidence, reason, privacy_status
+FROM memory_cards WHERE {where_clause}
+ORDER BY kind, title, card_id
+"#
+        )),
+    )?;
+    let rows = sqlite(
+        &storage.database_path,
+        statement.query_map(params![storage.repo_id], |row| {
+            let privacy_json: String = row.get(11)?;
+            let privacy_status = serde_json::from_str::<PrivacyStatus>(&privacy_json)
+                .unwrap_or_else(|_| PrivacyStatus::local_only());
+            Ok(MemoryCard {
+                id: row.get(0)?,
+                kind: memory_kind_from_label(&row.get::<_, String>(1)?),
+                title: row.get(2)?,
+                summary: row.get(3)?,
+                source_links: serde_json::from_str(&row.get::<_, String>(4)?).unwrap_or_default(),
+                input_hashes: serde_json::from_str(&row.get::<_, String>(5)?).unwrap_or_default(),
+                freshness: memory_freshness_from_label(&row.get::<_, String>(6)?),
+                review_status: memory_review_from_label(&row.get::<_, String>(7)?),
+                disabled: row.get::<_, i64>(8)? != 0,
+                confidence: row.get(9)?,
+                reason: row.get(10)?,
+                privacy_status,
+            })
+        }),
+    )?;
+    let mut cards = Vec::new();
+    for row in rows {
+        cards.push(sqlite(&storage.database_path, row)?);
+    }
+    Ok(cards)
+}
+
+pub fn update_memory_card_review_status(
+    repo_root: impl AsRef<Path>,
+    config: &StoreConfig,
+    card_id: &str,
+    review_status: MemoryReviewStatus,
+    disabled: bool,
+) -> Result<StorageStatusReport, StorageError> {
+    let storage = initialize_store(repo_root, config)?;
+    let connection = open_connection(&storage.database_path)?;
+    sqlite(
+        &storage.database_path,
+        connection.execute(
+            r#"
+UPDATE memory_cards
+SET review_status = ?1, disabled = ?2, updated_at_unix_seconds = ?3
+WHERE repo_id = ?4 AND card_id = ?5
+"#,
+            params![
+                memory_review_label(&review_status),
+                bool_as_i64(disabled),
+                as_i64(current_unix_seconds()),
+                storage.repo_id,
+                card_id,
+            ],
+        ),
+    )?;
+    storage_status_for_path(&storage.database_path)
 }
 
 pub fn vacuum_store(database_path: impl AsRef<Path>) -> Result<(), StorageError> {
@@ -946,6 +1098,56 @@ fn semantic_vector_id(repo_id: &str, record: &StorageSemanticVectorRecord) -> St
     format!("semantic:{hash}")
 }
 
+fn memory_kind_label(kind: &MemoryCardKind) -> &'static str {
+    match kind {
+        MemoryCardKind::Domain => "domain",
+        MemoryCardKind::Experience => "experience",
+    }
+}
+
+fn memory_kind_from_label(label: &str) -> MemoryCardKind {
+    match label {
+        "experience" => MemoryCardKind::Experience,
+        _ => MemoryCardKind::Domain,
+    }
+}
+
+fn memory_freshness_label(freshness: &MemoryFreshness) -> &'static str {
+    match freshness {
+        MemoryFreshness::Fresh => "fresh",
+        MemoryFreshness::Stale => "stale",
+        MemoryFreshness::Degraded => "degraded",
+    }
+}
+
+fn memory_freshness_from_label(label: &str) -> MemoryFreshness {
+    match label {
+        "stale" => MemoryFreshness::Stale,
+        "degraded" => MemoryFreshness::Degraded,
+        _ => MemoryFreshness::Fresh,
+    }
+}
+
+fn memory_review_label(status: &MemoryReviewStatus) -> &'static str {
+    match status {
+        MemoryReviewStatus::Deterministic => "deterministic",
+        MemoryReviewStatus::Pending => "pending",
+        MemoryReviewStatus::Approved => "approved",
+        MemoryReviewStatus::Rejected => "rejected",
+        MemoryReviewStatus::Disabled => "disabled",
+    }
+}
+
+fn memory_review_from_label(label: &str) -> MemoryReviewStatus {
+    match label {
+        "approved" => MemoryReviewStatus::Approved,
+        "rejected" => MemoryReviewStatus::Rejected,
+        "disabled" => MemoryReviewStatus::Disabled,
+        "pending" => MemoryReviewStatus::Pending,
+        _ => MemoryReviewStatus::Deterministic,
+    }
+}
+
 fn role_name(role: &FileRole) -> String {
     format!("{:?}", role).to_lowercase()
 }
@@ -1202,6 +1404,24 @@ CREATE TABLE IF NOT EXISTS semantic_vectors (
   updated_at_unix_seconds INTEGER NOT NULL,
   UNIQUE(repo_id, path, provider, model)
 );
+
+CREATE TABLE IF NOT EXISTS memory_cards (
+  card_id TEXT PRIMARY KEY,
+  repo_id TEXT NOT NULL REFERENCES repos(repo_id) ON DELETE CASCADE,
+  kind TEXT NOT NULL,
+  title TEXT NOT NULL,
+  summary_text TEXT NOT NULL,
+  link_paths_json TEXT NOT NULL,
+  input_hashes_json TEXT NOT NULL,
+  freshness TEXT NOT NULL,
+  review_status TEXT NOT NULL,
+  disabled INTEGER NOT NULL DEFAULT 0,
+  confidence REAL NOT NULL DEFAULT 0.0,
+  reason TEXT NOT NULL,
+  privacy_status TEXT NOT NULL,
+  created_at_unix_seconds INTEGER NOT NULL,
+  updated_at_unix_seconds INTEGER NOT NULL
+);
 "#,
         ),
     )
@@ -1319,6 +1539,26 @@ ON CONFLICT(version) DO NOTHING
                 SEMANTIC_MIGRATION_NAME,
                 as_i64(current_unix_seconds()),
                 SEMANTIC_MIGRATION_CHECKSUM
+            ],
+        ),
+    )?;
+    Ok(())
+}
+
+fn insert_memory_migration(connection: &Connection, path: &Path) -> Result<(), StorageError> {
+    sqlite(
+        path,
+        connection.execute(
+            r#"
+INSERT INTO schema_migrations (version, name, applied_at_unix_seconds, checksum)
+VALUES (?1, ?2, ?3, ?4)
+ON CONFLICT(version) DO NOTHING
+"#,
+            params![
+                3_u32,
+                MEMORY_MIGRATION_NAME,
+                as_i64(current_unix_seconds()),
+                MEMORY_MIGRATION_CHECKSUM
             ],
         ),
     )?;
@@ -1910,6 +2150,68 @@ mod tests {
         assert!(!database_text.contains("CTXPACK_SEMANTIC_SOURCE_SENTINEL"));
 
         drop(temp);
+    }
+
+    #[test]
+    fn persists_and_reviews_memory_cards_without_source_text() {
+        let (_temp, repo) = fixture_repo();
+        let database_path = repo.join("store.sqlite3");
+        let config = StoreConfig {
+            path_override: Some(database_path.clone()),
+        };
+        let card = MemoryCard {
+            id: "domain:auth".to_string(),
+            kind: MemoryCardKind::Domain,
+            title: "Auth".to_string(),
+            summary: "Auth uses session and middleware metadata.".to_string(),
+            source_links: vec!["src/lib.rs".to_string()],
+            input_hashes: vec!["hash-1".to_string()],
+            freshness: MemoryFreshness::Fresh,
+            review_status: MemoryReviewStatus::Pending,
+            disabled: false,
+            confidence: 0.7,
+            reason: "test metadata".to_string(),
+            privacy_status: PrivacyStatus::local_only(),
+        };
+
+        let status = persist_memory_card_records(
+            &repo,
+            &config,
+            &[StorageMemoryCardRecord { card: card.clone() }],
+        )
+        .unwrap();
+        assert_eq!(status.memory_card_records, 1);
+        let cards = list_memory_cards(&repo, &config, false).unwrap();
+        assert_eq!(cards[0].id, "domain:auth");
+        assert_eq!(cards[0].review_status, MemoryReviewStatus::Pending);
+
+        let status = update_memory_card_review_status(
+            &repo,
+            &config,
+            "domain:auth",
+            MemoryReviewStatus::Approved,
+            false,
+        )
+        .unwrap();
+        assert_eq!(status.memory_card_records, 1);
+        let cards = list_memory_cards(&repo, &config, false).unwrap();
+        assert_eq!(cards[0].review_status, MemoryReviewStatus::Approved);
+
+        update_memory_card_review_status(
+            &repo,
+            &config,
+            "domain:auth",
+            MemoryReviewStatus::Rejected,
+            true,
+        )
+        .unwrap();
+        assert!(list_memory_cards(&repo, &config, false).unwrap().is_empty());
+        assert_eq!(list_memory_cards(&repo, &config, true).unwrap().len(), 1);
+
+        let bytes = fs::read(&database_path).unwrap();
+        let database_text = String::from_utf8_lossy(&bytes);
+        assert!(!database_text.contains("pub fn demo"));
+        assert!(!database_text.contains("prompt"));
     }
 
     #[test]

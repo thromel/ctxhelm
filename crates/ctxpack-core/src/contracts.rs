@@ -53,6 +53,7 @@ pub enum RetrievalCandidateKind {
     Doc,
     Commit,
     Config,
+    Memory,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -69,6 +70,7 @@ pub enum RetrievalSignalKind {
     Docs,
     Config,
     Anchor,
+    Memory,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -135,6 +137,60 @@ pub struct PackOption {
 pub struct RiskFlag {
     pub code: String,
     pub message: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum MemoryCardKind {
+    Domain,
+    Experience,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum MemoryFreshness {
+    Fresh,
+    Stale,
+    Degraded,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum MemoryReviewStatus {
+    Deterministic,
+    Pending,
+    Approved,
+    Rejected,
+    Disabled,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct MemoryCard {
+    pub id: String,
+    pub kind: MemoryCardKind,
+    pub title: String,
+    pub summary: String,
+    #[serde(default)]
+    pub source_links: Vec<String>,
+    #[serde(default)]
+    pub input_hashes: Vec<String>,
+    pub freshness: MemoryFreshness,
+    pub review_status: MemoryReviewStatus,
+    pub disabled: bool,
+    pub confidence: f32,
+    pub reason: String,
+    pub privacy_status: PrivacyStatus,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct SelectedMemory {
+    pub card: MemoryCard,
+    pub score: f32,
+    pub reason: String,
+    #[serde(default)]
+    pub evidence: Vec<RetrievalEvidence>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -209,6 +265,8 @@ pub struct ContextPlan {
     pub diagnostics: Vec<Diagnostic>,
     #[serde(default)]
     pub retrieval_candidates: Vec<RetrievalCandidate>,
+    #[serde(default)]
+    pub selected_memory: Vec<SelectedMemory>,
     pub privacy_status: PrivacyStatus,
 }
 
@@ -296,6 +354,7 @@ mod tests {
                 count: 1,
             }],
             retrieval_candidates: Vec::new(),
+            selected_memory: Vec::new(),
             privacy_status: PrivacyStatus::local_only(),
         };
 
@@ -330,6 +389,7 @@ mod tests {
                 "count": 1
             }],
             "retrievalCandidates": [],
+            "selectedMemory": [],
             "privacyStatus": {
                 "localOnly": true,
                 "remoteEmbeddingsUsed": false,
@@ -353,6 +413,7 @@ mod tests {
             "riskFlags",
             "diagnostics",
             "retrievalCandidates",
+            "selectedMemory",
             "privacyStatus",
         ] {
             assert!(object.contains_key(key), "missing public field {key}");
@@ -428,6 +489,7 @@ mod tests {
                 }],
                 evidence: attribution,
             }],
+            selected_memory: Vec::new(),
             privacy_status: PrivacyStatus::local_only(),
         };
 
@@ -481,6 +543,7 @@ mod tests {
         let plan: ContextPlan = serde_json::from_value(old_json).unwrap();
 
         assert!(plan.retrieval_candidates.is_empty());
+        assert!(plan.selected_memory.is_empty());
         assert!(plan.target_files[0].attribution.is_empty());
         assert!(plan.related_tests[0].attribution.is_empty());
     }
@@ -527,10 +590,56 @@ mod tests {
             (RetrievalCandidateKind::Doc, "doc"),
             (RetrievalCandidateKind::Commit, "commit"),
             (RetrievalCandidateKind::Config, "config"),
+            (RetrievalCandidateKind::Memory, "memory"),
         ];
 
         for (kind, expected) in cases {
             assert_eq!(serde_json::to_value(kind).unwrap(), expected);
+        }
+    }
+
+    #[test]
+    fn memory_contracts_are_source_free_and_camel_case() {
+        let card = MemoryCard {
+            id: "domain:auth".to_string(),
+            kind: MemoryCardKind::Domain,
+            title: "Auth".to_string(),
+            summary: "Auth requests depend on session and middleware files.".to_string(),
+            source_links: vec!["src/auth/session.ts".to_string()],
+            input_hashes: vec!["hash-1".to_string()],
+            freshness: MemoryFreshness::Fresh,
+            review_status: MemoryReviewStatus::Deterministic,
+            disabled: false,
+            confidence: 0.82,
+            reason: "Generated from safe inventory metadata.".to_string(),
+            privacy_status: PrivacyStatus::local_only(),
+        };
+
+        let value = serde_json::to_value(SelectedMemory {
+            card,
+            score: 0.8,
+            reason: "task overlaps source links".to_string(),
+            evidence: vec![RetrievalEvidence {
+                signal: RetrievalSignalKind::Memory,
+                score: 0.8,
+                reason_code: "memory_task_overlap".to_string(),
+                path: Some("src/auth/session.ts".to_string()),
+                role: Some(FileRole::Source),
+                edge_label: None,
+                commit_ids: Vec::new(),
+                commit_count: 0,
+            }],
+        })
+        .unwrap();
+
+        assert_eq!(value["card"]["kind"], "domain");
+        assert_eq!(value["card"]["freshness"], "fresh");
+        assert_eq!(value["card"]["reviewStatus"], "deterministic");
+        assert_eq!(value["card"]["sourceLinks"][0], "src/auth/session.ts");
+        assert_eq!(value["evidence"][0]["signal"], "memory");
+        for forbidden in ["sourceText", "prompt", "rawTranscript", "logOutput"] {
+            assert!(value.get(forbidden).is_none());
+            assert!(value["card"].get(forbidden).is_none());
         }
     }
 

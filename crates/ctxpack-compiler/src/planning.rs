@@ -1,14 +1,16 @@
 use crate::ranking::{rank_candidates, select_ranked_candidates, AnchorCandidate, RankingInput};
 use ctxpack_core::{
-    ContextPlan, Diagnostic, DiagnosticSeverity, FileRole, PackBudget, PackOption, PrivacyStatus,
-    RiskFlag, TargetFile, TaskType,
+    ContextPlan, Diagnostic, DiagnosticSeverity, FileRole, MemoryCard, MemoryFreshness,
+    MemoryReviewStatus, PackBudget, PackOption, PrivacyStatus, RetrievalCandidate,
+    RetrievalCandidateKind, RetrievalEvidence, RetrievalSignalKind, RetrievalSignalScore, RiskFlag,
+    SelectedMemory, TargetFile, TaskType,
 };
 use ctxpack_index::{
-    co_change_hints_report, current_diff_summary_report, lexical_search_report,
+    co_change_hints_report, current_diff_summary_report, lexical_search_report, list_memory_cards,
     load_or_refresh_inventory, related_dependency_edges_report, related_tests_report,
     semantic_search_report, symbol_search_report, CoChangeOptions, CurrentDiffOptions,
     DependencyOptions, InventoryError, InventoryOptions, SearchOptions, SemanticOptions,
-    SymbolOptions,
+    StoreConfig, SymbolOptions,
 };
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::{Component, Path};
@@ -287,6 +289,7 @@ pub(crate) fn prepare_context_plan_with_paths_history_and_semantic(
     plan.related_tests = selection.related_tests;
     plan.recommended_commands = selection.recommended_commands;
     plan.retrieval_candidates = selection.retrieval_candidates;
+    attach_selected_memory(repo_root, task, &mut plan);
 
     if plan.target_files.is_empty() {
         plan.missing_info_questions.push(
@@ -370,8 +373,159 @@ fn base_plan(task_type: TaskType) -> ContextPlan {
         risk_flags: Vec::new(),
         diagnostics: Vec::new(),
         retrieval_candidates: Vec::new(),
+        selected_memory: Vec::new(),
         privacy_status: PrivacyStatus::local_only(),
     }
+}
+
+fn attach_selected_memory(repo_root: &Path, task: &str, plan: &mut ContextPlan) {
+    let cards = match list_memory_cards(repo_root, &StoreConfig::default(), false) {
+        Ok(cards) => cards,
+        Err(error) => {
+            push_plan_diagnostic(
+                plan,
+                Diagnostic {
+                    code: "memory_unavailable".to_string(),
+                    severity: DiagnosticSeverity::Warning,
+                    message: format!("Local memory cards were unavailable: {error}"),
+                    paths: Vec::new(),
+                    count: 0,
+                },
+            );
+            return;
+        }
+    };
+    if cards.is_empty() {
+        return;
+    }
+
+    let mut blocked = 0usize;
+    let mut selected = cards
+        .iter()
+        .filter_map(|card| {
+            if !memory_card_pack_eligible(card) {
+                blocked += 1;
+                return None;
+            }
+            score_memory_card(task, plan, card)
+        })
+        .collect::<Vec<_>>();
+    selected.sort_by(|left, right| {
+        right
+            .score
+            .partial_cmp(&left.score)
+            .unwrap_or(std::cmp::Ordering::Equal)
+            .then_with(|| left.card.id.cmp(&right.card.id))
+    });
+    selected.truncate(3);
+    if !selected.is_empty() {
+        for memory in &selected {
+            plan.retrieval_candidates.push(RetrievalCandidate {
+                kind: RetrievalCandidateKind::Memory,
+                path: memory.card.source_links.first().cloned(),
+                role: None,
+                reason_code: "selected_memory".to_string(),
+                confidence: memory.score,
+                signal_scores: vec![RetrievalSignalScore {
+                    signal: RetrievalSignalKind::Memory,
+                    score: memory.score,
+                    weight: 0.25,
+                }],
+                evidence: memory.evidence.clone(),
+            });
+        }
+        plan.selected_memory = selected;
+    }
+    if blocked > 0 {
+        push_plan_diagnostic(
+            plan,
+            Diagnostic {
+                code: "memory_cards_blocked".to_string(),
+                severity: DiagnosticSeverity::Warning,
+                message: format!(
+                    "{blocked} memory card(s) were stale, degraded, disabled, rejected, or pending review and were not selected."
+                ),
+                paths: Vec::new(),
+                count: blocked,
+            },
+        );
+    }
+}
+
+fn memory_card_pack_eligible(card: &MemoryCard) -> bool {
+    !card.disabled
+        && matches!(card.freshness, MemoryFreshness::Fresh)
+        && matches!(
+            card.review_status,
+            MemoryReviewStatus::Deterministic | MemoryReviewStatus::Approved
+        )
+}
+
+fn score_memory_card(task: &str, plan: &ContextPlan, card: &MemoryCard) -> Option<SelectedMemory> {
+    let task_terms = terms(task);
+    let mut score = 0.0f32;
+    let mut evidence = Vec::new();
+    for link in &card.source_links {
+        if plan.target_files.iter().any(|target| target.path == *link)
+            || plan.related_tests.iter().any(|test| test.path == *link)
+        {
+            score += 0.55;
+            evidence.push(RetrievalEvidence {
+                signal: RetrievalSignalKind::Memory,
+                score: 0.55,
+                reason_code: "memory_source_link_selected".to_string(),
+                path: Some(link.clone()),
+                role: None,
+                edge_label: Some("source_link".to_string()),
+                commit_ids: Vec::new(),
+                commit_count: 0,
+            });
+            break;
+        }
+    }
+    let haystack = format!(
+        "{} {} {}",
+        card.title,
+        card.summary,
+        card.source_links.join(" ")
+    )
+    .to_ascii_lowercase();
+    let overlap = task_terms
+        .iter()
+        .filter(|term| haystack.contains(term.as_str()))
+        .count();
+    if overlap > 0 {
+        let overlap_score = (overlap as f32 * 0.12).min(0.36);
+        score += overlap_score;
+        evidence.push(RetrievalEvidence {
+            signal: RetrievalSignalKind::Memory,
+            score: overlap_score,
+            reason_code: "memory_task_overlap".to_string(),
+            path: card.source_links.first().cloned(),
+            role: None,
+            edge_label: Some("task_overlap".to_string()),
+            commit_ids: Vec::new(),
+            commit_count: 0,
+        });
+    }
+    if score <= 0.0 {
+        return None;
+    }
+    let score = score.min(1.0) * card.confidence.max(0.1);
+    Some(SelectedMemory {
+        card: card.clone(),
+        score,
+        reason: "Selected from fresh local memory with task or target-file overlap.".to_string(),
+        evidence,
+    })
+}
+
+fn terms(value: &str) -> BTreeSet<String> {
+    value
+        .split(|character: char| !(character.is_ascii_alphanumeric() || character == '_'))
+        .map(|term| term.trim().to_ascii_lowercase())
+        .filter(|term| term.len() >= 3)
+        .collect()
 }
 
 pub(crate) fn normalized_target_agent(target_agent: &str) -> String {

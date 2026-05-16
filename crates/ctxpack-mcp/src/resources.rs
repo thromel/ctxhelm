@@ -2,8 +2,9 @@ use crate::protocol::RpcError;
 use ctxpack_compiler::{compile_context_pack_from_plan_for_agent, render_pack_markdown};
 use ctxpack_core::{ContextPack, RepoRoot};
 use ctxpack_index::{
-    dependency_edges, load_or_refresh_inventory, read_safe_source, symbol_search, test_map,
-    DependencyOptions, InventoryOptions, SourceReadStatus, SymbolOptions, SOURCE_READ_MAX_BYTES,
+    dependency_edges, list_memory_cards, load_or_refresh_inventory, read_safe_source,
+    symbol_search, test_map, DependencyOptions, InventoryOptions, SourceReadStatus, StoreConfig,
+    SymbolOptions, SOURCE_READ_MAX_BYTES,
 };
 use serde::Deserialize;
 use serde_json::{json, Value};
@@ -34,6 +35,10 @@ pub(crate) fn read_resource(params: Value) -> Result<Value, RpcError> {
         "ctxpack://repo/dependency-graph" => {
             let repo = discover_repo(None)?;
             resource_json(&repo_dependency_graph(&repo.path)?)
+        }
+        "ctxpack://repo/memory" => {
+            let repo = discover_repo(None)?;
+            resource_json(&repo_memory(&repo.path)?)
         }
         "ctxpack://pack/guide" => pack_guide_markdown(),
         uri if uri.starts_with("ctxpack://pack/") => read_pack_resource(uri)?,
@@ -234,6 +239,21 @@ fn repo_dependency_graph(repo: &Path) -> Result<Value, RpcError> {
     })?;
 
     Ok(json!({ "edges": edges }))
+}
+
+fn repo_memory(repo: &Path) -> Result<Value, RpcError> {
+    let cards = list_memory_cards(repo, &StoreConfig::default(), false).map_err(|error| {
+        RpcError::invalid_params(format!("failed to list memory cards: {error}"))
+    })?;
+
+    Ok(json!({
+        "cards": cards,
+        "privacyStatus": {
+            "localOnly": true,
+            "remoteEmbeddingsUsed": false,
+            "remoteRerankingUsed": false
+        }
+    }))
 }
 
 fn read_file_resource(repo: &Path, uri: &str) -> Result<ResourceContent, RpcError> {
