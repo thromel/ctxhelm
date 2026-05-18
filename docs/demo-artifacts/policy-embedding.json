@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "reportKind": "policy_embedding",
+  "semanticProvider": "local_hash",
+  "cloudEmbeddingsAllowed": false,
+  "cloudRerankingAllowed": false,
+  "sourceTextLogged": false,
+  "privacyStatus": {
+    "localOnly": true,
+    "remoteEmbeddingsUsed": false,
+    "remoteRerankingUsed": false,
+    "sourceTextLogged": false
+  },
+  "policyRows": [
+    {"profile": "default", "lexicalWeight": 0.3, "graphWeight": 0.25, "semanticWeight": 0.1}
+  ]
+}

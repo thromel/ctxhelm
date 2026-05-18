@@ -17,6 +17,12 @@ If those fail, install the release binary into a directory on `PATH`, for exampl
 
 GUI-launched agents can have a different PATH than your terminal. When configuring MCP clients, prefer an absolute `ctxpack` binary path if startup fails from the GUI.
 
+Run the install doctor to capture all binary-path checks in one place:
+
+```bash
+ctxpack doctor --repo /path/to/repo --binary "$(command -v ctxpack)"
+```
+
 ## Absolute MCP Binary Paths
 
 **Symptom:** the MCP client says it cannot start `ctxpack`, exits immediately, or reports no tools.
@@ -69,6 +75,25 @@ rm -rf ~/.ctxpack
 ```
 
 For custom state cleanup, remove the directory named by `CTXPACK_HOME`. Do not remove project source directories; ctxpack state is separate from your repository.
+
+## Stale Binary Or Upgrade Mismatch
+
+**Symptom:** `ctxpack --version` is older than the release archive you unpacked,
+or the agent still starts an older binary.
+
+**Fix:** locate the active binary and verify it against the release manifest:
+
+```bash
+command -v ctxpack
+ctxpack --version
+ctxpack doctor \
+  --repo /path/to/repo \
+  --binary "$(command -v ctxpack)" \
+  --release-manifest /path/to/ctxpack-v1.1.0-aarch64-apple-darwin.manifest.json
+```
+
+If `doctor` reports a manifest version mismatch, update the binary path used by
+your shell or MCP client. GUI clients often keep a stale absolute command path.
 
 ## wrong cwd Or Wrong Repository
 
@@ -123,6 +148,10 @@ ctxpack does not require permission to modify your source files.
 `setup-check` validates repo-local generated artifacts such as `AGENTS.md`, `.ctxpack/ctxpack.toml`, `.cursor/rules/ctxpack.mdc`, `.claude/commands/ctxpack-bugfix.md`, and adapter snippets when requested.
 
 It does not run real agent clients, does not prove a client called MCP tools, and does not mutate global Codex, Claude, Cursor, or OpenCode configuration.
+
+Use `ctxpack doctor` before `setup-check` when the failure may be install,
+upgrade, binary path, release manifest, or local state compatibility rather
+than generated guidance files.
 
 ## Session-Scoped Pack Resources
 

@@ -1,4 +1,6 @@
+mod artifacts;
 mod dependencies;
+mod feedback;
 mod freshness;
 mod git;
 mod inventory;
@@ -9,12 +11,25 @@ mod semantic;
 mod storage;
 mod symbols;
 mod traces;
+mod workspace;
 
+pub use artifacts::{
+    export_shared_artifact_manifest, import_shared_artifact_manifest,
+    imported_shared_artifact_manifest_path, inspect_shared_artifact_manifest,
+    shared_artifact_manifest_path, team_policy_path, team_policy_report,
+    write_team_policy_template, SHARED_ARTIFACT_SCHEMA_VERSION, TEAM_POLICY_SCHEMA_VERSION,
+};
 pub use dependencies::{
     dependency_edges, dependency_edges_report, import_precision_edges, precision_edges_path,
     related_dependency_edges, related_dependency_edges_report, DependencyEdge,
     DependencyEdgesReport, DependencyOptions, PrecisionEdgeRecord, PrecisionEdgesFile,
     PrecisionImportReport, PRECISION_EDGES_SCHEMA_VERSION,
+};
+pub use feedback::{
+    append_feedback_event, apply_policy_profile, disable_policy_profile, feedback_path,
+    list_feedback_events, list_policy_profiles, outcome_comparison_report, policy_profiles_path,
+    policy_quality_report, propose_policy_profile, rollback_policy_profile,
+    summarize_feedback_events, try_append_feedback_event, FEEDBACK_EVENT_SCHEMA_VERSION,
 };
 pub use freshness::{
     check_inventory_freshness, load_or_refresh_inventory, InventoryFreshness, InventoryLoadReport,
@@ -68,9 +83,14 @@ pub use symbols::{
     SymbolExtractionReport, SymbolKind, SymbolOptions, SymbolSearchReport, SymbolSearchResult,
 };
 pub use traces::{append_eval_trace, list_eval_traces, trace_path, try_append_eval_trace};
+pub use workspace::{
+    default_workspace_manifest_path, load_workspace_manifest, workspace_inventory_status,
+    workspace_inventory_status_for_manifest, write_workspace_manifest,
+    WORKSPACE_MANIFEST_SCHEMA_VERSION,
+};
 
 #[cfg(test)]
-use ctxpack_core::{EvalTrace, FileRole};
+use ctxpack_core::{EvalTrace, FeedbackOutcome, FileRole, PackBudget, SessionFeedbackEvent};
 #[cfg(test)]
 use git::{git_stdout_with_timeout, parse_git_log_name_only, parse_git_log_subject_name_only};
 #[cfg(test)]
@@ -1708,6 +1728,103 @@ mod tests {
         assert_eq!(traces[0].recommended_files, vec!["src/auth.ts"]);
 
         std::env::remove_var("CTXPACK_HOME");
+    }
+
+    #[test]
+    fn feedback_events_append_list_and_summarize_without_source_text() {
+        let _guard = env_lock();
+        let temp = tempfile::tempdir().unwrap();
+        let repo = temp.path().join("repo");
+        let home = temp.path().join("ctxpack-home");
+        fs::create_dir_all(repo.join(".git")).unwrap();
+        std::env::set_var("CTXPACK_HOME", &home);
+        let repo_id = repo_id_for_path(&fs::canonicalize(&repo).unwrap());
+
+        let first = SessionFeedbackEvent {
+            id: Uuid::nil(),
+            schema_version: FEEDBACK_EVENT_SCHEMA_VERSION,
+            repo_id: repo_id.clone(),
+            task_hash: task_hash("fix auth"),
+            task_type: ctxpack_core::TaskType::BugFix,
+            pack_id: Some(Uuid::nil()),
+            target_agent: "codex".to_string(),
+            budget: Some(PackBudget::Brief),
+            outcome: FeedbackOutcome::Passed,
+            recommended_files: vec!["src/auth.ts".to_string()],
+            recommended_tests: vec!["tests/auth.test.ts".to_string()],
+            recommended_commands: vec!["pnpm test tests/auth.test.ts".to_string()],
+            read_files: vec!["src/auth.ts".to_string()],
+            edited_files: vec!["src/auth.ts".to_string()],
+            tested_files: vec!["tests/auth.test.ts".to_string()],
+            tested_commands: vec!["pnpm test tests/auth.test.ts".to_string()],
+            user_corrected_files: Vec::new(),
+            tags: vec!["accepted_fix".to_string()],
+            created_at_unix_seconds: 1,
+            source_text_logged: false,
+        };
+        let second = SessionFeedbackEvent {
+            id: Uuid::nil(),
+            outcome: FeedbackOutcome::Failed,
+            created_at_unix_seconds: 2,
+            ..first.clone()
+        };
+
+        let path = append_feedback_event(&repo, &first).unwrap();
+        append_feedback_event(&repo, &second).unwrap();
+
+        assert_eq!(path, feedback_path(&repo_id));
+        let stored = fs::read_to_string(path).unwrap();
+        assert!(!stored.contains("fix auth"));
+        assert!(!stored.contains("pub fn"));
+        assert!(stored.contains("\"sourceTextLogged\":false"));
+
+        let events = list_feedback_events(&repo, 10).unwrap();
+        assert_eq!(events.len(), 2);
+        assert_eq!(events[0].outcome, FeedbackOutcome::Failed);
+        let summary = summarize_feedback_events(&repo_id, &events);
+        assert_eq!(summary.event_count, 2);
+        assert_eq!(summary.passed_count, 1);
+        assert_eq!(summary.failed_count, 1);
+        assert_eq!(summary.read_file_count, 1);
+        assert!(!summary.source_text_logged);
+
+        std::env::remove_var("CTXPACK_HOME");
+    }
+
+    #[test]
+    fn feedback_events_reject_source_text_and_unsafe_paths() {
+        let _guard = env_lock();
+        let temp = tempfile::tempdir().unwrap();
+        let repo = temp.path().join("repo");
+        fs::create_dir_all(repo.join(".git")).unwrap();
+        let repo_id = repo_id_for_path(&fs::canonicalize(&repo).unwrap());
+        let mut event = SessionFeedbackEvent {
+            id: Uuid::nil(),
+            schema_version: FEEDBACK_EVENT_SCHEMA_VERSION,
+            repo_id,
+            task_hash: "hash".to_string(),
+            task_type: ctxpack_core::TaskType::BugFix,
+            pack_id: None,
+            target_agent: "codex".to_string(),
+            budget: None,
+            outcome: FeedbackOutcome::Unknown,
+            recommended_files: vec!["../secret.rs".to_string()],
+            recommended_tests: Vec::new(),
+            recommended_commands: Vec::new(),
+            read_files: Vec::new(),
+            edited_files: Vec::new(),
+            tested_files: Vec::new(),
+            tested_commands: Vec::new(),
+            user_corrected_files: Vec::new(),
+            tags: Vec::new(),
+            created_at_unix_seconds: 1,
+            source_text_logged: false,
+        };
+
+        assert!(append_feedback_event(&repo, &event).is_err());
+        event.recommended_files = vec!["src/auth.ts".to_string()];
+        event.source_text_logged = true;
+        assert!(append_feedback_event(&repo, &event).is_err());
     }
 
     fn run_git(repo: &Path, args: &[&str]) {

@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "taskHash": "demo-task-auth-redirect",
+  "budget": "brief",
+  "targetAgent": "generic",
+  "sourceTextLogged": false,
+  "privacyStatus": {
+    "localOnly": true,
+    "remoteEmbeddingsUsed": false,
+    "remoteRerankingUsed": false,
+    "sourceTextLogged": false
+  },
+  "targetFiles": [
+    {
+      "path": "src/auth/middleware.ts",
+      "reason": "Owns unauthenticated redirect behavior",
+      "confidence": 0.88
+    },
+    {
+      "path": "tests/auth/redirect.test.ts",
+      "reason": "Likely focused validation target",
+      "confidence": 0.91
+    }
+  ],
+  "validationCommands": [
+    "pnpm vitest run tests/auth/redirect.test.ts",
+    "pnpm typecheck"
+  ],
+  "sections": [
+    {
+      "title": "Target Files",
+      "tokenEstimate": 480,
+      "sourceBearing": false
+    },
+    {
+      "title": "Validation",
+      "tokenEstimate": 120,
+      "sourceBearing": false
+    }
+  ]
+}

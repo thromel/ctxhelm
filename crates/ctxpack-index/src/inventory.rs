@@ -28,6 +28,8 @@ pub enum InventoryError {
         path: PathBuf,
         source: serde_json::Error,
     },
+    #[error("invalid inventory input: {0}")]
+    InvalidInput(String),
     #[error("git command failed in {repo_root}: {message}")]
     Git { repo_root: PathBuf, message: String },
 }

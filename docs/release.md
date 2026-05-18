@@ -25,6 +25,7 @@ tar -xzf ctxpack-v1.1.0-aarch64-apple-darwin.tar.gz
 install -m 0755 ctxpack-v1.1.0-aarch64-apple-darwin/ctxpack ~/.local/bin/ctxpack
 ctxpack --version
 ctxpack --help
+ctxpack doctor --binary "$(command -v ctxpack)" --release-manifest ctxpack-v1.1.0-aarch64-apple-darwin.manifest.json
 ```
 
 The expected diagnostic is:
@@ -70,6 +71,8 @@ It writes release artifacts under `dist/` by default, or under `CTXPACK_DIST_DIR
 
 ```text
 dist/ctxpack-v1.1.0-{target}.tar.gz
+dist/ctxpack-v1.1.0-{target}.manifest.json
+dist/ctxpack-v1.1.0-{target}.audit.json
 dist/ctxpack-v1.1.0-{target}.tar.gz.sha256
 dist/sha256sums.txt
 ```
@@ -79,6 +82,19 @@ The package script stages only the `ctxpack` binary, `README.md`, `LICENSE`, and
 ```bash
 ctxpack --version
 ctxpack --help
+```
+
+The release manifest records the version, target label, archive checksum, binary checksum, included files, local-only privacy status, unsupported publish actions, and the matching artifact audit report. `sha256sums.txt` covers the archive, manifest, and audit report.
+
+Maintainers can set `CARGO_TARGET_DIR=/absolute/path/to/target` when they need a clean build cache for packaging or release-gate verification.
+
+Maintainers can verify a built archive from a clean extraction directory:
+
+```bash
+bash scripts/verify-release-archive.sh \
+  --archive dist/ctxpack-v1.1.0-aarch64-apple-darwin.tar.gz \
+  --manifest dist/ctxpack-v1.1.0-aarch64-apple-darwin.manifest.json \
+  --checksums dist/sha256sums.txt
 ```
 
 During multi-plan local work, maintainers can set `CTXPACK_ALLOW_DIRTY=1` for verification, but release artifacts should be produced from a clean checkout.
@@ -106,15 +122,35 @@ The release gate runs these required checks:
 - `cargo test --workspace`
 - `scripts/check-release-docs.sh`
 - `scripts/release-package.sh`, including `scripts/audit-release-artifact.sh`
+- `scripts/verify-release-archive.sh` clean extraction verification
 - selected or extracted binary `ctxpack --version`
 - selected or extracted binary `ctxpack --help`
 - `scripts/smoke-first-pack.sh`
 - `scripts/smoke-storage.sh`
 - `scripts/smoke-memory.sh`
+- `scripts/smoke-feedback.sh`
+- `scripts/smoke-workspace.sh`
+- `scripts/smoke-shared-artifacts.sh`
+- `scripts/smoke-inspector.sh`
+- `scripts/smoke-retrieval-health.sh`
+- `scripts/smoke-graph.sh`
+- `scripts/smoke-policy-embedding.sh`
+- `scripts/smoke-agent-preview.sh`
+- `scripts/smoke-demo-artifacts.sh`
+- `scripts/smoke-distribution-metadata.sh`
+- `scripts/smoke-release-governance.sh`
 - `scripts/smoke-semantic.sh`
 - `scripts/smoke-precision.sh`
 - `scripts/smoke-mcp-protocol.sh` from a wrong cwd with an explicit `--repo`/MCP `repo` argument
 - optional `ctxpack eval proof` benchmark product proof when `CTXPACK_BENCHMARK_CONFIG` is set
+
+After all required checks pass, the gate writes a source-free proof bundle summary. By default it lives in the gate's temporary workspace; pass `CTXPACK_PROOF_DIR=/absolute/path/to/proof` to persist it:
+
+```bash
+CTXPACK_PROOF_DIR=/absolute/path/to/proof bash scripts/release-gate.sh
+```
+
+The proof summary records the checked `ctxpack` version, binary SHA-256, archive SHA-256, manifest name, audit report name, required check outcomes, optional benchmark/client proof status, and privacy status. It records file names and checksums instead of machine-local binary or repository paths.
 
 The optional real-client evidence wrappers are:
 
@@ -125,7 +161,33 @@ The semantic smoke proves explicit local semantic retrieval, source-free vector 
 
 The precision smoke proves Java/Kotlin symbol extraction, Java/Kotlin package import edges, source-free precision edge import, rejection of sensitive paths, and additive precision dependency output.
 
-The gate passes the same selected or extracted `CTXPACK_BIN` into the first-pack smoke, storage smoke, semantic smoke, precision smoke, MCP protocol smoke, and optional real-client wrappers. Real-client proof is not required by default. Use these environment variables when needed:
+The feedback smoke proves source-free feedback ingestion, policy report generation, candidate policy tuning, apply/rollback metadata, and budget outcome comparison.
+
+The workspace smoke proves local multi-repo manifest initialization, source-free workspace status JSON, workspace prepare-task routing, repo-boundary-aware workspace packs, missing source sentinel leakage, and single-repo command compatibility without an explicit workspace manifest.
+
+The shared-artifacts smoke proves source-free team policy templates, shared artifact export, schema/privacy inspection, compatible manifest import, MCP workspace resources for status and shared artifacts, and absence of sensitive sentinel leakage in outputs and local ctxpack state.
+
+The inspector smoke proves source-free JSON and static HTML inspector exports, local filter UI hooks, source-bearing section labels, and absence of source sentinel leakage in inspector artifacts.
+
+The retrieval-health smoke proves source-free health JSON and Markdown reports from real git history, including metrics, signal contributions, gap families, and absence of source sentinel leakage.
+
+The graph smoke proves source-free graph neighborhood JSON and Markdown reports from real dependency/test edges, including nodes, edges, communities, cap-safe metadata, and absence of source sentinel leakage.
+
+The policy/embedding smoke proves semantic provider status reporting, explicit cloud-disabled policy flags, source-free policy experiment rows, graph comparison metadata, and absence of source sentinel leakage.
+
+The agent-preview smoke proves Codex, Claude Code, Cursor, OpenCode, and generic MCP preview metadata, including MCP tools/resources, guidance paths, read/edit boundary notes, source-free flags, and absence of source sentinel leakage.
+
+The demo and distribution metadata smokes prove public source-free examples,
+package-manager preparation templates, update metadata, clean extraction
+verification syntax, and explicit signing and notarization gaps. They do not
+publish package-manager artifacts and are not a self-update implementation.
+
+The release governance smoke proves source-free candidate status metadata,
+ready/deferred/blocked lifecycle states, deterministic protocol proof language,
+optional real-client proof boundaries, Cursor/OpenCode non-claims, and rollback
+safety for marked local candidate directories.
+
+The gate passes the same selected or extracted `CTXPACK_BIN` into the first-pack, storage, memory, feedback, workspace, shared-artifact, inspector, retrieval-health, graph, policy/embedding, agent-preview, semantic, precision, MCP protocol, and optional real-client smokes. Demo, distribution metadata, and release governance smokes are source-free metadata checks and do not need the binary. Real-client proof is not required by default. Use these environment variables when needed:
 
 - `CTXPACK_SKIP_REAL_CLIENT=1` keeps Codex and Claude checks deterministic-only after the protocol proof.
 - `CTXPACK_REQUIRE_REAL_CLIENT=1` makes missing Codex or Claude tool-call evidence fail the gate.
@@ -136,7 +198,7 @@ The release gate does not publish, upload, or create GitHub releases, and does n
 
 ## Artifact Audit
 
-`scripts/release-package.sh` runs `scripts/audit-release-artifact.sh` immediately after archive creation and before checksum success output.
+`scripts/release-package.sh` runs `scripts/audit-release-artifact.sh` immediately after archive creation and before checksum success output. It writes a machine-readable `ctxpack-v1.1.0-{target}.audit.json` report next to the archive.
 
 The audit lists archive members and extracts the artifact to a temporary directory. It fails on local state, traces, request logs, cache or target debris, git internals, secret-looking filenames, absolute local paths, and text payloads with machine-specific or secret-looking values. It does not upload artifacts or call cloud scanning services.
 

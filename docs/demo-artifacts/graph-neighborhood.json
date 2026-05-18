@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "reportKind": "graph_neighborhood",
+  "sourceTextLogged": false,
+  "privacyStatus": {"localOnly": true, "sourceTextLogged": false},
+  "anchor": "src/auth/middleware.ts",
+  "nodes": [
+    {"id": "file:src/auth/middleware.ts", "kind": "file", "role": "source"},
+    {"id": "file:src/auth/session.ts", "kind": "file", "role": "source"},
+    {"id": "file:tests/auth/redirect.test.ts", "kind": "test", "role": "test"}
+  ],
+  "edges": [
+    {"from": "file:tests/auth/redirect.test.ts", "to": "file:src/auth/middleware.ts", "type": "tests"},
+    {"from": "file:src/auth/middleware.ts", "to": "file:src/auth/session.ts", "type": "imports"}
+  ],
+  "communities": [{"id": "auth", "nodeCount": 3}]
+}

@@ -4,8 +4,9 @@ use crate::planning::{
     prepare_context_plan_with_paths_history_and_semantic,
 };
 use ctxpack_core::{
-    ContextPack, ContextPlan, EvalTrace, FileRole, PackBudget, PrivacyStatus, RetrievalSignalKind,
-    TaskType,
+    ContextPack, ContextPlan, EvalTrace, FileRole, PackBudget, PolicyQualityReport, PrivacyStatus,
+    RetrievalHealthGapFamily, RetrievalHealthMetric, RetrievalHealthReport,
+    RetrievalHealthSignalContribution, RetrievalHealthTokenRoi, RetrievalSignalKind, TaskType,
 };
 use ctxpack_index::{
     historical_commit_samples, lexical_search, load_or_build_inventory, repo_id_for_path,
@@ -581,6 +582,172 @@ pub fn build_product_proof_report(benchmark_report: BenchmarkSuiteReport) -> Pro
         ],
         benchmark_report,
         privacy_status: PrivacyStatus::local_only(),
+    }
+}
+
+pub fn build_retrieval_health_report(
+    historical: &HistoricalEvalReport,
+    policy: &PolicyQualityReport,
+) -> RetrievalHealthReport {
+    let metrics = vec![
+        health_metric(
+            "fileRecallAt5",
+            historical.file_recall_at_5,
+            "ratio",
+            "historical_eval",
+        ),
+        health_metric(
+            "fileRecallAt10",
+            historical.file_recall_at_10,
+            "ratio",
+            "historical_eval",
+        ),
+        health_metric(
+            "testRecallAt10",
+            historical.test_recall_at_10,
+            "ratio",
+            "historical_eval",
+        ),
+        health_metric(
+            "ctxpackLiftAt10",
+            historical.ctxpack_lift_at_10,
+            "delta",
+            "historical_eval",
+        ),
+        health_metric(
+            "contextPrecision",
+            policy.context_precision,
+            "ratio",
+            "feedback",
+        ),
+        health_metric(
+            "validationCoverage",
+            policy.validation_coverage,
+            "ratio",
+            "feedback",
+        ),
+        health_metric(
+            "correctionRate",
+            policy.correction_rate,
+            "ratio",
+            "feedback",
+        ),
+    ];
+
+    let mut token_roi = historical
+        .token_roi
+        .iter()
+        .map(|row| RetrievalHealthTokenRoi {
+            budget: Some(row.budget.clone()),
+            source: "historical_eval".to_string(),
+            event_count: historical.evaluated_commits,
+            useful_files_per_event: 0.0,
+            useful_targets_per_1k_tokens: row.useful_targets_per_1k_tokens,
+            recall_at_cutoff: row.recall_at_cutoff,
+            larger_pack_adds_little_value: row.larger_pack_adds_little_value,
+        })
+        .collect::<Vec<_>>();
+    token_roi.extend(policy.token_roi.iter().map(|row| RetrievalHealthTokenRoi {
+        budget: row.budget.clone(),
+        source: "feedback".to_string(),
+        event_count: row.event_count,
+        useful_files_per_event: row.useful_files_per_event,
+        useful_targets_per_1k_tokens: 0.0,
+        recall_at_cutoff: 0.0,
+        larger_pack_adds_little_value: false,
+    }));
+
+    let mut signal_contributions = policy
+        .signal_contributions
+        .iter()
+        .map(|signal| RetrievalHealthSignalContribution {
+            signal: signal.signal.clone(),
+            source: "feedback".to_string(),
+            event_count: signal.event_count,
+            useful_file_hits: signal.useful_file_hits,
+            score: signal.score,
+            recall_without_signal: None,
+            recall_lift_vs_lexical_at_k: None,
+        })
+        .collect::<Vec<_>>();
+    signal_contributions.extend(historical.signal_ablations.iter().map(|ablation| {
+        RetrievalHealthSignalContribution {
+            signal: ablation.disabled_signal.clone(),
+            source: "historical_ablation".to_string(),
+            event_count: ablation.evaluated_commits,
+            useful_file_hits: 0,
+            score: ablation.metrics.recall_at_k,
+            recall_without_signal: Some(ablation.metrics.recall_at_k),
+            recall_lift_vs_lexical_at_k: Some(ablation.recall_lift_vs_lexical_at_k),
+        }
+    }));
+
+    let mut gap_families = historical
+        .retrieval_gap_summaries
+        .iter()
+        .map(|gap| RetrievalHealthGapFamily {
+            family: format!("{:?}:{:?}:{}", gap.role, gap.signal_gap, gap.path_family),
+            count: gap.missed_count,
+            recommendation_area: Some(format!("{:?}", gap.recommendation_area)),
+            target_status: Some(format!("{:?}", gap.target_status)),
+            safe_path: None,
+            source: "historical_eval".to_string(),
+        })
+        .collect::<Vec<_>>();
+    gap_families.extend(policy.repeated_missing_file_families.iter().map(|family| {
+        RetrievalHealthGapFamily {
+            family: family.path.clone(),
+            count: family.count,
+            recommendation_area: Some("feedback_missing_file".to_string()),
+            target_status: None,
+            safe_path: Some(family.path.clone()),
+            source: "feedback".to_string(),
+        }
+    }));
+
+    let health_inputs = [
+        historical.file_recall_at_10,
+        historical.test_recall_at_10,
+        policy.context_precision,
+        policy.validation_coverage,
+        1.0 - policy.correction_rate.min(1.0),
+    ];
+    let health_score = health_inputs.iter().sum::<f32>() / health_inputs.len() as f32;
+    let mut low_confidence_flags = Vec::new();
+    if historical.file_recall_at_10 < 0.5 {
+        low_confidence_flags.push("file_recall_at_10_below_0_50".to_string());
+    }
+    if historical.test_recall_at_10 < 0.5 {
+        low_confidence_flags.push("test_recall_at_10_below_0_50".to_string());
+    }
+    if policy.validation_coverage < 0.5 {
+        low_confidence_flags.push("feedback_validation_coverage_below_0_50".to_string());
+    }
+    if policy.correction_rate > 0.25 {
+        low_confidence_flags.push("feedback_correction_rate_above_0_25".to_string());
+    }
+
+    RetrievalHealthReport {
+        repo_id: historical.repo_id.clone(),
+        evaluated_commits: historical.evaluated_commits,
+        feedback_events: policy.event_count,
+        health_score,
+        metrics,
+        token_roi,
+        signal_contributions,
+        gap_families,
+        low_confidence_flags,
+        source_text_logged: false,
+        privacy_status: PrivacyStatus::local_only(),
+    }
+}
+
+fn health_metric(name: &str, value: f32, unit: &str, source: &str) -> RetrievalHealthMetric {
+    RetrievalHealthMetric {
+        name: name.to_string(),
+        value,
+        unit: unit.to_string(),
+        source: source.to_string(),
     }
 }
 

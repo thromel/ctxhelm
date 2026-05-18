@@ -298,6 +298,113 @@ pub struct ContextPack {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum InspectorContentKind {
+    SourceFree,
+    SourceBearing,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct InspectorSectionView {
+    pub title: String,
+    pub kind: String,
+    pub content_kind: InspectorContentKind,
+    pub source_bearing: bool,
+    pub token_estimate: usize,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct InspectorTargetFileView {
+    pub path: String,
+    pub reason: String,
+    pub line_range: Option<LineRange>,
+    pub confidence: f32,
+    #[serde(default)]
+    pub attribution: Vec<RetrievalEvidence>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct InspectorRelatedTestView {
+    pub path: String,
+    pub reason: String,
+    pub command: Option<String>,
+    pub confidence: f32,
+    #[serde(default)]
+    pub attribution: Vec<RetrievalEvidence>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct InspectorCandidateView {
+    pub id: String,
+    pub kind: RetrievalCandidateKind,
+    pub path: Option<String>,
+    pub role: Option<FileRole>,
+    pub reason_code: String,
+    pub confidence: f32,
+    #[serde(default)]
+    pub signal_scores: Vec<RetrievalSignalScore>,
+    #[serde(default)]
+    pub evidence: Vec<RetrievalEvidence>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct InspectorMemoryView {
+    pub id: String,
+    pub kind: MemoryCardKind,
+    pub title: String,
+    pub freshness: MemoryFreshness,
+    pub review_status: MemoryReviewStatus,
+    pub disabled: bool,
+    pub confidence: f32,
+    pub score: f32,
+    pub reason: String,
+    #[serde(default)]
+    pub source_links: Vec<String>,
+    #[serde(default)]
+    pub evidence: Vec<RetrievalEvidence>,
+    pub privacy_status: PrivacyStatus,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct PackInspectorView {
+    pub pack_id: Uuid,
+    pub task_id: Uuid,
+    pub repo_id: String,
+    pub workspace_id: Option<String>,
+    pub task_hash: String,
+    pub task_type: TaskType,
+    pub target_agent: String,
+    pub budget: PackBudget,
+    pub token_estimate: usize,
+    pub confidence: f32,
+    pub source_text_logged: bool,
+    pub source_bearing_section_count: usize,
+    pub privacy_status: PrivacyStatus,
+    #[serde(default)]
+    pub warnings: Vec<String>,
+    #[serde(default)]
+    pub diagnostics: Vec<Diagnostic>,
+    #[serde(default)]
+    pub sections: Vec<InspectorSectionView>,
+    #[serde(default)]
+    pub target_files: Vec<InspectorTargetFileView>,
+    #[serde(default)]
+    pub related_tests: Vec<InspectorRelatedTestView>,
+    #[serde(default)]
+    pub validation_commands: Vec<Command>,
+    #[serde(default)]
+    pub selected_memory: Vec<InspectorMemoryView>,
+    #[serde(default)]
+    pub retrieval_candidates: Vec<InspectorCandidateView>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct EvalTrace {
     pub id: Uuid,
@@ -312,6 +419,690 @@ pub struct EvalTrace {
     pub recommended_commands: Vec<String>,
     pub created_at_unix_seconds: u64,
     pub source_text_logged: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum FeedbackOutcome {
+    Passed,
+    Failed,
+    Blocked,
+    Unknown,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct SessionFeedbackEvent {
+    pub id: Uuid,
+    pub schema_version: u32,
+    pub repo_id: String,
+    pub task_hash: String,
+    pub task_type: TaskType,
+    pub pack_id: Option<Uuid>,
+    pub target_agent: String,
+    pub budget: Option<PackBudget>,
+    pub outcome: FeedbackOutcome,
+    #[serde(default)]
+    pub recommended_files: Vec<String>,
+    #[serde(default)]
+    pub recommended_tests: Vec<String>,
+    #[serde(default)]
+    pub recommended_commands: Vec<String>,
+    #[serde(default)]
+    pub read_files: Vec<String>,
+    #[serde(default)]
+    pub edited_files: Vec<String>,
+    #[serde(default)]
+    pub tested_files: Vec<String>,
+    #[serde(default)]
+    pub tested_commands: Vec<String>,
+    #[serde(default)]
+    pub user_corrected_files: Vec<String>,
+    #[serde(default)]
+    pub tags: Vec<String>,
+    pub created_at_unix_seconds: u64,
+    pub source_text_logged: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct FeedbackSummary {
+    pub repo_id: String,
+    pub event_count: usize,
+    pub passed_count: usize,
+    pub failed_count: usize,
+    pub blocked_count: usize,
+    pub unknown_count: usize,
+    pub read_file_count: usize,
+    pub edited_file_count: usize,
+    pub tested_file_count: usize,
+    pub user_corrected_file_count: usize,
+    pub source_text_logged: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct PolicyQualityReport {
+    pub repo_id: String,
+    pub event_count: usize,
+    pub sample_warning: Option<String>,
+    pub context_precision: f32,
+    pub read_precision: f32,
+    pub edit_recall_proxy: f32,
+    pub validation_coverage: f32,
+    pub correction_rate: f32,
+    pub token_roi: Vec<PolicyTokenRoi>,
+    pub repeated_missing_file_families: Vec<RepeatedMissingFileFamily>,
+    pub signal_contributions: Vec<PolicySignalContribution>,
+    pub source_text_logged: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct PolicyTokenRoi {
+    pub budget: Option<PackBudget>,
+    pub event_count: usize,
+    pub useful_files_per_event: f32,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct RepeatedMissingFileFamily {
+    pub path: String,
+    pub count: usize,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct PolicySignalContribution {
+    pub signal: RetrievalSignalKind,
+    pub event_count: usize,
+    pub useful_file_hits: usize,
+    pub score: f32,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct RetrievalHealthReport {
+    pub repo_id: String,
+    pub evaluated_commits: usize,
+    pub feedback_events: usize,
+    pub health_score: f32,
+    #[serde(default)]
+    pub metrics: Vec<RetrievalHealthMetric>,
+    #[serde(default)]
+    pub token_roi: Vec<RetrievalHealthTokenRoi>,
+    #[serde(default)]
+    pub signal_contributions: Vec<RetrievalHealthSignalContribution>,
+    #[serde(default)]
+    pub gap_families: Vec<RetrievalHealthGapFamily>,
+    #[serde(default)]
+    pub low_confidence_flags: Vec<String>,
+    pub source_text_logged: bool,
+    pub privacy_status: PrivacyStatus,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct RetrievalHealthMetric {
+    pub name: String,
+    pub value: f32,
+    pub unit: String,
+    pub source: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct RetrievalHealthTokenRoi {
+    pub budget: Option<PackBudget>,
+    pub source: String,
+    pub event_count: usize,
+    pub useful_files_per_event: f32,
+    pub useful_targets_per_1k_tokens: f32,
+    pub recall_at_cutoff: f32,
+    pub larger_pack_adds_little_value: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct RetrievalHealthSignalContribution {
+    pub signal: RetrievalSignalKind,
+    pub source: String,
+    pub event_count: usize,
+    pub useful_file_hits: usize,
+    pub score: f32,
+    pub recall_without_signal: Option<f32>,
+    pub recall_lift_vs_lexical_at_k: Option<f32>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct RetrievalHealthGapFamily {
+    pub family: String,
+    pub count: usize,
+    pub recommendation_area: Option<String>,
+    pub target_status: Option<String>,
+    pub safe_path: Option<String>,
+    pub source: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
+#[serde(rename_all = "snake_case")]
+pub enum GraphNodeKind {
+    File,
+    Test,
+    Memory,
+    Feedback,
+    Community,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct GraphNodeView {
+    pub id: String,
+    pub kind: GraphNodeKind,
+    pub label: String,
+    pub path: Option<String>,
+    pub role: Option<FileRole>,
+    pub weight: f32,
+    pub source: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct GraphEdgeView {
+    pub source: String,
+    pub target: String,
+    pub kind: String,
+    pub weight: f32,
+    pub reason: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct GraphCommunityView {
+    pub id: String,
+    pub label: String,
+    pub node_count: usize,
+    pub edge_count: usize,
+    pub summary: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct GraphNeighborhoodReport {
+    pub repo_id: String,
+    pub task_hash: Option<String>,
+    #[serde(default)]
+    pub anchors: Vec<String>,
+    pub max_nodes: usize,
+    pub max_edges: usize,
+    pub capped: bool,
+    #[serde(default)]
+    pub nodes: Vec<GraphNodeView>,
+    #[serde(default)]
+    pub edges: Vec<GraphEdgeView>,
+    #[serde(default)]
+    pub communities: Vec<GraphCommunityView>,
+    #[serde(default)]
+    pub diagnostics: Vec<Diagnostic>,
+    pub source_text_logged: bool,
+    pub privacy_status: PrivacyStatus,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct SemanticProviderStatusReport {
+    pub repo_id: String,
+    pub provider_kind: String,
+    pub model_id: String,
+    pub dimensions: usize,
+    pub distance_metric: String,
+    pub enabled_by_default: bool,
+    pub cloud_embeddings_allowed: bool,
+    pub cloud_reranking_allowed: bool,
+    pub local_vector_count: usize,
+    pub stored_vector_count: usize,
+    pub indexing_freshness: String,
+    #[serde(default)]
+    pub usage: Vec<SemanticUsageSummary>,
+    pub source_text_logged: bool,
+    pub privacy_status: PrivacyStatus,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct SemanticUsageSummary {
+    pub surface: String,
+    pub semantic_enabled: bool,
+    pub semantic_candidate_count: usize,
+    pub remote_embeddings_used: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct RetrievalPolicyExperimentReport {
+    pub repo_id: String,
+    pub task_hash: String,
+    #[serde(default)]
+    pub rows: Vec<RetrievalPolicyExperimentRow>,
+    #[serde(default)]
+    pub diagnostics: Vec<Diagnostic>,
+    pub source_text_logged: bool,
+    pub privacy_status: PrivacyStatus,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct RetrievalPolicyExperimentRow {
+    pub policy: String,
+    pub semantic_enabled: bool,
+    pub graph_enabled: bool,
+    pub file_recall_at_10: Option<f32>,
+    pub test_recall_at_10: Option<f32>,
+    pub context_precision: Option<f32>,
+    pub validation_coverage: Option<f32>,
+    pub graph_node_count: usize,
+    pub graph_edge_count: usize,
+    pub note: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum AgentPreviewSurfaceKind {
+    AgentsMd,
+    McpTool,
+    McpResource,
+    NativeRule,
+    NativeCommand,
+    AdapterSnippet,
+    CliFallback,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct AgentPreviewSurface {
+    pub kind: AgentPreviewSurfaceKind,
+    pub label: String,
+    pub path: Option<String>,
+    pub summary: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct AgentPreviewStep {
+    pub order: usize,
+    pub action: String,
+    pub owner: String,
+    pub source_bearing: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct AgentPreview {
+    pub target_agent: String,
+    pub display_name: String,
+    pub pack_resource_uri: String,
+    #[serde(default)]
+    pub mcp_tools: Vec<String>,
+    #[serde(default)]
+    pub mcp_resources: Vec<String>,
+    #[serde(default)]
+    pub guidance: Vec<AgentPreviewSurface>,
+    #[serde(default)]
+    pub native_rules: Vec<AgentPreviewSurface>,
+    #[serde(default)]
+    pub next_steps: Vec<AgentPreviewStep>,
+    #[serde(default)]
+    pub boundary: Vec<String>,
+    pub source_text_included: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct AgentPreviewReport {
+    pub repo_id: String,
+    pub task_hash: String,
+    pub task_type: TaskType,
+    pub budget: PackBudget,
+    pub source_text_logged: bool,
+    pub privacy_status: PrivacyStatus,
+    #[serde(default)]
+    pub previews: Vec<AgentPreview>,
+    #[serde(default)]
+    pub diagnostics: Vec<Diagnostic>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct RetrievalPolicyProfile {
+    pub id: String,
+    pub status: PolicyProfileStatus,
+    pub created_at_unix_seconds: u64,
+    pub source_report_event_count: usize,
+    pub rationale: String,
+    pub weights: Vec<PolicySignalWeight>,
+    pub safety_floors: Vec<PolicySafetyFloor>,
+    pub regression_warnings: Vec<String>,
+    pub rollback_profile_id: Option<String>,
+    pub source_text_logged: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum PolicyProfileStatus {
+    Candidate,
+    Active,
+    Disabled,
+    RolledBack,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct PolicySignalWeight {
+    pub signal: RetrievalSignalKind,
+    pub weight: f32,
+    pub rationale: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct PolicySafetyFloor {
+    pub signal: RetrievalSignalKind,
+    pub minimum_weight: f32,
+    pub reason: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct PolicyProfileActionReport {
+    pub repo_id: String,
+    pub profile_id: String,
+    pub action: String,
+    pub active_profile_id: Option<String>,
+    pub source_text_logged: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct WorkspaceManifest {
+    pub schema_version: u32,
+    pub workspace_id: Option<String>,
+    pub repos: Vec<WorkspaceRepo>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct WorkspaceRepo {
+    pub id: Option<String>,
+    pub path: String,
+    pub label: Option<String>,
+    #[serde(default)]
+    pub tags: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum WorkspaceRepoState {
+    Available,
+    Missing,
+    Invalid,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct WorkspaceRepoPrivacyStatus {
+    pub local_only: bool,
+    pub source_text_logged: bool,
+    pub source_text_persisted: bool,
+    pub remote_sync_used: bool,
+}
+
+impl WorkspaceRepoPrivacyStatus {
+    pub fn local_source_free() -> Self {
+        Self {
+            local_only: true,
+            source_text_logged: false,
+            source_text_persisted: false,
+            remote_sync_used: false,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct WorkspaceRepoDiagnostic {
+    pub code: String,
+    pub severity: DiagnosticSeverity,
+    pub message: String,
+    pub repo_id: Option<String>,
+    pub label: Option<String>,
+    #[serde(default)]
+    pub paths: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct WorkspaceRepoStatus {
+    pub repo_id: String,
+    pub label: String,
+    pub path_label: String,
+    #[serde(default)]
+    pub tags: Vec<String>,
+    pub state: WorkspaceRepoState,
+    pub git_root: bool,
+    pub file_count: usize,
+    pub ignored_count: usize,
+    pub generated_count: usize,
+    pub sensitive_count: usize,
+    pub storage_compatibility: Option<String>,
+    pub storage_database_present: bool,
+    pub memory_card_count: usize,
+    pub privacy_status: WorkspaceRepoPrivacyStatus,
+    #[serde(default)]
+    pub diagnostics: Vec<WorkspaceRepoDiagnostic>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct WorkspaceInventoryReport {
+    pub schema_version: u32,
+    pub workspace_root: String,
+    pub manifest_path: String,
+    pub repo_count: usize,
+    pub available_repo_count: usize,
+    pub file_count: usize,
+    pub ignored_count: usize,
+    pub generated_count: usize,
+    pub sensitive_count: usize,
+    pub source_text_logged: bool,
+    pub privacy_status: WorkspaceRepoPrivacyStatus,
+    pub repos: Vec<WorkspaceRepoStatus>,
+    #[serde(default)]
+    pub diagnostics: Vec<WorkspaceRepoDiagnostic>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct WorkspaceRepoPlan {
+    pub repo_id: String,
+    pub label: String,
+    pub path_label: String,
+    #[serde(default)]
+    pub tags: Vec<String>,
+    pub confidence: f32,
+    pub reason: String,
+    pub context_plan: ContextPlan,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct WorkspaceContextPlan {
+    pub task_id: Uuid,
+    pub task_type: TaskType,
+    pub confidence: f32,
+    pub workspace_root: String,
+    pub manifest_path: String,
+    pub selected_repo_count: usize,
+    pub source_text_logged: bool,
+    pub privacy_status: WorkspaceRepoPrivacyStatus,
+    pub repo_plans: Vec<WorkspaceRepoPlan>,
+    #[serde(default)]
+    pub diagnostics: Vec<WorkspaceRepoDiagnostic>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct WorkspaceRepoPack {
+    pub repo_id: String,
+    pub label: String,
+    pub path_label: String,
+    #[serde(default)]
+    pub tags: Vec<String>,
+    pub confidence: f32,
+    pub reason: String,
+    pub context_pack: ContextPack,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct WorkspaceContextPack {
+    pub id: Uuid,
+    pub task_id: Uuid,
+    pub task_type: TaskType,
+    pub target_agent: String,
+    pub budget: PackBudget,
+    pub confidence: f32,
+    pub token_estimate: usize,
+    pub workspace_root: String,
+    pub manifest_path: String,
+    pub selected_repo_count: usize,
+    pub source_text_logged: bool,
+    pub privacy_status: WorkspaceRepoPrivacyStatus,
+    #[serde(default)]
+    pub warnings: Vec<String>,
+    pub repo_packs: Vec<WorkspaceRepoPack>,
+    #[serde(default)]
+    pub diagnostics: Vec<WorkspaceRepoDiagnostic>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum SharedArtifactKind {
+    ContextCards,
+    BenchmarkReport,
+    PolicyProfile,
+    FeedbackSummary,
+    ProofReport,
+    WorkspaceManifest,
+    TeamPolicy,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum SharedArtifactStatus {
+    Present,
+    Missing,
+    Imported,
+    Disabled,
+    Regenerated,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct SharedArtifactEntry {
+    pub id: String,
+    pub kind: SharedArtifactKind,
+    pub status: SharedArtifactStatus,
+    pub path_label: String,
+    pub content_hash: Option<String>,
+    pub size_bytes: u64,
+    pub generated_at_unix_seconds: u64,
+    pub source_text_logged: bool,
+    pub privacy_status: WorkspaceRepoPrivacyStatus,
+    #[serde(default)]
+    pub diagnostics: Vec<WorkspaceRepoDiagnostic>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct SharedArtifactManifest {
+    pub schema_version: u32,
+    pub repo_id: String,
+    pub repo_label: String,
+    pub exported_at_unix_seconds: u64,
+    pub source_text_logged: bool,
+    pub privacy_status: WorkspaceRepoPrivacyStatus,
+    pub artifacts: Vec<SharedArtifactEntry>,
+    #[serde(default)]
+    pub diagnostics: Vec<WorkspaceRepoDiagnostic>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct SharedArtifactInspectionReport {
+    pub manifest_path: String,
+    pub artifact_count: usize,
+    pub compatible: bool,
+    pub source_text_logged: bool,
+    pub privacy_status: WorkspaceRepoPrivacyStatus,
+    pub artifacts: Vec<SharedArtifactEntry>,
+    #[serde(default)]
+    pub diagnostics: Vec<WorkspaceRepoDiagnostic>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct TeamPrivacyPolicy {
+    pub schema_version: u32,
+    pub name: String,
+    pub allow_workspace_indexing: bool,
+    pub allow_artifact_export: bool,
+    pub allow_cloud_embeddings: bool,
+    pub allow_cloud_reranking: bool,
+    pub allow_source_snippets_in_shared_artifacts: bool,
+    pub redact_secrets: bool,
+    pub source_text_logged: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct TeamPolicyReport {
+    pub policy_path: String,
+    pub policy: TeamPrivacyPolicy,
+    pub allowed_artifacts: Vec<SharedArtifactKind>,
+    pub blocked_artifacts: Vec<SharedArtifactKind>,
+    pub degraded_artifacts: Vec<SharedArtifactKind>,
+    pub redacted_artifacts: Vec<SharedArtifactKind>,
+    pub source_text_logged: bool,
+    pub privacy_status: WorkspaceRepoPrivacyStatus,
+    #[serde(default)]
+    pub diagnostics: Vec<WorkspaceRepoDiagnostic>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct AgentOutcomeComparisonReport {
+    pub repo_id: String,
+    pub event_count: usize,
+    pub sample_warning: Option<String>,
+    pub budgets: Vec<BudgetOutcome>,
+    pub changed_sample_warning: bool,
+    pub low_information_warning: bool,
+    pub source_text_logged: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct BudgetOutcome {
+    pub budget: Option<PackBudget>,
+    pub event_count: usize,
+    pub pass_rate: f32,
+    pub blocked_rate: f32,
+    pub correction_rate: f32,
+    pub validation_coverage: f32,
+    pub average_recommended_context_size: f32,
+    pub useful_target_files_per_1k_tokens: f32,
 }
 
 #[cfg(test)]
@@ -828,5 +1619,325 @@ mod tests {
         assert!(value.get("sourceText").is_none());
         assert!(value.get("source_text").is_none());
         assert!(value.get("source_text_logged").is_none());
+    }
+
+    #[test]
+    fn feedback_event_public_json_shape_is_source_free() {
+        let event = SessionFeedbackEvent {
+            id: Uuid::nil(),
+            schema_version: 1,
+            repo_id: "repo-1".to_string(),
+            task_hash: "hash-1".to_string(),
+            task_type: TaskType::BugFix,
+            pack_id: Some(Uuid::nil()),
+            target_agent: "codex".to_string(),
+            budget: Some(PackBudget::Brief),
+            outcome: FeedbackOutcome::Passed,
+            recommended_files: vec!["src/auth.ts".to_string()],
+            recommended_tests: vec!["tests/auth.test.ts".to_string()],
+            recommended_commands: vec!["pnpm test tests/auth.test.ts".to_string()],
+            read_files: vec!["src/auth.ts".to_string()],
+            edited_files: vec!["src/auth.ts".to_string()],
+            tested_files: vec!["tests/auth.test.ts".to_string()],
+            tested_commands: vec!["pnpm test tests/auth.test.ts".to_string()],
+            user_corrected_files: Vec::new(),
+            tags: vec!["accepted_fix".to_string()],
+            created_at_unix_seconds: 1,
+            source_text_logged: false,
+        };
+
+        let value = serde_json::to_value(&event).unwrap();
+        let object = value.as_object().unwrap();
+        for key in [
+            "id",
+            "schemaVersion",
+            "repoId",
+            "taskHash",
+            "taskType",
+            "packId",
+            "targetAgent",
+            "budget",
+            "outcome",
+            "recommendedFiles",
+            "recommendedTests",
+            "recommendedCommands",
+            "readFiles",
+            "editedFiles",
+            "testedFiles",
+            "testedCommands",
+            "userCorrectedFiles",
+            "tags",
+            "createdAtUnixSeconds",
+            "sourceTextLogged",
+        ] {
+            assert!(object.contains_key(key), "missing public field {key}");
+        }
+        assert_eq!(value["outcome"], "passed");
+        assert_eq!(value["sourceTextLogged"], false);
+        assert!(value.get("task").is_none());
+        assert!(value.get("prompt").is_none());
+        assert!(value.get("sourceText").is_none());
+        assert!(value.get("terminalLog").is_none());
+        assert!(value.get("repo_id").is_none());
+        assert!(value.get("task_hash").is_none());
+    }
+
+    #[test]
+    fn workspace_contracts_are_camel_case_and_source_free() {
+        let repo_status = WorkspaceRepoStatus {
+            repo_id: "repo-a".to_string(),
+            label: "web".to_string(),
+            path_label: "web".to_string(),
+            tags: vec!["frontend".to_string()],
+            state: WorkspaceRepoState::Available,
+            git_root: true,
+            file_count: 3,
+            ignored_count: 0,
+            generated_count: 1,
+            sensitive_count: 1,
+            storage_compatibility: Some("compatible".to_string()),
+            storage_database_present: true,
+            memory_card_count: 2,
+            privacy_status: WorkspaceRepoPrivacyStatus::local_source_free(),
+            diagnostics: vec![WorkspaceRepoDiagnostic {
+                code: "workspace_repo_label_sensitive".to_string(),
+                severity: DiagnosticSeverity::Warning,
+                message: "Label looks like a sensitive path name.".to_string(),
+                repo_id: Some("repo-a".to_string()),
+                label: Some("web".to_string()),
+                paths: vec!["web".to_string()],
+            }],
+        };
+        let report = WorkspaceInventoryReport {
+            schema_version: 1,
+            workspace_root: "/tmp/workspace".to_string(),
+            manifest_path: "/tmp/workspace/.ctxpack/workspace.json".to_string(),
+            repo_count: 1,
+            available_repo_count: 1,
+            file_count: 3,
+            ignored_count: 0,
+            generated_count: 1,
+            sensitive_count: 1,
+            source_text_logged: false,
+            privacy_status: WorkspaceRepoPrivacyStatus::local_source_free(),
+            repos: vec![repo_status],
+            diagnostics: Vec::new(),
+        };
+
+        let value = serde_json::to_value(&report).unwrap();
+        let object = value.as_object().unwrap();
+        for key in [
+            "schemaVersion",
+            "workspaceRoot",
+            "manifestPath",
+            "repoCount",
+            "availableRepoCount",
+            "fileCount",
+            "ignoredCount",
+            "generatedCount",
+            "sensitiveCount",
+            "sourceTextLogged",
+            "privacyStatus",
+            "repos",
+            "diagnostics",
+        ] {
+            assert!(object.contains_key(key), "missing public field {key}");
+        }
+
+        assert_eq!(value["sourceTextLogged"], false);
+        assert_eq!(value["repos"][0]["state"], "available");
+        assert_eq!(value["repos"][0]["storageCompatibility"], "compatible");
+        assert_eq!(value["repos"][0]["privacyStatus"]["localOnly"], true);
+        assert!(value.get("schema_version").is_none());
+        assert!(value.get("workspace_root").is_none());
+        assert!(value.get("source").is_none());
+        assert!(value.get("sourceText").is_none());
+        assert!(value.get("prompt").is_none());
+        assert!(value.get("terminalLog").is_none());
+
+        let serialized = serde_json::to_string(&report).unwrap();
+        for forbidden in [
+            "sourceText\":\"",
+            "sourceTextLogged\":true",
+            "prompt",
+            "terminalLog",
+            "transcript",
+        ] {
+            assert!(
+                !serialized.contains(forbidden),
+                "workspace contract leaked forbidden field/value {forbidden}: {serialized}"
+            );
+        }
+    }
+
+    #[test]
+    fn workspace_context_plan_contract_is_source_free() {
+        let context_plan = ContextPlan {
+            task_id: Uuid::nil(),
+            task_type: TaskType::BugFix,
+            confidence: 0.7,
+            target_files: Vec::new(),
+            related_tests: Vec::new(),
+            recommended_commands: Vec::new(),
+            pack_options: Vec::new(),
+            missing_info_questions: Vec::new(),
+            risk_flags: Vec::new(),
+            diagnostics: Vec::new(),
+            retrieval_candidates: Vec::new(),
+            selected_memory: Vec::new(),
+            privacy_status: PrivacyStatus::local_only(),
+        };
+        let workspace_plan = WorkspaceContextPlan {
+            task_id: Uuid::nil(),
+            task_type: TaskType::BugFix,
+            confidence: 0.8,
+            workspace_root: "/tmp/workspace".to_string(),
+            manifest_path: "/tmp/workspace/.ctxpack/workspace.json".to_string(),
+            selected_repo_count: 1,
+            source_text_logged: false,
+            privacy_status: WorkspaceRepoPrivacyStatus::local_source_free(),
+            repo_plans: vec![WorkspaceRepoPlan {
+                repo_id: "repo-a".to_string(),
+                label: "api".to_string(),
+                path_label: "api".to_string(),
+                tags: vec!["backend".to_string()],
+                confidence: 0.8,
+                reason: "Task matched 2 target file(s) and 1 related test(s).".to_string(),
+                context_plan,
+            }],
+            diagnostics: Vec::new(),
+        };
+
+        let value = serde_json::to_value(&workspace_plan).unwrap();
+        assert_eq!(value["taskId"], "00000000-0000-0000-0000-000000000000");
+        assert_eq!(value["taskType"], "bug_fix");
+        assert_eq!(value["selectedRepoCount"], 1);
+        assert_eq!(value["sourceTextLogged"], false);
+        assert_eq!(value["repoPlans"][0]["repoId"], "repo-a");
+        assert!(value.get("repo_plans").is_none());
+        assert!(value.get("source").is_none());
+        assert!(value.get("sourceText").is_none());
+        assert!(value.get("prompt").is_none());
+        assert!(value.get("terminalLog").is_none());
+    }
+
+    #[test]
+    fn workspace_context_pack_contract_keeps_repo_boundaries() {
+        let context_pack = ContextPack {
+            id: Uuid::nil(),
+            task_id: Uuid::nil(),
+            repo_id: "repo-a".to_string(),
+            task_hash: "task-hash".to_string(),
+            task_type: TaskType::BugFix,
+            target_agent: "codex".to_string(),
+            budget: PackBudget::Brief,
+            sections: vec![PackSection {
+                title: "Validation".to_string(),
+                kind: "validation".to_string(),
+                content: "Run targeted tests.".to_string(),
+            }],
+            token_estimate: 12,
+            confidence: 0.8,
+            warnings: Vec::new(),
+            diagnostics: Vec::new(),
+            privacy_status: PrivacyStatus::local_only(),
+        };
+        let workspace_pack = WorkspaceContextPack {
+            id: Uuid::nil(),
+            task_id: Uuid::nil(),
+            task_type: TaskType::BugFix,
+            target_agent: "codex".to_string(),
+            budget: PackBudget::Brief,
+            confidence: 0.8,
+            token_estimate: 12,
+            workspace_root: "/tmp/workspace".to_string(),
+            manifest_path: "/tmp/workspace/.ctxpack/workspace.json".to_string(),
+            selected_repo_count: 1,
+            source_text_logged: false,
+            privacy_status: WorkspaceRepoPrivacyStatus::local_source_free(),
+            warnings: vec!["Workspace pack limited to 1 repository.".to_string()],
+            repo_packs: vec![WorkspaceRepoPack {
+                repo_id: "repo-a".to_string(),
+                label: "api".to_string(),
+                path_label: "api".to_string(),
+                tags: Vec::new(),
+                confidence: 0.8,
+                reason: "Task matched target files.".to_string(),
+                context_pack,
+            }],
+            diagnostics: Vec::new(),
+        };
+
+        let value = serde_json::to_value(&workspace_pack).unwrap();
+        assert_eq!(value["repoPacks"][0]["repoId"], "repo-a");
+        assert_eq!(value["repoPacks"][0]["contextPack"]["repoId"], "repo-a");
+        assert_eq!(value["sourceTextLogged"], false);
+        assert_eq!(value["privacyStatus"]["localOnly"], true);
+        assert!(value.get("repo_packs").is_none());
+        assert!(value.get("source").is_none());
+        assert!(value.get("prompt").is_none());
+        assert!(value.get("terminalLog").is_none());
+    }
+
+    #[test]
+    fn shared_artifact_and_team_policy_contracts_are_source_free() {
+        let artifact = SharedArtifactEntry {
+            id: "feedback-summary".to_string(),
+            kind: SharedArtifactKind::FeedbackSummary,
+            status: SharedArtifactStatus::Present,
+            path_label: ".ctxpack/feedback-summary.json".to_string(),
+            content_hash: Some("hash".to_string()),
+            size_bytes: 12,
+            generated_at_unix_seconds: 1,
+            source_text_logged: false,
+            privacy_status: WorkspaceRepoPrivacyStatus::local_source_free(),
+            diagnostics: Vec::new(),
+        };
+        let manifest = SharedArtifactManifest {
+            schema_version: 1,
+            repo_id: "repo-a".to_string(),
+            repo_label: "api".to_string(),
+            exported_at_unix_seconds: 1,
+            source_text_logged: false,
+            privacy_status: WorkspaceRepoPrivacyStatus::local_source_free(),
+            artifacts: vec![artifact],
+            diagnostics: Vec::new(),
+        };
+        let policy = TeamPrivacyPolicy {
+            schema_version: 1,
+            name: "local-source-free".to_string(),
+            allow_workspace_indexing: true,
+            allow_artifact_export: true,
+            allow_cloud_embeddings: false,
+            allow_cloud_reranking: false,
+            allow_source_snippets_in_shared_artifacts: false,
+            redact_secrets: true,
+            source_text_logged: false,
+        };
+        let report = TeamPolicyReport {
+            policy_path: ".ctxpack/team-policy.json".to_string(),
+            policy,
+            allowed_artifacts: vec![SharedArtifactKind::FeedbackSummary],
+            blocked_artifacts: vec![SharedArtifactKind::ProofReport],
+            degraded_artifacts: Vec::new(),
+            redacted_artifacts: vec![SharedArtifactKind::ContextCards],
+            source_text_logged: false,
+            privacy_status: WorkspaceRepoPrivacyStatus::local_source_free(),
+            diagnostics: Vec::new(),
+        };
+
+        let manifest_value = serde_json::to_value(&manifest).unwrap();
+        let report_value = serde_json::to_value(&report).unwrap();
+        assert_eq!(manifest_value["sourceTextLogged"], false);
+        assert_eq!(manifest_value["artifacts"][0]["kind"], "feedback_summary");
+        assert_eq!(report_value["policy"]["allowCloudEmbeddings"], false);
+        assert_eq!(report_value["sourceTextLogged"], false);
+        for value in [manifest_value, report_value] {
+            assert!(value.get("source").is_none());
+            assert!(value.get("sourceText").is_none());
+            assert!(value.get("prompt").is_none());
+            assert!(value.get("terminalLog").is_none());
+            assert!(value.get("transcript").is_none());
+        }
     }
 }

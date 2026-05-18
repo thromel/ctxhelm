@@ -1,36 +1,50 @@
 use anyhow::Result;
 use clap::{Args, Parser, Subcommand, ValueEnum};
 use ctxpack_compiler::{
-    build_product_proof_report, compare_benchmark_suite_reports,
-    compile_context_pack_with_plan_and_paths_for_agent_and_semantic, eval_trace_for_pack,
-    eval_trace_for_plan, evaluate_historical_commits, generate_context_cards,
-    generate_experience_cards, load_benchmark_suite_config, load_benchmark_suite_report,
-    prepare_context_plan_with_paths_and_semantic, render_pack_markdown, run_benchmark_suite,
+    build_agent_preview_report, build_graph_neighborhood_report, build_product_proof_report,
+    build_retrieval_health_report, compare_benchmark_suite_reports,
+    compile_context_pack_with_plan_and_paths_for_agent_and_semantic, compile_pack_inspector_view,
+    compile_workspace_context_pack, eval_trace_for_pack, eval_trace_for_plan,
+    evaluate_historical_commits, generate_context_cards, generate_experience_cards,
+    load_benchmark_suite_config, load_benchmark_suite_report,
+    prepare_context_plan_with_paths_and_semantic, prepare_workspace_context_plan,
+    render_pack_inspector_html, render_pack_inspector_markdown, render_pack_markdown,
+    retrieval_policy_experiment_report, run_benchmark_suite, semantic_provider_status_report,
     BenchmarkComparisonReport, BenchmarkRegressionThreshold, BenchmarkSuiteReport,
     ContextCardsOptions, ContextCardsReport, ExperienceCardsOptions, ExperienceCardsReport,
     HistoricalEvalOptions, HistoricalEvalReport, ProductProofReport,
 };
 use ctxpack_core::{
-    run_init, run_setup_check, AgentAdapter, Diagnostic, DiagnosticSeverity, EvalTrace, InitAction,
-    InitOptions, InitReport, MemoryReviewStatus, PackBudget, PrivacyStatus, RepoRoot,
-    SetupCheckReport, SetupCheckStatus, TaskType,
+    run_init, run_setup_check, AgentAdapter, AgentOutcomeComparisonReport, AgentPreviewReport,
+    Diagnostic, DiagnosticSeverity, EvalTrace, FeedbackOutcome, FeedbackSummary,
+    GraphNeighborhoodReport, InitAction, InitOptions, InitReport, MemoryReviewStatus, PackBudget,
+    PolicyProfileActionReport, PolicyQualityReport, PrivacyStatus, RepoRoot, RetrievalHealthReport,
+    RetrievalPolicyExperimentReport, RetrievalPolicyProfile, SemanticProviderStatusReport,
+    SessionFeedbackEvent, SetupCheckReport, SetupCheckStatus, SharedArtifactInspectionReport,
+    SharedArtifactManifest, TaskType, TeamPolicyReport, WorkspaceContextPack, WorkspaceContextPlan,
+    WorkspaceInventoryReport, WorkspaceManifest, WorkspaceRepo,
 };
 use ctxpack_index::{
-    co_change_hints, current_diff_summary, dependency_edges, extract_symbols,
-    import_precision_edges, lexical_search, list_eval_traces, list_memory_cards,
-    related_dependency_edges, related_tests, semantic_search, storage_status_for_repo,
-    symbol_search, sync_inventory_to_store, sync_semantic_index_to_store, try_append_eval_trace,
+    apply_policy_profile, co_change_hints, current_diff_summary, dependency_edges,
+    disable_policy_profile, extract_symbols, import_precision_edges, lexical_search,
+    list_eval_traces, list_feedback_events, list_memory_cards, list_policy_profiles,
+    outcome_comparison_report, policy_quality_report, propose_policy_profile,
+    related_dependency_edges, related_tests, rollback_policy_profile, semantic_search,
+    storage_status_for_repo, summarize_feedback_events, symbol_search, sync_inventory_to_store,
+    sync_semantic_index_to_store, try_append_eval_trace, try_append_feedback_event,
     update_memory_card_review_status, vacuum_store, write_inventory, CoChangeOptions,
     CurrentDiffOptions, DependencyOptions, InventoryOptions, InventoryReport,
     PrecisionImportReport, SearchOptions, SemanticOptions, StorageBenchmarkRunRecord,
     StorageContextPackRecord, StorageGapRecord, StorageIndexReport, StorageMetricRecord,
     StorageProofReportRecord, StorageReport, StorageSemanticIndexReport, StorageStatusReport,
-    StoreConfig, SymbolOptions,
+    StoreConfig, SymbolOptions, FEEDBACK_EVENT_SCHEMA_VERSION, WORKSPACE_MANIFEST_SCHEMA_VERSION,
 };
 use std::collections::BTreeSet;
 use std::fs;
 use std::path::Path;
 use std::path::PathBuf;
+use std::time::{SystemTime, UNIX_EPOCH};
+use uuid::Uuid;
 
 #[derive(Debug, Parser)]
 #[command(name = "ctxpack")]
@@ -46,6 +60,8 @@ enum Command {
     Init(InitArgs),
     #[command(about = "Run a read-only validation of generated setup artifacts")]
     SetupCheck(SetupCheckArgs),
+    #[command(about = "Verify install, upgrade, release manifest, and local state compatibility")]
+    Doctor(DoctorArgs),
     Index(IndexArgs),
     PrepareTask(PrepareTaskArgs),
     GetPack(GetPackArgs),
@@ -70,6 +86,11 @@ enum Command {
     Cards(CardsArgs),
     Memory(MemoryArgs),
     Eval(EvalArgs),
+    Workspace(WorkspaceArgs),
+    Inspector(InspectorArgs),
+    Agent(AgentArgs),
+    Graph(GraphArgs),
+    Semantic(SemanticArgs),
     ServeMcp,
 }
 
@@ -98,6 +119,21 @@ struct SetupCheckArgs {
     claude: bool,
     #[arg(long, help = "Validate the generated OpenCode MCP snippet file.")]
     opencode: bool,
+}
+
+#[derive(Debug, Args)]
+struct DoctorArgs {
+    #[arg(long, help = "Repository used for local state compatibility checks.")]
+    repo: Option<PathBuf>,
+    #[arg(
+        long,
+        help = "ctxpack binary to verify. Defaults to the running executable."
+    )]
+    binary: Option<PathBuf>,
+    #[arg(long, help = "Release manifest JSON from a release archive.")]
+    release_manifest: Option<PathBuf>,
+    #[arg(long, value_enum, default_value_t = PackFormat::Markdown)]
+    format: PackFormat,
 }
 
 #[derive(Debug, Args)]
@@ -155,6 +191,307 @@ struct StorageResetArgs {
         help = "Actually delete the storage database. Without this, reset is a dry run."
     )]
     yes: bool,
+    #[arg(long, value_enum, default_value_t = PackFormat::Markdown)]
+    format: PackFormat,
+}
+
+#[derive(Debug, Args)]
+struct WorkspaceArgs {
+    #[command(subcommand)]
+    command: WorkspaceCommand,
+}
+
+#[derive(Debug, Args)]
+struct InspectorArgs {
+    #[command(subcommand)]
+    command: InspectorCommand,
+}
+
+#[derive(Debug, Args)]
+struct AgentArgs {
+    #[command(subcommand)]
+    command: AgentCommand,
+}
+
+#[derive(Debug, Args)]
+struct GraphArgs {
+    #[command(subcommand)]
+    command: GraphCommand,
+}
+
+#[derive(Debug, Args)]
+struct SemanticArgs {
+    #[command(subcommand)]
+    command: SemanticCommand,
+}
+
+#[derive(Debug, Subcommand)]
+enum SemanticCommand {
+    #[command(about = "Inspect local semantic provider status and cloud policy gates.")]
+    Status(SemanticStatusArgs),
+}
+
+#[derive(Debug, Args)]
+struct SemanticStatusArgs {
+    #[arg(long)]
+    repo: Option<PathBuf>,
+    #[arg(
+        long,
+        help = "Optional task/query used to inspect per-plan semantic usage."
+    )]
+    query: Option<String>,
+    #[arg(long, value_enum, default_value_t = Mode::Explain)]
+    mode: Mode,
+    #[arg(long, value_enum, default_value_t = PackFormat::Markdown)]
+    format: PackFormat,
+}
+
+#[derive(Debug, Subcommand)]
+enum AgentCommand {
+    #[command(about = "Preview agent-specific ctxpack context usage.")]
+    Preview(AgentPreviewArgs),
+}
+
+#[derive(Debug, Args)]
+struct AgentPreviewArgs {
+    task: String,
+    #[arg(long)]
+    repo: Option<PathBuf>,
+    #[arg(long, value_enum, default_value_t = Mode::Explain)]
+    mode: Mode,
+    #[arg(long, value_enum, default_value_t = Budget::Brief)]
+    budget: Budget,
+    #[arg(
+        long = "path",
+        help = "Active/open file path to pin as a context anchor. Repeatable."
+    )]
+    paths: Vec<String>,
+    #[arg(
+        long,
+        default_value = "all",
+        help = "codex, claude-code, cursor, opencode, generic, or all."
+    )]
+    target_agent: String,
+    #[arg(
+        long,
+        help = "Enable explicit local semantic retrieval in the preview planner."
+    )]
+    semantic: bool,
+    #[arg(long, value_enum, default_value_t = PackFormat::Markdown)]
+    format: PackFormat,
+}
+
+#[derive(Debug, Subcommand)]
+enum GraphCommand {
+    #[command(about = "Generate a source-free graph neighborhood report.")]
+    Neighborhood(GraphNeighborhoodArgs),
+}
+
+#[derive(Debug, Args)]
+struct GraphNeighborhoodArgs {
+    #[arg(help = "Optional task used to derive anchors when no --path is provided.")]
+    task: Option<String>,
+    #[arg(long)]
+    repo: Option<PathBuf>,
+    #[arg(long, value_enum, default_value_t = Mode::Explain)]
+    mode: Mode,
+    #[arg(
+        long = "path",
+        help = "Repo-relative or absolute path anchor. Repeatable."
+    )]
+    paths: Vec<String>,
+    #[arg(long, default_value_t = 40)]
+    max_nodes: usize,
+    #[arg(long, default_value_t = 80)]
+    max_edges: usize,
+    #[arg(long, value_enum, default_value_t = PackFormat::Markdown)]
+    format: PackFormat,
+}
+
+#[derive(Debug, Subcommand)]
+enum InspectorCommand {
+    #[command(about = "Export a source-free pack inspector artifact.")]
+    Export(InspectorExportArgs),
+}
+
+#[derive(Debug, Args)]
+struct InspectorExportArgs {
+    task: String,
+    #[arg(long)]
+    repo: Option<PathBuf>,
+    #[arg(long, value_enum, default_value_t = Mode::Explain)]
+    mode: Mode,
+    #[arg(long, value_enum, default_value_t = Budget::Brief)]
+    budget: Budget,
+    #[arg(
+        long = "path",
+        help = "Active/open file path to pin as a context anchor. Repeatable."
+    )]
+    paths: Vec<String>,
+    #[arg(
+        long = "current-diff",
+        help = "Add safe changed paths from the current local diff as context anchors."
+    )]
+    include_current_diff: bool,
+    #[arg(long, default_value = "generic")]
+    target_agent: String,
+    #[arg(
+        long,
+        help = "Enable explicit local semantic retrieval in the context pack planner."
+    )]
+    semantic: bool,
+    #[arg(long, value_enum, default_value_t = InspectorFormat::Json)]
+    format: InspectorFormat,
+    #[arg(long, help = "Write the artifact to a file instead of stdout.")]
+    output: Option<PathBuf>,
+}
+
+#[derive(Debug, Subcommand)]
+enum WorkspaceCommand {
+    #[command(about = "Export, inspect, or import source-free shared artifact manifests.")]
+    Artifacts(WorkspaceArtifactsArgs),
+    #[command(about = "Create a local source-free workspace manifest.")]
+    Init(WorkspaceInitArgs),
+    #[command(about = "Route a task to likely workspace repositories and return per-repo plans.")]
+    PrepareTask(WorkspacePrepareTaskArgs),
+    #[command(about = "Compile a repo-boundary-aware workspace context pack.")]
+    GetPack(WorkspaceGetPackArgs),
+    #[command(about = "Create or inspect a local team privacy policy template.")]
+    Policy(WorkspacePolicyArgs),
+    #[command(about = "Inspect source-free local workspace inventory status.")]
+    Status(WorkspaceStatusArgs),
+}
+
+#[derive(Debug, Args)]
+struct WorkspaceArtifactsArgs {
+    #[command(subcommand)]
+    command: WorkspaceArtifactsCommand,
+}
+
+#[derive(Debug, Subcommand)]
+enum WorkspaceArtifactsCommand {
+    #[command(about = "Export a source-free shared artifact manifest.")]
+    Export(WorkspaceArtifactExportArgs),
+    #[command(about = "Inspect a source-free shared artifact manifest.")]
+    Inspect(WorkspaceArtifactInspectArgs),
+    #[command(about = "Import a compatible source-free shared artifact manifest.")]
+    Import(WorkspaceArtifactImportArgs),
+}
+
+#[derive(Debug, Args)]
+struct WorkspaceArtifactExportArgs {
+    #[arg(long)]
+    repo: Option<PathBuf>,
+    #[arg(long, value_enum, default_value_t = PackFormat::Markdown)]
+    format: PackFormat,
+}
+
+#[derive(Debug, Args)]
+struct WorkspaceArtifactInspectArgs {
+    input: PathBuf,
+    #[arg(long, value_enum, default_value_t = PackFormat::Markdown)]
+    format: PackFormat,
+}
+
+#[derive(Debug, Args)]
+struct WorkspaceArtifactImportArgs {
+    input: PathBuf,
+    #[arg(long)]
+    repo: Option<PathBuf>,
+    #[arg(long, value_enum, default_value_t = PackFormat::Markdown)]
+    format: PackFormat,
+}
+
+#[derive(Debug, Args)]
+struct WorkspacePolicyArgs {
+    #[command(subcommand)]
+    command: WorkspacePolicyCommand,
+}
+
+#[derive(Debug, Subcommand)]
+enum WorkspacePolicyCommand {
+    #[command(about = "Write a local source-free team privacy policy template.")]
+    Init(WorkspacePolicyPathArgs),
+    #[command(about = "Inspect local source-free team privacy policy effects.")]
+    Status(WorkspacePolicyPathArgs),
+}
+
+#[derive(Debug, Args)]
+struct WorkspacePolicyPathArgs {
+    #[arg(long)]
+    repo: Option<PathBuf>,
+    #[arg(long, value_enum, default_value_t = PackFormat::Markdown)]
+    format: PackFormat,
+}
+
+#[derive(Debug, Args)]
+struct WorkspaceInitArgs {
+    #[arg(long)]
+    repo: Option<PathBuf>,
+    #[arg(long = "member", help = "Additional local repository path to include.")]
+    members: Vec<PathBuf>,
+    #[arg(long, help = "Display label for the workspace root repository.")]
+    label: Option<String>,
+    #[arg(long, value_enum, default_value_t = PackFormat::Markdown)]
+    format: PackFormat,
+}
+
+#[derive(Debug, Args)]
+struct WorkspaceStatusArgs {
+    #[arg(long)]
+    repo: Option<PathBuf>,
+    #[arg(long, help = "Override the workspace manifest path.")]
+    manifest: Option<PathBuf>,
+    #[arg(long, value_enum, default_value_t = PackFormat::Markdown)]
+    format: PackFormat,
+}
+
+#[derive(Debug, Args)]
+struct WorkspacePrepareTaskArgs {
+    task: String,
+    #[arg(long)]
+    repo: Option<PathBuf>,
+    #[arg(long, help = "Override the workspace manifest path.")]
+    manifest: Option<PathBuf>,
+    #[arg(long, value_enum, default_value_t = Mode::Explain)]
+    mode: Mode,
+    #[arg(
+        long = "path",
+        help = "Workspace-relative, repo-relative, or absolute active path anchor. Repeatable."
+    )]
+    paths: Vec<String>,
+    #[arg(
+        long,
+        help = "Enable explicit local semantic retrieval inside each selected workspace repository."
+    )]
+    semantic: bool,
+    #[arg(long, value_enum, default_value_t = PackFormat::Json)]
+    format: PackFormat,
+}
+
+#[derive(Debug, Args)]
+struct WorkspaceGetPackArgs {
+    task: String,
+    #[arg(long)]
+    repo: Option<PathBuf>,
+    #[arg(long, help = "Override the workspace manifest path.")]
+    manifest: Option<PathBuf>,
+    #[arg(long, value_enum, default_value_t = Mode::Explain)]
+    mode: Mode,
+    #[arg(long, value_enum, default_value_t = Budget::Brief)]
+    budget: Budget,
+    #[arg(
+        long = "path",
+        help = "Workspace-relative, repo-relative, or absolute active path anchor. Repeatable."
+    )]
+    paths: Vec<String>,
+    #[arg(long, default_value = "generic")]
+    target_agent: String,
+    #[arg(
+        long,
+        help = "Enable explicit local semantic retrieval inside each selected workspace repository."
+    )]
+    semantic: bool,
     #[arg(long, value_enum, default_value_t = PackFormat::Markdown)]
     format: PackFormat,
 }
@@ -375,7 +712,11 @@ struct EvalArgs {
 enum EvalCommand {
     Traces(EvalTracesArgs),
     Checklist(EvalTracesArgs),
+    Feedback(EvalFeedbackArgs),
+    Policy(EvalPolicyArgs),
+    Outcome(EvalOutcomeArgs),
     History(EvalHistoryArgs),
+    Health(EvalHealthArgs),
     Benchmark(EvalBenchmarkArgs),
     Compare(EvalCompareArgs),
     Proof(EvalProofArgs),
@@ -387,6 +728,149 @@ struct EvalTracesArgs {
     repo: Option<PathBuf>,
     #[arg(long, default_value_t = 20)]
     limit: usize,
+}
+
+#[derive(Debug, Args)]
+struct EvalFeedbackArgs {
+    #[command(subcommand)]
+    command: EvalFeedbackCommand,
+}
+
+#[derive(Debug, Subcommand)]
+enum EvalFeedbackCommand {
+    #[command(about = "Record a source-free agent-session feedback event.")]
+    Record(EvalFeedbackRecordArgs),
+    #[command(about = "List recent source-free feedback events.")]
+    List(EvalFeedbackListArgs),
+    #[command(about = "Summarize recent source-free feedback events.")]
+    Summary(EvalFeedbackListArgs),
+}
+
+#[derive(Debug, Args)]
+struct EvalFeedbackRecordArgs {
+    #[arg(long)]
+    repo: Option<PathBuf>,
+    #[arg(long, help = "Source-free task hash from a ctxpack trace or pack.")]
+    task_hash: String,
+    #[arg(long, value_enum, default_value_t = Mode::BugFix)]
+    mode: Mode,
+    #[arg(long, default_value = "generic")]
+    target_agent: String,
+    #[arg(
+        long,
+        help = "Optional ctxpack pack UUID associated with this feedback."
+    )]
+    pack_id: Option<Uuid>,
+    #[arg(long, value_enum)]
+    budget: Option<Budget>,
+    #[arg(long, value_enum, default_value_t = FeedbackOutcomeArg::Unknown)]
+    outcome: FeedbackOutcomeArg,
+    #[arg(long = "recommended-file")]
+    recommended_files: Vec<String>,
+    #[arg(long = "recommended-test")]
+    recommended_tests: Vec<String>,
+    #[arg(long = "recommended-command")]
+    recommended_commands: Vec<String>,
+    #[arg(long = "read-file")]
+    read_files: Vec<String>,
+    #[arg(long = "edited-file")]
+    edited_files: Vec<String>,
+    #[arg(long = "tested-file")]
+    tested_files: Vec<String>,
+    #[arg(long = "tested-command")]
+    tested_commands: Vec<String>,
+    #[arg(long = "corrected-file")]
+    user_corrected_files: Vec<String>,
+    #[arg(long = "tag")]
+    tags: Vec<String>,
+    #[arg(long, value_enum, default_value_t = PackFormat::Markdown)]
+    format: PackFormat,
+}
+
+#[derive(Debug, Args)]
+struct EvalFeedbackListArgs {
+    #[arg(long)]
+    repo: Option<PathBuf>,
+    #[arg(long, default_value_t = 20)]
+    limit: usize,
+    #[arg(long, value_enum, default_value_t = PackFormat::Markdown)]
+    format: PackFormat,
+}
+
+#[derive(Debug, Args)]
+struct EvalPolicyArgs {
+    #[command(subcommand)]
+    command: EvalPolicyCommand,
+}
+
+#[derive(Debug, Subcommand)]
+enum EvalPolicyCommand {
+    #[command(about = "Generate a source-free policy quality report from feedback events.")]
+    Report(EvalFeedbackListArgs),
+    #[command(about = "Propose a local retrieval policy profile from feedback evidence.")]
+    Tune(EvalFeedbackListArgs),
+    #[command(about = "List local retrieval policy profiles.")]
+    List(EvalPolicyListArgs),
+    #[command(about = "Apply a local retrieval policy profile.")]
+    Apply(EvalPolicyActionArgs),
+    #[command(about = "Disable a local retrieval policy profile.")]
+    Disable(EvalPolicyActionArgs),
+    #[command(about = "Roll back the active local retrieval policy profile.")]
+    Rollback(EvalPolicyListArgs),
+    #[command(about = "Compare source-free retrieval policy experiment rows.")]
+    Experiments(EvalPolicyExperimentArgs),
+}
+
+#[derive(Debug, Args)]
+struct EvalPolicyExperimentArgs {
+    task: String,
+    #[arg(long)]
+    repo: Option<PathBuf>,
+    #[arg(long, default_value_t = 10)]
+    limit: usize,
+    #[arg(long, default_value_t = 10)]
+    budget: usize,
+    #[arg(long, value_enum, default_value_t = Mode::BugFix)]
+    mode: Mode,
+    #[arg(long, value_enum, default_value_t = PackFormat::Markdown)]
+    format: PackFormat,
+}
+
+#[derive(Debug, Args)]
+struct EvalPolicyListArgs {
+    #[arg(long)]
+    repo: Option<PathBuf>,
+    #[arg(long, value_enum, default_value_t = PackFormat::Markdown)]
+    format: PackFormat,
+}
+
+#[derive(Debug, Args)]
+struct EvalPolicyActionArgs {
+    profile_id: String,
+    #[arg(long)]
+    repo: Option<PathBuf>,
+    #[arg(long, value_enum, default_value_t = PackFormat::Markdown)]
+    format: PackFormat,
+}
+
+#[derive(Debug, Args)]
+struct EvalOutcomeArgs {
+    #[command(subcommand)]
+    command: EvalOutcomeCommand,
+}
+
+#[derive(Debug, Subcommand)]
+enum EvalOutcomeCommand {
+    #[command(about = "Compare plan-only, brief, standard, and deep feedback outcomes.")]
+    Compare(EvalFeedbackListArgs),
+}
+
+#[derive(Debug, Clone, ValueEnum)]
+enum FeedbackOutcomeArg {
+    Passed,
+    Failed,
+    Blocked,
+    Unknown,
 }
 
 #[derive(Debug, Args)]
@@ -420,6 +904,35 @@ struct EvalHistoryArgs {
     store: bool,
     #[arg(long, help = "Override the SQLite storage database path.")]
     store_path: Option<PathBuf>,
+}
+
+#[derive(Debug, Args)]
+struct EvalHealthArgs {
+    #[arg(long)]
+    repo: Option<PathBuf>,
+    #[arg(long, default_value_t = 20)]
+    limit: usize,
+    #[arg(
+        long,
+        default_value_t = 10,
+        help = "Fixed context-file ranking budget used for combined, lexical, and ablation metrics."
+    )]
+    budget: usize,
+    #[arg(long, help = "Start revision for a stable historical eval range.")]
+    base: Option<String>,
+    #[arg(long, help = "End revision for a stable historical eval range.")]
+    head: Option<String>,
+    #[arg(long, value_enum, default_value_t = Mode::BugFix)]
+    mode: Mode,
+    #[arg(long, default_value = "generic")]
+    target_agent: String,
+    #[arg(
+        long,
+        help = "Enable explicit local semantic retrieval during historical eval."
+    )]
+    semantic: bool,
+    #[arg(long, value_enum, default_value_t = PackFormat::Markdown)]
+    format: PackFormat,
 }
 
 #[derive(Debug, Args)]
@@ -493,6 +1006,13 @@ enum PackFormat {
     Json,
 }
 
+#[derive(Debug, Clone, ValueEnum)]
+enum InspectorFormat {
+    Json,
+    Markdown,
+    Html,
+}
+
 impl From<Mode> for TaskType {
     fn from(value: Mode) -> Self {
         match value {
@@ -516,6 +1036,17 @@ impl From<Budget> for PackBudget {
     }
 }
 
+impl From<FeedbackOutcomeArg> for FeedbackOutcome {
+    fn from(value: FeedbackOutcomeArg) -> Self {
+        match value {
+            FeedbackOutcomeArg::Passed => FeedbackOutcome::Passed,
+            FeedbackOutcomeArg::Failed => FeedbackOutcome::Failed,
+            FeedbackOutcomeArg::Blocked => FeedbackOutcome::Blocked,
+            FeedbackOutcomeArg::Unknown => FeedbackOutcome::Unknown,
+        }
+    }
+}
+
 fn main() -> Result<()> {
     let cli = Cli::parse();
     match cli.command {
@@ -532,6 +1063,16 @@ fn main() -> Result<()> {
             let passed = report.passed;
             print_setup_check_report(&report);
             if !passed {
+                std::process::exit(1);
+            }
+        }
+        Command::Doctor(args) => {
+            let report = build_doctor_report(&args)?;
+            match args.format {
+                PackFormat::Json => println!("{}", serde_json::to_string_pretty(&report)?),
+                PackFormat::Markdown => print_doctor_report(&report),
+            }
+            if !report["passed"].as_bool().unwrap_or(false) {
                 std::process::exit(1);
             }
         }
@@ -653,6 +1194,86 @@ fn main() -> Result<()> {
                 PackFormat::Json => println!("{}", serde_json::to_string_pretty(&pack)?),
             }
         }
+        Command::Inspector(args) => match args.command {
+            InspectorCommand::Export(args) => {
+                let start = args.repo.clone().unwrap_or(std::env::current_dir()?);
+                let repo = RepoRoot::discover_from(&start)?;
+                let paths =
+                    context_anchor_paths(&repo.path, args.paths, args.include_current_diff)?;
+                let (plan, pack) = compile_context_pack_with_plan_and_paths_for_agent_and_semantic(
+                    &repo.path,
+                    &args.task,
+                    args.mode.into(),
+                    args.budget.into(),
+                    &paths,
+                    &args.target_agent,
+                    args.semantic,
+                )?;
+                let view = compile_pack_inspector_view(&plan, &pack);
+                let artifact = match args.format {
+                    InspectorFormat::Json => serde_json::to_string_pretty(&view)?,
+                    InspectorFormat::Markdown => render_pack_inspector_markdown(&view),
+                    InspectorFormat::Html => render_pack_inspector_html(&view),
+                };
+                write_or_print(args.output.as_deref(), &artifact)?;
+            }
+        },
+        Command::Agent(args) => match args.command {
+            AgentCommand::Preview(args) => {
+                let start = args.repo.clone().unwrap_or(std::env::current_dir()?);
+                let repo = RepoRoot::discover_from(&start)?;
+                let report = build_agent_preview_report(
+                    &repo.path,
+                    &args.task,
+                    args.mode.into(),
+                    args.budget.into(),
+                    &args.target_agent,
+                    &args.paths,
+                    args.semantic,
+                )?;
+                match args.format {
+                    PackFormat::Markdown => println!("{}", render_agent_preview_report(&report)),
+                    PackFormat::Json => println!("{}", serde_json::to_string_pretty(&report)?),
+                }
+            }
+        },
+        Command::Graph(args) => match args.command {
+            GraphCommand::Neighborhood(args) => {
+                let start = args.repo.clone().unwrap_or(std::env::current_dir()?);
+                let repo = RepoRoot::discover_from(&start)?;
+                let report = build_graph_neighborhood_report(
+                    &repo.path,
+                    args.task.as_deref(),
+                    args.mode.into(),
+                    &args.paths,
+                    args.max_nodes,
+                    args.max_edges,
+                )?;
+                match args.format {
+                    PackFormat::Markdown => {
+                        println!("{}", render_graph_neighborhood_report(&report))
+                    }
+                    PackFormat::Json => println!("{}", serde_json::to_string_pretty(&report)?),
+                }
+            }
+        },
+        Command::Semantic(args) => match args.command {
+            SemanticCommand::Status(args) => {
+                let start = args.repo.clone().unwrap_or(std::env::current_dir()?);
+                let repo = RepoRoot::discover_from(&start)?;
+                let report = semantic_provider_status_report(
+                    &repo.path,
+                    args.query.as_deref(),
+                    args.mode.into(),
+                )?;
+                match args.format {
+                    PackFormat::Markdown => {
+                        println!("{}", render_semantic_provider_status(&report))
+                    }
+                    PackFormat::Json => println!("{}", serde_json::to_string_pretty(&report)?),
+                }
+            }
+        },
         Command::Search {
             query,
             repo,
@@ -999,6 +1620,153 @@ fn main() -> Result<()> {
                     render_eval_checklist_with_gaps(&traces, &retrieval_gap_summaries)
                 );
             }
+            EvalCommand::Feedback(args) => match args.command {
+                EvalFeedbackCommand::Record(args) => {
+                    let start = args.repo.clone().unwrap_or(std::env::current_dir()?);
+                    let repo = RepoRoot::discover_from(&start)?;
+                    let repo_id = ctxpack_index::repo_id_for_path(&fs::canonicalize(&repo.path)?);
+                    let event = SessionFeedbackEvent {
+                        id: Uuid::new_v4(),
+                        schema_version: FEEDBACK_EVENT_SCHEMA_VERSION,
+                        repo_id,
+                        task_hash: args.task_hash,
+                        task_type: args.mode.into(),
+                        pack_id: args.pack_id,
+                        target_agent: args.target_agent,
+                        budget: args.budget.map(Into::into),
+                        outcome: args.outcome.into(),
+                        recommended_files: args.recommended_files,
+                        recommended_tests: args.recommended_tests,
+                        recommended_commands: args.recommended_commands,
+                        read_files: args.read_files,
+                        edited_files: args.edited_files,
+                        tested_files: args.tested_files,
+                        tested_commands: args.tested_commands,
+                        user_corrected_files: args.user_corrected_files,
+                        tags: args.tags,
+                        created_at_unix_seconds: current_unix_seconds(),
+                        source_text_logged: false,
+                    };
+                    let status = try_append_feedback_event(&repo.path, &event);
+                    match args.format {
+                        PackFormat::Markdown => {
+                            print_feedback_record_status(&event, &status);
+                        }
+                        PackFormat::Json => {
+                            println!(
+                                "{}",
+                                serde_json::to_string_pretty(&serde_json::json!({
+                                    "event": event,
+                                    "status": status
+                                }))?
+                            );
+                        }
+                    }
+                }
+                EvalFeedbackCommand::List(args) => {
+                    let start = args.repo.clone().unwrap_or(std::env::current_dir()?);
+                    let repo = RepoRoot::discover_from(&start)?;
+                    let events = list_feedback_events(&repo.path, args.limit)?;
+                    match args.format {
+                        PackFormat::Markdown => println!("{}", render_feedback_events(&events)),
+                        PackFormat::Json => println!("{}", serde_json::to_string_pretty(&events)?),
+                    }
+                }
+                EvalFeedbackCommand::Summary(args) => {
+                    let start = args.repo.clone().unwrap_or(std::env::current_dir()?);
+                    let repo = RepoRoot::discover_from(&start)?;
+                    let repo_id = ctxpack_index::repo_id_for_path(&fs::canonicalize(&repo.path)?);
+                    let events = list_feedback_events(&repo.path, args.limit)?;
+                    let summary = summarize_feedback_events(&repo_id, &events);
+                    match args.format {
+                        PackFormat::Markdown => println!("{}", render_feedback_summary(&summary)),
+                        PackFormat::Json => {
+                            println!("{}", serde_json::to_string_pretty(&summary)?)
+                        }
+                    }
+                }
+            },
+            EvalCommand::Policy(args) => match args.command {
+                EvalPolicyCommand::Report(args) => {
+                    let start = args.repo.clone().unwrap_or(std::env::current_dir()?);
+                    let repo = RepoRoot::discover_from(&start)?;
+                    let report = policy_quality_report(&repo.path, args.limit)?;
+                    match args.format {
+                        PackFormat::Markdown => {
+                            println!("{}", render_policy_quality_report(&report))
+                        }
+                        PackFormat::Json => println!("{}", serde_json::to_string_pretty(&report)?),
+                    }
+                }
+                EvalPolicyCommand::Tune(args) => {
+                    let start = args.repo.clone().unwrap_or(std::env::current_dir()?);
+                    let repo = RepoRoot::discover_from(&start)?;
+                    let profile = propose_policy_profile(&repo.path, args.limit)?;
+                    match args.format {
+                        PackFormat::Markdown => println!("{}", render_policy_profiles(&[profile])),
+                        PackFormat::Json => println!("{}", serde_json::to_string_pretty(&profile)?),
+                    }
+                }
+                EvalPolicyCommand::List(args) => {
+                    let start = args.repo.clone().unwrap_or(std::env::current_dir()?);
+                    let repo = RepoRoot::discover_from(&start)?;
+                    let profiles = list_policy_profiles(&repo.path)?;
+                    match args.format {
+                        PackFormat::Markdown => println!("{}", render_policy_profiles(&profiles)),
+                        PackFormat::Json => {
+                            println!("{}", serde_json::to_string_pretty(&profiles)?)
+                        }
+                    }
+                }
+                EvalPolicyCommand::Apply(args) => {
+                    let start = args.repo.clone().unwrap_or(std::env::current_dir()?);
+                    let repo = RepoRoot::discover_from(&start)?;
+                    let report = apply_policy_profile(&repo.path, &args.profile_id)?;
+                    print_policy_action_report(&report, &args.format)?;
+                }
+                EvalPolicyCommand::Disable(args) => {
+                    let start = args.repo.clone().unwrap_or(std::env::current_dir()?);
+                    let repo = RepoRoot::discover_from(&start)?;
+                    let report = disable_policy_profile(&repo.path, &args.profile_id)?;
+                    print_policy_action_report(&report, &args.format)?;
+                }
+                EvalPolicyCommand::Rollback(args) => {
+                    let start = args.repo.clone().unwrap_or(std::env::current_dir()?);
+                    let repo = RepoRoot::discover_from(&start)?;
+                    let report = rollback_policy_profile(&repo.path)?;
+                    print_policy_action_report(&report, &args.format)?;
+                }
+                EvalPolicyCommand::Experiments(args) => {
+                    let start = args.repo.clone().unwrap_or(std::env::current_dir()?);
+                    let repo = RepoRoot::discover_from(&start)?;
+                    let report = retrieval_policy_experiment_report(
+                        &repo.path,
+                        &args.task,
+                        args.mode.into(),
+                        args.limit,
+                        args.budget,
+                    )?;
+                    match args.format {
+                        PackFormat::Markdown => {
+                            println!("{}", render_policy_experiment_report(&report))
+                        }
+                        PackFormat::Json => println!("{}", serde_json::to_string_pretty(&report)?),
+                    }
+                }
+            },
+            EvalCommand::Outcome(args) => match args.command {
+                EvalOutcomeCommand::Compare(args) => {
+                    let start = args.repo.clone().unwrap_or(std::env::current_dir()?);
+                    let repo = RepoRoot::discover_from(&start)?;
+                    let report = outcome_comparison_report(&repo.path, args.limit)?;
+                    match args.format {
+                        PackFormat::Markdown => {
+                            println!("{}", render_outcome_comparison_report(&report))
+                        }
+                        PackFormat::Json => println!("{}", serde_json::to_string_pretty(&report)?),
+                    }
+                }
+            },
             EvalCommand::History(args) => {
                 let start = args.repo.clone().unwrap_or(std::env::current_dir()?);
                 let repo = RepoRoot::discover_from(&start)?;
@@ -1029,6 +1797,28 @@ fn main() -> Result<()> {
                 }
                 match args.format {
                     PackFormat::Markdown => println!("{}", render_historical_eval_report(&report)),
+                    PackFormat::Json => println!("{}", serde_json::to_string_pretty(&report)?),
+                }
+            }
+            EvalCommand::Health(args) => {
+                let start = args.repo.clone().unwrap_or(std::env::current_dir()?);
+                let repo = RepoRoot::discover_from(&start)?;
+                let historical = evaluate_historical_commits(
+                    &repo.path,
+                    &HistoricalEvalOptions {
+                        limit: args.limit,
+                        ranking_budget: args.budget,
+                        task_type: args.mode.into(),
+                        target_agent: args.target_agent,
+                        base: args.base,
+                        head: args.head,
+                        semantic_enabled: args.semantic,
+                    },
+                )?;
+                let policy = policy_quality_report(&repo.path, args.limit)?;
+                let report = build_retrieval_health_report(&historical, &policy);
+                match args.format {
+                    PackFormat::Markdown => println!("{}", render_retrieval_health_report(&report)),
                     PackFormat::Json => println!("{}", serde_json::to_string_pretty(&report)?),
                 }
             }
@@ -1075,6 +1865,138 @@ fn main() -> Result<()> {
                 }
             }
         },
+        Command::Workspace(args) => match args.command {
+            WorkspaceCommand::Artifacts(args) => match args.command {
+                WorkspaceArtifactsCommand::Export(args) => {
+                    let start = args.repo.clone().unwrap_or(std::env::current_dir()?);
+                    let repo = RepoRoot::discover_from(&start)?;
+                    let manifest = ctxpack_index::export_shared_artifact_manifest(&repo.path)?;
+                    match args.format {
+                        PackFormat::Markdown => print_shared_artifact_manifest(&manifest),
+                        PackFormat::Json => {
+                            println!("{}", serde_json::to_string_pretty(&manifest)?)
+                        }
+                    }
+                }
+                WorkspaceArtifactsCommand::Inspect(args) => {
+                    let report = ctxpack_index::inspect_shared_artifact_manifest(&args.input)?;
+                    match args.format {
+                        PackFormat::Markdown => print_shared_artifact_inspection(&report),
+                        PackFormat::Json => println!("{}", serde_json::to_string_pretty(&report)?),
+                    }
+                    if !report.compatible {
+                        std::process::exit(1);
+                    }
+                }
+                WorkspaceArtifactsCommand::Import(args) => {
+                    let start = args.repo.clone().unwrap_or(std::env::current_dir()?);
+                    let repo = RepoRoot::discover_from(&start)?;
+                    let report =
+                        ctxpack_index::import_shared_artifact_manifest(&repo.path, &args.input)?;
+                    match args.format {
+                        PackFormat::Markdown => print_shared_artifact_inspection(&report),
+                        PackFormat::Json => println!("{}", serde_json::to_string_pretty(&report)?),
+                    }
+                    if !report.compatible {
+                        std::process::exit(1);
+                    }
+                }
+            },
+            WorkspaceCommand::Init(args) => {
+                let start = args.repo.clone().unwrap_or(std::env::current_dir()?);
+                let repo = RepoRoot::discover_from(&start)?;
+                let mut repos = vec![workspace_repo_entry(
+                    &repo.path,
+                    &repo.path,
+                    args.label.as_deref(),
+                )?];
+                for member in args.members {
+                    let member_repo = RepoRoot::discover_from(&member)?;
+                    repos.push(workspace_repo_entry(&repo.path, &member_repo.path, None)?);
+                }
+                let manifest = WorkspaceManifest {
+                    schema_version: WORKSPACE_MANIFEST_SCHEMA_VERSION,
+                    workspace_id: None,
+                    repos,
+                };
+                let manifest_path = ctxpack_index::write_workspace_manifest(&repo.path, &manifest)?;
+                let report =
+                    ctxpack_index::workspace_inventory_status(&repo.path, Some(&manifest_path))?;
+                match args.format {
+                    PackFormat::Markdown => {
+                        println!("Created workspace manifest at {}", manifest_path.display());
+                        print_workspace_status_report(&report);
+                    }
+                    PackFormat::Json => println!("{}", serde_json::to_string_pretty(&report)?),
+                }
+            }
+            WorkspaceCommand::PrepareTask(args) => {
+                let start = args.repo.clone().unwrap_or(std::env::current_dir()?);
+                let repo = RepoRoot::discover_from(&start)?;
+                let plan = prepare_workspace_context_plan(
+                    &repo.path,
+                    args.manifest.as_deref(),
+                    &args.task,
+                    args.mode.into(),
+                    &args.paths,
+                    args.semantic,
+                )?;
+                match args.format {
+                    PackFormat::Markdown => print_workspace_context_plan(&plan),
+                    PackFormat::Json => println!("{}", serde_json::to_string_pretty(&plan)?),
+                }
+            }
+            WorkspaceCommand::GetPack(args) => {
+                let start = args.repo.clone().unwrap_or(std::env::current_dir()?);
+                let repo = RepoRoot::discover_from(&start)?;
+                let pack = compile_workspace_context_pack(
+                    &repo.path,
+                    args.manifest.as_deref(),
+                    &args.task,
+                    args.mode.into(),
+                    args.budget.into(),
+                    &args.paths,
+                    &args.target_agent,
+                    args.semantic,
+                )?;
+                match args.format {
+                    PackFormat::Markdown => print_workspace_context_pack(&pack),
+                    PackFormat::Json => println!("{}", serde_json::to_string_pretty(&pack)?),
+                }
+            }
+            WorkspaceCommand::Policy(args) => match args.command {
+                WorkspacePolicyCommand::Init(args) => {
+                    let start = args.repo.clone().unwrap_or(std::env::current_dir()?);
+                    let repo = RepoRoot::discover_from(&start)?;
+                    let report = ctxpack_index::write_team_policy_template(&repo.path)?;
+                    match args.format {
+                        PackFormat::Markdown => print_team_policy_report(&report),
+                        PackFormat::Json => println!("{}", serde_json::to_string_pretty(&report)?),
+                    }
+                }
+                WorkspacePolicyCommand::Status(args) => {
+                    let start = args.repo.clone().unwrap_or(std::env::current_dir()?);
+                    let repo = RepoRoot::discover_from(&start)?;
+                    let report = ctxpack_index::team_policy_report(&repo.path)?;
+                    match args.format {
+                        PackFormat::Markdown => print_team_policy_report(&report),
+                        PackFormat::Json => println!("{}", serde_json::to_string_pretty(&report)?),
+                    }
+                }
+            },
+            WorkspaceCommand::Status(args) => {
+                let start = args.repo.clone().unwrap_or(std::env::current_dir()?);
+                let repo = RepoRoot::discover_from(&start)?;
+                let report = ctxpack_index::workspace_inventory_status(
+                    &repo.path,
+                    args.manifest.as_deref(),
+                )?;
+                match args.format {
+                    PackFormat::Markdown => print_workspace_status_report(&report),
+                    PackFormat::Json => println!("{}", serde_json::to_string_pretty(&report)?),
+                }
+            }
+        },
         Command::ServeMcp => {
             ctxpack_mcp::run_stdio_server()?;
         }
@@ -1088,6 +2010,52 @@ fn init_options(args: &InitArgs) -> InitOptions {
 
 fn setup_check_options(args: &SetupCheckArgs) -> InitOptions {
     adapter_options(args.cursor, args.claude, args.opencode)
+}
+
+fn workspace_repo_entry(
+    workspace_root: &Path,
+    repo_root: &Path,
+    label: Option<&str>,
+) -> Result<WorkspaceRepo> {
+    let canonical = fs::canonicalize(repo_root)?;
+    let path = workspace_manifest_path_label(workspace_root, &canonical);
+    let label = label
+        .map(str::to_string)
+        .or_else(|| {
+            canonical
+                .file_name()
+                .map(|name| name.to_string_lossy().to_string())
+        })
+        .unwrap_or_else(|| "repo".to_string());
+    Ok(WorkspaceRepo {
+        id: Some(ctxpack_index::repo_id_for_path(&canonical)),
+        path,
+        label: Some(label),
+        tags: Vec::new(),
+    })
+}
+
+fn workspace_manifest_path_label(workspace_root: &Path, repo_root: &Path) -> String {
+    repo_root
+        .strip_prefix(workspace_root)
+        .ok()
+        .filter(|path| !path.as_os_str().is_empty())
+        .map(|path| {
+            path.components()
+                .filter_map(|component| match component {
+                    std::path::Component::Normal(part) => Some(part.to_string_lossy()),
+                    _ => None,
+                })
+                .collect::<Vec<_>>()
+                .join("/")
+        })
+        .unwrap_or_else(|| {
+            if repo_root == workspace_root {
+                ".".to_string()
+            } else {
+                repo_root.display().to_string()
+            }
+        })
 }
 
 fn parse_regression_threshold(
@@ -1179,6 +2147,204 @@ fn print_setup_check_report(report: &SetupCheckReport) {
         println!("Result: passed");
     } else {
         println!("Result: failed");
+    }
+}
+
+fn build_doctor_report(args: &DoctorArgs) -> Result<serde_json::Value> {
+    let binary_path = match &args.binary {
+        Some(path) => path.clone(),
+        None => std::env::current_exe()?,
+    };
+    let binary_absolute = binary_path.is_absolute();
+    let binary_exists = binary_path.is_file();
+    let binary_version = command_first_line(&binary_path, "--version");
+    let binary_help = command_success(&binary_path, "--help");
+
+    let mut checks = vec![
+        serde_json::json!({
+            "name": "binary_path_absolute",
+            "passed": binary_absolute,
+            "detail": if binary_absolute {
+                "binary path is absolute"
+            } else {
+                "use an absolute ctxpack binary path for MCP clients"
+            },
+        }),
+        serde_json::json!({
+            "name": "binary_exists",
+            "passed": binary_exists,
+            "detail": if binary_exists {
+                "binary exists"
+            } else {
+                "binary path does not point to a file"
+            },
+        }),
+        serde_json::json!({
+            "name": "binary_version",
+            "passed": binary_version.is_some(),
+            "detail": binary_version
+                .clone()
+                .unwrap_or_else(|| "ctxpack --version failed".to_string()),
+        }),
+        serde_json::json!({
+            "name": "binary_help",
+            "passed": binary_help,
+            "detail": if binary_help {
+                "ctxpack --help succeeded"
+            } else {
+                "ctxpack --help failed"
+            },
+        }),
+    ];
+
+    let mut release_manifest = serde_json::Value::Null;
+    if let Some(path) = &args.release_manifest {
+        let manifest_text = fs::read_to_string(path)?;
+        let manifest: serde_json::Value = serde_json::from_str(&manifest_text)?;
+        let manifest_version = manifest["version"].as_str().unwrap_or_default();
+        let version_matches = binary_version
+            .as_deref()
+            .map(|version| version.contains(manifest_version))
+            .unwrap_or(false);
+        let manifest_local_only = manifest["privacyStatus"]["localOnly"]
+            .as_bool()
+            .unwrap_or(false);
+        let has_archive_checksum = manifest["archive"]["sha256"].as_str().is_some();
+        let has_binary_checksum = manifest["binary"]["sha256"].as_str().is_some();
+        checks.push(serde_json::json!({
+            "name": "release_manifest_version",
+            "passed": version_matches,
+            "detail": format!("manifest version {manifest_version} matches active binary"),
+        }));
+        checks.push(serde_json::json!({
+            "name": "release_manifest_privacy",
+            "passed": manifest_local_only,
+            "detail": "release manifest declares local-only privacy status",
+        }));
+        checks.push(serde_json::json!({
+            "name": "release_manifest_checksums",
+            "passed": has_archive_checksum && has_binary_checksum,
+            "detail": "release manifest includes archive and binary SHA-256 values",
+        }));
+        release_manifest = serde_json::json!({
+            "path": path,
+            "version": manifest_version,
+            "archiveName": manifest["archive"]["name"].clone(),
+            "auditReport": manifest["auditReport"].clone(),
+            "localOnly": manifest_local_only,
+        });
+    }
+
+    let mut storage = serde_json::Value::Null;
+    if let Some(repo_input) = &args.repo {
+        let repo = RepoRoot::discover_from(repo_input)?;
+        let status = storage_status_for_repo(
+            &repo.path,
+            &StoreConfig {
+                path_override: None,
+            },
+        )?;
+        let compatibility_label = format!("{:?}", status.compatibility);
+        let no_existing_state = status.schema_version.is_none();
+        let compatible = matches!(
+            compatibility_label.as_str(),
+            "Compatible" | "MissingMetadata"
+        ) || no_existing_state;
+        checks.push(serde_json::json!({
+            "name": "local_state_compatibility",
+            "passed": compatible,
+            "detail": format!("storage compatibility: {compatibility_label}"),
+        }));
+        storage = serde_json::json!({
+            "repo": repo.path,
+            "databasePath": status.database_path,
+            "schemaVersion": status.schema_version,
+            "compatibility": status.compatibility,
+            "diagnostics": status.diagnostics,
+        });
+    }
+
+    let passed = checks
+        .iter()
+        .all(|check| check["passed"].as_bool().unwrap_or(false));
+
+    Ok(serde_json::json!({
+        "passed": passed,
+        "binary": {
+            "path": binary_path,
+            "absolute": binary_absolute,
+            "exists": binary_exists,
+            "version": binary_version,
+            "helpOk": binary_help,
+        },
+        "releaseManifest": release_manifest,
+        "storage": storage,
+        "checks": checks,
+        "privacyStatus": {
+            "localOnly": true,
+            "remoteEmbeddingsUsed": false,
+            "remoteRerankingUsed": false,
+            "sourceTextLogged": false,
+        },
+        "mutatesGlobalAgentConfig": false,
+    }))
+}
+
+fn command_first_line(binary_path: &Path, arg: &str) -> Option<String> {
+    let output = std::process::Command::new(binary_path)
+        .arg(arg)
+        .output()
+        .ok()?;
+    if !output.status.success() {
+        return None;
+    }
+    String::from_utf8_lossy(&output.stdout)
+        .lines()
+        .next()
+        .map(str::to_string)
+}
+
+fn command_success(binary_path: &Path, arg: &str) -> bool {
+    std::process::Command::new(binary_path)
+        .arg(arg)
+        .output()
+        .map(|output| output.status.success())
+        .unwrap_or(false)
+}
+
+fn print_doctor_report(report: &serde_json::Value) {
+    println!("# ctxpack Install Doctor");
+    println!();
+    println!("- Passed: `{}`", report["passed"]);
+    println!("- Binary: `{}`", report["binary"]["path"]);
+    if let Some(version) = report["binary"]["version"].as_str() {
+        println!("- Version: `{version}`");
+    }
+    println!("- Global agent config mutation: `false`");
+    println!("- Privacy: local-only, sourceTextLogged=false");
+    if !report["releaseManifest"].is_null() {
+        println!(
+            "- Release manifest: version `{}`, archive `{}`",
+            report["releaseManifest"]["version"], report["releaseManifest"]["archiveName"]
+        );
+    }
+    if !report["storage"].is_null() {
+        println!(
+            "- Local state compatibility: `{}`",
+            report["storage"]["compatibility"]
+        );
+    }
+    println!();
+    println!("## Checks");
+    if let Some(checks) = report["checks"].as_array() {
+        for check in checks {
+            let marker = if check["passed"].as_bool().unwrap_or(false) {
+                "pass"
+            } else {
+                "fail"
+            };
+            println!("- {marker}: {} — {}", check["name"], check["detail"]);
+        }
     }
 }
 
@@ -1280,6 +2446,217 @@ fn print_storage_status_report(report: &StorageStatusReport) {
     );
     println!("- Memory card records: `{}`", report.memory_card_records);
     print_diagnostics(&report.diagnostics);
+}
+
+fn print_workspace_status_report(report: &WorkspaceInventoryReport) {
+    println!("# ctxpack Workspace Status");
+    println!();
+    println!("- Workspace root: `{}`", report.workspace_root);
+    println!("- Manifest: `{}`", report.manifest_path);
+    println!("- Repositories: `{}`", report.repo_count);
+    println!(
+        "- Available repositories: `{}`",
+        report.available_repo_count
+    );
+    println!("- Files: `{}`", report.file_count);
+    println!("- Generated paths: `{}`", report.generated_count);
+    println!("- Sensitive paths: `{}`", report.sensitive_count);
+    println!("- Source text logged: `{}`", report.source_text_logged);
+    println!(
+        "- Privacy: local-only `{}`",
+        report.privacy_status.local_only
+    );
+    println!();
+    println!("## Repositories");
+    for repo in &report.repos {
+        println!(
+            "- `{}` ({}) — {:?}, files `{}`, storage `{:?}`, memory cards `{}`",
+            repo.label,
+            repo.path_label,
+            repo.state,
+            repo.file_count,
+            repo.storage_compatibility,
+            repo.memory_card_count
+        );
+        for diagnostic in &repo.diagnostics {
+            println!(
+                "  - `{:?}` `{}`: {}",
+                diagnostic.severity, diagnostic.code, diagnostic.message
+            );
+        }
+    }
+    if !report.diagnostics.is_empty() {
+        println!();
+        println!("## Workspace Diagnostics");
+        for diagnostic in &report.diagnostics {
+            println!(
+                "- `{:?}` `{}`: {}",
+                diagnostic.severity, diagnostic.code, diagnostic.message
+            );
+        }
+    }
+}
+
+fn print_workspace_context_plan(plan: &WorkspaceContextPlan) {
+    println!("# ctxpack Workspace Context Plan");
+    println!();
+    println!("- Workspace root: `{}`", plan.workspace_root);
+    println!("- Manifest: `{}`", plan.manifest_path);
+    println!("- Task type: `{:?}`", plan.task_type);
+    println!("- Confidence: `{:.2}`", plan.confidence);
+    println!("- Selected repositories: `{}`", plan.selected_repo_count);
+    println!("- Source text logged: `{}`", plan.source_text_logged);
+    println!("- Privacy: local-only `{}`", plan.privacy_status.local_only);
+    println!();
+    println!("## Repository Plans");
+    for repo in &plan.repo_plans {
+        println!(
+            "- `{}` ({}) confidence `{:.2}`: {}",
+            repo.label, repo.path_label, repo.confidence, repo.reason
+        );
+        for target in &repo.context_plan.target_files {
+            println!("  - target `{}`: {}", target.path, target.reason);
+        }
+        for test in &repo.context_plan.related_tests {
+            println!("  - test `{}`: {}", test.path, test.reason);
+        }
+    }
+    if !plan.diagnostics.is_empty() {
+        println!();
+        println!("## Workspace Diagnostics");
+        for diagnostic in &plan.diagnostics {
+            println!(
+                "- `{:?}` `{}`: {}",
+                diagnostic.severity, diagnostic.code, diagnostic.message
+            );
+        }
+    }
+}
+
+fn print_workspace_context_pack(pack: &WorkspaceContextPack) {
+    println!("# ctxpack Workspace Context Pack");
+    println!();
+    println!("- Pack ID: `{}`", pack.id);
+    println!("- Task ID: `{}`", pack.task_id);
+    println!("- Workspace root: `{}`", pack.workspace_root);
+    println!("- Manifest: `{}`", pack.manifest_path);
+    println!("- Target agent: `{}`", pack.target_agent);
+    println!("- Budget: `{:?}`", pack.budget);
+    println!("- Confidence: `{:.2}`", pack.confidence);
+    println!("- Estimated tokens: `{}`", pack.token_estimate);
+    println!("- Selected repositories: `{}`", pack.selected_repo_count);
+    println!("- Source text logged: `{}`", pack.source_text_logged);
+    println!("- Privacy: local-only `{}`", pack.privacy_status.local_only);
+    if !pack.warnings.is_empty() {
+        println!();
+        println!("## Warnings");
+        for warning in &pack.warnings {
+            println!("- {warning}");
+        }
+    }
+    for repo in &pack.repo_packs {
+        println!();
+        println!(
+            "## Repository: {} ({})\n\nConfidence `{:.2}`. {}",
+            repo.label, repo.path_label, repo.confidence, repo.reason
+        );
+        println!("{}", render_pack_markdown(&repo.context_pack));
+    }
+    if !pack.diagnostics.is_empty() {
+        println!();
+        println!("## Workspace Diagnostics");
+        for diagnostic in &pack.diagnostics {
+            println!(
+                "- `{:?}` `{}`: {}",
+                diagnostic.severity, diagnostic.code, diagnostic.message
+            );
+        }
+    }
+}
+
+fn print_shared_artifact_manifest(manifest: &SharedArtifactManifest) {
+    println!("# ctxpack Shared Artifact Manifest");
+    println!();
+    println!("- Repo ID: `{}`", manifest.repo_id);
+    println!("- Repo label: `{}`", manifest.repo_label);
+    println!("- Artifacts: `{}`", manifest.artifacts.len());
+    println!("- Source text logged: `{}`", manifest.source_text_logged);
+    println!(
+        "- Privacy: local-only `{}`",
+        manifest.privacy_status.local_only
+    );
+    for artifact in &manifest.artifacts {
+        println!(
+            "- `{:?}` `{}`: {:?}, hash `{:?}`",
+            artifact.kind, artifact.path_label, artifact.status, artifact.content_hash
+        );
+    }
+}
+
+fn print_shared_artifact_inspection(report: &SharedArtifactInspectionReport) {
+    println!("# ctxpack Shared Artifact Inspection");
+    println!();
+    println!("- Manifest: `{}`", report.manifest_path);
+    println!("- Compatible: `{}`", report.compatible);
+    println!("- Artifacts: `{}`", report.artifact_count);
+    println!("- Source text logged: `{}`", report.source_text_logged);
+    println!(
+        "- Privacy: local-only `{}`",
+        report.privacy_status.local_only
+    );
+    for artifact in &report.artifacts {
+        println!(
+            "- `{:?}` `{}`: {:?}",
+            artifact.kind, artifact.path_label, artifact.status
+        );
+    }
+    for diagnostic in &report.diagnostics {
+        println!(
+            "- `{:?}` `{}`: {}",
+            diagnostic.severity, diagnostic.code, diagnostic.message
+        );
+    }
+}
+
+fn print_team_policy_report(report: &TeamPolicyReport) {
+    println!("# ctxpack Team Policy");
+    println!();
+    println!("- Policy: `{}`", report.policy_path);
+    println!("- Name: `{}`", report.policy.name);
+    println!(
+        "- Workspace indexing: `{}`",
+        report.policy.allow_workspace_indexing
+    );
+    println!(
+        "- Artifact export: `{}`",
+        report.policy.allow_artifact_export
+    );
+    println!(
+        "- Cloud embeddings: `{}`",
+        report.policy.allow_cloud_embeddings
+    );
+    println!(
+        "- Cloud reranking: `{}`",
+        report.policy.allow_cloud_reranking
+    );
+    println!("- Redact secrets: `{}`", report.policy.redact_secrets);
+    println!("- Source text logged: `{}`", report.source_text_logged);
+    println!("- Allowed artifacts: `{}`", report.allowed_artifacts.len());
+    println!("- Blocked artifacts: `{}`", report.blocked_artifacts.len());
+    println!(
+        "- Degraded artifacts: `{}`",
+        report.degraded_artifacts.len()
+    );
+    println!(
+        "- Redacted artifacts: `{}`",
+        report.redacted_artifacts.len()
+    );
+    for diagnostic in &report.diagnostics {
+        println!(
+            "- `{:?}` `{}`: {}",
+            diagnostic.severity, diagnostic.code, diagnostic.message
+        );
+    }
 }
 
 fn print_diagnostics(diagnostics: &[Diagnostic]) {
@@ -1445,6 +2822,15 @@ fn json_label<T: serde::Serialize>(value: &T) -> String {
         .unwrap_or_else(|_| "unknown".to_string())
 }
 
+fn write_or_print(output_path: Option<&Path>, artifact: &str) -> Result<()> {
+    if let Some(path) = output_path {
+        fs::write(path, artifact)?;
+    } else {
+        println!("{artifact}");
+    }
+    Ok(())
+}
+
 fn context_anchor_paths(
     repo: &Path,
     explicit_paths: Vec<String>,
@@ -1487,6 +2873,532 @@ fn trace_disabled_diagnostic() -> Diagnostic {
         paths: Vec::new(),
         count: 1,
     }
+}
+
+fn current_unix_seconds() -> u64 {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_secs()
+}
+
+fn print_feedback_record_status(event: &SessionFeedbackEvent, status: &ctxpack_core::TraceStatus) {
+    println!("# ctxpack Feedback Event\n");
+    println!("- Event ID: `{}`", event.id);
+    println!("- Task hash: `{}`", event.task_hash);
+    println!("- Task type: `{:?}`", event.task_type);
+    println!("- Target agent: `{}`", event.target_agent);
+    println!("- Outcome: `{:?}`", event.outcome);
+    println!("- Source text logged: `{}`", event.source_text_logged);
+    println!("- Status: `{:?}`", status.status);
+    if let Some(path) = &status.path {
+        println!("- Path: `{path}`");
+    }
+    if !status.diagnostics.is_empty() {
+        println!("\n## Diagnostics\n");
+        for diagnostic in &status.diagnostics {
+            println!("- `{}`: {}", diagnostic.code, diagnostic.message);
+        }
+    }
+}
+
+fn render_feedback_events(events: &[SessionFeedbackEvent]) -> String {
+    let mut output = String::from("# ctxpack Feedback Events\n\n");
+    output.push_str(
+        "Source-free feedback events compare ctxpack recommendations with what agents actually read, edited, tested, and validated.\n\n",
+    );
+    if events.is_empty() {
+        output.push_str("No feedback events found for this repository.\n");
+        return output;
+    }
+    for (index, event) in events.iter().enumerate() {
+        output.push_str(&format!(
+            "## Event {}\n\n- Event ID: `{}`\n- Task hash: `{}`\n- Task type: `{:?}`\n- Target agent: `{}`\n- Outcome: `{:?}`\n",
+            index + 1,
+            event.id,
+            event.task_hash,
+            event.task_type,
+            event.target_agent,
+            event.outcome
+        ));
+        if let Some(pack_id) = event.pack_id {
+            output.push_str(&format!("- Pack ID: `{pack_id}`\n"));
+        }
+        if let Some(budget) = &event.budget {
+            output.push_str(&format!("- Budget: `{:?}`\n", budget));
+        }
+        output.push_str(&format!(
+            "- Created at: `{}`\n- Source text logged: `{}`\n\n",
+            event.created_at_unix_seconds, event.source_text_logged
+        ));
+        push_named_values(&mut output, "Recommended files", &event.recommended_files);
+        push_named_values(&mut output, "Read files", &event.read_files);
+        push_named_values(&mut output, "Edited files", &event.edited_files);
+        push_named_values(&mut output, "Tested files", &event.tested_files);
+        push_named_values(
+            &mut output,
+            "User-corrected files",
+            &event.user_corrected_files,
+        );
+        push_named_values(&mut output, "Tags", &event.tags);
+        output.push('\n');
+    }
+    output
+}
+
+fn render_feedback_summary(summary: &FeedbackSummary) -> String {
+    format!(
+        "# ctxpack Feedback Summary\n\n- Repo ID: `{}`\n- Events: `{}`\n- Passed: `{}`\n- Failed: `{}`\n- Blocked: `{}`\n- Unknown: `{}`\n- Unique read files: `{}`\n- Unique edited files: `{}`\n- Unique tested files: `{}`\n- Unique user-corrected files: `{}`\n- Source text logged: `{}`\n",
+        summary.repo_id,
+        summary.event_count,
+        summary.passed_count,
+        summary.failed_count,
+        summary.blocked_count,
+        summary.unknown_count,
+        summary.read_file_count,
+        summary.edited_file_count,
+        summary.tested_file_count,
+        summary.user_corrected_file_count,
+        summary.source_text_logged
+    )
+}
+
+fn render_policy_quality_report(report: &PolicyQualityReport) -> String {
+    let mut output = String::from("# ctxpack Policy Quality Report\n\n");
+    output.push_str(&format!("- Repo ID: `{}`\n", report.repo_id));
+    output.push_str(&format!("- Events: `{}`\n", report.event_count));
+    if let Some(warning) = &report.sample_warning {
+        output.push_str(&format!("- Sample warning: `{warning}`\n"));
+    }
+    output.push_str(&format!(
+        "- Context precision: `{:.2}`\n- Read precision: `{:.2}`\n- Edit recall proxy: `{:.2}`\n- Validation coverage: `{:.2}`\n- Correction rate: `{:.2}`\n- Source text logged: `{}`\n\n",
+        report.context_precision,
+        report.read_precision,
+        report.edit_recall_proxy,
+        report.validation_coverage,
+        report.correction_rate,
+        report.source_text_logged
+    ));
+
+    output.push_str("## Token ROI\n\n");
+    if report.token_roi.is_empty() {
+        output.push_str("_No token ROI samples._\n\n");
+    } else {
+        for metric in &report.token_roi {
+            output.push_str(&format!(
+                "- Budget: `{:?}` events `{}` useful files/event `{:.2}`\n",
+                metric.budget, metric.event_count, metric.useful_files_per_event
+            ));
+        }
+        output.push('\n');
+    }
+
+    output.push_str("## Repeated Missing File Families\n\n");
+    if report.repeated_missing_file_families.is_empty() {
+        output.push_str("_No repeated missing file families._\n\n");
+    } else {
+        for family in &report.repeated_missing_file_families {
+            output.push_str(&format!("- `{}`: `{}`\n", family.path, family.count));
+        }
+        output.push('\n');
+    }
+
+    output.push_str("## Signal Contributions\n\n");
+    for signal in &report.signal_contributions {
+        output.push_str(&format!(
+            "- `{:?}`: events `{}`, useful hits `{}`, score `{:.2}`\n",
+            signal.signal, signal.event_count, signal.useful_file_hits, signal.score
+        ));
+    }
+    output
+}
+
+fn render_policy_profiles(profiles: &[RetrievalPolicyProfile]) -> String {
+    let mut output = String::from("# ctxpack Policy Profiles\n\n");
+    if profiles.is_empty() {
+        output.push_str("No policy profiles found for this repository.\n");
+        return output;
+    }
+    for profile in profiles {
+        output.push_str(&format!(
+            "## `{}`\n\n- Status: `{:?}`\n- Events: `{}`\n- Created at: `{}`\n- Source text logged: `{}`\n- Rationale: {}\n\n",
+            profile.id,
+            profile.status,
+            profile.source_report_event_count,
+            profile.created_at_unix_seconds,
+            profile.source_text_logged,
+            profile.rationale
+        ));
+        output.push_str("### Weights\n\n");
+        for weight in &profile.weights {
+            output.push_str(&format!(
+                "- `{:?}`: `{:.2}` — {}\n",
+                weight.signal, weight.weight, weight.rationale
+            ));
+        }
+        output.push_str("\n### Safety Floors\n\n");
+        for floor in &profile.safety_floors {
+            output.push_str(&format!(
+                "- `{:?}`: min `{:.2}` — {}\n",
+                floor.signal, floor.minimum_weight, floor.reason
+            ));
+        }
+        if !profile.regression_warnings.is_empty() {
+            output.push_str("\n### Regression Warnings\n\n");
+            for warning in &profile.regression_warnings {
+                output.push_str(&format!("- {warning}\n"));
+            }
+        }
+        output.push('\n');
+    }
+    output
+}
+
+fn print_policy_action_report(
+    report: &PolicyProfileActionReport,
+    format: &PackFormat,
+) -> Result<()> {
+    match format {
+        PackFormat::Markdown => {
+            println!(
+                "# ctxpack Policy Profile Action\n\n- Repo ID: `{}`\n- Profile ID: `{}`\n- Action: `{}`\n- Active profile ID: `{:?}`\n- Source text logged: `{}`",
+                report.repo_id,
+                report.profile_id,
+                report.action,
+                report.active_profile_id,
+                report.source_text_logged
+            );
+        }
+        PackFormat::Json => println!("{}", serde_json::to_string_pretty(report)?),
+    }
+    Ok(())
+}
+
+fn render_outcome_comparison_report(report: &AgentOutcomeComparisonReport) -> String {
+    let mut output = String::from("# ctxpack Agent Outcome Comparison\n\n");
+    output.push_str(&format!(
+        "- Repo ID: `{}`\n- Events: `{}`\n- Changed sample warning: `{}`\n- Low information warning: `{}`\n- Source text logged: `{}`\n",
+        report.repo_id,
+        report.event_count,
+        report.changed_sample_warning,
+        report.low_information_warning,
+        report.source_text_logged
+    ));
+    if let Some(warning) = &report.sample_warning {
+        output.push_str(&format!("- Sample warning: `{warning}`\n"));
+    }
+    output.push_str("\n## Budgets\n\n");
+    if report.budgets.is_empty() {
+        output.push_str("_No budget outcomes found._\n");
+        return output;
+    }
+    for budget in &report.budgets {
+        output.push_str(&format!(
+            "- Budget: `{:?}` events `{}` pass `{:.2}` blocked `{:.2}` corrections `{:.2}` validation `{:.2}` avg context `{:.2}` useful/1k `{:.2}`\n",
+            budget.budget,
+            budget.event_count,
+            budget.pass_rate,
+            budget.blocked_rate,
+            budget.correction_rate,
+            budget.validation_coverage,
+            budget.average_recommended_context_size,
+            budget.useful_target_files_per_1k_tokens
+        ));
+    }
+    output
+}
+
+fn render_retrieval_health_report(report: &RetrievalHealthReport) -> String {
+    let mut output = String::from("# ctxpack Retrieval Health Report\n\n");
+    output.push_str(&format!(
+        "- Repo ID: `{}`\n- Evaluated commits: `{}`\n- Feedback events: `{}`\n- Health score: `{:.2}`\n- Source text logged: `{}`\n- Privacy: local-only `{}`\n\n",
+        report.repo_id,
+        report.evaluated_commits,
+        report.feedback_events,
+        report.health_score,
+        report.source_text_logged,
+        report.privacy_status.local_only
+    ));
+
+    output.push_str("## Metrics\n\n");
+    for metric in &report.metrics {
+        output.push_str(&format!(
+            "- `{}`: `{:.2}` {} ({})\n",
+            metric.name, metric.value, metric.unit, metric.source
+        ));
+    }
+    if report.metrics.is_empty() {
+        output.push_str("- No metrics available.\n");
+    }
+    output.push('\n');
+
+    output.push_str("## Token ROI\n\n");
+    for row in &report.token_roi {
+        output.push_str(&format!(
+            "- Source `{}` budget `{:?}` events `{}` useful/event `{:.2}` useful/1k `{:.2}` recall `{:.2}` larger pack adds little value `{}`\n",
+            row.source,
+            row.budget,
+            row.event_count,
+            row.useful_files_per_event,
+            row.useful_targets_per_1k_tokens,
+            row.recall_at_cutoff,
+            row.larger_pack_adds_little_value
+        ));
+    }
+    if report.token_roi.is_empty() {
+        output.push_str("- No token ROI available.\n");
+    }
+    output.push('\n');
+
+    output.push_str("## Signal Contributions\n\n");
+    for signal in &report.signal_contributions {
+        output.push_str(&format!(
+            "- `{:?}` from `{}`: events `{}`, useful hits `{}`, score `{:.2}`, recall without signal `{:?}`, lift vs lexical `{:?}`\n",
+            signal.signal,
+            signal.source,
+            signal.event_count,
+            signal.useful_file_hits,
+            signal.score,
+            signal.recall_without_signal,
+            signal.recall_lift_vs_lexical_at_k
+        ));
+    }
+    if report.signal_contributions.is_empty() {
+        output.push_str("- No signal contribution evidence available.\n");
+    }
+    output.push('\n');
+
+    output.push_str("## Gap Families\n\n");
+    for gap in &report.gap_families {
+        output.push_str(&format!(
+            "- `{}` from `{}` count `{}` area `{:?}` status `{:?}` path `{:?}`\n",
+            gap.family,
+            gap.source,
+            gap.count,
+            gap.recommendation_area,
+            gap.target_status,
+            gap.safe_path
+        ));
+    }
+    if report.gap_families.is_empty() {
+        output.push_str("- No repeated gap families found.\n");
+    }
+    output.push('\n');
+
+    output.push_str("## Low Confidence Flags\n\n");
+    if report.low_confidence_flags.is_empty() {
+        output.push_str("- No low-confidence flags.\n");
+    } else {
+        for flag in &report.low_confidence_flags {
+            output.push_str(&format!("- `{flag}`\n"));
+        }
+    }
+    output
+}
+
+fn render_agent_preview_report(report: &AgentPreviewReport) -> String {
+    let mut output = String::from("# ctxpack Agent Preview\n\n");
+    output.push_str(&format!(
+        "- Repo ID: `{}`\n- Task hash: `{}`\n- Task type: `{:?}`\n- Budget: `{:?}`\n- Agent previews: `{}`\n- Source text logged: `{}`\n- Privacy: local-only `{}`\n\n",
+        report.repo_id,
+        report.task_hash,
+        report.task_type,
+        report.budget,
+        report.previews.len(),
+        report.source_text_logged,
+        report.privacy_status.local_only
+    ));
+
+    for preview in &report.previews {
+        output.push_str(&format!(
+            "## {}\n\n- Target agent: `{}`\n- Pack resource: `{}`\n- Source text included: `{}`\n\n",
+            preview.display_name,
+            preview.target_agent,
+            preview.pack_resource_uri,
+            preview.source_text_included
+        ));
+
+        output.push_str("### MCP Tools\n\n");
+        push_plain_path_list(&mut output, &preview.mcp_tools, "No MCP tools.");
+
+        output.push_str("\n### MCP Resources\n\n");
+        push_plain_path_list(&mut output, &preview.mcp_resources, "No MCP resources.");
+
+        output.push_str("\n### Guidance\n\n");
+        for surface in &preview.guidance {
+            output.push_str(&format!(
+                "- `{:?}` `{}` path `{:?}` — {}\n",
+                surface.kind, surface.label, surface.path, surface.summary
+            ));
+        }
+        for surface in &preview.native_rules {
+            output.push_str(&format!(
+                "- `{:?}` `{}` path `{:?}` — {}\n",
+                surface.kind, surface.label, surface.path, surface.summary
+            ));
+        }
+
+        output.push_str("\n### Next Steps\n\n");
+        for step in &preview.next_steps {
+            output.push_str(&format!(
+                "{}. `{}` owns this step; source-bearing `{}`: {}\n",
+                step.order, step.owner, step.source_bearing, step.action
+            ));
+        }
+
+        output.push_str("\n### Boundary\n\n");
+        for boundary in &preview.boundary {
+            output.push_str(&format!("- {boundary}\n"));
+        }
+        output.push('\n');
+    }
+
+    if !report.diagnostics.is_empty() {
+        output.push_str("## Diagnostics\n\n");
+        print_diagnostics_to_string(&mut output, &report.diagnostics);
+    }
+
+    output
+}
+
+fn render_graph_neighborhood_report(report: &GraphNeighborhoodReport) -> String {
+    let mut output = String::from("# ctxpack Graph Neighborhood\n\n");
+    output.push_str(&format!(
+        "- Repo ID: `{}`\n- Task hash: `{:?}`\n- Anchors: `{}`\n- Nodes: `{}` / max `{}`\n- Edges: `{}` / max `{}`\n- Capped: `{}`\n- Source text logged: `{}`\n- Privacy: local-only `{}`\n\n",
+        report.repo_id,
+        report.task_hash,
+        report.anchors.len(),
+        report.nodes.len(),
+        report.max_nodes,
+        report.edges.len(),
+        report.max_edges,
+        report.capped,
+        report.source_text_logged,
+        report.privacy_status.local_only
+    ));
+
+    output.push_str("## Anchors\n\n");
+    push_plain_path_list(&mut output, &report.anchors, "No anchors selected.");
+
+    output.push_str("\n## Communities\n\n");
+    if report.communities.is_empty() {
+        output.push_str("- No communities.\n");
+    } else {
+        for community in &report.communities {
+            output.push_str(&format!(
+                "- `{}`: nodes `{}`, edges `{}` — {}\n",
+                community.label, community.node_count, community.edge_count, community.summary
+            ));
+        }
+    }
+
+    output.push_str("\n## Nodes\n\n");
+    if report.nodes.is_empty() {
+        output.push_str("- No nodes.\n");
+    } else {
+        for node in &report.nodes {
+            output.push_str(&format!(
+                "- `{}` {:?} label `{}` path `{:?}` role `{:?}` weight `{:.2}` source `{}`\n",
+                node.id, node.kind, node.label, node.path, node.role, node.weight, node.source
+            ));
+        }
+    }
+
+    output.push_str("\n## Edges\n\n");
+    if report.edges.is_empty() {
+        output.push_str("- No edges.\n");
+    } else {
+        for edge in &report.edges {
+            output.push_str(&format!(
+                "- `{}` -> `{}` `{}` weight `{:.2}` — {}\n",
+                edge.source, edge.target, edge.kind, edge.weight, edge.reason
+            ));
+        }
+    }
+
+    if !report.diagnostics.is_empty() {
+        output.push_str("\n## Diagnostics\n\n");
+        print_diagnostics_to_string(&mut output, &report.diagnostics);
+    }
+
+    output
+}
+
+fn render_semantic_provider_status(report: &SemanticProviderStatusReport) -> String {
+    let mut output = String::from("# ctxpack Semantic Provider Status\n\n");
+    output.push_str(&format!(
+        "- Repo ID: `{}`\n- Provider: `{}`\n- Model: `{}`\n- Dimensions: `{}`\n- Distance metric: `{}`\n- Enabled by default: `{}`\n- Cloud embeddings allowed: `{}`\n- Cloud reranking allowed: `{}`\n- Local vector count: `{}`\n- Stored vector count: `{}`\n- Indexing freshness: `{}`\n- Source text logged: `{}`\n- Privacy: local-only `{}`\n\n",
+        report.repo_id,
+        report.provider_kind,
+        report.model_id,
+        report.dimensions,
+        report.distance_metric,
+        report.enabled_by_default,
+        report.cloud_embeddings_allowed,
+        report.cloud_reranking_allowed,
+        report.local_vector_count,
+        report.stored_vector_count,
+        report.indexing_freshness,
+        report.source_text_logged,
+        report.privacy_status.local_only
+    ));
+    output.push_str("## Usage\n\n");
+    if report.usage.is_empty() {
+        output.push_str("- No semantic usage sample requested.\n");
+    } else {
+        for usage in &report.usage {
+            output.push_str(&format!(
+                "- `{}` semantic `{}` candidates `{}` remote embeddings `{}`\n",
+                usage.surface,
+                usage.semantic_enabled,
+                usage.semantic_candidate_count,
+                usage.remote_embeddings_used
+            ));
+        }
+    }
+    output
+}
+
+fn render_policy_experiment_report(report: &RetrievalPolicyExperimentReport) -> String {
+    let mut output = String::from("# ctxpack Retrieval Policy Experiments\n\n");
+    output.push_str(&format!(
+        "- Repo ID: `{}`\n- Task hash: `{}`\n- Source text logged: `{}`\n- Privacy: local-only `{}`\n\n",
+        report.repo_id,
+        report.task_hash,
+        report.source_text_logged,
+        report.privacy_status.local_only
+    ));
+    output.push_str("## Rows\n\n");
+    for row in &report.rows {
+        output.push_str(&format!(
+            "- `{}` semantic `{}` graph `{}` fileRecall@10 `{:?}` testRecall@10 `{:?}` graph nodes `{}` graph edges `{}` — {}\n",
+            row.policy,
+            row.semantic_enabled,
+            row.graph_enabled,
+            row.file_recall_at_10,
+            row.test_recall_at_10,
+            row.graph_node_count,
+            row.graph_edge_count,
+            row.note
+        ));
+    }
+    if !report.diagnostics.is_empty() {
+        output.push_str("\n## Diagnostics\n\n");
+        print_diagnostics_to_string(&mut output, &report.diagnostics);
+    }
+    output
+}
+
+fn push_named_values(output: &mut String, title: &str, values: &[String]) {
+    output.push_str(&format!("### {title}\n\n"));
+    if values.is_empty() {
+        output.push_str("_None._\n\n");
+        return;
+    }
+    for value in values {
+        output.push_str(&format!("- `{value}`\n"));
+    }
+    output.push('\n');
 }
 
 fn render_eval_checklist_with_gaps(
@@ -2343,6 +4255,71 @@ mod tests {
             panic!("expected eval history command");
         };
         assert_eq!(default_args.budget, 10);
+    }
+
+    #[test]
+    fn inspector_export_command_parses_static_formats() {
+        let cli = Cli::try_parse_from([
+            "ctxpack",
+            "inspector",
+            "export",
+            "fix auth redirect",
+            "--mode",
+            "bug-fix",
+            "--budget",
+            "standard",
+            "--target-agent",
+            "codex",
+            "--format",
+            "html",
+            "--output",
+            "pack.html",
+        ])
+        .unwrap();
+
+        let Command::Inspector(InspectorArgs {
+            command: InspectorCommand::Export(args),
+        }) = cli.command
+        else {
+            panic!("expected inspector export command");
+        };
+        assert_eq!(args.task, "fix auth redirect");
+        assert!(matches!(args.mode, Mode::BugFix));
+        assert!(matches!(args.budget, Budget::Standard));
+        assert!(matches!(args.format, InspectorFormat::Html));
+        assert_eq!(args.target_agent, "codex");
+        assert_eq!(args.output, Some(PathBuf::from("pack.html")));
+    }
+
+    #[test]
+    fn agent_preview_command_parses_agent_and_format() {
+        let cli = Cli::try_parse_from([
+            "ctxpack",
+            "agent",
+            "preview",
+            "fix auth redirect",
+            "--mode",
+            "bug-fix",
+            "--budget",
+            "standard",
+            "--target-agent",
+            "claude-code",
+            "--format",
+            "json",
+        ])
+        .unwrap();
+
+        let Command::Agent(AgentArgs {
+            command: AgentCommand::Preview(args),
+        }) = cli.command
+        else {
+            panic!("expected agent preview command");
+        };
+        assert_eq!(args.task, "fix auth redirect");
+        assert!(matches!(args.mode, Mode::BugFix));
+        assert!(matches!(args.budget, Budget::Standard));
+        assert_eq!(args.target_agent, "claude-code");
+        assert!(matches!(args.format, PackFormat::Json));
     }
 
     #[test]

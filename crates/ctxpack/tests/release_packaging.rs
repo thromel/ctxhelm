@@ -23,6 +23,8 @@ fn release_package_script_contract() {
 
     let script_text = fs::read_to_string(&script).unwrap();
     assert!(script_text.contains("cargo build -p ctxpack --release --locked"));
+    assert!(script_text.contains("CARGO_TARGET_DIR"));
+    assert!(script_text.contains("CARGO_BUILD_TARGET_DIR"));
     assert!(script_text.contains("CTXPACK_DIST_DIR"));
     assert!(script_text.contains("dist"));
     assert!(script_text.contains("CTXPACK_ALLOW_DIRTY"));
@@ -39,6 +41,12 @@ fn release_package_script_contract() {
     assert!(script_text.contains("README.md"));
     assert!(script_text.contains("LICENSE"));
     assert!(script_text.contains("VERSION"));
+    assert!(script_text.contains("manifest.json"));
+    assert!(script_text.contains("audit.json"));
+    assert!(script_text.contains("ARCHIVE_SHA256"));
+    assert!(script_text.contains("BINARY_SHA256"));
+    assert!(script_text.contains("privacyStatus"));
+    assert!(script_text.contains("unsupportedActions"));
     assert!(script_text.contains("sha256sums.txt"));
     assert!(
         script_text.contains("shasum -a 256") || script_text.contains("sha256sum"),
@@ -83,6 +91,9 @@ fn release_artifact_audit_script_contract() {
         ".git/",
         "/Users/",
         "tar -tf",
+        "CTXPACK_AUDIT_REPORT",
+        "privacyStatus",
+        "sourceFree",
     ] {
         assert!(
             script_text.contains(required),
@@ -140,6 +151,41 @@ fn release_artifact_audit_accepts_minimal_release_archive() {
 }
 
 #[test]
+fn release_artifact_audit_writes_source_free_report() {
+    let archive = archive_with_entries(&[
+        (
+            "ctxpack-v1.1.0-test/ctxpack",
+            "#!/usr/bin/env bash\nexit 0\n",
+        ),
+        ("ctxpack-v1.1.0-test/README.md", "ctxpack release\n"),
+        ("ctxpack-v1.1.0-test/LICENSE", "MIT License\n"),
+        ("ctxpack-v1.1.0-test/VERSION", "ctxpack 1.1.0\n"),
+    ]);
+    let report_dir = TempDir::new().unwrap();
+    let report_path = report_dir.path().join("audit.json");
+
+    let output = Command::new(workspace_root().join("scripts/audit-release-artifact.sh"))
+        .env("CTXPACK_AUDIT_REPORT", &report_path)
+        .arg(&archive)
+        .output()
+        .unwrap();
+    assert!(
+        output.status.success(),
+        "audit failed: {}\n{}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let report: serde_json::Value =
+        serde_json::from_slice(&fs::read(&report_path).unwrap()).unwrap();
+    assert_eq!(report["status"], "passed");
+    assert_eq!(report["sourceFree"], true);
+    assert_eq!(report["privacyStatus"]["localOnly"], true);
+    let report_text = fs::read_to_string(report_path).unwrap();
+    assert!(!report_text.contains("/Users/"));
+    assert!(!report_text.contains(".ctxpack/repos"));
+}
+
+#[test]
 fn release_artifact_audit_is_called_by_package_script() {
     let script = fs::read_to_string(workspace_root().join("scripts/release-package.sh")).unwrap();
     let audit_pos = script
@@ -177,8 +223,18 @@ fn release_gate_script_contract() {
         "cargo test --workspace",
         "scripts/check-release-docs.sh",
         "scripts/release-package.sh",
+        "scripts/verify-release-archive.sh",
         "scripts/smoke-first-pack.sh",
         "scripts/smoke-storage.sh",
+        "scripts/smoke-shared-artifacts.sh",
+        "scripts/smoke-inspector.sh",
+        "scripts/smoke-retrieval-health.sh",
+        "scripts/smoke-graph.sh",
+        "scripts/smoke-policy-embedding.sh",
+        "scripts/smoke-agent-preview.sh",
+        "scripts/smoke-demo-artifacts.sh",
+        "scripts/smoke-distribution-metadata.sh",
+        "scripts/smoke-release-governance.sh",
         "scripts/smoke-semantic.sh",
         "scripts/smoke-precision.sh",
         "scripts/smoke-mcp-protocol.sh",
@@ -188,9 +244,15 @@ fn release_gate_script_contract() {
         "CTXPACK_SKIP_REAL_CLIENT",
         "CTXPACK_REQUIRE_REAL_CLIENT",
         "CTXPACK_REAL_CLIENT_EVIDENCE_DIR",
+        "CTXPACK_PROOF_DIR",
         "CTXPACK_BENCHMARK_CONFIG",
         "eval proof",
         "product proof privacyStatus.localOnly",
+        "release proof bundle",
+        "release-proof-summary.json",
+        "binaryIdentity",
+        "optionalProofs",
+        "archive_sha256",
         "--version",
         "--help",
         "tar -xzf",
@@ -268,6 +330,10 @@ fn release_docs_script_contract() {
         "docs/quickstart.md",
         "docs/agent-setup.md",
         "docs/troubleshooting.md",
+        "docs/demo.md",
+        "docs/public-project-summary.md",
+        "docs/distribution.md",
+        "docs/release-governance.md",
         "ctxpack --version",
         "ctxpack --help",
         "v1.1.0",
@@ -298,8 +364,18 @@ fn release_docs_script_contract() {
         "cloud telemetry",
         "global agent config",
         "scripts/release-gate.sh",
+        "scripts/verify-release-archive.sh",
         "scripts/smoke-first-pack.sh",
         "scripts/smoke-storage.sh",
+        "scripts/smoke-shared-artifacts.sh",
+        "scripts/smoke-inspector.sh",
+        "scripts/smoke-retrieval-health.sh",
+        "scripts/smoke-graph.sh",
+        "scripts/smoke-policy-embedding.sh",
+        "scripts/smoke-agent-preview.sh",
+        "scripts/smoke-demo-artifacts.sh",
+        "scripts/smoke-distribution-metadata.sh",
+        "scripts/smoke-release-governance.sh",
         "scripts/smoke-semantic.sh",
         "scripts/smoke-precision.sh",
         "scripts/smoke-mcp-protocol.sh",
@@ -309,9 +385,18 @@ fn release_docs_script_contract() {
         "CTXPACK_REQUIRE_REAL_CLIENT",
         "CTXPACK_SKIP_REAL_CLIENT",
         "CTXPACK_REAL_CLIENT_EVIDENCE_DIR",
+        "CTXPACK_PROOF_DIR",
         "does not publish",
         "does not create tags",
         "Cursor and OpenCode real-client proof is not claimed",
+        "manifest.json",
+        "audit.json",
+        "source-free proof bundle",
+        "clean extraction verification",
+        "not a self-update implementation",
+        "signing and notarization gaps",
+        "ready/deferred/blocked",
+        "rollback",
     ] {
         assert!(
             script_text.contains(required),

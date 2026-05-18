@@ -3,8 +3,9 @@ use ctxpack_compiler::{compile_context_pack_from_plan_for_agent, render_pack_mar
 use ctxpack_core::{ContextPack, RepoRoot};
 use ctxpack_index::{
     dependency_edges, list_memory_cards, load_or_refresh_inventory, read_safe_source,
-    symbol_search, test_map, DependencyOptions, InventoryOptions, SourceReadStatus, StoreConfig,
-    SymbolOptions, SOURCE_READ_MAX_BYTES,
+    shared_artifact_manifest_path, symbol_search, test_map, workspace_inventory_status,
+    DependencyOptions, InventoryOptions, SourceReadStatus, StoreConfig, SymbolOptions,
+    SOURCE_READ_MAX_BYTES,
 };
 use serde::Deserialize;
 use serde_json::{json, Value};
@@ -39,6 +40,14 @@ pub(crate) fn read_resource(params: Value) -> Result<Value, RpcError> {
         "ctxpack://repo/memory" => {
             let repo = discover_repo(None)?;
             resource_json(&repo_memory(&repo.path)?)
+        }
+        "ctxpack://workspace/status" => {
+            let repo = discover_repo(None)?;
+            resource_json(&workspace_status_resource(&repo.path)?)
+        }
+        "ctxpack://workspace/shared-artifacts" => {
+            let repo = discover_repo(None)?;
+            resource_json(&shared_artifacts_resource(&repo.path)?)
         }
         "ctxpack://pack/guide" => pack_guide_markdown(),
         uri if uri.starts_with("ctxpack://pack/") => read_pack_resource(uri)?,
@@ -254,6 +263,35 @@ fn repo_memory(repo: &Path) -> Result<Value, RpcError> {
             "remoteRerankingUsed": false
         }
     }))
+}
+
+fn workspace_status_resource(repo: &Path) -> Result<Value, RpcError> {
+    let report = workspace_inventory_status(repo, None).map_err(|error| {
+        RpcError::invalid_params(format!("failed to inspect workspace status: {error}"))
+    })?;
+    serde_json::to_value(report).map_err(|error| {
+        RpcError::invalid_params(format!("failed to serialize workspace status: {error}"))
+    })
+}
+
+fn shared_artifacts_resource(repo: &Path) -> Result<Value, RpcError> {
+    let path = shared_artifact_manifest_path(repo);
+    if !path.exists() {
+        return Err(RpcError::invalid_params(format!(
+            "shared artifact manifest does not exist; run `ctxpack workspace artifacts export --repo {}` first",
+            repo.display()
+        )));
+    }
+    let report = ctxpack_index::inspect_shared_artifact_manifest(path).map_err(|error| {
+        RpcError::invalid_params(format!(
+            "failed to inspect shared artifact manifest: {error}"
+        ))
+    })?;
+    serde_json::to_value(report).map_err(|error| {
+        RpcError::invalid_params(format!(
+            "failed to serialize shared artifact manifest inspection: {error}"
+        ))
+    })
 }
 
 fn read_file_resource(repo: &Path, uri: &str) -> Result<ResourceContent, RpcError> {

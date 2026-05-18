@@ -2,15 +2,105 @@
 
 ## Active
 
-### v1.6 Repo Memory & Experience Cards
+### v2.2 Release & Distribution Hardening
 
-**Goal:** Turn generated repo summaries and prior agent-run lessons into durable, source-linked, source-free memory that agents can reuse selectively without bloating context packs.
+**Goal:** Turn the locally complete ctxpack product into a reproducible, installable, public release with clean packaging, upgrade, adoption, and proof artifacts.
 
-**Status:** Requirements and roadmap ready. Next phase is `25 Memory Contracts & Storage Schema`.
+**Status:** Requirements and roadmap drafted.
 
-**Planned phases:** 25-29
+**Planned phases:** 45-49
 
 ## Shipped
+
+### v2.1 Pack Inspector & GraphRAG Retrieval
+
+**Goal:** Add an optional diagnostic pack inspector and measured GraphRAG/embedding retrieval improvements while keeping ctxpack local-first, read-only, and agent-native.
+
+**Status:** Shipped locally: 2026-05-18.
+
+**Phases completed:** Phases 39-44, 6 plans total
+
+**Key accomplishments:**
+
+- Added source-free pack inspector contracts plus JSON, Markdown, and static HTML exports.
+- Added a local read-only inspector UI with filters, responsive layout checks, and sentinel leak tests.
+- Added retrieval-health reports for historical eval trends, feedback gaps, signal contribution, and token ROI.
+- Added source-free graph neighborhood/community reports and policy experiment comparisons.
+- Added semantic provider status and explicit cloud-disabled embedding/reranking controls.
+- Added agent previews for Codex CLI, Claude Code, Cursor, OpenCode, and generic MCP clients.
+- Wired inspector, health, graph, policy/embedding, and agent-preview smokes into release docs and release-gate contracts.
+
+**Archive:**
+
+- Roadmap: `.planning/milestones/v2.1-ROADMAP.md`
+- Requirements: `.planning/milestones/v2.1-REQUIREMENTS.md`
+- Audit: `.planning/milestones/v2.1-MILESTONE-AUDIT.md`
+- Research: `.planning/milestones/v2.1-research/`
+- Phases: `.planning/milestones/v2.1-phases/`
+
+### v2.0 Workspace & Team Layer (Shipped locally: 2026-05-17)
+
+**Delivered:** Multi-repo workspace manifests/status, workspace-aware context plans and packs, source-free shared artifact manifests, local team privacy policy templates, MCP workspace resources, docs, and release smokes.
+
+**Phases completed:** Phases 35-38, 4 plans total
+
+**Key accomplishments:**
+
+- Added source-free workspace manifests and status aggregation across multiple local repositories.
+- Added workspace-aware `prepare-task` and `get-pack` with repo-boundary-preserving `repoPacks`.
+- Added shared artifact export, inspect, and import flows plus local team privacy policy reports.
+- Added MCP resources for `ctxpack://workspace/status` and `ctxpack://workspace/shared-artifacts` without expanding the six-tool MCP surface.
+- Added workspace/shared-artifact docs and release-gate smoke coverage.
+
+**Archive:**
+
+- Roadmap: `.planning/milestones/v2.0-ROADMAP.md`
+- Requirements: `.planning/milestones/v2.0-REQUIREMENTS.md`
+- Research: `.planning/milestones/v2.0-research/`
+- Phases: `.planning/milestones/v2.0-phases/`
+
+### v1.7 Adaptive Retrieval Policy & Feedback Loop (Shipped: 2026-05-17)
+
+**Delivered:** Source-free feedback events, policy quality reports, adaptive policy profile controls, agent outcome comparison, feedback docs, and release-gate smoke coverage.
+
+**Phases completed:** Phases 30-34, 5 plans total
+
+**Key accomplishments:**
+
+- Added source-free session feedback contracts and local JSONL ingestion/list/summary CLI.
+- Added policy quality reports for context precision, read precision, edit recall proxy, validation coverage, repeated missing-file families, signal contribution, and token ROI.
+- Added explicit local retrieval-policy profile controls for tune, list, apply, disable, and rollback.
+- Added outcome comparison by plan-only, brief, standard, and deep pack budgets with low-evidence warnings.
+- Added `docs/feedback.md`, `scripts/smoke-feedback.sh`, release-doc checks, and release-gate coverage.
+
+**Archive:**
+
+- Roadmap: `.planning/milestones/v1.7-ROADMAP.md`
+- Requirements: `.planning/milestones/v1.7-REQUIREMENTS.md`
+- Audit: `.planning/milestones/v1.7-MILESTONE-AUDIT.md`
+- Phases: `.planning/milestones/v1.7-phases/`
+
+### v1.6 Repo Memory & Experience Cards (Shipped: 2026-05-16)
+
+**Delivered:** Source-free repo memory cards, experience cards, review controls, and selected-memory plan/pack output.
+
+**Phases completed:** Phases 25-29, 5 plans total
+
+**Key accomplishments:**
+
+- Added source-free memory card contracts and SQLite `memory_cards` persistence.
+- Generated freshness-aware domain cards from safe inventory, symbols, tests, docs, and dependency edges.
+- Generated source-free experience cards from local eval traces and structured metadata.
+- Selected memory into `prepare_task`, `get_pack`, and MCP resources under explicit evidence and token-budget caps.
+- Added memory review/redaction/disable/regeneration commands, docs, and deterministic smoke coverage.
+
+**Archive:**
+
+- Roadmap: `.planning/milestones/v1.6-ROADMAP.md`
+- Requirements: `.planning/milestones/v1.6-REQUIREMENTS.md`
+- Audit: `.planning/milestones/v1.6-MILESTONE-AUDIT.md`
+- Research: `.planning/milestones/v1.6-research/`
+- Phases: `.planning/milestones/v1.6-phases/`
 
 ### v1.5 Parser/Semantic Precision (Shipped: 2026-05-16)
 
@@ -120,41 +210,80 @@
 
 ## Planned Product Vision
 
-### v1.7 Adaptive Retrieval Policy & Feedback Loop
+### v2.3 Evaluation Lab & Learned Retrieval Policy
 
-**Goal:** Use benchmark results and real agent-session traces to tune retrieval policy, identify repeated gaps, and prove whether context choices improve agent outcomes.
+**Goal:** Make ctxpack's retrieval-quality claims repeatable across fixed corpora, large histories, policy variants, and agent outcome comparisons.
 
-**Depends on:** v1.2 benchmark proof, v1.3 storage, v1.4 semantic retrieval, v1.5 precision, and v1.6 memory cards.
-
-**Expected capabilities:**
-
-- Session feedback ingestion for recommended, read, edited, tested, passed, failed, and user-corrected files.
-- Source-free policy statistics for signal weights, context precision, token ROI, and repeated missing-file families.
-- Eval-driven retrieval-policy tuning with rollback when semantic, graph, history, precision, or memory signals regress.
-- Agent outcome reports comparing plan-only, brief, standard, and deep packs across fixed tasks.
-
-### v2.0 Workspace & Team Layer
-
-**Goal:** Support multi-repo and team workflows while keeping source code local and agent-native surfaces primary.
-
-**Depends on:** v1.3 storage, v1.6 source-free memory, and v1.7 feedback reporting.
+**Depends on:** v1.2 benchmark/proof reports, v1.7 feedback, v2.1 retrieval-health and policy experiment reports.
 
 **Expected capabilities:**
 
-- Multi-repo workspace inventory and cross-repo context planning.
-- Source-free shared context cards, policy files, and benchmark reports.
-- Team-level privacy policy templates without hosted source indexing.
-- No hosted source indexing requirement.
+- Fixed public/local benchmark corpus manifests with stable revision ranges.
+- Policy learner that proposes graph/semantic/history/test weights from source-free eval and feedback.
+- Regression thresholds for recall, precision, token ROI, validation coverage, and source-free privacy.
+- Product proof reports that distinguish real lift from lexical-baseline parity.
 
-### v2.1 UI / Pack Inspector
+### v2.4 Production Semantic & Precision Backends
 
-**Goal:** Add an optional diagnostics UI for inspecting packs, retrieval gaps, context health, and benchmark trends.
+**Goal:** Move beyond deterministic local hash vectors and manual precision overlays into production-grade local semantic and precise-code intelligence.
 
-**Depends on:** v2.0 workspace metadata and v1.2/v1.3 reporting/storage foundations.
+**Depends on:** v1.4 semantic retrieval, v1.5 precision edges, v2.3 eval gates.
 
 **Expected capabilities:**
 
-- Pack inspector showing target files, evidence, token budgets, omitted candidates, and warnings.
-- Retrieval-health dashboard for benchmark trends and repeated gap families.
-- Context-card and adapter preview surfaces.
-- UI remains diagnostic; daily coding still happens inside Codex, Claude Code, Cursor, OpenCode, and similar agents.
+- Local vector index with real embedding backends and source-free metadata/cache controls.
+- Optional cloud embeddings and reranking behind explicit repo policy gates.
+- SCIP/LSP indexing automation for TypeScript, Python, Go, Rust, Java, and Kotlin where available.
+- Backward-compatible semantic/provider migration and rollback metadata.
+
+### v2.5 Agent-Native Deep Integrations
+
+**Goal:** Make ctxpack feel native inside Codex, Claude Code, Cursor, OpenCode, and generic MCP clients without taking over editing or shell execution.
+
+**Depends on:** v1.1 setup/adoption, v2.1 agent previews, v2.2 release installation path.
+
+**Expected capabilities:**
+
+- Stronger Codex and Claude Code real-client proof with request-log artifacts.
+- Cursor and OpenCode proof paths where the clients expose machine-checkable evidence.
+- Agent-specific prompts/hooks/rules that stay thin, dynamic, and repo-local.
+- Cloud/disconnected fallback cards for agents that cannot reach local MCP.
+
+### v2.6 Desktop Inspector & Local UX
+
+**Goal:** Package the diagnostic inspector as a polished optional local UX for understanding and debugging ctxpack decisions.
+
+**Depends on:** v2.1 static inspector and agent preview, v2.2 release packaging.
+
+**Expected capabilities:**
+
+- Optional Tauri or native desktop shell around the local inspector.
+- Graph visualization for source-free neighborhoods and communities.
+- Onboarding/status checks for setup, storage, benchmark proof, and agent config.
+- No daily coding UI: the desktop surface remains diagnostic and read-only.
+
+### v2.7 Team Sync & Enterprise Controls
+
+**Goal:** Add optional team-safe sharing and governance without weakening local-first defaults.
+
+**Depends on:** v2.0 shared artifacts/team policy, v2.2 release trust, v2.4 provider policy controls.
+
+**Expected capabilities:**
+
+- Optional remote metadata sync for source-free cards, benchmark reports, policy profiles, and shared artifacts.
+- Enterprise privacy/audit policy, SSO/admin controls, and explicit data-sharing review.
+- Remote MCP endpoint for approved source-free or policy-allowed context.
+- Clear local-only fallback with no hosted dependency.
+
+### v3.0 Context Governor
+
+**Goal:** Turn ctxpack from a context compiler into an adaptive context governor for AI coding agents.
+
+**Depends on:** v2.3 learned policy, v2.4 semantic/precision backends, v2.5 integrations, v2.7 governance.
+
+**Expected capabilities:**
+
+- Adaptive per-task budget, retrieval, memory, graph, semantic, and validation policy.
+- Closed-loop learning from source-free agent sessions and eval outcomes.
+- Policy rollout, rollback, and comparison across repos/teams.
+- Context-quality decisions exposed clearly enough for maintainers to trust and tune.

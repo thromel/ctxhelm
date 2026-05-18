@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ctxpack release update metadata",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "package",
+    "version",
+    "artifacts",
+    "privacyStatus",
+    "selfUpdateImplemented",
+    "signedInstaller"
+  ],
+  "properties": {
+    "schemaVersion": {"type": "integer", "const": 1},
+    "package": {"type": "string", "const": "ctxpack"},
+    "version": {"type": "string"},
+    "artifacts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["targetLabel", "archiveName", "archiveSha256", "manifestName"],
+        "properties": {
+          "targetLabel": {"type": "string"},
+          "archiveName": {"type": "string"},
+          "archiveSha256": {"type": "string"},
+          "manifestName": {"type": "string"}
+        }
+      }
+    },
+    "privacyStatus": {
+      "type": "object",
+      "required": ["localOnly", "remoteEmbeddingsUsed", "remoteRerankingUsed", "sourceTextLogged"],
+      "properties": {
+        "localOnly": {"type": "boolean"},
+        "remoteEmbeddingsUsed": {"type": "boolean"},
+        "remoteRerankingUsed": {"type": "boolean"},
+        "sourceTextLogged": {"type": "boolean"}
+      }
+    },
+    "selfUpdateImplemented": {"type": "boolean"},
+    "signedInstaller": {"type": "boolean"},
+    "notes": {"type": "array", "items": {"type": "string"}}
+  }
+}
+

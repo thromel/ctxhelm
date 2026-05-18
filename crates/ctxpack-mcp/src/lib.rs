@@ -199,12 +199,14 @@ mod tests {
         .unwrap();
         let resources = response["result"]["resources"].as_array().unwrap();
 
-        assert_eq!(resources.len(), 5);
+        assert_eq!(resources.len(), 7);
         assert_eq!(resources[0]["uri"], "ctxpack://repo/summary");
         assert_eq!(resources[1]["uri"], "ctxpack://repo/test-map");
         assert_eq!(resources[2]["uri"], "ctxpack://repo/dependency-graph");
         assert_eq!(resources[3]["uri"], "ctxpack://repo/memory");
-        assert_eq!(resources[4]["uri"], "ctxpack://pack/guide");
+        assert_eq!(resources[4]["uri"], "ctxpack://workspace/status");
+        assert_eq!(resources[5]["uri"], "ctxpack://workspace/shared-artifacts");
+        assert_eq!(resources[6]["uri"], "ctxpack://pack/guide");
     }
 
     #[test]
@@ -214,6 +216,21 @@ mod tests {
         std::env::set_var("CTXPACK_HOME", &repo.home);
         let cwd = std::env::current_dir().unwrap();
         std::env::set_current_dir(&repo.repo).unwrap();
+        ctxpack_index::write_workspace_manifest(
+            &repo.repo,
+            &ctxpack_core::WorkspaceManifest {
+                schema_version: ctxpack_index::WORKSPACE_MANIFEST_SCHEMA_VERSION,
+                workspace_id: None,
+                repos: vec![ctxpack_core::WorkspaceRepo {
+                    id: None,
+                    path: ".".to_string(),
+                    label: Some("fixture".to_string()),
+                    tags: vec!["primary".to_string()],
+                }],
+            },
+        )
+        .unwrap();
+        ctxpack_index::export_shared_artifact_manifest(&repo.repo).unwrap();
 
         let list = handle_line(
             r#"{"jsonrpc":"2.0","id":"resources","method":"resources/list","params":{}}"#,
@@ -233,6 +250,8 @@ mod tests {
                 "ctxpack://repo/test-map",
                 "ctxpack://repo/dependency-graph",
                 "ctxpack://repo/memory",
+                "ctxpack://workspace/status",
+                "ctxpack://workspace/shared-artifacts",
                 "ctxpack://pack/guide",
             ]
         );
@@ -255,6 +274,14 @@ mod tests {
         .unwrap();
         let memory = handle_line(
             r#"{"jsonrpc":"2.0","id":36,"method":"resources/read","params":{"uri":"ctxpack://repo/memory"}}"#,
+        )
+        .unwrap();
+        let workspace = handle_line(
+            r#"{"jsonrpc":"2.0","id":37,"method":"resources/read","params":{"uri":"ctxpack://workspace/status"}}"#,
+        )
+        .unwrap();
+        let shared_artifacts = handle_line(
+            r#"{"jsonrpc":"2.0","id":38,"method":"resources/read","params":{"uri":"ctxpack://workspace/shared-artifacts"}}"#,
         )
         .unwrap();
         let file = handle_line(
@@ -283,6 +310,22 @@ mod tests {
             memory["result"]["contents"][0]["uri"],
             "ctxpack://repo/memory"
         );
+        assert_eq!(
+            workspace["result"]["contents"][0]["uri"],
+            "ctxpack://workspace/status"
+        );
+        assert_eq!(
+            shared_artifacts["result"]["contents"][0]["uri"],
+            "ctxpack://workspace/shared-artifacts"
+        );
+        assert!(workspace["result"]["contents"][0]["text"]
+            .as_str()
+            .unwrap()
+            .contains("\"sourceTextLogged\": false"));
+        assert!(shared_artifacts["result"]["contents"][0]["text"]
+            .as_str()
+            .unwrap()
+            .contains("\"compatible\": true"));
         assert!(file["result"]["contents"][0]["text"]
             .as_str()
             .unwrap()

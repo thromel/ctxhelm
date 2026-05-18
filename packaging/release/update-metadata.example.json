@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "package": "ctxpack",
+  "version": "1.1.0",
+  "artifacts": [
+    {
+      "targetLabel": "aarch64-apple-darwin",
+      "archiveName": "ctxpack-v1.1.0-aarch64-apple-darwin.tar.gz",
+      "archiveSha256": "replace-with-release-archive-sha256",
+      "manifestName": "ctxpack-v1.1.0-aarch64-apple-darwin.manifest.json"
+    }
+  ],
+  "privacyStatus": {
+    "localOnly": true,
+    "remoteEmbeddingsUsed": false,
+    "remoteRerankingUsed": false,
+    "sourceTextLogged": false
+  },
+  "selfUpdateImplemented": false,
+  "signedInstaller": false,
+  "notes": [
+    "Metadata supports future update checks only; ctxpack does not implement self-update in this release.",
+    "Signed installers and notarized packages remain future distribution work."
+  ]
+}
+

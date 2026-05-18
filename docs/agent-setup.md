@@ -64,6 +64,7 @@ Run:
 
 ```bash
 ctxpack init --repo "$REPO"
+ctxpack doctor --repo "$REPO"
 ctxpack setup-check --repo "$REPO"
 ```
 
@@ -75,6 +76,7 @@ Run:
 
 ```bash
 ctxpack init --repo "$REPO" --claude
+ctxpack doctor --repo "$REPO"
 ctxpack setup-check --repo "$REPO" --claude
 ```
 
@@ -86,6 +88,7 @@ Run:
 
 ```bash
 ctxpack init --repo "$REPO" --cursor
+ctxpack doctor --repo "$REPO"
 ctxpack setup-check --repo "$REPO" --cursor
 ```
 
@@ -97,6 +100,7 @@ Run:
 
 ```bash
 ctxpack init --repo "$REPO" --opencode
+ctxpack doctor --repo "$REPO"
 ctxpack setup-check --repo "$REPO" --opencode
 ```
 

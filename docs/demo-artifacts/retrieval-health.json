@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "reportKind": "retrieval_health",
+  "sourceTextLogged": false,
+  "privacyStatus": {
+    "localOnly": true,
+    "sourceTextLogged": false
+  },
+  "metrics": {
+    "targetFileRecallAt5": 0.8,
+    "testRecallAt5": 0.75,
+    "tokenEfficiency": 2.4
+  },
+  "signalContributions": [
+    {"signal": "lexical", "share": 0.31},
+    {"signal": "graph", "share": 0.27},
+    {"signal": "tests", "share": 0.22},
+    {"signal": "history", "share": 0.2}
+  ],
+  "gapFamilies": ["ambiguous_task", "missing_test_edge"]
+}

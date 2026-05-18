@@ -50,6 +50,18 @@ pub(crate) fn resources_list_result() -> Value {
                 "mimeType": "application/json"
             },
             {
+                "uri": "ctxpack://workspace/status",
+                "name": "Workspace Status",
+                "description": "Source-free local workspace status from .ctxpack/workspace.json.",
+                "mimeType": "application/json"
+            },
+            {
+                "uri": "ctxpack://workspace/shared-artifacts",
+                "name": "Workspace Shared Artifacts",
+                "description": "Source-free shared artifact manifest inspection for the current workspace root.",
+                "mimeType": "application/json"
+            },
+            {
                 "uri": "ctxpack://pack/guide",
                 "name": "Context Pack Guide",
                 "description": "How to request task-conditioned context packs with ctxpack.get_pack.",

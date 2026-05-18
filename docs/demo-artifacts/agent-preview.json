@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "reportKind": "agent_preview",
+  "sourceTextLogged": false,
+  "privacyStatus": {"localOnly": true, "sourceTextLogged": false},
+  "agents": [
+    {"agent": "codex", "tools": ["prepare_task", "get_pack"], "ownsEdits": true},
+    {"agent": "claude-code", "tools": ["prepare_task", "get_pack"], "ownsEdits": true},
+    {"agent": "cursor", "tools": ["prepare_task", "get_pack"], "ownsEdits": true},
+    {"agent": "opencode", "tools": ["prepare_task", "get_pack"], "ownsEdits": true}
+  ],
+  "ctxpackBoundary": "ctxpack recommends context; agents read, edit, and run commands."
+}

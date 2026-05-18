@@ -1,0 +1,23 @@
+# Homebrew formula template for ctxpack.
+#
+# This file is preparatory metadata. It is not a published tap formula.
+# Replace CTXPACK_VERSION, CTXPACK_URL, and CTXPACK_SHA256 during release prep.
+
+class Ctxpack < Formula
+  desc "Local, read-only context compiler for AI coding agents"
+  homepage "https://github.com/thromel/ctxpack"
+  url "CTXPACK_URL"
+  sha256 "CTXPACK_SHA256"
+  version "CTXPACK_VERSION"
+  license "MIT"
+
+  def install
+    bin.install "ctxpack"
+  end
+
+  test do
+    assert_match "ctxpack #{version}", shell_output("#{bin}/ctxpack --version")
+    shell_output("#{bin}/ctxpack --help")
+  end
+end
+

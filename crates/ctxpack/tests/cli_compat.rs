@@ -1,7 +1,7 @@
 mod common;
 
 use assert_cmd::Command;
-use common::{fixture_repo, json_stdout, CTXPACK_HOME_ENV};
+use common::{fixture_repo, json_stdout, run_git, CTXPACK_HOME_ENV};
 use predicates::prelude::PredicateBooleanExt;
 use predicates::str::contains;
 use serde_json::{json, Value};
@@ -79,7 +79,9 @@ fn help_lists_core_commands() {
         .stdout(contains("dependencies"))
         .stdout(contains("precision"))
         .stdout(contains("setup-check"))
+        .stdout(contains("doctor"))
         .stdout(contains("eval"))
+        .stdout(contains("workspace"))
         .stdout(contains("serve-mcp"));
 }
 
@@ -91,6 +93,62 @@ fn version_reports_release_identity() {
         .assert()
         .success()
         .stdout(contains("ctxpack 1.1.0"));
+}
+
+#[test]
+fn doctor_verifies_binary_manifest_and_local_state_source_free() {
+    let fixture = fixture_repo();
+    let binary = assert_cmd::cargo::cargo_bin("ctxpack");
+    let manifest_path = fixture.temp.path().join("release-manifest.json");
+    fs::write(
+        &manifest_path,
+        json!({
+            "version": "1.1.0",
+            "archive": {
+                "name": "ctxpack-v1.1.0-test.tar.gz",
+                "sha256": "archive-sha"
+            },
+            "binary": {
+                "name": "ctxpack",
+                "sha256": "binary-sha"
+            },
+            "auditReport": "ctxpack-v1.1.0-test.audit.json",
+            "privacyStatus": {
+                "localOnly": true,
+                "sourceTextLogged": false
+            }
+        })
+        .to_string(),
+    )
+    .unwrap();
+
+    let value = json_stdout(
+        Command::cargo_bin("ctxpack")
+            .unwrap()
+            .env(CTXPACK_HOME_ENV, &fixture.home)
+            .args(["doctor", "--format", "json", "--repo"])
+            .arg(&fixture.repo)
+            .arg("--binary")
+            .arg(&binary)
+            .arg("--release-manifest")
+            .arg(&manifest_path)
+            .assert()
+            .success(),
+    );
+
+    assert_eq!(value["passed"], true);
+    assert_eq!(value["binary"]["version"], "ctxpack 1.1.0");
+    assert_eq!(value["releaseManifest"]["version"], "1.1.0");
+    assert_eq!(value["privacyStatus"]["localOnly"], true);
+    assert_eq!(value["mutatesGlobalAgentConfig"], false);
+    assert!(value["checks"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .any(|check| check["name"] == "local_state_compatibility" && check["passed"] == true));
+    let rendered = serde_json::to_string(&value).unwrap();
+    assert!(!rendered.contains("UserDb"));
+    assert!(!rendered.contains("fix requireSession"));
 }
 
 #[test]
@@ -148,6 +206,324 @@ fn init_with_adapters_reports_repo_local_outputs_only() {
             predicates::str::contains("mutate global Codex, Claude, Cursor, or OpenCode config")
                 .not(),
         );
+}
+
+#[test]
+fn workspace_init_and_status_are_source_free_for_multiple_repos() {
+    let first = fixture_repo();
+    let second = fixture_repo();
+    let sentinel = "CTXPACK_WORKSPACE_CLI_SOURCE_SENTINEL";
+    fs::write(second.repo.join("src/auth/workspace-secret.ts"), sentinel).unwrap();
+    run_git(&second.repo, &["add", "."]);
+    run_git(&second.repo, &["commit", "-m", "add workspace sentinel"]);
+
+    let init = json_stdout(
+        Command::cargo_bin("ctxpack")
+            .unwrap()
+            .env(CTXPACK_HOME_ENV, &first.home)
+            .args(["workspace", "init", "--repo"])
+            .arg(&first.repo)
+            .args(["--member"])
+            .arg(&second.repo)
+            .args(["--label", "primary", "--format", "json"])
+            .assert(),
+    );
+    assert_eq!(init["sourceTextLogged"], false);
+    assert_eq!(init["repoCount"], 2);
+    assert!(init["repos"].as_array().unwrap().len() == 2);
+    assert_no_source_or_prompt_text(&init);
+    assert!(!serde_json::to_string(&init).unwrap().contains(sentinel));
+
+    let manifest = first.repo.join(".ctxpack/workspace.json");
+    assert!(manifest.exists());
+    let manifest_json: Value = serde_json::from_slice(&fs::read(&manifest).unwrap()).unwrap();
+    assert_eq!(manifest_json["schemaVersion"], 1);
+    assert_eq!(manifest_json["repos"].as_array().unwrap().len(), 2);
+
+    let status = json_stdout(
+        Command::cargo_bin("ctxpack")
+            .unwrap()
+            .env(CTXPACK_HOME_ENV, &first.home)
+            .args(["workspace", "status", "--repo"])
+            .arg(&first.repo)
+            .args(["--format", "json"])
+            .assert(),
+    );
+    assert_object_has_keys(
+        &status,
+        &[
+            "schemaVersion",
+            "workspaceRoot",
+            "manifestPath",
+            "repoCount",
+            "availableRepoCount",
+            "fileCount",
+            "generatedCount",
+            "sensitiveCount",
+            "sourceTextLogged",
+            "privacyStatus",
+            "repos",
+            "diagnostics",
+        ],
+    );
+    assert_eq!(status["availableRepoCount"], 2);
+    assert_eq!(status["sourceTextLogged"], false);
+    assert_eq!(status["privacyStatus"]["localOnly"], true);
+    assert!(status["repos"].as_array().unwrap().iter().all(|repo| {
+        repo["state"] == "available" && repo["privacyStatus"]["sourceTextLogged"] == false
+    }));
+    assert!(!serde_json::to_string(&status).unwrap().contains(sentinel));
+    assert_no_source_or_prompt_text(&status);
+
+    Command::cargo_bin("ctxpack")
+        .unwrap()
+        .env(CTXPACK_HOME_ENV, &first.home)
+        .args(["workspace", "status", "--repo"])
+        .arg(&first.repo)
+        .assert()
+        .success()
+        .stdout(contains("# ctxpack Workspace Status"))
+        .stdout(contains("Source text logged: `false`"))
+        .stdout(contains("primary"));
+}
+
+#[test]
+fn workspace_prepare_task_routes_to_likely_repo_source_free() {
+    let first = fixture_repo();
+    let second = fixture_repo();
+    fs::write(
+        second.repo.join("src/auth/workspace-login.ts"),
+        "export function workspaceLoginRedirect() { return true; }\n",
+    )
+    .unwrap();
+    run_git(&second.repo, &["add", "."]);
+    run_git(&second.repo, &["commit", "-m", "add workspace login"]);
+
+    Command::cargo_bin("ctxpack")
+        .unwrap()
+        .env(CTXPACK_HOME_ENV, &first.home)
+        .args(["workspace", "init", "--repo"])
+        .arg(&first.repo)
+        .args(["--member"])
+        .arg(&second.repo)
+        .assert()
+        .success();
+
+    let value = json_stdout(
+        Command::cargo_bin("ctxpack")
+            .unwrap()
+            .env(CTXPACK_HOME_ENV, &first.home)
+            .args([
+                "workspace",
+                "prepare-task",
+                "fix workspace login redirect",
+                "--repo",
+            ])
+            .arg(&first.repo)
+            .args(["--mode", "bug-fix", "--format", "json"])
+            .assert(),
+    );
+
+    assert_object_has_keys(
+        &value,
+        &[
+            "taskId",
+            "taskType",
+            "confidence",
+            "workspaceRoot",
+            "manifestPath",
+            "selectedRepoCount",
+            "sourceTextLogged",
+            "privacyStatus",
+            "repoPlans",
+            "diagnostics",
+        ],
+    );
+    assert_eq!(value["taskType"], "bug_fix");
+    assert_eq!(value["sourceTextLogged"], false);
+    assert_eq!(value["privacyStatus"]["localOnly"], true);
+    assert!(value["selectedRepoCount"].as_u64().unwrap() >= 1);
+    assert!(value["repoPlans"].as_array().unwrap().iter().any(|repo| {
+        repo["contextPlan"]["targetFiles"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|target| target["path"] == "src/auth/workspace-login.ts")
+    }));
+    assert!(!serde_json::to_string(&value)
+        .unwrap()
+        .contains("export function workspaceLoginRedirect"));
+    assert_no_source_or_prompt_text(&value);
+}
+
+#[test]
+fn workspace_get_pack_returns_repo_boundary_aware_pack() {
+    let first = fixture_repo();
+    let second = fixture_repo();
+    fs::write(
+        second.repo.join("src/auth/workspace-login.ts"),
+        "export function workspaceLoginRedirect() { return true; }\n",
+    )
+    .unwrap();
+    run_git(&second.repo, &["add", "."]);
+    run_git(&second.repo, &["commit", "-m", "add workspace login"]);
+
+    Command::cargo_bin("ctxpack")
+        .unwrap()
+        .env(CTXPACK_HOME_ENV, &first.home)
+        .args(["workspace", "init", "--repo"])
+        .arg(&first.repo)
+        .args(["--member"])
+        .arg(&second.repo)
+        .assert()
+        .success();
+
+    let value = json_stdout(
+        Command::cargo_bin("ctxpack")
+            .unwrap()
+            .env(CTXPACK_HOME_ENV, &first.home)
+            .args([
+                "workspace",
+                "get-pack",
+                "fix workspace login redirect",
+                "--repo",
+            ])
+            .arg(&first.repo)
+            .args([
+                "--mode",
+                "bug-fix",
+                "--budget",
+                "brief",
+                "--target-agent",
+                "codex",
+                "--format",
+                "json",
+            ])
+            .assert(),
+    );
+
+    assert_object_has_keys(
+        &value,
+        &[
+            "id",
+            "taskId",
+            "taskType",
+            "targetAgent",
+            "budget",
+            "confidence",
+            "tokenEstimate",
+            "workspaceRoot",
+            "manifestPath",
+            "selectedRepoCount",
+            "sourceTextLogged",
+            "privacyStatus",
+            "warnings",
+            "repoPacks",
+            "diagnostics",
+        ],
+    );
+    assert_eq!(value["targetAgent"], "codex");
+    assert_eq!(value["budget"], "brief");
+    assert_eq!(value["sourceTextLogged"], false);
+    assert!(value["repoPacks"].as_array().unwrap().iter().any(|repo| {
+        repo["contextPack"]["sections"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|section| {
+                section["kind"] == "target_snippets"
+                    && section["content"]
+                        .as_str()
+                        .unwrap()
+                        .contains("workspaceLoginRedirect")
+            })
+    }));
+    assert!(value["repoPacks"].as_array().unwrap().iter().all(|repo| {
+        repo["repoId"].is_string()
+            && repo["label"].is_string()
+            && repo["pathLabel"].is_string()
+            && repo["contextPack"]["repoId"].is_string()
+    }));
+}
+
+#[test]
+fn workspace_shared_artifacts_and_team_policy_are_source_free() {
+    let fixture = fixture_repo();
+    fs::create_dir_all(fixture.repo.join(".ctxpack/cards")).unwrap();
+    fs::write(
+        fixture.repo.join(".ctxpack/cards/testing.md"),
+        "source-free testing summary\n",
+    )
+    .unwrap();
+    fs::write(
+        fixture.repo.join(".ctxpack/feedback-summary.json"),
+        r#"{"sourceTextLogged":false,"eventCount":0}"#,
+    )
+    .unwrap();
+
+    let policy = json_stdout(
+        Command::cargo_bin("ctxpack")
+            .unwrap()
+            .env(CTXPACK_HOME_ENV, &fixture.home)
+            .args(["workspace", "policy", "init", "--repo"])
+            .arg(&fixture.repo)
+            .args(["--format", "json"])
+            .assert(),
+    );
+    assert_eq!(policy["policy"]["allowCloudEmbeddings"], false);
+    assert_eq!(policy["policy"]["allowCloudReranking"], false);
+    assert_eq!(policy["sourceTextLogged"], false);
+    assert!(fixture.repo.join(".ctxpack/team-policy.json").exists());
+    assert_no_source_or_prompt_text(&policy);
+
+    let manifest = json_stdout(
+        Command::cargo_bin("ctxpack")
+            .unwrap()
+            .env(CTXPACK_HOME_ENV, &fixture.home)
+            .args(["workspace", "artifacts", "export", "--repo"])
+            .arg(&fixture.repo)
+            .args(["--format", "json"])
+            .assert(),
+    );
+    assert_eq!(manifest["sourceTextLogged"], false);
+    assert!(manifest["artifacts"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .any(|artifact| {
+            artifact["kind"] == "context_cards" && artifact["status"] == "present"
+        }));
+    assert_no_source_or_prompt_text(&manifest);
+
+    let manifest_path = fixture.repo.join(".ctxpack/shared-artifacts.json");
+    let inspect = json_stdout(
+        Command::cargo_bin("ctxpack")
+            .unwrap()
+            .env(CTXPACK_HOME_ENV, &fixture.home)
+            .args(["workspace", "artifacts", "inspect"])
+            .arg(&manifest_path)
+            .args(["--format", "json"])
+            .assert(),
+    );
+    assert_eq!(inspect["compatible"], true);
+    assert_eq!(inspect["sourceTextLogged"], false);
+
+    let import = json_stdout(
+        Command::cargo_bin("ctxpack")
+            .unwrap()
+            .env(CTXPACK_HOME_ENV, &fixture.home)
+            .args(["workspace", "artifacts", "import"])
+            .arg(&manifest_path)
+            .args(["--repo"])
+            .arg(&fixture.repo)
+            .args(["--format", "json"])
+            .assert(),
+    );
+    assert_eq!(import["compatible"], true);
+    assert!(fixture
+        .repo
+        .join(".ctxpack/imported-shared-artifacts.json")
+        .exists());
 }
 
 #[test]
@@ -780,6 +1156,159 @@ fn search_related_tests_dependencies_and_eval_history_emit_json_shapes() {
         .stdout(contains("## Signal Ablations"))
         .stdout(contains("## Grouped Retrieval Failures"))
         .stdout(contains("Source text logged: `false`"));
+}
+
+#[test]
+fn eval_feedback_records_lists_and_summarizes_source_free_events() {
+    let fixture = fixture_repo();
+    let record = json_stdout(
+        Command::cargo_bin("ctxpack")
+            .unwrap()
+            .env(CTXPACK_HOME_ENV, &fixture.home)
+            .args([
+                "eval",
+                "feedback",
+                "record",
+                "--task-hash",
+                "task-hash-1",
+                "--mode",
+                "bug-fix",
+                "--target-agent",
+                "codex",
+                "--budget",
+                "brief",
+                "--outcome",
+                "passed",
+                "--recommended-file",
+                "src/auth/session.ts",
+                "--recommended-test",
+                "tests/auth/session.test.ts",
+                "--recommended-command",
+                "pnpm test tests/auth/session.test.ts",
+                "--read-file",
+                "src/auth/session.ts",
+                "--edited-file",
+                "src/auth/session.ts",
+                "--tested-file",
+                "tests/auth/session.test.ts",
+                "--tested-command",
+                "pnpm test tests/auth/session.test.ts",
+                "--tag",
+                "accepted_fix",
+                "--format",
+                "json",
+                "--repo",
+            ])
+            .arg(&fixture.repo)
+            .assert(),
+    );
+
+    assert_eq!(record["event"]["taskHash"], "task-hash-1");
+    assert_eq!(record["event"]["outcome"], "passed");
+    assert_eq!(record["event"]["sourceTextLogged"], false);
+    assert_eq!(record["status"]["status"], "written");
+    assert_no_source_or_prompt_text(&record);
+
+    let events = json_stdout(
+        Command::cargo_bin("ctxpack")
+            .unwrap()
+            .env(CTXPACK_HOME_ENV, &fixture.home)
+            .args(["eval", "feedback", "list", "--format", "json", "--repo"])
+            .arg(&fixture.repo)
+            .assert(),
+    );
+    assert_eq!(events.as_array().unwrap().len(), 1);
+    assert_eq!(events[0]["readFiles"], json!(["src/auth/session.ts"]));
+    assert_no_source_or_prompt_text(&events);
+
+    let summary = json_stdout(
+        Command::cargo_bin("ctxpack")
+            .unwrap()
+            .env(CTXPACK_HOME_ENV, &fixture.home)
+            .args(["eval", "feedback", "summary", "--format", "json", "--repo"])
+            .arg(&fixture.repo)
+            .assert(),
+    );
+    assert_eq!(summary["eventCount"], 1);
+    assert_eq!(summary["passedCount"], 1);
+    assert_eq!(summary["readFileCount"], 1);
+    assert_eq!(summary["sourceTextLogged"], false);
+}
+
+#[test]
+fn eval_policy_and_outcome_reports_are_source_free() {
+    let fixture = fixture_repo();
+    record_feedback_event(&fixture, "task-1", "brief", "passed");
+    record_feedback_event(&fixture, "task-2", "standard", "blocked");
+
+    let report = json_stdout(
+        Command::cargo_bin("ctxpack")
+            .unwrap()
+            .env(CTXPACK_HOME_ENV, &fixture.home)
+            .args(["eval", "policy", "report", "--format", "json", "--repo"])
+            .arg(&fixture.repo)
+            .assert(),
+    );
+    assert_eq!(report["eventCount"], 2);
+    assert!(report["contextPrecision"].as_f64().unwrap() >= 0.0);
+    assert!(report["signalContributions"].is_array());
+    assert_no_source_or_prompt_text(&report);
+
+    let profile = json_stdout(
+        Command::cargo_bin("ctxpack")
+            .unwrap()
+            .env(CTXPACK_HOME_ENV, &fixture.home)
+            .args(["eval", "policy", "tune", "--format", "json", "--repo"])
+            .arg(&fixture.repo)
+            .assert(),
+    );
+    let profile_id = profile["id"].as_str().unwrap().to_string();
+    assert_eq!(profile["status"], "candidate");
+    assert!(profile["weights"].is_array());
+    assert!(profile["safetyFloors"].is_array());
+    assert_no_source_or_prompt_text(&profile);
+
+    let apply = json_stdout(
+        Command::cargo_bin("ctxpack")
+            .unwrap()
+            .env(CTXPACK_HOME_ENV, &fixture.home)
+            .args([
+                "eval",
+                "policy",
+                "apply",
+                &profile_id,
+                "--format",
+                "json",
+                "--repo",
+            ])
+            .arg(&fixture.repo)
+            .assert(),
+    );
+    assert_eq!(apply["action"], "apply");
+    assert_eq!(apply["activeProfileId"], profile_id);
+
+    let rollback = json_stdout(
+        Command::cargo_bin("ctxpack")
+            .unwrap()
+            .env(CTXPACK_HOME_ENV, &fixture.home)
+            .args(["eval", "policy", "rollback", "--format", "json", "--repo"])
+            .arg(&fixture.repo)
+            .assert(),
+    );
+    assert_eq!(rollback["action"], "rollback");
+    assert!(rollback["activeProfileId"].is_null());
+
+    let outcome = json_stdout(
+        Command::cargo_bin("ctxpack")
+            .unwrap()
+            .env(CTXPACK_HOME_ENV, &fixture.home)
+            .args(["eval", "outcome", "compare", "--format", "json", "--repo"])
+            .arg(&fixture.repo)
+            .assert(),
+    );
+    assert_eq!(outcome["eventCount"], 2);
+    assert!(outcome["budgets"].as_array().unwrap().len() >= 2);
+    assert_no_source_or_prompt_text(&outcome);
 }
 
 #[test]
@@ -1565,6 +2094,50 @@ fn assert_string_present(value: &Value, expected: &str) {
 
 fn first_array_item(value: &Value) -> &Value {
     value.as_array().unwrap().first().unwrap()
+}
+
+fn record_feedback_event(
+    fixture: &common::FixtureRepo,
+    task_hash: &str,
+    budget: &str,
+    outcome: &str,
+) {
+    Command::cargo_bin("ctxpack")
+        .unwrap()
+        .env(CTXPACK_HOME_ENV, &fixture.home)
+        .args([
+            "eval",
+            "feedback",
+            "record",
+            "--task-hash",
+            task_hash,
+            "--mode",
+            "bug-fix",
+            "--target-agent",
+            "codex",
+            "--budget",
+            budget,
+            "--outcome",
+            outcome,
+            "--recommended-file",
+            "src/auth/session.ts",
+            "--recommended-test",
+            "tests/auth/session.test.ts",
+            "--read-file",
+            "src/auth/session.ts",
+            "--edited-file",
+            "src/auth/session.ts",
+            "--tested-file",
+            "tests/auth/session.test.ts",
+            "--tested-command",
+            "pnpm test tests/auth/session.test.ts",
+            "--format",
+            "json",
+            "--repo",
+        ])
+        .arg(&fixture.repo)
+        .assert()
+        .success();
 }
 
 fn diagnostic_codes(value: &Value) -> Vec<&str> {

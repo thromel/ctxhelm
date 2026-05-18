@@ -15,9 +15,24 @@ ctxpack is local-first and read-only. It does not edit source files, run your pr
 ```bash
 ctxpack --version
 ctxpack --help
+ctxpack doctor --repo "$REPO"
 ```
 
 For v1.1.0, `ctxpack --version` should print `ctxpack 1.1.0`. If the command is not found, fix your shell or agent `PATH`, or use an absolute binary path in the MCP configuration.
+
+When installing from a release archive, keep the release manifest beside the
+archive and verify it against the active binary:
+
+```bash
+ctxpack doctor \
+  --repo "$REPO" \
+  --binary "$(command -v ctxpack)" \
+  --release-manifest /path/to/ctxpack-v1.1.0-aarch64-apple-darwin.manifest.json
+```
+
+`doctor` is read-only. It checks the binary path, `--version`, `--help`, release
+manifest privacy/checksum metadata, and local .ctxpack storage compatibility.
+It does not mutate global agent configuration.
 
 ## Choose A Repo
 

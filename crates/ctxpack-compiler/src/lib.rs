@@ -1,37 +1,46 @@
+mod agent_preview;
 mod cards;
 mod eval;
+mod graph;
 mod packs;
 mod planning;
+mod policy;
 mod ranking;
+mod workspace;
 
+pub use agent_preview::build_agent_preview_report;
 pub use cards::{
     generate_context_cards, generate_experience_cards, ContextCardsOptions, ContextCardsReport,
     ExperienceCardsOptions, ExperienceCardsReport, GeneratedContextCard,
 };
 pub use eval::{
-    build_product_proof_report, compare_benchmark_suite_reports, eval_trace_for_pack,
-    eval_trace_for_plan, evaluate_historical_commits, load_benchmark_suite_config,
-    load_benchmark_suite_report, run_benchmark_suite, run_benchmark_suite_config,
-    BenchmarkComparisonReport, BenchmarkDefaults, BenchmarkGapFamilyDelta, BenchmarkMetricDelta,
-    BenchmarkRegressionThreshold, BenchmarkRepoConfig, BenchmarkRepoEffectiveConfig,
-    BenchmarkRepoReport, BenchmarkSuiteConfig, BenchmarkSuiteReport, BenchmarkThresholdCheck,
-    EvalComparison, HistoricalChangedPathLabel, HistoricalCommitEval,
-    HistoricalEvalEffectiveFilters, HistoricalEvalOptions, HistoricalEvalRefs,
-    HistoricalEvalReport, HistoricalMissingFileSummary, ProductProofMetric, ProductProofReport,
-    RankingMetrics, RetrievalGapRecommendationArea, RetrievalGapSummary, RetrievalGapTargetStatus,
-    RoleRecallMetric, SignalAblationResult, TokenRoiMetric,
+    build_product_proof_report, build_retrieval_health_report, compare_benchmark_suite_reports,
+    eval_trace_for_pack, eval_trace_for_plan, evaluate_historical_commits,
+    load_benchmark_suite_config, load_benchmark_suite_report, run_benchmark_suite,
+    run_benchmark_suite_config, BenchmarkComparisonReport, BenchmarkDefaults,
+    BenchmarkGapFamilyDelta, BenchmarkMetricDelta, BenchmarkRegressionThreshold,
+    BenchmarkRepoConfig, BenchmarkRepoEffectiveConfig, BenchmarkRepoReport, BenchmarkSuiteConfig,
+    BenchmarkSuiteReport, BenchmarkThresholdCheck, EvalComparison, HistoricalChangedPathLabel,
+    HistoricalCommitEval, HistoricalEvalEffectiveFilters, HistoricalEvalOptions,
+    HistoricalEvalRefs, HistoricalEvalReport, HistoricalMissingFileSummary, ProductProofMetric,
+    ProductProofReport, RankingMetrics, RetrievalGapRecommendationArea, RetrievalGapSummary,
+    RetrievalGapTargetStatus, RoleRecallMetric, SignalAblationResult, TokenRoiMetric,
 };
+pub use graph::build_graph_neighborhood_report;
 pub use packs::{
     compile_context_pack, compile_context_pack_from_plan, compile_context_pack_from_plan_for_agent,
     compile_context_pack_with_plan, compile_context_pack_with_plan_and_paths,
     compile_context_pack_with_plan_and_paths_for_agent,
     compile_context_pack_with_plan_and_paths_for_agent_and_semantic,
-    compile_context_pack_with_plan_for_agent, render_pack_markdown,
+    compile_context_pack_with_plan_for_agent, compile_pack_inspector_view,
+    render_pack_inspector_html, render_pack_inspector_markdown, render_pack_markdown,
 };
 pub use planning::{
     empty_plan_for_task, prepare_context_plan, prepare_context_plan_with_paths,
     prepare_context_plan_with_paths_and_semantic,
 };
+pub use policy::{retrieval_policy_experiment_report, semantic_provider_status_report};
+pub use workspace::{compile_workspace_context_pack, prepare_workspace_context_plan};
 
 #[cfg(test)]
 use ctxpack_core::{
@@ -193,6 +202,60 @@ mod tests {
         assert!(markdown.contains("- Lines: 31-31"));
         assert!(markdown.contains("31: export function requireSession"));
         assert!(markdown.contains("... omitted lines 1-"));
+
+        std::env::remove_var("CTXPACK_HOME");
+    }
+
+    #[test]
+    fn pack_inspector_view_keeps_source_snippets_out_of_metadata() {
+        let _guard = env_lock();
+        let temp = tempfile::tempdir().unwrap();
+        let repo = temp.path().join("repo");
+        let home = temp.path().join("ctxpack-home");
+        fs::create_dir_all(repo.join("src/auth")).unwrap();
+        run_git(&repo, &["init"]);
+        run_git(&repo, &["config", "user.email", "ctxpack@example.com"]);
+        run_git(&repo, &["config", "user.name", "ctxpack"]);
+        fs::write(
+            repo.join("src/auth/session.ts"),
+            "export function requireSession() {\n  return 'TOP_SECRET_SOURCE_SENTINEL';\n}\n",
+        )
+        .unwrap();
+        run_git(&repo, &["add", "."]);
+        run_git(&repo, &["commit", "-m", "add session"]);
+        std::env::set_var("CTXPACK_HOME", &home);
+
+        let (plan, pack) = compile_context_pack_with_plan(
+            &repo,
+            "fix requireSession sentinel",
+            TaskType::BugFix,
+            PackBudget::Brief,
+        )
+        .unwrap();
+        let pack_markdown = render_pack_markdown(&pack);
+        let view = compile_pack_inspector_view(&plan, &pack);
+        let view_json = serde_json::to_string_pretty(&view).unwrap();
+        let view_markdown = render_pack_inspector_markdown(&view);
+        let view_html = render_pack_inspector_html(&view);
+
+        assert!(pack_markdown.contains("TOP_SECRET_SOURCE_SENTINEL"));
+        assert!(!view_json.contains("TOP_SECRET_SOURCE_SENTINEL"));
+        assert!(!view_markdown.contains("TOP_SECRET_SOURCE_SENTINEL"));
+        assert!(!view_html.contains("TOP_SECRET_SOURCE_SENTINEL"));
+        assert!(!view.source_text_logged);
+        assert!(view.source_bearing_section_count > 0);
+        assert!(view
+            .sections
+            .iter()
+            .any(|section| section.kind == "target_snippets" && section.source_bearing));
+        assert_eq!(view.target_files[0].path, "src/auth/session.ts");
+        assert!(view_html.contains("data-inspector-source-free=\"true\""));
+        assert!(view_html.contains("id=\"filterText\""));
+        assert!(view_html.contains("id=\"kindFilter\""));
+        assert!(view_html.contains("id=\"sourceOnly\""));
+        assert!(view_html.contains("data-kind=\"target\""));
+        assert!(view_html.contains("data-source-bearing=\"true\""));
+        assert!(view_html.contains("Retrieval Candidates"));
 
         std::env::remove_var("CTXPACK_HOME");
     }

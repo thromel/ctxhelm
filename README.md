@@ -28,6 +28,7 @@ tar -xzf ctxpack-v1.1.0-aarch64-apple-darwin.tar.gz
 install -m 0755 ctxpack-v1.1.0-aarch64-apple-darwin/ctxpack ~/.local/bin/ctxpack
 ctxpack --version
 ctxpack --help
+ctxpack doctor --binary "$(command -v ctxpack)" --release-manifest ctxpack-v1.1.0-aarch64-apple-darwin.manifest.json
 ```
 
 The expected version diagnostic is `ctxpack 1.1.0`. See [docs/release.md](docs/release.md) for release details, source-build fallbacks, and maintainer packaging checks.
@@ -40,12 +41,14 @@ Start from the installed `ctxpack` binary and an existing git repository:
 ctxpack --version
 ctxpack --help
 export REPO=/path/to/repo
+ctxpack doctor --repo "$REPO"
 ```
 
 Initialize repo-local guidance and optional agent snippets:
 
 ```bash
 ctxpack init --repo "$REPO" --cursor --claude --opencode
+ctxpack doctor --repo "$REPO"
 ctxpack setup-check --repo "$REPO" --cursor --claude --opencode
 ```
 
@@ -67,6 +70,16 @@ ctxpack get-pack "fix requireSession bug" \
   --budget brief
 ```
 
+Inspect that pack decision path as source-free metadata:
+
+```bash
+ctxpack inspector export "fix requireSession bug" \
+  --repo "$REPO" \
+  --mode bug-fix \
+  --budget brief \
+  --format json
+```
+
 For the longer walkthrough, including setup validation, deterministic MCP proof context, and how to interpret pack options, see [docs/quickstart.md](docs/quickstart.md).
 
 ## More Docs
@@ -74,9 +87,26 @@ For the longer walkthrough, including setup validation, deterministic MCP proof 
 - [First-pack quickstart](docs/quickstart.md)
 - [Release and install guide](docs/release.md)
 - [Agent setup matrix](docs/agent-setup.md)
+- [Architecture and trade-offs](docs/architecture.md)
+- [Component guide](docs/components.md)
+- [Data contracts](docs/data-contracts.md)
+- [Context compiler](docs/context-compiler.md)
+- [Pack inspector](docs/inspector.md)
+- [Agent preview](docs/agent-preview.md)
+- [Public demo artifacts](docs/demo.md)
+- [Public project summary](docs/public-project-summary.md)
+- [Distribution metadata](docs/distribution.md)
+- [Release governance](docs/release-governance.md)
+- [Agent integrations](docs/integrations.md)
+- [Workspace manifests](docs/workspace.md)
+- [Shared artifacts and team policy](docs/shared-artifacts.md)
+- [Retrieval health](docs/retrieval-health.md)
+- [Graph neighborhoods](docs/graph.md)
+- [Policy and embedding controls](docs/policy-embedding.md)
 - [Retrieval benchmarking](docs/benchmarking.md)
 - [Storage](docs/storage.md)
 - [Repo memory](docs/memory.md)
+- [Feedback and policy learning](docs/feedback.md)
 - [Local semantic retrieval](docs/semantic.md)
 - [Parser and precision edges](docs/precision.md)
 - [Troubleshooting](docs/troubleshooting.md)
@@ -106,7 +136,7 @@ Implemented MCP tools:
 `related` can expand from a `path`, `symbol`, or `includeCurrentDiff: true`. Symbol expansion resolves safe symbol matches first, and current-diff expansion uses safe changed paths; both return related tests, dependency edges, and co-change hints around the resolved file paths.
 If local git history is unavailable, `related` still returns non-history context and includes a warning instead of failing the whole call.
 
-Implemented MCP resources include `ctxpack://repo/summary`, package-aware `ctxpack://repo/test-map`, `ctxpack://repo/dependency-graph`, `ctxpack://pack/guide`, session-scoped `ctxpack://pack/<task-id>/<budget>` resources returned by `prepare_task` for brief, standard, and deep packs, safe file slices, and symbol search. Implemented prompts cover bugfix, feature, refactor, review, test-writing, and explanation workflows.
+Implemented MCP resources include `ctxpack://repo/summary`, package-aware `ctxpack://repo/test-map`, `ctxpack://repo/dependency-graph`, `ctxpack://repo/memory`, `ctxpack://workspace/status`, `ctxpack://workspace/shared-artifacts`, `ctxpack://pack/guide`, session-scoped `ctxpack://pack/<task-id>/<budget>` resources returned by `prepare_task` for brief, standard, and deep packs, safe file slices, and symbol search. Implemented prompts cover bugfix, feature, refactor, review, test-writing, and explanation workflows.
 
 ## Client Integration Status
 
