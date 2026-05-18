@@ -144,7 +144,7 @@ Current local smoke status:
 
 - Deterministic protocol proof is the required release gate: direct JSON-RPC/MCP calls verify `prepare_task`, `get_pack`, `search`, `related`, `related_tests`, `current_diff`, and same-session pack-resource reads with an explicit `repo`.
 - Codex CLI `0.130.0`: optional real-client smoke support can require source-free server-side evidence for both `prepare_task` and `get_pack` with an isolated `CODEX_HOME`.
-- Claude Code `2.1.140`: optional real-client smoke support can require source-free server-side evidence for both `prepare_task` and `get_pack` with strict MCP config.
+- Claude Code `2.1.143`: optional real-client smoke support can require source-free server-side evidence for both `prepare_task` and `get_pack` with strict MCP config.
 
 When using ctxpack through MCP, pass the active repository path as `repo` whenever the client knows it. Some clients launch MCP servers from a different working directory than the project they expose.
 
