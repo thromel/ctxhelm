@@ -10,6 +10,9 @@
     "mode": "bug_fix",
     "targetAgent": "claude-code",
     "semanticEnabled": false,
+    "cacheEnabled": true,
+    "forceRefresh": false,
+    "parallelism": 4,
     "roleFilters": ["source", "test"]
   },
   "repositories": [

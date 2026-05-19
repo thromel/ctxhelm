@@ -25,6 +25,9 @@ Benchmark suites are JSON files. Paths may be absolute or relative to the suite 
     "mode": "bug_fix",
     "targetAgent": "codex",
     "semanticEnabled": false,
+    "cacheEnabled": true,
+    "forceRefresh": false,
+    "parallelism": 4,
     "roleFilters": ["source", "test"]
   },
   "repositories": [
@@ -66,13 +69,16 @@ Fields:
 - `defaults.mode`: task type used when replaying commit titles.
 - `defaults.targetAgent`: source-free agent label in eval metadata.
 - `defaults.semanticEnabled`: explicit opt-in for local semantic retrieval during historical eval.
+- `defaults.cacheEnabled`: reuse source-free stored historical eval reports when the repo/range/options/cache schema are unchanged.
+- `defaults.forceRefresh`: recompute and overwrite a cached historical eval report for the same source-free range.
+- `defaults.parallelism`: number of historical commit samples to evaluate concurrently. Output ordering remains deterministic.
 - `defaults.roleFilters`: documented target roles for this benchmark scope. Phase 9 records these filters in source-free metadata; later v1.2 phases use them for deeper metric segmentation.
 - `repositories[*].name`: source-free repo label.
 - `repositories[*].path`: local repository path.
 - `repositories[*].revisionRangeId`: source-free stable label for the revision range.
 - `repositories[*].privacyLabel`: expected repo privacy class.
 - `repositories[*].base` / `head`: optional stable revision range.
-- `repositories[*].limit`, `rankingBudget`, `mode`, `targetAgent`, `semanticEnabled`, `roleFilters`: per-repo overrides.
+- `repositories[*].limit`, `rankingBudget`, `mode`, `targetAgent`, `semanticEnabled`, `cacheEnabled`, `forceRefresh`, `parallelism`, `roleFilters`: per-repo overrides.
 - `repositories[*].baseline`: optional locked source-free baseline metadata for regression suites. Supported fields are `fileRecallAt10`, `lexicalBaselineRecallAt10`, `totalMillis`, `gapFamilies`, and `notes`.
 
 ## Run
@@ -81,6 +87,8 @@ Fields:
 ctxpack eval benchmark --config .ctxpack/benchmarks/retrieval-quality.json --format markdown
 ctxpack eval benchmark --config .ctxpack/benchmarks/retrieval-quality.json --format json
 ctxpack eval history --repo /path/to/repo --semantic --format json
+ctxpack eval history --repo /path/to/repo --cache --parallelism 4 --format markdown
+ctxpack eval history --repo /path/to/repo --cache --force --parallelism 4 --format json
 ctxpack eval compare --base-report previous.json --head-report current.json --threshold fileRecallAt10=0.05
 ctxpack eval proof --config .ctxpack/benchmarks/retrieval-quality.json
 ```
@@ -101,6 +109,7 @@ Benchmark reports include:
 - source-free file paths and role labels;
 - skipped path counts and privacy status.
 - optional locked baseline deltas for source-free metrics and runtime.
+- cache hits/misses, effective parallelism, git sample cost, ranking cost, pack/compiler cost, and slow commits.
 
 Benchmark reports do not include:
 
@@ -145,6 +154,7 @@ Use this as the first large-history regression target, not as a broad product cl
 - `retrievalGapSummaries`: source-free failure families grouped by role, signal gap, package, path family, target status, and recommendation area.
 - `ctxpack eval compare`: compares two benchmark reports across recall, token ROI, skipped paths, and gap families; configured thresholds fail when a metric drops more than the allowed amount.
 - `ctxpack eval proof`: generates a concise product proof report from a local suite and embeds the underlying source-free benchmark report in JSON output.
+- `runtime`: reports total time, per-commit time, overhead, cache hits/misses, effective parallelism, git sample cost, ranking cost, pack/compiler cost, and the slowest source-free commit summaries.
 
 ## Product Proof
 

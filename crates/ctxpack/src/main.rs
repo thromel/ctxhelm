@@ -898,6 +898,22 @@ struct EvalHistoryArgs {
         help = "Enable explicit local semantic retrieval during historical eval."
     )]
     semantic: bool,
+    #[arg(
+        long,
+        help = "Reuse source-free historical eval report cache when available."
+    )]
+    cache: bool,
+    #[arg(
+        long,
+        help = "Refresh historical eval even when a cached report exists."
+    )]
+    force: bool,
+    #[arg(
+        long,
+        default_value_t = 1,
+        help = "Number of historical commits to evaluate concurrently."
+    )]
+    parallelism: usize,
     #[arg(long, value_enum, default_value_t = PackFormat::Markdown)]
     format: PackFormat,
     #[arg(long, help = "Persist source-free eval metrics into SQLite storage.")]
@@ -931,6 +947,22 @@ struct EvalHealthArgs {
         help = "Enable explicit local semantic retrieval during historical eval."
     )]
     semantic: bool,
+    #[arg(
+        long,
+        help = "Reuse source-free historical eval report cache when available."
+    )]
+    cache: bool,
+    #[arg(
+        long,
+        help = "Refresh historical eval even when a cached report exists."
+    )]
+    force: bool,
+    #[arg(
+        long,
+        default_value_t = 1,
+        help = "Number of historical commits to evaluate concurrently."
+    )]
+    parallelism: usize,
     #[arg(long, value_enum, default_value_t = PackFormat::Markdown)]
     format: PackFormat,
 }
@@ -1611,6 +1643,9 @@ fn main() -> Result<()> {
                         base: None,
                         head: None,
                         semantic_enabled: false,
+                        cache_enabled: false,
+                        force_refresh: false,
+                        parallelism: 1,
                     },
                 )
                 .map(|report| report.retrieval_gap_summaries)
@@ -1780,6 +1815,9 @@ fn main() -> Result<()> {
                         base: args.base,
                         head: args.head,
                         semantic_enabled: args.semantic,
+                        cache_enabled: args.cache,
+                        force_refresh: args.force,
+                        parallelism: args.parallelism,
                     },
                 )?;
                 if args.store {
@@ -1813,6 +1851,9 @@ fn main() -> Result<()> {
                         base: args.base,
                         head: args.head,
                         semantic_enabled: args.semantic,
+                        cache_enabled: args.cache,
+                        force_refresh: args.force,
+                        parallelism: args.parallelism,
                     },
                 )?;
                 let policy = policy_quality_report(&repo.path, args.limit)?;
@@ -3494,7 +3535,7 @@ fn render_historical_eval_report(report: &HistoricalEvalReport) -> String {
     let mut output = String::from("# ctxpack Historical Retrieval Eval\n\n");
     output.push_str("This source-free report replays recent commit subjects through `prepare_task` and compares recommended context paths with the safe files changed by each commit.\n\n");
     output.push_str(&format!(
-        "- Eval range ID: `{}`\n- Repo ID: `{}`\n- Evaluated commits: `{}`\n- Budget: `{:?}`\n- Effective limit: `{}`\n- Ranking budget K: `{}`\n- Effective mode: `{:?}`\n- Effective target agent: `{}`\n- Semantic enabled: `{}`\n- Base: `{}`\n- Head: `{}`\n- File Recall@5: `{:.2}`\n- File Recall@10: `{:.2}`\n- Lexical Baseline Recall@5: `{:.2}`\n- Lexical Baseline Recall@10: `{:.2}`\n- ctxpack Lift@5: `{:+.2}`\n- ctxpack Lift@10: `{:+.2}`\n- Recall@K: `{:.2}`\n- Precision@K: `{:.2}`\n- MRR@K: `{:.2}`\n- Lexical Recall@K: `{:.2}`\n- No-context Recall@K: `{:.2}`\n- ctxpack Lift@K: `{:+.2}`\n- ctxpack Lift vs No-context@K: `{:+.2}`\n- Source Recall@5: `{:.2}`\n- Source Recall@10: `{:.2}`\n- Test Recall@5: `{:.2}`\n- Test Recall@10: `{:.2}`\n- Test recommendation rate: `{:.2}`\n- Average recommended context files: `{:.2}`\n- Runtime total ms: `{}`\n- Runtime commit-loop ms: `{}`\n- Runtime overhead ms: `{}`\n- Runtime average commit ms: `{:.2}`\n- Low-information commits: `{}`\n- Privacy: local-only `{}`\n\n",
+        "- Eval range ID: `{}`\n- Repo ID: `{}`\n- Evaluated commits: `{}`\n- Budget: `{:?}`\n- Effective limit: `{}`\n- Ranking budget K: `{}`\n- Effective mode: `{:?}`\n- Effective target agent: `{}`\n- Semantic enabled: `{}`\n- Base: `{}`\n- Head: `{}`\n- File Recall@5: `{:.2}`\n- File Recall@10: `{:.2}`\n- Lexical Baseline Recall@5: `{:.2}`\n- Lexical Baseline Recall@10: `{:.2}`\n- ctxpack Lift@5: `{:+.2}`\n- ctxpack Lift@10: `{:+.2}`\n- Recall@K: `{:.2}`\n- Precision@K: `{:.2}`\n- MRR@K: `{:.2}`\n- Lexical Recall@K: `{:.2}`\n- No-context Recall@K: `{:.2}`\n- ctxpack Lift@K: `{:+.2}`\n- ctxpack Lift vs No-context@K: `{:+.2}`\n- Source Recall@5: `{:.2}`\n- Source Recall@10: `{:.2}`\n- Test Recall@5: `{:.2}`\n- Test Recall@10: `{:.2}`\n- Test recommendation rate: `{:.2}`\n- Average recommended context files: `{:.2}`\n- Runtime total ms: `{}`\n- Runtime commit-loop ms: `{}`\n- Runtime overhead ms: `{}`\n- Runtime average commit ms: `{:.2}`\n- Runtime git sample ms: `{}`\n- Runtime ranking ms: `{}`\n- Runtime pack/compiler ms: `{}`\n- Eval cache hits: `{}`\n- Eval cache misses: `{}`\n- Eval parallelism: `{}`\n- Low-information commits: `{}`\n- Privacy: local-only `{}`\n\n",
         report.eval_range_id,
         report.repo_id,
         report.evaluated_commits,
@@ -3529,6 +3570,12 @@ fn render_historical_eval_report(report: &HistoricalEvalReport) -> String {
         report.runtime.commit_millis,
         report.runtime.overhead_millis,
         report.runtime.average_commit_millis,
+        report.runtime.git_sample_millis,
+        report.runtime.ranking_millis,
+        report.runtime.pack_compiler_millis,
+        report.runtime.cache_hits,
+        report.runtime.cache_misses,
+        report.runtime.parallelism,
         report.low_information_commit_count,
         report.privacy_status.local_only
     ));
@@ -3730,7 +3777,7 @@ fn render_benchmark_suite_report(report: &BenchmarkSuiteReport) -> String {
     for repo in &report.repositories {
         output.push_str(&format!("### `{}`\n\n", repo.name));
         output.push_str(&format!(
-            "- Repo ID: `{}`\n- Revision range ID: `{}`\n- Privacy label: `{}`\n- Evaluated commits: `{}`\n- Excluded changed files: `{}`\n- Skipped path labels: `{}`\n- Limit: `{}`\n- Ranking budget K: `{}`\n- Mode: `{:?}`\n- Target agent: `{}`\n- Base: `{}`\n- Head: `{}`\n- Role filters: `{}`\n- Privacy: local-only `{}`\n",
+            "- Repo ID: `{}`\n- Revision range ID: `{}`\n- Privacy label: `{}`\n- Evaluated commits: `{}`\n- Excluded changed files: `{}`\n- Skipped path labels: `{}`\n- Limit: `{}`\n- Ranking budget K: `{}`\n- Cache enabled: `{}`\n- Force refresh: `{}`\n- Parallelism: `{}`\n- Mode: `{:?}`\n- Target agent: `{}`\n- Base: `{}`\n- Head: `{}`\n- Role filters: `{}`\n- Privacy: local-only `{}`\n",
             repo.repo_id.as_deref().unwrap_or("unavailable"),
             repo.effective_config
                 .revision_range_id
@@ -3745,6 +3792,9 @@ fn render_benchmark_suite_report(report: &BenchmarkSuiteReport) -> String {
             repo.skipped_path_count,
             repo.effective_config.limit,
             repo.effective_config.ranking_budget,
+            repo.effective_config.cache_enabled,
+            repo.effective_config.force_refresh,
+            repo.effective_config.parallelism,
             repo.effective_config.mode,
             repo.effective_config.target_agent,
             repo.effective_config.base.as_deref().unwrap_or("HEAD history"),
@@ -4219,6 +4269,12 @@ mod tests {
                 commit_millis: 250,
                 overhead_millis: 0,
                 average_commit_millis: 250.0,
+                cache_hits: 0,
+                cache_misses: 1,
+                parallelism: 1,
+                git_sample_millis: 0,
+                ranking_millis: 0,
+                pack_compiler_millis: 0,
                 slow_commits: vec![ctxpack_compiler::HistoricalSlowCommitSummary {
                     sha: "abcdef1234567890".to_string(),
                     elapsed_millis: 250,

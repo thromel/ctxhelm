@@ -986,6 +986,9 @@ mod tests {
                 base: None,
                 head: None,
                 semantic_enabled: false,
+                cache_enabled: false,
+                force_refresh: false,
+                parallelism: 1,
             },
         )
         .unwrap();
@@ -1135,6 +1138,75 @@ mod tests {
     }
 
     #[test]
+    fn historical_eval_reuses_source_free_cache_and_parallelism_metadata() {
+        let _guard = env_lock();
+        let temp = tempfile::tempdir().unwrap();
+        let repo = temp.path().join("repo");
+        let home = temp.path().join("ctxpack-home");
+        fs::create_dir_all(repo.join("src/auth")).unwrap();
+        run_git(&repo, &["init"]);
+        run_git(&repo, &["config", "user.email", "ctxpack@example.com"]);
+        run_git(&repo, &["config", "user.name", "ctxpack"]);
+        fs::write(
+            repo.join("src/auth/session.ts"),
+            "export function requireSession() { return true; }\n",
+        )
+        .unwrap();
+        run_git(&repo, &["add", "."]);
+        run_git(&repo, &["commit", "-m", "fix requireSession bug"]);
+        std::env::set_var("CTXPACK_HOME", &home);
+
+        let options = HistoricalEvalOptions {
+            limit: 5,
+            ranking_budget: 10,
+            task_type: TaskType::BugFix,
+            target_agent: "codex".to_string(),
+            base: None,
+            head: None,
+            semantic_enabled: false,
+            cache_enabled: true,
+            force_refresh: false,
+            parallelism: 2,
+        };
+
+        let first = evaluate_historical_commits(&repo, &options).unwrap();
+        let second = evaluate_historical_commits(&repo, &options).unwrap();
+        let forced = evaluate_historical_commits(
+            &repo,
+            &HistoricalEvalOptions {
+                force_refresh: true,
+                ..options
+            },
+        )
+        .unwrap();
+
+        assert_eq!(first.evaluated_commits, 1);
+        assert_eq!(first.runtime.cache_hits, 0);
+        assert_eq!(first.runtime.cache_misses, 1);
+        assert_eq!(first.runtime.parallelism, 1);
+        assert_eq!(second.eval_range_id, first.eval_range_id);
+        assert_eq!(second.runtime.cache_hits, 1);
+        assert_eq!(second.runtime.cache_misses, 0);
+        assert_eq!(second.runtime.parallelism, 1);
+        assert_eq!(forced.eval_range_id, first.eval_range_id);
+        assert_eq!(forced.runtime.cache_hits, 0);
+        assert_eq!(forced.runtime.cache_misses, 1);
+
+        let cache_root = home
+            .join("repos")
+            .join(&first.repo_id)
+            .join("eval-cache")
+            .join(format!("{}.json", first.eval_range_id));
+        assert!(cache_root.exists());
+        let json = fs::read_to_string(cache_root).unwrap();
+        assert!(json.contains("\"sourceTextLogged\": false"));
+        assert!(!json.contains("return true"));
+        assert!(!json.contains("fix requireSession bug"));
+
+        std::env::remove_var("CTXPACK_HOME");
+    }
+
+    #[test]
     fn historical_eval_report_public_json_shape_is_stable() {
         let report = HistoricalEvalReport {
             eval_range_id: "range-1".to_string(),
@@ -1248,6 +1320,12 @@ mod tests {
                 commit_millis: 120,
                 overhead_millis: 0,
                 average_commit_millis: 120.0,
+                cache_hits: 0,
+                cache_misses: 1,
+                parallelism: 1,
+                git_sample_millis: 0,
+                ranking_millis: 0,
+                pack_compiler_millis: 0,
                 slow_commits: vec![HistoricalSlowCommitSummary {
                     sha: "abc123".to_string(),
                     elapsed_millis: 120,
@@ -1429,6 +1507,9 @@ mod tests {
                 base: None,
                 head: None,
                 semantic_enabled: false,
+                cache_enabled: false,
+                force_refresh: false,
+                parallelism: 1,
             },
         )
         .unwrap();
@@ -1540,6 +1621,12 @@ mod tests {
                 commit_millis: 0,
                 overhead_millis: 0,
                 average_commit_millis: 0.0,
+                cache_hits: 0,
+                cache_misses: 1,
+                parallelism: 1,
+                git_sample_millis: 0,
+                ranking_millis: 0,
+                pack_compiler_millis: 0,
                 slow_commits: Vec::new(),
             },
             low_information_commit_count: 0,
@@ -1612,6 +1699,9 @@ mod tests {
                 base: None,
                 head: None,
                 semantic_enabled: false,
+                cache_enabled: false,
+                force_refresh: false,
+                parallelism: 1,
             },
         )
         .unwrap();
@@ -1876,6 +1966,9 @@ mod tests {
                 mode: TaskType::BugFix,
                 target_agent: "codex".to_string(),
                 semantic_enabled: false,
+                cache_enabled: false,
+                force_refresh: false,
+                parallelism: 1,
                 role_filters: vec![FileRole::Source, FileRole::Test],
             },
             repositories: vec![
@@ -1891,6 +1984,9 @@ mod tests {
                     mode: None,
                     target_agent: None,
                     semantic_enabled: None,
+                    cache_enabled: None,
+                    force_refresh: None,
+                    parallelism: None,
                     role_filters: Vec::new(),
                     baseline: Some(BenchmarkRepoBaseline {
                         file_recall_at_10: None,
@@ -1912,6 +2008,9 @@ mod tests {
                     mode: Some(TaskType::Feature),
                     target_agent: Some("claude-code".to_string()),
                     semantic_enabled: Some(false),
+                    cache_enabled: Some(false),
+                    force_refresh: Some(false),
+                    parallelism: Some(1),
                     role_filters: vec![FileRole::Source],
                     baseline: None,
                 },
@@ -1946,6 +2045,8 @@ mod tests {
             report.repositories[0].effective_config.role_filters,
             vec![FileRole::Source, FileRole::Test]
         );
+        assert_eq!(report.repositories[0].effective_config.parallelism, 1);
+        assert!(!report.repositories[0].effective_config.cache_enabled);
         assert_eq!(report.repositories[1].effective_config.ranking_budget, 3);
         assert_eq!(
             report.repositories[1].effective_config.mode,

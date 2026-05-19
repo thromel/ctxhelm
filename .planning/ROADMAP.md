@@ -15,7 +15,7 @@ The milestone is intentionally evaluation-first. Production semantic backends, c
 - Decimal phases (50.1, 51.1): Urgent insertions if needed
 
 - [x] **Phase 50: Fixed Benchmark Corpus & RefactoringMiner Regression Suite** - Maintainers can define fixed source-free benchmark corpora and lock the first large-history regression suite.
-- [ ] **Phase 51: Historical Eval Cache & Parallel Runner** - Maintainers can run large-history evals faster through cache reuse, parallel samples, and runtime diagnostics.
+- [x] **Phase 51: Historical Eval Cache & Parallel Runner** - Maintainers can run large-history evals faster through cache reuse, parallel samples, and runtime diagnostics.
 - [ ] **Phase 52: Source-Free Candidate Feature Export** - Maintainers can export privacy-safe candidate feature rows for learning, diagnostics, and paired analysis.
 - [ ] **Phase 53: Paired Baseline & Ablation Analysis** - Maintainers can compare ctxpack against lexical, no-context, and signal-ablation baselines with honest verdicts.
 - [ ] **Phase 54: Offline Learned Retrieval Policy Experiment** - Maintainers can generate, compare, apply, disable, and roll back non-default learned policy profiles.
@@ -59,7 +59,7 @@ Plans:
 **Plans**: 1 plan
 
 Plans:
-- [ ] 51-historical-eval-cache-parallel-runner-01-PLAN.md - Add eval cache keys, deterministic parallel execution, stored-run reuse, and runtime diagnostics.
+- [x] 51-historical-eval-cache-parallel-runner-01-PLAN.md - Add eval cache keys, deterministic parallel execution, stored-run reuse, and runtime diagnostics.
 
 ### Phase 52: Source-Free Candidate Feature Export
 
@@ -176,7 +176,7 @@ Phases execute in numeric order: 50 -> 51 -> 52 -> 53 -> 54 -> 55
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 50. Fixed Benchmark Corpus & RefactoringMiner Regression Suite | 1/1 | Complete | 2026-05-19 |
-| 51. Historical Eval Cache & Parallel Runner | 0/1 | Not Started | - |
+| 51. Historical Eval Cache & Parallel Runner | 1/1 | Complete | 2026-05-19 |
 | 52. Source-Free Candidate Feature Export | 0/1 | Not Started | - |
 | 53. Paired Baseline & Ablation Analysis | 0/1 | Not Started | - |
 | 54. Offline Learned Retrieval Policy Experiment | 0/1 | Not Started | - |

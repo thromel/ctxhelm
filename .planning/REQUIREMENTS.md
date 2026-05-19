@@ -17,10 +17,10 @@ This milestone turns ctxpack's retrieval-quality claims into repeatable, source-
 
 ### Eval Speed And Reuse
 
-- [ ] **SPEED-01**: Historical eval can reuse warm parent snapshot, inventory, index, and candidate metadata when repo state, options, and versions have not changed.
-- [ ] **SPEED-02**: Historical eval can run commit samples in parallel and merge results deterministically with stable ordering and source-free output.
-- [ ] **SPEED-03**: Eval reports include runtime diagnostics for total time, per-commit time, cache hits, slow commits, git diff cost, ranking cost, and pack/compiler cost.
-- [ ] **SPEED-04**: Maintainer can compare stored runs and avoid recomputing unchanged benchmark ranges unless explicitly forced.
+- [x] **SPEED-01**: Historical eval can reuse warm parent snapshot, inventory, index, and candidate metadata when repo state, options, and versions have not changed.
+- [x] **SPEED-02**: Historical eval can run commit samples in parallel and merge results deterministically with stable ordering and source-free output.
+- [x] **SPEED-03**: Eval reports include runtime diagnostics for total time, per-commit time, cache hits, slow commits, git diff cost, ranking cost, and pack/compiler cost.
+- [x] **SPEED-04**: Maintainer can compare stored runs and avoid recomputing unchanged benchmark ranges unless explicitly forced.
 
 ### Source-Free Candidate Features
 
@@ -111,10 +111,10 @@ Explicitly excluded from v2.3 to keep the milestone focused on measured quality 
 | CORPUS-02 | Phase 50 | Complete |
 | CORPUS-03 | Phase 50 | Complete |
 | CORPUS-04 | Phase 50 | Complete |
-| SPEED-01 | Phase 51 | Planned |
-| SPEED-02 | Phase 51 | Planned |
-| SPEED-03 | Phase 51 | Planned |
-| SPEED-04 | Phase 51 | Planned |
+| SPEED-01 | Phase 51 | Complete |
+| SPEED-02 | Phase 51 | Complete |
+| SPEED-03 | Phase 51 | Complete |
+| SPEED-04 | Phase 51 | Complete |
 | FEATURE-01 | Phase 52 | Planned |
 | FEATURE-02 | Phase 52 | Planned |
 | FEATURE-03 | Phase 52 | Planned |

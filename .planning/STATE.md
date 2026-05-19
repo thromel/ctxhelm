@@ -4,23 +4,23 @@ milestone: v2.3
 milestone_name: Evaluation Lab & Learned Retrieval Policy
 status: in_progress
 last_updated: "2026-05-19T00:00:00.000+06:00"
-last_activity: 2026-05-19 - Phase 50 completed fixed corpus manifests and RefactoringMiner regression suite metadata
+last_activity: 2026-05-19 - Phase 51 completed historical eval cache reuse, parallel runner, and runtime diagnostics
 progress:
   total_phases: 6
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 6
-  completed_plans: 1
-  percent: 17
+  completed_plans: 2
+  percent: 33
 ---
 
 # Project State
 
 ## Current Position
 
-Phase: 51
+Phase: 52
 Plan: -
-Status: Phase 50 complete; Phase 51 next
-Last activity: 2026-05-19 - Phase 50 completed fixed corpus manifests and RefactoringMiner regression suite metadata
+Status: Phase 51 complete; Phase 52 next
+Last activity: 2026-05-19 - Phase 51 completed historical eval cache reuse, parallel runner, and runtime diagnostics
 
 ## Project Reference
 
@@ -36,10 +36,10 @@ v2.3 Evaluation Lab & Learned Retrieval Policy is active.
 
 ## Next Step
 
-Plan Phase 51: Historical Eval Cache & Parallel Runner.
+Plan Phase 52: Source-Free Candidate Feature Export.
 
 ## Operator Next Steps
 
-- Run `$gsd-plan-phase 51` to create the executable plan for historical eval cache and parallel runner work.
+- Run `$gsd-plan-phase 52` to create the executable plan for source-free candidate feature export.
 - Keep RefactoringMiner as the first locked large-history regression target, but do not claim broad product lift from that repo alone.
 - Preserve local-first, read-only, source-free learning constraints in every eval artifact.

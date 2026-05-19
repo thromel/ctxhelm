@@ -10,16 +10,19 @@ use ctxpack_core::{
 };
 use ctxpack_index::{
     historical_commit_samples, lexical_search, load_or_build_inventory, repo_id_for_path,
-    task_hash, HistoricalChangedPath, HistoricalCommitOptions, InventoryError, InventoryOptions,
-    LabelScope, SearchOptions,
+    task_hash, HistoricalChangedPath, HistoricalCommitOptions, HistoricalCommitSample,
+    InventoryError, InventoryOptions, LabelScope, SearchOptions,
 };
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::{Command as ProcessCommand, Stdio};
+use std::thread;
 use std::time::{Instant, SystemTime, UNIX_EPOCH};
 use uuid::Uuid;
+
+const HISTORICAL_EVAL_CACHE_SCHEMA_VERSION: &str = "historical-eval-cache-v2.3.1";
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
@@ -32,6 +35,12 @@ pub struct HistoricalEvalOptions {
     pub head: Option<String>,
     #[serde(default)]
     pub semantic_enabled: bool,
+    #[serde(default)]
+    pub cache_enabled: bool,
+    #[serde(default)]
+    pub force_refresh: bool,
+    #[serde(default)]
+    pub parallelism: usize,
 }
 
 pub type HistoricalChangedPathLabel = HistoricalChangedPath;
@@ -134,6 +143,12 @@ pub struct HistoricalEvalRuntimeSummary {
     pub commit_millis: u64,
     pub overhead_millis: u64,
     pub average_commit_millis: f32,
+    pub cache_hits: usize,
+    pub cache_misses: usize,
+    pub parallelism: usize,
+    pub git_sample_millis: u64,
+    pub ranking_millis: u64,
+    pub pack_compiler_millis: u64,
     pub slow_commits: Vec<HistoricalSlowCommitSummary>,
 }
 
@@ -315,6 +330,12 @@ pub struct BenchmarkDefaults {
     #[serde(default)]
     pub semantic_enabled: bool,
     #[serde(default)]
+    pub cache_enabled: bool,
+    #[serde(default)]
+    pub force_refresh: bool,
+    #[serde(default = "default_benchmark_parallelism")]
+    pub parallelism: usize,
+    #[serde(default)]
     pub role_filters: Vec<FileRole>,
 }
 
@@ -326,6 +347,9 @@ impl Default for BenchmarkDefaults {
             mode: default_benchmark_task_type(),
             target_agent: default_benchmark_target_agent(),
             semantic_enabled: false,
+            cache_enabled: false,
+            force_refresh: false,
+            parallelism: default_benchmark_parallelism(),
             role_filters: Vec::new(),
         }
     }
@@ -354,6 +378,12 @@ pub struct BenchmarkRepoConfig {
     pub target_agent: Option<String>,
     #[serde(default)]
     pub semantic_enabled: Option<bool>,
+    #[serde(default)]
+    pub cache_enabled: Option<bool>,
+    #[serde(default)]
+    pub force_refresh: Option<bool>,
+    #[serde(default)]
+    pub parallelism: Option<usize>,
     #[serde(default)]
     pub role_filters: Vec<FileRole>,
     #[serde(default)]
@@ -405,6 +435,9 @@ pub struct BenchmarkRepoEffectiveConfig {
     pub mode: TaskType,
     pub target_agent: String,
     pub semantic_enabled: bool,
+    pub cache_enabled: bool,
+    pub force_refresh: bool,
+    pub parallelism: usize,
     #[serde(default)]
     pub role_filters: Vec<FileRole>,
 }
@@ -892,6 +925,12 @@ fn run_benchmark_repo(
         semantic_enabled: repo_config
             .semantic_enabled
             .unwrap_or(defaults.semantic_enabled),
+        cache_enabled: repo_config.cache_enabled.unwrap_or(defaults.cache_enabled),
+        force_refresh: repo_config.force_refresh.unwrap_or(defaults.force_refresh),
+        parallelism: repo_config
+            .parallelism
+            .unwrap_or(defaults.parallelism)
+            .max(1),
         role_filters: if repo_config.role_filters.is_empty() {
             defaults.role_filters.clone()
         } else {
@@ -907,6 +946,9 @@ fn run_benchmark_repo(
         base: effective_config.base.clone(),
         head: effective_config.head.clone(),
         semantic_enabled: effective_config.semantic_enabled,
+        cache_enabled: effective_config.cache_enabled,
+        force_refresh: effective_config.force_refresh,
+        parallelism: effective_config.parallelism,
     };
 
     match evaluate_historical_commits(&repo_path, &options) {
@@ -1119,7 +1161,7 @@ fn benchmark_suite_id(
     );
     for repo in repositories {
         input.push_str(&format!(
-            "repo={}\nrepoId={}\nrevisionRangeId={}\nprivacy={}\nbase={}\nhead={}\nlimit={}\nrankingBudget={}\nmode={:?}\ntarget={}\nroles={:?}\ncommits={}\nerror={}\n",
+            "repo={}\nrepoId={}\nrevisionRangeId={}\nprivacy={}\nbase={}\nhead={}\nlimit={}\nrankingBudget={}\nparallelism={}\ncache={}\nforceRefresh={}\nmode={:?}\ntarget={}\nroles={:?}\ncommits={}\nerror={}\n",
             repo.name,
             repo.repo_id.as_deref().unwrap_or(""),
             repo.effective_config.revision_range_id.as_deref().unwrap_or(""),
@@ -1128,6 +1170,9 @@ fn benchmark_suite_id(
             repo.effective_config.head.as_deref().unwrap_or(""),
             repo.effective_config.limit,
             repo.effective_config.ranking_budget,
+            repo.effective_config.parallelism,
+            repo.effective_config.cache_enabled,
+            repo.effective_config.force_refresh,
             repo.effective_config.mode,
             repo.effective_config.target_agent,
             repo.effective_config.role_filters,
@@ -1189,6 +1234,10 @@ fn default_benchmark_ranking_budget() -> usize {
     10
 }
 
+fn default_benchmark_parallelism() -> usize {
+    1
+}
+
 fn default_benchmark_task_type() -> TaskType {
     TaskType::BugFix
 }
@@ -1203,154 +1252,10 @@ pub fn evaluate_historical_commits(
 ) -> Result<HistoricalEvalReport, InventoryError> {
     let eval_started = Instant::now();
     let repo_root = repo_root.as_ref();
-    let inventory = load_or_build_inventory(repo_root, &InventoryOptions::default())?;
-    let snapshot_paths = inventory
-        .files
-        .iter()
-        .map(|file| file.path.clone())
-        .collect::<Vec<_>>();
-    let roles_by_path = inventory
-        .files
-        .iter()
-        .map(|file| (file.path.clone(), file.role.clone()))
-        .collect::<BTreeMap<_, _>>();
-    let samples = historical_commit_samples(
-        repo_root,
-        &HistoricalCommitOptions {
-            limit: options.limit,
-            base: options.base.clone(),
-            head: options.head.clone(),
-        },
-    )?;
     let target_agent = normalized_target_agent(&options.target_agent);
     let budget = PackBudget::Standard;
     let ranking_budget = options.ranking_budget.max(1);
     let repo_id = pack_repo_id(repo_root);
-    let mut commits = Vec::new();
-    let mut ablation_rankings = initial_ablation_rankings();
-    let mut gap_reasons_by_commit = Vec::new();
-
-    for sample in samples {
-        let commit_started = Instant::now();
-        let changed_path_labels = sample.changed_paths.clone();
-        let task = if sample.title.trim().is_empty() {
-            format!("change {}", sample.sha)
-        } else {
-            sample.title.clone()
-        };
-        let eval_repo = HistoricalEvalWorktree::for_parent(
-            repo_root,
-            sample.parent_sha.as_deref(),
-            &snapshot_paths,
-        )?;
-        let eval_root = eval_repo.path();
-        let plan = prepare_context_plan_with_paths_history_and_semantic(
-            eval_root,
-            &task,
-            options.task_type.clone(),
-            &[],
-            false,
-            options.semantic_enabled,
-        )?;
-        let signals_by_path = signals_by_path(&plan);
-        let recommended_files = plan
-            .target_files
-            .iter()
-            .map(|target| target.path.clone())
-            .collect::<Vec<_>>();
-        let recommended_tests = plan
-            .related_tests
-            .iter()
-            .map(|test| test.path.clone())
-            .collect::<Vec<_>>();
-        let recommended_commands = plan
-            .recommended_commands
-            .iter()
-            .map(|command| command.command.clone())
-            .collect::<Vec<_>>();
-        let recommended_context_files =
-            context_file_ranking(&recommended_files, &recommended_tests, ranking_budget);
-        let lexical_baseline_files =
-            lexical_baseline_context_files(eval_root, &task, ranking_budget)?;
-        let file_hits_at_5 =
-            changed_file_hits(&sample.safe_changed_files, &recommended_context_files, 5);
-        let file_hits_at_10 =
-            changed_file_hits(&sample.safe_changed_files, &recommended_context_files, 10);
-        let lexical_baseline_hits_at_5 =
-            changed_file_hits(&sample.safe_changed_files, &lexical_baseline_files, 5);
-        let lexical_baseline_hits_at_10 =
-            changed_file_hits(&sample.safe_changed_files, &lexical_baseline_files, 10);
-        let missing_files_at_10 =
-            missing_changed_files(&sample.safe_changed_files, &recommended_context_files, 10);
-        for signal in ablation_signals() {
-            let ranking =
-                ablated_context_ranking(&recommended_context_files, &signals_by_path, &signal);
-            if let Some(rankings) = ablation_rankings
-                .iter_mut()
-                .find(|entry| entry.disabled_signal == signal)
-            {
-                rankings.rankings.push(ranking);
-            }
-        }
-        gap_reasons_by_commit.push(retrieval_gap_reasons(
-            &missing_files_at_10,
-            &lexical_baseline_files,
-            &signals_by_path,
-        ));
-        let source_changed_files = filter_changed_labels_by_role(
-            &changed_path_labels,
-            &sample.safe_changed_files,
-            |role| matches!(role, FileRole::Source),
-        );
-        let test_changed_files = filter_changed_labels_by_role(
-            &changed_path_labels,
-            &sample.safe_changed_files,
-            |role| matches!(role, FileRole::Test),
-        );
-        let source_hits_at_5 =
-            changed_file_hits(&source_changed_files, &recommended_context_files, 5).len();
-        let source_hits_at_10 =
-            changed_file_hits(&source_changed_files, &recommended_context_files, 10).len();
-        let test_hits_at_5 =
-            changed_file_hits(&test_changed_files, &recommended_context_files, 5).len();
-        let test_hits_at_10 =
-            changed_file_hits(&test_changed_files, &recommended_context_files, 10).len();
-
-        commits.push(HistoricalCommitEval {
-            sha: sample.sha,
-            task_hash: task_hash(&task),
-            task_type: options.task_type.clone(),
-            target_agent: target_agent.clone(),
-            changed_path_labels,
-            safe_changed_files: sample.safe_changed_files,
-            excluded_changed_file_count: sample.excluded_changed_file_count,
-            recommended_files,
-            recommended_tests,
-            recommended_context_files,
-            recommended_commands,
-            lexical_baseline_files,
-            file_hits_at_5,
-            file_hits_at_10,
-            lexical_baseline_hits_at_5,
-            lexical_baseline_hits_at_10,
-            missing_files_at_10,
-            source_files_changed: source_changed_files.len(),
-            source_hits_at_5,
-            source_hits_at_10,
-            test_files_changed: test_changed_files.len(),
-            test_hits_at_5,
-            test_hits_at_10,
-            low_information_task: is_low_information_task(&task),
-            confidence: plan.confidence,
-            elapsed_millis: elapsed_millis(commit_started),
-            source_text_logged: false,
-        });
-    }
-
-    let file_recall_at_5 = average_recall(&commits, 5);
-    let file_recall_at_10 = average_recall(&commits, 10);
-    let lexical_baseline_recall_at_5 = average_lexical_baseline_recall(&commits, 5);
-    let lexical_baseline_recall_at_10 = average_lexical_baseline_recall(&commits, 10);
     let refs = HistoricalEvalRefs {
         base: options.base.clone(),
         head: options.head.clone(),
@@ -1364,6 +1269,70 @@ pub fn evaluate_historical_commits(
         semantic_enabled: options.semantic_enabled,
     };
     let eval_range_id = historical_eval_range_id(&repo_id, &effective_filters, &refs);
+
+    if options.cache_enabled && !options.force_refresh {
+        if let Some(mut cached) = load_historical_eval_cache(&repo_id, &eval_range_id)? {
+            cached.runtime.cache_hits += 1;
+            cached.runtime.cache_misses = 0;
+            return Ok(cached);
+        }
+    }
+
+    let inventory = load_or_build_inventory(repo_root, &InventoryOptions::default())?;
+    let snapshot_paths = inventory
+        .files
+        .iter()
+        .map(|file| file.path.clone())
+        .collect::<Vec<_>>();
+    let roles_by_path = inventory
+        .files
+        .iter()
+        .map(|file| (file.path.clone(), file.role.clone()))
+        .collect::<BTreeMap<_, _>>();
+    let git_sample_started = Instant::now();
+    let samples = historical_commit_samples(
+        repo_root,
+        &HistoricalCommitOptions {
+            limit: options.limit,
+            base: options.base.clone(),
+            head: options.head.clone(),
+        },
+    )?;
+    let git_sample_millis = elapsed_millis(git_sample_started);
+    let parallelism = options.parallelism.max(1).min(samples.len().max(1));
+    let commit_results = evaluate_historical_commit_samples(
+        repo_root,
+        &snapshot_paths,
+        samples,
+        &target_agent,
+        options,
+        ranking_budget,
+        parallelism,
+    )?;
+    let mut commits = Vec::new();
+    let mut ablation_rankings = initial_ablation_rankings();
+    let mut gap_reasons_by_commit = Vec::new();
+    let mut ranking_millis = 0u64;
+    let mut pack_compiler_millis = 0u64;
+    for result in commit_results {
+        for (signal, ranking) in result.ablation_rankings {
+            if let Some(rankings) = ablation_rankings
+                .iter_mut()
+                .find(|entry| entry.disabled_signal == signal)
+            {
+                rankings.rankings.push(ranking);
+            }
+        }
+        gap_reasons_by_commit.push(result.gap_reasons);
+        ranking_millis += result.ranking_millis;
+        pack_compiler_millis += result.pack_compiler_millis;
+        commits.push(result.commit);
+    }
+
+    let file_recall_at_5 = average_recall(&commits, 5);
+    let file_recall_at_10 = average_recall(&commits, 10);
+    let lexical_baseline_recall_at_5 = average_lexical_baseline_recall(&commits, 5);
+    let lexical_baseline_recall_at_10 = average_lexical_baseline_recall(&commits, 10);
     let roles_by_label_path = roles_by_path_from_labels(&commits, &roles_by_path);
     let labels_by_path = labels_by_path_from_commits(&commits);
 
@@ -1383,9 +1352,17 @@ pub fn evaluate_historical_commits(
         &labels_by_path,
         10,
     );
-    let runtime = historical_eval_runtime_summary(&commits, elapsed_millis(eval_started));
+    let runtime = historical_eval_runtime_summary(
+        &commits,
+        elapsed_millis(eval_started),
+        usize::from(options.cache_enabled),
+        parallelism,
+        git_sample_millis,
+        ranking_millis,
+        pack_compiler_millis,
+    );
 
-    Ok(HistoricalEvalReport {
+    let report = HistoricalEvalReport {
         eval_range_id,
         repo_id,
         evaluated_commits: commits.len(),
@@ -1418,13 +1395,213 @@ pub fn evaluate_historical_commits(
         top_missing_files: top_missing_files(&commits, &roles_by_label_path, 10),
         commits,
         privacy_status: PrivacyStatus::local_only(),
-    })
+    };
+    if options.cache_enabled {
+        write_historical_eval_cache(&report.repo_id, &report.eval_range_id, &report)?;
+    }
+    Ok(report)
 }
 
 pub(crate) struct HistoricalEvalWorktree<'a> {
     path: PathBuf,
     _source_repo: &'a Path,
     _temp_dir: Option<tempfile::TempDir>,
+}
+
+struct HistoricalCommitEvalResult {
+    commit: HistoricalCommitEval,
+    ablation_rankings: Vec<(RetrievalSignalKind, Vec<String>)>,
+    gap_reasons: BTreeMap<String, String>,
+    ranking_millis: u64,
+    pack_compiler_millis: u64,
+}
+
+fn evaluate_historical_commit_samples(
+    repo_root: &Path,
+    snapshot_paths: &[String],
+    samples: Vec<HistoricalCommitSample>,
+    target_agent: &str,
+    options: &HistoricalEvalOptions,
+    ranking_budget: usize,
+    parallelism: usize,
+) -> Result<Vec<HistoricalCommitEvalResult>, InventoryError> {
+    if parallelism <= 1 || samples.len() <= 1 {
+        return samples
+            .into_iter()
+            .map(|sample| {
+                evaluate_historical_commit_sample(
+                    repo_root,
+                    snapshot_paths,
+                    sample,
+                    target_agent,
+                    options,
+                    ranking_budget,
+                )
+            })
+            .collect();
+    }
+
+    let mut indexed_results = Vec::new();
+    for (chunk_index, chunk) in samples.chunks(parallelism.max(1)).enumerate() {
+        let mut handles = Vec::new();
+        for (offset, sample) in chunk.iter().cloned().enumerate() {
+            let repo_root = repo_root.to_path_buf();
+            let snapshot_paths = snapshot_paths.to_vec();
+            let target_agent = target_agent.to_string();
+            let options = options.clone();
+            handles.push(thread::spawn(move || {
+                let result = evaluate_historical_commit_sample(
+                    &repo_root,
+                    &snapshot_paths,
+                    sample,
+                    &target_agent,
+                    &options,
+                    ranking_budget,
+                );
+                (offset, result)
+            }));
+        }
+        for handle in handles {
+            let (offset, result) = handle.join().map_err(|_| {
+                InventoryError::InvalidInput("historical eval worker thread panicked".to_string())
+            })?;
+            indexed_results.push((chunk_index * parallelism.max(1) + offset, result?));
+        }
+    }
+    indexed_results.sort_by_key(|(index, _)| *index);
+    Ok(indexed_results
+        .into_iter()
+        .map(|(_, result)| result)
+        .collect())
+}
+
+fn evaluate_historical_commit_sample(
+    repo_root: &Path,
+    snapshot_paths: &[String],
+    sample: HistoricalCommitSample,
+    target_agent: &str,
+    options: &HistoricalEvalOptions,
+    ranking_budget: usize,
+) -> Result<HistoricalCommitEvalResult, InventoryError> {
+    let commit_started = Instant::now();
+    let changed_path_labels = sample.changed_paths.clone();
+    let task = if sample.title.trim().is_empty() {
+        format!("change {}", sample.sha)
+    } else {
+        sample.title.clone()
+    };
+    let eval_repo = HistoricalEvalWorktree::for_parent(
+        repo_root,
+        sample.parent_sha.as_deref(),
+        snapshot_paths,
+    )?;
+    let eval_root = eval_repo.path();
+    let plan_started = Instant::now();
+    let plan = prepare_context_plan_with_paths_history_and_semantic(
+        eval_root,
+        &task,
+        options.task_type.clone(),
+        &[],
+        false,
+        options.semantic_enabled,
+    )?;
+    let pack_compiler_millis = elapsed_millis(plan_started);
+    let ranking_started = Instant::now();
+    let signals_by_path = signals_by_path(&plan);
+    let recommended_files = plan
+        .target_files
+        .iter()
+        .map(|target| target.path.clone())
+        .collect::<Vec<_>>();
+    let recommended_tests = plan
+        .related_tests
+        .iter()
+        .map(|test| test.path.clone())
+        .collect::<Vec<_>>();
+    let recommended_commands = plan
+        .recommended_commands
+        .iter()
+        .map(|command| command.command.clone())
+        .collect::<Vec<_>>();
+    let recommended_context_files =
+        context_file_ranking(&recommended_files, &recommended_tests, ranking_budget);
+    let lexical_baseline_files = lexical_baseline_context_files(eval_root, &task, ranking_budget)?;
+    let file_hits_at_5 =
+        changed_file_hits(&sample.safe_changed_files, &recommended_context_files, 5);
+    let file_hits_at_10 =
+        changed_file_hits(&sample.safe_changed_files, &recommended_context_files, 10);
+    let lexical_baseline_hits_at_5 =
+        changed_file_hits(&sample.safe_changed_files, &lexical_baseline_files, 5);
+    let lexical_baseline_hits_at_10 =
+        changed_file_hits(&sample.safe_changed_files, &lexical_baseline_files, 10);
+    let missing_files_at_10 =
+        missing_changed_files(&sample.safe_changed_files, &recommended_context_files, 10);
+    let ablation_rankings = ablation_signals()
+        .into_iter()
+        .map(|signal| {
+            let ranking =
+                ablated_context_ranking(&recommended_context_files, &signals_by_path, &signal);
+            (signal, ranking)
+        })
+        .collect::<Vec<_>>();
+    let gap_reasons = retrieval_gap_reasons(
+        &missing_files_at_10,
+        &lexical_baseline_files,
+        &signals_by_path,
+    );
+    let source_changed_files =
+        filter_changed_labels_by_role(&changed_path_labels, &sample.safe_changed_files, |role| {
+            matches!(role, FileRole::Source)
+        });
+    let test_changed_files =
+        filter_changed_labels_by_role(&changed_path_labels, &sample.safe_changed_files, |role| {
+            matches!(role, FileRole::Test)
+        });
+    let source_hits_at_5 =
+        changed_file_hits(&source_changed_files, &recommended_context_files, 5).len();
+    let source_hits_at_10 =
+        changed_file_hits(&source_changed_files, &recommended_context_files, 10).len();
+    let test_hits_at_5 =
+        changed_file_hits(&test_changed_files, &recommended_context_files, 5).len();
+    let test_hits_at_10 =
+        changed_file_hits(&test_changed_files, &recommended_context_files, 10).len();
+    let ranking_millis = elapsed_millis(ranking_started);
+
+    Ok(HistoricalCommitEvalResult {
+        commit: HistoricalCommitEval {
+            sha: sample.sha,
+            task_hash: task_hash(&task),
+            task_type: options.task_type.clone(),
+            target_agent: target_agent.to_string(),
+            changed_path_labels,
+            safe_changed_files: sample.safe_changed_files,
+            excluded_changed_file_count: sample.excluded_changed_file_count,
+            recommended_files,
+            recommended_tests,
+            recommended_context_files,
+            recommended_commands,
+            lexical_baseline_files,
+            file_hits_at_5,
+            file_hits_at_10,
+            lexical_baseline_hits_at_5,
+            lexical_baseline_hits_at_10,
+            missing_files_at_10,
+            source_files_changed: source_changed_files.len(),
+            source_hits_at_5,
+            source_hits_at_10,
+            test_files_changed: test_changed_files.len(),
+            test_hits_at_5,
+            test_hits_at_10,
+            low_information_task: is_low_information_task(&task),
+            confidence: plan.confidence,
+            elapsed_millis: elapsed_millis(commit_started),
+            source_text_logged: false,
+        },
+        ablation_rankings,
+        gap_reasons,
+        ranking_millis,
+        pack_compiler_millis,
+    })
 }
 
 impl<'a> HistoricalEvalWorktree<'a> {
@@ -1734,7 +1911,7 @@ fn historical_eval_range_id(
     refs: &HistoricalEvalRefs,
 ) -> String {
     task_hash(&format!(
-        "repo={repo_id}\nlimit={}\nrankingBudget={}\nmode={:?}\ntarget={}\nbudget={:?}\nsemantic={}\nbase={}\nhead={}",
+        "version={HISTORICAL_EVAL_CACHE_SCHEMA_VERSION}\nrepo={repo_id}\nlimit={}\nrankingBudget={}\nmode={:?}\ntarget={}\nbudget={:?}\nsemantic={}\nbase={}\nhead={}",
         filters.limit,
         filters.ranking_budget,
         filters.mode,
@@ -1744,6 +1921,55 @@ fn historical_eval_range_id(
         refs.base.as_deref().unwrap_or(""),
         refs.head.as_deref().unwrap_or("")
     ))
+}
+
+fn historical_eval_cache_path(repo_id: &str, eval_range_id: &str) -> PathBuf {
+    ctxpack_cache_root()
+        .join("repos")
+        .join(repo_id)
+        .join("eval-cache")
+        .join(format!("{eval_range_id}.json"))
+}
+
+fn load_historical_eval_cache(
+    repo_id: &str,
+    eval_range_id: &str,
+) -> Result<Option<HistoricalEvalReport>, InventoryError> {
+    let path = historical_eval_cache_path(repo_id, eval_range_id);
+    let content = match fs::read_to_string(&path) {
+        Ok(content) => content,
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(None),
+        Err(source) => return Err(InventoryError::Read { path, source }),
+    };
+    serde_json::from_str(&content)
+        .map(Some)
+        .map_err(|source| InventoryError::Deserialize { path, source })
+}
+
+fn write_historical_eval_cache(
+    repo_id: &str,
+    eval_range_id: &str,
+    report: &HistoricalEvalReport,
+) -> Result<(), InventoryError> {
+    let path = historical_eval_cache_path(repo_id, eval_range_id);
+    if let Some(parent) = path.parent() {
+        fs::create_dir_all(parent).map_err(|source| InventoryError::CreateDir {
+            path: parent.to_path_buf(),
+            source,
+        })?;
+    }
+    let json = serde_json::to_string_pretty(report).map_err(InventoryError::Serialize)?;
+    fs::write(&path, json).map_err(|source| InventoryError::Write { path, source })
+}
+
+fn ctxpack_cache_root() -> PathBuf {
+    if let Ok(value) = std::env::var("CTXPACK_HOME") {
+        return PathBuf::from(value);
+    }
+    std::env::var("HOME")
+        .map(PathBuf::from)
+        .unwrap_or_else(|_| PathBuf::from("."))
+        .join(".ctxpack")
 }
 
 #[derive(Debug, Clone)]
@@ -2263,6 +2489,11 @@ fn retrieval_gap_summaries(
 fn historical_eval_runtime_summary(
     commits: &[HistoricalCommitEval],
     total_millis: u64,
+    cache_misses: usize,
+    parallelism: usize,
+    git_sample_millis: u64,
+    ranking_millis: u64,
+    pack_compiler_millis: u64,
 ) -> HistoricalEvalRuntimeSummary {
     let commit_millis = commits
         .iter()
@@ -2296,6 +2527,12 @@ fn historical_eval_runtime_summary(
         } else {
             commit_millis as f32 / commits.len() as f32
         },
+        cache_hits: 0,
+        cache_misses,
+        parallelism,
+        git_sample_millis,
+        ranking_millis,
+        pack_compiler_millis,
         slow_commits,
     }
 }

@@ -89,6 +89,9 @@ pub fn retrieval_policy_experiment_report(
             base: None,
             head: None,
             semantic_enabled: false,
+            cache_enabled: false,
+            force_refresh: false,
+            parallelism: 1,
         },
     )?;
     let hybrid = evaluate_historical_commits(
@@ -101,6 +104,9 @@ pub fn retrieval_policy_experiment_report(
             base: None,
             head: None,
             semantic_enabled: true,
+            cache_enabled: false,
+            force_refresh: false,
+            parallelism: 1,
         },
     )?;
     let graph = build_graph_neighborhood_report(repo_root, Some(task), task_type, &[], 40, 80)?;
