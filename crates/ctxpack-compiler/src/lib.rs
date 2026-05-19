@@ -22,7 +22,8 @@ pub use eval::{
     BenchmarkRepoConfig, BenchmarkRepoEffectiveConfig, BenchmarkRepoReport, BenchmarkSuiteConfig,
     BenchmarkSuiteReport, BenchmarkThresholdCheck, EvalComparison, HistoricalChangedPathLabel,
     HistoricalCommitEval, HistoricalEvalEffectiveFilters, HistoricalEvalOptions,
-    HistoricalEvalRefs, HistoricalEvalReport, HistoricalMissingFileSummary, ProductProofMetric,
+    HistoricalEvalRefs, HistoricalEvalReport, HistoricalEvalRuntimeSummary,
+    HistoricalMissingFileSummary, HistoricalSlowCommitSummary, ProductProofMetric,
     ProductProofReport, RankingMetrics, RetrievalGapRecommendationArea, RetrievalGapSummary,
     RetrievalGapTargetStatus, RoleRecallMetric, SignalAblationResult, TokenRoiMetric,
 };
@@ -1241,6 +1242,20 @@ mod tests {
                 },
             ],
             retrieval_gap_summaries: Vec::new(),
+            runtime: HistoricalEvalRuntimeSummary {
+                total_millis: 120,
+                commit_millis: 120,
+                overhead_millis: 0,
+                average_commit_millis: 120.0,
+                slow_commits: vec![HistoricalSlowCommitSummary {
+                    sha: "abc123".to_string(),
+                    elapsed_millis: 120,
+                    safe_changed_file_count: 1,
+                    recommended_context_file_count: 1,
+                    missing_file_count_at_10: 0,
+                    low_information_task: false,
+                }],
+            },
             low_information_commit_count: 0,
             file_recall_at_5: 0.5,
             file_recall_at_10: 1.0,
@@ -1292,6 +1307,7 @@ mod tests {
                 test_hits_at_10: 0,
                 low_information_task: false,
                 confidence: 0.8,
+                elapsed_millis: 120,
                 source_text_logged: false,
             }],
             privacy_status: PrivacyStatus::local_only(),
@@ -1313,6 +1329,7 @@ mod tests {
             "signalAblations",
             "tokenRoi",
             "retrievalGapSummaries",
+            "runtime",
             "lowInformationCommitCount",
             "fileRecallAt5",
             "fileRecallAt10",
@@ -1343,6 +1360,10 @@ mod tests {
             0.0
         );
         assert_eq!(value["rankingComparison"]["recallLiftVsNoContextAtK"], 1.0);
+        assert_eq!(value["runtime"]["totalMillis"], 120);
+        assert_eq!(value["runtime"]["commitMillis"], 120);
+        assert_eq!(value["runtime"]["overheadMillis"], 0);
+        assert_eq!(value["runtime"]["slowCommits"][0]["sha"], "abc123");
         assert!(value["signalAblations"].as_array().unwrap().is_empty());
         assert_eq!(value["tokenRoi"][0]["budget"], "brief");
         assert_eq!(value["tokenRoi"][1]["largerPackAddsLittleValue"], true);
@@ -1356,6 +1377,7 @@ mod tests {
         assert_eq!(value["testRecallAt5"], 0.0);
         assert_eq!(value["topMissingFiles"][0]["path"], "src/missing.rs");
         assert_eq!(value["privacyStatus"]["localOnly"], true);
+        assert_eq!(value["commits"][0]["elapsedMillis"], 120);
         assert_eq!(value["commits"][0]["sourceTextLogged"], false);
         assert_eq!(
             value["commits"][0]["changedPathLabels"][0]["changeKind"],
@@ -1512,6 +1534,13 @@ mod tests {
                 missed_count: 2,
                 example_paths: vec!["src/auth/session.ts".to_string()],
             }],
+            runtime: HistoricalEvalRuntimeSummary {
+                total_millis: 0,
+                commit_millis: 0,
+                overhead_millis: 0,
+                average_commit_millis: 0.0,
+                slow_commits: Vec::new(),
+            },
             low_information_commit_count: 0,
             file_recall_at_5: 0.0,
             file_recall_at_10: 0.0,

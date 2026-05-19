@@ -142,6 +142,28 @@ Interpretation:
 - The hybrid policy is no longer worse than lexical on this real slice.
 - The lift is small; this is a correctness recovery, not a strong product win yet.
 
+Follow-up eval-diagnostics and related-test ranking result:
+
+- `evaluatedCommits: 20`
+- `fileRecallAt5: 0.4532`
+- `fileRecallAt10: 0.5186`
+- `lexicalBaselineRecallAt5: 0.4532`
+- `lexicalBaselineRecallAt10: 0.5008`
+- `ctxpackLiftAt5: 0.0`
+- `ctxpackLiftAt10: 0.0179`
+- `sourceRecallAt10: 0.4611`
+- `testRecallAt10: 0.4722`
+- runtime total: `191097ms`
+- runtime commit loop: `184130ms`
+- runtime overhead: `6967ms`
+- average commit runtime: `9206.5ms`
+
+Interpretation:
+
+- Aggregate retrieval quality stayed stable after the related-test ranking fix.
+- The latest MCP commit improved from one missing test file at 10 to zero missing files at 10 on the two-commit smoke slice.
+- Runtime diagnostics confirm the expensive part is per-commit parent-snapshot planning, not fixed eval overhead.
+
 Top retrieval gaps:
 
 1. MCP source files with `no_candidate_signal`.
@@ -172,6 +194,7 @@ Patched local-binary timings:
 | --- | ---: |
 | `eval history --limit 20` after sampler fix | 265.65s |
 | `eval history --limit 20` after ranking fixes | 279.18s |
+| `eval history --limit 20` after runtime/test ranking fixes | 191.10s |
 | `agent preview --target-agent all` after shared-plan fix | 45.41s |
 
 Efficiency conclusions:
@@ -376,17 +399,23 @@ Needed:
 
 ### REF-E2E-009: Related Tests Are Noisy
 
-Status: open.
+Status: improved.
 
 Evidence:
 
 - Related test output still includes GUI and broad regression tests for sparse NPE tasks.
 - Commands are now useful Gradle/JUnit class-level commands.
+- Latest MCP commit two-commit smoke moved from one missing test file at 10 to zero missing files at 10.
 
-Needed:
+Fixed:
 
 - Java/Gradle test command mapping.
 - Package-proximity and class-name matching should dominate broad resource/test references.
+- Content-only related-test matches are capped so broad helper tests do not outrank structurally matched class tests.
+
+Still needed:
+
+- Better Java package proximity for sparse AST tasks where no test class name directly matches the changed source file.
 
 ### REF-E2E-010: Deep Historical Eval Is Expensive
 
@@ -395,12 +424,13 @@ Status: open.
 Evidence:
 
 - Fixed `eval history --limit 20` took 265.65s on the RefactoringMiner clone.
+- Runtime-instrumented `eval history --limit 20` took 191.10s total, with 184.13s spent inside per-commit planning and 6.97s in overhead.
 
 Needed:
 
 - Cache parent snapshots or candidate plans.
 - Add a cheaper first-pass history eval mode.
-- Surface skipped/slow commit diagnostics in `HistoricalEvalReport`.
+- Use the new slow-commit diagnostics in `HistoricalEvalReport` to choose the next performance optimization.
 
 ## Validation
 
@@ -421,6 +451,9 @@ CARGO_INCREMENTAL=0 cargo test -p ctxpack-compiler agent_preview -- --nocapture
 CARGO_INCREMENTAL=0 cargo test -p ctxpack-compiler ranking -- --nocapture
 CARGO_INCREMENTAL=0 cargo test -p ctxpack-index lexical_search_ignores_common_task_verbs -- --nocapture
 CARGO_INCREMENTAL=0 cargo test -p ctxpack-index related_tests_uses_gradle_java_test_class_command -- --nocapture
+CARGO_INCREMENTAL=0 cargo test -p ctxpack-index related_tests -- --nocapture
+CARGO_INCREMENTAL=0 cargo test -p ctxpack-compiler historical_eval -- --nocapture
+CARGO_INCREMENTAL=0 cargo test -p ctxpack historical_eval_report_renders_source_free_metrics -- --nocapture
 CARGO_INCREMENTAL=0 cargo test -p ctxpack --test cli_compat search_related_tests_dependencies_and_eval_history_emit_json_shapes -- --nocapture
 CARGO_INCREMENTAL=0 cargo test -p ctxpack-mcp related_call -- --nocapture
 ```

@@ -18,7 +18,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::{Command as ProcessCommand, Stdio};
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::time::{Instant, SystemTime, UNIX_EPOCH};
 use uuid::Uuid;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -125,6 +125,27 @@ pub struct RetrievalGapSummary {
     pub recommendation_area: RetrievalGapRecommendationArea,
     pub missed_count: usize,
     pub example_paths: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct HistoricalEvalRuntimeSummary {
+    pub total_millis: u64,
+    pub commit_millis: u64,
+    pub overhead_millis: u64,
+    pub average_commit_millis: f32,
+    pub slow_commits: Vec<HistoricalSlowCommitSummary>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct HistoricalSlowCommitSummary {
+    pub sha: String,
+    pub elapsed_millis: u64,
+    pub safe_changed_file_count: usize,
+    pub recommended_context_file_count: usize,
+    pub missing_file_count_at_10: usize,
+    pub low_information_task: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
@@ -244,6 +265,7 @@ pub struct HistoricalEvalReport {
     pub signal_ablations: Vec<SignalAblationResult>,
     pub token_roi: Vec<TokenRoiMetric>,
     pub retrieval_gap_summaries: Vec<RetrievalGapSummary>,
+    pub runtime: HistoricalEvalRuntimeSummary,
     pub low_information_commit_count: usize,
     pub file_recall_at_5: f32,
     pub file_recall_at_10: f32,
@@ -404,6 +426,8 @@ pub struct HistoricalCommitEval {
     pub test_hits_at_10: usize,
     pub low_information_task: bool,
     pub confidence: f32,
+    #[serde(default)]
+    pub elapsed_millis: u64,
     pub source_text_logged: bool,
 }
 
@@ -1062,6 +1086,7 @@ pub fn evaluate_historical_commits(
     repo_root: impl AsRef<Path>,
     options: &HistoricalEvalOptions,
 ) -> Result<HistoricalEvalReport, InventoryError> {
+    let eval_started = Instant::now();
     let repo_root = repo_root.as_ref();
     let inventory = load_or_build_inventory(repo_root, &InventoryOptions::default())?;
     let snapshot_paths = inventory
@@ -1091,6 +1116,7 @@ pub fn evaluate_historical_commits(
     let mut gap_reasons_by_commit = Vec::new();
 
     for sample in samples {
+        let commit_started = Instant::now();
         let changed_path_labels = sample.changed_paths.clone();
         let task = if sample.title.trim().is_empty() {
             format!("change {}", sample.sha)
@@ -1201,6 +1227,7 @@ pub fn evaluate_historical_commits(
             test_hits_at_10,
             low_information_task: is_low_information_task(&task),
             confidence: plan.confidence,
+            elapsed_millis: elapsed_millis(commit_started),
             source_text_logged: false,
         });
     }
@@ -1241,6 +1268,7 @@ pub fn evaluate_historical_commits(
         &labels_by_path,
         10,
     );
+    let runtime = historical_eval_runtime_summary(&commits, elapsed_millis(eval_started));
 
     Ok(HistoricalEvalReport {
         eval_range_id,
@@ -1255,6 +1283,7 @@ pub fn evaluate_historical_commits(
         signal_ablations,
         token_roi,
         retrieval_gap_summaries,
+        runtime,
         low_information_commit_count: commits
             .iter()
             .filter(|commit| commit.low_information_task)
@@ -2114,6 +2143,50 @@ fn retrieval_gap_summaries(
     });
     summaries.truncate(limit.max(1));
     summaries
+}
+
+fn historical_eval_runtime_summary(
+    commits: &[HistoricalCommitEval],
+    total_millis: u64,
+) -> HistoricalEvalRuntimeSummary {
+    let commit_millis = commits
+        .iter()
+        .map(|commit| commit.elapsed_millis)
+        .sum::<u64>();
+    let mut slow_commits = commits
+        .iter()
+        .map(|commit| HistoricalSlowCommitSummary {
+            sha: commit.sha.clone(),
+            elapsed_millis: commit.elapsed_millis,
+            safe_changed_file_count: commit.safe_changed_files.len(),
+            recommended_context_file_count: commit.recommended_context_files.len(),
+            missing_file_count_at_10: commit.missing_files_at_10.len(),
+            low_information_task: commit.low_information_task,
+        })
+        .collect::<Vec<_>>();
+    slow_commits.sort_by(|left, right| {
+        right
+            .elapsed_millis
+            .cmp(&left.elapsed_millis)
+            .then_with(|| left.sha.cmp(&right.sha))
+    });
+    slow_commits.truncate(5);
+
+    HistoricalEvalRuntimeSummary {
+        total_millis,
+        commit_millis,
+        overhead_millis: total_millis.saturating_sub(commit_millis),
+        average_commit_millis: if commits.is_empty() {
+            0.0
+        } else {
+            commit_millis as f32 / commits.len() as f32
+        },
+        slow_commits,
+    }
+}
+
+fn elapsed_millis(started: Instant) -> u64 {
+    started.elapsed().as_millis().try_into().unwrap_or(u64::MAX)
 }
 
 fn labels_by_path_from_commits(

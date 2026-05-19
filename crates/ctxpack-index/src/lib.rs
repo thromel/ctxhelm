@@ -1156,6 +1156,66 @@ mod tests {
     }
 
     #[test]
+    fn related_tests_deduplicates_shared_source_terms_across_many_sources() {
+        let _guard = env_lock();
+        let temp = tempfile::tempdir().unwrap();
+        let repo = temp.path().join("repo");
+        let home = temp.path().join("ctxpack-home");
+        fs::create_dir_all(repo.join(".git")).unwrap();
+        fs::create_dir_all(repo.join("src/main/java/org/refactoringminer/mcp")).unwrap();
+        fs::create_dir_all(repo.join("src/test/java/org/refactoringminer/mcp")).unwrap();
+        fs::create_dir_all(repo.join("src/test/java/org/refactoringminer/test")).unwrap();
+        fs::write(repo.join("build.gradle"), "plugins { id 'java' }\n").unwrap();
+        fs::write(
+            repo.join("src/main/java/org/refactoringminer/mcp/RefactoringMinerMcpTools.java"),
+            "package org.refactoringminer.mcp; class RefactoringMinerMcpTools {}\n",
+        )
+        .unwrap();
+        fs::write(
+            repo.join("src/main/java/org/refactoringminer/mcp/RefactoringMinerMcpService.java"),
+            "package org.refactoringminer.mcp; class RefactoringMinerMcpService {}\n",
+        )
+        .unwrap();
+        fs::write(
+            repo.join("src/test/java/org/refactoringminer/mcp/RefactoringMinerMcpToolsTest.java"),
+            "package org.refactoringminer.mcp; class RefactoringMinerMcpToolsTest { RefactoringMinerMcpTools tools; }\n",
+        )
+        .unwrap();
+        fs::write(
+            repo.join("src/test/java/org/refactoringminer/test/TestBuilder.java"),
+            "package org.refactoringminer.test; class TestBuilder { String s = \"refactoringminer mcp refactoringminer mcp refactoringminer mcp\"; }\n",
+        )
+        .unwrap();
+        std::env::set_var("CTXPACK_HOME", &home);
+
+        let results = related_tests(
+            &repo,
+            &[
+                "src/main/java/org/refactoringminer/mcp/RefactoringMinerMcpTools.java".to_string(),
+                "src/main/java/org/refactoringminer/mcp/RefactoringMinerMcpService.java"
+                    .to_string(),
+            ],
+        )
+        .unwrap();
+
+        assert_eq!(
+            results[0].path,
+            "src/test/java/org/refactoringminer/mcp/RefactoringMinerMcpToolsTest.java"
+        );
+        let tools_test_position = results
+            .iter()
+            .position(|result| result.path.ends_with("RefactoringMinerMcpToolsTest.java"))
+            .unwrap();
+        let helper_position = results
+            .iter()
+            .position(|result| result.path.ends_with("TestBuilder.java"))
+            .unwrap();
+        assert!(tools_test_position < helper_position);
+
+        std::env::remove_var("CTXPACK_HOME");
+    }
+
+    #[test]
     fn related_tests_uses_content_mentions_and_excludes_non_inventory_files() {
         let _guard = env_lock();
         let temp = tempfile::tempdir().unwrap();

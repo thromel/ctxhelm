@@ -4,6 +4,7 @@ use crate::policy::{read_safe_source, SourceReadStatus, SOURCE_READ_MAX_BYTES};
 use crate::search::{count_occurrences, query_terms};
 use ctxpack_core::{CacheStatus, Diagnostic, DiagnosticSeverity, FileRole};
 use serde::{Deserialize, Serialize};
+use std::collections::BTreeSet;
 use std::fs;
 use std::path::{Path, PathBuf};
 
@@ -187,11 +188,14 @@ fn score_test_file(
         .unwrap_or(test_path_lower.as_str());
     let content = content.to_ascii_lowercase();
     let mut score = 0.0;
+    let mut structural_score = 0.0;
     let mut reasons = Vec::new();
+    let mut scored_identifiers = BTreeSet::new();
 
     for source in source_keys {
         if !source.stem.is_empty() && test_name.contains(&source.stem) {
             score += 9.0;
+            structural_score += 9.0;
             reasons.push(format!(
                 "test file name matches source stem `{}`",
                 source.stem
@@ -199,10 +203,12 @@ fn score_test_file(
         }
         if !source.directory.is_empty() && test_path_lower.contains(&source.directory) {
             score += 4.0;
+            structural_score += 4.0;
             reasons.push(format!("test path shares directory `{}`", source.directory));
         }
         if content.contains(&source.path) {
             score += 8.0;
+            structural_score += 8.0;
             reasons.push(format!(
                 "test content mentions source path `{}`",
                 source.path
@@ -210,6 +216,9 @@ fn score_test_file(
         }
         for identifier in &source.identifiers {
             if identifier.len() < 3 {
+                continue;
+            }
+            if !scored_identifiers.insert(identifier.clone()) {
                 continue;
             }
             let occurrences = count_occurrences(&content, identifier);
@@ -224,6 +233,9 @@ fn score_test_file(
 
     if score <= 0.0 {
         return None;
+    }
+    if structural_score == 0.0 {
+        score = score.min(6.0);
     }
 
     reasons.sort();
