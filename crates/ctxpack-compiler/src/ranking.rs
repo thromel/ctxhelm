@@ -93,6 +93,7 @@ pub(crate) fn rank_candidates(input: RankingInput) -> Vec<RankedCandidate> {
 
     for result in input.semantic_results {
         let kind = candidate_kind_for_role(&result.role);
+        let facet_label = semantic_facet_label(&result);
         candidates.add_path_signal(PathSignal {
             kind,
             path: result.path,
@@ -101,10 +102,7 @@ pub(crate) fn rank_candidates(input: RankingInput) -> Vec<RankedCandidate> {
             score: result.score.clamp(0.05, 0.95),
             weight: signal_weight(&RetrievalSignalKind::Semantic),
             reason_code: "semantic_match",
-            edge_label: Some(format!(
-                "{}:{}:{}",
-                result.provider.provider, result.provider.model, result.provider.distance_metric
-            )),
+            edge_label: Some(facet_label),
             commit_ids: Vec::new(),
             commit_count: 0,
             line_range: None,
@@ -235,6 +233,41 @@ pub(crate) fn rank_candidates(input: RankingInput) -> Vec<RankedCandidate> {
     }
 
     candidates.finish()
+}
+
+fn semantic_facet_label(result: &SemanticSearchResult) -> String {
+    let facets = result
+        .matched_facets
+        .iter()
+        .map(|facet| facet.label.clone())
+        .collect::<BTreeSet<_>>()
+        .into_iter()
+        .take(4)
+        .collect::<Vec<_>>()
+        .join(",");
+    let precision = result
+        .precision_status
+        .as_ref()
+        .map(|status| format!(":{status:?}").to_ascii_lowercase())
+        .unwrap_or_default();
+    if facets.is_empty() {
+        format!(
+            "{}:{}:{}{}",
+            result.provider.provider,
+            result.provider.model,
+            result.provider.distance_metric,
+            precision
+        )
+    } else {
+        format!(
+            "{}:{}:{}:{}{}",
+            result.provider.provider,
+            result.provider.model,
+            result.provider.distance_metric,
+            facets,
+            precision
+        )
+    }
 }
 
 pub(crate) fn select_ranked_candidates(
@@ -904,6 +937,9 @@ mod tests {
                 score: 0.91,
                 reason: "local semantic similarity".to_string(),
                 provider: SemanticProviderConfig::default(),
+                document_id: Some("sem_doc_auth".to_string()),
+                matched_facets: Vec::new(),
+                precision_status: None,
             }],
             roles: roles([("src/auth/session.ts", FileRole::Source)]),
             ..RankingInput::default()

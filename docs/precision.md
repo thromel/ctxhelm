@@ -32,4 +32,12 @@ The overlay is written to `.ctxpack/precision-edges.json`. ctxpack validates eve
 
 Imported precision edges appear in dependency results with kinds such as `precision:calls` or `precision:references`. They are additive: inferred imports still work when no overlay exists, and invalid or unreadable overlays produce non-fatal diagnostics instead of breaking context planning.
 
+Semantic status also reports precision availability:
+
+```bash
+ctxpack semantic status --repo /path/to/repo --format json
+```
+
+The `precisionStatus` field reports whether the local overlay is `unavailable`, `available`, `invalid`, or `degraded`, along with provider, edge count, rejected edge count, overlay path, and diagnostics. Missing or invalid overlays do not disable lexical, graph, test, or semantic-document retrieval. Valid overlays enrich semantic documents as `precision` facets and dependency edges as `precision:*` relations.
+
 Use precision overlays when exact reference/call information is available from a trusted local indexer. Avoid them when the edge export contains raw source snippets or private payloads; strip those fields before importing.

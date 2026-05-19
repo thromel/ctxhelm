@@ -7,8 +7,9 @@ use ctxpack_core::{
     RetrievalPolicyExperimentRow, SemanticProviderStatusReport, SemanticUsageSummary, TaskType,
 };
 use ctxpack_index::{
-    normalized_provider, semantic_vector_records, storage_status_for_repo, task_hash,
-    InventoryError, SemanticOptions, SemanticProviderConfig, StoreConfig,
+    normalized_provider, semantic_document_report, semantic_vector_records,
+    storage_status_for_repo, task_hash, InventoryError, SemanticDocumentOptions, SemanticOptions,
+    SemanticProviderConfig, StoreConfig,
 };
 use std::path::Path;
 
@@ -19,6 +20,8 @@ pub fn semantic_provider_status_report(
 ) -> Result<SemanticProviderStatusReport, InventoryError> {
     let repo_root = repo_root.as_ref();
     let provider = normalized_provider(&SemanticProviderConfig::default());
+    let document_report =
+        semantic_document_report(repo_root, &SemanticDocumentOptions { limit: usize::MAX })?;
     let local_records = semantic_vector_records(
         repo_root,
         &SemanticOptions {
@@ -73,6 +76,9 @@ pub fn semantic_provider_status_report(
         enabled_by_default: false,
         cloud_embeddings_allowed: false,
         cloud_reranking_allowed: false,
+        semantic_document_count: document_report.document_count,
+        semantic_facet_count: document_report.facet_count,
+        precision_status: document_report.precision_status,
         local_vector_count: local_records.len(),
         stored_vector_count,
         indexing_freshness: "safe_inventory_current_or_refreshed".to_string(),

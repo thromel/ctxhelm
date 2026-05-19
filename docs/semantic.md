@@ -15,6 +15,25 @@ ctxpack eval history --repo /path/to/repo --semantic
 
 The default provider is `local_hash` with model `ctxpack-local-hash-v1`, cosine similarity, and local vector metadata only. `local_hash` is deterministic scaffold/test behavior. It exists to prove the semantic-retrieval contract, storage privacy boundary, and agent provenance without claiming production retrieval quality.
 
+## Source-Free Semantic Documents
+
+Semantic retrieval now indexes source-free semantic documents instead of raw file bodies. A semantic document is built from safe repository metadata:
+
+- path, role, language, and safe file hash
+- extracted symbol names, kinds, line ranges, and sanitized signatures
+- import/dependency edges
+- related-test paths and source-free relation reasons
+- docs/card file references
+- optional precision edge labels from `.ctxpack/precision-edges.json`
+
+The document report is visible through semantic status:
+
+```bash
+ctxpack semantic status --repo /path/to/repo --format json
+```
+
+The report includes `semanticDocumentCount`, `semanticFacetCount`, `precisionStatus`, `sourceTextLogged`, and `privacyStatus`. `sourceTextLogged` remains `false`; raw source bodies are not embedded, exported, or persisted by the default semantic document path.
+
 Phase 56 also defines `local_fastembed` as the optional real local embedding backend. It is compiled only when `ctxpack-index` is built with the `local-embeddings` Cargo feature. Normal workspace builds keep `local_fastembed` unavailable and return the warning diagnostic `semantic_provider_unavailable` if it is requested, rather than falling back silently or calling a cloud provider.
 
 ## Index Vector Metadata
@@ -26,13 +45,13 @@ ctxpack index --repo /path/to/repo --semantic
 ctxpack storage status --repo /path/to/repo
 ```
 
-`--semantic` implies a safe inventory storage sync. The store records provider, model, dimensions, distance metric, file path, safe hash, privacy label, and numeric vector JSON for providers such as `local_hash` and `local_fastembed`. It does not store raw file contents, prompts, snippets, secrets, or cloud payloads.
+`--semantic` implies a safe inventory storage sync. The store records provider, model, dimensions, distance metric, file path, safe hash, privacy label, source-free semantic document metadata, and numeric vector JSON for providers such as `local_hash` and `local_fastembed`. It does not store raw file contents, prompts, snippets, secrets, or cloud payloads.
 
 ## Agent And MCP Use
 
 MCP `prepare_task`, `get_pack`, and `search` accept `semantic: true`. The field is optional and additive, so existing agents keep their lexical, symbol, graph, test, and history behavior unless they explicitly request semantic retrieval.
 
-Semantic evidence appears as the `semantic` retrieval signal with provider metadata in source-free provenance. Provider reports expose `providerRole`, `qualityBackend`, `localOnly`, `providerAvailable`, `providerStatus`, `cacheLocation`, and `degraded` so agents and release checks can distinguish deterministic scaffold behavior from a production local backend.
+Semantic evidence appears as the `semantic` retrieval signal with provider metadata in source-free provenance. Search results include a `documentId`, bounded `matchedFacets`, and precision status so agents can tell whether a semantic match came from symbol, dependency, doc, related-test, or precision evidence. Provider reports expose `providerRole`, `qualityBackend`, `localOnly`, `providerAvailable`, `providerStatus`, `cacheLocation`, `semanticDocumentCount`, `semanticFacetCount`, `precisionStatus`, and `degraded` so agents and release checks can distinguish deterministic scaffold behavior from a production local backend.
 
 Semantic retrieval is intentionally weighted below exact path, active diff, symbol, lexical, graph, and test evidence so conceptual matches cannot crowd out stronger code signals.
 
@@ -42,7 +61,7 @@ Semantic retrieval uses:
 
 - `.gitignore`, `.ctxpackignore`, and `.cursorignore`
 - generated-file and sensitive-file exclusions
-- source-read revalidation before vectorization
+- semantic-document construction before vectorization
 - local-only privacy status
 - no cloud embedding or reranking calls
 

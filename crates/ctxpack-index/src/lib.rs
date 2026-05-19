@@ -62,10 +62,11 @@ pub use search::{
     lexical_search, lexical_search_report, SearchOptions, SearchReport, SearchResult,
 };
 pub use semantic::{
-    normalized_provider, semantic_search, semantic_search_report, semantic_vector_records,
-    sync_semantic_index_to_store, SemanticOptions, SemanticProviderConfig, SemanticSearchReport,
-    SemanticSearchResult, SemanticVectorRecord, DEFAULT_SEMANTIC_DIMENSIONS,
-    DEFAULT_SEMANTIC_DISTANCE, DEFAULT_SEMANTIC_MODEL, DEFAULT_SEMANTIC_PROVIDER,
+    normalized_provider, semantic_document_report, semantic_search, semantic_search_report,
+    semantic_vector_records, sync_semantic_index_to_store, SemanticDocumentOptions,
+    SemanticOptions, SemanticProviderConfig, SemanticSearchReport, SemanticSearchResult,
+    SemanticVectorRecord, DEFAULT_SEMANTIC_DIMENSIONS, DEFAULT_SEMANTIC_DISTANCE,
+    DEFAULT_SEMANTIC_MODEL, DEFAULT_SEMANTIC_PROVIDER,
 };
 pub use storage::{
     initialize_store, inspect_store_schema, list_memory_cards, open_store_report,

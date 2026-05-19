@@ -735,11 +735,90 @@ pub struct SemanticProviderStatusReport {
     pub enabled_by_default: bool,
     pub cloud_embeddings_allowed: bool,
     pub cloud_reranking_allowed: bool,
+    pub semantic_document_count: usize,
+    pub semantic_facet_count: usize,
+    pub precision_status: PrecisionStatusReport,
     pub local_vector_count: usize,
     pub stored_vector_count: usize,
     pub indexing_freshness: String,
     #[serde(default)]
     pub usage: Vec<SemanticUsageSummary>,
+    pub source_text_logged: bool,
+    pub privacy_status: PrivacyStatus,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum PrecisionStatus {
+    Unavailable,
+    Available,
+    Stale,
+    Invalid,
+    Degraded,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct PrecisionStatusReport {
+    pub status: PrecisionStatus,
+    pub provider: Option<String>,
+    pub overlay_path: Option<String>,
+    pub edge_count: usize,
+    pub rejected_edge_count: usize,
+    pub stale: bool,
+    pub degraded: bool,
+    #[serde(default)]
+    pub diagnostics: Vec<Diagnostic>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum SemanticDocumentFacetKind {
+    Metadata,
+    Symbol,
+    Dependency,
+    RelatedTest,
+    Doc,
+    Precision,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct SemanticDocumentFacet {
+    pub kind: SemanticDocumentFacetKind,
+    pub label: String,
+    pub value: String,
+    pub path: Option<String>,
+    pub line_range: Option<LineRange>,
+    pub weight: f32,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct SemanticDocument {
+    pub id: String,
+    pub path: String,
+    pub role: FileRole,
+    pub language: Option<String>,
+    pub safe_hash: String,
+    pub summary: String,
+    #[serde(default)]
+    pub facets: Vec<SemanticDocumentFacet>,
+    pub source_text_logged: bool,
+    pub privacy_status: PrivacyStatus,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct SemanticDocumentReport {
+    pub document_count: usize,
+    pub facet_count: usize,
+    #[serde(default)]
+    pub documents: Vec<SemanticDocument>,
+    #[serde(default)]
+    pub diagnostics: Vec<Diagnostic>,
+    pub cache_status: CacheStatus,
+    pub precision_status: PrecisionStatusReport,
     pub source_text_logged: bool,
     pub privacy_status: PrivacyStatus,
 }
@@ -1418,6 +1497,73 @@ mod tests {
             value["targetFiles"][0]["attribution"][0]["reasonCode"],
             "lexical_match"
         );
+    }
+
+    #[test]
+    fn semantic_document_contracts_are_camel_case_and_source_free() {
+        let report = SemanticDocumentReport {
+            document_count: 1,
+            facet_count: 2,
+            documents: vec![SemanticDocument {
+                id: "sem_doc_1".to_string(),
+                path: "src/auth/session.ts".to_string(),
+                role: FileRole::Source,
+                language: Some("typescript".to_string()),
+                safe_hash: "abc123".to_string(),
+                summary: "source-free auth session document".to_string(),
+                facets: vec![
+                    SemanticDocumentFacet {
+                        kind: SemanticDocumentFacetKind::Symbol,
+                        label: "function".to_string(),
+                        value: "getSession(req): Promise<Session>".to_string(),
+                        path: Some("src/auth/session.ts".to_string()),
+                        line_range: Some(LineRange { start: 4, end: 4 }),
+                        weight: 1.0,
+                    },
+                    SemanticDocumentFacet {
+                        kind: SemanticDocumentFacetKind::Precision,
+                        label: "precision:references".to_string(),
+                        value: "source-free precision edge for getSession".to_string(),
+                        path: Some("tests/auth/session.test.ts".to_string()),
+                        line_range: None,
+                        weight: 0.95,
+                    },
+                ],
+                source_text_logged: false,
+                privacy_status: PrivacyStatus::local_only(),
+            }],
+            diagnostics: Vec::new(),
+            cache_status: CacheStatus {
+                status: CacheStatusKind::Hit,
+                path: Some(".ctxpack/index.json".to_string()),
+                diagnostics: Vec::new(),
+            },
+            precision_status: PrecisionStatusReport {
+                status: PrecisionStatus::Available,
+                provider: Some("fixture_scip".to_string()),
+                overlay_path: Some(".ctxpack/precision-edges.json".to_string()),
+                edge_count: 1,
+                rejected_edge_count: 0,
+                stale: false,
+                degraded: false,
+                diagnostics: Vec::new(),
+            },
+            source_text_logged: false,
+            privacy_status: PrivacyStatus::local_only(),
+        };
+
+        let value = serde_json::to_value(&report).unwrap();
+
+        assert_eq!(value["documentCount"], 1);
+        assert_eq!(value["facetCount"], 2);
+        assert_eq!(value["documents"][0]["sourceTextLogged"], false);
+        assert_eq!(value["documents"][0]["facets"][0]["lineRange"]["start"], 4);
+        assert_eq!(value["precisionStatus"]["status"], "available");
+        assert_eq!(value["privacyStatus"]["localOnly"], true);
+        assert!(value.get("document_count").is_none());
+        assert!(value.get("sourceText").is_none());
+        assert!(value.to_string().contains("getSession"));
+        assert!(!value.to_string().contains("return "));
     }
 
     #[test]

@@ -41,13 +41,13 @@ export CTXPACK_HOME="$home"
 "$ctxpack_bin" index --repo "$repo" --semantic --store-path "$store" >"$work_dir/index.txt"
 "$ctxpack_bin" storage status --repo "$repo" --path "$store" >"$work_dir/status.txt"
 "$ctxpack_bin" semantic status --repo "$repo" --format json >"$work_dir/semantic-status.json"
-"$ctxpack_bin" search "payment webhook validation" --repo "$repo" --limit 5 --semantic >"$search_json"
-"$ctxpack_bin" prepare-task "fix payment webhook validation" \
+"$ctxpack_bin" search "verifyPaymentWebhook payments webhooks" --repo "$repo" --limit 5 --semantic >"$search_json"
+"$ctxpack_bin" prepare-task "verifyPaymentWebhook payments webhooks" \
   --repo "$repo" \
   --mode bug-fix \
   --semantic \
   --no-trace >"$plan_json"
-"$ctxpack_bin" get-pack "fix payment webhook validation" \
+"$ctxpack_bin" get-pack "verifyPaymentWebhook payments webhooks" \
   --repo "$repo" \
   --mode bug-fix \
   --budget brief \
