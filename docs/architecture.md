@@ -44,6 +44,8 @@ edit, and shell tools after ctxpack tells them where to look.
 - [Graph neighborhoods](graph.md) documents source-free relationship reports.
 - [Candidate feature exports](feature-exports.md) document source-free feature
   rows for learning and diagnostics.
+- [Paired baselines](paired-baselines.md) documents lexical/no-context,
+  signal-only, and ablation comparison reports.
 - [Workspace manifests](workspace.md) documents local multi-repo workspace
   state.
 - [Agent integrations](integrations.md) documents AGENTS.md, MCP, and native

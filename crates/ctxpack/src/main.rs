@@ -9,13 +9,13 @@ use ctxpack_compiler::{
     eval_trace_for_plan, evaluate_historical_commits, export_candidate_features_for_task,
     generate_context_cards, generate_experience_cards, list_candidate_feature_exports,
     load_benchmark_suite_config, load_benchmark_suite_report, load_candidate_feature_export,
-    prepare_context_plan_with_paths_and_semantic, prepare_workspace_context_plan,
-    render_pack_inspector_html, render_pack_inspector_markdown, render_pack_markdown,
-    retrieval_policy_experiment_report, run_benchmark_suite, semantic_provider_status_report,
-    write_candidate_feature_export, BenchmarkComparisonReport, BenchmarkRegressionThreshold,
-    BenchmarkSuiteReport, CandidateFeatureComparisonReport, ContextCardsOptions,
-    ContextCardsReport, ExperienceCardsOptions, ExperienceCardsReport, HistoricalEvalOptions,
-    HistoricalEvalReport, ProductProofReport,
+    paired_baseline_analysis_report, prepare_context_plan_with_paths_and_semantic,
+    prepare_workspace_context_plan, render_pack_inspector_html, render_pack_inspector_markdown,
+    render_pack_markdown, retrieval_policy_experiment_report, run_benchmark_suite,
+    semantic_provider_status_report, write_candidate_feature_export, BenchmarkComparisonReport,
+    BenchmarkRegressionThreshold, BenchmarkSuiteReport, CandidateFeatureComparisonReport,
+    ContextCardsOptions, ContextCardsReport, ExperienceCardsOptions, ExperienceCardsReport,
+    HistoricalEvalOptions, HistoricalEvalReport, PairedBaselineAnalysisReport, ProductProofReport,
 };
 use ctxpack_core::{
     run_init, run_setup_check, AgentAdapter, AgentOutcomeComparisonReport, AgentPreviewReport,
@@ -722,6 +722,7 @@ enum EvalCommand {
     Outcome(EvalOutcomeArgs),
     History(EvalHistoryArgs),
     Health(EvalHealthArgs),
+    Baselines(EvalBaselineArgs),
     Benchmark(EvalBenchmarkArgs),
     Compare(EvalCompareArgs),
     Proof(EvalProofArgs),
@@ -1056,6 +1057,51 @@ struct EvalHealthArgs {
         help = "Number of historical commits to evaluate concurrently."
     )]
     parallelism: usize,
+    #[arg(long, value_enum, default_value_t = PackFormat::Markdown)]
+    format: PackFormat,
+}
+
+#[derive(Debug, Args)]
+struct EvalBaselineArgs {
+    #[arg(long)]
+    repo: Option<PathBuf>,
+    #[arg(long, default_value_t = 20)]
+    limit: usize,
+    #[arg(
+        long,
+        default_value_t = 10,
+        help = "Fixed context-file ranking budget used for paired baseline metrics."
+    )]
+    budget: usize,
+    #[arg(long, help = "Start revision for a stable historical eval range.")]
+    base: Option<String>,
+    #[arg(long, help = "End revision for a stable historical eval range.")]
+    head: Option<String>,
+    #[arg(long, value_enum, default_value_t = Mode::BugFix)]
+    mode: Mode,
+    #[arg(long, default_value = "generic")]
+    target_agent: String,
+    #[arg(
+        long,
+        help = "Enable explicit local semantic retrieval during historical eval."
+    )]
+    semantic: bool,
+    #[arg(
+        long,
+        help = "Reuse source-free historical eval report cache when available."
+    )]
+    cache: bool,
+    #[arg(
+        long,
+        help = "Refresh historical eval even when a cached report exists."
+    )]
+    force: bool,
+    #[arg(long, default_value_t = 1)]
+    parallelism: usize,
+    #[arg(long, default_value_t = 0.03)]
+    min_lift: f32,
+    #[arg(long, default_value_t = 0.03)]
+    max_regression: f32,
     #[arg(long, value_enum, default_value_t = PackFormat::Markdown)]
     format: PackFormat,
 }
@@ -2062,6 +2108,34 @@ fn main() -> Result<()> {
                 let report = build_retrieval_health_report(&historical, &policy);
                 match args.format {
                     PackFormat::Markdown => println!("{}", render_retrieval_health_report(&report)),
+                    PackFormat::Json => println!("{}", serde_json::to_string_pretty(&report)?),
+                }
+            }
+            EvalCommand::Baselines(args) => {
+                let start = args.repo.clone().unwrap_or(std::env::current_dir()?);
+                let repo = RepoRoot::discover_from(&start)?;
+                let historical = evaluate_historical_commits(
+                    &repo.path,
+                    &HistoricalEvalOptions {
+                        limit: args.limit,
+                        ranking_budget: args.budget,
+                        task_type: args.mode.into(),
+                        target_agent: args.target_agent,
+                        base: args.base,
+                        head: args.head,
+                        semantic_enabled: args.semantic,
+                        cache_enabled: args.cache,
+                        force_refresh: args.force,
+                        parallelism: args.parallelism,
+                    },
+                )?;
+                let report = paired_baseline_analysis_report(
+                    &historical,
+                    args.min_lift,
+                    args.max_regression,
+                );
+                match args.format {
+                    PackFormat::Markdown => println!("{}", render_paired_baseline_report(&report)),
                     PackFormat::Json => println!("{}", serde_json::to_string_pretty(&report)?),
                 }
             }
@@ -3742,6 +3816,90 @@ fn render_policy_experiment_report(report: &RetrievalPolicyExperimentReport) -> 
     output
 }
 
+fn render_paired_baseline_report(report: &PairedBaselineAnalysisReport) -> String {
+    let mut output = String::from("# ctxpack Paired Baseline Analysis\n\n");
+    output.push_str("This source-free report compares default ctxpack ranking against lexical, no-context, signal-only, and signal-ablation variants on the same historical commit corpus.\n\n");
+    output.push_str(&format!(
+        "- Eval range ID: `{}`\n- Repo ID: `{}`\n- Evaluated commits: `{}`\n- Ranking budget K: `{}`\n- Lexical delta@K: `{:+.2}`\n- Lexical status: `{:?}`\n- Validation coverage: `{:.2}`\n- Runtime total ms: `{}`\n- Runtime average commit ms: `{:.2}`\n- Runtime parallelism: `{}`\n- Source text logged: `{}`\n- Privacy: local-only `{}`\n\n",
+        report.eval_range_id,
+        report.repo_id,
+        report.evaluated_commits,
+        report.k,
+        report.lexical_delta_at_k,
+        report.lexical_status,
+        report.validation_coverage,
+        report.runtime.total_millis,
+        report.runtime.average_commit_millis,
+        report.runtime.parallelism,
+        report.source_text_logged,
+        report.privacy_status.local_only
+    ));
+
+    output.push_str("## Variants\n\n");
+    if report.rows.is_empty() {
+        output.push_str("- No variant rows were available.\n\n");
+    } else {
+        for row in &report.rows {
+            output.push_str(&format!(
+                "- `{}` `{:?}`: recall@K `{:.2}`, precision@K `{:.2}`, MRR@K `{:.2}`, test rate `{:.2}`, avg files `{:.2}`, delta default `{:+.2}`, delta lexical `{:+.2}`, verdict `{:?}` — {}\n",
+                row.variant,
+                row.family,
+                row.metrics.recall_at_k,
+                row.metrics.precision_at_k,
+                row.metrics.mrr_at_k,
+                row.metrics.test_recommendation_rate,
+                row.metrics.average_recommended_context_files,
+                row.recall_delta_vs_default_at_k,
+                row.recall_delta_vs_lexical_at_k,
+                row.verdict,
+                row.note
+            ));
+        }
+        output.push('\n');
+    }
+
+    output.push_str("## Token ROI\n\n");
+    if report.token_roi.is_empty() {
+        output.push_str("- No token ROI rows were available.\n\n");
+    } else {
+        for row in &report.token_roi {
+            output.push_str(&format!(
+                "- `{:?}`: cutoff `{}`, estimated tokens `{}`, useful targets `{}/{}`, useful targets per 1k tokens `{:.2}`, recall `{:.2}`, marginal useful targets `{:+}`, larger pack adds little value `{}`\n",
+                row.budget,
+                row.ranking_cutoff,
+                row.estimated_tokens,
+                row.useful_targets,
+                row.safe_targets,
+                row.useful_targets_per_1k_tokens,
+                row.recall_at_cutoff,
+                row.marginal_useful_targets_vs_previous_budget,
+                row.larger_pack_adds_little_value
+            ));
+        }
+        output.push('\n');
+    }
+
+    output.push_str("## Signal Saturation\n\n");
+    if report.signal_saturation.is_empty() {
+        output.push_str("- No signal saturation rows were available.\n\n");
+    } else {
+        for row in &report.signal_saturation {
+            output.push_str(&format!(
+                "- `{:?}`: commits with signal `{}`, average candidate files `{:.2}`, recall@K `{:.2}`\n",
+                row.signal,
+                row.commits_with_signal,
+                row.average_candidate_files,
+                row.recall_at_k
+            ));
+        }
+        output.push('\n');
+    }
+
+    output.push_str("## Retrieval Gaps\n\n");
+    push_retrieval_gap_summaries(&mut output, &report.gap_summaries);
+    output
+}
+
 fn push_named_values(output: &mut String, title: &str, values: &[String]) {
     output.push_str(&format!("### {title}\n\n"));
     if values.is_empty() {
@@ -4630,6 +4788,7 @@ mod tests {
                 ],
                 recommended_commands: vec!["pnpm test tests/auth.test.ts".to_string()],
                 lexical_baseline_files: vec!["README.md".to_string()],
+                signal_baseline_files: Vec::new(),
                 file_hits_at_5: vec!["src/auth.ts".to_string()],
                 file_hits_at_10: vec!["src/auth.ts".to_string()],
                 lexical_baseline_hits_at_5: vec![],

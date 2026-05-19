@@ -18,18 +18,20 @@ pub use eval::{
     compare_candidate_feature_exports, delete_candidate_feature_export, eval_trace_for_pack,
     eval_trace_for_plan, evaluate_historical_commits, export_candidate_features_for_task,
     list_candidate_feature_exports, load_benchmark_suite_config, load_benchmark_suite_report,
-    load_candidate_feature_export, run_benchmark_suite, run_benchmark_suite_config,
-    write_candidate_feature_export, BenchmarkComparisonReport, BenchmarkDefaults,
-    BenchmarkGapFamilyDelta, BenchmarkMetricDelta, BenchmarkRegressionThreshold,
+    load_candidate_feature_export, paired_baseline_analysis_report, run_benchmark_suite,
+    run_benchmark_suite_config, write_candidate_feature_export, BenchmarkComparisonReport,
+    BenchmarkDefaults, BenchmarkGapFamilyDelta, BenchmarkMetricDelta, BenchmarkRegressionThreshold,
     BenchmarkRepoBaseline, BenchmarkRepoBaselineStatus, BenchmarkRepoConfig,
     BenchmarkRepoEffectiveConfig, BenchmarkRepoReport, BenchmarkSuiteConfig, BenchmarkSuiteReport,
     BenchmarkThresholdCheck, CandidateFeatureComparisonReport, CandidateFeatureKindDelta,
     EvalComparison, HistoricalChangedPathLabel, HistoricalCommitEval,
     HistoricalEvalEffectiveFilters, HistoricalEvalOptions, HistoricalEvalRefs,
     HistoricalEvalReport, HistoricalEvalRuntimeSummary, HistoricalMissingFileSummary,
-    HistoricalSlowCommitSummary, ProductProofMetric, ProductProofReport, RankingMetrics,
-    RetrievalGapRecommendationArea, RetrievalGapSummary, RetrievalGapTargetStatus,
-    RoleRecallMetric, SignalAblationResult, TokenRoiMetric,
+    HistoricalSignalRanking, HistoricalSlowCommitSummary, PairedBaselineAnalysisReport,
+    PairedBaselineFamily, PairedBaselineRow, PairedBaselineVerdict, ProductProofMetric,
+    ProductProofReport, RankingMetrics, RetrievalGapRecommendationArea, RetrievalGapSummary,
+    RetrievalGapTargetStatus, RoleRecallMetric, SignalAblationResult, SignalSaturationMetric,
+    TokenRoiMetric,
 };
 pub use graph::build_graph_neighborhood_report;
 pub use packs::{
@@ -1235,6 +1237,95 @@ mod tests {
     }
 
     #[test]
+    fn paired_baseline_analysis_reports_variant_verdicts_without_source_text() {
+        let _guard = env_lock();
+        let temp = tempfile::tempdir().unwrap();
+        let repo = temp.path().join("repo");
+        let home = temp.path().join("ctxpack-home");
+        fs::create_dir_all(repo.join("src/auth")).unwrap();
+        fs::create_dir_all(repo.join("tests/auth")).unwrap();
+        run_git(&repo, &["init"]);
+        run_git(&repo, &["config", "user.email", "ctxpack@example.com"]);
+        run_git(&repo, &["config", "user.name", "ctxpack"]);
+        fs::write(
+            repo.join("src/auth/session.ts"),
+            "export function requireSession() { return true; }\n",
+        )
+        .unwrap();
+        fs::write(
+            repo.join("tests/auth/session.test.ts"),
+            "import { requireSession } from '../../src/auth/session';\n",
+        )
+        .unwrap();
+        run_git(&repo, &["add", "."]);
+        run_git(&repo, &["commit", "-m", "fix requireSession bug"]);
+        std::env::set_var("CTXPACK_HOME", &home);
+
+        let historical = evaluate_historical_commits(
+            &repo,
+            &HistoricalEvalOptions {
+                limit: 5,
+                ranking_budget: 10,
+                task_type: TaskType::BugFix,
+                target_agent: "codex".to_string(),
+                base: None,
+                head: None,
+                semantic_enabled: false,
+                cache_enabled: false,
+                force_refresh: false,
+                parallelism: 1,
+            },
+        )
+        .unwrap();
+        let report = paired_baseline_analysis_report(&historical, 0.03, 0.03);
+        let variants = report
+            .rows
+            .iter()
+            .map(|row| row.variant.as_str())
+            .collect::<Vec<_>>();
+
+        for expected in [
+            "ctxpack_default",
+            "lexical_baseline",
+            "no_context",
+            "semantic_only",
+            "graph_only",
+            "history_only",
+            "test_only",
+            "memory_only",
+            "feedback_weighted",
+        ] {
+            assert!(variants.contains(&expected), "missing {expected}");
+        }
+        assert!(variants
+            .iter()
+            .any(|variant| variant.starts_with("without_")));
+        assert_eq!(report.evaluated_commits, 1);
+        assert_eq!(report.k, 10);
+        assert_eq!(report.token_roi.len(), 3);
+        assert!(report.signal_saturation.iter().any(|row| {
+            row.signal == RetrievalSignalKind::RelatedTest && row.commits_with_signal >= 1
+        }));
+        assert_eq!(report.privacy_status, PrivacyStatus::local_only());
+        assert!(!report.source_text_logged);
+        assert_eq!(
+            report
+                .rows
+                .iter()
+                .find(|row| row.variant == "feedback_weighted")
+                .unwrap()
+                .verdict,
+            PairedBaselineVerdict::InsufficientEvidence
+        );
+        let json = serde_json::to_string(&report).unwrap();
+        assert!(json.contains("lexical_baseline"));
+        assert!(!json.contains("export function"));
+        assert!(!json.contains("fix requireSession bug"));
+
+        std::env::remove_var("CTXPACK_HOME");
+    }
+
+    #[test]
     fn historical_eval_reuses_source_free_cache_and_parallelism_metadata() {
         let _guard = env_lock();
         let temp = tempfile::tempdir().unwrap();
@@ -1470,6 +1561,7 @@ mod tests {
                 recommended_context_files: vec!["src/lib.rs".to_string()],
                 recommended_commands: Vec::new(),
                 lexical_baseline_files: vec!["src/lib.rs".to_string()],
+                signal_baseline_files: Vec::new(),
                 file_hits_at_5: vec!["src/lib.rs".to_string()],
                 file_hits_at_10: vec!["src/lib.rs".to_string()],
                 lexical_baseline_hits_at_5: vec!["src/lib.rs".to_string()],

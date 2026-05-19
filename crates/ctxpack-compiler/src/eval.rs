@@ -113,6 +113,68 @@ pub struct SignalAblationResult {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
+pub struct PairedBaselineAnalysisReport {
+    pub repo_id: String,
+    pub eval_range_id: String,
+    pub evaluated_commits: usize,
+    pub k: usize,
+    #[serde(default)]
+    pub rows: Vec<PairedBaselineRow>,
+    #[serde(default)]
+    pub token_roi: Vec<TokenRoiMetric>,
+    #[serde(default)]
+    pub signal_saturation: Vec<SignalSaturationMetric>,
+    pub lexical_delta_at_k: f32,
+    pub lexical_status: PairedBaselineVerdict,
+    pub validation_coverage: f32,
+    pub runtime: HistoricalEvalRuntimeSummary,
+    #[serde(default)]
+    pub gap_summaries: Vec<RetrievalGapSummary>,
+    pub source_text_logged: bool,
+    pub privacy_status: PrivacyStatus,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct PairedBaselineRow {
+    pub variant: String,
+    pub family: PairedBaselineFamily,
+    pub metrics: RankingMetrics,
+    pub recall_delta_vs_default_at_k: f32,
+    pub recall_delta_vs_lexical_at_k: f32,
+    pub verdict: PairedBaselineVerdict,
+    pub note: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct SignalSaturationMetric {
+    pub signal: RetrievalSignalKind,
+    pub commits_with_signal: usize,
+    pub average_candidate_files: f32,
+    pub recall_at_k: f32,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum PairedBaselineFamily {
+    Default,
+    Baseline,
+    SignalOnly,
+    Ablation,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum PairedBaselineVerdict {
+    Lift,
+    Neutral,
+    Regression,
+    InsufficientEvidence,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
 pub struct TokenRoiMetric {
     pub budget: PackBudget,
     pub ranking_cutoff: usize,
@@ -477,6 +539,13 @@ pub struct HistoricalMissingFileSummary {
     pub missed_count: usize,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct HistoricalSignalRanking {
+    pub signal: RetrievalSignalKind,
+    pub files: Vec<String>,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct HistoricalCommitEval {
@@ -492,6 +561,8 @@ pub struct HistoricalCommitEval {
     pub recommended_context_files: Vec<String>,
     pub recommended_commands: Vec<String>,
     pub lexical_baseline_files: Vec<String>,
+    #[serde(default)]
+    pub signal_baseline_files: Vec<HistoricalSignalRanking>,
     pub file_hits_at_5: Vec<String>,
     pub file_hits_at_10: Vec<String>,
     pub lexical_baseline_hits_at_5: Vec<String>,
@@ -843,6 +914,163 @@ pub fn build_retrieval_health_report(
         low_confidence_flags,
         source_text_logged: false,
         privacy_status: PrivacyStatus::local_only(),
+    }
+}
+
+pub fn paired_baseline_analysis_report(
+    historical: &HistoricalEvalReport,
+    min_lift: f32,
+    max_regression: f32,
+) -> PairedBaselineAnalysisReport {
+    let default = historical.ranking_comparison.combined.clone();
+    let lexical = historical.ranking_comparison.lexical_baseline.clone();
+    let no_context = historical.ranking_comparison.no_context_baseline.clone();
+    let mut rows = Vec::new();
+
+    rows.push(paired_baseline_row(
+        "ctxpack_default",
+        PairedBaselineFamily::Default,
+        default.clone(),
+        &default,
+        &lexical,
+        historical.evaluated_commits,
+        min_lift,
+        max_regression,
+        "Current hybrid ranking under the fixed context-file budget.",
+    ));
+    rows.push(paired_baseline_row(
+        "lexical_baseline",
+        PairedBaselineFamily::Baseline,
+        lexical.clone(),
+        &default,
+        &lexical,
+        historical.evaluated_commits,
+        min_lift,
+        max_regression,
+        "Exact/BM25-style path and identifier baseline under the same K.",
+    ));
+    rows.push(paired_baseline_row(
+        "no_context",
+        PairedBaselineFamily::Baseline,
+        no_context,
+        &default,
+        &lexical,
+        historical.evaluated_commits,
+        min_lift,
+        max_regression,
+        "Zero-file baseline for an agent starting without ctxpack context.",
+    ));
+
+    for (variant, signal) in [
+        ("semantic_only", RetrievalSignalKind::Semantic),
+        ("graph_only", RetrievalSignalKind::Dependency),
+        ("history_only", RetrievalSignalKind::CoChange),
+        ("test_only", RetrievalSignalKind::RelatedTest),
+        ("memory_only", RetrievalSignalKind::Memory),
+    ] {
+        rows.push(paired_baseline_row(
+            variant,
+            PairedBaselineFamily::SignalOnly,
+            signal_only_ranking_metrics(
+                &historical.commits,
+                historical.ranking_comparison.k,
+                signal,
+            ),
+            &default,
+            &lexical,
+            historical.evaluated_commits,
+            min_lift,
+            max_regression,
+            "Ranks only candidates carrying this signal in the default source-free candidate set.",
+        ));
+    }
+    rows.push(paired_baseline_row(
+        "feedback_weighted",
+        PairedBaselineFamily::SignalOnly,
+        empty_ranking_metrics(historical.ranking_comparison.k),
+        &default,
+        &lexical,
+        0,
+        min_lift,
+        max_regression,
+        "Insufficient evidence until feedback labels are joined with fixed-corpus candidate rows.",
+    ));
+
+    for ablation in &historical.signal_ablations {
+        rows.push(paired_baseline_row(
+            &format!("without_{:?}", ablation.disabled_signal).to_lowercase(),
+            PairedBaselineFamily::Ablation,
+            ablation.metrics.clone(),
+            &default,
+            &lexical,
+            historical.evaluated_commits,
+            min_lift,
+            max_regression,
+            "Default ranking with one signal family removed.",
+        ));
+    }
+
+    let lexical_delta_at_k = default.recall_at_k - lexical.recall_at_k;
+    let lexical_status = if lexical_delta_at_k < -max_regression {
+        PairedBaselineVerdict::Regression
+    } else if lexical_delta_at_k > min_lift {
+        PairedBaselineVerdict::Lift
+    } else {
+        PairedBaselineVerdict::Neutral
+    };
+    PairedBaselineAnalysisReport {
+        repo_id: historical.repo_id.clone(),
+        eval_range_id: historical.eval_range_id.clone(),
+        evaluated_commits: historical.evaluated_commits,
+        k: historical.ranking_comparison.k,
+        rows,
+        token_roi: historical.token_roi.clone(),
+        signal_saturation: signal_saturation_metrics(
+            &historical.commits,
+            historical.ranking_comparison.k,
+        ),
+        lexical_delta_at_k,
+        lexical_status,
+        validation_coverage: historical.test_recommendation_rate,
+        runtime: historical.runtime.clone(),
+        gap_summaries: historical.retrieval_gap_summaries.clone(),
+        source_text_logged: false,
+        privacy_status: PrivacyStatus::local_only(),
+    }
+}
+
+fn paired_baseline_row(
+    variant: &str,
+    family: PairedBaselineFamily,
+    metrics: RankingMetrics,
+    default: &RankingMetrics,
+    lexical: &RankingMetrics,
+    evaluated_commits: usize,
+    min_lift: f32,
+    max_regression: f32,
+    note: &str,
+) -> PairedBaselineRow {
+    let recall_delta_vs_default_at_k = metrics.recall_at_k - default.recall_at_k;
+    let recall_delta_vs_lexical_at_k = metrics.recall_at_k - lexical.recall_at_k;
+    let has_signal_evidence =
+        metrics.average_recommended_context_files > 0.0 || variant == "no_context";
+    let verdict = if evaluated_commits == 0 || !has_signal_evidence {
+        PairedBaselineVerdict::InsufficientEvidence
+    } else if recall_delta_vs_default_at_k < -max_regression {
+        PairedBaselineVerdict::Regression
+    } else if recall_delta_vs_lexical_at_k > min_lift {
+        PairedBaselineVerdict::Lift
+    } else {
+        PairedBaselineVerdict::Neutral
+    };
+    PairedBaselineRow {
+        variant: variant.to_string(),
+        family,
+        metrics,
+        recall_delta_vs_default_at_k,
+        recall_delta_vs_lexical_at_k,
+        verdict,
+        note: note.to_string(),
     }
 }
 
@@ -1551,6 +1779,8 @@ fn evaluate_historical_commit_sample(
         &lexical_baseline_files,
         &signals_by_path,
     );
+    let signal_baseline_files =
+        signal_baseline_rankings(&recommended_context_files, &signals_by_path);
     let source_changed_files =
         filter_changed_labels_by_role(&changed_path_labels, &sample.safe_changed_files, |role| {
             matches!(role, FileRole::Source)
@@ -1583,6 +1813,7 @@ fn evaluate_historical_commit_sample(
             recommended_context_files,
             recommended_commands,
             lexical_baseline_files,
+            signal_baseline_files,
             file_hits_at_5,
             file_hits_at_10,
             lexical_baseline_hits_at_5,
@@ -2366,6 +2597,37 @@ fn signals_by_path(plan: &ContextPlan) -> BTreeMap<String, Vec<RetrievalSignalKi
     signals
 }
 
+fn signal_baseline_rankings(
+    recommended_context_files: &[String],
+    signals_by_path: &BTreeMap<String, Vec<RetrievalSignalKind>>,
+) -> Vec<HistoricalSignalRanking> {
+    signal_baseline_signals()
+        .into_iter()
+        .map(|signal| HistoricalSignalRanking {
+            files: recommended_context_files
+                .iter()
+                .filter(|path| {
+                    signals_by_path
+                        .get(path.as_str())
+                        .is_some_and(|signals| signals.contains(&signal))
+                })
+                .cloned()
+                .collect(),
+            signal,
+        })
+        .collect()
+}
+
+fn signal_baseline_signals() -> Vec<RetrievalSignalKind> {
+    vec![
+        RetrievalSignalKind::Semantic,
+        RetrievalSignalKind::Dependency,
+        RetrievalSignalKind::RelatedTest,
+        RetrievalSignalKind::CoChange,
+        RetrievalSignalKind::Memory,
+    ]
+}
+
 fn push_signal(signals: &mut Vec<RetrievalSignalKind>, signal: RetrievalSignalKind) {
     if !signals.contains(&signal) {
         signals.push(signal);
@@ -2608,6 +2870,105 @@ fn ranking_metrics(
     }
 }
 
+fn signal_only_ranking_metrics(
+    commits: &[HistoricalCommitEval],
+    k: usize,
+    signal: RetrievalSignalKind,
+) -> RankingMetrics {
+    if commits.is_empty() {
+        return empty_ranking_metrics(k);
+    }
+    let recall_at_k = commits
+        .iter()
+        .map(|commit| {
+            let ranking = signal_ranking_for_commit(commit, &signal);
+            if commit.safe_changed_files.is_empty() {
+                0.0
+            } else {
+                changed_file_hits(&commit.safe_changed_files, &ranking, k).len() as f32
+                    / commit.safe_changed_files.len() as f32
+            }
+        })
+        .sum::<f32>()
+        / commits.len() as f32;
+    let precision_at_k = commits
+        .iter()
+        .map(|commit| {
+            let ranking = signal_ranking_for_commit(commit, &signal);
+            changed_file_hits(&commit.safe_changed_files, &ranking, k).len() as f32 / k as f32
+        })
+        .sum::<f32>()
+        / commits.len() as f32;
+    let mrr_at_k = commits
+        .iter()
+        .map(|commit| {
+            let ranking = signal_ranking_for_commit(commit, &signal);
+            reciprocal_rank_for_files(&commit.safe_changed_files, &ranking, k)
+        })
+        .sum::<f32>()
+        / commits.len() as f32;
+    let average_recommended_context_files = commits
+        .iter()
+        .map(|commit| signal_ranking_for_commit(commit, &signal).len().min(k))
+        .sum::<usize>() as f32
+        / commits.len() as f32;
+    RankingMetrics {
+        k,
+        recall_at_k,
+        precision_at_k,
+        mrr_at_k,
+        role_recall: Vec::new(),
+        test_recommendation_rate: test_recommendation_rate(commits),
+        average_recommended_context_files,
+    }
+}
+
+fn signal_saturation_metrics(
+    commits: &[HistoricalCommitEval],
+    k: usize,
+) -> Vec<SignalSaturationMetric> {
+    signal_baseline_signals()
+        .into_iter()
+        .map(|signal| {
+            let metrics = signal_only_ranking_metrics(commits, k, signal.clone());
+            let commits_with_signal = commits
+                .iter()
+                .filter(|commit| !signal_ranking_for_commit(commit, &signal).is_empty())
+                .count();
+            SignalSaturationMetric {
+                signal,
+                commits_with_signal,
+                average_candidate_files: metrics.average_recommended_context_files,
+                recall_at_k: metrics.recall_at_k,
+            }
+        })
+        .collect()
+}
+
+fn empty_ranking_metrics(k: usize) -> RankingMetrics {
+    RankingMetrics {
+        k,
+        recall_at_k: 0.0,
+        precision_at_k: 0.0,
+        mrr_at_k: 0.0,
+        role_recall: Vec::new(),
+        test_recommendation_rate: 0.0,
+        average_recommended_context_files: 0.0,
+    }
+}
+
+fn signal_ranking_for_commit(
+    commit: &HistoricalCommitEval,
+    signal: &RetrievalSignalKind,
+) -> Vec<String> {
+    commit
+        .signal_baseline_files
+        .iter()
+        .find(|ranking| &ranking.signal == signal)
+        .map(|ranking| ranking.files.clone())
+        .unwrap_or_default()
+}
+
 fn ranking_for_family(commit: &HistoricalCommitEval, family: RankingFamily) -> &[String] {
     match family {
         RankingFamily::Combined => &commit.recommended_context_files,
@@ -2676,6 +3037,20 @@ fn ranking_hits(commit: &HistoricalCommitEval, k: usize, family: RankingFamily) 
 fn reciprocal_rank(commit: &HistoricalCommitEval, k: usize, family: RankingFamily) -> f32 {
     let safe_changed_files = commit.safe_changed_files.iter().collect::<BTreeSet<_>>();
     ranking_for_family(commit, family)
+        .iter()
+        .take(k)
+        .position(|path| safe_changed_files.contains(path))
+        .map(|index| 1.0 / (index + 1) as f32)
+        .unwrap_or(0.0)
+}
+
+fn reciprocal_rank_for_files(
+    safe_changed_files: &[String],
+    recommended_context_files: &[String],
+    k: usize,
+) -> f32 {
+    let safe_changed_files = safe_changed_files.iter().collect::<BTreeSet<_>>();
+    recommended_context_files
         .iter()
         .take(k)
         .position(|path| safe_changed_files.contains(path))

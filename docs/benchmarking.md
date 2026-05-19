@@ -89,11 +89,12 @@ ctxpack eval benchmark --config .ctxpack/benchmarks/retrieval-quality.json --for
 ctxpack eval history --repo /path/to/repo --semantic --format json
 ctxpack eval history --repo /path/to/repo --cache --parallelism 4 --format markdown
 ctxpack eval history --repo /path/to/repo --cache --force --parallelism 4 --format json
+ctxpack eval baselines --repo /path/to/repo --limit 20 --budget 10 --format markdown
 ctxpack eval compare --base-report previous.json --head-report current.json --threshold fileRecallAt10=0.05
 ctxpack eval proof --config .ctxpack/benchmarks/retrieval-quality.json
 ```
 
-The Markdown report is meant for local inspection. The JSON report is the stable contract for future release gates, portfolio tables, and regression comparison. `ctxpack eval compare` consumes two benchmark JSON reports and emits source-free metric deltas, retrieval-gap family deltas, and threshold pass/fail checks. `ctxpack eval proof` runs the configured benchmark suite and emits the adoption-facing proof report with headline metrics, limitations, when ctxpack helps, when it does not, and future work from measured gaps.
+The Markdown report is meant for local inspection. The JSON report is the stable contract for future release gates, portfolio tables, and regression comparison. `ctxpack eval baselines` runs a paired source-free comparison for default ctxpack, lexical, no-context, signal-only, and ablation variants on the same historical corpus. `ctxpack eval compare` consumes two benchmark JSON reports and emits source-free metric deltas, retrieval-gap family deltas, and threshold pass/fail checks. `ctxpack eval proof` runs the configured benchmark suite and emits the adoption-facing proof report with headline metrics, limitations, when ctxpack helps, when it does not, and future work from measured gaps.
 
 ## Privacy Boundary
 
@@ -149,6 +150,7 @@ Use this as the first large-history regression target, not as a broad product cl
 - `rankingComparison.lexicalBaseline`: exact/BM25-style local search baseline under the same K budget.
 - `rankingComparison.noContextBaseline`: a zero-file baseline that represents an agent starting without ctxpack-provided repository context.
 - `signalAblations`: source-free lift checks after removing one retrieval signal family.
+- `ctxpack eval baselines`: paired comparison report with thresholded verdicts, lexical parity/regression status, token ROI, validation coverage, signal saturation, runtime, and retrieval-gap taxonomy.
 - `tokenRoi`: brief, standard, and deep budget estimates showing useful changed-file targets per 1k estimated context tokens.
 - `largerPackAddsLittleValue`: true when a larger budget adds no additional useful changed-file targets over the previous budget in the current fixed ranking.
 - `retrievalGapSummaries`: source-free failure families grouped by role, signal gap, package, path family, target status, and recommendation area.

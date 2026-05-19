@@ -31,10 +31,10 @@ This milestone turns ctxpack's retrieval-quality claims into repeatable, source-
 
 ### Paired Baselines And Ablations
 
-- [ ] **BASELINE-01**: Maintainer can compare ctxpack default ranking against lexical, no-context, graph-only, semantic-only, history-only, test-only, memory-only, and feedback-weighted policy variants on the same fixed corpus.
-- [ ] **BASELINE-02**: Reports include Recall@K, precision proxy, test recall, token ROI, validation coverage, missed-family taxonomy, signal saturation, runtime, and privacy status.
-- [ ] **BASELINE-03**: Product proof distinguishes lift, neutral, regression, and insufficient-evidence verdicts using configured thresholds instead of raw metric deltas alone.
-- [ ] **BASELINE-04**: Reports explicitly flag lexical parity or lexical regression so exact-token search strength is not hidden behind aggregate ctxpack scores.
+- [x] **BASELINE-01**: Maintainer can compare ctxpack default ranking against lexical, no-context, graph-only, semantic-only, history-only, test-only, memory-only, and feedback-weighted policy variants on the same fixed corpus.
+- [x] **BASELINE-02**: Reports include Recall@K, precision proxy, test recall, token ROI, validation coverage, missed-family taxonomy, signal saturation, runtime, and privacy status.
+- [x] **BASELINE-03**: Product proof distinguishes lift, neutral, regression, and insufficient-evidence verdicts using configured thresholds instead of raw metric deltas alone.
+- [x] **BASELINE-04**: Reports explicitly flag lexical parity or lexical regression so exact-token search strength is not hidden behind aggregate ctxpack scores.
 
 ### Learned Retrieval Policy
 
@@ -119,10 +119,10 @@ Explicitly excluded from v2.3 to keep the milestone focused on measured quality 
 | FEATURE-02 | Phase 52 | Complete |
 | FEATURE-03 | Phase 52 | Complete |
 | FEATURE-04 | Phase 52 | Complete |
-| BASELINE-01 | Phase 53 | Planned |
-| BASELINE-02 | Phase 53 | Planned |
-| BASELINE-03 | Phase 53 | Planned |
-| BASELINE-04 | Phase 53 | Planned |
+| BASELINE-01 | Phase 53 | Complete |
+| BASELINE-02 | Phase 53 | Complete |
+| BASELINE-03 | Phase 53 | Complete |
+| BASELINE-04 | Phase 53 | Complete |
 | POLICY-01 | Phase 54 | Planned |
 | POLICY-02 | Phase 54 | Planned |
 | POLICY-03 | Phase 54 | Planned |

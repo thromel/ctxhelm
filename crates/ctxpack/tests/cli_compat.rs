@@ -1512,6 +1512,78 @@ fn eval_benchmark_runs_named_suite_source_free() {
 }
 
 #[test]
+fn eval_baselines_reports_paired_variants_source_free() {
+    let fixture = fixture_repo();
+
+    let value = json_stdout(
+        Command::cargo_bin("ctxpack")
+            .unwrap()
+            .env(CTXPACK_HOME_ENV, &fixture.home)
+            .args(["eval", "baselines", "--repo"])
+            .arg(&fixture.repo)
+            .args(["--limit", "1", "--budget", "10", "--format", "json"])
+            .assert(),
+    );
+
+    assert_eq!(value["evaluatedCommits"], 1);
+    assert_eq!(value["k"], 10);
+    assert_eq!(value["privacyStatus"]["localOnly"], true);
+    assert_eq!(value["sourceTextLogged"], false);
+    assert_eq!(value["tokenRoi"].as_array().unwrap().len(), 3);
+    assert!(value["signalSaturation"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .any(|row| row["signal"] == "related_test"
+            && row["averageCandidateFiles"].as_f64().unwrap() >= 0.0));
+    assert!(value["rows"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .any(|row| row["variant"] == "ctxpack_default" && row["family"] == "default"));
+    assert!(value["rows"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .any(|row| row["variant"] == "lexical_baseline"));
+    assert!(value["rows"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .any(|row| row["variant"] == "no_context"));
+    assert!(value["rows"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .any(|row| row["variant"] == "graph_only"));
+    assert!(value["rows"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .any(|row| row["variant"] == "feedback_weighted"
+            && row["verdict"] == "insufficient_evidence"));
+    assert_no_source_or_prompt_text(&value);
+
+    Command::cargo_bin("ctxpack")
+        .unwrap()
+        .env(
+            CTXPACK_HOME_ENV,
+            fixture.temp.path().join("ctxpack-home-baselines-md"),
+        )
+        .args(["eval", "baselines", "--repo"])
+        .arg(&fixture.repo)
+        .args(["--limit", "1", "--budget", "10"])
+        .assert()
+        .success()
+        .stdout(contains("# ctxpack Paired Baseline Analysis"))
+        .stdout(contains("Variants"))
+        .stdout(contains("Token ROI"))
+        .stdout(contains("Signal Saturation"))
+        .stdout(contains("lexical_baseline"))
+        .stdout(contains("feedback_weighted"));
+}
+
+#[test]
 fn eval_compare_reports_source_free_metric_and_gap_deltas() {
     let fixture = fixture_repo();
     let suite_path = fixture.temp.path().join("ctxpack-benchmark.json");
