@@ -92,7 +92,10 @@ pub use workspace::{
 #[cfg(test)]
 use ctxpack_core::{EvalTrace, FeedbackOutcome, FileRole, PackBudget, SessionFeedbackEvent};
 #[cfg(test)]
-use git::{git_stdout_with_timeout, parse_git_log_name_only, parse_git_log_subject_name_only};
+use git::{
+    git_commit_subject_file_sets_with_timeouts, git_stdout_with_timeout, parse_git_log_name_only,
+    parse_git_log_subject_name_only,
+};
 #[cfg(test)]
 use std::{fs, path::Path, process::Command, time::Duration};
 #[cfg(test)]
@@ -1538,6 +1541,35 @@ mod tests {
             .all(|sample| sample.title != "first auth change"));
 
         std::env::remove_var("CTXPACK_HOME");
+    }
+
+    #[test]
+    fn historical_commit_collection_skips_per_commit_diff_failures() {
+        let _guard = env_lock();
+        let temp = tempfile::tempdir().unwrap();
+        let repo = temp.path().join("repo");
+        fs::create_dir_all(repo.join("src")).unwrap();
+        run_git(&repo, &["init"]);
+        run_git(&repo, &["config", "user.email", "ctxpack@example.com"]);
+        run_git(&repo, &["config", "user.name", "ctxpack"]);
+        fs::write(repo.join("src/first.ts"), "export const first = 1;\n").unwrap();
+        run_git(&repo, &["add", "."]);
+        run_git(&repo, &["commit", "-m", "first change"]);
+        fs::write(repo.join("src/second.ts"), "export const second = 2;\n").unwrap();
+        run_git(&repo, &["add", "."]);
+        run_git(&repo, &["commit", "-m", "second change"]);
+
+        let commits = git_commit_subject_file_sets_with_timeouts(
+            &repo,
+            2,
+            None,
+            None,
+            Duration::from_secs(1),
+            Duration::ZERO,
+        )
+        .unwrap();
+
+        assert!(commits.is_empty());
     }
 
     #[test]

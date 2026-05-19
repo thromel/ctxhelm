@@ -1,5 +1,6 @@
-use crate::packs::compile_context_pack_with_plan_and_paths_for_agent_and_semantic;
+use crate::packs::compile_context_pack_from_plan_for_agent;
 use crate::planning::normalized_target_agent;
+use crate::planning::prepare_context_plan_with_paths_and_semantic;
 use ctxpack_core::{
     AgentPreview, AgentPreviewReport, AgentPreviewStep, AgentPreviewSurface,
     AgentPreviewSurfaceKind, Diagnostic, DiagnosticSeverity, PackBudget, PrivacyStatus, TaskType,
@@ -18,33 +19,39 @@ pub fn build_agent_preview_report(
 ) -> Result<AgentPreviewReport, InventoryError> {
     let repo_root = repo_root.as_ref();
     let target_agents = expand_target_agents(target_agent);
+    let plan = prepare_context_plan_with_paths_and_semantic(
+        repo_root,
+        task,
+        task_type.clone(),
+        paths,
+        semantic_enabled,
+    )?;
+    let pack_target_agent = target_agents
+        .first()
+        .map(String::as_str)
+        .unwrap_or("generic");
+    let pack = compile_context_pack_from_plan_for_agent(
+        repo_root,
+        task,
+        &plan,
+        budget.clone(),
+        pack_target_agent,
+    );
+    let repo_id = pack.repo_id.clone();
+    let pack_resource_uri = format!(
+        "ctxpack://pack/{}/{}",
+        pack.id,
+        budget_resource_label(&budget)
+    );
     let mut previews = Vec::new();
     let mut diagnostics = Vec::new();
-    let mut repo_id = String::new();
 
     for agent in target_agents {
-        let (plan, pack) = compile_context_pack_with_plan_and_paths_for_agent_and_semantic(
-            repo_root,
-            task,
-            task_type.clone(),
-            budget.clone(),
-            paths,
-            &agent,
-            semantic_enabled,
-        )?;
-        if repo_id.is_empty() {
-            repo_id = pack.repo_id.clone();
-        }
-        let pack_resource_uri = format!(
-            "ctxpack://pack/{}/{}",
-            pack.id,
-            budget_resource_label(&budget)
-        );
         let mcp_resources = mcp_resources_for_plan(&pack_resource_uri, &plan);
         previews.push(AgentPreview {
             target_agent: agent.clone(),
             display_name: display_name(&agent).to_string(),
-            pack_resource_uri,
+            pack_resource_uri: pack_resource_uri.clone(),
             mcp_tools: vec![
                 "prepare_task".to_string(),
                 "search".to_string(),

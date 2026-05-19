@@ -626,6 +626,24 @@ fn git_commit_subject_file_sets(
     base: Option<&str>,
     head: Option<&str>,
 ) -> Result<Vec<GitCommitSubjectFiles>, InventoryError> {
+    git_commit_subject_file_sets_with_timeouts(
+        repo_root,
+        max_count,
+        base,
+        head,
+        Duration::from_millis(250),
+        Duration::from_millis(250),
+    )
+}
+
+pub(crate) fn git_commit_subject_file_sets_with_timeouts(
+    repo_root: &Path,
+    max_count: usize,
+    base: Option<&str>,
+    head: Option<&str>,
+    metadata_timeout: Duration,
+    diff_timeout: Duration,
+) -> Result<Vec<GitCommitSubjectFiles>, InventoryError> {
     let max_count = format!("--max-count={}", max_count.max(1));
     let rev = commit_range(base, head);
     let mut rev_list_args = vec!["rev-list", &max_count];
@@ -634,15 +652,17 @@ fn git_commit_subject_file_sets(
     let mut commits = Vec::new();
 
     for sha in shas.lines().map(str::trim).filter(|sha| !sha.is_empty()) {
-        let title = git_stdout_with_timeout(
+        let Ok(title) = git_stdout_with_timeout(
             repo_root,
             &["log", "-1", "--format=%s", sha],
-            Duration::from_millis(250),
-        )?
-        .trim()
-        .to_string();
-        let parent_sha = git_parent_sha(repo_root, sha)?;
-        let output = git_stdout_bytes_with_timeout(
+            metadata_timeout,
+        ) else {
+            continue;
+        };
+        let parent_sha = git_parent_sha_with_timeout(repo_root, sha, metadata_timeout)
+            .ok()
+            .flatten();
+        let Ok(output) = git_stdout_bytes_with_timeout(
             repo_root,
             &[
                 "diff-tree",
@@ -655,13 +675,15 @@ fn git_commit_subject_file_sets(
                 "-M",
                 sha,
             ],
-            Duration::from_millis(250),
-        )?;
+            diff_timeout,
+        ) else {
+            continue;
+        };
         let files = parse_git_name_status_z(&output);
         commits.push(GitCommitSubjectFiles {
             sha: sha.to_string(),
             parent_sha,
-            title,
+            title: title.trim().to_string(),
             files,
         });
     }
@@ -669,11 +691,15 @@ fn git_commit_subject_file_sets(
     Ok(commits)
 }
 
-fn git_parent_sha(repo_root: &Path, sha: &str) -> Result<Option<String>, InventoryError> {
+fn git_parent_sha_with_timeout(
+    repo_root: &Path,
+    sha: &str,
+    timeout: Duration,
+) -> Result<Option<String>, InventoryError> {
     let output = git_stdout_with_timeout(
         repo_root,
         &["rev-list", "--parents", "-n", "1", sha],
-        Duration::from_millis(250),
+        timeout,
     )?;
     Ok(output
         .split_whitespace()
