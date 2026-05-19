@@ -2,7 +2,27 @@
 
 ## Active
 
-No active milestone. Start the next milestone with `$gsd-new-milestone`.
+### v2.4 Production Semantic & Precision Backends
+
+**Goal:** Convert semantic and precision retrieval from local scaffolding into measured, policy-gated retrieval-quality improvements without breaking ctxpack's local-first and source-safe contract.
+
+**Status:** Planned.
+
+**Phases planned:** Phases 56-60, 5 plans total
+
+**Planned capabilities:**
+
+- Production local semantic backend with real embedding provider and source-free vector/provider metadata.
+- Precision-enriched semantic documents using safe inventory, symbols, tests, docs/cards, and optional SCIP/LSP status.
+- Structured query construction and hybrid fusion controls for task, commit, path, symbol, and error-like inputs.
+- Provider and reranker policy gates with cloud disabled by default.
+- Fixed-corpus semantic/precision evaluation gates and release proof that block neutral or regressive defaults.
+
+**Active artifacts:**
+
+- Roadmap: `.planning/ROADMAP.md`
+- Requirements: `.planning/REQUIREMENTS.md`
+- Research: `.planning/research/`
 
 ## Shipped
 
@@ -250,19 +270,6 @@ No active milestone. Start the next milestone with `$gsd-new-milestone`.
 - Audit: `.planning/milestones/v1.1-MILESTONE-AUDIT.md`
 
 ## Planned Product Vision
-
-### v2.4 Production Semantic & Precision Backends
-
-**Goal:** Move beyond deterministic local hash vectors and manual precision overlays into production-grade local semantic and precise-code intelligence.
-
-**Depends on:** v1.4 semantic retrieval, v1.5 precision edges, v2.3 eval gates.
-
-**Expected capabilities:**
-
-- Local vector index with real embedding backends and source-free metadata/cache controls.
-- Optional cloud embeddings and reranking behind explicit repo policy gates.
-- SCIP/LSP indexing automation for TypeScript, Python, Go, Rust, Java, and Kotlin where available.
-- Backward-compatible semantic/provider migration and rollback metadata.
 
 ### v2.5 Agent-Native Deep Integrations
 

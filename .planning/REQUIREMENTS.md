@@ -1,0 +1,124 @@
+# Requirements: Repo Context Packer v2.4 Production Semantic & Precision Backends
+
+**Defined:** 2026-05-19
+**Milestone:** v2.4 Production Semantic & Precision Backends
+**Core Value:** Given a coding task, ctxpack should return the smallest safe evidence set that makes an existing coding agent more likely to inspect the right files, run the right tests, and avoid irrelevant context.
+
+## v2.4 Requirements
+
+This milestone turns semantic and precision retrieval from measured scaffolding into production-quality, policy-gated retrieval infrastructure. The milestone must preserve the local-first and source-safe product contract, and it must not promote semantic defaults unless fixed-corpus gates show measurable lift.
+
+### Production Local Semantic Backend
+
+- [ ] **SEM-01**: Maintainer can build a local semantic index using a real embedding backend while keeping source text local and storing only source-free provider/vector metadata in reports.
+- [ ] **SEM-02**: Maintainer can inspect semantic provider status, model id, provider version, dimensions, cache location, freshness, privacy status, and degraded/error state through CLI and source-free reports.
+- [ ] **SEM-03**: Existing `local_hash` semantic behavior remains available only as deterministic test/scaffold behavior and is clearly labeled as not a quality backend.
+- [ ] **SEM-04**: Semantic search results expose typed candidate provenance, provider metadata, score/rank fields, and source-free eval features without changing existing CLI/MCP contracts incompatibly.
+
+### Precision-Enriched Semantic Documents
+
+- [ ] **PREC-01**: Maintainer can build typed semantic documents from safe inventory, paths, roles, symbols, signatures, imports, tests, docs/cards, and optional precision edges.
+- [ ] **PREC-02**: Maintainer can import or discover SCIP/LSP precision inputs and receive explicit status for unavailable, present, stale, failed, partial, or degraded precision data.
+- [ ] **PREC-03**: `prepare-task`, `search`, `related`, and `get-pack` can use precision-enriched semantic/graph evidence when available while falling back safely when precision is missing.
+- [ ] **PREC-04**: Precision-enriched outputs remain source-safe in eval exports, product proof, and diagnostic summaries.
+
+### Query Construction And Fusion
+
+- [ ] **QUERY-01**: Task, commit, current-diff, explicit-path, symbol, and error-like inputs are converted into structured query facets used consistently by lexical, semantic, graph, history, test, and rerank stages.
+- [ ] **QUERY-02**: Maintainer can inspect a source-free query construction trace showing which facets influenced each retrieval signal.
+- [ ] **QUERY-03**: Candidate fusion distinguishes lexical, semantic, precision, graph, history, test, memory, feedback, and active-anchor signals without letting semantic candidates crowd out explicit anchors.
+- [ ] **QUERY-04**: Retrieval ranking can run semantic and precision variants under fixed budget so comparisons are paired and reproducible.
+
+### Provider And Reranker Policy Gates
+
+- [ ] **PROVIDER-01**: Cloud embedding and cloud reranking providers are disabled by default and require explicit repo policy before any source-bearing data can be sent remotely.
+- [ ] **PROVIDER-02**: Provider policy records allowed data classes, redaction/source-snippet permissions, provider/model/version/dimensions, cost/runtime notes, and rollback target.
+- [ ] **PROVIDER-03**: Optional reranking can score first-stage lexical/semantic candidates through a local or cloud provider without expanding the default MCP tool surface.
+- [ ] **PROVIDER-04**: CLI/MCP outputs include provider privacy status and warnings whenever semantic or reranker candidates depend on non-default policy.
+
+### Evaluation Gates And Product Proof
+
+- [ ] **GATE-01**: Maintainer can run paired fixed-corpus ablations for default, lexical, local semantic, precision-enriched semantic, semantic-plus-precision, and reranked variants.
+- [ ] **GATE-02**: Reports include File Recall@K, MRR@K, test recall, precision proxy, runtime, cache-hit rate, token ROI, failure-family deltas, provider status, and privacy status.
+- [ ] **GATE-03**: Semantic/precision/reranker defaults are blocked unless configured thresholds beat baseline Recall@10, MRR@10, runtime, token ROI, and privacy gates.
+- [ ] **GATE-04**: Product proof and docs explain whether v2.4 produced lift, neutral results, or regressions on RefactoringMiner and any added semantic fixture corpus.
+
+## Future Requirements
+
+Deferred into later milestones from the remaining product vision.
+
+### v2.5 Agent-Native Deep Integrations
+
+- **AGENT-01**: User can verify Codex and Claude Code real-client tool-call evidence from release docs.
+- **AGENT-02**: User can verify Cursor and OpenCode integration behavior where clients expose machine-checkable proof.
+- **AGENT-03**: User can install thin prompts/hooks/rules without broad static context injection.
+- **AGENT-04**: User can use disconnected/cloud fallback cards when local MCP is unavailable.
+
+### v2.6 Desktop Inspector & Local UX
+
+- **UX-01**: User can open an optional desktop/local inspector shell for diagnostic review.
+- **UX-02**: User can visualize graph neighborhoods and retrieval health interactively.
+- **UX-03**: User can run setup/status checks from the UX without editing source files.
+- **UX-04**: User can keep daily coding inside existing agents; the UX remains diagnostic.
+
+### v2.7 Team Sync & Enterprise Controls
+
+- **TEAM-01**: Team can optionally sync source-free shared artifacts and policy metadata.
+- **TEAM-02**: Admin can configure enterprise privacy/audit controls and SSO.
+- **TEAM-03**: Team can expose a remote MCP endpoint only after explicit data-sharing review.
+- **TEAM-04**: User can keep a fully local-only fallback when sync is disabled.
+
+### v3.0 Context Governor
+
+- **GOVERN-01**: ctxpack can adapt retrieval/budget/memory/validation policy per task.
+- **GOVERN-02**: ctxpack can learn from source-free agent sessions and eval outcomes.
+- **GOVERN-03**: Maintainer can roll out, compare, and roll back context policies across repos.
+- **GOVERN-04**: Maintainer can inspect why a context policy selected or omitted evidence.
+
+## Out of Scope
+
+Explicitly excluded from v2.4 to keep the milestone focused on measured backend quality.
+
+| Feature | Reason |
+|---------|--------|
+| Cloud embeddings or cloud reranking by default | Local-first trust remains the product contract; cloud providers require explicit repo policy. |
+| Hosted vector database | Too heavy for local-first v2.4 and unnecessary before local eval proves value. |
+| Silent semantic default promotion | The May 19 semantic ablation showed no Recall@10 lift and worse runtime, so defaults require hard gates. |
+| Mandatory SCIP/LSP generation | Precision inputs are valuable but operationally fragile; normal `prepare_task` must work without them. |
+| Desktop inspector UX | v2.6 owns optional desktop/local UX. |
+| Deep Codex/Claude/Cursor/OpenCode hooks | v2.5 owns deeper agent-native integration proof. |
+| Autonomous source edits or test execution | Existing coding agents own editing, permissions, and shell execution. |
+
+## Traceability
+
+| Requirement | Phase | Status |
+|-------------|-------|--------|
+| SEM-01 | Phase 56 | Planned |
+| SEM-02 | Phase 56 | Planned |
+| SEM-03 | Phase 56 | Planned |
+| SEM-04 | Phase 56 | Planned |
+| PREC-01 | Phase 57 | Planned |
+| PREC-02 | Phase 57 | Planned |
+| PREC-03 | Phase 57 | Planned |
+| PREC-04 | Phase 57 | Planned |
+| QUERY-01 | Phase 58 | Planned |
+| QUERY-02 | Phase 58 | Planned |
+| QUERY-03 | Phase 58 | Planned |
+| QUERY-04 | Phase 58 | Planned |
+| PROVIDER-01 | Phase 59 | Planned |
+| PROVIDER-02 | Phase 59 | Planned |
+| PROVIDER-03 | Phase 59 | Planned |
+| PROVIDER-04 | Phase 59 | Planned |
+| GATE-01 | Phase 60 | Planned |
+| GATE-02 | Phase 60 | Planned |
+| GATE-03 | Phase 60 | Planned |
+| GATE-04 | Phase 60 | Planned |
+
+**Coverage:**
+
+- v2.4 requirements: 20 total
+- Mapped to phases: 20
+- Unmapped: 0
+
+---
+*Requirements defined: 2026-05-19*

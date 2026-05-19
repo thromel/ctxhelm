@@ -1,43 +1,105 @@
-# Architecture Research: v2.3 Evaluation Lab & Learned Retrieval Policy
+# Architecture Research: v2.4 Production Semantic & Precision Backends
 
-## Integration Points
+## Proposed Architecture
 
-- `crates/ctxpack-core/src/contracts.rs`
-- `crates/ctxpack-index/src/git.rs`
-- `crates/ctxpack-index/src/storage.rs`
-- `crates/ctxpack-compiler/src/eval.rs`
-- `crates/ctxpack-compiler/src/benchmark.rs`
-- `crates/ctxpack-compiler/src/policy.rs`
-- `crates/ctxpack/src/main.rs`
-- `scripts/release-gate.sh`
-- `docs/benchmarking.md`
-- `.planning/e2e/2026-05-19-refactoringminer-full-e2e.md`
+```text
+Task / commit / active context
+  -> query facet builder
+  -> lexical + graph + history + tests
+  -> semantic query
+  -> local embedding provider
+  -> vector candidate store
+  -> precision-enriched graph expansion
+  -> optional reranker/provider gate
+  -> paired eval gate
+  -> context compiler
+```
 
-## Build Order
+## New Internal Surfaces
 
-1. Define corpus manifests and lock the RefactoringMiner regression suite.
-2. Add eval cache/reuse semantics before expanding corpora so iteration stays practical.
-3. Export source-free candidate features and paired comparison rows.
-4. Add baseline/ablation analysis and thresholded verdicts.
-5. Add offline learned-policy experiment and explicit apply/disable gates.
-6. Wire bounded eval proof into docs and release gates.
+### SemanticDocument
 
-## Architecture Boundary
+Typed document used for embedding and reranking.
 
-The learning layer should consume only source-free features:
+Fields:
 
-- path role and extension
-- candidate kind
-- source signal scores
-- rank positions
-- graph distances
-- history/co-change counts
-- test relation confidence
-- memory/feedback usage counts
-- whether the candidate was eventually read, edited, validated, or part of hidden gold labels
+- id
+- kind: file, symbol, test, doc, commit, memory
+- path
+- symbol
+- role
+- language
+- text_hash
+- source_policy
+- semantic_text
+- included_facets
+- precision_status
+- token_estimate
 
-It should not consume raw source, prompts, snippets, terminal logs, issue descriptions, or private repo text.
+The stored eval/export form must be source-free. The runtime text can be materialized from safe inventory when building local embeddings.
 
-## Why This Before v2.4
+### EmbeddingProvider
 
-Production embeddings, SCIP automation, and cloud rerankers can all add cost and complexity. v2.3 builds the measurement harness that can later answer whether those backends improve Recall@K, precision, token ROI, runtime, and agent outcomes enough to justify adoption.
+Provider trait:
+
+- provider_id
+- model_id
+- dimensions
+- supports_local_only
+- supports_batch
+- max_input_tokens
+- embed_documents
+- embed_query
+- privacy_status
+- health/status
+
+Providers:
+
+- `local_hash`: deterministic test provider, never quality default
+- `local_fastembed`: first real local backend
+- future optional cloud providers under policy gates
+
+### PrecisionInputStatus
+
+Status object:
+
+- unavailable
+- present
+- stale
+- failed
+- partial
+- degraded
+
+Every context plan using precision should expose the status and avoid hiding fallback behavior.
+
+### RetrievalGate
+
+Gate object:
+
+- corpus id
+- variant id
+- baseline variant
+- Recall@10 delta
+- MRR@10 delta
+- test recall delta
+- runtime delta
+- token ROI delta
+- known-miss deltas
+- verdict: promote, keep opt-in, block, insufficient evidence
+
+## Data Flow
+
+1. Build semantic documents from safe inventory, symbols, tests, docs, cards, and optional precision edges.
+2. Embed documents locally by default.
+3. Persist source-free vector metadata and local vector files under ctxpack storage.
+4. At query time, construct lexical, semantic, and reranker queries from the same task facets.
+5. Fuse semantic candidates with existing lexical/graph/history/test candidates.
+6. Run paired evals before changing default policy.
+7. Render provider and gate metadata through CLI, MCP, docs, and product proof.
+
+## Architecture Constraints
+
+- No source text in eval reports, feature exports, or proof artifacts.
+- No cloud provider without explicit repo policy.
+- No mandatory SCIP/LSP generator for normal `prepare_task`.
+- No MCP tool surface expansion unless a new tool is unavoidable; prefer additive fields and existing `search`, `prepare_task`, `get_pack`, and `eval` surfaces.

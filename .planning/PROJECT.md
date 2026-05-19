@@ -6,15 +6,25 @@ Repo Context Packer is a local-first, read-only context broker that helps existi
 
 The current codebase is a Rust workspace with a CLI, MCP server, safe repository inventory, lexical, symbol, semantic, and precision-edge retrieval, related-test inference, dependency hints, current-diff anchors, context packs, generated context cards, local eval traces, historical retrieval evaluation, benchmark suites, source-free retrieval gap reporting, product proof generation, release hardening, and diagnostic inspector surfaces.
 
-## Current State: v2.3 Evaluation Lab & Learned Retrieval Policy Shipped
+## Current State: v2.4 Production Semantic & Precision Backends Planned
 
 The v2.3 milestone is complete locally and archived in the milestone index. ctxpack now has fixed source-free benchmark corpora, cached and deterministic parallel historical eval, candidate feature exports, paired baseline and ablation analysis, offline learned retrieval-policy proposals, and v2.3 product proof gates wired into release validation.
 
-The refreshed v2.3 evidence confirms that ctxpack can measure its retrieval claims locally and source-free, but product proof must stay honest: useful context at lexical parity is not world-class lift. The next milestone should use the v2.3 gates to decide which production semantic, precision, or integration work earns its complexity.
+The May 19 semantic ablation showed no RefactoringMiner Recall@10 lift from the current `local_hash` semantic scaffold and worse runtime. v2.4 is planned to turn semantic and precision retrieval into production-quality, policy-gated infrastructure through real local embeddings, precision-enriched semantic documents, query construction, optional provider/reranker gates, and fixed-corpus promotion gates.
 
 ## Current Milestone
 
-No active milestone. Start the next milestone with `$gsd-new-milestone`.
+v2.4 Production Semantic & Precision Backends.
+
+Goal: Convert semantic and precision retrieval from local scaffolding into measured, policy-gated retrieval-quality improvements without breaking ctxpack's local-first and source-safe contract.
+
+Planned phases:
+
+- Phase 56: Production Local Semantic Backend
+- Phase 57: Precision-Enriched Semantic Documents
+- Phase 58: Query Construction And Hybrid Fusion Controls
+- Phase 59: Provider And Reranker Policy Gates
+- Phase 60: Semantic/Precision Evaluation Gates And Release Proof
 
 ## Core Value
 
@@ -56,18 +66,20 @@ Given a coding task, ctxpack should return the smallest safe evidence set that m
 
 ### Active
 
-- Define the next milestone from the remaining product vision.
-- Use v2.3 proof gates before promoting production semantic, precision, cloud, or integration complexity.
-- Keep learned retrieval profiles opt-in until fixed-corpus thresholds and process-level agent evidence justify stronger defaults.
+- Build a production local semantic backend with a real embedding provider while keeping source text local and reports source-free.
+- Enrich semantic retrieval with typed symbol/test/docs context and optional SCIP/LSP precision status.
+- Add structured query construction and paired hybrid fusion controls for task, commit, explicit-path, symbol, and error-like inputs.
+- Keep cloud embeddings and reranking disabled by default behind explicit repo policy gates.
+- Block semantic, precision, or reranker defaults unless fixed-corpus gates prove measurable lift over existing baselines.
 
 ### Out of Scope
 
 - Autonomous code editing inside ctxpack — existing coding agents already own editing, permissions, approvals, and shell execution.
 - Cloud indexing, cloud embeddings, or cloud reranking by default — local-first trust is part of the product contract.
 - A standalone daily chat app or editor replacement — ctxpack should improve agent-native workflows instead of becoming another coding surface.
-- Hosted backend, team sync, SSO, or enterprise admin — useful later, but not part of v2.3 evaluation and policy learning.
-- Cloud indexing, cloud embeddings, cloud reranking, and production vector backend migration — planned for v2.4 after v2.3 eval gates can prove where those backends help.
-- Full SWE-bench Pro execution harness — v2.3 should learn from contamination-aware benchmark design without taking on a hosted benchmark platform.
+- Hosted backend, team sync, SSO, or enterprise admin — useful later, but not part of v2.4 production semantic/precision backend work.
+- Cloud indexing, cloud embeddings, and cloud reranking by default — v2.4 may add explicit provider policy gates, but defaults stay local-only.
+- Full SWE-bench Pro execution harness — ctxpack should learn from contamination-aware benchmark design without taking on a hosted benchmark platform.
 - Real-client agent outcome execution as a required release blocker — useful later, but environment-dependent and better suited to v2.5 deep integrations.
 
 ## Context
@@ -82,7 +94,7 @@ The codebase map in `.planning/codebase/` documents the current system:
 - `crates/ctxpack-mcp/src/lib.rs` is the stable facade for JSON-RPC/MCP protocol, tools, resources, prompts, diagnostics, session-scoped pack cache, and tool/resource response shaping implemented in focused MCP modules.
 - `crates/ctxpack/src/main.rs` owns the user-facing CLI and command output.
 
-v1 through v1.1 proved the local context broker, source-free safety model, agent-native protocol surface, packaging path, and setup/release gates. v1.2 proved the adoption claim with measured retrieval-quality evidence. v1.3 converted those measured needs into production-grade local storage. v1.4 used that storage foundation to add local semantic retrieval only as a measured, optional signal inside the existing context compiler. v1.5 added parser and precision-edge coverage where Java-heavy real repos exposed structural gaps. v1.6 turned durable repo summaries and session lessons into selective, source-free memory. v1.7 closed the learning loop by comparing ctxpack recommendations with what agents actually read, edit, test, and validate. v2.0 extended those local, source-free foundations across multi-repo workspaces and team-safe artifacts. v2.1 turned the accumulated evidence into inspectable diagnostic surfaces and added measured graph/embedding controls. v2.2 made the product installable, reproducible, and credible for public adoption. v2.3 turned the research and local evidence into repeatable evaluation, fast iteration, paired baselines, and source-free learned retrieval policy.
+v1 through v1.1 proved the local context broker, source-free safety model, agent-native protocol surface, packaging path, and setup/release gates. v1.2 proved the adoption claim with measured retrieval-quality evidence. v1.3 converted those measured needs into production-grade local storage. v1.4 used that storage foundation to add local semantic retrieval only as a measured, optional signal inside the existing context compiler. v1.5 added parser and precision-edge coverage where Java-heavy real repos exposed structural gaps. v1.6 turned durable repo summaries and session lessons into selective, source-free memory. v1.7 closed the learning loop by comparing ctxpack recommendations with what agents actually read, edit, test, and validate. v2.0 extended those local, source-free foundations across multi-repo workspaces and team-safe artifacts. v2.1 turned the accumulated evidence into inspectable diagnostic surfaces and added measured graph/embedding controls. v2.2 made the product installable, reproducible, and credible for public adoption. v2.3 turned the research and local evidence into repeatable evaluation, fast iteration, paired baselines, and source-free learned retrieval policy. v2.4 now uses that proof layer to build production semantic and precision backends only where fixed-corpus gates justify the added complexity.
 
 Milestone strategy from the original product vision:
 
@@ -129,6 +141,7 @@ Milestone strategy from the original product vision:
 | Retrieval proof before bigger architecture | Storage, embeddings, parser precision, team features, and UI should be justified by measured retrieval gaps instead of speculative architecture desire. | ✓ Validated in v1.2 |
 | Precision overlays should be source-free bridges first | Direct SCIP/LSP project setup is fragile; a source-free edge overlay gives agents precise structure without making language tooling mandatory. | ✓ Validated in v1.5 |
 | Eval lab before heavier backends | Research and local RefactoringMiner evidence show the next bottleneck is repeatable proof and learned selection policy, not adding another retrieval backend blindly. | Adopted for v2.3 |
+| Real semantic backends need hard gates | The May 19 semantic ablation showed the hash scaffold produced no Recall@10 lift and worse runtime, so v2.4 must treat stronger embeddings, precision, and reranking as gated hypotheses. | Adopted for v2.4 |
 
 ## Evolution
 
@@ -148,4 +161,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-05-19 after v2.3 evaluation lab and learned retrieval policy shipment*
+*Last updated: 2026-05-19 after v2.4 production semantic and precision backend planning*

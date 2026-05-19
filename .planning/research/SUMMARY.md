@@ -1,46 +1,100 @@
-# Research Summary: v2.3 Evaluation Lab & Learned Retrieval Policy
+# Research Summary: v2.4 Production Semantic & Precision Backends
 
-**Status:** External research refresh plus synthesis from the prior ctxpack retrieval, GraphRAG, memory, feedback, and RefactoringMiner E2E evidence.
+## Research Question
 
-## Research Thesis
+How should ctxpack turn semantic and precision retrieval from local scaffolding into a production-quality, measured retrieval improvement while preserving the local-first, read-only, source-safe product contract?
 
-ctxpack has enough retrieval modes to be useful, but it is not yet world-class because the product proof is still too small, too slow, and too close to lexical baseline on the hardest real repo slice. The next milestone should make quality claims repeatable and teach the system when each signal should dominate.
+## Current Evidence
 
-The research points to four priorities:
+The May 19 RefactoringMiner semantic ablation is the controlling project evidence:
 
-1. **Evaluate process, not only final answers.** ContextBench argues that coding-agent benchmarks need intermediate gold-context metrics because final task success hides whether agents retrieved and used the right code context.
-2. **Use realistic, contamination-aware corpora.** OpenAI now recommends SWE-bench Pro over SWE-bench Verified for frontier coding claims because Verified is contaminated and has flawed tests. ctxpack's own proof should therefore use fixed local corpora, held-out ranges where possible, and source-free metadata.
-3. **Optimize useful context under latency.** RepoBench separates retrieval, completion, and pipeline tasks; HEF and RepoFuse-style work emphasize that repository context must be cached, compressed, and fast enough to use repeatedly.
-4. **Learn selective policy before adding heavier backends.** Graph-based systems such as RepoGraph and GraphCoder support repository-wide navigation and subgraph retrieval, while SWE-ContextBench shows that accurately selected experience helps and unfiltered context can hurt.
+- Default File Recall@10: 0.518631
+- Semantic-enabled File Recall@10: 0.518631
+- Default MRR@10: 0.6375
+- Semantic-enabled MRR@10: 0.6350
+- Runtime increased from 84,398 ms to 104,901 ms
+- Semantic-only changed-file hits: 0/82
 
-## Prior ctxpack Evidence To Carry Forward
+Conclusion: the current `local_hash` provider is useful as a privacy-safe contract and eval scaffold, but it is not a quality backend. v2.4 must not enable semantic defaults until stronger backends and richer semantic documents pass fixed-corpus gates.
 
-- RefactoringMiner full E2E confirmed real-client Claude Code can call ctxpack through MCP against a large Java repository.
-- The same E2E exposed a small retrieval-quality margin: fixed ctxpack Recall@10 `0.5186` versus lexical baseline `0.5008`.
-- Historical eval over the 20-commit RefactoringMiner slice was slow enough to block tight iteration, with the documented run taking several minutes.
-- Several failures were policy failures, not missing backend failures: strong lexical hits were present but selected too low after graph/history/symbol saturation.
-- Related-test output improved after fixing Java/Gradle command inference, which confirms eval-driven iteration is productive.
+## Primary Findings
 
-## Milestone Direction
+### 1. Local embeddings should use a real model backend, not hashes
 
-v2.3 should not start by adding cloud embeddings, production vector stores, or a new GraphRAG framework. It should first build the evaluation lab that can prove those later changes help.
+`fastembed` is a practical Rust-first candidate because it exposes `TextEmbedding`, supported model listing, configurable init options, ONNX sources, quantization modes, and bring-your-own embedding/reranker model structs. That matches ctxpack's local-first architecture and lets the first production backend remain in-process and source-safe.
 
-Recommended milestone shape:
+Source: https://docs.rs/fastembed/
 
-1. Fixed benchmark corpus and RefactoringMiner regression suite.
-2. Warm historical eval cache and parallel runner.
-3. Source-free candidate feature export.
-4. Paired baseline and ablation reports with honest lift/neutral/regression verdicts.
-5. Offline learned retrieval-policy experiment that proposes weights but is not default until gated.
-6. Product proof and release-gate integration for bounded v2.3 eval smoke.
+### 2. Semantic text quality is as important as the embedding model
 
-## Sources
+Embedding raw file names or weak snippets will not beat lexical search on code. v2.4 should construct semantic documents from source-free and safe-source-derived structure:
 
-- OpenAI, "Why SWE-bench Verified no longer measures frontier coding capabilities": https://openai.com/index/why-we-no-longer-evaluate-swe-bench-verified/
-- RepoBench ICLR 2024 abstract: https://proceedings.iclr.cc/paper_files/paper/2024/hash/d191ba4c8923ed8fd8935b7c98658b5f-Abstract-Conference.html
-- ContextBench arXiv: https://arxiv.org/abs/2602.05892
-- SWE-ContextBench arXiv: https://arxiv.org/abs/2602.08316
-- SWE-Bench Pro arXiv: https://arxiv.org/abs/2509.16941
-- RepoGraph arXiv: https://arxiv.org/abs/2410.14684
-- Microsoft GraphRAG query overview: https://microsoft.github.io/graphrag/query/overview/
-- Hierarchical Embedding Fusion arXiv: https://arxiv.org/abs/2603.06593
+- path and package role
+- symbol names and signatures
+- imports/exports
+- test names and fixture names
+- precision callers/callees when available
+- docs/card summaries where source-safe
+- recent commit/task facets without storing private prompt text
+
+Tree-sitter remains the broad parsing layer because it exposes syntax node types and source positions. SCIP/LSP should enrich semantic documents and graph edges where available, not replace Tree-sitter.
+
+Sources:
+
+- https://tree-sitter.github.io/tree-sitter/using-parsers/2-basic-parsing.html
+- https://microsoft.github.io/language-server-protocol/
+- https://scip-code.org/
+
+### 3. SCIP should be an optional precision upgrade with degraded-mode reporting
+
+SCIP is a language-agnostic protocol for code navigation data such as go-to-definition and find-references. Sourcegraph's docs also show the operational reality: precise navigation is opt-in, requires indexes, and search-based navigation is the fallback when precise indexes are unavailable.
+
+ctxpack should mirror that: import or generate SCIP/LSP-derived edges when available, report missing/stale/degraded precision inputs, and fall back to lexical, Tree-sitter, graph, history, and test signals without failing the main workflow.
+
+Sources:
+
+- https://sourcegraph.com/docs/code-navigation/precise-code-navigation
+- https://scip-code.org/
+
+### 4. Cloud embeddings and reranking are valuable but must stay policy-gated
+
+Voyage and Cohere both describe the standard retrieval stack: embeddings produce vectors for semantic retrieval, rerankers score query-document relevance after first-stage retrieval, and reranking can refine BM25/vector candidates. OpenAI's current embedding docs also position embeddings as a relatedness/search primitive.
+
+For ctxpack, this supports optional provider interfaces, not default cloud use. Every cloud provider must require explicit repo policy, disclose source-sharing implications, record provider/model/dimension/version metadata, and pass paired eval gates before becoming recommended.
+
+Sources:
+
+- https://docs.voyageai.com/docs/introduction
+- https://docs.cohere.com/docs/rerank-overview
+- https://platform.openai.com/docs/models/text-embedding-3-small
+
+### 5. v2.4 needs quality gates, not another retrieval checkbox
+
+The product risk is adding an expensive semantic path that changes candidate sets without improving gold-file recall or agent behavior. v2.4 should require:
+
+- paired default vs semantic vs precision vs reranker comparisons on the same fixed corpus
+- Recall@10 and MRR lift thresholds
+- runtime and cache-hit budgets
+- failure-family deltas for known misses
+- provider rollback metadata
+- explicit "do not promote" verdicts when semantic is neutral or regressive
+
+## Recommended Architecture Decision
+
+Build v2.4 in this order:
+
+1. Production local embedding backend contract and vector store.
+2. Precision-enriched semantic document builder.
+3. Query construction pipeline for tasks, commits, paths, symbols, and errors.
+4. Provider/reranker policy gates.
+5. Fixed-corpus eval gates and release proof.
+
+Do not enable semantic by default as part of this milestone unless the eval gate proves measurable lift.
+
+## Open Risks
+
+- Local ONNX inference can add binary/download/runtime complexity.
+- Code-specialized cloud models may outperform local defaults but conflict with the trust contract.
+- SCIP automation can be fragile because language indexers depend on project setup.
+- Better embeddings may still fail if semantic documents are weak or if benchmark tasks are primarily exact-identifier tasks.
+- Eval lift on RefactoringMiner may not generalize to TS/Python repos without additional corpora.
