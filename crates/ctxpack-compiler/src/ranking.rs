@@ -278,6 +278,18 @@ fn select_target_files(candidates: &[RankedCandidate], file_budget: usize) -> Ve
 
     let mut selected = Vec::new();
     let mut selected_paths = BTreeSet::new();
+
+    for candidate in candidates
+        .iter()
+        .filter(|candidate| candidate.target_file.is_some())
+        .filter(|candidate| {
+            signal_score(&candidate.candidate, RetrievalSignalKind::Anchor).is_some()
+                || signal_score(&candidate.candidate, RetrievalSignalKind::CurrentDiff).is_some()
+        })
+    {
+        push_target(candidate, &mut selected, &mut selected_paths, file_budget);
+    }
+
     let mut lexical_floor = candidates
         .iter()
         .filter(|candidate| candidate.target_file.is_some())
@@ -905,6 +917,41 @@ mod tests {
         assert_signals(
             &file.candidate.signal_scores,
             &[RetrievalSignalKind::Lexical, RetrievalSignalKind::Semantic],
+        );
+    }
+
+    #[test]
+    fn selection_preserves_explicit_anchors_before_lexical_floor() {
+        let lexical_results = (0..8)
+            .map(|index| lexical(&format!("src/noisy-{index}.ts"), 24.0))
+            .collect::<Vec<_>>();
+        let candidates = rank_candidates(RankingInput {
+            anchors: vec![AnchorCandidate {
+                path: "src/active.ts".to_string(),
+                role: FileRole::Source,
+                current_diff: false,
+            }],
+            lexical_results,
+            roles: roles([
+                ("src/active.ts", FileRole::Source),
+                ("src/noisy-0.ts", FileRole::Source),
+                ("src/noisy-1.ts", FileRole::Source),
+                ("src/noisy-2.ts", FileRole::Source),
+                ("src/noisy-3.ts", FileRole::Source),
+                ("src/noisy-4.ts", FileRole::Source),
+                ("src/noisy-5.ts", FileRole::Source),
+                ("src/noisy-6.ts", FileRole::Source),
+                ("src/noisy-7.ts", FileRole::Source),
+            ]),
+            ..RankingInput::default()
+        });
+
+        let selection = select_ranked_candidates(&candidates, 3, 0);
+
+        assert_eq!(selection.target_files[0].path, "src/active.ts");
+        assert_eq!(
+            selection.target_files[0].reason,
+            "explicit path anchor from active context"
         );
     }
 

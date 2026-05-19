@@ -1,0 +1,135 @@
+{
+  "binaryIdentity": {
+    "fileName": "ctxpack",
+    "sha256": "2190ad78212810e0c8da6a628c458513103b1b33dc677f550daaf2d3f45ae5a2",
+    "source": "selected"
+  },
+  "ctxpackVersion": "ctxpack 1.1.0",
+  "optionalProofs": {
+    "benchmarkProductProof": "skipped",
+    "claudeRealClientProof": "skipped",
+    "codexRealClientProof": "skipped",
+    "cursorRealClientProof": "not_claimed",
+    "opencodeRealClientProof": "not_claimed",
+    "realClientRequired": false
+  },
+  "privacyStatus": {
+    "localOnly": true,
+    "remoteEmbeddingsUsed": false,
+    "remoteRerankingUsed": false,
+    "sourceTextLogged": false
+  },
+  "releaseArchive": {
+    "auditReport": "ctxpack-v1.1.0-aarch64-apple-darwin.audit.json",
+    "manifest": "ctxpack-v1.1.0-aarch64-apple-darwin.manifest.json",
+    "name": "ctxpack-v1.1.0-aarch64-apple-darwin.tar.gz",
+    "sha256": "6e2cb7f6daf3e1f5cec69df0695cb20e433bb2b825a78299dc3ab08a049ab74e"
+  },
+  "requiredChecks": [
+    {
+      "name": "cargo test --workspace",
+      "status": "passed"
+    },
+    {
+      "name": "scripts/check-release-docs.sh",
+      "status": "passed"
+    },
+    {
+      "name": "scripts/release-package.sh",
+      "status": "passed"
+    },
+    {
+      "name": "scripts/verify-release-archive.sh",
+      "status": "passed"
+    },
+    {
+      "name": "ctxpack --version",
+      "status": "passed"
+    },
+    {
+      "name": "ctxpack --help",
+      "status": "passed"
+    },
+    {
+      "name": "scripts/smoke-first-pack.sh",
+      "status": "passed"
+    },
+    {
+      "name": "scripts/smoke-storage.sh",
+      "status": "passed"
+    },
+    {
+      "name": "scripts/smoke-memory.sh",
+      "status": "passed"
+    },
+    {
+      "name": "scripts/smoke-feedback.sh",
+      "status": "passed"
+    },
+    {
+      "name": "scripts/smoke-workspace.sh",
+      "status": "passed"
+    },
+    {
+      "name": "scripts/smoke-shared-artifacts.sh",
+      "status": "passed"
+    },
+    {
+      "name": "scripts/smoke-inspector.sh",
+      "status": "passed"
+    },
+    {
+      "name": "scripts/smoke-retrieval-health.sh",
+      "status": "passed"
+    },
+    {
+      "name": "scripts/smoke-graph.sh",
+      "status": "passed"
+    },
+    {
+      "name": "scripts/smoke-policy-embedding.sh",
+      "status": "passed"
+    },
+    {
+      "name": "scripts/smoke-agent-preview.sh",
+      "status": "passed"
+    },
+    {
+      "name": "scripts/smoke-demo-artifacts.sh",
+      "status": "passed"
+    },
+    {
+      "name": "scripts/smoke-distribution-metadata.sh",
+      "status": "passed"
+    },
+    {
+      "name": "scripts/smoke-release-governance.sh",
+      "status": "passed"
+    },
+    {
+      "name": "scripts/smoke-semantic.sh",
+      "status": "passed"
+    },
+    {
+      "name": "scripts/smoke-precision.sh",
+      "status": "passed"
+    },
+    {
+      "name": "scripts/smoke-v23-eval.sh",
+      "status": "passed"
+    },
+    {
+      "name": "scripts/smoke-mcp-protocol.sh",
+      "status": "passed"
+    }
+  ],
+  "schemaVersion": 1,
+  "status": "passed",
+  "unsupportedActions": [
+    "publishing",
+    "tag creation",
+    "global agent config mutation",
+    "user project test execution",
+    "cloud upload"
+  ]
+}
