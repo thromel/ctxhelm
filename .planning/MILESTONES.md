@@ -2,15 +2,33 @@
 
 ## Active
 
+No active milestone. Start the next milestone with `$gsd-new-milestone`.
+
+## Shipped
+
 ### v2.3 Evaluation Lab & Learned Retrieval Policy
 
 **Goal:** Make ctxpack's retrieval-quality claims repeatable across fixed corpora, large histories, policy variants, and source-free learned retrieval experiments.
 
-**Status:** Requirements, roadmap, and research drafted.
+**Status:** Shipped locally: 2026-05-19.
 
-**Planned phases:** 50-55
+**Phases completed:** Phases 50-55, 6 plans total
 
-## Shipped
+**Key accomplishments:**
+
+- Added fixed source-free benchmark corpus manifests and locked RefactoringMiner v2.3 baseline metadata.
+- Added cached and deterministic parallel historical eval with runtime diagnostics.
+- Added source-free candidate feature exports for learning, diagnostics, and paired analysis.
+- Added paired baseline and ablation analysis with lexical lift/parity/regression verdicts.
+- Added offline learned retrieval-policy proposals with thresholded application and rollback controls.
+- Added v2.3 product proof summary, deterministic eval smoke, and release-gate proof boundary docs.
+
+**Archive:**
+
+- Roadmap: `.planning/milestones/v2.3-ROADMAP.md`
+- Requirements: `.planning/milestones/v2.3-REQUIREMENTS.md`
+- Audit: `.planning/milestones/v2.3-MILESTONE-AUDIT.md`
+- Phases: `.planning/milestones/v2.3-phases/`
 
 ### v2.2 Release & Distribution Hardening
 
