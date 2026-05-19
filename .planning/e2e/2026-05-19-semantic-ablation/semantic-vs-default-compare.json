@@ -1,0 +1,227 @@
+{
+  "baseSuiteId": "7d09746bb9baddc46fd23b489163cf12042b41e846e376f5e148c163d9b1ea23",
+  "headSuiteId": "497ad71e36ede84b4eb36ded477691c545e013627e8ee0ca9df04e7a3f4decb3",
+  "repositoryCount": 1,
+  "metricDeltas": [
+    {
+      "repository": "RefactoringMiner-clean",
+      "metric": "skippedPathCount",
+      "baseValue": 0.0,
+      "headValue": 0.0,
+      "delta": 0.0
+    },
+    {
+      "repository": "RefactoringMiner-clean",
+      "metric": "excludedChangedFileCount",
+      "baseValue": 0.0,
+      "headValue": 0.0,
+      "delta": 0.0
+    },
+    {
+      "repository": "RefactoringMiner-clean",
+      "metric": "fileRecallAt10",
+      "baseValue": 0.518631,
+      "headValue": 0.518631,
+      "delta": 0.0
+    },
+    {
+      "repository": "RefactoringMiner-clean",
+      "metric": "testRecallAt10",
+      "baseValue": 0.4722222,
+      "headValue": 0.4722222,
+      "delta": 0.0
+    },
+    {
+      "repository": "RefactoringMiner-clean",
+      "metric": "ctxpackLiftAt10",
+      "baseValue": 0.017857194,
+      "headValue": 0.017857194,
+      "delta": 0.0
+    },
+    {
+      "repository": "RefactoringMiner-clean",
+      "metric": "recallLiftVsNoContextAtK",
+      "baseValue": 0.518631,
+      "headValue": 0.518631,
+      "delta": 0.0
+    },
+    {
+      "repository": "RefactoringMiner-clean",
+      "metric": "tokenRoiBrief",
+      "baseValue": 5.75,
+      "headValue": 5.75,
+      "delta": 0.0
+    },
+    {
+      "repository": "RefactoringMiner-clean",
+      "metric": "tokenRoiStandard",
+      "baseValue": 1.2916666,
+      "headValue": 1.2916666,
+      "delta": 0.0
+    },
+    {
+      "repository": "RefactoringMiner-clean",
+      "metric": "tokenRoiDeep",
+      "baseValue": 0.31,
+      "headValue": 0.31,
+      "delta": 0.0
+    }
+  ],
+  "gapFamilyDeltas": [
+    {
+      "repository": "RefactoringMiner-clean",
+      "role": "config",
+      "signalGap": "no_candidate_signal",
+      "package": "docker",
+      "pathFamily": "docker/*",
+      "targetStatus": "currentReachable",
+      "recommendationArea": "storage",
+      "baseMissedCount": 1,
+      "headMissedCount": 1,
+      "delta": 0
+    },
+    {
+      "repository": "RefactoringMiner-clean",
+      "role": "docs",
+      "signalGap": "no_candidate_signal",
+      "package": "README.md",
+      "pathFamily": "*.md",
+      "targetStatus": "currentReachable",
+      "recommendationArea": "storage",
+      "baseMissedCount": 0,
+      "headMissedCount": 1,
+      "delta": 1
+    },
+    {
+      "repository": "RefactoringMiner-clean",
+      "role": "docs",
+      "signalGap": "no_candidate_signal",
+      "package": "documentation",
+      "pathFamily": "documentation/*.md",
+      "targetStatus": "currentReachable",
+      "recommendationArea": "storage",
+      "baseMissedCount": 2,
+      "headMissedCount": 0,
+      "delta": -2
+    },
+    {
+      "repository": "RefactoringMiner-clean",
+      "role": "source",
+      "signalGap": "no_candidate_signal",
+      "package": "src",
+      "pathFamily": "src/main/java/gr/uom/java/xmi/*.java",
+      "targetStatus": "currentReachable",
+      "recommendationArea": "storage",
+      "baseMissedCount": 3,
+      "headMissedCount": 3,
+      "delta": 0
+    },
+    {
+      "repository": "RefactoringMiner-clean",
+      "role": "source",
+      "signalGap": "no_candidate_signal",
+      "package": "src",
+      "pathFamily": "src/main/java/org/refactoringminer/astDiff/matchers/wrappers/*.java",
+      "targetStatus": "currentReachable",
+      "recommendationArea": "storage",
+      "baseMissedCount": 3,
+      "headMissedCount": 3,
+      "delta": 0
+    },
+    {
+      "repository": "RefactoringMiner-clean",
+      "role": "source",
+      "signalGap": "no_candidate_signal",
+      "package": "src",
+      "pathFamily": "src/main/java/org/refactoringminer/astDiff/utils/*.java",
+      "targetStatus": "currentReachable",
+      "recommendationArea": "storage",
+      "baseMissedCount": 3,
+      "headMissedCount": 3,
+      "delta": 0
+    },
+    {
+      "repository": "RefactoringMiner-clean",
+      "role": "source",
+      "signalGap": "no_candidate_signal",
+      "package": "src",
+      "pathFamily": "src/main/java/org/refactoringminer/mcp/*.java",
+      "targetStatus": "currentReachable",
+      "recommendationArea": "storage",
+      "baseMissedCount": 14,
+      "headMissedCount": 14,
+      "delta": 0
+    },
+    {
+      "repository": "RefactoringMiner-clean",
+      "role": "test",
+      "signalGap": "no_candidate_signal",
+      "package": "src",
+      "pathFamily": "src/test/java/org/refactoringminer/mcp/*.java",
+      "targetStatus": "currentReachable",
+      "recommendationArea": "testMapping",
+      "baseMissedCount": 8,
+      "headMissedCount": 8,
+      "delta": 0
+    },
+    {
+      "repository": "RefactoringMiner-clean",
+      "role": "test",
+      "signalGap": "ranked_below_budget_related_test",
+      "package": "src",
+      "pathFamily": "src/test/java/org/refactoringminer/mcp/*.java",
+      "targetStatus": "currentReachable",
+      "recommendationArea": "testMapping",
+      "baseMissedCount": 3,
+      "headMissedCount": 3,
+      "delta": 0
+    },
+    {
+      "repository": "RefactoringMiner-clean",
+      "role": "unknown",
+      "signalGap": "no_candidate_signal",
+      "package": "build.gradle",
+      "pathFamily": "*.gradle",
+      "targetStatus": "currentReachable",
+      "recommendationArea": "storage",
+      "baseMissedCount": 3,
+      "headMissedCount": 3,
+      "delta": 0
+    },
+    {
+      "repository": "RefactoringMiner-clean",
+      "role": "unknown",
+      "signalGap": "no_candidate_signal",
+      "package": "src",
+      "pathFamily": "src/main/resources/*.xml",
+      "targetStatus": "currentReachable",
+      "recommendationArea": "storage",
+      "baseMissedCount": 2,
+      "headMissedCount": 2,
+      "delta": 0
+    }
+  ],
+  "thresholdChecks": [
+    {
+      "repository": "RefactoringMiner-clean",
+      "metric": "fileRecallAt10",
+      "maxDrop": 0.01,
+      "delta": 0.0,
+      "passed": true
+    },
+    {
+      "repository": "RefactoringMiner-clean",
+      "metric": "testRecallAt10",
+      "maxDrop": 0.01,
+      "delta": 0.0,
+      "passed": true
+    }
+  ],
+  "passed": true,
+  "privacyStatus": {
+    "localOnly": true,
+    "remoteEmbeddingsUsed": false,
+    "remoteRerankingUsed": false,
+    "redactionsApplied": 0
+  }
+}

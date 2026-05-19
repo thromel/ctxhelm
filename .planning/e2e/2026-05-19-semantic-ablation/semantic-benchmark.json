@@ -1,0 +1,3520 @@
+{
+  "manifestVersion": "ctxpack-benchmark-corpus-v2.3",
+  "suiteName": "refactoringminer-semantic-ablation",
+  "suiteId": "497ad71e36ede84b4eb36ded477691c545e013627e8ee0ca9df04e7a3f4decb3",
+  "corpusId": "ctxpack-semantic-ablation-refactoringminer-local-semantic-20",
+  "privacyLabel": "source_free_local",
+  "description": "Local semantic retrieval variant for RefactoringMiner semantic ablation.",
+  "generatedAtUnixSeconds": 1779177595,
+  "repositoryCount": 1,
+  "evaluatedRepositoryCount": 1,
+  "evaluatedCommitCount": 20,
+  "repositories": [
+    {
+      "name": "RefactoringMiner-clean",
+      "repoId": "ee7cf3ad-fce8-5793-83f0-313a1cb32552",
+      "effectiveConfig": {
+        "revisionRangeId": "refactoringminer-semantic-ablation-head-20",
+        "privacyLabel": "source_free_local",
+        "base": null,
+        "head": null,
+        "limit": 20,
+        "rankingBudget": 10,
+        "mode": "bug_fix",
+        "targetAgent": "claude-code",
+        "semanticEnabled": true,
+        "cacheEnabled": false,
+        "forceRefresh": true,
+        "parallelism": 4,
+        "roleFilters": [
+          "source",
+          "test"
+        ]
+      },
+      "baseline": null,
+      "baselineStatus": null,
+      "evaluatedCommits": 20,
+      "excludedChangedFileCount": 0,
+      "skippedPathCount": 0,
+      "report": {
+        "evalRangeId": "73f8aa2451f629afde15998e6b28b1dbbb71e5873872cfcb63ec9d4ddad98f20",
+        "repoId": "ee7cf3ad-fce8-5793-83f0-313a1cb32552",
+        "evaluatedCommits": 20,
+        "budget": "standard",
+        "effectiveFilters": {
+          "limit": 20,
+          "rankingBudget": 10,
+          "mode": "bug_fix",
+          "targetAgent": "claude-code",
+          "budget": "standard",
+          "semanticEnabled": true
+        },
+        "refs": {
+          "base": null,
+          "head": null
+        },
+        "base": null,
+        "head": null,
+        "rankingComparison": {
+          "k": 10,
+          "combined": {
+            "k": 10,
+            "recallAtK": 0.518631,
+            "precisionAtK": 0.155,
+            "mrrAtK": 0.635,
+            "roleRecall": [
+              {
+                "role": "source",
+                "recallAtK": 0.39130434,
+                "changedFileCount": 46,
+                "hitCount": 18
+              },
+              {
+                "role": "test",
+                "recallAtK": 0.3125,
+                "changedFileCount": 16,
+                "hitCount": 5
+              }
+            ],
+            "testRecommendationRate": 1.0,
+            "averageRecommendedContextFiles": 10.0
+          },
+          "lexicalBaseline": {
+            "k": 10,
+            "recallAtK": 0.5007738,
+            "precisionAtK": 0.155,
+            "mrrAtK": 0.59166664,
+            "roleRecall": [
+              {
+                "role": "source",
+                "recallAtK": 0.39130434,
+                "changedFileCount": 46,
+                "hitCount": 18
+              },
+              {
+                "role": "test",
+                "recallAtK": 0.3125,
+                "changedFileCount": 16,
+                "hitCount": 5
+              }
+            ],
+            "testRecommendationRate": 1.0,
+            "averageRecommendedContextFiles": 10.0
+          },
+          "noContextBaseline": {
+            "k": 10,
+            "recallAtK": 0.0,
+            "precisionAtK": 0.0,
+            "mrrAtK": 0.0,
+            "roleRecall": [
+              {
+                "role": "source",
+                "recallAtK": 0.0,
+                "changedFileCount": 46,
+                "hitCount": 0
+              },
+              {
+                "role": "test",
+                "recallAtK": 0.0,
+                "changedFileCount": 16,
+                "hitCount": 0
+              }
+            ],
+            "testRecommendationRate": 1.0,
+            "averageRecommendedContextFiles": 0.0
+          },
+          "recallLiftAtK": 0.017857194,
+          "precisionLiftAtK": 0.0,
+          "mrrLiftAtK": 0.04333335,
+          "recallLiftVsNoContextAtK": 0.518631,
+          "precisionLiftVsNoContextAtK": 0.155,
+          "mrrLiftVsNoContextAtK": 0.635
+        },
+        "signalAblations": [
+          {
+            "evalRangeId": "73f8aa2451f629afde15998e6b28b1dbbb71e5873872cfcb63ec9d4ddad98f20",
+            "disabledSignal": "lexical",
+            "evaluatedCommits": 20,
+            "metrics": {
+              "k": 10,
+              "recallAtK": 0.28976187,
+              "precisionAtK": 0.085,
+              "mrrAtK": 0.39749998,
+              "roleRecall": [
+                {
+                  "role": "source",
+                  "recallAtK": 0.10869565,
+                  "changedFileCount": 46,
+                  "hitCount": 5
+                },
+                {
+                  "role": "test",
+                  "recallAtK": 0.3125,
+                  "changedFileCount": 16,
+                  "hitCount": 5
+                }
+              ],
+              "testRecommendationRate": 1.0,
+              "averageRecommendedContextFiles": 6.3
+            },
+            "recallLiftVsLexicalAtK": -0.21101192
+          },
+          {
+            "evalRangeId": "73f8aa2451f629afde15998e6b28b1dbbb71e5873872cfcb63ec9d4ddad98f20",
+            "disabledSignal": "semantic",
+            "evaluatedCommits": 20,
+            "metrics": {
+              "k": 10,
+              "recallAtK": 0.518631,
+              "precisionAtK": 0.155,
+              "mrrAtK": 0.635,
+              "roleRecall": [
+                {
+                  "role": "source",
+                  "recallAtK": 0.39130434,
+                  "changedFileCount": 46,
+                  "hitCount": 18
+                },
+                {
+                  "role": "test",
+                  "recallAtK": 0.3125,
+                  "changedFileCount": 16,
+                  "hitCount": 5
+                }
+              ],
+              "testRecommendationRate": 1.0,
+              "averageRecommendedContextFiles": 10.0
+            },
+            "recallLiftVsLexicalAtK": 0.017857194
+          },
+          {
+            "evalRangeId": "73f8aa2451f629afde15998e6b28b1dbbb71e5873872cfcb63ec9d4ddad98f20",
+            "disabledSignal": "symbol",
+            "evaluatedCommits": 20,
+            "metrics": {
+              "k": 10,
+              "recallAtK": 0.518631,
+              "precisionAtK": 0.155,
+              "mrrAtK": 0.635,
+              "roleRecall": [
+                {
+                  "role": "source",
+                  "recallAtK": 0.39130434,
+                  "changedFileCount": 46,
+                  "hitCount": 18
+                },
+                {
+                  "role": "test",
+                  "recallAtK": 0.3125,
+                  "changedFileCount": 16,
+                  "hitCount": 5
+                }
+              ],
+              "testRecommendationRate": 1.0,
+              "averageRecommendedContextFiles": 9.85
+            },
+            "recallLiftVsLexicalAtK": 0.017857194
+          },
+          {
+            "evalRangeId": "73f8aa2451f629afde15998e6b28b1dbbb71e5873872cfcb63ec9d4ddad98f20",
+            "disabledSignal": "dependency",
+            "evaluatedCommits": 20,
+            "metrics": {
+              "k": 10,
+              "recallAtK": 0.49363095,
+              "precisionAtK": 0.15,
+              "mrrAtK": 0.625,
+              "roleRecall": [
+                {
+                  "role": "source",
+                  "recallAtK": 0.36956522,
+                  "changedFileCount": 46,
+                  "hitCount": 17
+                },
+                {
+                  "role": "test",
+                  "recallAtK": 0.3125,
+                  "changedFileCount": 16,
+                  "hitCount": 5
+                }
+              ],
+              "testRecommendationRate": 1.0,
+              "averageRecommendedContextFiles": 9.0
+            },
+            "recallLiftVsLexicalAtK": -0.007142842
+          },
+          {
+            "evalRangeId": "73f8aa2451f629afde15998e6b28b1dbbb71e5873872cfcb63ec9d4ddad98f20",
+            "disabledSignal": "related_test",
+            "evaluatedCommits": 20,
+            "metrics": {
+              "k": 10,
+              "recallAtK": 0.518631,
+              "precisionAtK": 0.155,
+              "mrrAtK": 0.635,
+              "roleRecall": [
+                {
+                  "role": "source",
+                  "recallAtK": 0.39130434,
+                  "changedFileCount": 46,
+                  "hitCount": 18
+                },
+                {
+                  "role": "test",
+                  "recallAtK": 0.3125,
+                  "changedFileCount": 16,
+                  "hitCount": 5
+                }
+              ],
+              "testRecommendationRate": 1.0,
+              "averageRecommendedContextFiles": 9.25
+            },
+            "recallLiftVsLexicalAtK": 0.017857194
+          },
+          {
+            "evalRangeId": "73f8aa2451f629afde15998e6b28b1dbbb71e5873872cfcb63ec9d4ddad98f20",
+            "disabledSignal": "co_change",
+            "evaluatedCommits": 20,
+            "metrics": {
+              "k": 10,
+              "recallAtK": 0.518631,
+              "precisionAtK": 0.155,
+              "mrrAtK": 0.635,
+              "roleRecall": [
+                {
+                  "role": "source",
+                  "recallAtK": 0.39130434,
+                  "changedFileCount": 46,
+                  "hitCount": 18
+                },
+                {
+                  "role": "test",
+                  "recallAtK": 0.3125,
+                  "changedFileCount": 16,
+                  "hitCount": 5
+                }
+              ],
+              "testRecommendationRate": 1.0,
+              "averageRecommendedContextFiles": 10.0
+            },
+            "recallLiftVsLexicalAtK": 0.017857194
+          },
+          {
+            "evalRangeId": "73f8aa2451f629afde15998e6b28b1dbbb71e5873872cfcb63ec9d4ddad98f20",
+            "disabledSignal": "current_diff",
+            "evaluatedCommits": 20,
+            "metrics": {
+              "k": 10,
+              "recallAtK": 0.518631,
+              "precisionAtK": 0.155,
+              "mrrAtK": 0.635,
+              "roleRecall": [
+                {
+                  "role": "source",
+                  "recallAtK": 0.39130434,
+                  "changedFileCount": 46,
+                  "hitCount": 18
+                },
+                {
+                  "role": "test",
+                  "recallAtK": 0.3125,
+                  "changedFileCount": 16,
+                  "hitCount": 5
+                }
+              ],
+              "testRecommendationRate": 1.0,
+              "averageRecommendedContextFiles": 10.0
+            },
+            "recallLiftVsLexicalAtK": 0.017857194
+          },
+          {
+            "evalRangeId": "73f8aa2451f629afde15998e6b28b1dbbb71e5873872cfcb63ec9d4ddad98f20",
+            "disabledSignal": "anchor",
+            "evaluatedCommits": 20,
+            "metrics": {
+              "k": 10,
+              "recallAtK": 0.518631,
+              "precisionAtK": 0.155,
+              "mrrAtK": 0.635,
+              "roleRecall": [
+                {
+                  "role": "source",
+                  "recallAtK": 0.39130434,
+                  "changedFileCount": 46,
+                  "hitCount": 18
+                },
+                {
+                  "role": "test",
+                  "recallAtK": 0.3125,
+                  "changedFileCount": 16,
+                  "hitCount": 5
+                }
+              ],
+              "testRecommendationRate": 1.0,
+              "averageRecommendedContextFiles": 10.0
+            },
+            "recallLiftVsLexicalAtK": 0.017857194
+          }
+        ],
+        "tokenRoi": [
+          {
+            "budget": "brief",
+            "rankingCutoff": 5,
+            "estimatedTokens": 4000,
+            "usefulTargets": 23,
+            "safeTargets": 82,
+            "usefulTargetsPer1kTokens": 5.75,
+            "recallAtCutoff": 0.2804878,
+            "marginalUsefulTargetsVsPreviousBudget": 23,
+            "largerPackAddsLittleValue": false
+          },
+          {
+            "budget": "standard",
+            "rankingCutoff": 10,
+            "estimatedTokens": 24000,
+            "usefulTargets": 31,
+            "safeTargets": 82,
+            "usefulTargetsPer1kTokens": 1.2916666,
+            "recallAtCutoff": 0.37804878,
+            "marginalUsefulTargetsVsPreviousBudget": 8,
+            "largerPackAddsLittleValue": false
+          },
+          {
+            "budget": "deep",
+            "rankingCutoff": 10,
+            "estimatedTokens": 100000,
+            "usefulTargets": 31,
+            "safeTargets": 82,
+            "usefulTargetsPer1kTokens": 0.31,
+            "recallAtCutoff": 0.37804878,
+            "marginalUsefulTargetsVsPreviousBudget": 0,
+            "largerPackAddsLittleValue": true
+          }
+        ],
+        "retrievalGapSummaries": [
+          {
+            "role": "source",
+            "signalGap": "no_candidate_signal",
+            "package": "src",
+            "pathFamily": "src/main/java/org/refactoringminer/mcp/*.java",
+            "targetStatus": "currentReachable",
+            "recommendationArea": "storage",
+            "missedCount": 14,
+            "examplePaths": [
+              "src/main/java/org/refactoringminer/mcp/WebDiffBrowserLauncher.java",
+              "src/main/java/org/refactoringminer/mcp/DiffBrowserLauncher.java",
+              "src/main/java/org/refactoringminer/mcp/McpDiffBrowserResult.java"
+            ]
+          },
+          {
+            "role": "test",
+            "signalGap": "no_candidate_signal",
+            "package": "src",
+            "pathFamily": "src/test/java/org/refactoringminer/mcp/*.java",
+            "targetStatus": "currentReachable",
+            "recommendationArea": "testMapping",
+            "missedCount": 8,
+            "examplePaths": [
+              "src/test/java/org/refactoringminer/mcp/WebDiffBrowserLauncherTest.java",
+              "src/test/java/org/refactoringminer/mcp/McpIntentValidatorTest.java",
+              "src/test/java/org/refactoringminer/mcp/McpValidationContractTest.java"
+            ]
+          },
+          {
+            "role": "source",
+            "signalGap": "no_candidate_signal",
+            "package": "src",
+            "pathFamily": "src/main/java/gr/uom/java/xmi/*.java",
+            "targetStatus": "currentReachable",
+            "recommendationArea": "storage",
+            "missedCount": 3,
+            "examplePaths": [
+              "src/main/java/gr/uom/java/xmi/ModuleContainer.java"
+            ]
+          },
+          {
+            "role": "source",
+            "signalGap": "no_candidate_signal",
+            "package": "src",
+            "pathFamily": "src/main/java/org/refactoringminer/astDiff/matchers/wrappers/*.java",
+            "targetStatus": "currentReachable",
+            "recommendationArea": "storage",
+            "missedCount": 3,
+            "examplePaths": [
+              "src/main/java/org/refactoringminer/astDiff/matchers/wrappers/MethodMatcher.java",
+              "src/main/java/org/refactoringminer/astDiff/matchers/wrappers/BodyMapperMatcher.java"
+            ]
+          },
+          {
+            "role": "source",
+            "signalGap": "no_candidate_signal",
+            "package": "src",
+            "pathFamily": "src/main/java/org/refactoringminer/astDiff/utils/*.java",
+            "targetStatus": "currentReachable",
+            "recommendationArea": "storage",
+            "missedCount": 3,
+            "examplePaths": [
+              "src/main/java/org/refactoringminer/astDiff/utils/Constants.java",
+              "src/main/java/org/refactoringminer/astDiff/utils/TreeUtilFunctions.java"
+            ]
+          },
+          {
+            "role": "test",
+            "signalGap": "ranked_below_budget_related_test",
+            "package": "src",
+            "pathFamily": "src/test/java/org/refactoringminer/mcp/*.java",
+            "targetStatus": "currentReachable",
+            "recommendationArea": "testMapping",
+            "missedCount": 3,
+            "examplePaths": [
+              "src/test/java/org/refactoringminer/mcp/RefactoringMinerMcpToolsTest.java",
+              "src/test/java/org/refactoringminer/mcp/RefactoringMinerMcpServiceTest.java"
+            ]
+          },
+          {
+            "role": "unknown",
+            "signalGap": "no_candidate_signal",
+            "package": "build.gradle",
+            "pathFamily": "*.gradle",
+            "targetStatus": "currentReachable",
+            "recommendationArea": "storage",
+            "missedCount": 3,
+            "examplePaths": [
+              "build.gradle"
+            ]
+          },
+          {
+            "role": "unknown",
+            "signalGap": "no_candidate_signal",
+            "package": "src",
+            "pathFamily": "src/main/resources/*.xml",
+            "targetStatus": "currentReachable",
+            "recommendationArea": "storage",
+            "missedCount": 2,
+            "examplePaths": [
+              "src/main/resources/logback.xml"
+            ]
+          },
+          {
+            "role": "config",
+            "signalGap": "no_candidate_signal",
+            "package": "docker",
+            "pathFamily": "docker/*",
+            "targetStatus": "currentReachable",
+            "recommendationArea": "storage",
+            "missedCount": 1,
+            "examplePaths": [
+              "docker/Dockerfile"
+            ]
+          },
+          {
+            "role": "docs",
+            "signalGap": "no_candidate_signal",
+            "package": "README.md",
+            "pathFamily": "*.md",
+            "targetStatus": "currentReachable",
+            "recommendationArea": "storage",
+            "missedCount": 1,
+            "examplePaths": [
+              "README.md"
+            ]
+          }
+        ],
+        "runtime": {
+          "totalMillis": 104901,
+          "commitMillis": 359780,
+          "overheadMillis": 0,
+          "averageCommitMillis": 17989.0,
+          "cacheHits": 0,
+          "cacheMisses": 0,
+          "parallelism": 4,
+          "gitSampleMillis": 7412,
+          "rankingMillis": 12556,
+          "packCompilerMillis": 315596,
+          "slowCommits": [
+            {
+              "sha": "507dc25ba023b7d78b5196a2246946ff74626211",
+              "elapsedMillis": 20721,
+              "safeChangedFileCount": 2,
+              "recommendedContextFileCount": 10,
+              "missingFileCountAt10": 2,
+              "lowInformationTask": false
+            },
+            {
+              "sha": "de037aa63d793fc9dd311eca1c9474f2b82da680",
+              "elapsedMillis": 20533,
+              "safeChangedFileCount": 1,
+              "recommendedContextFileCount": 10,
+              "missingFileCountAt10": 0,
+              "lowInformationTask": false
+            },
+            {
+              "sha": "c16c031d048618c8389f474f80c2feee21a06ad1",
+              "elapsedMillis": 20345,
+              "safeChangedFileCount": 2,
+              "recommendedContextFileCount": 10,
+              "missingFileCountAt10": 1,
+              "lowInformationTask": false
+            },
+            {
+              "sha": "949bddcd3509a805f5e3bcc55fcdb71a691b0dac",
+              "elapsedMillis": 20338,
+              "safeChangedFileCount": 5,
+              "recommendedContextFileCount": 10,
+              "missingFileCountAt10": 0,
+              "lowInformationTask": false
+            },
+            {
+              "sha": "5a9fd78610c74a26d1102cd1eaa28d81759718b9",
+              "elapsedMillis": 19297,
+              "safeChangedFileCount": 4,
+              "recommendedContextFileCount": 10,
+              "missingFileCountAt10": 0,
+              "lowInformationTask": false
+            }
+          ]
+        },
+        "lowInformationCommitCount": 0,
+        "fileRecallAt5": 0.45315474,
+        "fileRecallAt10": 0.518631,
+        "lexicalBaselineRecallAt5": 0.45315474,
+        "lexicalBaselineRecallAt10": 0.5007738,
+        "ctxpackLiftAt5": 0.0,
+        "ctxpackLiftAt10": 0.017857194,
+        "sourceRecallAt5": 0.38888887,
+        "sourceRecallAt10": 0.4611111,
+        "testRecallAt5": 0.0,
+        "testRecallAt10": 0.4722222,
+        "testRecommendationRate": 1.0,
+        "averageRecommendedContextFiles": 10.0,
+        "topMissingFiles": [
+          {
+            "path": "build.gradle",
+            "role": "unknown",
+            "missedCount": 3
+          },
+          {
+            "path": "src/main/java/gr/uom/java/xmi/ModuleContainer.java",
+            "role": "source",
+            "missedCount": 3
+          },
+          {
+            "path": "src/test/java/org/refactoringminer/mcp/RefactoringMinerMcpToolsTest.java",
+            "role": "test",
+            "missedCount": 3
+          },
+          {
+            "path": "documentation/mcp.md",
+            "role": "docs",
+            "missedCount": 2
+          },
+          {
+            "path": "src/main/java/gui/webdiff/WebDiff.java",
+            "role": "source",
+            "missedCount": 2
+          },
+          {
+            "path": "src/main/java/org/refactoringminer/astDiff/matchers/wrappers/MethodMatcher.java",
+            "role": "source",
+            "missedCount": 2
+          },
+          {
+            "path": "src/main/java/org/refactoringminer/astDiff/utils/Constants.java",
+            "role": "source",
+            "missedCount": 2
+          },
+          {
+            "path": "src/main/java/org/refactoringminer/mcp/RefactoringMinerMcpService.java",
+            "role": "source",
+            "missedCount": 2
+          },
+          {
+            "path": "src/main/java/org/refactoringminer/mcp/WebDiffBrowserLauncher.java",
+            "role": "source",
+            "missedCount": 2
+          },
+          {
+            "path": "src/main/resources/logback.xml",
+            "role": "unknown",
+            "missedCount": 2
+          }
+        ],
+        "commits": [
+          {
+            "sha": "949bddcd3509a805f5e3bcc55fcdb71a691b0dac",
+            "taskHash": "8e00e58933630239347ed2701bf1a691db841ba3324487bb688f79b0ec406416",
+            "taskType": "bug_fix",
+            "targetAgent": "claude-code",
+            "changedPathLabels": [
+              {
+                "path": "documentation/mcp.md",
+                "changeKind": "modified",
+                "role": "docs",
+                "labelScope": "safe"
+              },
+              {
+                "path": "src/main/java/org/refactoringminer/mcp/RefactoringMinerMcpService.java",
+                "changeKind": "modified",
+                "role": "source",
+                "labelScope": "safe"
+              },
+              {
+                "path": "src/main/java/org/refactoringminer/mcp/RefactoringMinerMcpTools.java",
+                "changeKind": "modified",
+                "role": "source",
+                "labelScope": "safe"
+              },
+              {
+                "path": "src/test/java/org/refactoringminer/mcp/RefactoringMinerMcpServiceRepositoryTest.java",
+                "changeKind": "modified",
+                "role": "test",
+                "labelScope": "safe"
+              },
+              {
+                "path": "src/test/java/org/refactoringminer/mcp/RefactoringMinerMcpToolsTest.java",
+                "changeKind": "modified",
+                "role": "test",
+                "labelScope": "safe"
+              }
+            ],
+            "safeChangedFiles": [
+              "documentation/mcp.md",
+              "src/main/java/org/refactoringminer/mcp/RefactoringMinerMcpService.java",
+              "src/main/java/org/refactoringminer/mcp/RefactoringMinerMcpTools.java",
+              "src/test/java/org/refactoringminer/mcp/RefactoringMinerMcpServiceRepositoryTest.java",
+              "src/test/java/org/refactoringminer/mcp/RefactoringMinerMcpToolsTest.java"
+            ],
+            "excludedChangedFileCount": 0,
+            "recommendedFiles": [
+              "src/main/java/org/refactoringminer/mcp/RefactoringMinerMcpService.java",
+              "documentation/mcp.md",
+              "src/main/java/org/refactoringminer/mcp/RefactoringMinerMcpTools.java",
+              "src/main/java/org/refactoringminer/mcp/WorktreeChangeCollector.java",
+              "src/main/java/org/refactoringminer/util/GitServiceImpl.java",
+              "src/main/java/org/refactoringminer/api/GitHistoryRefactoringMiner.java",
+              "src/main/java/org/refactoringminer/mcp/McpIntentValidator.java",
+              "src/main/java/org/refactoringminer/rm1/GitHistoryRefactoringMinerImpl.java"
+            ],
+            "recommendedTests": [
+              "src/test/java/org/refactoringminer/mcp/RefactoringMinerMcpServiceRepositoryTest.java",
+              "src/test/java/org/refactoringminer/mcp/RefactoringMinerMcpServiceTest.java",
+              "src/test/java/org/refactoringminer/mcp/RefactoringMinerMcpToolsTest.java",
+              "src/test/java/org/refactoringminer/mcp/McpIntentValidatorTest.java",
+              "src/test/java/org/refactoringminer/mcp/WorktreeChangeCollectorTest.java"
+            ],
+            "recommendedContextFiles": [
+              "src/main/java/org/refactoringminer/mcp/RefactoringMinerMcpService.java",
+              "documentation/mcp.md",
+              "src/main/java/org/refactoringminer/mcp/RefactoringMinerMcpTools.java",
+              "src/main/java/org/refactoringminer/mcp/WorktreeChangeCollector.java",
+              "src/main/java/org/refactoringminer/util/GitServiceImpl.java",
+              "src/main/java/org/refactoringminer/api/GitHistoryRefactoringMiner.java",
+              "src/main/java/org/refactoringminer/mcp/McpIntentValidator.java",
+              "src/test/java/org/refactoringminer/mcp/RefactoringMinerMcpServiceRepositoryTest.java",
+              "src/test/java/org/refactoringminer/mcp/RefactoringMinerMcpServiceTest.java",
+              "src/test/java/org/refactoringminer/mcp/RefactoringMinerMcpToolsTest.java"
+            ],
+            "recommendedCommands": [
+              "./gradlew test --tests org.refactoringminer.mcp.RefactoringMinerMcpServiceRepositoryTest",
+              "./gradlew test --tests org.refactoringminer.mcp.RefactoringMinerMcpServiceTest",
+              "./gradlew test --tests org.refactoringminer.mcp.RefactoringMinerMcpToolsTest",
+              "./gradlew test --tests org.refactoringminer.mcp.McpIntentValidatorTest",
+              "./gradlew test --tests org.refactoringminer.mcp.WorktreeChangeCollectorTest"
+            ],
+            "lexicalBaselineFiles": [
+              "src/test/java/org/refactoringminer/mcp/RefactoringMinerMcpServiceRepositoryTest.java",
+              "src/main/java/org/refactoringminer/mcp/RefactoringMinerMcpService.java",
+              "documentation/mcp.md",
+              "src/test/java/org/refactoringminer/mcp/RefactoringMinerMcpToolsTest.java",
+              "src/main/java/org/refactoringminer/mcp/RefactoringMinerMcpTools.java",
+              "src/main/java/org/refactoringminer/mcp/WorktreeChangeCollector.java",
+              "src/main/java/org/refactoringminer/util/GitServiceImpl.java",
+              "src/test/java/org/refactoringminer/mcp/RefactoringMinerMcpServiceTest.java",
+              "src/main/java/org/refactoringminer/api/GitHistoryRefactoringMiner.java",
+              "src/main/java/org/refactoringminer/mcp/McpIntentValidator.java"
+            ],
+            "signalBaselineFiles": [
+              {
+                "signal": "semantic",
+                "files": [
+                  "src/main/java/org/refactoringminer/mcp/WorktreeChangeCollector.java"
+                ]
+              },
+              {
+                "signal": "dependency",
+                "files": []
+              },
+              {
+                "signal": "related_test",
+                "files": [
+                  "src/test/java/org/refactoringminer/mcp/RefactoringMinerMcpServiceRepositoryTest.java",
+                  "src/test/java/org/refactoringminer/mcp/RefactoringMinerMcpServiceTest.java",
+                  "src/test/java/org/refactoringminer/mcp/RefactoringMinerMcpToolsTest.java"
+                ]
+              },
+              {
+                "signal": "co_change",
+                "files": []
+              },
+              {
+                "signal": "memory",
+                "files": []
+              }
+            ],
+            "fileHitsAt5": [
+              "documentation/mcp.md",
+              "src/main/java/org/refactoringminer/mcp/RefactoringMinerMcpService.java",
+              "src/main/java/org/refactoringminer/mcp/RefactoringMinerMcpTools.java"
+            ],
+            "fileHitsAt10": [
+              "documentation/mcp.md",
+              "src/main/java/org/refactoringminer/mcp/RefactoringMinerMcpService.java",
+              "src/main/java/org/refactoringminer/mcp/RefactoringMinerMcpTools.java",
+              "src/test/java/org/refactoringminer/mcp/RefactoringMinerMcpServiceRepositoryTest.java",
+              "src/test/java/org/refactoringminer/mcp/RefactoringMinerMcpToolsTest.java"
+            ],
+            "lexicalBaselineHitsAt5": [
+              "documentation/mcp.md",
+              "src/main/java/org/refactoringminer/mcp/RefactoringMinerMcpService.java",
+              "src/main/java/org/refactoringminer/mcp/RefactoringMinerMcpTools.java",
+              "src/test/java/org/refactoringminer/mcp/RefactoringMinerMcpServiceRepositoryTest.java",
+              "src/test/java/org/refactoringminer/mcp/RefactoringMinerMcpToolsTest.java"
+            ],
+            "lexicalBaselineHitsAt10": [
+              "documentation/mcp.md",
+              "src/main/java/org/refactoringminer/mcp/RefactoringMinerMcpService.java",
+              "src/main/java/org/refactoringminer/mcp/RefactoringMinerMcpTools.java",
+              "src/test/java/org/refactoringminer/mcp/RefactoringMinerMcpServiceRepositoryTest.java",
+              "src/test/java/org/refactoringminer/mcp/RefactoringMinerMcpToolsTest.java"
+            ],
+            "missingFilesAt10": [],
+            "sourceFilesChanged": 2,
+            "sourceHitsAt5": 2,
+            "sourceHitsAt10": 2,
+            "testFilesChanged": 2,
+            "testHitsAt5": 0,
+            "testHitsAt10": 2,
+            "lowInformationTask": false,
+            "confidence": 0.8,
+            "elapsedMillis": 20338,
+            "sourceTextLogged": false
+          },
+          {
+            "sha": "c16c031d048618c8389f474f80c2feee21a06ad1",
+            "taskHash": "ab3d0c478c9177ad6fc5bbfbecbddc0b6f889f7f723a4a7c30d456d57feaa6b2",
+            "taskType": "bug_fix",
+            "targetAgent": "claude-code",
+            "changedPathLabels": [
+              {
+                "path": "src/main/java/gr/uom/java/xmi/decomposition/VariableDeclaration.java",
+                "changeKind": "modified",
+                "role": "source",
+                "labelScope": "safe"
+              },
+              {
+                "path": "src/main/java/org/refactoringminer/astDiff/matchers/wrappers/MethodMatcher.java",
+                "changeKind": "modified",
+                "role": "source",
+                "labelScope": "safe"
+              }
+            ],
+            "safeChangedFiles": [
+              "src/main/java/gr/uom/java/xmi/decomposition/VariableDeclaration.java",
+              "src/main/java/org/refactoringminer/astDiff/matchers/wrappers/MethodMatcher.java"
+            ],
+            "excludedChangedFileCount": 0,
+            "recommendedFiles": [
+              "src/main/java/gr/uom/java/xmi/decomposition/VariableDeclaration.java",
+              "src/main/java/extension/umladapter/UMLModelAdapter.java",
+              "src/main/java/gr/uom/java/xmi/KotlinFileProcessor.java",
+              "src/main/java/extension/umladapter/processor/UMLAdapterVariableProcessor.java",
+              "src/main/java/gr/uom/java/xmi/JavaFileProcessor.java",
+              "src/main/java/extension/ast/builder/csharp/component/CSharpDeclarationASTBuilder.java",
+              "src/main/java/extension/ast/builder/python/component/PyDeclarationASTBuilder.java",
+              "src/main/java/extension/ast/builder/python/component/PyStatementASTBuilder.java"
+            ],
+            "recommendedTests": [
+              "src/test/resources/commandline/refactoring-toy-example-commit-expected.json",
+              "src/test/java/gui/MarkAsViewedTest.java",
+              "src/test/java/gui/webdiff/viewers/spv/SinglePageViewViewedFilesTest.java",
+              "src/test/java/org/refactoringminer/astDiff/tests/ConsideringCommentsVisitorTest.java",
+              "src/test/java/org/refactoringminer/astDiff/tests/Defects4JPerfectDiffTest.java"
+            ],
+            "recommendedContextFiles": [
+              "src/main/java/gr/uom/java/xmi/decomposition/VariableDeclaration.java",
+              "src/main/java/extension/umladapter/UMLModelAdapter.java",
+              "src/main/java/gr/uom/java/xmi/KotlinFileProcessor.java",
+              "src/main/java/extension/umladapter/processor/UMLAdapterVariableProcessor.java",
+              "src/main/java/gr/uom/java/xmi/JavaFileProcessor.java",
+              "src/main/java/extension/ast/builder/csharp/component/CSharpDeclarationASTBuilder.java",
+              "src/main/java/extension/ast/builder/python/component/PyDeclarationASTBuilder.java",
+              "src/test/resources/commandline/refactoring-toy-example-commit-expected.json",
+              "src/test/java/gui/MarkAsViewedTest.java",
+              "src/test/java/gui/webdiff/viewers/spv/SinglePageViewViewedFilesTest.java"
+            ],
+            "recommendedCommands": [
+              "./gradlew test --tests gui.MarkAsViewedTest",
+              "./gradlew test --tests gui.webdiff.viewers.spv.SinglePageViewViewedFilesTest",
+              "./gradlew test --tests org.refactoringminer.astDiff.tests.ConsideringCommentsVisitorTest",
+              "./gradlew test --tests org.refactoringminer.astDiff.tests.Defects4JPerfectDiffTest"
+            ],
+            "lexicalBaselineFiles": [
+              "src/main/java/gr/uom/java/xmi/decomposition/VariableDeclaration.java",
+              "src/main/java/gr/uom/java/xmi/decomposition/OperationBody.java",
+              "src/main/java/gr/uom/java/xmi/decomposition/OperationInvocation.java",
+              "src/main/java/gr/uom/java/xmi/decomposition/ObjectCreation.java",
+              "src/main/java/gr/uom/java/xmi/TypeScriptFileProcessor.java",
+              "src/main/java/gr/uom/java/xmi/UMLType.java",
+              "src/main/java/gr/uom/java/xmi/decomposition/LambdaExpressionObject.java",
+              "src/main/java/gr/uom/java/xmi/decomposition/CompositeStatementObject.java",
+              "src/main/java/gr/uom/java/xmi/decomposition/AbstractExpression.java",
+              "src/main/java/gr/uom/java/xmi/decomposition/LeafExpression.java"
+            ],
+            "signalBaselineFiles": [
+              {
+                "signal": "semantic",
+                "files": [
+                  "src/test/resources/commandline/refactoring-toy-example-commit-expected.json"
+                ]
+              },
+              {
+                "signal": "dependency",
+                "files": [
+                  "src/main/java/extension/umladapter/UMLModelAdapter.java",
+                  "src/main/java/gr/uom/java/xmi/KotlinFileProcessor.java",
+                  "src/main/java/extension/umladapter/processor/UMLAdapterVariableProcessor.java",
+                  "src/main/java/gr/uom/java/xmi/JavaFileProcessor.java",
+                  "src/main/java/extension/ast/builder/csharp/component/CSharpDeclarationASTBuilder.java",
+                  "src/main/java/extension/ast/builder/python/component/PyDeclarationASTBuilder.java"
+                ]
+              },
+              {
+                "signal": "related_test",
+                "files": [
+                  "src/test/resources/commandline/refactoring-toy-example-commit-expected.json",
+                  "src/test/java/gui/MarkAsViewedTest.java",
+                  "src/test/java/gui/webdiff/viewers/spv/SinglePageViewViewedFilesTest.java"
+                ]
+              },
+              {
+                "signal": "co_change",
+                "files": []
+              },
+              {
+                "signal": "memory",
+                "files": []
+              }
+            ],
+            "fileHitsAt5": [
+              "src/main/java/gr/uom/java/xmi/decomposition/VariableDeclaration.java"
+            ],
+            "fileHitsAt10": [
+              "src/main/java/gr/uom/java/xmi/decomposition/VariableDeclaration.java"
+            ],
+            "lexicalBaselineHitsAt5": [
+              "src/main/java/gr/uom/java/xmi/decomposition/VariableDeclaration.java"
+            ],
+            "lexicalBaselineHitsAt10": [
+              "src/main/java/gr/uom/java/xmi/decomposition/VariableDeclaration.java"
+            ],
+            "missingFilesAt10": [
+              "src/main/java/org/refactoringminer/astDiff/matchers/wrappers/MethodMatcher.java"
+            ],
+            "sourceFilesChanged": 2,
+            "sourceHitsAt5": 1,
+            "sourceHitsAt10": 1,
+            "testFilesChanged": 0,
+            "testHitsAt5": 0,
+            "testHitsAt10": 0,
+            "lowInformationTask": false,
+            "confidence": 0.8,
+            "elapsedMillis": 20345,
+            "sourceTextLogged": false
+          },
+          {
+            "sha": "507dc25ba023b7d78b5196a2246946ff74626211",
+            "taskHash": "9e310e09fc9293fc0047f2d0b4e89c4ff9e3c32d772981b312dc9894b58bb698",
+            "taskType": "bug_fix",
+            "targetAgent": "claude-code",
+            "changedPathLabels": [
+              {
+                "path": "src/main/java/org/refactoringminer/astDiff/matchers/wrappers/MethodMatcher.java",
+                "changeKind": "modified",
+                "role": "source",
+                "labelScope": "safe"
+              },
+              {
+                "path": "src/main/java/org/refactoringminer/astDiff/utils/Constants.java",
+                "changeKind": "modified",
+                "role": "source",
+                "labelScope": "safe"
+              }
+            ],
+            "safeChangedFiles": [
+              "src/main/java/org/refactoringminer/astDiff/matchers/wrappers/MethodMatcher.java",
+              "src/main/java/org/refactoringminer/astDiff/utils/Constants.java"
+            ],
+            "excludedChangedFileCount": 0,
+            "recommendedFiles": [
+              "src/main/java/org/refactoringminer/astDiff/moved/AllSubTreesMovedASTDiffGenerator.java",
+              "src/main/java/org/refactoringminer/astDiff/moved/MovedASTDiffGenerator.java",
+              "src/main/java/org/refactoringminer/astDiff/actions/editscript/ExtendedChawatheScriptGenerator.java",
+              "src/main/java/org/refactoringminer/astDiff/matchers/wrappers/BodyMapperMatcher.java",
+              "src/main/java/gr/uom/java/xmi/diff/UMLClassBaseDiff.java",
+              "src/main/java/org/refactoringminer/astDiff/matchers/ProjectASTDiffer.java",
+              "src/main/java/org/refactoringminer/astDiff/models/ASTDiff.java",
+              "src/main/java/org/refactoringminer/astDiff/matchers/wrappers/ASTDiffMappingOptimizer.java"
+            ],
+            "recommendedTests": [
+              "src/test/java/org/refactoringminer/test/TestKotlinDatasetRefactorings.java",
+              "src/test/java/org/refactoringminer/test/TestNewDatasetRefactorings.java",
+              "src/test/java/org/refactoringminer/test/TestPythonDatasetRefactorings.java",
+              "src/test/java/gui/MarkAsViewedTest.java",
+              "src/test/java/gui/webdiff/viewers/spv/SinglePageViewViewedFilesTest.java"
+            ],
+            "recommendedContextFiles": [
+              "src/main/java/org/refactoringminer/astDiff/moved/AllSubTreesMovedASTDiffGenerator.java",
+              "src/main/java/org/refactoringminer/astDiff/moved/MovedASTDiffGenerator.java",
+              "src/main/java/org/refactoringminer/astDiff/actions/editscript/ExtendedChawatheScriptGenerator.java",
+              "src/main/java/org/refactoringminer/astDiff/matchers/wrappers/BodyMapperMatcher.java",
+              "src/main/java/gr/uom/java/xmi/diff/UMLClassBaseDiff.java",
+              "src/main/java/org/refactoringminer/astDiff/matchers/ProjectASTDiffer.java",
+              "src/main/java/org/refactoringminer/astDiff/models/ASTDiff.java",
+              "src/test/java/org/refactoringminer/test/TestKotlinDatasetRefactorings.java",
+              "src/test/java/org/refactoringminer/test/TestNewDatasetRefactorings.java",
+              "src/test/java/org/refactoringminer/test/TestPythonDatasetRefactorings.java"
+            ],
+            "recommendedCommands": [
+              "./gradlew test --tests org.refactoringminer.test.TestKotlinDatasetRefactorings",
+              "./gradlew test --tests org.refactoringminer.test.TestNewDatasetRefactorings",
+              "./gradlew test --tests org.refactoringminer.test.TestPythonDatasetRefactorings",
+              "./gradlew test --tests gui.MarkAsViewedTest",
+              "./gradlew test --tests gui.webdiff.viewers.spv.SinglePageViewViewedFilesTest"
+            ],
+            "lexicalBaselineFiles": [
+              "src/main/java/org/refactoringminer/astDiff/moved/AllSubTreesMovedASTDiffGenerator.java",
+              "src/main/java/org/refactoringminer/astDiff/moved/MovedASTDiffGenerator.java",
+              "src/main/java/org/refactoringminer/astDiff/actions/editscript/ExtendedChawatheScriptGenerator.java",
+              "src/main/java/org/refactoringminer/astDiff/matchers/wrappers/BodyMapperMatcher.java",
+              "src/main/java/gr/uom/java/xmi/diff/UMLClassBaseDiff.java",
+              "src/main/java/org/refactoringminer/astDiff/matchers/ProjectASTDiffer.java",
+              "src/main/java/org/refactoringminer/astDiff/models/ASTDiff.java",
+              "src/main/java/org/refactoringminer/astDiff/matchers/wrappers/ASTDiffMappingOptimizer.java",
+              "src/main/java/org/refactoringminer/astDiff/matchers/wrappers/FieldDeclarationMatcher.java",
+              "src/main/java/gr/uom/java/xmi/TypeScriptFileProcessor.java"
+            ],
+            "signalBaselineFiles": [
+              {
+                "signal": "semantic",
+                "files": [
+                  "src/test/java/org/refactoringminer/test/TestKotlinDatasetRefactorings.java",
+                  "src/test/java/org/refactoringminer/test/TestNewDatasetRefactorings.java",
+                  "src/test/java/org/refactoringminer/test/TestPythonDatasetRefactorings.java"
+                ]
+              },
+              {
+                "signal": "dependency",
+                "files": []
+              },
+              {
+                "signal": "related_test",
+                "files": [
+                  "src/test/java/org/refactoringminer/test/TestKotlinDatasetRefactorings.java",
+                  "src/test/java/org/refactoringminer/test/TestNewDatasetRefactorings.java",
+                  "src/test/java/org/refactoringminer/test/TestPythonDatasetRefactorings.java"
+                ]
+              },
+              {
+                "signal": "co_change",
+                "files": []
+              },
+              {
+                "signal": "memory",
+                "files": []
+              }
+            ],
+            "fileHitsAt5": [],
+            "fileHitsAt10": [],
+            "lexicalBaselineHitsAt5": [],
+            "lexicalBaselineHitsAt10": [],
+            "missingFilesAt10": [
+              "src/main/java/org/refactoringminer/astDiff/matchers/wrappers/MethodMatcher.java",
+              "src/main/java/org/refactoringminer/astDiff/utils/Constants.java"
+            ],
+            "sourceFilesChanged": 2,
+            "sourceHitsAt5": 0,
+            "sourceHitsAt10": 0,
+            "testFilesChanged": 0,
+            "testHitsAt5": 0,
+            "testHitsAt10": 0,
+            "lowInformationTask": false,
+            "confidence": 0.8,
+            "elapsedMillis": 20721,
+            "sourceTextLogged": false
+          },
+          {
+            "sha": "de037aa63d793fc9dd311eca1c9474f2b82da680",
+            "taskHash": "71a8ee378f8272ce27a982cb99a64a87d45a9d06a2b42796cba88a77b2923a98",
+            "taskType": "bug_fix",
+            "targetAgent": "claude-code",
+            "changedPathLabels": [
+              {
+                "path": "src/main/java/gr/uom/java/xmi/decomposition/UMLOperationBodyMapper.java",
+                "changeKind": "modified",
+                "role": "source",
+                "labelScope": "safe"
+              }
+            ],
+            "safeChangedFiles": [
+              "src/main/java/gr/uom/java/xmi/decomposition/UMLOperationBodyMapper.java"
+            ],
+            "excludedChangedFileCount": 0,
+            "recommendedFiles": [
+              "src/main/java/gr/uom/java/xmi/decomposition/UMLOperationBodyMapper.java",
+              "src/main/java/gr/uom/java/xmi/diff/UMLModelDiff.java",
+              "src/main/java/gr/uom/java/xmi/decomposition/StringBasedHeuristics.java",
+              "src/main/java/gr/uom/java/xmi/decomposition/CompositeStatementObject.java",
+              "src/main/java/extension/umladapter/UMLModelAdapter.java",
+              "src/main/java/extension/ast/builder/csharp/component/CSharpStatementASTBuilder.java",
+              "src/main/java/extension/ast/builder/python/component/PyStatementASTBuilder.java",
+              "src/main/java/gr/uom/java/xmi/decomposition/StatementObject.java"
+            ],
+            "recommendedTests": [
+              "src/test/java/org/refactoringminer/test/TestStatementMappings.java",
+              "src/test/java/org/refactoringminer/test/TestStatementMappingsJunit4.java",
+              "src/test/java/org/refactoringminer/astDiff/utils/URLHelperTest.java",
+              "src/test/java/gui/MarkAsViewedTest.java",
+              "src/test/java/gui/webdiff/viewers/spv/SinglePageViewViewedFilesTest.java"
+            ],
+            "recommendedContextFiles": [
+              "src/main/java/gr/uom/java/xmi/decomposition/UMLOperationBodyMapper.java",
+              "src/main/java/gr/uom/java/xmi/diff/UMLModelDiff.java",
+              "src/main/java/gr/uom/java/xmi/decomposition/StringBasedHeuristics.java",
+              "src/main/java/gr/uom/java/xmi/decomposition/CompositeStatementObject.java",
+              "src/main/java/extension/umladapter/UMLModelAdapter.java",
+              "src/main/java/extension/ast/builder/csharp/component/CSharpStatementASTBuilder.java",
+              "src/main/java/extension/ast/builder/python/component/PyStatementASTBuilder.java",
+              "src/test/java/org/refactoringminer/test/TestStatementMappings.java",
+              "src/test/java/org/refactoringminer/test/TestStatementMappingsJunit4.java",
+              "src/test/java/org/refactoringminer/astDiff/utils/URLHelperTest.java"
+            ],
+            "recommendedCommands": [
+              "./gradlew test --tests org.refactoringminer.test.TestStatementMappings",
+              "./gradlew test --tests org.refactoringminer.test.TestStatementMappingsJunit4",
+              "./gradlew test --tests org.refactoringminer.astDiff.utils.URLHelperTest",
+              "./gradlew test --tests gui.MarkAsViewedTest",
+              "./gradlew test --tests gui.webdiff.viewers.spv.SinglePageViewViewedFilesTest"
+            ],
+            "lexicalBaselineFiles": [
+              "src/test/java/org/refactoringminer/test/TestStatementMappingsJunit4.java",
+              "src/test/java/org/refactoringminer/test/TestStatementMappings.java",
+              "src/main/java/gr/uom/java/xmi/decomposition/UMLOperationBodyMapper.java",
+              "src/main/java/gr/uom/java/xmi/diff/UMLModelDiff.java",
+              "src/main/java/gr/uom/java/xmi/decomposition/StringBasedHeuristics.java",
+              "src/main/java/gr/uom/java/xmi/decomposition/CompositeStatementObject.java",
+              "src/main/java/extension/umladapter/UMLModelAdapter.java",
+              "src/main/java/extension/ast/builder/csharp/component/CSharpStatementASTBuilder.java",
+              "src/main/java/extension/ast/builder/python/component/PyStatementASTBuilder.java",
+              "src/main/java/extension/ast/node/statement/LangAssertStatement.java"
+            ],
+            "signalBaselineFiles": [
+              {
+                "signal": "semantic",
+                "files": [
+                  "src/test/java/org/refactoringminer/astDiff/utils/URLHelperTest.java"
+                ]
+              },
+              {
+                "signal": "dependency",
+                "files": []
+              },
+              {
+                "signal": "related_test",
+                "files": [
+                  "src/test/java/org/refactoringminer/test/TestStatementMappings.java",
+                  "src/test/java/org/refactoringminer/test/TestStatementMappingsJunit4.java",
+                  "src/test/java/org/refactoringminer/astDiff/utils/URLHelperTest.java"
+                ]
+              },
+              {
+                "signal": "co_change",
+                "files": []
+              },
+              {
+                "signal": "memory",
+                "files": []
+              }
+            ],
+            "fileHitsAt5": [
+              "src/main/java/gr/uom/java/xmi/decomposition/UMLOperationBodyMapper.java"
+            ],
+            "fileHitsAt10": [
+              "src/main/java/gr/uom/java/xmi/decomposition/UMLOperationBodyMapper.java"
+            ],
+            "lexicalBaselineHitsAt5": [
+              "src/main/java/gr/uom/java/xmi/decomposition/UMLOperationBodyMapper.java"
+            ],
+            "lexicalBaselineHitsAt10": [
+              "src/main/java/gr/uom/java/xmi/decomposition/UMLOperationBodyMapper.java"
+            ],
+            "missingFilesAt10": [],
+            "sourceFilesChanged": 1,
+            "sourceHitsAt5": 1,
+            "sourceHitsAt10": 1,
+            "testFilesChanged": 0,
+            "testHitsAt5": 0,
+            "testHitsAt10": 0,
+            "lowInformationTask": false,
+            "confidence": 0.8,
+            "elapsedMillis": 20533,
+            "sourceTextLogged": false
+          },
+          {
+            "sha": "7deb175ed134037932d3990520842f8659f29e8c",
+            "taskHash": "1834319e88c90eb73317490645f42deb6a2979e35aaf9668d786c4c0ff03854b",
+            "taskType": "bug_fix",
+            "targetAgent": "claude-code",
+            "changedPathLabels": [
+              {
+                "path": "src/main/java/gr/uom/java/xmi/decomposition/AbstractCodeFragment.java",
+                "changeKind": "modified",
+                "role": "source",
+                "labelScope": "safe"
+              },
+              {
+                "path": "src/main/java/gr/uom/java/xmi/decomposition/ReplacementAlgorithm.java",
+                "changeKind": "modified",
+                "role": "source",
+                "labelScope": "safe"
+              }
+            ],
+            "safeChangedFiles": [
+              "src/main/java/gr/uom/java/xmi/decomposition/AbstractCodeFragment.java",
+              "src/main/java/gr/uom/java/xmi/decomposition/ReplacementAlgorithm.java"
+            ],
+            "excludedChangedFileCount": 0,
+            "recommendedFiles": [
+              "src/main/java/gr/uom/java/xmi/decomposition/UMLOperationBodyMapper.java",
+              "src/main/java/gr/uom/java/xmi/decomposition/TypeScriptVisitor.java",
+              "src/main/java/gr/uom/java/xmi/TypeScriptFileProcessor.java",
+              "src/main/java/gr/uom/java/xmi/decomposition/AbstractCall.java",
+              "src/main/java/gr/uom/java/xmi/decomposition/AbstractCodeFragment.java",
+              "src/main/java/gr/uom/java/xmi/decomposition/AbstractCodeMapping.java",
+              "src/main/java/gr/uom/java/xmi/decomposition/CompositeStatementObject.java",
+              "src/main/java/gr/uom/java/xmi/decomposition/LambdaExpressionObject.java"
+            ],
+            "recommendedTests": [
+              "src/test/java/org/refactoringminer/astDiff/tests/TypeScriptDiffTest.java",
+              "src/test/java/org/refactoringminer/rm1/GitHistoryRefactoringMinerImplMergeCommitTest.java",
+              "src/test/java/gui/MarkAsViewedTest.java",
+              "src/test/java/gui/webdiff/viewers/spv/SinglePageViewViewedFilesTest.java",
+              "src/test/java/org/refactoringminer/astDiff/tests/ConsideringCommentsVisitorTest.java"
+            ],
+            "recommendedContextFiles": [
+              "src/main/java/gr/uom/java/xmi/decomposition/UMLOperationBodyMapper.java",
+              "src/main/java/gr/uom/java/xmi/decomposition/TypeScriptVisitor.java",
+              "src/main/java/gr/uom/java/xmi/TypeScriptFileProcessor.java",
+              "src/main/java/gr/uom/java/xmi/decomposition/AbstractCall.java",
+              "src/main/java/gr/uom/java/xmi/decomposition/AbstractCodeFragment.java",
+              "src/main/java/gr/uom/java/xmi/decomposition/AbstractCodeMapping.java",
+              "src/main/java/gr/uom/java/xmi/decomposition/CompositeStatementObject.java",
+              "src/test/java/org/refactoringminer/astDiff/tests/TypeScriptDiffTest.java",
+              "src/test/java/org/refactoringminer/rm1/GitHistoryRefactoringMinerImplMergeCommitTest.java",
+              "src/test/java/gui/MarkAsViewedTest.java"
+            ],
+            "recommendedCommands": [
+              "./gradlew test --tests org.refactoringminer.astDiff.tests.TypeScriptDiffTest",
+              "./gradlew test --tests org.refactoringminer.rm1.GitHistoryRefactoringMinerImplMergeCommitTest",
+              "./gradlew test --tests gui.MarkAsViewedTest",
+              "./gradlew test --tests gui.webdiff.viewers.spv.SinglePageViewViewedFilesTest",
+              "./gradlew test --tests org.refactoringminer.astDiff.tests.ConsideringCommentsVisitorTest"
+            ],
+            "lexicalBaselineFiles": [
+              "src/main/java/gr/uom/java/xmi/UMLModelASTReader.java",
+              "src/main/java/gr/uom/java/xmi/TypeScriptFileProcessor.java",
+              "src/main/java/gr/uom/java/xmi/decomposition/TypeScriptVisitor.java",
+              "src/test/java/org/refactoringminer/astDiff/tests/TypeScriptDiffTest.java",
+              "src/main/java/org/refactoringminer/api/PurityChecker.java",
+              "src/main/java/org/refactoringminer/astDiff/matchers/wrappers/ModelDiffRefactoringsForClassDiffMatcher.java",
+              "src/main/java/org/refactoringminer/perforce/PerforceHistoryRefactoringMinerImpl.java",
+              "docker/README.md",
+              "documentation/accuracy.md",
+              "documentation/how-to.md"
+            ],
+            "signalBaselineFiles": [
+              {
+                "signal": "semantic",
+                "files": [
+                  "src/test/java/org/refactoringminer/rm1/GitHistoryRefactoringMinerImplMergeCommitTest.java"
+                ]
+              },
+              {
+                "signal": "dependency",
+                "files": [
+                  "src/main/java/gr/uom/java/xmi/decomposition/UMLOperationBodyMapper.java",
+                  "src/main/java/gr/uom/java/xmi/decomposition/AbstractCall.java",
+                  "src/main/java/gr/uom/java/xmi/decomposition/AbstractCodeFragment.java",
+                  "src/main/java/gr/uom/java/xmi/decomposition/AbstractCodeMapping.java",
+                  "src/main/java/gr/uom/java/xmi/decomposition/CompositeStatementObject.java"
+                ]
+              },
+              {
+                "signal": "related_test",
+                "files": [
+                  "src/test/java/org/refactoringminer/astDiff/tests/TypeScriptDiffTest.java",
+                  "src/test/java/org/refactoringminer/rm1/GitHistoryRefactoringMinerImplMergeCommitTest.java",
+                  "src/test/java/gui/MarkAsViewedTest.java"
+                ]
+              },
+              {
+                "signal": "co_change",
+                "files": []
+              },
+              {
+                "signal": "memory",
+                "files": []
+              }
+            ],
+            "fileHitsAt5": [
+              "src/main/java/gr/uom/java/xmi/decomposition/AbstractCodeFragment.java"
+            ],
+            "fileHitsAt10": [
+              "src/main/java/gr/uom/java/xmi/decomposition/AbstractCodeFragment.java"
+            ],
+            "lexicalBaselineHitsAt5": [],
+            "lexicalBaselineHitsAt10": [],
+            "missingFilesAt10": [
+              "src/main/java/gr/uom/java/xmi/decomposition/ReplacementAlgorithm.java"
+            ],
+            "sourceFilesChanged": 2,
+            "sourceHitsAt5": 1,
+            "sourceHitsAt10": 1,
+            "testFilesChanged": 0,
+            "testHitsAt5": 0,
+            "testHitsAt10": 0,
+            "lowInformationTask": false,
+            "confidence": 0.8,
+            "elapsedMillis": 18846,
+            "sourceTextLogged": false
+          },
+          {
+            "sha": "b3e206ee686958a00599735cfcdbdf34d80fea82",
+            "taskHash": "5f09a761d8c5ba23a372bfc4b33e68e7b763286509a10a5aefd4ee90054e350b",
+            "taskType": "bug_fix",
+            "targetAgent": "claude-code",
+            "changedPathLabels": [
+              {
+                "path": "src/main/java/gr/uom/java/xmi/ModuleContainer.java",
+                "changeKind": "modified",
+                "role": "source",
+                "labelScope": "safe"
+              },
+              {
+                "path": "src/main/java/gr/uom/java/xmi/decomposition/UMLOperationBodyMapper.java",
+                "changeKind": "modified",
+                "role": "source",
+                "labelScope": "safe"
+              }
+            ],
+            "safeChangedFiles": [
+              "src/main/java/gr/uom/java/xmi/ModuleContainer.java",
+              "src/main/java/gr/uom/java/xmi/decomposition/UMLOperationBodyMapper.java"
+            ],
+            "excludedChangedFileCount": 0,
+            "recommendedFiles": [
+              "src/main/java/gr/uom/java/xmi/decomposition/UMLOperationBodyMapper.java",
+              "src/main/java/gr/uom/java/xmi/diff/UMLClassBaseDiff.java",
+              "src/main/java/gr/uom/java/xmi/decomposition/StringBasedHeuristics.java",
+              "src/test/java/org/refactoringminer/test/TestStatementMappings.java",
+              "src/main/java/gr/uom/java/xmi/decomposition/VariableReplacementAnalysis.java",
+              "src/main/java/org/refactoringminer/api/PurityChecker.java",
+              "src/main/java/gr/uom/java/xmi/UMLOperation.java",
+              "src/main/java/gr/uom/java/xmi/decomposition/OperationInvocation.java"
+            ],
+            "recommendedTests": [
+              "src/test/java/org/refactoringminer/test/TestStatementMappings.java",
+              "src/test/java/org/refactoringminer/test/TestStatementMappingsJunit4.java",
+              "src/test/java/org/refactoringminer/test/AdvancedAssertionMigrationTest.java",
+              "src/test/java/org/refactoringminer/astDiff/utils/dataset/runners/BenchmarkUtilityRunner.java",
+              "src/test/java/org/refactoringminer/astDiff/tests/ConsideringCommentsVisitorTest.java"
+            ],
+            "recommendedContextFiles": [
+              "src/main/java/gr/uom/java/xmi/decomposition/UMLOperationBodyMapper.java",
+              "src/main/java/gr/uom/java/xmi/diff/UMLClassBaseDiff.java",
+              "src/main/java/gr/uom/java/xmi/decomposition/StringBasedHeuristics.java",
+              "src/test/java/org/refactoringminer/test/TestStatementMappings.java",
+              "src/main/java/gr/uom/java/xmi/decomposition/VariableReplacementAnalysis.java",
+              "src/main/java/org/refactoringminer/api/PurityChecker.java",
+              "src/main/java/gr/uom/java/xmi/UMLOperation.java",
+              "src/test/java/org/refactoringminer/test/TestStatementMappingsJunit4.java",
+              "src/test/java/org/refactoringminer/test/AdvancedAssertionMigrationTest.java",
+              "src/test/java/org/refactoringminer/astDiff/utils/dataset/runners/BenchmarkUtilityRunner.java"
+            ],
+            "recommendedCommands": [
+              "./gradlew test --tests org.refactoringminer.test.TestStatementMappings",
+              "./gradlew test --tests org.refactoringminer.test.TestStatementMappingsJunit4",
+              "./gradlew test --tests org.refactoringminer.test.AdvancedAssertionMigrationTest",
+              "./gradlew test --tests org.refactoringminer.astDiff.utils.dataset.runners.BenchmarkUtilityRunner",
+              "./gradlew test --tests org.refactoringminer.astDiff.tests.ConsideringCommentsVisitorTest"
+            ],
+            "lexicalBaselineFiles": [
+              "src/main/java/gr/uom/java/xmi/decomposition/UMLOperationBodyMapper.java",
+              "src/test/java/org/refactoringminer/test/TestStatementMappingsJunit4.java",
+              "src/test/java/org/refactoringminer/test/TestStatementMappings.java",
+              "src/main/java/gr/uom/java/xmi/diff/UMLClassBaseDiff.java",
+              "src/main/java/gr/uom/java/xmi/decomposition/StringBasedHeuristics.java",
+              "src/main/java/org/refactoringminer/api/PurityChecker.java",
+              "src/main/java/gr/uom/java/xmi/diff/UMLModelDiff.java",
+              "src/test/java/org/refactoringminer/test/AdvancedAssertionMigrationTest.java",
+              ".github/workflows/updateTestStats.yml",
+              "src/main/java/gr/uom/java/xmi/decomposition/ReplacementAlgorithm.java"
+            ],
+            "signalBaselineFiles": [
+              {
+                "signal": "semantic",
+                "files": [
+                  "src/test/java/org/refactoringminer/astDiff/utils/dataset/runners/BenchmarkUtilityRunner.java"
+                ]
+              },
+              {
+                "signal": "dependency",
+                "files": [
+                  "src/main/java/gr/uom/java/xmi/decomposition/VariableReplacementAnalysis.java",
+                  "src/main/java/gr/uom/java/xmi/UMLOperation.java"
+                ]
+              },
+              {
+                "signal": "related_test",
+                "files": [
+                  "src/test/java/org/refactoringminer/test/TestStatementMappings.java",
+                  "src/test/java/org/refactoringminer/test/TestStatementMappingsJunit4.java",
+                  "src/test/java/org/refactoringminer/test/AdvancedAssertionMigrationTest.java",
+                  "src/test/java/org/refactoringminer/astDiff/utils/dataset/runners/BenchmarkUtilityRunner.java"
+                ]
+              },
+              {
+                "signal": "co_change",
+                "files": []
+              },
+              {
+                "signal": "memory",
+                "files": []
+              }
+            ],
+            "fileHitsAt5": [
+              "src/main/java/gr/uom/java/xmi/decomposition/UMLOperationBodyMapper.java"
+            ],
+            "fileHitsAt10": [
+              "src/main/java/gr/uom/java/xmi/decomposition/UMLOperationBodyMapper.java"
+            ],
+            "lexicalBaselineHitsAt5": [
+              "src/main/java/gr/uom/java/xmi/decomposition/UMLOperationBodyMapper.java"
+            ],
+            "lexicalBaselineHitsAt10": [
+              "src/main/java/gr/uom/java/xmi/decomposition/UMLOperationBodyMapper.java"
+            ],
+            "missingFilesAt10": [
+              "src/main/java/gr/uom/java/xmi/ModuleContainer.java"
+            ],
+            "sourceFilesChanged": 2,
+            "sourceHitsAt5": 1,
+            "sourceHitsAt10": 1,
+            "testFilesChanged": 0,
+            "testHitsAt5": 0,
+            "testHitsAt10": 0,
+            "lowInformationTask": false,
+            "confidence": 0.8,
+            "elapsedMillis": 18839,
+            "sourceTextLogged": false
+          },
+          {
+            "sha": "1f4d0717c5444490c6088b3d6ff7054858cc1211",
+            "taskHash": "977ad25c4648d891d2b5a02694954d3fb1562e1622ac52955a9f4d711f368d5f",
+            "taskType": "bug_fix",
+            "targetAgent": "claude-code",
+            "changedPathLabels": [
+              {
+                "path": "src/main/java/org/refactoringminer/astDiff/matchers/wrappers/BodyMapperMatcher.java",
+                "changeKind": "modified",
+                "role": "source",
+                "labelScope": "safe"
+              },
+              {
+                "path": "src/main/java/org/refactoringminer/astDiff/utils/Constants.java",
+                "changeKind": "modified",
+                "role": "source",
+                "labelScope": "safe"
+              },
+              {
+                "path": "src/main/java/org/refactoringminer/astDiff/utils/TreeUtilFunctions.java",
+                "changeKind": "modified",
+                "role": "source",
+                "labelScope": "safe"
+              }
+            ],
+            "safeChangedFiles": [
+              "src/main/java/org/refactoringminer/astDiff/matchers/wrappers/BodyMapperMatcher.java",
+              "src/main/java/org/refactoringminer/astDiff/utils/Constants.java",
+              "src/main/java/org/refactoringminer/astDiff/utils/TreeUtilFunctions.java"
+            ],
+            "excludedChangedFileCount": 0,
+            "recommendedFiles": [
+              "src/main/java/extension/ast/node/statement/LangThrowStatement.java",
+              "src/main/java/extension/base/lang/python/PythonParser.java",
+              "src/main/java/gr/uom/java/xmi/decomposition/AbstractCall.java",
+              "src/main/java/gr/uom/java/xmi/decomposition/AdvancedAssertionMigrationMatcher.java",
+              "src/main/java/gr/uom/java/xmi/decomposition/OperationBody.java",
+              "src/main/java/gr/uom/java/xmi/decomposition/ReplacementAlgorithm.java",
+              "src/main/java/gr/uom/java/xmi/decomposition/UMLOperationBodyMapper.java",
+              "src/main/java/extension/base/lang/csharp/CSharpParser.java"
+            ],
+            "recommendedTests": [
+              "src/test/java/org/refactoringminer/test/ExpectedAnnotationToAssertThrowsTest.java",
+              "src/test/java/org/refactoringminer/astDiff/tests/IgnoringCommentsVisitorTest.java",
+              "src/test/java/org/refactoringminer/astDiff/tests/ConsideringCommentsVisitorTest.java",
+              "src/test/java/org/refactoringminer/utils/RefactoringCollector.java",
+              "src/test/java/org/refactoringminer/test/TestRelatedStatementMappingsTest.java"
+            ],
+            "recommendedContextFiles": [
+              "src/main/java/extension/ast/node/statement/LangThrowStatement.java",
+              "src/main/java/extension/base/lang/python/PythonParser.java",
+              "src/main/java/gr/uom/java/xmi/decomposition/AbstractCall.java",
+              "src/main/java/gr/uom/java/xmi/decomposition/AdvancedAssertionMigrationMatcher.java",
+              "src/main/java/gr/uom/java/xmi/decomposition/OperationBody.java",
+              "src/main/java/gr/uom/java/xmi/decomposition/ReplacementAlgorithm.java",
+              "src/main/java/gr/uom/java/xmi/decomposition/UMLOperationBodyMapper.java",
+              "src/test/java/org/refactoringminer/test/ExpectedAnnotationToAssertThrowsTest.java",
+              "src/test/java/org/refactoringminer/astDiff/tests/IgnoringCommentsVisitorTest.java",
+              "src/test/java/org/refactoringminer/astDiff/tests/ConsideringCommentsVisitorTest.java"
+            ],
+            "recommendedCommands": [
+              "./gradlew test --tests org.refactoringminer.test.ExpectedAnnotationToAssertThrowsTest",
+              "./gradlew test --tests org.refactoringminer.astDiff.tests.IgnoringCommentsVisitorTest",
+              "./gradlew test --tests org.refactoringminer.astDiff.tests.ConsideringCommentsVisitorTest",
+              "./gradlew test --tests org.refactoringminer.utils.RefactoringCollector",
+              "./gradlew test --tests org.refactoringminer.test.TestRelatedStatementMappingsTest"
+            ],
+            "lexicalBaselineFiles": [
+              "src/test/java/org/refactoringminer/test/ExpectedAnnotationToAssertThrowsTest.java",
+              "src/main/java/extension/ast/node/statement/LangThrowStatement.java",
+              "src/main/java/extension/base/lang/python/PythonParser.java",
+              "src/main/java/gr/uom/java/xmi/decomposition/AbstractCall.java",
+              "src/main/java/gr/uom/java/xmi/decomposition/AdvancedAssertionMigrationMatcher.java",
+              "src/main/java/gr/uom/java/xmi/decomposition/OperationBody.java",
+              "src/main/java/gr/uom/java/xmi/decomposition/ReplacementAlgorithm.java",
+              "src/main/java/gr/uom/java/xmi/decomposition/UMLOperationBodyMapper.java",
+              "src/main/java/gr/uom/java/xmi/diff/AssertThrowsRefactoring.java",
+              "src/main/java/gr/uom/java/xmi/diff/UMLClassBaseDiff.java"
+            ],
+            "signalBaselineFiles": [
+              {
+                "signal": "semantic",
+                "files": [
+                  "src/test/java/org/refactoringminer/astDiff/tests/IgnoringCommentsVisitorTest.java",
+                  "src/test/java/org/refactoringminer/astDiff/tests/ConsideringCommentsVisitorTest.java"
+                ]
+              },
+              {
+                "signal": "dependency",
+                "files": []
+              },
+              {
+                "signal": "related_test",
+                "files": [
+                  "src/test/java/org/refactoringminer/test/ExpectedAnnotationToAssertThrowsTest.java",
+                  "src/test/java/org/refactoringminer/astDiff/tests/IgnoringCommentsVisitorTest.java",
+                  "src/test/java/org/refactoringminer/astDiff/tests/ConsideringCommentsVisitorTest.java"
+                ]
+              },
+              {
+                "signal": "co_change",
+                "files": []
+              },
+              {
+                "signal": "memory",
+                "files": []
+              }
+            ],
+            "fileHitsAt5": [],
+            "fileHitsAt10": [],
+            "lexicalBaselineHitsAt5": [],
+            "lexicalBaselineHitsAt10": [],
+            "missingFilesAt10": [
+              "src/main/java/org/refactoringminer/astDiff/matchers/wrappers/BodyMapperMatcher.java",
+              "src/main/java/org/refactoringminer/astDiff/utils/Constants.java",
+              "src/main/java/org/refactoringminer/astDiff/utils/TreeUtilFunctions.java"
+            ],
+            "sourceFilesChanged": 3,
+            "sourceHitsAt5": 0,
+            "sourceHitsAt10": 0,
+            "testFilesChanged": 0,
+            "testHitsAt5": 0,
+            "testHitsAt10": 0,
+            "lowInformationTask": false,
+            "confidence": 0.8,
+            "elapsedMillis": 19159,
+            "sourceTextLogged": false
+          },
+          {
+            "sha": "5a9fd78610c74a26d1102cd1eaa28d81759718b9",
+            "taskHash": "ccff286d8df1c1e8b2c2cf0e3dff45ce4cb3f0dc854be66fa4f416b8a0cbc46f",
+            "taskType": "bug_fix",
+            "targetAgent": "claude-code",
+            "changedPathLabels": [
+              {
+                "path": "src/main/java/org/refactoringminer/astDiff/matchers/wrappers/BodyMapperMatcher.java",
+                "changeKind": "modified",
+                "role": "source",
+                "labelScope": "safe"
+              },
+              {
+                "path": "src/main/java/org/refactoringminer/astDiff/matchers/wrappers/ClassDeclarationMatcher.java",
+                "changeKind": "modified",
+                "role": "source",
+                "labelScope": "safe"
+              },
+              {
+                "path": "src/main/java/org/refactoringminer/astDiff/matchers/wrappers/FieldDeclarationMatcher.java",
+                "changeKind": "modified",
+                "role": "source",
+                "labelScope": "safe"
+              },
+              {
+                "path": "src/main/java/org/refactoringminer/astDiff/matchers/wrappers/MethodMatcher.java",
+                "changeKind": "modified",
+                "role": "source",
+                "labelScope": "safe"
+              }
+            ],
+            "safeChangedFiles": [
+              "src/main/java/org/refactoringminer/astDiff/matchers/wrappers/BodyMapperMatcher.java",
+              "src/main/java/org/refactoringminer/astDiff/matchers/wrappers/ClassDeclarationMatcher.java",
+              "src/main/java/org/refactoringminer/astDiff/matchers/wrappers/FieldDeclarationMatcher.java",
+              "src/main/java/org/refactoringminer/astDiff/matchers/wrappers/MethodMatcher.java"
+            ],
+            "excludedChangedFileCount": 0,
+            "recommendedFiles": [
+              "src/main/java/org/refactoringminer/astDiff/matchers/wrappers/BodyMapperMatcher.java",
+              "src/main/java/org/refactoringminer/astDiff/matchers/wrappers/ClassDeclarationMatcher.java",
+              "src/main/java/gr/uom/java/xmi/diff/UMLClassBaseDiff.java",
+              "src/main/java/org/refactoringminer/astDiff/matchers/wrappers/FieldDeclarationMatcher.java",
+              "src/main/java/org/refactoringminer/astDiff/utils/MappingExportModel.java",
+              "src/main/java/org/refactoringminer/astDiff/utils/ExportUtils.java",
+              "src/main/java/org/refactoringminer/astDiff/matchers/wrappers/MethodMatcher.java",
+              "src/main/java/org/refactoringminer/astDiff/models/ASTDiff.java"
+            ],
+            "recommendedTests": [
+              "src/test/java/org/refactoringminer/astDiff/tests/TypeScriptDiffTest.java",
+              "src/test/java/gui/MarkAsViewedTest.java",
+              "src/test/java/gui/webdiff/viewers/spv/SinglePageViewViewedFilesTest.java",
+              "src/test/java/org/refactoringminer/astDiff/tests/ConsideringCommentsVisitorTest.java",
+              "src/test/java/org/refactoringminer/astDiff/tests/Defects4JPerfectDiffTest.java"
+            ],
+            "recommendedContextFiles": [
+              "src/main/java/org/refactoringminer/astDiff/matchers/wrappers/BodyMapperMatcher.java",
+              "src/main/java/org/refactoringminer/astDiff/matchers/wrappers/ClassDeclarationMatcher.java",
+              "src/main/java/gr/uom/java/xmi/diff/UMLClassBaseDiff.java",
+              "src/main/java/org/refactoringminer/astDiff/matchers/wrappers/FieldDeclarationMatcher.java",
+              "src/main/java/org/refactoringminer/astDiff/utils/MappingExportModel.java",
+              "src/main/java/org/refactoringminer/astDiff/utils/ExportUtils.java",
+              "src/main/java/org/refactoringminer/astDiff/matchers/wrappers/MethodMatcher.java",
+              "src/test/java/org/refactoringminer/astDiff/tests/TypeScriptDiffTest.java",
+              "src/test/java/gui/MarkAsViewedTest.java",
+              "src/test/java/gui/webdiff/viewers/spv/SinglePageViewViewedFilesTest.java"
+            ],
+            "recommendedCommands": [
+              "./gradlew test --tests org.refactoringminer.astDiff.tests.TypeScriptDiffTest",
+              "./gradlew test --tests gui.MarkAsViewedTest",
+              "./gradlew test --tests gui.webdiff.viewers.spv.SinglePageViewViewedFilesTest",
+              "./gradlew test --tests org.refactoringminer.astDiff.tests.ConsideringCommentsVisitorTest",
+              "./gradlew test --tests org.refactoringminer.astDiff.tests.Defects4JPerfectDiffTest"
+            ],
+            "lexicalBaselineFiles": [
+              "src/main/java/org/refactoringminer/astDiff/matchers/wrappers/BodyMapperMatcher.java",
+              "src/main/java/org/refactoringminer/astDiff/matchers/wrappers/ClassDeclarationMatcher.java",
+              "src/main/java/gr/uom/java/xmi/diff/UMLClassBaseDiff.java",
+              "src/main/java/org/refactoringminer/astDiff/matchers/wrappers/FieldDeclarationMatcher.java",
+              "src/main/java/org/refactoringminer/astDiff/utils/MappingExportModel.java",
+              "src/main/java/org/refactoringminer/astDiff/utils/ExportUtils.java",
+              "src/test/java/org/refactoringminer/astDiff/tests/TypeScriptDiffTest.java",
+              "src/main/java/org/refactoringminer/astDiff/matchers/wrappers/MethodMatcher.java",
+              "src/main/java/org/refactoringminer/astDiff/matchers/wrappers/KeywordMatcher.java",
+              "src/main/java/org/refactoringminer/astDiff/utils/Constants.java"
+            ],
+            "signalBaselineFiles": [
+              {
+                "signal": "semantic",
+                "files": []
+              },
+              {
+                "signal": "dependency",
+                "files": []
+              },
+              {
+                "signal": "related_test",
+                "files": [
+                  "src/test/java/org/refactoringminer/astDiff/tests/TypeScriptDiffTest.java",
+                  "src/test/java/gui/MarkAsViewedTest.java",
+                  "src/test/java/gui/webdiff/viewers/spv/SinglePageViewViewedFilesTest.java"
+                ]
+              },
+              {
+                "signal": "co_change",
+                "files": []
+              },
+              {
+                "signal": "memory",
+                "files": []
+              }
+            ],
+            "fileHitsAt5": [
+              "src/main/java/org/refactoringminer/astDiff/matchers/wrappers/BodyMapperMatcher.java",
+              "src/main/java/org/refactoringminer/astDiff/matchers/wrappers/ClassDeclarationMatcher.java",
+              "src/main/java/org/refactoringminer/astDiff/matchers/wrappers/FieldDeclarationMatcher.java"
+            ],
+            "fileHitsAt10": [
+              "src/main/java/org/refactoringminer/astDiff/matchers/wrappers/BodyMapperMatcher.java",
+              "src/main/java/org/refactoringminer/astDiff/matchers/wrappers/ClassDeclarationMatcher.java",
+              "src/main/java/org/refactoringminer/astDiff/matchers/wrappers/FieldDeclarationMatcher.java",
+              "src/main/java/org/refactoringminer/astDiff/matchers/wrappers/MethodMatcher.java"
+            ],
+            "lexicalBaselineHitsAt5": [
+              "src/main/java/org/refactoringminer/astDiff/matchers/wrappers/BodyMapperMatcher.java",
+              "src/main/java/org/refactoringminer/astDiff/matchers/wrappers/ClassDeclarationMatcher.java",
+              "src/main/java/org/refactoringminer/astDiff/matchers/wrappers/FieldDeclarationMatcher.java"
+            ],
+            "lexicalBaselineHitsAt10": [
+              "src/main/java/org/refactoringminer/astDiff/matchers/wrappers/BodyMapperMatcher.java",
+              "src/main/java/org/refactoringminer/astDiff/matchers/wrappers/ClassDeclarationMatcher.java",
+              "src/main/java/org/refactoringminer/astDiff/matchers/wrappers/FieldDeclarationMatcher.java",
+              "src/main/java/org/refactoringminer/astDiff/matchers/wrappers/MethodMatcher.java"
+            ],
+            "missingFilesAt10": [],
+            "sourceFilesChanged": 4,
+            "sourceHitsAt5": 3,
+            "sourceHitsAt10": 4,
+            "testFilesChanged": 0,
+            "testHitsAt5": 0,
+            "testHitsAt10": 0,
+            "lowInformationTask": false,
+            "confidence": 0.8,
+            "elapsedMillis": 19297,
+            "sourceTextLogged": false
+          },
+          {
+            "sha": "4fa3c1a48ad40779dba7f214dd62e682a9bf173d",
+            "taskHash": "ccd0ac64e7536b4107fa37175cceca22c55832fe774af77a9066094fa70fb477",
+            "taskType": "bug_fix",
+            "targetAgent": "claude-code",
+            "changedPathLabels": [
+              {
+                "path": "docker/Dockerfile",
+                "changeKind": "modified",
+                "role": "config",
+                "labelScope": "safe"
+              },
+              {
+                "path": "docker/README.md",
+                "changeKind": "modified",
+                "role": "docs",
+                "labelScope": "safe"
+              },
+              {
+                "path": "docker/native/Dockerfile-native",
+                "changeKind": "modified",
+                "role": "unknown",
+                "labelScope": "safe"
+              },
+              {
+                "path": "documentation/mcp.md",
+                "changeKind": "modified",
+                "role": "docs",
+                "labelScope": "safe"
+              },
+              {
+                "path": "src/main/java/gui/webdiff/WebDiff.java",
+                "changeKind": "modified",
+                "role": "source",
+                "labelScope": "safe"
+              },
+              {
+                "path": "src/main/java/org/refactoringminer/mcp/McpDiffBrowserResult.java",
+                "changeKind": "modified",
+                "role": "source",
+                "labelScope": "safe"
+              },
+              {
+                "path": "src/main/java/org/refactoringminer/mcp/WebDiffBrowserLauncher.java",
+                "changeKind": "modified",
+                "role": "source",
+                "labelScope": "safe"
+              },
+              {
+                "path": "src/test/java/org/refactoringminer/mcp/WebDiffBrowserLauncherTest.java",
+                "changeKind": "modified",
+                "role": "test",
+                "labelScope": "safe"
+              }
+            ],
+            "safeChangedFiles": [
+              "docker/Dockerfile",
+              "docker/README.md",
+              "docker/native/Dockerfile-native",
+              "documentation/mcp.md",
+              "src/main/java/gui/webdiff/WebDiff.java",
+              "src/main/java/org/refactoringminer/mcp/McpDiffBrowserResult.java",
+              "src/main/java/org/refactoringminer/mcp/WebDiffBrowserLauncher.java",
+              "src/test/java/org/refactoringminer/mcp/WebDiffBrowserLauncherTest.java"
+            ],
+            "excludedChangedFileCount": 0,
+            "recommendedFiles": [
+              "src/main/java/org/refactoringminer/mcp/WebDiffBrowserLauncher.java",
+              "documentation/mcp.md",
+              "src/main/java/org/refactoringminer/mcp/RefactoringMinerMcpTools.java",
+              "src/main/java/org/refactoringminer/mcp/RefactoringMinerMcpService.java",
+              "src/main/java/org/refactoringminer/mcp/McpDiffBrowserResult.java",
+              "src/main/java/gui/webdiff/WebDiff.java",
+              "src/main/java/org/refactoringminer/mcp/McpAnalysisResult.java",
+              "src/main/java/gui/webdiff/DiffDriver.java"
+            ],
+            "recommendedTests": [
+              "src/test/java/org/refactoringminer/mcp/WebDiffBrowserLauncherTest.java",
+              "src/test/java/org/refactoringminer/mcp/McpIntentValidatorTest.java",
+              "src/test/java/org/refactoringminer/mcp/RefactoringMinerMcpServiceRepositoryTest.java",
+              "src/test/java/org/refactoringminer/mcp/RefactoringMinerMcpServiceTest.java",
+              "src/test/java/org/refactoringminer/mcp/RefactoringMinerMcpToolsTest.java"
+            ],
+            "recommendedContextFiles": [
+              "src/main/java/org/refactoringminer/mcp/WebDiffBrowserLauncher.java",
+              "documentation/mcp.md",
+              "src/main/java/org/refactoringminer/mcp/RefactoringMinerMcpTools.java",
+              "src/main/java/org/refactoringminer/mcp/RefactoringMinerMcpService.java",
+              "src/main/java/org/refactoringminer/mcp/McpDiffBrowserResult.java",
+              "src/main/java/gui/webdiff/WebDiff.java",
+              "src/main/java/org/refactoringminer/mcp/McpAnalysisResult.java",
+              "src/test/java/org/refactoringminer/mcp/WebDiffBrowserLauncherTest.java",
+              "src/test/java/org/refactoringminer/mcp/McpIntentValidatorTest.java",
+              "src/test/java/org/refactoringminer/mcp/RefactoringMinerMcpServiceRepositoryTest.java"
+            ],
+            "recommendedCommands": [
+              "./gradlew test --tests org.refactoringminer.mcp.WebDiffBrowserLauncherTest",
+              "./gradlew test --tests org.refactoringminer.mcp.McpIntentValidatorTest",
+              "./gradlew test --tests org.refactoringminer.mcp.RefactoringMinerMcpServiceRepositoryTest",
+              "./gradlew test --tests org.refactoringminer.mcp.RefactoringMinerMcpServiceTest",
+              "./gradlew test --tests org.refactoringminer.mcp.RefactoringMinerMcpToolsTest"
+            ],
+            "lexicalBaselineFiles": [
+              "src/main/java/org/refactoringminer/mcp/WebDiffBrowserLauncher.java",
+              "src/test/java/org/refactoringminer/mcp/WebDiffBrowserLauncherTest.java",
+              "documentation/mcp.md",
+              "src/main/java/org/refactoringminer/mcp/RefactoringMinerMcpTools.java",
+              "src/main/java/org/refactoringminer/mcp/RefactoringMinerMcpService.java",
+              "src/main/java/org/refactoringminer/mcp/McpDiffBrowserResult.java",
+              "src/main/java/gui/webdiff/WebDiff.java",
+              "src/main/java/org/refactoringminer/mcp/McpAnalysisResult.java",
+              "src/main/java/org/refactoringminer/mcp/McpIntentValidator.java",
+              "src/main/java/org/refactoringminer/mcp/McpValidationResult.java"
+            ],
+            "signalBaselineFiles": [
+              {
+                "signal": "semantic",
+                "files": []
+              },
+              {
+                "signal": "dependency",
+                "files": []
+              },
+              {
+                "signal": "related_test",
+                "files": [
+                  "src/test/java/org/refactoringminer/mcp/WebDiffBrowserLauncherTest.java",
+                  "src/test/java/org/refactoringminer/mcp/McpIntentValidatorTest.java",
+                  "src/test/java/org/refactoringminer/mcp/RefactoringMinerMcpServiceRepositoryTest.java"
+                ]
+              },
+              {
+                "signal": "co_change",
+                "files": []
+              },
+              {
+                "signal": "memory",
+                "files": []
+              }
+            ],
+            "fileHitsAt5": [
+              "documentation/mcp.md",
+              "src/main/java/org/refactoringminer/mcp/McpDiffBrowserResult.java",
+              "src/main/java/org/refactoringminer/mcp/WebDiffBrowserLauncher.java"
+            ],
+            "fileHitsAt10": [
+              "documentation/mcp.md",
+              "src/main/java/gui/webdiff/WebDiff.java",
+              "src/main/java/org/refactoringminer/mcp/McpDiffBrowserResult.java",
+              "src/main/java/org/refactoringminer/mcp/WebDiffBrowserLauncher.java",
+              "src/test/java/org/refactoringminer/mcp/WebDiffBrowserLauncherTest.java"
+            ],
+            "lexicalBaselineHitsAt5": [
+              "documentation/mcp.md",
+              "src/main/java/org/refactoringminer/mcp/WebDiffBrowserLauncher.java",
+              "src/test/java/org/refactoringminer/mcp/WebDiffBrowserLauncherTest.java"
+            ],
+            "lexicalBaselineHitsAt10": [
+              "documentation/mcp.md",
+              "src/main/java/gui/webdiff/WebDiff.java",
+              "src/main/java/org/refactoringminer/mcp/McpDiffBrowserResult.java",
+              "src/main/java/org/refactoringminer/mcp/WebDiffBrowserLauncher.java",
+              "src/test/java/org/refactoringminer/mcp/WebDiffBrowserLauncherTest.java"
+            ],
+            "missingFilesAt10": [
+              "docker/Dockerfile",
+              "docker/README.md",
+              "docker/native/Dockerfile-native"
+            ],
+            "sourceFilesChanged": 3,
+            "sourceHitsAt5": 2,
+            "sourceHitsAt10": 3,
+            "testFilesChanged": 1,
+            "testHitsAt5": 0,
+            "testHitsAt10": 1,
+            "lowInformationTask": false,
+            "confidence": 0.8,
+            "elapsedMillis": 17622,
+            "sourceTextLogged": false
+          },
+          {
+            "sha": "cb7a929389689011b7d64097f6960dfa578ef2d5",
+            "taskHash": "613bded438fc0ebf15ceaed5fc150998ea27d7a3c4ecdbc9fc980066eec9f96c",
+            "taskType": "bug_fix",
+            "targetAgent": "claude-code",
+            "changedPathLabels": [
+              {
+                "path": "publishToMavenCentral.gradle",
+                "changeKind": "modified",
+                "role": "unknown",
+                "labelScope": "safe"
+              }
+            ],
+            "safeChangedFiles": [
+              "publishToMavenCentral.gradle"
+            ],
+            "excludedChangedFileCount": 0,
+            "recommendedFiles": [
+              "publishToMavenCentral.gradle",
+              ".github/workflows/gradle.yml",
+              "build.gradle",
+              "src/main/java/gr/uom/java/xmi/diff/ReplacePipelineWithLoopRefactoring.java",
+              "gradlew",
+              "gradlew.bat",
+              "src/main/java/extension/base/lang/csharp/CSharpParser.java",
+              "src/main/java/extension/base/lang/python/PythonParser.java"
+            ],
+            "recommendedTests": [
+              "src/test/java/org/refactoringminer/test/TestNewDatasetRefactorings.java",
+              "src/test/java/org/refactoringminer/test/TestStatementMappings.java",
+              "src/test/java/gui/MarkAsViewedTest.java",
+              "src/test/java/gui/webdiff/viewers/spv/SinglePageViewViewedFilesTest.java",
+              "src/test/java/org/refactoringminer/astDiff/tests/ConsideringCommentsVisitorTest.java"
+            ],
+            "recommendedContextFiles": [
+              "publishToMavenCentral.gradle",
+              ".github/workflows/gradle.yml",
+              "build.gradle",
+              "src/main/java/gr/uom/java/xmi/diff/ReplacePipelineWithLoopRefactoring.java",
+              "gradlew",
+              "gradlew.bat",
+              "src/main/java/extension/base/lang/csharp/CSharpParser.java",
+              "src/test/java/org/refactoringminer/test/TestNewDatasetRefactorings.java",
+              "src/test/java/org/refactoringminer/test/TestStatementMappings.java",
+              "src/test/java/gui/MarkAsViewedTest.java"
+            ],
+            "recommendedCommands": [
+              "./gradlew test --tests org.refactoringminer.test.TestNewDatasetRefactorings",
+              "./gradlew test --tests org.refactoringminer.test.TestStatementMappings",
+              "./gradlew test --tests gui.MarkAsViewedTest",
+              "./gradlew test --tests gui.webdiff.viewers.spv.SinglePageViewViewedFilesTest",
+              "./gradlew test --tests org.refactoringminer.astDiff.tests.ConsideringCommentsVisitorTest"
+            ],
+            "lexicalBaselineFiles": [
+              "publishToMavenCentral.gradle",
+              ".github/workflows/gradle.yml",
+              "build.gradle",
+              "src/main/java/gr/uom/java/xmi/diff/ReplacePipelineWithLoopRefactoring.java",
+              "gradlew",
+              "gradlew.bat",
+              "documentation/how-to.md",
+              "src/test/java/org/refactoringminer/test/TestNewDatasetRefactorings.java",
+              "gradle/wrapper/gradle-wrapper.properties",
+              "src/test/java/org/refactoringminer/test/TestStatementMappings.java"
+            ],
+            "signalBaselineFiles": [
+              {
+                "signal": "semantic",
+                "files": [
+                  "gradlew"
+                ]
+              },
+              {
+                "signal": "dependency",
+                "files": []
+              },
+              {
+                "signal": "related_test",
+                "files": [
+                  "src/test/java/org/refactoringminer/test/TestNewDatasetRefactorings.java",
+                  "src/test/java/org/refactoringminer/test/TestStatementMappings.java",
+                  "src/test/java/gui/MarkAsViewedTest.java"
+                ]
+              },
+              {
+                "signal": "co_change",
+                "files": []
+              },
+              {
+                "signal": "memory",
+                "files": []
+              }
+            ],
+            "fileHitsAt5": [
+              "publishToMavenCentral.gradle"
+            ],
+            "fileHitsAt10": [
+              "publishToMavenCentral.gradle"
+            ],
+            "lexicalBaselineHitsAt5": [
+              "publishToMavenCentral.gradle"
+            ],
+            "lexicalBaselineHitsAt10": [
+              "publishToMavenCentral.gradle"
+            ],
+            "missingFilesAt10": [],
+            "sourceFilesChanged": 0,
+            "sourceHitsAt5": 0,
+            "sourceHitsAt10": 0,
+            "testFilesChanged": 0,
+            "testHitsAt5": 0,
+            "testHitsAt10": 0,
+            "lowInformationTask": false,
+            "confidence": 0.8,
+            "elapsedMillis": 17824,
+            "sourceTextLogged": false
+          },
+          {
+            "sha": "bc014a0d4392ff227f23597900dea3c203f69f9c",
+            "taskHash": "764b66e9dac759130998e931e50c1de09e52c7d5e5cb994f6a0e2441aca7fe77",
+            "taskType": "bug_fix",
+            "targetAgent": "claude-code",
+            "changedPathLabels": [
+              {
+                "path": "README.md",
+                "changeKind": "modified",
+                "role": "docs",
+                "labelScope": "safe"
+              }
+            ],
+            "safeChangedFiles": [
+              "README.md"
+            ],
+            "excludedChangedFileCount": 0,
+            "recommendedFiles": [
+              "README.md",
+              "docker/README.md",
+              "src/main/java/gr/uom/java/xmi/decomposition/OperationBody.java",
+              ".github/workflows/updateTestStats.yml",
+              "documentation/how-to.md",
+              "src/main/java/gr/uom/java/xmi/diff/UMLClassBaseDiff.java",
+              "src/main/java/gr/uom/java/xmi/decomposition/AbstractCall.java",
+              "src/main/java/gr/uom/java/xmi/decomposition/CreationReference.java"
+            ],
+            "recommendedTests": [
+              "src/test/java/gui/webdiff/viewers/spv/SinglePageViewViewedFilesTest.java",
+              "src/test/java/gui/MarkAsViewedTest.java",
+              "src/test/java/org/refactoringminer/astDiff/tests/ConsideringCommentsVisitorTest.java",
+              "src/test/java/org/refactoringminer/astDiff/tests/Defects4JPerfectDiffTest.java",
+              "src/test/java/org/refactoringminer/astDiff/tests/Defects4JProblematicCasesTest.java"
+            ],
+            "recommendedContextFiles": [
+              "README.md",
+              "docker/README.md",
+              "src/main/java/gr/uom/java/xmi/decomposition/OperationBody.java",
+              ".github/workflows/updateTestStats.yml",
+              "documentation/how-to.md",
+              "src/main/java/gr/uom/java/xmi/diff/UMLClassBaseDiff.java",
+              "src/main/java/gr/uom/java/xmi/decomposition/AbstractCall.java",
+              "src/test/java/gui/webdiff/viewers/spv/SinglePageViewViewedFilesTest.java",
+              "src/test/java/gui/MarkAsViewedTest.java",
+              "src/test/java/org/refactoringminer/astDiff/tests/ConsideringCommentsVisitorTest.java"
+            ],
+            "recommendedCommands": [
+              "./gradlew test --tests gui.webdiff.viewers.spv.SinglePageViewViewedFilesTest",
+              "./gradlew test --tests gui.MarkAsViewedTest",
+              "./gradlew test --tests org.refactoringminer.astDiff.tests.ConsideringCommentsVisitorTest",
+              "./gradlew test --tests org.refactoringminer.astDiff.tests.Defects4JPerfectDiffTest",
+              "./gradlew test --tests org.refactoringminer.astDiff.tests.Defects4JProblematicCasesTest"
+            ],
+            "lexicalBaselineFiles": [
+              "README.md",
+              "docker/README.md",
+              "src/main/java/gr/uom/java/xmi/decomposition/OperationBody.java",
+              ".github/workflows/updateTestStats.yml",
+              "documentation/how-to.md",
+              "src/main/java/gr/uom/java/xmi/diff/UMLClassBaseDiff.java",
+              "src/main/java/gr/uom/java/xmi/decomposition/UMLOperationBodyMapper.java",
+              "documentation/research.md",
+              "documentation/accuracy.md",
+              "documentation/api.md"
+            ],
+            "signalBaselineFiles": [
+              {
+                "signal": "semantic",
+                "files": [
+                  "src/test/java/gui/webdiff/viewers/spv/SinglePageViewViewedFilesTest.java"
+                ]
+              },
+              {
+                "signal": "dependency",
+                "files": []
+              },
+              {
+                "signal": "related_test",
+                "files": [
+                  "src/test/java/gui/webdiff/viewers/spv/SinglePageViewViewedFilesTest.java",
+                  "src/test/java/gui/MarkAsViewedTest.java",
+                  "src/test/java/org/refactoringminer/astDiff/tests/ConsideringCommentsVisitorTest.java"
+                ]
+              },
+              {
+                "signal": "co_change",
+                "files": []
+              },
+              {
+                "signal": "memory",
+                "files": []
+              }
+            ],
+            "fileHitsAt5": [
+              "README.md"
+            ],
+            "fileHitsAt10": [
+              "README.md"
+            ],
+            "lexicalBaselineHitsAt5": [
+              "README.md"
+            ],
+            "lexicalBaselineHitsAt10": [
+              "README.md"
+            ],
+            "missingFilesAt10": [],
+            "sourceFilesChanged": 0,
+            "sourceHitsAt5": 0,
+            "sourceHitsAt10": 0,
+            "testFilesChanged": 0,
+            "testHitsAt5": 0,
+            "testHitsAt10": 0,
+            "lowInformationTask": false,
+            "confidence": 0.8,
+            "elapsedMillis": 17638,
+            "sourceTextLogged": false
+          },
+          {
+            "sha": "bd0b2277933fda91585b7819fa9f5ed7cfd5edbc",
+            "taskHash": "3afa526b1d7fe7362b44ba343b7c1c60aee3d8f10fb676edfe5a3135e27fc3ac",
+            "taskType": "bug_fix",
+            "targetAgent": "claude-code",
+            "changedPathLabels": [
+              {
+                "path": "build.gradle",
+                "changeKind": "modified",
+                "role": "unknown",
+                "labelScope": "safe"
+              },
+              {
+                "path": "documentation/mcp.md",
+                "changeKind": "modified",
+                "role": "docs",
+                "labelScope": "safe"
+              },
+              {
+                "path": "src/main/java/org/refactoringminer/mcp/RefactoringMinerMcpTools.java",
+                "changeKind": "modified",
+                "role": "source",
+                "labelScope": "safe"
+              },
+              {
+                "path": "src/main/java/org/refactoringminer/mcp/WebDiffBrowserLauncher.java",
+                "changeKind": "modified",
+                "role": "source",
+                "labelScope": "safe"
+              },
+              {
+                "path": "src/main/resources/logback.xml",
+                "changeKind": "modified",
+                "role": "unknown",
+                "labelScope": "safe"
+              },
+              {
+                "path": "src/test/java/org/refactoringminer/mcp/RefactoringMinerMcpToolsTest.java",
+                "changeKind": "modified",
+                "role": "test",
+                "labelScope": "safe"
+              }
+            ],
+            "safeChangedFiles": [
+              "build.gradle",
+              "documentation/mcp.md",
+              "src/main/java/org/refactoringminer/mcp/RefactoringMinerMcpTools.java",
+              "src/main/java/org/refactoringminer/mcp/WebDiffBrowserLauncher.java",
+              "src/main/resources/logback.xml",
+              "src/test/java/org/refactoringminer/mcp/RefactoringMinerMcpToolsTest.java"
+            ],
+            "excludedChangedFileCount": 0,
+            "recommendedFiles": [
+              "documentation/mcp.md",
+              "src/main/java/org/refactoringminer/mcp/McpAnalysisResult.java",
+              "src/main/java/org/refactoringminer/mcp/McpIntentValidator.java",
+              "src/main/java/org/refactoringminer/mcp/McpValidationResult.java",
+              "src/main/java/org/refactoringminer/mcp/RefactoringMinerMcpServer.java",
+              "src/main/java/org/refactoringminer/mcp/RefactoringMinerMcpService.java",
+              "src/main/java/org/refactoringminer/mcp/RefactoringMinerMcpTools.java",
+              "src/test/java/org/refactoringminer/mcp/McpIntentValidatorTest.java"
+            ],
+            "recommendedTests": [
+              "src/test/java/org/refactoringminer/mcp/McpIntentValidatorTest.java",
+              "src/test/java/org/refactoringminer/mcp/RefactoringMinerMcpServiceRepositoryTest.java",
+              "src/test/java/org/refactoringminer/mcp/McpValidationContractTest.java",
+              "src/test/java/org/refactoringminer/mcp/RefactoringMinerMcpServerStartupTest.java",
+              "src/test/java/org/refactoringminer/mcp/RefactoringMinerMcpServiceTest.java"
+            ],
+            "recommendedContextFiles": [
+              "documentation/mcp.md",
+              "src/main/java/org/refactoringminer/mcp/McpAnalysisResult.java",
+              "src/main/java/org/refactoringminer/mcp/McpIntentValidator.java",
+              "src/main/java/org/refactoringminer/mcp/McpValidationResult.java",
+              "src/main/java/org/refactoringminer/mcp/RefactoringMinerMcpServer.java",
+              "src/main/java/org/refactoringminer/mcp/RefactoringMinerMcpService.java",
+              "src/main/java/org/refactoringminer/mcp/RefactoringMinerMcpTools.java",
+              "src/test/java/org/refactoringminer/mcp/McpIntentValidatorTest.java",
+              "src/test/java/org/refactoringminer/mcp/RefactoringMinerMcpServiceRepositoryTest.java",
+              "src/test/java/org/refactoringminer/mcp/McpValidationContractTest.java"
+            ],
+            "recommendedCommands": [
+              "./gradlew test --tests org.refactoringminer.mcp.McpIntentValidatorTest",
+              "./gradlew test --tests org.refactoringminer.mcp.RefactoringMinerMcpServiceRepositoryTest",
+              "./gradlew test --tests org.refactoringminer.mcp.McpValidationContractTest",
+              "./gradlew test --tests org.refactoringminer.mcp.RefactoringMinerMcpServerStartupTest",
+              "./gradlew test --tests org.refactoringminer.mcp.RefactoringMinerMcpServiceTest"
+            ],
+            "lexicalBaselineFiles": [
+              "documentation/mcp.md",
+              "src/main/java/org/refactoringminer/mcp/McpAnalysisResult.java",
+              "src/main/java/org/refactoringminer/mcp/McpIntentValidator.java",
+              "src/main/java/org/refactoringminer/mcp/McpValidationResult.java",
+              "src/main/java/org/refactoringminer/mcp/RefactoringMinerMcpServer.java",
+              "src/main/java/org/refactoringminer/mcp/RefactoringMinerMcpService.java",
+              "src/main/java/org/refactoringminer/mcp/RefactoringMinerMcpTools.java",
+              "src/test/java/org/refactoringminer/mcp/McpIntentValidatorTest.java",
+              "src/test/java/org/refactoringminer/mcp/McpValidationContractTest.java",
+              "src/test/java/org/refactoringminer/mcp/RefactoringMinerMcpServiceRepositoryTest.java"
+            ],
+            "signalBaselineFiles": [
+              {
+                "signal": "semantic",
+                "files": []
+              },
+              {
+                "signal": "dependency",
+                "files": []
+              },
+              {
+                "signal": "related_test",
+                "files": [
+                  "src/test/java/org/refactoringminer/mcp/McpIntentValidatorTest.java",
+                  "src/test/java/org/refactoringminer/mcp/RefactoringMinerMcpServiceRepositoryTest.java",
+                  "src/test/java/org/refactoringminer/mcp/McpValidationContractTest.java"
+                ]
+              },
+              {
+                "signal": "co_change",
+                "files": []
+              },
+              {
+                "signal": "memory",
+                "files": []
+              }
+            ],
+            "fileHitsAt5": [
+              "documentation/mcp.md"
+            ],
+            "fileHitsAt10": [
+              "documentation/mcp.md",
+              "src/main/java/org/refactoringminer/mcp/RefactoringMinerMcpTools.java"
+            ],
+            "lexicalBaselineHitsAt5": [
+              "documentation/mcp.md"
+            ],
+            "lexicalBaselineHitsAt10": [
+              "documentation/mcp.md",
+              "src/main/java/org/refactoringminer/mcp/RefactoringMinerMcpTools.java"
+            ],
+            "missingFilesAt10": [
+              "build.gradle",
+              "src/main/java/org/refactoringminer/mcp/WebDiffBrowserLauncher.java",
+              "src/main/resources/logback.xml",
+              "src/test/java/org/refactoringminer/mcp/RefactoringMinerMcpToolsTest.java"
+            ],
+            "sourceFilesChanged": 2,
+            "sourceHitsAt5": 0,
+            "sourceHitsAt10": 1,
+            "testFilesChanged": 1,
+            "testHitsAt5": 0,
+            "testHitsAt10": 0,
+            "lowInformationTask": false,
+            "confidence": 0.8,
+            "elapsedMillis": 17730,
+            "sourceTextLogged": false
+          },
+          {
+            "sha": "f19a66e121cad62f13f08118e028ddbde84d22c2",
+            "taskHash": "dd13fa1b7a77f4bca4697ada0ef87ff96cef1787390a894f89f438245fdbb949",
+            "taskType": "bug_fix",
+            "targetAgent": "claude-code",
+            "changedPathLabels": [
+              {
+                "path": "documentation/mcp.md",
+                "changeKind": "modified",
+                "role": "docs",
+                "labelScope": "safe"
+              }
+            ],
+            "safeChangedFiles": [
+              "documentation/mcp.md"
+            ],
+            "excludedChangedFileCount": 0,
+            "recommendedFiles": [
+              "src/main/java/org/refactoringminer/mcp/McpDiffBrowserResult.java",
+              "documentation/mcp.md",
+              "src/main/java/org/refactoringminer/mcp/RefactoringMinerMcpService.java",
+              "src/main/java/org/refactoringminer/mcp/RefactoringMinerMcpTools.java",
+              "src/main/java/org/refactoringminer/mcp/WebDiffBrowserLauncher.java",
+              "src/main/java/org/refactoringminer/mcp/DiffBrowserLauncher.java",
+              "src/main/java/org/refactoringminer/mcp/McpAnalysisResult.java",
+              "src/main/java/org/refactoringminer/astDiff/models/ProjectASTDiff.java"
+            ],
+            "recommendedTests": [
+              "src/test/java/org/refactoringminer/mcp/RefactoringMinerMcpServiceTest.java",
+              "src/test/java/org/refactoringminer/mcp/RefactoringMinerMcpToolsTest.java",
+              "src/test/java/org/refactoringminer/mcp/WebDiffBrowserLauncherTest.java",
+              "src/test/java/org/refactoringminer/mcp/RefactoringMinerMcpServiceRepositoryTest.java",
+              "src/test/java/org/refactoringminer/astDiff/utils/CaseInfoSerializer.java"
+            ],
+            "recommendedContextFiles": [
+              "src/main/java/org/refactoringminer/mcp/McpDiffBrowserResult.java",
+              "documentation/mcp.md",
+              "src/main/java/org/refactoringminer/mcp/RefactoringMinerMcpService.java",
+              "src/main/java/org/refactoringminer/mcp/RefactoringMinerMcpTools.java",
+              "src/main/java/org/refactoringminer/mcp/WebDiffBrowserLauncher.java",
+              "src/main/java/org/refactoringminer/mcp/DiffBrowserLauncher.java",
+              "src/main/java/org/refactoringminer/mcp/McpAnalysisResult.java",
+              "src/test/java/org/refactoringminer/mcp/RefactoringMinerMcpServiceTest.java",
+              "src/test/java/org/refactoringminer/mcp/RefactoringMinerMcpToolsTest.java",
+              "src/test/java/org/refactoringminer/mcp/WebDiffBrowserLauncherTest.java"
+            ],
+            "recommendedCommands": [
+              "./gradlew test --tests org.refactoringminer.mcp.RefactoringMinerMcpServiceTest",
+              "./gradlew test --tests org.refactoringminer.mcp.RefactoringMinerMcpToolsTest",
+              "./gradlew test --tests org.refactoringminer.mcp.WebDiffBrowserLauncherTest",
+              "./gradlew test --tests org.refactoringminer.mcp.RefactoringMinerMcpServiceRepositoryTest",
+              "./gradlew test --tests org.refactoringminer.astDiff.utils.CaseInfoSerializer"
+            ],
+            "lexicalBaselineFiles": [
+              "src/main/java/org/refactoringminer/mcp/McpDiffBrowserResult.java",
+              "documentation/mcp.md",
+              "src/main/java/org/refactoringminer/mcp/RefactoringMinerMcpService.java",
+              "src/main/java/org/refactoringminer/mcp/RefactoringMinerMcpTools.java",
+              "src/test/java/org/refactoringminer/mcp/RefactoringMinerMcpToolsTest.java",
+              "src/test/java/org/refactoringminer/mcp/WebDiffBrowserLauncherTest.java",
+              "src/main/java/org/refactoringminer/mcp/WebDiffBrowserLauncher.java",
+              "src/test/java/org/refactoringminer/mcp/RefactoringMinerMcpServiceTest.java",
+              "src/main/java/org/refactoringminer/mcp/DiffBrowserLauncher.java",
+              "src/main/java/org/refactoringminer/mcp/McpAnalysisResult.java"
+            ],
+            "signalBaselineFiles": [
+              {
+                "signal": "semantic",
+                "files": []
+              },
+              {
+                "signal": "dependency",
+                "files": []
+              },
+              {
+                "signal": "related_test",
+                "files": [
+                  "src/test/java/org/refactoringminer/mcp/RefactoringMinerMcpServiceTest.java",
+                  "src/test/java/org/refactoringminer/mcp/RefactoringMinerMcpToolsTest.java",
+                  "src/test/java/org/refactoringminer/mcp/WebDiffBrowserLauncherTest.java"
+                ]
+              },
+              {
+                "signal": "co_change",
+                "files": []
+              },
+              {
+                "signal": "memory",
+                "files": []
+              }
+            ],
+            "fileHitsAt5": [
+              "documentation/mcp.md"
+            ],
+            "fileHitsAt10": [
+              "documentation/mcp.md"
+            ],
+            "lexicalBaselineHitsAt5": [
+              "documentation/mcp.md"
+            ],
+            "lexicalBaselineHitsAt10": [
+              "documentation/mcp.md"
+            ],
+            "missingFilesAt10": [],
+            "sourceFilesChanged": 0,
+            "sourceHitsAt5": 0,
+            "sourceHitsAt10": 0,
+            "testFilesChanged": 0,
+            "testHitsAt5": 0,
+            "testHitsAt10": 0,
+            "lowInformationTask": false,
+            "confidence": 0.8,
+            "elapsedMillis": 16576,
+            "sourceTextLogged": false
+          },
+          {
+            "sha": "1b9f2cf08b3c1296e0c6ca9cd5d1c1d0bc901cda",
+            "taskHash": "6c787ac6243a495b4718be57f62a02485bd2f6eba2b5a1524d926ef43bb5a7af",
+            "taskType": "bug_fix",
+            "targetAgent": "claude-code",
+            "changedPathLabels": [
+              {
+                "path": "documentation/mcp.md",
+                "changeKind": "modified",
+                "role": "docs",
+                "labelScope": "safe"
+              },
+              {
+                "path": "src/main/java/gui/webdiff/WebDiff.java",
+                "changeKind": "modified",
+                "role": "source",
+                "labelScope": "safe"
+              },
+              {
+                "path": "src/main/java/org/refactoringminer/mcp/RefactoringMinerMcpService.java",
+                "changeKind": "modified",
+                "role": "source",
+                "labelScope": "safe"
+              },
+              {
+                "path": "src/main/java/org/refactoringminer/mcp/RefactoringMinerMcpTools.java",
+                "changeKind": "modified",
+                "role": "source",
+                "labelScope": "safe"
+              },
+              {
+                "path": "src/main/java/org/refactoringminer/mcp/WebDiffBrowserLauncher.java",
+                "changeKind": "modified",
+                "role": "source",
+                "labelScope": "safe"
+              },
+              {
+                "path": "src/test/java/org/refactoringminer/mcp/RefactoringMinerMcpToolsTest.java",
+                "changeKind": "modified",
+                "role": "test",
+                "labelScope": "safe"
+              },
+              {
+                "path": "src/test/java/org/refactoringminer/mcp/WebDiffBrowserLauncherTest.java",
+                "changeKind": "modified",
+                "role": "test",
+                "labelScope": "safe"
+              }
+            ],
+            "safeChangedFiles": [
+              "documentation/mcp.md",
+              "src/main/java/gui/webdiff/WebDiff.java",
+              "src/main/java/org/refactoringminer/mcp/RefactoringMinerMcpService.java",
+              "src/main/java/org/refactoringminer/mcp/RefactoringMinerMcpTools.java",
+              "src/main/java/org/refactoringminer/mcp/WebDiffBrowserLauncher.java",
+              "src/test/java/org/refactoringminer/mcp/RefactoringMinerMcpToolsTest.java",
+              "src/test/java/org/refactoringminer/mcp/WebDiffBrowserLauncherTest.java"
+            ],
+            "excludedChangedFileCount": 0,
+            "recommendedFiles": [
+              "src/main/java/org/refactoringminer/mcp/WebDiffBrowserLauncher.java",
+              "documentation/mcp.md",
+              "src/main/java/org/refactoringminer/mcp/RefactoringMinerMcpTools.java",
+              "src/main/java/gui/webdiff/dir/PullRequestReviewComment.java",
+              "src/main/java/org/refactoringminer/mcp/RefactoringMinerMcpService.java",
+              "src/main/java/org/refactoringminer/mcp/McpDiffBrowserResult.java",
+              "src/main/java/gui/webdiff/viewers/monaco/SingleMonacoContent.java",
+              "src/main/java/gui/webdiff/DiffDriver.java"
+            ],
+            "recommendedTests": [
+              "src/test/java/org/refactoringminer/mcp/WebDiffBrowserLauncherTest.java",
+              "src/test/java/org/refactoringminer/mcp/RefactoringMinerMcpServiceRepositoryTest.java",
+              "src/test/java/org/refactoringminer/mcp/RefactoringMinerMcpServiceTest.java",
+              "src/test/java/org/refactoringminer/mcp/RefactoringMinerMcpToolsTest.java",
+              "src/test/java/org/refactoringminer/astDiff/utils/CaseInfoSerializer.java"
+            ],
+            "recommendedContextFiles": [
+              "src/main/java/org/refactoringminer/mcp/WebDiffBrowserLauncher.java",
+              "documentation/mcp.md",
+              "src/main/java/org/refactoringminer/mcp/RefactoringMinerMcpTools.java",
+              "src/main/java/gui/webdiff/dir/PullRequestReviewComment.java",
+              "src/main/java/org/refactoringminer/mcp/RefactoringMinerMcpService.java",
+              "src/main/java/org/refactoringminer/mcp/McpDiffBrowserResult.java",
+              "src/main/java/gui/webdiff/viewers/monaco/SingleMonacoContent.java",
+              "src/test/java/org/refactoringminer/mcp/WebDiffBrowserLauncherTest.java",
+              "src/test/java/org/refactoringminer/mcp/RefactoringMinerMcpServiceRepositoryTest.java",
+              "src/test/java/org/refactoringminer/mcp/RefactoringMinerMcpServiceTest.java"
+            ],
+            "recommendedCommands": [
+              "./gradlew test --tests org.refactoringminer.mcp.WebDiffBrowserLauncherTest",
+              "./gradlew test --tests org.refactoringminer.mcp.RefactoringMinerMcpServiceRepositoryTest",
+              "./gradlew test --tests org.refactoringminer.mcp.RefactoringMinerMcpServiceTest",
+              "./gradlew test --tests org.refactoringminer.mcp.RefactoringMinerMcpToolsTest",
+              "./gradlew test --tests org.refactoringminer.astDiff.utils.CaseInfoSerializer"
+            ],
+            "lexicalBaselineFiles": [
+              "src/main/java/org/refactoringminer/mcp/WebDiffBrowserLauncher.java",
+              "src/test/java/org/refactoringminer/mcp/WebDiffBrowserLauncherTest.java",
+              "documentation/mcp.md",
+              "src/main/java/org/refactoringminer/mcp/RefactoringMinerMcpTools.java",
+              "src/main/java/gui/webdiff/dir/PullRequestReviewComment.java",
+              "src/main/java/org/refactoringminer/mcp/RefactoringMinerMcpService.java",
+              "src/main/java/org/refactoringminer/mcp/McpDiffBrowserResult.java",
+              "src/main/java/gui/webdiff/viewers/monaco/SingleMonacoContent.java",
+              "src/main/java/gui/webdiff/dir/DirComparator.java",
+              "src/main/java/gui/webdiff/WebDiff.java"
+            ],
+            "signalBaselineFiles": [
+              {
+                "signal": "semantic",
+                "files": []
+              },
+              {
+                "signal": "dependency",
+                "files": []
+              },
+              {
+                "signal": "related_test",
+                "files": [
+                  "src/test/java/org/refactoringminer/mcp/WebDiffBrowserLauncherTest.java",
+                  "src/test/java/org/refactoringminer/mcp/RefactoringMinerMcpServiceRepositoryTest.java",
+                  "src/test/java/org/refactoringminer/mcp/RefactoringMinerMcpServiceTest.java"
+                ]
+              },
+              {
+                "signal": "co_change",
+                "files": []
+              },
+              {
+                "signal": "memory",
+                "files": []
+              }
+            ],
+            "fileHitsAt5": [
+              "documentation/mcp.md",
+              "src/main/java/org/refactoringminer/mcp/RefactoringMinerMcpService.java",
+              "src/main/java/org/refactoringminer/mcp/RefactoringMinerMcpTools.java",
+              "src/main/java/org/refactoringminer/mcp/WebDiffBrowserLauncher.java"
+            ],
+            "fileHitsAt10": [
+              "documentation/mcp.md",
+              "src/main/java/org/refactoringminer/mcp/RefactoringMinerMcpService.java",
+              "src/main/java/org/refactoringminer/mcp/RefactoringMinerMcpTools.java",
+              "src/main/java/org/refactoringminer/mcp/WebDiffBrowserLauncher.java",
+              "src/test/java/org/refactoringminer/mcp/WebDiffBrowserLauncherTest.java"
+            ],
+            "lexicalBaselineHitsAt5": [
+              "documentation/mcp.md",
+              "src/main/java/org/refactoringminer/mcp/RefactoringMinerMcpTools.java",
+              "src/main/java/org/refactoringminer/mcp/WebDiffBrowserLauncher.java",
+              "src/test/java/org/refactoringminer/mcp/WebDiffBrowserLauncherTest.java"
+            ],
+            "lexicalBaselineHitsAt10": [
+              "documentation/mcp.md",
+              "src/main/java/gui/webdiff/WebDiff.java",
+              "src/main/java/org/refactoringminer/mcp/RefactoringMinerMcpService.java",
+              "src/main/java/org/refactoringminer/mcp/RefactoringMinerMcpTools.java",
+              "src/main/java/org/refactoringminer/mcp/WebDiffBrowserLauncher.java",
+              "src/test/java/org/refactoringminer/mcp/WebDiffBrowserLauncherTest.java"
+            ],
+            "missingFilesAt10": [
+              "src/main/java/gui/webdiff/WebDiff.java",
+              "src/test/java/org/refactoringminer/mcp/RefactoringMinerMcpToolsTest.java"
+            ],
+            "sourceFilesChanged": 4,
+            "sourceHitsAt5": 3,
+            "sourceHitsAt10": 3,
+            "testFilesChanged": 2,
+            "testHitsAt5": 0,
+            "testHitsAt10": 1,
+            "lowInformationTask": false,
+            "confidence": 0.8,
+            "elapsedMillis": 16469,
+            "sourceTextLogged": false
+          },
+          {
+            "sha": "65a2809dafe59f99c400884fb815b826bb18eb5f",
+            "taskHash": "06aa316941f38ce1657c87ed23ece6359d5ac0949d00be65825f1e5fc1d895db",
+            "taskType": "bug_fix",
+            "targetAgent": "claude-code",
+            "changedPathLabels": [
+              {
+                "path": "documentation/mcp.md",
+                "changeKind": "modified",
+                "role": "docs",
+                "labelScope": "safe"
+              },
+              {
+                "path": "src/main/java/gui/webdiff/WebDiff.java",
+                "changeKind": "modified",
+                "role": "source",
+                "labelScope": "safe"
+              },
+              {
+                "path": "src/main/java/org/refactoringminer/mcp/DiffBrowserLauncher.java",
+                "changeKind": "added",
+                "role": "source",
+                "labelScope": "safe"
+              },
+              {
+                "path": "src/main/java/org/refactoringminer/mcp/McpDiffBrowserResult.java",
+                "changeKind": "added",
+                "role": "source",
+                "labelScope": "safe"
+              },
+              {
+                "path": "src/main/java/org/refactoringminer/mcp/RefactoringMinerMcpService.java",
+                "changeKind": "modified",
+                "role": "source",
+                "labelScope": "safe"
+              },
+              {
+                "path": "src/main/java/org/refactoringminer/mcp/RefactoringMinerMcpTools.java",
+                "changeKind": "modified",
+                "role": "source",
+                "labelScope": "safe"
+              },
+              {
+                "path": "src/main/java/org/refactoringminer/mcp/WebDiffBrowserLauncher.java",
+                "changeKind": "added",
+                "role": "source",
+                "labelScope": "safe"
+              },
+              {
+                "path": "src/test/java/org/refactoringminer/mcp/RefactoringMinerMcpServiceTest.java",
+                "changeKind": "modified",
+                "role": "test",
+                "labelScope": "safe"
+              },
+              {
+                "path": "src/test/java/org/refactoringminer/mcp/RefactoringMinerMcpToolsTest.java",
+                "changeKind": "modified",
+                "role": "test",
+                "labelScope": "safe"
+              },
+              {
+                "path": "src/test/java/org/refactoringminer/mcp/WebDiffBrowserLauncherTest.java",
+                "changeKind": "added",
+                "role": "test",
+                "labelScope": "safe"
+              }
+            ],
+            "safeChangedFiles": [
+              "documentation/mcp.md",
+              "src/main/java/gui/webdiff/WebDiff.java",
+              "src/main/java/org/refactoringminer/mcp/DiffBrowserLauncher.java",
+              "src/main/java/org/refactoringminer/mcp/McpDiffBrowserResult.java",
+              "src/main/java/org/refactoringminer/mcp/RefactoringMinerMcpService.java",
+              "src/main/java/org/refactoringminer/mcp/RefactoringMinerMcpTools.java",
+              "src/main/java/org/refactoringminer/mcp/WebDiffBrowserLauncher.java",
+              "src/test/java/org/refactoringminer/mcp/RefactoringMinerMcpServiceTest.java",
+              "src/test/java/org/refactoringminer/mcp/RefactoringMinerMcpToolsTest.java",
+              "src/test/java/org/refactoringminer/mcp/WebDiffBrowserLauncherTest.java"
+            ],
+            "excludedChangedFileCount": 0,
+            "recommendedFiles": [
+              "src/main/java/org/refactoringminer/mcp/RefactoringMinerMcpTools.java",
+              "src/main/java/org/refactoringminer/astDiff/matchers/ProjectASTDiffer.java",
+              "src/main/java/org/refactoringminer/astDiff/models/ProjectASTDiff.java",
+              "src/main/java/org/refactoringminer/mcp/McpAnalysisResult.java",
+              "src/main/java/org/refactoringminer/astDiff/moved/AllSubTreesMovedASTDiffGenerator.java",
+              "src/main/java/org/refactoringminer/mcp/McpIntentValidator.java",
+              "src/main/java/org/refactoringminer/astDiff/models/ASTDiff.java",
+              "src/main/java/org/refactoringminer/astDiff/matchers/wrappers/ASTDiffMappingOptimizer.java"
+            ],
+            "recommendedTests": [
+              "src/test/java/org/refactoringminer/mcp/RefactoringMinerMcpToolsTest.java",
+              "src/test/java/org/refactoringminer/astDiff/utils/dataset/runners/AddCommand.java",
+              "src/test/java/org/refactoringminer/mcp/RefactoringMinerMcpServiceRepositoryTest.java",
+              "src/test/java/org/refactoringminer/mcp/McpIntentValidatorTest.java",
+              "src/test/java/gui/MarkAsViewedTest.java"
+            ],
+            "recommendedContextFiles": [
+              "src/main/java/org/refactoringminer/mcp/RefactoringMinerMcpTools.java",
+              "src/main/java/org/refactoringminer/astDiff/matchers/ProjectASTDiffer.java",
+              "src/main/java/org/refactoringminer/astDiff/models/ProjectASTDiff.java",
+              "src/main/java/org/refactoringminer/mcp/McpAnalysisResult.java",
+              "src/main/java/org/refactoringminer/astDiff/moved/AllSubTreesMovedASTDiffGenerator.java",
+              "src/main/java/org/refactoringminer/mcp/McpIntentValidator.java",
+              "src/main/java/org/refactoringminer/astDiff/models/ASTDiff.java",
+              "src/test/java/org/refactoringminer/mcp/RefactoringMinerMcpToolsTest.java",
+              "src/test/java/org/refactoringminer/astDiff/utils/dataset/runners/AddCommand.java",
+              "src/test/java/org/refactoringminer/mcp/RefactoringMinerMcpServiceRepositoryTest.java"
+            ],
+            "recommendedCommands": [
+              "./gradlew test --tests org.refactoringminer.mcp.RefactoringMinerMcpToolsTest",
+              "./gradlew test --tests org.refactoringminer.astDiff.utils.dataset.runners.AddCommand",
+              "./gradlew test --tests org.refactoringminer.mcp.RefactoringMinerMcpServiceRepositoryTest",
+              "./gradlew test --tests org.refactoringminer.mcp.McpIntentValidatorTest",
+              "./gradlew test --tests gui.MarkAsViewedTest"
+            ],
+            "lexicalBaselineFiles": [
+              "src/test/java/org/refactoringminer/mcp/RefactoringMinerMcpToolsTest.java",
+              "src/main/java/org/refactoringminer/mcp/RefactoringMinerMcpTools.java",
+              "src/test/java/org/refactoringminer/astDiff/utils/dataset/runners/AddCommand.java",
+              "src/main/java/org/refactoringminer/astDiff/matchers/ProjectASTDiffer.java",
+              "src/main/java/org/refactoringminer/astDiff/models/ProjectASTDiff.java",
+              "src/main/java/org/refactoringminer/mcp/McpAnalysisResult.java",
+              "src/main/java/org/refactoringminer/astDiff/moved/AllSubTreesMovedASTDiffGenerator.java",
+              "src/main/java/org/refactoringminer/mcp/McpIntentValidator.java",
+              "src/test/java/org/refactoringminer/mcp/RefactoringMinerMcpServiceRepositoryTest.java",
+              "src/main/java/org/refactoringminer/astDiff/models/ASTDiff.java"
+            ],
+            "signalBaselineFiles": [
+              {
+                "signal": "semantic",
+                "files": [
+                  "src/main/java/org/refactoringminer/astDiff/matchers/ProjectASTDiffer.java"
+                ]
+              },
+              {
+                "signal": "dependency",
+                "files": []
+              },
+              {
+                "signal": "related_test",
+                "files": [
+                  "src/test/java/org/refactoringminer/mcp/RefactoringMinerMcpToolsTest.java",
+                  "src/test/java/org/refactoringminer/astDiff/utils/dataset/runners/AddCommand.java",
+                  "src/test/java/org/refactoringminer/mcp/RefactoringMinerMcpServiceRepositoryTest.java"
+                ]
+              },
+              {
+                "signal": "co_change",
+                "files": []
+              },
+              {
+                "signal": "memory",
+                "files": []
+              }
+            ],
+            "fileHitsAt5": [
+              "src/main/java/org/refactoringminer/mcp/RefactoringMinerMcpTools.java"
+            ],
+            "fileHitsAt10": [
+              "src/main/java/org/refactoringminer/mcp/RefactoringMinerMcpTools.java",
+              "src/test/java/org/refactoringminer/mcp/RefactoringMinerMcpToolsTest.java"
+            ],
+            "lexicalBaselineHitsAt5": [
+              "src/main/java/org/refactoringminer/mcp/RefactoringMinerMcpTools.java",
+              "src/test/java/org/refactoringminer/mcp/RefactoringMinerMcpToolsTest.java"
+            ],
+            "lexicalBaselineHitsAt10": [
+              "src/main/java/org/refactoringminer/mcp/RefactoringMinerMcpTools.java",
+              "src/test/java/org/refactoringminer/mcp/RefactoringMinerMcpToolsTest.java"
+            ],
+            "missingFilesAt10": [
+              "documentation/mcp.md",
+              "src/main/java/gui/webdiff/WebDiff.java",
+              "src/main/java/org/refactoringminer/mcp/DiffBrowserLauncher.java",
+              "src/main/java/org/refactoringminer/mcp/McpDiffBrowserResult.java",
+              "src/main/java/org/refactoringminer/mcp/RefactoringMinerMcpService.java",
+              "src/main/java/org/refactoringminer/mcp/WebDiffBrowserLauncher.java",
+              "src/test/java/org/refactoringminer/mcp/RefactoringMinerMcpServiceTest.java",
+              "src/test/java/org/refactoringminer/mcp/WebDiffBrowserLauncherTest.java"
+            ],
+            "sourceFilesChanged": 6,
+            "sourceHitsAt5": 1,
+            "sourceHitsAt10": 1,
+            "testFilesChanged": 3,
+            "testHitsAt5": 0,
+            "testHitsAt10": 1,
+            "lowInformationTask": false,
+            "confidence": 0.8,
+            "elapsedMillis": 16598,
+            "sourceTextLogged": false
+          },
+          {
+            "sha": "5c47005d549f1c6432ff873d81a7dd283c3d1ccb",
+            "taskHash": "d56053b4006e149cee65057eb193e769ab1a41d2102ffd118b866cfadd07bcf5",
+            "taskType": "bug_fix",
+            "targetAgent": "claude-code",
+            "changedPathLabels": [
+              {
+                "path": "README.md",
+                "changeKind": "modified",
+                "role": "docs",
+                "labelScope": "safe"
+              },
+              {
+                "path": "build.gradle",
+                "changeKind": "modified",
+                "role": "unknown",
+                "labelScope": "safe"
+              },
+              {
+                "path": "documentation/mcp.md",
+                "changeKind": "added",
+                "role": "docs",
+                "labelScope": "safe"
+              },
+              {
+                "path": "src/main/java/org/refactoringminer/RefactoringMiner.java",
+                "changeKind": "modified",
+                "role": "source",
+                "labelScope": "safe"
+              },
+              {
+                "path": "src/main/java/org/refactoringminer/mcp/McpAnalysisResult.java",
+                "changeKind": "added",
+                "role": "source",
+                "labelScope": "safe"
+              },
+              {
+                "path": "src/main/java/org/refactoringminer/mcp/McpIntentValidator.java",
+                "changeKind": "added",
+                "role": "source",
+                "labelScope": "safe"
+              },
+              {
+                "path": "src/main/java/org/refactoringminer/mcp/McpRefactoringIntent.java",
+                "changeKind": "added",
+                "role": "source",
+                "labelScope": "safe"
+              },
+              {
+                "path": "src/main/java/org/refactoringminer/mcp/McpRefactoringResult.java",
+                "changeKind": "added",
+                "role": "source",
+                "labelScope": "safe"
+              },
+              {
+                "path": "src/main/java/org/refactoringminer/mcp/McpValidationResult.java",
+                "changeKind": "added",
+                "role": "source",
+                "labelScope": "safe"
+              },
+              {
+                "path": "src/main/java/org/refactoringminer/mcp/RefactoringMinerMcpServer.java",
+                "changeKind": "added",
+                "role": "source",
+                "labelScope": "safe"
+              },
+              {
+                "path": "src/main/java/org/refactoringminer/mcp/RefactoringMinerMcpService.java",
+                "changeKind": "added",
+                "role": "source",
+                "labelScope": "safe"
+              },
+              {
+                "path": "src/main/java/org/refactoringminer/mcp/RefactoringMinerMcpTools.java",
+                "changeKind": "added",
+                "role": "source",
+                "labelScope": "safe"
+              },
+              {
+                "path": "src/main/java/org/refactoringminer/mcp/WorktreeChangeCollector.java",
+                "changeKind": "added",
+                "role": "source",
+                "labelScope": "safe"
+              },
+              {
+                "path": "src/main/resources/logback.xml",
+                "changeKind": "modified",
+                "role": "unknown",
+                "labelScope": "safe"
+              },
+              {
+                "path": "src/test/java/org/refactoringminer/mcp/McpIntentValidatorTest.java",
+                "changeKind": "added",
+                "role": "test",
+                "labelScope": "safe"
+              },
+              {
+                "path": "src/test/java/org/refactoringminer/mcp/McpValidationContractTest.java",
+                "changeKind": "added",
+                "role": "test",
+                "labelScope": "safe"
+              },
+              {
+                "path": "src/test/java/org/refactoringminer/mcp/RefactoringMinerMcpServerStartupTest.java",
+                "changeKind": "added",
+                "role": "test",
+                "labelScope": "safe"
+              },
+              {
+                "path": "src/test/java/org/refactoringminer/mcp/RefactoringMinerMcpServiceRepositoryTest.java",
+                "changeKind": "added",
+                "role": "test",
+                "labelScope": "safe"
+              },
+              {
+                "path": "src/test/java/org/refactoringminer/mcp/RefactoringMinerMcpServiceTest.java",
+                "changeKind": "added",
+                "role": "test",
+                "labelScope": "safe"
+              },
+              {
+                "path": "src/test/java/org/refactoringminer/mcp/RefactoringMinerMcpToolsTest.java",
+                "changeKind": "added",
+                "role": "test",
+                "labelScope": "safe"
+              },
+              {
+                "path": "src/test/java/org/refactoringminer/mcp/WorktreeChangeCollectorTest.java",
+                "changeKind": "added",
+                "role": "test",
+                "labelScope": "safe"
+              }
+            ],
+            "safeChangedFiles": [
+              "README.md",
+              "build.gradle",
+              "documentation/mcp.md",
+              "src/main/java/org/refactoringminer/RefactoringMiner.java",
+              "src/main/java/org/refactoringminer/mcp/McpAnalysisResult.java",
+              "src/main/java/org/refactoringminer/mcp/McpIntentValidator.java",
+              "src/main/java/org/refactoringminer/mcp/McpRefactoringIntent.java",
+              "src/main/java/org/refactoringminer/mcp/McpRefactoringResult.java",
+              "src/main/java/org/refactoringminer/mcp/McpValidationResult.java",
+              "src/main/java/org/refactoringminer/mcp/RefactoringMinerMcpServer.java",
+              "src/main/java/org/refactoringminer/mcp/RefactoringMinerMcpService.java",
+              "src/main/java/org/refactoringminer/mcp/RefactoringMinerMcpTools.java",
+              "src/main/java/org/refactoringminer/mcp/WorktreeChangeCollector.java",
+              "src/main/resources/logback.xml",
+              "src/test/java/org/refactoringminer/mcp/McpIntentValidatorTest.java",
+              "src/test/java/org/refactoringminer/mcp/McpValidationContractTest.java",
+              "src/test/java/org/refactoringminer/mcp/RefactoringMinerMcpServerStartupTest.java",
+              "src/test/java/org/refactoringminer/mcp/RefactoringMinerMcpServiceRepositoryTest.java",
+              "src/test/java/org/refactoringminer/mcp/RefactoringMinerMcpServiceTest.java",
+              "src/test/java/org/refactoringminer/mcp/RefactoringMinerMcpToolsTest.java",
+              "src/test/java/org/refactoringminer/mcp/WorktreeChangeCollectorTest.java"
+            ],
+            "excludedChangedFileCount": 0,
+            "recommendedFiles": [
+              "src/main/java/org/refactoringminer/RefactoringMinerHttpServer.java",
+              "src/main/java/org/refactoringminer/RefactoringMinerHttpsServer.java",
+              "src/main/java/org/refactoringminer/perforce/PerforceHistoryRefactoringMinerImpl.java",
+              "src/main/java/org/refactoringminer/rm1/GitHistoryRefactoringMinerImpl.java",
+              "src/main/java/org/refactoringminer/astDiff/matchers/ProjectASTDiffer.java",
+              "src/main/java/gr/uom/java/xmi/decomposition/UMLOperationBodyMapper.java",
+              "src/main/java/gr/uom/java/xmi/decomposition/VariableReplacementAnalysis.java",
+              "src/main/java/gui/webdiff/RunMode.java"
+            ],
+            "recommendedTests": [
+              "src/test/java/org/refactoringminer/rm1/GitHistoryRefactoringMinerImplMergeCommitTest.java",
+              "src/test/java/org/refactoringminer/astDiff/utils/dataset/runners/AddCommand.java",
+              "src/test/java/org/refactoringminer/test/TestJavadocDiff.java",
+              "src/test/java/org/refactoringminer/test/TestStatementMappings.java",
+              "src/test/java/org/refactoringminer/test/TestStatementMappingsJunit4.java"
+            ],
+            "recommendedContextFiles": [
+              "src/main/java/org/refactoringminer/RefactoringMinerHttpServer.java",
+              "src/main/java/org/refactoringminer/RefactoringMinerHttpsServer.java",
+              "src/main/java/org/refactoringminer/perforce/PerforceHistoryRefactoringMinerImpl.java",
+              "src/main/java/org/refactoringminer/rm1/GitHistoryRefactoringMinerImpl.java",
+              "src/main/java/org/refactoringminer/astDiff/matchers/ProjectASTDiffer.java",
+              "src/main/java/gr/uom/java/xmi/decomposition/UMLOperationBodyMapper.java",
+              "src/main/java/gr/uom/java/xmi/decomposition/VariableReplacementAnalysis.java",
+              "src/test/java/org/refactoringminer/rm1/GitHistoryRefactoringMinerImplMergeCommitTest.java",
+              "src/test/java/org/refactoringminer/astDiff/utils/dataset/runners/AddCommand.java",
+              "src/test/java/org/refactoringminer/test/TestJavadocDiff.java"
+            ],
+            "recommendedCommands": [
+              "./gradlew test --tests org.refactoringminer.rm1.GitHistoryRefactoringMinerImplMergeCommitTest",
+              "./gradlew test --tests org.refactoringminer.astDiff.utils.dataset.runners.AddCommand",
+              "./gradlew test --tests org.refactoringminer.test.TestJavadocDiff",
+              "./gradlew test --tests org.refactoringminer.test.TestStatementMappings",
+              "./gradlew test --tests org.refactoringminer.test.TestStatementMappingsJunit4"
+            ],
+            "lexicalBaselineFiles": [
+              "src/main/java/org/refactoringminer/RefactoringMinerHttpServer.java",
+              "src/main/java/org/refactoringminer/RefactoringMinerHttpsServer.java",
+              "src/main/java/org/refactoringminer/perforce/PerforceHistoryRefactoringMinerImpl.java",
+              "src/test/java/org/refactoringminer/astDiff/utils/dataset/runners/AddCommand.java",
+              "src/test/java/org/refactoringminer/test/TestStatementMappings.java",
+              "src/test/java/org/refactoringminer/test/TestStatementMappingsJunit4.java",
+              "src/main/java/org/refactoringminer/rm1/GitHistoryRefactoringMinerImpl.java",
+              "src/test/java/org/refactoringminer/rm1/GitHistoryRefactoringMinerImplMergeCommitTest.java",
+              "src/test/java/org/refactoringminer/test/TestJavadocDiff.java",
+              "src/main/java/org/refactoringminer/astDiff/matchers/ProjectASTDiffer.java"
+            ],
+            "signalBaselineFiles": [
+              {
+                "signal": "semantic",
+                "files": []
+              },
+              {
+                "signal": "dependency",
+                "files": [
+                  "src/main/java/gr/uom/java/xmi/decomposition/UMLOperationBodyMapper.java",
+                  "src/main/java/gr/uom/java/xmi/decomposition/VariableReplacementAnalysis.java"
+                ]
+              },
+              {
+                "signal": "related_test",
+                "files": [
+                  "src/test/java/org/refactoringminer/rm1/GitHistoryRefactoringMinerImplMergeCommitTest.java",
+                  "src/test/java/org/refactoringminer/astDiff/utils/dataset/runners/AddCommand.java",
+                  "src/test/java/org/refactoringminer/test/TestJavadocDiff.java"
+                ]
+              },
+              {
+                "signal": "co_change",
+                "files": []
+              },
+              {
+                "signal": "memory",
+                "files": []
+              }
+            ],
+            "fileHitsAt5": [],
+            "fileHitsAt10": [],
+            "lexicalBaselineHitsAt5": [],
+            "lexicalBaselineHitsAt10": [],
+            "missingFilesAt10": [
+              "README.md",
+              "build.gradle",
+              "documentation/mcp.md",
+              "src/main/java/org/refactoringminer/RefactoringMiner.java",
+              "src/main/java/org/refactoringminer/mcp/McpAnalysisResult.java",
+              "src/main/java/org/refactoringminer/mcp/McpIntentValidator.java",
+              "src/main/java/org/refactoringminer/mcp/McpRefactoringIntent.java",
+              "src/main/java/org/refactoringminer/mcp/McpRefactoringResult.java",
+              "src/main/java/org/refactoringminer/mcp/McpValidationResult.java",
+              "src/main/java/org/refactoringminer/mcp/RefactoringMinerMcpServer.java",
+              "src/main/java/org/refactoringminer/mcp/RefactoringMinerMcpService.java",
+              "src/main/java/org/refactoringminer/mcp/RefactoringMinerMcpTools.java",
+              "src/main/java/org/refactoringminer/mcp/WorktreeChangeCollector.java",
+              "src/main/resources/logback.xml",
+              "src/test/java/org/refactoringminer/mcp/McpIntentValidatorTest.java",
+              "src/test/java/org/refactoringminer/mcp/McpValidationContractTest.java",
+              "src/test/java/org/refactoringminer/mcp/RefactoringMinerMcpServerStartupTest.java",
+              "src/test/java/org/refactoringminer/mcp/RefactoringMinerMcpServiceRepositoryTest.java",
+              "src/test/java/org/refactoringminer/mcp/RefactoringMinerMcpServiceTest.java",
+              "src/test/java/org/refactoringminer/mcp/RefactoringMinerMcpToolsTest.java",
+              "src/test/java/org/refactoringminer/mcp/WorktreeChangeCollectorTest.java"
+            ],
+            "sourceFilesChanged": 10,
+            "sourceHitsAt5": 0,
+            "sourceHitsAt10": 0,
+            "testFilesChanged": 7,
+            "testHitsAt5": 0,
+            "testHitsAt10": 0,
+            "lowInformationTask": false,
+            "confidence": 0.8,
+            "elapsedMillis": 15918,
+            "sourceTextLogged": false
+          },
+          {
+            "sha": "9444c83bb9dbe1f36d4e13100dccae94081645ca",
+            "taskHash": "23beef77c9f7ea45f95f0bc3b362a063d9b41c033aa01ba3a3f6b6ca0f90b101",
+            "taskType": "bug_fix",
+            "targetAgent": "claude-code",
+            "changedPathLabels": [
+              {
+                "path": "build.gradle",
+                "changeKind": "modified",
+                "role": "unknown",
+                "labelScope": "safe"
+              },
+              {
+                "path": "publishToMavenCentral.gradle",
+                "changeKind": "modified",
+                "role": "unknown",
+                "labelScope": "safe"
+              }
+            ],
+            "safeChangedFiles": [
+              "build.gradle",
+              "publishToMavenCentral.gradle"
+            ],
+            "excludedChangedFileCount": 0,
+            "recommendedFiles": [
+              "src/main/java/gr/uom/java/xmi/decomposition/OperationBody.java",
+              "src/main/java/gr/uom/java/xmi/decomposition/StringBasedHeuristics.java",
+              "src/main/java/gr/uom/java/xmi/decomposition/UMLOperationBodyMapper.java",
+              "src/main/java/gr/uom/java/xmi/diff/ReplacePipelineWithLoopRefactoring.java",
+              "src/main/java/gr/uom/java/xmi/diff/UMLClassBaseDiff.java",
+              "src/main/java/gui/webdiff/viewers/monaco/MonacoCore.java",
+              "src/main/java/org/refactoringminer/util/GitServiceImpl.java",
+              "src/main/java/gr/uom/java/xmi/UMLOperation.java"
+            ],
+            "recommendedTests": [
+              "src/test/resources/commandline/drill-2800c57981f27d04b97e5994c3f6325ca301f110-expected.json",
+              "src/test/resources/commandline/drill-gp-expected.json",
+              "src/test/resources/commandline/drill-1db65a271ef6574e1dd240669dc816fcd17740fd-expected.json",
+              "src/test/java/org/refactoringminer/util/GitServiceImplTest.java",
+              "src/test/java/org/refactoringminer/test/RefactoringPopulator.java"
+            ],
+            "recommendedContextFiles": [
+              "src/main/java/gr/uom/java/xmi/decomposition/OperationBody.java",
+              "src/main/java/gr/uom/java/xmi/decomposition/StringBasedHeuristics.java",
+              "src/main/java/gr/uom/java/xmi/decomposition/UMLOperationBodyMapper.java",
+              "src/main/java/gr/uom/java/xmi/diff/ReplacePipelineWithLoopRefactoring.java",
+              "src/main/java/gr/uom/java/xmi/diff/UMLClassBaseDiff.java",
+              "src/main/java/gui/webdiff/viewers/monaco/MonacoCore.java",
+              "src/main/java/org/refactoringminer/util/GitServiceImpl.java",
+              "src/test/resources/commandline/drill-2800c57981f27d04b97e5994c3f6325ca301f110-expected.json",
+              "src/test/resources/commandline/drill-gp-expected.json",
+              "src/test/resources/commandline/drill-1db65a271ef6574e1dd240669dc816fcd17740fd-expected.json"
+            ],
+            "recommendedCommands": [
+              "./gradlew test --tests org.refactoringminer.util.GitServiceImplTest",
+              "./gradlew test --tests org.refactoringminer.test.RefactoringPopulator"
+            ],
+            "lexicalBaselineFiles": [
+              "src/main/java/gr/uom/java/xmi/decomposition/OperationBody.java",
+              "src/main/java/gr/uom/java/xmi/decomposition/StringBasedHeuristics.java",
+              "src/main/java/gr/uom/java/xmi/decomposition/UMLOperationBodyMapper.java",
+              "src/main/java/gr/uom/java/xmi/diff/ReplacePipelineWithLoopRefactoring.java",
+              "src/main/java/gr/uom/java/xmi/diff/UMLClassBaseDiff.java",
+              "src/main/java/gui/webdiff/viewers/monaco/MonacoCore.java",
+              "src/main/java/org/refactoringminer/util/GitServiceImpl.java",
+              "src/test/resources/commandline/drill-1db65a271ef6574e1dd240669dc816fcd17740fd-expected.json",
+              "src/test/resources/commandline/drill-2800c57981f27d04b97e5994c3f6325ca301f110-expected.json",
+              "src/test/resources/commandline/drill-gp-expected.json"
+            ],
+            "signalBaselineFiles": [
+              {
+                "signal": "semantic",
+                "files": []
+              },
+              {
+                "signal": "dependency",
+                "files": []
+              },
+              {
+                "signal": "related_test",
+                "files": [
+                  "src/test/resources/commandline/drill-2800c57981f27d04b97e5994c3f6325ca301f110-expected.json",
+                  "src/test/resources/commandline/drill-gp-expected.json",
+                  "src/test/resources/commandline/drill-1db65a271ef6574e1dd240669dc816fcd17740fd-expected.json"
+                ]
+              },
+              {
+                "signal": "co_change",
+                "files": []
+              },
+              {
+                "signal": "memory",
+                "files": []
+              }
+            ],
+            "fileHitsAt5": [],
+            "fileHitsAt10": [],
+            "lexicalBaselineHitsAt5": [],
+            "lexicalBaselineHitsAt10": [],
+            "missingFilesAt10": [
+              "build.gradle",
+              "publishToMavenCentral.gradle"
+            ],
+            "sourceFilesChanged": 0,
+            "sourceHitsAt5": 0,
+            "sourceHitsAt10": 0,
+            "testFilesChanged": 0,
+            "testHitsAt5": 0,
+            "testHitsAt10": 0,
+            "lowInformationTask": false,
+            "confidence": 0.8,
+            "elapsedMillis": 16262,
+            "sourceTextLogged": false
+          },
+          {
+            "sha": "9bd4387a40bb7f52ad043a7c87497db192c5b1d2",
+            "taskHash": "764b66e9dac759130998e931e50c1de09e52c7d5e5cb994f6a0e2441aca7fe77",
+            "taskType": "bug_fix",
+            "targetAgent": "claude-code",
+            "changedPathLabels": [
+              {
+                "path": "README.md",
+                "changeKind": "modified",
+                "role": "docs",
+                "labelScope": "safe"
+              }
+            ],
+            "safeChangedFiles": [
+              "README.md"
+            ],
+            "excludedChangedFileCount": 0,
+            "recommendedFiles": [
+              "README.md",
+              "docker/README.md",
+              "src/main/java/gr/uom/java/xmi/decomposition/OperationBody.java",
+              ".github/workflows/updateTestStats.yml",
+              "documentation/how-to.md",
+              "src/main/java/gr/uom/java/xmi/diff/UMLClassBaseDiff.java",
+              "src/main/java/gr/uom/java/xmi/decomposition/AbstractCall.java",
+              "src/main/java/gr/uom/java/xmi/decomposition/CreationReference.java"
+            ],
+            "recommendedTests": [
+              "src/test/java/gui/webdiff/viewers/spv/SinglePageViewViewedFilesTest.java",
+              "src/test/java/gui/MarkAsViewedTest.java",
+              "src/test/java/org/refactoringminer/astDiff/tests/ConsideringCommentsVisitorTest.java",
+              "src/test/java/org/refactoringminer/astDiff/tests/Defects4JPerfectDiffTest.java",
+              "src/test/java/org/refactoringminer/astDiff/tests/Defects4JProblematicCasesTest.java"
+            ],
+            "recommendedContextFiles": [
+              "README.md",
+              "docker/README.md",
+              "src/main/java/gr/uom/java/xmi/decomposition/OperationBody.java",
+              ".github/workflows/updateTestStats.yml",
+              "documentation/how-to.md",
+              "src/main/java/gr/uom/java/xmi/diff/UMLClassBaseDiff.java",
+              "src/main/java/gr/uom/java/xmi/decomposition/AbstractCall.java",
+              "src/test/java/gui/webdiff/viewers/spv/SinglePageViewViewedFilesTest.java",
+              "src/test/java/gui/MarkAsViewedTest.java",
+              "src/test/java/org/refactoringminer/astDiff/tests/ConsideringCommentsVisitorTest.java"
+            ],
+            "recommendedCommands": [
+              "./gradlew test --tests gui.webdiff.viewers.spv.SinglePageViewViewedFilesTest",
+              "./gradlew test --tests gui.MarkAsViewedTest",
+              "./gradlew test --tests org.refactoringminer.astDiff.tests.ConsideringCommentsVisitorTest",
+              "./gradlew test --tests org.refactoringminer.astDiff.tests.Defects4JPerfectDiffTest",
+              "./gradlew test --tests org.refactoringminer.astDiff.tests.Defects4JProblematicCasesTest"
+            ],
+            "lexicalBaselineFiles": [
+              "README.md",
+              "docker/README.md",
+              "src/main/java/gr/uom/java/xmi/decomposition/OperationBody.java",
+              ".github/workflows/updateTestStats.yml",
+              "documentation/how-to.md",
+              "src/main/java/gr/uom/java/xmi/diff/UMLClassBaseDiff.java",
+              "src/main/java/gr/uom/java/xmi/decomposition/UMLOperationBodyMapper.java",
+              "documentation/research.md",
+              "documentation/accuracy.md",
+              "documentation/api.md"
+            ],
+            "signalBaselineFiles": [
+              {
+                "signal": "semantic",
+                "files": [
+                  "src/test/java/gui/webdiff/viewers/spv/SinglePageViewViewedFilesTest.java"
+                ]
+              },
+              {
+                "signal": "dependency",
+                "files": []
+              },
+              {
+                "signal": "related_test",
+                "files": [
+                  "src/test/java/gui/webdiff/viewers/spv/SinglePageViewViewedFilesTest.java",
+                  "src/test/java/gui/MarkAsViewedTest.java",
+                  "src/test/java/org/refactoringminer/astDiff/tests/ConsideringCommentsVisitorTest.java"
+                ]
+              },
+              {
+                "signal": "co_change",
+                "files": []
+              },
+              {
+                "signal": "memory",
+                "files": []
+              }
+            ],
+            "fileHitsAt5": [
+              "README.md"
+            ],
+            "fileHitsAt10": [
+              "README.md"
+            ],
+            "lexicalBaselineHitsAt5": [
+              "README.md"
+            ],
+            "lexicalBaselineHitsAt10": [
+              "README.md"
+            ],
+            "missingFilesAt10": [],
+            "sourceFilesChanged": 0,
+            "sourceHitsAt5": 0,
+            "sourceHitsAt10": 0,
+            "testFilesChanged": 0,
+            "testHitsAt5": 0,
+            "testHitsAt10": 0,
+            "lowInformationTask": false,
+            "confidence": 0.8,
+            "elapsedMillis": 16242,
+            "sourceTextLogged": false
+          },
+          {
+            "sha": "f39eb26471ac87125d3ad6eabfcefc1404a6ba2d",
+            "taskHash": "449829a15cac17385582c62e1286263fdd68ae4ad5e0a395fe4df3140d6f3cf0",
+            "taskType": "bug_fix",
+            "targetAgent": "claude-code",
+            "changedPathLabels": [
+              {
+                "path": "src/main/java/gr/uom/java/xmi/ModuleContainer.java",
+                "changeKind": "modified",
+                "role": "source",
+                "labelScope": "safe"
+              }
+            ],
+            "safeChangedFiles": [
+              "src/main/java/gr/uom/java/xmi/ModuleContainer.java"
+            ],
+            "excludedChangedFileCount": 0,
+            "recommendedFiles": [
+              "src/main/java/gr/uom/java/xmi/decomposition/UMLOperationBodyMapper.java",
+              "src/main/java/gr/uom/java/xmi/diff/UMLClassBaseDiff.java",
+              "src/test/java/org/refactoringminer/test/TestStatementMappings.java",
+              "src/main/java/gr/uom/java/xmi/decomposition/StringBasedHeuristics.java",
+              "src/main/java/extension/ast/builder/csharp/component/CSharpDeclarationASTBuilder.java",
+              "src/main/java/extension/ast/builder/python/component/PyDeclarationASTBuilder.java",
+              "src/main/java/extension/ast/node/declaration/LangTypeDeclaration.java",
+              "src/main/java/gr/uom/java/xmi/decomposition/ReplacementAlgorithm.java"
+            ],
+            "recommendedTests": [
+              "src/test/java/org/refactoringminer/test/TestStatementMappings.java",
+              "src/test/java/org/refactoringminer/test/TestStatementMappingsJunit4.java",
+              "src/test/java/org/refactoringminer/test/AdvancedAssertionMigrationTest.java",
+              "src/test/java/gui/MarkAsViewedTest.java",
+              "src/test/java/gui/webdiff/viewers/spv/SinglePageViewViewedFilesTest.java"
+            ],
+            "recommendedContextFiles": [
+              "src/main/java/gr/uom/java/xmi/decomposition/UMLOperationBodyMapper.java",
+              "src/main/java/gr/uom/java/xmi/diff/UMLClassBaseDiff.java",
+              "src/test/java/org/refactoringminer/test/TestStatementMappings.java",
+              "src/main/java/gr/uom/java/xmi/decomposition/StringBasedHeuristics.java",
+              "src/main/java/extension/ast/builder/csharp/component/CSharpDeclarationASTBuilder.java",
+              "src/main/java/extension/ast/builder/python/component/PyDeclarationASTBuilder.java",
+              "src/main/java/extension/ast/node/declaration/LangTypeDeclaration.java",
+              "src/test/java/org/refactoringminer/test/TestStatementMappingsJunit4.java",
+              "src/test/java/org/refactoringminer/test/AdvancedAssertionMigrationTest.java",
+              "src/test/java/gui/MarkAsViewedTest.java"
+            ],
+            "recommendedCommands": [
+              "./gradlew test --tests org.refactoringminer.test.TestStatementMappings",
+              "./gradlew test --tests org.refactoringminer.test.TestStatementMappingsJunit4",
+              "./gradlew test --tests org.refactoringminer.test.AdvancedAssertionMigrationTest",
+              "./gradlew test --tests gui.MarkAsViewedTest",
+              "./gradlew test --tests gui.webdiff.viewers.spv.SinglePageViewViewedFilesTest"
+            ],
+            "lexicalBaselineFiles": [
+              "src/main/java/gr/uom/java/xmi/decomposition/UMLOperationBodyMapper.java",
+              "src/test/java/org/refactoringminer/test/TestStatementMappingsJunit4.java",
+              "src/test/java/org/refactoringminer/test/TestStatementMappings.java",
+              "src/main/java/gr/uom/java/xmi/diff/UMLClassBaseDiff.java",
+              "src/main/java/gr/uom/java/xmi/decomposition/StringBasedHeuristics.java",
+              "src/main/java/gr/uom/java/xmi/decomposition/ReplacementAlgorithm.java",
+              "src/main/java/org/refactoringminer/api/PurityChecker.java",
+              "src/main/java/gr/uom/java/xmi/diff/UMLModelDiff.java",
+              "src/test/java/org/refactoringminer/test/AdvancedAssertionMigrationTest.java",
+              ".github/workflows/updateTestStats.yml"
+            ],
+            "signalBaselineFiles": [
+              {
+                "signal": "semantic",
+                "files": []
+              },
+              {
+                "signal": "dependency",
+                "files": [
+                  "src/main/java/extension/ast/builder/csharp/component/CSharpDeclarationASTBuilder.java",
+                  "src/main/java/extension/ast/builder/python/component/PyDeclarationASTBuilder.java",
+                  "src/main/java/extension/ast/node/declaration/LangTypeDeclaration.java"
+                ]
+              },
+              {
+                "signal": "related_test",
+                "files": [
+                  "src/test/java/org/refactoringminer/test/TestStatementMappings.java",
+                  "src/test/java/org/refactoringminer/test/TestStatementMappingsJunit4.java",
+                  "src/test/java/org/refactoringminer/test/AdvancedAssertionMigrationTest.java",
+                  "src/test/java/gui/MarkAsViewedTest.java"
+                ]
+              },
+              {
+                "signal": "co_change",
+                "files": []
+              },
+              {
+                "signal": "memory",
+                "files": []
+              }
+            ],
+            "fileHitsAt5": [],
+            "fileHitsAt10": [],
+            "lexicalBaselineHitsAt5": [],
+            "lexicalBaselineHitsAt10": [],
+            "missingFilesAt10": [
+              "src/main/java/gr/uom/java/xmi/ModuleContainer.java"
+            ],
+            "sourceFilesChanged": 1,
+            "sourceHitsAt5": 0,
+            "sourceHitsAt10": 0,
+            "testFilesChanged": 0,
+            "testHitsAt5": 0,
+            "testHitsAt10": 0,
+            "lowInformationTask": false,
+            "confidence": 0.8,
+            "elapsedMillis": 16528,
+            "sourceTextLogged": false
+          },
+          {
+            "sha": "789ffc1064c69d80d676369109408aba1163617b",
+            "taskHash": "5f09a761d8c5ba23a372bfc4b33e68e7b763286509a10a5aefd4ee90054e350b",
+            "taskType": "bug_fix",
+            "targetAgent": "claude-code",
+            "changedPathLabels": [
+              {
+                "path": "src/main/java/gr/uom/java/xmi/ModuleContainer.java",
+                "changeKind": "modified",
+                "role": "source",
+                "labelScope": "safe"
+              },
+              {
+                "path": "src/main/java/gr/uom/java/xmi/decomposition/AbstractCodeFragment.java",
+                "changeKind": "modified",
+                "role": "source",
+                "labelScope": "safe"
+              }
+            ],
+            "safeChangedFiles": [
+              "src/main/java/gr/uom/java/xmi/ModuleContainer.java",
+              "src/main/java/gr/uom/java/xmi/decomposition/AbstractCodeFragment.java"
+            ],
+            "excludedChangedFileCount": 0,
+            "recommendedFiles": [
+              "src/main/java/gr/uom/java/xmi/decomposition/UMLOperationBodyMapper.java",
+              "src/main/java/gr/uom/java/xmi/diff/UMLClassBaseDiff.java",
+              "src/main/java/gr/uom/java/xmi/decomposition/StringBasedHeuristics.java",
+              "src/test/java/org/refactoringminer/test/TestStatementMappings.java",
+              "src/main/java/gr/uom/java/xmi/decomposition/VariableReplacementAnalysis.java",
+              "src/main/java/org/refactoringminer/api/PurityChecker.java",
+              "src/main/java/gr/uom/java/xmi/UMLOperation.java",
+              "src/main/java/gr/uom/java/xmi/decomposition/OperationInvocation.java"
+            ],
+            "recommendedTests": [
+              "src/test/java/org/refactoringminer/test/TestStatementMappings.java",
+              "src/test/java/org/refactoringminer/test/TestStatementMappingsJunit4.java",
+              "src/test/java/org/refactoringminer/test/AdvancedAssertionMigrationTest.java",
+              "src/test/java/org/refactoringminer/astDiff/utils/dataset/runners/BenchmarkUtilityRunner.java",
+              "src/test/java/org/refactoringminer/astDiff/tests/ConsideringCommentsVisitorTest.java"
+            ],
+            "recommendedContextFiles": [
+              "src/main/java/gr/uom/java/xmi/decomposition/UMLOperationBodyMapper.java",
+              "src/main/java/gr/uom/java/xmi/diff/UMLClassBaseDiff.java",
+              "src/main/java/gr/uom/java/xmi/decomposition/StringBasedHeuristics.java",
+              "src/test/java/org/refactoringminer/test/TestStatementMappings.java",
+              "src/main/java/gr/uom/java/xmi/decomposition/VariableReplacementAnalysis.java",
+              "src/main/java/org/refactoringminer/api/PurityChecker.java",
+              "src/main/java/gr/uom/java/xmi/UMLOperation.java",
+              "src/test/java/org/refactoringminer/test/TestStatementMappingsJunit4.java",
+              "src/test/java/org/refactoringminer/test/AdvancedAssertionMigrationTest.java",
+              "src/test/java/org/refactoringminer/astDiff/utils/dataset/runners/BenchmarkUtilityRunner.java"
+            ],
+            "recommendedCommands": [
+              "./gradlew test --tests org.refactoringminer.test.TestStatementMappings",
+              "./gradlew test --tests org.refactoringminer.test.TestStatementMappingsJunit4",
+              "./gradlew test --tests org.refactoringminer.test.AdvancedAssertionMigrationTest",
+              "./gradlew test --tests org.refactoringminer.astDiff.utils.dataset.runners.BenchmarkUtilityRunner",
+              "./gradlew test --tests org.refactoringminer.astDiff.tests.ConsideringCommentsVisitorTest"
+            ],
+            "lexicalBaselineFiles": [
+              "src/main/java/gr/uom/java/xmi/decomposition/UMLOperationBodyMapper.java",
+              "src/test/java/org/refactoringminer/test/TestStatementMappingsJunit4.java",
+              "src/test/java/org/refactoringminer/test/TestStatementMappings.java",
+              "src/main/java/gr/uom/java/xmi/diff/UMLClassBaseDiff.java",
+              "src/main/java/gr/uom/java/xmi/decomposition/StringBasedHeuristics.java",
+              "src/main/java/org/refactoringminer/api/PurityChecker.java",
+              "src/main/java/gr/uom/java/xmi/diff/UMLModelDiff.java",
+              "src/test/java/org/refactoringminer/test/AdvancedAssertionMigrationTest.java",
+              ".github/workflows/updateTestStats.yml",
+              "src/main/java/gr/uom/java/xmi/decomposition/ReplacementAlgorithm.java"
+            ],
+            "signalBaselineFiles": [
+              {
+                "signal": "semantic",
+                "files": [
+                  "src/test/java/org/refactoringminer/astDiff/utils/dataset/runners/BenchmarkUtilityRunner.java"
+                ]
+              },
+              {
+                "signal": "dependency",
+                "files": [
+                  "src/main/java/gr/uom/java/xmi/decomposition/VariableReplacementAnalysis.java",
+                  "src/main/java/gr/uom/java/xmi/UMLOperation.java"
+                ]
+              },
+              {
+                "signal": "related_test",
+                "files": [
+                  "src/test/java/org/refactoringminer/test/TestStatementMappings.java",
+                  "src/test/java/org/refactoringminer/test/TestStatementMappingsJunit4.java",
+                  "src/test/java/org/refactoringminer/test/AdvancedAssertionMigrationTest.java",
+                  "src/test/java/org/refactoringminer/astDiff/utils/dataset/runners/BenchmarkUtilityRunner.java"
+                ]
+              },
+              {
+                "signal": "co_change",
+                "files": []
+              },
+              {
+                "signal": "memory",
+                "files": []
+              }
+            ],
+            "fileHitsAt5": [],
+            "fileHitsAt10": [],
+            "lexicalBaselineHitsAt5": [],
+            "lexicalBaselineHitsAt10": [],
+            "missingFilesAt10": [
+              "src/main/java/gr/uom/java/xmi/ModuleContainer.java",
+              "src/main/java/gr/uom/java/xmi/decomposition/AbstractCodeFragment.java"
+            ],
+            "sourceFilesChanged": 2,
+            "sourceHitsAt5": 0,
+            "sourceHitsAt10": 0,
+            "testFilesChanged": 0,
+            "testHitsAt5": 0,
+            "testHitsAt10": 0,
+            "lowInformationTask": false,
+            "confidence": 0.8,
+            "elapsedMillis": 16295,
+            "sourceTextLogged": false
+          }
+        ],
+        "privacyStatus": {
+          "localOnly": true,
+          "remoteEmbeddingsUsed": false,
+          "remoteRerankingUsed": false,
+          "redactionsApplied": 0
+        }
+      },
+      "error": null,
+      "privacyStatus": {
+        "localOnly": true,
+        "remoteEmbeddingsUsed": false,
+        "remoteRerankingUsed": false,
+        "redactionsApplied": 0
+      }
+    }
+  ],
+  "privacyStatus": {
+    "localOnly": true,
+    "remoteEmbeddingsUsed": false,
+    "remoteRerankingUsed": false,
+    "redactionsApplied": 0
+  }
+}
