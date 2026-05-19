@@ -14,7 +14,7 @@ The milestone is intentionally evaluation-first. Production semantic backends, c
 - Integer phases (50, 51, 52, 53, 54, 55): Planned v2.3 work
 - Decimal phases (50.1, 51.1): Urgent insertions if needed
 
-- [ ] **Phase 50: Fixed Benchmark Corpus & RefactoringMiner Regression Suite** - Maintainers can define fixed source-free benchmark corpora and lock the first large-history regression suite.
+- [x] **Phase 50: Fixed Benchmark Corpus & RefactoringMiner Regression Suite** - Maintainers can define fixed source-free benchmark corpora and lock the first large-history regression suite.
 - [ ] **Phase 51: Historical Eval Cache & Parallel Runner** - Maintainers can run large-history evals faster through cache reuse, parallel samples, and runtime diagnostics.
 - [ ] **Phase 52: Source-Free Candidate Feature Export** - Maintainers can export privacy-safe candidate feature rows for learning, diagnostics, and paired analysis.
 - [ ] **Phase 53: Paired Baseline & Ablation Analysis** - Maintainers can compare ctxpack against lexical, no-context, and signal-ablation baselines with honest verdicts.
@@ -40,7 +40,7 @@ The milestone is intentionally evaluation-first. Production semantic backends, c
 **Plans**: 1 plan
 
 Plans:
-- [ ] 50-fixed-benchmark-corpus-refactoringminer-regression-suite-01-PLAN.md - Build corpus manifests, lock RefactoringMiner baseline metadata, and document reproducible source-free benchmark setup.
+- [x] 50-fixed-benchmark-corpus-refactoringminer-regression-suite-01-PLAN.md - Build corpus manifests, lock RefactoringMiner baseline metadata, and document reproducible source-free benchmark setup.
 
 ### Phase 51: Historical Eval Cache & Parallel Runner
 
@@ -175,7 +175,7 @@ Phases execute in numeric order: 50 -> 51 -> 52 -> 53 -> 54 -> 55
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 50. Fixed Benchmark Corpus & RefactoringMiner Regression Suite | 0/1 | Not Started | - |
+| 50. Fixed Benchmark Corpus & RefactoringMiner Regression Suite | 1/1 | Complete | 2026-05-19 |
 | 51. Historical Eval Cache & Parallel Runner | 0/1 | Not Started | - |
 | 52. Source-Free Candidate Feature Export | 0/1 | Not Started | - |
 | 53. Paired Baseline & Ablation Analysis | 0/1 | Not Started | - |

@@ -19,13 +19,14 @@ pub use eval::{
     load_benchmark_suite_config, load_benchmark_suite_report, run_benchmark_suite,
     run_benchmark_suite_config, BenchmarkComparisonReport, BenchmarkDefaults,
     BenchmarkGapFamilyDelta, BenchmarkMetricDelta, BenchmarkRegressionThreshold,
-    BenchmarkRepoConfig, BenchmarkRepoEffectiveConfig, BenchmarkRepoReport, BenchmarkSuiteConfig,
-    BenchmarkSuiteReport, BenchmarkThresholdCheck, EvalComparison, HistoricalChangedPathLabel,
-    HistoricalCommitEval, HistoricalEvalEffectiveFilters, HistoricalEvalOptions,
-    HistoricalEvalRefs, HistoricalEvalReport, HistoricalEvalRuntimeSummary,
-    HistoricalMissingFileSummary, HistoricalSlowCommitSummary, ProductProofMetric,
-    ProductProofReport, RankingMetrics, RetrievalGapRecommendationArea, RetrievalGapSummary,
-    RetrievalGapTargetStatus, RoleRecallMetric, SignalAblationResult, TokenRoiMetric,
+    BenchmarkRepoBaseline, BenchmarkRepoBaselineStatus, BenchmarkRepoConfig,
+    BenchmarkRepoEffectiveConfig, BenchmarkRepoReport, BenchmarkSuiteConfig, BenchmarkSuiteReport,
+    BenchmarkThresholdCheck, EvalComparison, HistoricalChangedPathLabel, HistoricalCommitEval,
+    HistoricalEvalEffectiveFilters, HistoricalEvalOptions, HistoricalEvalRefs,
+    HistoricalEvalReport, HistoricalEvalRuntimeSummary, HistoricalMissingFileSummary,
+    HistoricalSlowCommitSummary, ProductProofMetric, ProductProofReport, RankingMetrics,
+    RetrievalGapRecommendationArea, RetrievalGapSummary, RetrievalGapTargetStatus,
+    RoleRecallMetric, SignalAblationResult, TokenRoiMetric,
 };
 pub use graph::build_graph_neighborhood_report;
 pub use packs::{
@@ -1864,7 +1865,10 @@ mod tests {
         std::env::set_var("CTXPACK_HOME", &home);
 
         let config = BenchmarkSuiteConfig {
+            manifest_version: "ctxpack-benchmark-corpus-v2.3".to_string(),
             name: "phase-nine-smoke".to_string(),
+            corpus_id: Some("phase-nine-smoke-corpus".to_string()),
+            privacy_label: Some("source_free_local".to_string()),
             description: Some("source-free benchmark contract smoke".to_string()),
             defaults: BenchmarkDefaults {
                 limit: 2,
@@ -1878,6 +1882,8 @@ mod tests {
                 BenchmarkRepoConfig {
                     name: "first".to_string(),
                     path: first_repo.clone(),
+                    revision_range_id: Some("first-head-history".to_string()),
+                    privacy_label: Some("source_free_local".to_string()),
                     base: None,
                     head: None,
                     limit: None,
@@ -1886,10 +1892,19 @@ mod tests {
                     target_agent: None,
                     semantic_enabled: None,
                     role_filters: Vec::new(),
+                    baseline: Some(BenchmarkRepoBaseline {
+                        file_recall_at_10: None,
+                        lexical_baseline_recall_at_10: None,
+                        total_millis: None,
+                        gap_families: vec!["no_candidate_signal".to_string()],
+                        notes: vec!["source-free fixture baseline".to_string()],
+                    }),
                 },
                 BenchmarkRepoConfig {
                     name: "second".to_string(),
                     path: second_repo.clone(),
+                    revision_range_id: Some("second-head-history".to_string()),
+                    privacy_label: Some("source_free_local".to_string()),
                     base: None,
                     head: None,
                     limit: Some(1),
@@ -1898,6 +1913,7 @@ mod tests {
                     target_agent: Some("claude-code".to_string()),
                     semantic_enabled: Some(false),
                     role_filters: vec![FileRole::Source],
+                    baseline: None,
                 },
             ],
         };
@@ -1906,6 +1922,9 @@ mod tests {
         let json = serde_json::to_string(&report).unwrap();
 
         assert_eq!(report.suite_name, "phase-nine-smoke");
+        assert_eq!(report.manifest_version, "ctxpack-benchmark-corpus-v2.3");
+        assert_eq!(report.corpus_id.as_deref(), Some("phase-nine-smoke-corpus"));
+        assert_eq!(report.privacy_label.as_deref(), Some("source_free_local"));
         assert_eq!(report.repository_count, 2);
         assert_eq!(report.evaluated_repository_count, 2);
         assert!(report.evaluated_commit_count >= 2);
@@ -1914,6 +1933,15 @@ mod tests {
             report.repositories[0].effective_config.target_agent,
             "codex"
         );
+        assert_eq!(
+            report.repositories[0]
+                .effective_config
+                .revision_range_id
+                .as_deref(),
+            Some("first-head-history")
+        );
+        assert!(report.repositories[0].baseline.is_some());
+        assert!(report.repositories[0].baseline_status.is_some());
         assert_eq!(
             report.repositories[0].effective_config.role_filters,
             vec![FileRole::Source, FileRole::Test]

@@ -3705,9 +3705,12 @@ fn render_benchmark_suite_report(report: &BenchmarkSuiteReport) -> String {
         "This source-free report runs named real-repo historical eval suites and compares ctxpack retrieval against configured baselines without storing task text or source snippets.\n\n",
     );
     output.push_str(&format!(
-        "- Suite: `{}`\n- Suite ID: `{}`\n- Repositories: `{}`\n- Evaluated repositories: `{}`\n- Evaluated commits: `{}`\n- Generated at: `{}`\n- Privacy: local-only `{}`\n\n",
+        "- Manifest version: `{}`\n- Suite: `{}`\n- Suite ID: `{}`\n- Corpus ID: `{}`\n- Privacy label: `{}`\n- Repositories: `{}`\n- Evaluated repositories: `{}`\n- Evaluated commits: `{}`\n- Generated at: `{}`\n- Privacy: local-only `{}`\n\n",
+        report.manifest_version,
         report.suite_name,
         report.suite_id,
+        report.corpus_id.as_deref().unwrap_or("unspecified"),
+        report.privacy_label.as_deref().unwrap_or("source_free_local"),
         report.repository_count,
         report.evaluated_repository_count,
         report.evaluated_commit_count,
@@ -3727,8 +3730,16 @@ fn render_benchmark_suite_report(report: &BenchmarkSuiteReport) -> String {
     for repo in &report.repositories {
         output.push_str(&format!("### `{}`\n\n", repo.name));
         output.push_str(&format!(
-            "- Repo ID: `{}`\n- Evaluated commits: `{}`\n- Excluded changed files: `{}`\n- Skipped path labels: `{}`\n- Limit: `{}`\n- Ranking budget K: `{}`\n- Mode: `{:?}`\n- Target agent: `{}`\n- Base: `{}`\n- Head: `{}`\n- Role filters: `{}`\n- Privacy: local-only `{}`\n",
+            "- Repo ID: `{}`\n- Revision range ID: `{}`\n- Privacy label: `{}`\n- Evaluated commits: `{}`\n- Excluded changed files: `{}`\n- Skipped path labels: `{}`\n- Limit: `{}`\n- Ranking budget K: `{}`\n- Mode: `{:?}`\n- Target agent: `{}`\n- Base: `{}`\n- Head: `{}`\n- Role filters: `{}`\n- Privacy: local-only `{}`\n",
             repo.repo_id.as_deref().unwrap_or("unavailable"),
+            repo.effective_config
+                .revision_range_id
+                .as_deref()
+                .unwrap_or("unspecified"),
+            repo.effective_config
+                .privacy_label
+                .as_deref()
+                .unwrap_or("source_free_local"),
             repo.evaluated_commits,
             repo.excluded_changed_file_count,
             repo.skipped_path_count,
@@ -3766,6 +3777,30 @@ fn render_benchmark_suite_report(report: &BenchmarkSuiteReport) -> String {
             eval.test_recommendation_rate,
             eval.average_recommended_context_files
         ));
+
+        if let Some(status) = &repo.baseline_status {
+            output.push_str("#### Locked Baseline Comparison\n\n");
+            output.push_str(&format!("- Compared: `{}`\n", status.compared));
+            if let Some(delta) = status.file_recall_at_10_delta {
+                output.push_str(&format!(
+                    "- File Recall@10 delta from baseline: `{delta:+.3}`\n"
+                ));
+            }
+            if let Some(delta) = status.lexical_baseline_recall_at_10_delta {
+                output.push_str(&format!(
+                    "- Lexical Baseline Recall@10 delta from baseline: `{delta:+.3}`\n"
+                ));
+            }
+            if let Some(delta) = status.total_millis_delta {
+                output.push_str(&format!(
+                    "- Total runtime delta from baseline millis: `{delta:+}`\n"
+                ));
+            }
+            for note in &status.notes {
+                output.push_str(&format!("- Note: {note}\n"));
+            }
+            output.push('\n');
+        }
 
         output.push_str("#### Token ROI\n\n");
         if eval.token_roi.is_empty() {

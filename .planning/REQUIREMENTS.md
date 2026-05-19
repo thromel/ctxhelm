@@ -10,10 +10,10 @@ This milestone turns ctxpack's retrieval-quality claims into repeatable, source-
 
 ### Benchmark Corpora
 
-- [ ] **CORPUS-01**: Maintainer can define fixed benchmark corpus manifests with stable repo paths, revisions, commit ranges, budgets, task types, and privacy labels.
-- [ ] **CORPUS-02**: Maintainer can run a locked RefactoringMiner 20-commit regression suite that records the current Recall@10, lexical baseline, runtime, and known gap families as baseline metadata.
-- [ ] **CORPUS-03**: Maintainer can add additional local or public repositories to the same manifest format without storing source text, prompts, snippets, or private issue descriptions in reports.
-- [ ] **CORPUS-04**: Benchmark reports include reproducibility metadata: repo identity, revision range, index/compiler/policy versions, budget, task type, target agent, and source-free privacy status.
+- [x] **CORPUS-01**: Maintainer can define fixed benchmark corpus manifests with stable repo paths, revisions, commit ranges, budgets, task types, and privacy labels.
+- [x] **CORPUS-02**: Maintainer can run a locked RefactoringMiner 20-commit regression suite that records the current Recall@10, lexical baseline, runtime, and known gap families as baseline metadata.
+- [x] **CORPUS-03**: Maintainer can add additional local or public repositories to the same manifest format without storing source text, prompts, snippets, or private issue descriptions in reports.
+- [x] **CORPUS-04**: Benchmark reports include reproducibility metadata: repo identity, revision range, index/compiler/policy versions, budget, task type, target agent, and source-free privacy status.
 
 ### Eval Speed And Reuse
 
@@ -107,10 +107,10 @@ Explicitly excluded from v2.3 to keep the milestone focused on measured quality 
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| CORPUS-01 | Phase 50 | Planned |
-| CORPUS-02 | Phase 50 | Planned |
-| CORPUS-03 | Phase 50 | Planned |
-| CORPUS-04 | Phase 50 | Planned |
+| CORPUS-01 | Phase 50 | Complete |
+| CORPUS-02 | Phase 50 | Complete |
+| CORPUS-03 | Phase 50 | Complete |
+| CORPUS-04 | Phase 50 | Complete |
 | SPEED-01 | Phase 51 | Planned |
 | SPEED-02 | Phase 51 | Planned |
 | SPEED-03 | Phase 51 | Planned |

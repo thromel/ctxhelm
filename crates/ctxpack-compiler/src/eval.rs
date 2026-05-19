@@ -284,10 +284,16 @@ pub struct HistoricalEvalReport {
     pub privacy_status: PrivacyStatus,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct BenchmarkSuiteConfig {
+    #[serde(default = "default_benchmark_manifest_version")]
+    pub manifest_version: String,
     pub name: String,
+    #[serde(default)]
+    pub corpus_id: Option<String>,
+    #[serde(default)]
+    pub privacy_label: Option<String>,
     #[serde(default)]
     pub description: Option<String>,
     #[serde(default)]
@@ -325,11 +331,15 @@ impl Default for BenchmarkDefaults {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct BenchmarkRepoConfig {
     pub name: String,
     pub path: PathBuf,
+    #[serde(default)]
+    pub revision_range_id: Option<String>,
+    #[serde(default)]
+    pub privacy_label: Option<String>,
     #[serde(default)]
     pub base: Option<String>,
     #[serde(default)]
@@ -346,13 +356,18 @@ pub struct BenchmarkRepoConfig {
     pub semantic_enabled: Option<bool>,
     #[serde(default)]
     pub role_filters: Vec<FileRole>,
+    #[serde(default)]
+    pub baseline: Option<BenchmarkRepoBaseline>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct BenchmarkSuiteReport {
+    pub manifest_version: String,
     pub suite_name: String,
     pub suite_id: String,
+    pub corpus_id: Option<String>,
+    pub privacy_label: Option<String>,
     pub description: Option<String>,
     pub generated_at_unix_seconds: u64,
     pub repository_count: usize,
@@ -368,6 +383,8 @@ pub struct BenchmarkRepoReport {
     pub name: String,
     pub repo_id: Option<String>,
     pub effective_config: BenchmarkRepoEffectiveConfig,
+    pub baseline: Option<BenchmarkRepoBaseline>,
+    pub baseline_status: Option<BenchmarkRepoBaselineStatus>,
     pub evaluated_commits: usize,
     pub excluded_changed_file_count: usize,
     pub skipped_path_count: usize,
@@ -379,6 +396,8 @@ pub struct BenchmarkRepoReport {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct BenchmarkRepoEffectiveConfig {
+    pub revision_range_id: Option<String>,
+    pub privacy_label: Option<String>,
     pub base: Option<String>,
     pub head: Option<String>,
     pub limit: usize,
@@ -388,6 +407,31 @@ pub struct BenchmarkRepoEffectiveConfig {
     pub semantic_enabled: bool,
     #[serde(default)]
     pub role_filters: Vec<FileRole>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct BenchmarkRepoBaseline {
+    #[serde(default)]
+    pub file_recall_at_10: Option<f32>,
+    #[serde(default)]
+    pub lexical_baseline_recall_at_10: Option<f32>,
+    #[serde(default)]
+    pub total_millis: Option<u64>,
+    #[serde(default)]
+    pub gap_families: Vec<String>,
+    #[serde(default)]
+    pub notes: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct BenchmarkRepoBaselineStatus {
+    pub compared: bool,
+    pub file_recall_at_10_delta: Option<f32>,
+    pub lexical_baseline_recall_at_10_delta: Option<f32>,
+    pub total_millis_delta: Option<i64>,
+    pub notes: Vec<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -600,9 +644,10 @@ pub fn build_product_proof_report(benchmark_report: BenchmarkSuiteReport) -> Pro
             "The benchmark range contains low-information commit messages.".to_string(),
         ],
         future_work: vec![
-            "v1.3: persist benchmark results in local storage for trend history.".to_string(),
-            "v1.4: add optional local semantic retrieval where gaps justify it.".to_string(),
-            "v1.5: add parser and SCIP/LSP precision where gap families point to it.".to_string(),
+            "v2.3: keep fixed corpus manifests and paired baseline verdicts current.".to_string(),
+            "v2.4: add production semantic and precision backends only where eval gates show lift."
+                .to_string(),
+            "v2.5: expand machine-checkable real-client agent outcome proof.".to_string(),
         ],
         benchmark_report,
         privacy_status: PrivacyStatus::local_only(),
@@ -800,8 +845,11 @@ pub fn run_benchmark_suite_config(
     let suite_id = benchmark_suite_id(config, &repositories);
 
     Ok(BenchmarkSuiteReport {
+        manifest_version: config.manifest_version.clone(),
         suite_name: config.name.clone(),
         suite_id,
+        corpus_id: config.corpus_id.clone(),
+        privacy_label: config.privacy_label.clone(),
         description: config.description.clone(),
         generated_at_unix_seconds: SystemTime::now()
             .duration_since(UNIX_EPOCH)
@@ -821,6 +869,11 @@ fn run_benchmark_repo(
     repo_config: &BenchmarkRepoConfig,
 ) -> BenchmarkRepoReport {
     let effective_config = BenchmarkRepoEffectiveConfig {
+        revision_range_id: repo_config.revision_range_id.clone(),
+        privacy_label: repo_config
+            .privacy_label
+            .clone()
+            .or_else(|| Some("source_free_local".to_string())),
         base: repo_config.base.clone(),
         head: repo_config.head.clone(),
         limit: repo_config.limit.unwrap_or(defaults.limit).max(1),
@@ -858,6 +911,10 @@ fn run_benchmark_repo(
 
     match evaluate_historical_commits(&repo_path, &options) {
         Ok(report) => {
+            let baseline_status = repo_config
+                .baseline
+                .as_ref()
+                .map(|baseline| baseline_status_for_report(baseline, &report));
             let excluded_changed_file_count = report
                 .commits
                 .iter()
@@ -873,6 +930,8 @@ fn run_benchmark_repo(
                 name: repo_config.name.clone(),
                 repo_id: Some(report.repo_id.clone()),
                 effective_config,
+                baseline: repo_config.baseline.clone(),
+                baseline_status,
                 evaluated_commits: report.evaluated_commits,
                 excluded_changed_file_count,
                 skipped_path_count,
@@ -885,6 +944,11 @@ fn run_benchmark_repo(
             name: repo_config.name.clone(),
             repo_id: None,
             effective_config,
+            baseline: repo_config.baseline.clone(),
+            baseline_status: repo_config
+                .baseline
+                .as_ref()
+                .map(|baseline| baseline_status_for_error(baseline, &error.to_string())),
             evaluated_commits: 0,
             excluded_changed_file_count: 0,
             skipped_path_count: 0,
@@ -1046,12 +1110,20 @@ fn benchmark_suite_id(
     config: &BenchmarkSuiteConfig,
     repositories: &[BenchmarkRepoReport],
 ) -> String {
-    let mut input = format!("suite={}\n", config.name);
+    let mut input = format!(
+        "manifest={}\nsuite={}\ncorpus={}\nprivacy={}\n",
+        config.manifest_version,
+        config.name,
+        config.corpus_id.as_deref().unwrap_or(""),
+        config.privacy_label.as_deref().unwrap_or("")
+    );
     for repo in repositories {
         input.push_str(&format!(
-            "repo={}\nrepoId={}\nbase={}\nhead={}\nlimit={}\nrankingBudget={}\nmode={:?}\ntarget={}\nroles={:?}\ncommits={}\nerror={}\n",
+            "repo={}\nrepoId={}\nrevisionRangeId={}\nprivacy={}\nbase={}\nhead={}\nlimit={}\nrankingBudget={}\nmode={:?}\ntarget={}\nroles={:?}\ncommits={}\nerror={}\n",
             repo.name,
             repo.repo_id.as_deref().unwrap_or(""),
+            repo.effective_config.revision_range_id.as_deref().unwrap_or(""),
+            repo.effective_config.privacy_label.as_deref().unwrap_or(""),
             repo.effective_config.base.as_deref().unwrap_or(""),
             repo.effective_config.head.as_deref().unwrap_or(""),
             repo.effective_config.limit,
@@ -1064,6 +1136,49 @@ fn benchmark_suite_id(
         ));
     }
     task_hash(&input)
+}
+
+fn baseline_status_for_report(
+    baseline: &BenchmarkRepoBaseline,
+    report: &HistoricalEvalReport,
+) -> BenchmarkRepoBaselineStatus {
+    let file_recall_at_10_delta = baseline
+        .file_recall_at_10
+        .map(|value| report.file_recall_at_10 - value);
+    let lexical_baseline_recall_at_10_delta = baseline
+        .lexical_baseline_recall_at_10
+        .map(|value| report.lexical_baseline_recall_at_10 - value);
+    let total_millis_delta = baseline
+        .total_millis
+        .map(|value| report.runtime.total_millis as i64 - value as i64);
+    BenchmarkRepoBaselineStatus {
+        compared: file_recall_at_10_delta.is_some()
+            || lexical_baseline_recall_at_10_delta.is_some()
+            || total_millis_delta.is_some(),
+        file_recall_at_10_delta,
+        lexical_baseline_recall_at_10_delta,
+        total_millis_delta,
+        notes: baseline.notes.clone(),
+    }
+}
+
+fn baseline_status_for_error(
+    baseline: &BenchmarkRepoBaseline,
+    error: &str,
+) -> BenchmarkRepoBaselineStatus {
+    let mut notes = baseline.notes.clone();
+    notes.push(format!("baseline comparison unavailable: {error}"));
+    BenchmarkRepoBaselineStatus {
+        compared: false,
+        file_recall_at_10_delta: None,
+        lexical_baseline_recall_at_10_delta: None,
+        total_millis_delta: None,
+        notes,
+    }
+}
+
+fn default_benchmark_manifest_version() -> String {
+    "ctxpack-benchmark-corpus-v2.3".to_string()
 }
 
 fn default_benchmark_limit() -> usize {
