@@ -4935,6 +4935,7 @@ mod tests {
                 test_hits_at_10: 0,
                 low_information_task: true,
                 confidence: 0.85,
+                query_trace: None,
                 elapsed_millis: 250,
                 source_text_logged: false,
             }],

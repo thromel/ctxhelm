@@ -8,6 +8,8 @@ The benchmark runner reuses `ctxpack eval history` for each configured repositor
 
 v2.3 treats benchmark suites as fixed corpus manifests. Older suite files still work, but v2.3 manifests should include a manifest version, corpus ID, privacy label, revision range ID, and optional locked baseline metadata so quality claims are reproducible.
 
+Phase 58 adds source-free query construction traces to prepare-task and historical eval commit rows. These traces record extracted paths, stack frames, symbols, error terms, domain terms, commit clues, retriever query sets, and fusion controls. They intentionally store task hashes and bounded facets instead of raw prompts or source snippets.
+
 ## Suite File
 
 Benchmark suites are JSON files. Paths may be absolute or relative to the suite file.
@@ -157,6 +159,17 @@ Use this as the first large-history regression target, not as a broad product cl
 - `ctxpack eval compare`: compares two benchmark reports across recall, token ROI, skipped paths, and gap families; configured thresholds fail when a metric drops more than the allowed amount.
 - `ctxpack eval proof`: generates a concise product proof report from a local suite and embeds the underlying source-free benchmark report in JSON output.
 - `runtime`: reports total time, per-commit time, overhead, cache hits/misses, effective parallelism, git sample cost, ranking cost, pack/compiler cost, and the slowest source-free commit summaries.
+
+## Query Trace Debugging
+
+When retrieval quality does not improve, inspect `queryTrace` before changing weights. The trace answers whether the benchmark actually exercised the intended path:
+
+- `facets`: source-free extracted evidence such as `explicit_path`, `stack_frame`, `symbol`, `error_text`, `domain_phrase`, `commit_clue`, and `current_diff_path`.
+- `retrieverQueries`: the terms sent to lexical, semantic, symbol, graph, history, and test retrieval.
+- `fusionControls`: the guardrails used for anchor dominance, exact-evidence protection, semantic cap, and semantic weight.
+- `sourceTextLogged`: must remain `false`.
+
+If `semanticEnabled` is true but `queryTrace.retrieverQueries.semanticPhrases` contains only weak generic terms, a semantic backend should not be expected to lift Recall@K. Conversely, if explicit paths or stack frames appear in the trace, those anchors should remain protected even when semantic retrieval is enabled.
 
 ## Product Proof
 

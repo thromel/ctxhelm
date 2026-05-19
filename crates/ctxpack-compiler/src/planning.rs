@@ -1,14 +1,15 @@
 use crate::ranking::{rank_candidates, select_ranked_candidates, AnchorCandidate, RankingInput};
 use ctxpack_core::{
-    ContextPlan, Diagnostic, DiagnosticSeverity, FileRole, MemoryCard, MemoryFreshness,
-    MemoryReviewStatus, PackBudget, PackOption, PrivacyStatus, RetrievalCandidate,
-    RetrievalCandidateKind, RetrievalEvidence, RetrievalSignalKind, RetrievalSignalScore, RiskFlag,
+    ContextPlan, Diagnostic, DiagnosticSeverity, FileRole, FusionControlSummary, MemoryCard,
+    MemoryFreshness, MemoryReviewStatus, PackBudget, PackOption, PrivacyStatus,
+    QueryConstructionTrace, QueryFacet, QueryFacetKind, RetrievalCandidate, RetrievalCandidateKind,
+    RetrievalEvidence, RetrievalSignalKind, RetrievalSignalScore, RetrieverQuerySet, RiskFlag,
     SelectedMemory, TargetFile, TaskType,
 };
 use ctxpack_index::{
     co_change_hints_report, current_diff_summary_report, lexical_search_report, list_memory_cards,
     load_or_refresh_inventory, related_dependency_edges_report, related_tests_report,
-    semantic_search_report, symbol_search_report, CoChangeOptions, CurrentDiffOptions,
+    semantic_search_report, symbol_search_report, task_hash, CoChangeOptions, CurrentDiffOptions,
     DependencyOptions, InventoryError, InventoryOptions, SearchOptions, SemanticOptions,
     StoreConfig, SymbolOptions,
 };
@@ -119,10 +120,30 @@ pub(crate) fn prepare_context_plan_with_paths_history_and_semantic(
 
     let (mut roles, inventory_diagnostics) = inventory_roles(repo_root)?;
     extend_plan_diagnostics(&mut plan, inventory_diagnostics);
+    let mut query_trace = construct_query_trace(task, anchor_paths);
+    let mut combined_anchor_paths = anchor_paths.to_vec();
+    for path in query_trace
+        .facets
+        .iter()
+        .filter(|facet| {
+            matches!(
+                facet.kind,
+                QueryFacetKind::ExplicitPath | QueryFacetKind::StackFrame
+            )
+        })
+        .map(|facet| facet.value.clone())
+    {
+        if !combined_anchor_paths.contains(&path) {
+            combined_anchor_paths.push(path);
+        }
+    }
+    let symbol_query = query_text_or_task(&query_trace.retriever_queries.symbol_terms, task);
+    let lexical_query = query_text_or_task(&query_trace.retriever_queries.lexical_terms, task);
+    let semantic_query = query_text_or_task(&query_trace.retriever_queries.semantic_phrases, task);
 
     let symbol_report = symbol_search_report(
         repo_root,
-        task,
+        &symbol_query,
         &SymbolOptions {
             limit: search_limit(&plan.task_type),
         },
@@ -132,7 +153,7 @@ pub(crate) fn prepare_context_plan_with_paths_history_and_semantic(
 
     let search_report = lexical_search_report(
         repo_root,
-        task,
+        &lexical_query,
         &SearchOptions {
             limit: search_limit(&plan.task_type),
         },
@@ -145,7 +166,7 @@ pub(crate) fn prepare_context_plan_with_paths_history_and_semantic(
     let semantic_results = if semantic_enabled {
         let semantic_report = semantic_search_report(
             repo_root,
-            task,
+            &semantic_query,
             &SemanticOptions {
                 limit: search_limit(&plan.task_type),
                 enabled: true,
@@ -161,7 +182,7 @@ pub(crate) fn prepare_context_plan_with_paths_history_and_semantic(
         Vec::new()
     };
     let (anchor_targets, unavailable_anchors, anchor_diagnostics) =
-        anchored_target_files(repo_root, anchor_paths)?;
+        anchored_target_files(repo_root, &combined_anchor_paths)?;
     extend_plan_diagnostics(&mut plan, anchor_diagnostics);
     for unavailable in unavailable_anchors {
         push_plan_diagnostic(
@@ -178,6 +199,16 @@ pub(crate) fn prepare_context_plan_with_paths_history_and_semantic(
         );
     }
     let current_diff_paths = current_diff_anchor_paths(repo_root, &anchor_targets);
+    for path in &current_diff_paths {
+        push_query_facet(
+            &mut query_trace.facets,
+            QueryFacetKind::CurrentDiffPath,
+            path.clone(),
+            "current_diff".to_string(),
+            1.0,
+        );
+        push_unique(&mut query_trace.retriever_queries.graph_seeds, path.clone());
+    }
     let anchors = anchor_targets
         .into_iter()
         .map(|(target, role)| {
@@ -290,6 +321,7 @@ pub(crate) fn prepare_context_plan_with_paths_history_and_semantic(
     plan.recommended_commands = selection.recommended_commands;
     plan.retrieval_candidates = selection.retrieval_candidates;
     attach_selected_memory(repo_root, task, &mut plan);
+    plan.query_trace = Some(query_trace);
 
     if plan.target_files.is_empty() {
         plan.missing_info_questions.push(
@@ -346,6 +378,303 @@ fn push_plan_diagnostic(plan: &mut ContextPlan, diagnostic: Diagnostic) {
     }
 }
 
+fn construct_query_trace(task: &str, anchor_paths: &[String]) -> QueryConstructionTrace {
+    let mut facets = Vec::new();
+    push_query_facet(
+        &mut facets,
+        QueryFacetKind::OriginalTask,
+        format!("task_hash:{}", task_hash(task)),
+        "task".to_string(),
+        0.1,
+    );
+    for path in anchor_paths {
+        push_query_facet(
+            &mut facets,
+            QueryFacetKind::ExplicitPath,
+            normalize_query_path(path),
+            "active_context".to_string(),
+            1.0,
+        );
+    }
+    for path in extract_path_facets(task) {
+        push_query_facet(
+            &mut facets,
+            QueryFacetKind::ExplicitPath,
+            path,
+            "task_path".to_string(),
+            1.0,
+        );
+    }
+    for frame in extract_stack_frame_facets(task) {
+        push_query_facet(
+            &mut facets,
+            QueryFacetKind::StackFrame,
+            frame,
+            "task_stack_frame".to_string(),
+            0.95,
+        );
+    }
+    for symbol in extract_symbol_facets(task) {
+        push_query_facet(
+            &mut facets,
+            QueryFacetKind::Symbol,
+            symbol,
+            "task_symbol".to_string(),
+            0.9,
+        );
+    }
+    for error in extract_error_facets(task) {
+        push_query_facet(
+            &mut facets,
+            QueryFacetKind::ErrorText,
+            error,
+            "task_error".to_string(),
+            0.8,
+        );
+    }
+    for term in extract_domain_terms(task) {
+        push_query_facet(
+            &mut facets,
+            QueryFacetKind::DomainPhrase,
+            term,
+            "task_terms".to_string(),
+            0.5,
+        );
+    }
+    if looks_like_commit_subject(task) {
+        for term in extract_domain_terms(task).into_iter().take(6) {
+            push_query_facet(
+                &mut facets,
+                QueryFacetKind::CommitClue,
+                term,
+                "task_commit_clue".to_string(),
+                0.45,
+            );
+        }
+    }
+
+    let retriever_queries = retriever_query_set(&facets);
+    QueryConstructionTrace {
+        task_hash: task_hash(task),
+        facets,
+        retriever_queries,
+        fusion_controls: FusionControlSummary {
+            anchor_dominance: true,
+            exact_evidence_protected: true,
+            semantic_candidate_cap: search_limit(&TaskType::Explain),
+            semantic_weight: 0.7,
+        },
+        source_text_logged: false,
+        privacy_status: PrivacyStatus::local_only(),
+    }
+}
+
+fn push_query_facet(
+    facets: &mut Vec<QueryFacet>,
+    kind: QueryFacetKind,
+    value: String,
+    source: String,
+    weight: f32,
+) {
+    let value = bounded_query_value(&value);
+    if value.is_empty()
+        || facets
+            .iter()
+            .any(|facet| facet.kind == kind && facet.value == value)
+    {
+        return;
+    }
+    facets.push(QueryFacet {
+        kind,
+        value,
+        origin: source,
+        weight,
+    });
+}
+
+fn retriever_query_set(facets: &[QueryFacet]) -> RetrieverQuerySet {
+    let mut query_set = RetrieverQuerySet {
+        lexical_terms: Vec::new(),
+        semantic_phrases: Vec::new(),
+        symbol_terms: Vec::new(),
+        graph_seeds: Vec::new(),
+        history_terms: Vec::new(),
+        test_terms: Vec::new(),
+    };
+    for facet in facets {
+        match facet.kind {
+            QueryFacetKind::ExplicitPath | QueryFacetKind::StackFrame => {
+                push_unique(&mut query_set.lexical_terms, facet.value.clone());
+                push_unique(&mut query_set.graph_seeds, facet.value.clone());
+                push_unique(&mut query_set.test_terms, facet.value.clone());
+            }
+            QueryFacetKind::CurrentDiffPath => {
+                push_unique(&mut query_set.lexical_terms, facet.value.clone());
+                push_unique(&mut query_set.graph_seeds, facet.value.clone());
+            }
+            QueryFacetKind::Symbol => {
+                push_unique(&mut query_set.symbol_terms, facet.value.clone());
+                push_unique(&mut query_set.lexical_terms, facet.value.clone());
+                push_unique(&mut query_set.semantic_phrases, facet.value.clone());
+                push_unique(&mut query_set.test_terms, facet.value.clone());
+            }
+            QueryFacetKind::ErrorText => {
+                push_unique(&mut query_set.lexical_terms, facet.value.clone());
+                push_unique(&mut query_set.history_terms, facet.value.clone());
+            }
+            QueryFacetKind::DomainPhrase => {
+                push_unique(&mut query_set.lexical_terms, facet.value.clone());
+                push_unique(&mut query_set.semantic_phrases, facet.value.clone());
+                push_unique(&mut query_set.history_terms, facet.value.clone());
+            }
+            QueryFacetKind::CommitClue => {
+                push_unique(&mut query_set.history_terms, facet.value.clone());
+            }
+            QueryFacetKind::OriginalTask => {}
+        }
+    }
+    query_set
+}
+
+fn query_text_or_task(values: &[String], task: &str) -> String {
+    if values.is_empty() {
+        task.to_string()
+    } else {
+        values.join(" ")
+    }
+}
+
+fn extract_path_facets(task: &str) -> Vec<String> {
+    task.split_whitespace()
+        .filter_map(|token| {
+            let token = clean_query_token(token);
+            let looks_like_path = token.contains('/')
+                && [
+                    ".ts", ".tsx", ".js", ".jsx", ".py", ".rs", ".go", ".java", ".kt", ".md",
+                ]
+                .iter()
+                .any(|extension| token.ends_with(extension));
+            looks_like_path.then_some(normalize_query_path(&token))
+        })
+        .collect()
+}
+
+fn extract_stack_frame_facets(task: &str) -> Vec<String> {
+    let mut frames = Vec::new();
+    for token in task.split_whitespace().map(clean_query_token) {
+        let Some((path, line)) = token.rsplit_once(':') else {
+            continue;
+        };
+        if path.contains('/') && path.contains('.') && line.chars().all(|c| c.is_ascii_digit()) {
+            push_unique(&mut frames, normalize_query_path(path));
+        }
+    }
+    frames
+}
+
+fn extract_symbol_facets(task: &str) -> Vec<String> {
+    task.split(|character: char| {
+        !(character.is_ascii_alphanumeric()
+            || character == '_'
+            || character == ':'
+            || character == '.')
+    })
+    .map(clean_query_token)
+    .filter(|token| {
+        token.len() >= 3
+            && (token.contains("::")
+                || token.contains('.')
+                || token
+                    .chars()
+                    .any(|character| character.is_ascii_uppercase()))
+    })
+    .take(16)
+    .collect()
+}
+
+fn extract_error_facets(task: &str) -> Vec<String> {
+    task.lines()
+        .filter(|line| {
+            let lower = line.to_ascii_lowercase();
+            lower.contains("error")
+                || lower.contains("exception")
+                || lower.contains("failed")
+                || lower.contains("panic")
+        })
+        .map(clean_query_token)
+        .filter(|line| !line.is_empty())
+        .take(8)
+        .collect()
+}
+
+fn extract_domain_terms(task: &str) -> Vec<String> {
+    let mut terms = Vec::new();
+    for token in
+        task.split(|character: char| !character.is_ascii_alphanumeric() && character != '_')
+    {
+        let token = clean_query_token(token).to_ascii_lowercase();
+        if token.len() < 3 || QUERY_STOP_WORDS.contains(&token.as_str()) {
+            continue;
+        }
+        push_unique(&mut terms, token);
+        if terms.len() >= 24 {
+            break;
+        }
+    }
+    terms
+}
+
+fn looks_like_commit_subject(task: &str) -> bool {
+    let lower = task.trim().to_ascii_lowercase();
+    [
+        "fix ",
+        "add ",
+        "update ",
+        "remove ",
+        "refactor ",
+        "support ",
+    ]
+    .iter()
+    .any(|prefix| lower.starts_with(prefix))
+}
+
+fn clean_query_token(token: &str) -> String {
+    let mut cleaned = token
+        .trim_matches(|character: char| {
+            character.is_ascii_punctuation()
+                && !matches!(character, '/' | '.' | '_' | '-' | ':' | '\\')
+        })
+        .replace('\\', "/");
+    while cleaned.ends_with(':') && !cleaned.ends_with("::") {
+        cleaned.pop();
+    }
+    cleaned
+}
+
+fn normalize_query_path(path: &str) -> String {
+    clean_query_token(path).trim_start_matches("./").to_string()
+}
+
+fn bounded_query_value(value: &str) -> String {
+    let value = value.trim();
+    if value.len() <= 160 {
+        value.to_string()
+    } else {
+        value.chars().take(160).collect()
+    }
+}
+
+fn push_unique(values: &mut Vec<String>, value: String) {
+    if !value.is_empty() && !values.contains(&value) {
+        values.push(value);
+    }
+}
+
+const QUERY_STOP_WORDS: &[&str] = &[
+    "the", "and", "for", "with", "that", "this", "from", "into", "when", "then", "fix", "add",
+    "update", "remove", "refactor", "support", "test", "task", "code", "file",
+];
+
 fn base_plan(task_type: TaskType) -> ContextPlan {
     let task_id = Uuid::new_v4();
     ContextPlan {
@@ -374,6 +703,7 @@ fn base_plan(task_type: TaskType) -> ContextPlan {
         diagnostics: Vec::new(),
         retrieval_candidates: Vec::new(),
         selected_memory: Vec::new(),
+        query_trace: None,
         privacy_status: PrivacyStatus::local_only(),
     }
 }
@@ -745,5 +1075,79 @@ fn normalize_anchor_path(repo_root: &Path, input: &str) -> Option<String> {
         None
     } else {
         Some(parts.join("/"))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::fs;
+
+    #[test]
+    fn query_trace_extracts_source_free_facets() {
+        let trace = construct_query_trace(
+            "fix src/auth/session.ts\nsrc/auth/session.ts:42\nError: getSession failed in AuthService",
+            &["tests/auth/session.test.ts".to_string()],
+        );
+
+        assert!(!trace.source_text_logged);
+        assert!(trace.privacy_status.local_only);
+        assert!(trace
+            .facets
+            .iter()
+            .any(|facet| facet.kind == QueryFacetKind::ExplicitPath
+                && facet.value == "src/auth/session.ts"));
+        assert!(trace
+            .facets
+            .iter()
+            .any(|facet| facet.kind == QueryFacetKind::Symbol && facet.value == "AuthService"));
+        assert!(trace
+            .facets
+            .iter()
+            .any(|facet| facet.kind == QueryFacetKind::ErrorText));
+        assert!(trace
+            .retriever_queries
+            .semantic_phrases
+            .iter()
+            .any(|phrase| phrase == "AuthService"));
+        assert!(trace.fusion_controls.anchor_dominance);
+    }
+
+    #[test]
+    fn prepare_plan_promotes_task_path_to_anchor() {
+        let temp = tempfile::tempdir().unwrap();
+        let repo = temp.path();
+        fs::create_dir(repo.join(".git")).unwrap();
+        fs::create_dir_all(repo.join("src/auth")).unwrap();
+        fs::write(
+            repo.join("src/auth/session.ts"),
+            "export function getSession() { return null; }\n",
+        )
+        .unwrap();
+
+        let plan = prepare_context_plan_with_paths_history_and_semantic(
+            repo,
+            "fix src/auth/session.ts getSession",
+            TaskType::BugFix,
+            &[],
+            false,
+            false,
+        )
+        .unwrap();
+
+        assert_eq!(plan.target_files[0].path, "src/auth/session.ts");
+        assert!(plan
+            .target_files
+            .first()
+            .unwrap()
+            .attribution
+            .iter()
+            .any(|evidence| evidence.signal == RetrievalSignalKind::Anchor));
+        let trace = plan.query_trace.expect("query trace");
+        assert!(trace
+            .facets
+            .iter()
+            .any(|facet| facet.kind == QueryFacetKind::ExplicitPath
+                && facet.value == "src/auth/session.ts"));
     }
 }

@@ -334,6 +334,68 @@ pub struct ContextPlan {
     pub retrieval_candidates: Vec<RetrievalCandidate>,
     #[serde(default)]
     pub selected_memory: Vec<SelectedMemory>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub query_trace: Option<QueryConstructionTrace>,
+    pub privacy_status: PrivacyStatus,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum QueryFacetKind {
+    OriginalTask,
+    ExplicitPath,
+    CurrentDiffPath,
+    Symbol,
+    StackFrame,
+    ErrorText,
+    DomainPhrase,
+    CommitClue,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct QueryFacet {
+    pub kind: QueryFacetKind,
+    pub value: String,
+    pub origin: String,
+    pub weight: f32,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct RetrieverQuerySet {
+    #[serde(default)]
+    pub lexical_terms: Vec<String>,
+    #[serde(default)]
+    pub semantic_phrases: Vec<String>,
+    #[serde(default)]
+    pub symbol_terms: Vec<String>,
+    #[serde(default)]
+    pub graph_seeds: Vec<String>,
+    #[serde(default)]
+    pub history_terms: Vec<String>,
+    #[serde(default)]
+    pub test_terms: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct FusionControlSummary {
+    pub anchor_dominance: bool,
+    pub exact_evidence_protected: bool,
+    pub semantic_candidate_cap: usize,
+    pub semantic_weight: f32,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct QueryConstructionTrace {
+    pub task_hash: String,
+    #[serde(default)]
+    pub facets: Vec<QueryFacet>,
+    pub retriever_queries: RetrieverQuerySet,
+    pub fusion_controls: FusionControlSummary,
+    pub source_text_logged: bool,
     pub privacy_status: PrivacyStatus,
 }
 
@@ -1345,6 +1407,7 @@ mod tests {
             }],
             retrieval_candidates: Vec::new(),
             selected_memory: Vec::new(),
+            query_trace: None,
             privacy_status: PrivacyStatus::local_only(),
         };
 
@@ -1480,6 +1543,7 @@ mod tests {
                 evidence: attribution,
             }],
             selected_memory: Vec::new(),
+            query_trace: None,
             privacy_status: PrivacyStatus::local_only(),
         };
 
@@ -1563,6 +1627,55 @@ mod tests {
         assert!(value.get("document_count").is_none());
         assert!(value.get("sourceText").is_none());
         assert!(value.to_string().contains("getSession"));
+        assert!(!value.to_string().contains("return "));
+    }
+
+    #[test]
+    fn query_trace_contract_is_source_free_and_camel_case() {
+        let trace = QueryConstructionTrace {
+            task_hash: "hash123".to_string(),
+            facets: vec![
+                QueryFacet {
+                    kind: QueryFacetKind::ExplicitPath,
+                    value: "src/auth/session.ts".to_string(),
+                    origin: "task_path".to_string(),
+                    weight: 1.0,
+                },
+                QueryFacet {
+                    kind: QueryFacetKind::Symbol,
+                    value: "getSession".to_string(),
+                    origin: "task_symbol".to_string(),
+                    weight: 0.9,
+                },
+            ],
+            retriever_queries: RetrieverQuerySet {
+                lexical_terms: vec!["src/auth/session.ts".to_string(), "getSession".to_string()],
+                semantic_phrases: vec!["getSession".to_string()],
+                symbol_terms: vec!["getSession".to_string()],
+                graph_seeds: vec!["src/auth/session.ts".to_string()],
+                history_terms: Vec::new(),
+                test_terms: vec!["src/auth/session.ts".to_string()],
+            },
+            fusion_controls: FusionControlSummary {
+                anchor_dominance: true,
+                exact_evidence_protected: true,
+                semantic_candidate_cap: 8,
+                semantic_weight: 0.7,
+            },
+            source_text_logged: false,
+            privacy_status: PrivacyStatus::local_only(),
+        };
+
+        let value = serde_json::to_value(&trace).unwrap();
+
+        assert_eq!(value["taskHash"], "hash123");
+        assert_eq!(value["facets"][0]["kind"], "explicit_path");
+        assert_eq!(value["retrieverQueries"]["symbolTerms"][0], "getSession");
+        assert_eq!(value["fusionControls"]["anchorDominance"], true);
+        assert_eq!(value["sourceTextLogged"], false);
+        assert_eq!(value["privacyStatus"]["localOnly"], true);
+        assert!(value.get("task_hash").is_none());
+        assert!(value.get("sourceText").is_none());
         assert!(!value.to_string().contains("return "));
     }
 
@@ -2051,6 +2164,7 @@ mod tests {
             diagnostics: Vec::new(),
             retrieval_candidates: Vec::new(),
             selected_memory: Vec::new(),
+            query_trace: None,
             privacy_status: PrivacyStatus::local_only(),
         };
         let workspace_plan = WorkspaceContextPlan {

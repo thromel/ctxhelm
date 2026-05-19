@@ -120,7 +120,7 @@ pub(crate) fn rank_candidates(input: RankingInput) -> Vec<RankedCandidate> {
             end: result.symbol.end_line.max(result.symbol.start_line),
         });
         candidates.add_path_signal(PathSignal {
-            kind: RetrievalCandidateKind::File,
+            kind: candidate_kind_for_role(&role),
             path: path.clone(),
             role: role.clone(),
             signal: RetrievalSignalKind::Symbol,

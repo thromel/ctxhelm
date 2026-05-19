@@ -6,9 +6,9 @@ use crate::planning::{
 use ctxpack_core::{
     CandidateFeatureExport, CandidateFeatureLabel, CandidateFeatureRow, CandidateFeatureSource,
     ContextPack, ContextPlan, EvalTrace, FileRole, PackBudget, PolicyQualityReport, PrivacyStatus,
-    RetrievalCandidate, RetrievalCandidateKind, RetrievalHealthGapFamily, RetrievalHealthMetric,
-    RetrievalHealthReport, RetrievalHealthSignalContribution, RetrievalHealthTokenRoi,
-    RetrievalSignalKind, TaskType,
+    QueryConstructionTrace, RetrievalCandidate, RetrievalCandidateKind, RetrievalHealthGapFamily,
+    RetrievalHealthMetric, RetrievalHealthReport, RetrievalHealthSignalContribution,
+    RetrievalHealthTokenRoi, RetrievalSignalKind, TaskType,
 };
 use ctxpack_index::{
     historical_commit_samples, lexical_search, load_or_build_inventory, repo_id_for_path,
@@ -619,6 +619,8 @@ pub struct HistoricalCommitEval {
     pub test_hits_at_10: usize,
     pub low_information_task: bool,
     pub confidence: f32,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub query_trace: Option<QueryConstructionTrace>,
     #[serde(default)]
     pub elapsed_millis: u64,
     pub source_text_logged: bool,
@@ -1922,6 +1924,7 @@ fn evaluate_historical_commit_sample(
             test_hits_at_10,
             low_information_task: is_low_information_task(&task),
             confidence: plan.confidence,
+            query_trace: plan.query_trace.clone(),
             elapsed_millis: elapsed_millis(commit_started),
             source_text_logged: false,
         },
