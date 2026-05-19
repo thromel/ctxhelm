@@ -178,6 +178,13 @@ fn compile_pack_from_plan(
             render_selected_memory(plan, memory_limit(&budget)),
         ));
     }
+    if let Some(policy) = &plan.provider_policy {
+        sections.push(section(
+            "Provider policy",
+            "provider_policy",
+            render_provider_policy(policy),
+        ));
+    }
 
     let mut diagnostics = plan.diagnostics.clone();
     let inventory_report = match load_or_refresh_inventory(repo_root, &InventoryOptions::default())
@@ -266,6 +273,7 @@ fn compile_pack_from_plan(
         confidence: plan.confidence,
         warnings,
         diagnostics,
+        provider_policy: plan.provider_policy.clone(),
         privacy_status: plan.privacy_status.clone(),
     }
 }
@@ -273,6 +281,29 @@ fn compile_pack_from_plan(
 pub(crate) fn pack_repo_id(repo_root: &Path) -> String {
     let canonical = fs::canonicalize(repo_root).unwrap_or_else(|_| repo_root.to_path_buf());
     repo_id_for_path(&canonical)
+}
+
+fn render_provider_policy(policy: &ctxpack_core::ProviderPolicyReport) -> String {
+    let mut output = format!(
+        "Policy: `{}`\nLocal providers: `{}`\nCloud embeddings: `{}`\nCloud reranking: `{}`\nSource transfer: `{}`\n\n",
+        policy.policy_path.as_deref().unwrap_or("safe defaults"),
+        policy.policy.allow_local_providers,
+        policy.policy.allow_cloud_embeddings,
+        policy.policy.allow_cloud_reranking,
+        policy.policy.allow_source_transfer
+    );
+    for decision in &policy.decisions {
+        output.push_str(&format!(
+            "- `{:?}` provider `{}` status `{:?}` remoteAllowed `{}` sourceAllowed `{}`: {}\n",
+            decision.capability,
+            decision.provider,
+            decision.status,
+            decision.remote_allowed,
+            decision.source_text_allowed,
+            decision.reason
+        ));
+    }
+    output
 }
 
 pub fn render_pack_markdown(pack: &ContextPack) -> String {

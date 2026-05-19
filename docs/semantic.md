@@ -66,6 +66,11 @@ Semantic retrieval uses:
 - no cloud embedding or reranking calls
 
 Cloud embeddings and cloud reranking remain out of scope for the default product.
+Semantic status and plans now include a `providerPolicy` object that records
+allowed, denied, unavailable, disabled, and skipped backend decisions. Local
+source-free metadata providers are allowed by default; cloud embeddings, cloud
+reranking, source transfer, and reranking execution are denied or disabled until
+repo policy explicitly opts in.
 
 Semantic defaults are not promoted in Phase 56. Promotion of any production-quality semantic backend remains gated by later evaluation and release criteria.
 

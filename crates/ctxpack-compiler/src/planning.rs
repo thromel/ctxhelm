@@ -1,10 +1,14 @@
-use crate::ranking::{rank_candidates, select_ranked_candidates, AnchorCandidate, RankingInput};
+use crate::policy::{provider_policy_report, reranker_decision, semantic_provider_decision};
+use crate::ranking::{
+    rank_candidates, rerank_with_local_fixture, select_ranked_candidates, AnchorCandidate,
+    RankingInput,
+};
 use ctxpack_core::{
     ContextPlan, Diagnostic, DiagnosticSeverity, FileRole, FusionControlSummary, MemoryCard,
     MemoryFreshness, MemoryReviewStatus, PackBudget, PackOption, PrivacyStatus,
-    QueryConstructionTrace, QueryFacet, QueryFacetKind, RetrievalCandidate, RetrievalCandidateKind,
-    RetrievalEvidence, RetrievalSignalKind, RetrievalSignalScore, RetrieverQuerySet, RiskFlag,
-    SelectedMemory, TargetFile, TaskType,
+    ProviderDecisionStatus, QueryConstructionTrace, QueryFacet, QueryFacetKind, RetrievalCandidate,
+    RetrievalCandidateKind, RetrievalEvidence, RetrievalSignalKind, RetrievalSignalScore,
+    RetrieverQuerySet, RiskFlag, SelectedMemory, TargetFile, TaskType,
 };
 use ctxpack_index::{
     co_change_hints_report, current_diff_summary_report, lexical_search_report, list_memory_cards,
@@ -120,6 +124,8 @@ pub(crate) fn prepare_context_plan_with_paths_history_and_semantic(
 
     let (mut roles, inventory_diagnostics) = inventory_roles(repo_root)?;
     extend_plan_diagnostics(&mut plan, inventory_diagnostics);
+    let mut provider_policy = provider_policy_report(repo_root)?;
+    extend_plan_diagnostics(&mut plan, provider_policy.diagnostics.clone());
     let mut query_trace = construct_query_trace(task, anchor_paths);
     let mut combined_anchor_paths = anchor_paths.to_vec();
     for path in query_trace
@@ -163,7 +169,13 @@ pub(crate) fn prepare_context_plan_with_paths_history_and_semantic(
     for result in &search_results {
         roles.insert(result.path.clone(), result.role.clone());
     }
-    let semantic_results = if semantic_enabled {
+    let semantic_provider = SemanticOptions::default().provider;
+    let semantic_decision =
+        semantic_provider_decision(&provider_policy, &semantic_provider, semantic_enabled);
+    provider_policy.decisions.push(semantic_decision.clone());
+    let semantic_results = if semantic_enabled
+        && matches!(semantic_decision.status, ProviderDecisionStatus::Allowed)
+    {
         let semantic_report = semantic_search_report(
             repo_root,
             &semantic_query,
@@ -179,6 +191,18 @@ pub(crate) fn prepare_context_plan_with_paths_history_and_semantic(
         }
         semantic_report.results
     } else {
+        if semantic_enabled {
+            push_plan_diagnostic(
+                &mut plan,
+                Diagnostic {
+                    code: "semantic_provider_policy_blocked".to_string(),
+                    severity: DiagnosticSeverity::Warning,
+                    message: semantic_decision.reason,
+                    paths: Vec::new(),
+                    count: 1,
+                },
+            );
+        }
         Vec::new()
     };
     let (anchor_targets, unavailable_anchors, anchor_diagnostics) =
@@ -315,6 +339,23 @@ pub(crate) fn prepare_context_plan_with_paths_history_and_semantic(
         roles,
         expansion_seeds: expansion_seed_paths,
     });
+    let reranker = reranker_decision(&provider_policy);
+    provider_policy.decisions.push(reranker.clone());
+    let ranked_candidates = if matches!(reranker.status, ProviderDecisionStatus::Allowed) {
+        push_plan_diagnostic(
+            &mut plan,
+            Diagnostic {
+                code: "local_fixture_reranker_applied".to_string(),
+                severity: DiagnosticSeverity::Info,
+                message: "Applied deterministic local fixture reranker using source-free candidate metadata.".to_string(),
+                paths: Vec::new(),
+                count: ranked_candidates.len(),
+            },
+        );
+        rerank_with_local_fixture(ranked_candidates)
+    } else {
+        ranked_candidates
+    };
     let selection = select_ranked_candidates(&ranked_candidates, PREPARE_TASK_TARGET_LIMIT, 5);
     plan.target_files = selection.target_files;
     plan.related_tests = selection.related_tests;
@@ -322,6 +363,7 @@ pub(crate) fn prepare_context_plan_with_paths_history_and_semantic(
     plan.retrieval_candidates = selection.retrieval_candidates;
     attach_selected_memory(repo_root, task, &mut plan);
     plan.query_trace = Some(query_trace);
+    plan.provider_policy = Some(provider_policy);
 
     if plan.target_files.is_empty() {
         plan.missing_info_questions.push(
@@ -704,6 +746,7 @@ fn base_plan(task_type: TaskType) -> ContextPlan {
         retrieval_candidates: Vec::new(),
         selected_memory: Vec::new(),
         query_trace: None,
+        provider_policy: None,
         privacy_status: PrivacyStatus::local_only(),
     }
 }
@@ -1149,5 +1192,37 @@ mod tests {
             .iter()
             .any(|facet| facet.kind == QueryFacetKind::ExplicitPath
                 && facet.value == "src/auth/session.ts"));
+    }
+
+    #[test]
+    fn prepare_plan_attaches_default_provider_policy_and_disabled_reranker() {
+        let temp = tempfile::tempdir().unwrap();
+        let repo = temp.path();
+        fs::create_dir(repo.join(".git")).unwrap();
+        fs::create_dir_all(repo.join("src")).unwrap();
+        fs::write(repo.join("src/lib.ts"), "export function auth() {}\n").unwrap();
+
+        let plan = prepare_context_plan_with_paths_history_and_semantic(
+            repo,
+            "fix src/lib.ts auth",
+            TaskType::BugFix,
+            &[],
+            false,
+            true,
+        )
+        .unwrap();
+        let policy = plan.provider_policy.expect("provider policy");
+
+        assert!(!policy.policy.allow_cloud_embeddings);
+        assert!(!policy.policy.allow_cloud_reranking);
+        assert!(!policy.policy.allow_source_transfer);
+        assert!(policy.decisions.iter().any(|decision| decision.status
+            == ProviderDecisionStatus::Disabled
+            && decision.provider == "local_fixture"));
+        assert!(policy
+            .decisions
+            .iter()
+            .any(|decision| decision.provider == "local_hash"
+                && decision.status == ProviderDecisionStatus::Allowed));
     }
 }

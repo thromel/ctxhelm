@@ -3,15 +3,255 @@ use crate::graph::build_graph_neighborhood_report;
 use crate::packs::pack_repo_id;
 use crate::planning::prepare_context_plan_with_paths_and_semantic;
 use ctxpack_core::{
-    Diagnostic, DiagnosticSeverity, PrivacyStatus, RetrievalPolicyExperimentReport,
-    RetrievalPolicyExperimentRow, SemanticProviderStatusReport, SemanticUsageSummary, TaskType,
+    Diagnostic, DiagnosticSeverity, PrivacyStatus, ProviderCapability, ProviderDataClass,
+    ProviderDecision, ProviderDecisionStatus, ProviderPolicy, ProviderPolicyReport,
+    RetrievalPolicyExperimentReport, RetrievalPolicyExperimentRow, SemanticProviderStatusReport,
+    SemanticUsageSummary, TaskType,
 };
 use ctxpack_index::{
     normalized_provider, semantic_document_report, semantic_vector_records,
-    storage_status_for_repo, task_hash, InventoryError, SemanticDocumentOptions, SemanticOptions,
-    SemanticProviderConfig, StoreConfig,
+    storage_status_for_repo, task_hash, team_policy_report, InventoryError,
+    SemanticDocumentOptions, SemanticOptions, SemanticProviderConfig, StoreConfig,
 };
+use std::fs;
 use std::path::Path;
+
+pub const PROVIDER_POLICY_SCHEMA_VERSION: u32 = 1;
+
+pub fn provider_policy_report(
+    repo_root: impl AsRef<Path>,
+) -> Result<ProviderPolicyReport, InventoryError> {
+    let repo_root = repo_root.as_ref();
+    let path = repo_root.join(".ctxpack").join("provider-policy.json");
+    let (policy_path, mut policy, mut diagnostics) = if path.exists() {
+        let json = fs::read_to_string(&path).map_err(|source| InventoryError::Read {
+            path: path.clone(),
+            source,
+        })?;
+        let mut loaded = serde_json::from_str::<ProviderPolicy>(&json).map_err(|source| {
+            InventoryError::Deserialize {
+                path: path.clone(),
+                source,
+            }
+        })?;
+        loaded.schema_version = PROVIDER_POLICY_SCHEMA_VERSION;
+        (Some(path.display().to_string()), loaded, Vec::new())
+    } else {
+        (
+            None,
+            ProviderPolicy::default(),
+            vec![Diagnostic {
+                code: "provider_policy_absent_safe_defaults".to_string(),
+                severity: DiagnosticSeverity::Info,
+                message: "Provider policy file was not found; using local source-free defaults."
+                    .to_string(),
+                paths: Vec::new(),
+                count: 0,
+            }],
+        )
+    };
+
+    if let Ok(team_report) = team_policy_report(repo_root) {
+        policy.allow_cloud_embeddings &=
+            team_report.policy.allow_cloud_embeddings && policy.allow_source_transfer;
+        policy.allow_cloud_reranking &=
+            team_report.policy.allow_cloud_reranking && policy.allow_source_transfer;
+        policy.allow_source_transfer &=
+            team_report.policy.allow_source_snippets_in_shared_artifacts;
+        diagnostics.extend(
+            team_report
+                .diagnostics
+                .into_iter()
+                .map(|diagnostic| Diagnostic {
+                    code: format!("provider_policy_{}", diagnostic.code),
+                    severity: diagnostic.severity,
+                    message: diagnostic.message,
+                    paths: diagnostic.paths,
+                    count: 1,
+                }),
+        );
+    }
+
+    let decisions = provider_decisions(&policy);
+    if decisions.iter().any(|decision| {
+        matches!(decision.status, ProviderDecisionStatus::Denied)
+            && matches!(
+                decision.capability,
+                ProviderCapability::SemanticEmbedding | ProviderCapability::Reranking
+            )
+    }) {
+        diagnostics.push(Diagnostic {
+            code: "provider_policy_remote_denied".to_string(),
+            severity: DiagnosticSeverity::Info,
+            message:
+                "Remote embedding or reranking providers are blocked by local source-free policy."
+                    .to_string(),
+            paths: policy_path.clone().into_iter().collect(),
+            count: 1,
+        });
+    }
+
+    Ok(ProviderPolicyReport {
+        policy_path,
+        policy,
+        decisions,
+        diagnostics,
+        source_text_logged: false,
+        privacy_status: PrivacyStatus::local_only(),
+    })
+}
+
+pub(crate) fn semantic_provider_decision(
+    report: &ProviderPolicyReport,
+    provider: &SemanticProviderConfig,
+    requested: bool,
+) -> ProviderDecision {
+    if !requested {
+        return ProviderDecision {
+            capability: ProviderCapability::SemanticEmbedding,
+            provider: provider.provider.clone(),
+            status: ProviderDecisionStatus::Skipped,
+            data_classes: vec![
+                ProviderDataClass::Metadata,
+                ProviderDataClass::SemanticVector,
+            ],
+            remote_allowed: false,
+            source_text_allowed: false,
+            reason: "Semantic retrieval was not requested for this operation.".to_string(),
+        };
+    }
+    if !provider.available {
+        return ProviderDecision {
+            capability: ProviderCapability::SemanticEmbedding,
+            provider: provider.provider.clone(),
+            status: ProviderDecisionStatus::Unavailable,
+            data_classes: vec![
+                ProviderDataClass::Metadata,
+                ProviderDataClass::SemanticVector,
+            ],
+            remote_allowed: false,
+            source_text_allowed: false,
+            reason: "Requested semantic provider is not available in this build.".to_string(),
+        };
+    }
+    if provider.local_only {
+        let status = if report.policy.allow_local_providers {
+            ProviderDecisionStatus::Allowed
+        } else {
+            ProviderDecisionStatus::Denied
+        };
+        return ProviderDecision {
+            capability: ProviderCapability::SemanticEmbedding,
+            provider: provider.provider.clone(),
+            status,
+            data_classes: vec![
+                ProviderDataClass::Metadata,
+                ProviderDataClass::SemanticVector,
+            ],
+            remote_allowed: false,
+            source_text_allowed: false,
+            reason: if report.policy.allow_local_providers {
+                "Local source-free semantic provider is allowed.".to_string()
+            } else {
+                "Local semantic providers are disabled by provider policy.".to_string()
+            },
+        };
+    }
+
+    ProviderDecision {
+        capability: ProviderCapability::SemanticEmbedding,
+        provider: provider.provider.clone(),
+        status: if report.policy.allow_cloud_embeddings && report.policy.allow_source_transfer {
+            ProviderDecisionStatus::Allowed
+        } else {
+            ProviderDecisionStatus::Denied
+        },
+        data_classes: vec![ProviderDataClass::Metadata, ProviderDataClass::SourceText],
+        remote_allowed: report.policy.allow_cloud_embeddings,
+        source_text_allowed: report.policy.allow_source_transfer,
+        reason: "Cloud semantic providers require explicit cloud and source-transfer policy."
+            .to_string(),
+    }
+}
+
+pub(crate) fn reranker_decision(report: &ProviderPolicyReport) -> ProviderDecision {
+    if report.policy.enable_local_fixture_reranker {
+        return ProviderDecision {
+            capability: ProviderCapability::Reranking,
+            provider: "local_fixture".to_string(),
+            status: if report.policy.allow_local_providers {
+                ProviderDecisionStatus::Allowed
+            } else {
+                ProviderDecisionStatus::Denied
+            },
+            data_classes: vec![ProviderDataClass::Metadata],
+            remote_allowed: false,
+            source_text_allowed: false,
+            reason: "Deterministic local fixture reranker is policy-enabled.".to_string(),
+        };
+    }
+    ProviderDecision {
+        capability: ProviderCapability::Reranking,
+        provider: "local_fixture".to_string(),
+        status: ProviderDecisionStatus::Disabled,
+        data_classes: vec![ProviderDataClass::Metadata],
+        remote_allowed: false,
+        source_text_allowed: false,
+        reason: "Reranker is disabled by default.".to_string(),
+    }
+}
+
+fn provider_decisions(policy: &ProviderPolicy) -> Vec<ProviderDecision> {
+    let local_provider = if policy.allow_local_providers {
+        ProviderDecisionStatus::Allowed
+    } else {
+        ProviderDecisionStatus::Denied
+    };
+    vec![
+        ProviderDecision {
+            capability: ProviderCapability::SemanticEmbedding,
+            provider: "local_hash".to_string(),
+            status: local_provider.clone(),
+            data_classes: vec![
+                ProviderDataClass::Metadata,
+                ProviderDataClass::SemanticVector,
+            ],
+            remote_allowed: false,
+            source_text_allowed: false,
+            reason: "Default deterministic local semantic metadata provider.".to_string(),
+        },
+        ProviderDecision {
+            capability: ProviderCapability::SemanticEmbedding,
+            provider: "cloud_embedding".to_string(),
+            status: if policy.allow_cloud_embeddings && policy.allow_source_transfer {
+                ProviderDecisionStatus::Allowed
+            } else {
+                ProviderDecisionStatus::Denied
+            },
+            data_classes: vec![ProviderDataClass::Metadata, ProviderDataClass::SourceText],
+            remote_allowed: policy.allow_cloud_embeddings,
+            source_text_allowed: policy.allow_source_transfer,
+            reason: "Cloud embeddings require both cloud and source-transfer policy.".to_string(),
+        },
+        ProviderDecision {
+            capability: ProviderCapability::PrecisionGraph,
+            provider: "local_precision_overlay".to_string(),
+            status: local_provider,
+            data_classes: vec![ProviderDataClass::Metadata],
+            remote_allowed: false,
+            source_text_allowed: false,
+            reason: "Local precision overlays are metadata-only.".to_string(),
+        },
+        reranker_decision(&ProviderPolicyReport {
+            policy_path: None,
+            policy: policy.clone(),
+            decisions: Vec::new(),
+            diagnostics: Vec::new(),
+            source_text_logged: false,
+            privacy_status: PrivacyStatus::local_only(),
+        }),
+    ]
+}
 
 pub fn semantic_provider_status_report(
     repo_root: impl AsRef<Path>,
@@ -20,6 +260,7 @@ pub fn semantic_provider_status_report(
 ) -> Result<SemanticProviderStatusReport, InventoryError> {
     let repo_root = repo_root.as_ref();
     let provider = normalized_provider(&SemanticProviderConfig::default());
+    let provider_policy = provider_policy_report(repo_root)?;
     let document_report =
         semantic_document_report(repo_root, &SemanticDocumentOptions { limit: usize::MAX })?;
     let local_records = semantic_vector_records(
@@ -83,6 +324,7 @@ pub fn semantic_provider_status_report(
         stored_vector_count,
         indexing_freshness: "safe_inventory_current_or_refreshed".to_string(),
         usage,
+        provider_policy,
         source_text_logged: false,
         privacy_status: PrivacyStatus::local_only(),
     })
@@ -96,6 +338,7 @@ pub fn retrieval_policy_experiment_report(
     ranking_budget: usize,
 ) -> Result<RetrievalPolicyExperimentReport, InventoryError> {
     let repo_root = repo_root.as_ref();
+    let provider_policy = provider_policy_report(repo_root)?;
     let lexical = evaluate_historical_commits(
         repo_root,
         &HistoricalEvalOptions {
@@ -195,7 +438,91 @@ pub fn retrieval_policy_experiment_report(
         task_hash: task_hash(task),
         rows,
         diagnostics,
+        provider_policy,
         source_text_logged: false,
         privacy_status: PrivacyStatus::local_only(),
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::fs;
+
+    #[test]
+    fn provider_policy_uses_safe_defaults_when_config_is_absent() {
+        let temp = tempfile::tempdir().unwrap();
+        let repo = temp.path();
+
+        let report = provider_policy_report(repo).unwrap();
+
+        assert!(report.policy.allow_local_providers);
+        assert!(!report.policy.allow_cloud_embeddings);
+        assert!(!report.policy.allow_cloud_reranking);
+        assert!(!report.policy.allow_source_transfer);
+        assert!(!report.policy.enable_local_fixture_reranker);
+        assert!(report.privacy_status.local_only);
+        assert!(report
+            .decisions
+            .iter()
+            .any(|decision| decision.status == ProviderDecisionStatus::Denied
+                && decision.provider == "cloud_embedding"));
+    }
+
+    #[test]
+    fn provider_policy_team_policy_denies_cloud_even_if_provider_file_allows_it() {
+        let temp = tempfile::tempdir().unwrap();
+        let repo = temp.path();
+        fs::create_dir_all(repo.join(".ctxpack")).unwrap();
+        fs::write(
+            repo.join(".ctxpack/provider-policy.json"),
+            r#"{
+              "schemaVersion": 1,
+              "name": "unsafe-request",
+              "allowLocalProviders": true,
+              "allowCloudEmbeddings": true,
+              "allowCloudReranking": true,
+              "allowSourceTransfer": true,
+              "enableLocalFixtureReranker": true,
+              "sourceTextLogged": false
+            }"#,
+        )
+        .unwrap();
+
+        let report = provider_policy_report(repo).unwrap();
+
+        assert!(!report.policy.allow_cloud_embeddings);
+        assert!(!report.policy.allow_cloud_reranking);
+        assert!(!report.policy.allow_source_transfer);
+        assert!(report.policy.enable_local_fixture_reranker);
+        assert!(report
+            .decisions
+            .iter()
+            .any(|decision| decision.provider == "cloud_embedding"
+                && decision.status == ProviderDecisionStatus::Denied));
+    }
+
+    #[test]
+    fn reranker_decision_is_disabled_by_default_and_local_when_enabled() {
+        let default_report = ProviderPolicyReport {
+            policy_path: None,
+            policy: ProviderPolicy::default(),
+            decisions: Vec::new(),
+            diagnostics: Vec::new(),
+            source_text_logged: false,
+            privacy_status: PrivacyStatus::local_only(),
+        };
+        let disabled = reranker_decision(&default_report);
+        assert_eq!(disabled.status, ProviderDecisionStatus::Disabled);
+        assert!(!disabled.remote_allowed);
+        assert!(!disabled.source_text_allowed);
+
+        let mut enabled_report = default_report;
+        enabled_report.policy.enable_local_fixture_reranker = true;
+        let enabled = reranker_decision(&enabled_report);
+        assert_eq!(enabled.status, ProviderDecisionStatus::Allowed);
+        assert_eq!(enabled.provider, "local_fixture");
+        assert!(!enabled.remote_allowed);
+        assert!(!enabled.source_text_allowed);
+    }
 }

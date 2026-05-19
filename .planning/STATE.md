@@ -4,23 +4,23 @@ milestone: v2.4
 milestone_name: Production Semantic & Precision Backends
 status: executing
 last_updated: "2026-05-19T20:00:00Z"
-last_activity: 2026-05-20 -- Phase 58 execution complete
+last_activity: 2026-05-20 -- Phase 59 execution complete
 progress:
   total_phases: 5
-  completed_phases: 3
+  completed_phases: 4
   total_plans: 5
   completed_plans: 5
-  percent: 60
+  percent: 80
 ---
 
 # Project State
 
 ## Current Position
 
-Phase: 59 - Provider And Reranker Policy Gates
-Plan: 59-provider-reranker-policy-gates-01-PLAN.md
+Phase: 60 - Semantic/Precision Evaluation Gates And Release Proof
+Plan: 60-semantic-precision-evaluation-gates-release-proof-01-PLAN.md
 Status: Ready to execute
-Last activity: 2026-05-20 -- Phase 58 execution complete
+Last activity: 2026-05-20 -- Phase 59 execution complete
 
 ## Project Reference
 
@@ -39,16 +39,16 @@ Goal: Convert semantic and precision retrieval from local scaffolding into measu
 Planned phases:
 
 - Phase 56: Production Local Semantic Backend (complete)
-- Phase 57: Precision-Enriched Semantic Documents
-- Phase 58: Query Construction And Hybrid Fusion Controls
-- Phase 59: Provider And Reranker Policy Gates
+- Phase 57: Precision-Enriched Semantic Documents (complete)
+- Phase 58: Query Construction And Hybrid Fusion Controls (complete)
+- Phase 59: Provider And Reranker Policy Gates (complete)
 - Phase 60: Semantic/Precision Evaluation Gates And Release Proof
 
 ## Next Step
 
-Run `$gsd-autonomous --from 59`.
+Run `$gsd-autonomous --from 60`.
 
 ## Operator Next Steps
 
-- Execute Phase 59 next.
-- Keep semantic defaults gated until fixed-corpus eval shows measurable lift.
+- Execute Phase 60 next.
+- Keep semantic/provider defaults gated until fixed-corpus eval shows measurable lift.

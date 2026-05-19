@@ -336,6 +336,8 @@ pub struct ContextPlan {
     pub selected_memory: Vec<SelectedMemory>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub query_trace: Option<QueryConstructionTrace>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub provider_policy: Option<ProviderPolicyReport>,
     pub privacy_status: PrivacyStatus,
 }
 
@@ -423,6 +425,8 @@ pub struct ContextPack {
     pub warnings: Vec<String>,
     #[serde(default)]
     pub diagnostics: Vec<Diagnostic>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub provider_policy: Option<ProviderPolicyReport>,
     pub privacy_status: PrivacyStatus,
 }
 
@@ -805,6 +809,7 @@ pub struct SemanticProviderStatusReport {
     pub indexing_freshness: String,
     #[serde(default)]
     pub usage: Vec<SemanticUsageSummary>,
+    pub provider_policy: ProviderPolicyReport,
     pub source_text_logged: bool,
     pub privacy_status: PrivacyStatus,
 }
@@ -894,6 +899,87 @@ pub struct SemanticUsageSummary {
     pub remote_embeddings_used: bool,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum ProviderCapability {
+    SemanticEmbedding,
+    PrecisionGraph,
+    Reranking,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum ProviderDataClass {
+    Metadata,
+    SourceText,
+    SemanticVector,
+    GitHistory,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum ProviderDecisionStatus {
+    Allowed,
+    Denied,
+    Unavailable,
+    Disabled,
+    Skipped,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct ProviderDecision {
+    pub capability: ProviderCapability,
+    pub provider: String,
+    pub status: ProviderDecisionStatus,
+    #[serde(default)]
+    pub data_classes: Vec<ProviderDataClass>,
+    pub remote_allowed: bool,
+    pub source_text_allowed: bool,
+    pub reason: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct ProviderPolicy {
+    pub schema_version: u32,
+    pub name: String,
+    pub allow_local_providers: bool,
+    pub allow_cloud_embeddings: bool,
+    pub allow_cloud_reranking: bool,
+    pub allow_source_transfer: bool,
+    pub enable_local_fixture_reranker: bool,
+    pub source_text_logged: bool,
+}
+
+impl Default for ProviderPolicy {
+    fn default() -> Self {
+        Self {
+            schema_version: 1,
+            name: "local-source-free-default".to_string(),
+            allow_local_providers: true,
+            allow_cloud_embeddings: false,
+            allow_cloud_reranking: false,
+            allow_source_transfer: false,
+            enable_local_fixture_reranker: false,
+            source_text_logged: false,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct ProviderPolicyReport {
+    pub policy_path: Option<String>,
+    pub policy: ProviderPolicy,
+    #[serde(default)]
+    pub decisions: Vec<ProviderDecision>,
+    #[serde(default)]
+    pub diagnostics: Vec<Diagnostic>,
+    pub source_text_logged: bool,
+    pub privacy_status: PrivacyStatus,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct RetrievalPolicyExperimentReport {
@@ -903,6 +989,7 @@ pub struct RetrievalPolicyExperimentReport {
     pub rows: Vec<RetrievalPolicyExperimentRow>,
     #[serde(default)]
     pub diagnostics: Vec<Diagnostic>,
+    pub provider_policy: ProviderPolicyReport,
     pub source_text_logged: bool,
     pub privacy_status: PrivacyStatus,
 }
@@ -1408,6 +1495,7 @@ mod tests {
             retrieval_candidates: Vec::new(),
             selected_memory: Vec::new(),
             query_trace: None,
+            provider_policy: None,
             privacy_status: PrivacyStatus::local_only(),
         };
 
@@ -1495,6 +1583,55 @@ mod tests {
     }
 
     #[test]
+    fn provider_policy_defaults_are_source_safe_and_camel_case() {
+        let report = ProviderPolicyReport {
+            policy_path: None,
+            policy: ProviderPolicy::default(),
+            decisions: vec![
+                ProviderDecision {
+                    capability: ProviderCapability::SemanticEmbedding,
+                    provider: "local_hash".to_string(),
+                    status: ProviderDecisionStatus::Allowed,
+                    data_classes: vec![
+                        ProviderDataClass::Metadata,
+                        ProviderDataClass::SemanticVector,
+                    ],
+                    remote_allowed: false,
+                    source_text_allowed: false,
+                    reason: "local metadata only".to_string(),
+                },
+                ProviderDecision {
+                    capability: ProviderCapability::Reranking,
+                    provider: "cloud_reranker".to_string(),
+                    status: ProviderDecisionStatus::Denied,
+                    data_classes: vec![ProviderDataClass::SourceText],
+                    remote_allowed: false,
+                    source_text_allowed: false,
+                    reason: "cloud reranking denied by default".to_string(),
+                },
+            ],
+            diagnostics: Vec::new(),
+            source_text_logged: false,
+            privacy_status: PrivacyStatus::local_only(),
+        };
+
+        let value = serde_json::to_value(&report).unwrap();
+
+        assert_eq!(value["policy"]["allowLocalProviders"], true);
+        assert_eq!(value["policy"]["allowCloudEmbeddings"], false);
+        assert_eq!(value["policy"]["allowCloudReranking"], false);
+        assert_eq!(value["policy"]["allowSourceTransfer"], false);
+        assert_eq!(value["policy"]["enableLocalFixtureReranker"], false);
+        assert_eq!(value["decisions"][0]["capability"], "semantic_embedding");
+        assert_eq!(value["decisions"][0]["dataClasses"][0], "metadata");
+        assert_eq!(value["decisions"][1]["status"], "denied");
+        assert_eq!(value["sourceTextLogged"], false);
+        assert_eq!(value["privacyStatus"]["localOnly"], true);
+        assert!(value.get("source").is_none());
+        assert!(value.get("sourceText").is_none());
+    }
+
+    #[test]
     fn retrieval_contracts_serialize_additive_camel_case_fields() {
         let attribution = vec![RetrievalEvidence {
             signal: RetrievalSignalKind::Lexical,
@@ -1544,6 +1681,7 @@ mod tests {
             }],
             selected_memory: Vec::new(),
             query_trace: None,
+            provider_policy: None,
             privacy_status: PrivacyStatus::local_only(),
         };
 
@@ -1838,6 +1976,7 @@ mod tests {
                 paths: vec!["src/lib.rs".to_string()],
                 count: 1,
             }],
+            provider_policy: None,
             privacy_status: PrivacyStatus::local_only(),
         };
 
@@ -2165,6 +2304,7 @@ mod tests {
             retrieval_candidates: Vec::new(),
             selected_memory: Vec::new(),
             query_trace: None,
+            provider_policy: None,
             privacy_status: PrivacyStatus::local_only(),
         };
         let workspace_plan = WorkspaceContextPlan {
@@ -2220,6 +2360,7 @@ mod tests {
             confidence: 0.8,
             warnings: Vec::new(),
             diagnostics: Vec::new(),
+            provider_policy: None,
             privacy_status: PrivacyStatus::local_only(),
         };
         let workspace_pack = WorkspaceContextPack {

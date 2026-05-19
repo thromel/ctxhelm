@@ -235,6 +235,38 @@ pub(crate) fn rank_candidates(input: RankingInput) -> Vec<RankedCandidate> {
     candidates.finish()
 }
 
+pub(crate) fn rerank_with_local_fixture(
+    mut candidates: Vec<RankedCandidate>,
+) -> Vec<RankedCandidate> {
+    candidates.sort_by(|left, right| {
+        fixture_rerank_score(right)
+            .total_cmp(&fixture_rerank_score(left))
+            .then_with(|| right.rank_score.total_cmp(&left.rank_score))
+            .then_with(|| left.candidate.path.cmp(&right.candidate.path))
+    });
+    candidates
+}
+
+fn fixture_rerank_score(candidate: &RankedCandidate) -> f32 {
+    let evidence_score = candidate.candidate.evidence.len() as f32 * 0.05;
+    let exact_score = candidate
+        .candidate
+        .signal_scores
+        .iter()
+        .filter(|score| {
+            matches!(
+                score.signal,
+                RetrievalSignalKind::Anchor
+                    | RetrievalSignalKind::CurrentDiff
+                    | RetrievalSignalKind::Lexical
+                    | RetrievalSignalKind::Symbol
+            )
+        })
+        .map(|score| score.score * score.weight)
+        .sum::<f32>();
+    candidate.rank_score + exact_score + evidence_score
+}
+
 fn semantic_facet_label(result: &SemanticSearchResult) -> String {
     let facets = result
         .matched_facets
@@ -1195,6 +1227,47 @@ mod tests {
         assert!(!serialized.contains("term match"));
         assert!(!serialized.contains("changed together"));
         assert!(serialized.contains("abc1234"));
+    }
+
+    #[test]
+    fn local_fixture_reranker_is_deterministic_and_source_free() {
+        let candidates = rank_candidates(RankingInput {
+            lexical_results: vec![lexical("src/secondary.ts", 20.0)],
+            symbol_results: vec![SymbolSearchResult {
+                symbol: CodeSymbol {
+                    name: "AuthService".to_string(),
+                    kind: ctxpack_index::SymbolKind::Function,
+                    path: "src/primary.ts".to_string(),
+                    language: Some("typescript".to_string()),
+                    signature: "AuthService()".to_string(),
+                    start_line: 1,
+                    end_line: 1,
+                    exported: true,
+                },
+                score: 20.0,
+                reason: "symbol name match".to_string(),
+            }],
+            roles: roles([
+                ("src/primary.ts", FileRole::Source),
+                ("src/secondary.ts", FileRole::Source),
+            ]),
+            ..RankingInput::default()
+        });
+
+        let reranked = rerank_with_local_fixture(candidates.clone());
+        let reranked_again = rerank_with_local_fixture(candidates);
+
+        assert_eq!(candidate_paths(&reranked), candidate_paths(&reranked_again));
+        assert_eq!(candidate_paths(&reranked).first(), Some(&"src/primary.ts"));
+        let serialized = serde_json::to_string(
+            &reranked
+                .iter()
+                .map(|candidate| &candidate.candidate)
+                .collect::<Vec<_>>(),
+        )
+        .unwrap();
+        assert!(!serialized.contains("symbol name match"));
+        assert!(!serialized.contains("source code"));
     }
 
     fn lexical(path: &str, score: f32) -> SearchResult {

@@ -181,7 +181,7 @@ The retrieval-health smoke proves source-free health JSON and Markdown reports f
 
 The graph smoke proves source-free graph neighborhood JSON and Markdown reports from real dependency/test edges, including nodes, edges, communities, cap-safe metadata, and absence of source sentinel leakage.
 
-The policy/embedding smoke proves semantic provider status reporting, `deterministic_scaffold` labeling for `local_hash`, explicit cloud-disabled policy flags, source-free policy experiment rows, graph comparison metadata, and absence of source sentinel leakage.
+The policy/embedding smoke proves semantic provider status reporting, `deterministic_scaffold` labeling for `local_hash`, explicit provider-policy decisions, disabled default reranking, explicit cloud-disabled/source-transfer-denied flags, source-free policy experiment rows, graph comparison metadata, and absence of source sentinel leakage.
 
 The agent-preview smoke proves Codex, Claude Code, Cursor, OpenCode, and generic MCP preview metadata, including MCP tools/resources, guidance paths, read/edit boundary notes, source-free flags, and absence of source sentinel leakage.
 

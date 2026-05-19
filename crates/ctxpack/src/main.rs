@@ -3852,6 +3852,19 @@ fn render_semantic_provider_status(report: &SemanticProviderStatusReport) -> Str
         report.source_text_logged,
         report.privacy_status.local_only
     ));
+    output.push_str("## Provider Policy\n\n");
+    for decision in &report.provider_policy.decisions {
+        output.push_str(&format!(
+            "- `{:?}` provider `{}` status `{:?}` remoteAllowed `{}` sourceAllowed `{}`: {}\n",
+            decision.capability,
+            decision.provider,
+            decision.status,
+            decision.remote_allowed,
+            decision.source_text_allowed,
+            decision.reason
+        ));
+    }
+    output.push('\n');
     output.push_str("## Usage\n\n");
     if report.usage.is_empty() {
         output.push_str("- No semantic usage sample requested.\n");
@@ -3878,6 +3891,19 @@ fn render_policy_experiment_report(report: &RetrievalPolicyExperimentReport) -> 
         report.source_text_logged,
         report.privacy_status.local_only
     ));
+    output.push_str("## Provider Policy\n\n");
+    for decision in &report.provider_policy.decisions {
+        output.push_str(&format!(
+            "- `{:?}` provider `{}` status `{:?}` remoteAllowed `{}` sourceAllowed `{}`: {}\n",
+            decision.capability,
+            decision.provider,
+            decision.status,
+            decision.remote_allowed,
+            decision.source_text_allowed,
+            decision.reason
+        ));
+    }
+    output.push('\n');
     output.push_str("## Rows\n\n");
     for row in &report.rows {
         output.push_str(&format!(

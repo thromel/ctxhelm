@@ -46,7 +46,9 @@ pub use planning::{
     empty_plan_for_task, prepare_context_plan, prepare_context_plan_with_paths,
     prepare_context_plan_with_paths_and_semantic,
 };
-pub use policy::{retrieval_policy_experiment_report, semantic_provider_status_report};
+pub use policy::{
+    provider_policy_report, retrieval_policy_experiment_report, semantic_provider_status_report,
+};
 pub use workspace::{compile_workspace_context_pack, prepare_workspace_context_plan};
 
 #[cfg(test)]
