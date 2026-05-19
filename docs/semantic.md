@@ -20,11 +20,11 @@ The default provider is `local_hash` with model `ctxpack-local-hash-v1`, cosine 
 Semantic retrieval now indexes source-free semantic documents instead of raw file bodies. A semantic document is built from safe repository metadata:
 
 - path, role, language, and safe file hash
-- extracted symbol names, kinds, line ranges, and sanitized signatures
+- Tree-sitter extracted symbol names, kinds, line ranges, and sanitized signatures
 - import/dependency edges
 - related-test paths and source-free relation reasons
 - docs/card file references
-- optional precision edge labels from `.ctxpack/precision-edges.json`
+- optional discovered or imported precision edge labels from `.ctxpack/precision-edges.json`
 
 The document report is visible through semantic status:
 
@@ -66,6 +66,8 @@ Semantic retrieval uses:
 - no cloud embedding or reranking calls
 
 Cloud embeddings and cloud reranking remain out of scope for the default product.
+Local metadata reranking is available only when provider policy enables it; it
+uses candidate metadata and signal provenance, not raw source text.
 Semantic status and plans now include a `providerPolicy` object that records
 allowed, denied, unavailable, disabled, and skipped backend decisions. Local
 source-free metadata providers are allowed by default; cloud embeddings, cloud

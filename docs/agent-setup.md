@@ -21,6 +21,19 @@ ctxpack is an agent-native, read-only context broker. It generates repo-local gu
 
 Cursor and OpenCode setup can be checked through generated artifacts plus deterministic protocol proof. v1.1 does not claim machine-checkable Cursor tool-call proof, and it does not claim machine-checkable OpenCode tool-call proof.
 
+The setup-proof wrappers are:
+
+```bash
+bash scripts/smoke-cursor-mcp.sh
+bash scripts/smoke-opencode-mcp.sh
+```
+
+They generate repo-local adapter files in a temporary repo, run `setup-check`,
+run the deterministic MCP protocol smoke, and optionally write JSON evidence to
+`CTXPACK_REAL_CLIENT_EVIDENCE_DIR`. The evidence explicitly marks
+`realClientToolCalls: false` so setup proof is not confused with tool-call
+transcript proof.
+
 ## Common Agent Flow
 
 Use the same sequence across clients:

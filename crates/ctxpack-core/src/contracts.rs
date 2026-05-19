@@ -948,6 +948,9 @@ pub struct ProviderPolicy {
     pub allow_cloud_embeddings: bool,
     pub allow_cloud_reranking: bool,
     pub allow_source_transfer: bool,
+    #[serde(default)]
+    pub enable_local_metadata_reranker: bool,
+    #[serde(default)]
     pub enable_local_fixture_reranker: bool,
     pub source_text_logged: bool,
 }
@@ -961,6 +964,7 @@ impl Default for ProviderPolicy {
             allow_cloud_embeddings: false,
             allow_cloud_reranking: false,
             allow_source_transfer: false,
+            enable_local_metadata_reranker: false,
             enable_local_fixture_reranker: false,
             source_text_logged: false,
         }

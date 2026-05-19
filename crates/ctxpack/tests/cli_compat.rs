@@ -152,6 +152,33 @@ fn doctor_verifies_binary_manifest_and_local_state_source_free() {
 }
 
 #[test]
+fn cards_fallback_generates_source_free_agent_guide() {
+    let fixture = fixture_repo();
+
+    let value = json_stdout(
+        Command::cargo_bin("ctxpack")
+            .unwrap()
+            .env(CTXPACK_HOME_ENV, &fixture.home)
+            .args(["cards", "fallback", "--repo"])
+            .arg(&fixture.repo)
+            .args(["--target-agent", "claude", "--format", "json"])
+            .assert(),
+    );
+    assert_eq!(value["targetAgent"], "claude-code");
+    assert_eq!(value["sourceTextLogged"], false);
+    assert!(value["cardCount"].as_u64().unwrap() >= 3);
+    assert_no_source_or_prompt_text(&value);
+
+    let guide_path = value["guidePath"].as_str().unwrap();
+    let guide = fs::read_to_string(guide_path).unwrap();
+    assert!(guide.contains("ctxpack Disconnected Fallback"));
+    assert!(guide.contains("Claude Code"));
+    assert!(guide.contains("Source snippets included: `false`"));
+    assert!(!guide.contains("auth required"));
+    assert!(!guide.contains("token:${userId}"));
+}
+
+#[test]
 fn init_reports_file_actions_and_next_steps() {
     let fixture = fixture_repo();
 
@@ -988,6 +1015,22 @@ fn search_related_tests_dependencies_and_eval_history_emit_json_shapes() {
     assert_eq!(first_edge["sourcePath"], "tests/auth/session.test.ts");
     assert_eq!(first_edge["targetPath"], "src/auth/session.ts");
     assert_eq!(first_edge["kind"], "imports");
+
+    let discovered_precision = json_stdout(
+        Command::cargo_bin("ctxpack")
+            .unwrap()
+            .env(CTXPACK_HOME_ENV, &fixture.home)
+            .args(["precision", "discover", "--repo"])
+            .arg(&fixture.repo)
+            .args(["--format", "json", "--limit", "20"])
+            .assert(),
+    );
+    assert_eq!(
+        discovered_precision["provider"],
+        "local_tree_sitter_reference_scan"
+    );
+    assert!(discovered_precision["discoveredEdges"].as_u64().unwrap() > 0);
+    assert_no_source_or_prompt_text(&discovered_precision);
 
     let precision_input = fixture.home.join("precision.json");
     fs::write(
@@ -2270,6 +2313,40 @@ fn real_client_smoke_scripts_have_contract_guards() {
             content.contains("CTXPACK_RUN_REAL_CLIENT")
                 || content.contains("CTXPACK_REQUIRE_REAL_CLIENT"),
             "{script} must keep real-client execution env-gated"
+        );
+    }
+
+    for script in [
+        "scripts/smoke-cursor-mcp.sh",
+        "scripts/smoke-opencode-mcp.sh",
+    ] {
+        let script_path = workspace_root.join(script);
+        let content = fs::read_to_string(&script_path)
+            .unwrap_or_else(|error| panic!("failed to read {script}: {error}"));
+        let syntax = StdCommand::new("bash")
+            .arg("-n")
+            .arg(&script_path)
+            .status()
+            .unwrap_or_else(|error| panic!("failed to run bash -n {script}: {error}"));
+        assert!(syntax.success(), "{script} failed bash -n");
+        for needle in [
+            "scripts/smoke-mcp-protocol.sh",
+            "setup-check",
+            "CTXPACK_BIN",
+            "CTXPACK_REAL_CLIENT_EVIDENCE_DIR",
+            "clientVersion",
+            "ctxpackVersion",
+            "deterministicProtocol",
+            "realClientToolCalls",
+            "proofBoundary",
+            "not_installed",
+            "passed",
+        ] {
+            assert!(content.contains(needle), "{script} missing {needle}");
+        }
+        assert!(
+            content.contains("no machine-checkable"),
+            "{script} must not overclaim real-client tool-call proof"
         );
     }
 }

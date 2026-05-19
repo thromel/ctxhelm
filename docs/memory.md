@@ -15,6 +15,18 @@ links, input hashes, freshness, review status, confidence, and privacy status.
 They summarize safe inventory, tests, dependency edges, and path domains. They
 do not store raw file contents, source snippets, secrets, or raw prompts.
 
+## Generate Disconnected Fallback Cards
+
+```bash
+ctxpack cards fallback --repo "$REPO" --target-agent codex
+```
+
+This regenerates source-free context cards and writes a guide under
+`.ctxpack/fallback/<agent>-context.md`. Use it for cloud, copied, or
+disconnected agent contexts where local MCP is unavailable. The guide points
+agents to `AGENTS.md` and the source-free cards, but it still tells them to
+inspect current files with native tools before editing.
+
 ## Generate Experience Memory
 
 ```bash

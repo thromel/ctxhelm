@@ -9,8 +9,17 @@ description.workspace = true
 rust-version.workspace = true
 
 [features]
-default = []
+default = ["tree-sitter-parsers"]
 local-embeddings = ["dep:fastembed"]
+tree-sitter-parsers = [
+    "dep:tree-sitter",
+    "dep:tree-sitter-go",
+    "dep:tree-sitter-java",
+    "dep:tree-sitter-kotlin-ng",
+    "dep:tree-sitter-python",
+    "dep:tree-sitter-rust",
+    "dep:tree-sitter-typescript",
+]
 
 [dependencies]
 blake3.workspace = true
@@ -21,6 +30,13 @@ rusqlite.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 thiserror.workspace = true
+tree-sitter = { workspace = true, optional = true }
+tree-sitter-go = { workspace = true, optional = true }
+tree-sitter-java = { workspace = true, optional = true }
+tree-sitter-kotlin-ng = { workspace = true, optional = true }
+tree-sitter-python = { workspace = true, optional = true }
+tree-sitter-rust = { workspace = true, optional = true }
+tree-sitter-typescript = { workspace = true, optional = true }
 uuid = { workspace = true, features = ["v5"] }
 
 [dev-dependencies]

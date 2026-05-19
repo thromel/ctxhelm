@@ -158,6 +158,14 @@ The optional real-client evidence wrappers are:
 - `scripts/smoke-codex-mcp.sh`
 - `scripts/smoke-claude-mcp.sh`
 
+Cursor and OpenCode have deterministic setup/protocol proof wrappers:
+
+- `scripts/smoke-cursor-mcp.sh`
+- `scripts/smoke-opencode-mcp.sh`
+
+These wrappers validate repo-local setup artifacts and MCP protocol behavior,
+and their evidence explicitly marks `realClientToolCalls: false`.
+
 The semantic smoke proves explicit local semantic retrieval, source-free vector metadata, semantic provenance in plans, semantic-enabled eval metadata, scaffold/provider status for `local_hash`, and cloud-disabled privacy status. It does not call cloud embedding or reranking services. The optional `local_fastembed` backend remains behind the `local-embeddings` Cargo feature and is not a default release requirement.
 
 The precision smoke proves Java/Kotlin symbol extraction, Java/Kotlin package import edges, source-free precision edge import, rejection of sensitive paths, and additive precision dependency output.
@@ -205,7 +213,7 @@ ready/deferred/blocked lifecycle states, deterministic protocol proof language,
 optional real-client proof boundaries, Cursor/OpenCode non-claims, and rollback
 safety for marked local candidate directories.
 
-The gate passes the same selected or extracted `CTXPACK_BIN` into the first-pack, storage, memory, feedback, workspace, shared-artifact, inspector, retrieval-health, graph, policy/embedding, agent-preview, semantic, precision, v2.3 eval, v2.4 semantic/precision gate, MCP protocol, and optional real-client smokes. Demo, distribution metadata, and release governance smokes are source-free metadata checks and do not need the binary. Real-client proof is not required by default. Use these environment variables when needed:
+The gate passes the same selected or extracted `CTXPACK_BIN` into the first-pack, storage, memory, feedback, workspace, shared-artifact, inspector, retrieval-health, graph, policy/embedding, agent-preview, semantic, precision, v2.3 eval, v2.4 semantic/precision gate, MCP protocol, Cursor/OpenCode setup-proof wrappers, and optional real-client smokes. Demo, distribution metadata, and release governance smokes are source-free metadata checks and do not need the binary. Real-client proof is not required by default. Use these environment variables when needed:
 
 - `CTXPACK_SKIP_REAL_CLIENT=1` keeps Codex and Claude checks deterministic-only after the protocol proof.
 - `CTXPACK_REQUIRE_REAL_CLIENT=1` makes missing Codex or Claude tool-call evidence fail the gate.

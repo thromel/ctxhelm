@@ -1,6 +1,23 @@
 # Parser and Precision Edges
 
-ctxpack now extracts local symbols and import edges for TypeScript, JavaScript, Python, Rust, Go, Java, and Kotlin. Java/Kotlin support is intentionally lightweight: it reads safe inventoried files, recognizes common classes, interfaces, records, methods, constants, and package imports, and degrades to the existing lexical/graph signals when a file cannot be read safely.
+ctxpack now extracts local symbols with Tree-sitter for TypeScript, JavaScript,
+Python, Rust, Go, Java, and Kotlin, then falls back to the lightweight extractor
+only when a parser is unavailable or produces no symbols. This gives the context
+compiler AST-backed classes, functions, methods, constants, modules, line
+ranges, and signatures while preserving the same safe-read policy.
+
+ctxpack can also generate a local source-free precision overlay from those
+Tree-sitter symbols:
+
+```bash
+ctxpack precision discover --repo /path/to/repo
+ctxpack dependencies src/auth/middleware.ts --repo /path/to/repo
+```
+
+Discovery scans only safe inventoried source/test files, records metadata edges
+such as `precision:calls` and `precision:references`, and writes only paths,
+symbol names, edge labels, confidence, and source-free reasons to
+`.ctxpack/precision-edges.json`.
 
 For repositories that already run SCIP, LSP, or another code-intelligence indexer, ctxpack can also import a source-free precision edge overlay:
 
@@ -30,7 +47,10 @@ The import format is deliberately small and source-free:
 
 The overlay is written to `.ctxpack/precision-edges.json`. ctxpack validates every edge against the safe local inventory before storing it, rejects sensitive/generated/ignored paths, and does not store source snippets, prompt text, secrets, or cloud payloads.
 
-Imported precision edges appear in dependency results with kinds such as `precision:calls` or `precision:references`. They are additive: inferred imports still work when no overlay exists, and invalid or unreadable overlays produce non-fatal diagnostics instead of breaking context planning.
+Discovered and imported precision edges appear in dependency results with kinds
+such as `precision:calls` or `precision:references`. They are additive:
+inferred imports still work when no overlay exists, and invalid or unreadable
+overlays produce non-fatal diagnostics instead of breaking context planning.
 
 Semantic status also reports precision availability:
 

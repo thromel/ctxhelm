@@ -27,6 +27,8 @@ smoke_v24_gate_script="$repo_root/scripts/smoke-v24-gate.sh"
 smoke_mcp_protocol_script="$repo_root/scripts/smoke-mcp-protocol.sh"
 smoke_codex_mcp_script="$repo_root/scripts/smoke-codex-mcp.sh"
 smoke_claude_mcp_script="$repo_root/scripts/smoke-claude-mcp.sh"
+smoke_cursor_mcp_script="$repo_root/scripts/smoke-cursor-mcp.sh"
+smoke_opencode_mcp_script="$repo_root/scripts/smoke-opencode-mcp.sh"
 
 work_dir="$(mktemp -d)"
 cleanup() {
@@ -205,6 +207,18 @@ CTXPACK_BIN="$ctxpack_bin" \
   CTXPACK_SMOKE_QUERY="prepare_task" \
   bash "$smoke_mcp_protocol_script"
 
+log_step "Cursor setup and MCP protocol evidence"
+CTXPACK_BIN="$ctxpack_bin" \
+  CTXPACK_ROOT="$repo_root" \
+  CTXPACK_REAL_CLIENT_EVIDENCE_DIR="${CTXPACK_REAL_CLIENT_EVIDENCE_DIR:-}" \
+  bash "$smoke_cursor_mcp_script"
+
+log_step "OpenCode setup and MCP protocol evidence"
+CTXPACK_BIN="$ctxpack_bin" \
+  CTXPACK_ROOT="$repo_root" \
+  CTXPACK_REAL_CLIENT_EVIDENCE_DIR="${CTXPACK_REAL_CLIENT_EVIDENCE_DIR:-}" \
+  bash "$smoke_opencode_mcp_script"
+
 log_step "optional benchmark product proof"
 if [[ -n "${CTXPACK_BENCHMARK_CONFIG:-}" ]]; then
   proof_report="$work_dir/product-proof.json"
@@ -321,6 +335,8 @@ required_checks = [
     "scripts/smoke-v23-eval.sh",
     "scripts/smoke-v24-gate.sh",
     "scripts/smoke-mcp-protocol.sh",
+    "scripts/smoke-cursor-mcp.sh",
+    "scripts/smoke-opencode-mcp.sh",
 ]
 payload = {
     "schemaVersion": 1,

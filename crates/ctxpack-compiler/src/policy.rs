@@ -175,10 +175,10 @@ pub(crate) fn semantic_provider_decision(
 }
 
 pub(crate) fn reranker_decision(report: &ProviderPolicyReport) -> ProviderDecision {
-    if report.policy.enable_local_fixture_reranker {
+    if report.policy.enable_local_metadata_reranker || report.policy.enable_local_fixture_reranker {
         return ProviderDecision {
             capability: ProviderCapability::Reranking,
-            provider: "local_fixture".to_string(),
+            provider: "local_metadata".to_string(),
             status: if report.policy.allow_local_providers {
                 ProviderDecisionStatus::Allowed
             } else {
@@ -187,12 +187,12 @@ pub(crate) fn reranker_decision(report: &ProviderPolicyReport) -> ProviderDecisi
             data_classes: vec![ProviderDataClass::Metadata],
             remote_allowed: false,
             source_text_allowed: false,
-            reason: "Deterministic local fixture reranker is policy-enabled.".to_string(),
+            reason: "Deterministic local metadata reranker is policy-enabled.".to_string(),
         };
     }
     ProviderDecision {
         capability: ProviderCapability::Reranking,
-        provider: "local_fixture".to_string(),
+        provider: "local_metadata".to_string(),
         status: ProviderDecisionStatus::Disabled,
         data_classes: vec![ProviderDataClass::Metadata],
         remote_allowed: false,
@@ -460,6 +460,7 @@ mod tests {
         assert!(!report.policy.allow_cloud_embeddings);
         assert!(!report.policy.allow_cloud_reranking);
         assert!(!report.policy.allow_source_transfer);
+        assert!(!report.policy.enable_local_metadata_reranker);
         assert!(!report.policy.enable_local_fixture_reranker);
         assert!(report.privacy_status.local_only);
         assert!(report
@@ -518,10 +519,10 @@ mod tests {
         assert!(!disabled.source_text_allowed);
 
         let mut enabled_report = default_report;
-        enabled_report.policy.enable_local_fixture_reranker = true;
+        enabled_report.policy.enable_local_metadata_reranker = true;
         let enabled = reranker_decision(&enabled_report);
         assert_eq!(enabled.status, ProviderDecisionStatus::Allowed);
-        assert_eq!(enabled.provider, "local_fixture");
+        assert_eq!(enabled.provider, "local_metadata");
         assert!(!enabled.remote_allowed);
         assert!(!enabled.source_text_allowed);
     }

@@ -4,6 +4,7 @@ use crate::inventory::{
     RepoInventory,
 };
 use crate::policy::{read_safe_source, SourceReadStatus, SOURCE_READ_MAX_BYTES};
+use crate::symbols::{extract_symbols_report, CodeSymbol};
 use ctxpack_core::{CacheStatus, Diagnostic, DiagnosticSeverity, FileRole};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeSet;
@@ -74,6 +75,34 @@ pub struct PrecisionImportReport {
     pub provider: String,
     pub accepted_edges: usize,
     pub rejected_edges: usize,
+    #[serde(default)]
+    pub diagnostics: Vec<Diagnostic>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct PrecisionDiscoverOptions {
+    pub limit: usize,
+    #[serde(default)]
+    pub include_private_symbols: bool,
+}
+
+impl Default for PrecisionDiscoverOptions {
+    fn default() -> Self {
+        Self {
+            limit: 500,
+            include_private_symbols: false,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct PrecisionDiscoverReport {
+    pub path: String,
+    pub provider: String,
+    pub discovered_edges: usize,
+    pub scanned_files: usize,
     #[serde(default)]
     pub diagnostics: Vec<Diagnostic>,
 }
@@ -326,6 +355,143 @@ pub fn import_precision_edges(
         rejected_edges,
         diagnostics,
     })
+}
+
+pub fn discover_precision_edges(
+    repo_root: impl AsRef<Path>,
+    options: &PrecisionDiscoverOptions,
+) -> Result<PrecisionDiscoverReport, InventoryError> {
+    let repo_root = canonicalize(repo_root.as_ref())?;
+    let inventory_report = load_or_refresh_inventory(&repo_root, &InventoryOptions::default())?;
+    let mut diagnostics = inventory_report.diagnostics;
+    let safe_files = safe_dependency_files(&inventory_report.inventory);
+    let safe_paths = safe_files
+        .iter()
+        .map(|file| file.path.clone())
+        .collect::<BTreeSet<_>>();
+    let symbol_report = extract_symbols_report(&repo_root)?;
+    diagnostics.extend(symbol_report.diagnostics);
+    let symbols = symbol_report
+        .symbols
+        .into_iter()
+        .filter(|symbol| {
+            options.include_private_symbols || symbol.exported || symbol.name.len() >= 4
+        })
+        .filter(|symbol| !symbol.name.trim().is_empty())
+        .collect::<Vec<_>>();
+    let mut seen = BTreeSet::new();
+    let mut edges = Vec::new();
+    let mut scanned_files = 0;
+
+    for file in safe_files {
+        let source = read_safe_source(
+            &repo_root,
+            &inventory_report.inventory,
+            &file.path,
+            SOURCE_READ_MAX_BYTES,
+        )?;
+        if !source.diagnostics.is_empty() {
+            diagnostics.extend(source.diagnostics);
+            diagnostics.push(partial_diagnostic(
+                "precision_discovery_partial",
+                "Precision discovery skipped at least one source file because it could not be safely read.",
+                vec![file.path.clone()],
+            ));
+        }
+        let SourceReadStatus::Read = source.status else {
+            continue;
+        };
+        scanned_files += 1;
+        let content = source.text.unwrap_or_default();
+        for symbol in symbols.iter().filter(|symbol| symbol.path != file.path) {
+            let Some(edge_type) = symbol_reference_edge_type(&content, symbol) else {
+                continue;
+            };
+            if !safe_paths.contains(&symbol.path) {
+                continue;
+            }
+            if seen.insert((file.path.clone(), symbol.path.clone(), symbol.name.clone())) {
+                edges.push(PrecisionEdgeRecord {
+                    source_path: file.path.clone(),
+                    target_path: symbol.path.clone(),
+                    edge_type,
+                    symbol: Some(symbol.name.clone()),
+                    confidence: Some(symbol_reference_confidence(&content, symbol)),
+                    reason: Some(format!(
+                        "local Tree-sitter symbol reference scan found `{}`",
+                        symbol.name
+                    )),
+                });
+            }
+            if edges.len() >= options.limit.max(1) {
+                break;
+            }
+        }
+        if edges.len() >= options.limit.max(1) {
+            break;
+        }
+    }
+
+    let output = PrecisionEdgesFile {
+        schema_version: PRECISION_EDGES_SCHEMA_VERSION,
+        provider: "local_tree_sitter_reference_scan".to_string(),
+        edges,
+    };
+    let path = precision_edges_path(&repo_root)?;
+    if let Some(parent) = path.parent() {
+        fs::create_dir_all(parent).map_err(|source| InventoryError::CreateDir {
+            path: parent.to_path_buf(),
+            source,
+        })?;
+    }
+    let json = serde_json::to_string_pretty(&output).map_err(InventoryError::Serialize)?;
+    fs::write(&path, format!("{json}\n")).map_err(|source| InventoryError::Write {
+        path: path.clone(),
+        source,
+    })?;
+
+    Ok(PrecisionDiscoverReport {
+        path: path.display().to_string(),
+        provider: output.provider,
+        discovered_edges: output.edges.len(),
+        scanned_files,
+        diagnostics,
+    })
+}
+
+fn symbol_reference_edge_type(content: &str, symbol: &CodeSymbol) -> Option<String> {
+    let name = symbol.name.trim();
+    if name.len() < 3 || !contains_identifier(content, name) {
+        return None;
+    }
+    if content.contains(&format!("{name}(")) || content.contains(&format!("{name}::")) {
+        Some("calls".to_string())
+    } else {
+        Some("references".to_string())
+    }
+}
+
+fn symbol_reference_confidence(content: &str, symbol: &CodeSymbol) -> f32 {
+    let name = symbol.name.trim();
+    if content.contains(&format!("{name}(")) {
+        0.82
+    } else if symbol.exported {
+        0.72
+    } else {
+        0.58
+    }
+}
+
+fn contains_identifier(content: &str, name: &str) -> bool {
+    content.match_indices(name).any(|(index, _)| {
+        let before = content[..index].chars().next_back();
+        let after = content[index + name.len()..].chars().next();
+        !is_identifier_char(before) && !is_identifier_char(after)
+    })
+}
+
+fn is_identifier_char(character: Option<char>) -> bool {
+    character.is_some_and(|character| character.is_ascii_alphanumeric() || character == '_')
 }
 
 #[derive(Debug, Default)]

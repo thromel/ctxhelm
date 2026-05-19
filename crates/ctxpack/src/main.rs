@@ -7,17 +7,17 @@ use ctxpack_compiler::{
     compile_context_pack_with_plan_and_paths_for_agent_and_semantic, compile_pack_inspector_view,
     compile_workspace_context_pack, delete_candidate_feature_export, eval_trace_for_pack,
     eval_trace_for_plan, evaluate_historical_commits, export_candidate_features_for_task,
-    generate_context_cards, generate_experience_cards, list_candidate_feature_exports,
-    load_benchmark_suite_config, load_benchmark_suite_report, load_candidate_feature_export,
-    paired_baseline_analysis_report, prepare_context_plan_with_paths_and_semantic,
-    prepare_workspace_context_plan, render_pack_inspector_html, render_pack_inspector_markdown,
-    render_pack_markdown, retrieval_policy_experiment_report, run_benchmark_suite,
-    semantic_precision_gate_report, semantic_provider_status_report,
-    write_candidate_feature_export, BenchmarkComparisonReport, BenchmarkRegressionThreshold,
-    BenchmarkSuiteReport, CandidateFeatureComparisonReport, ContextCardsOptions,
-    ContextCardsReport, ExperienceCardsOptions, ExperienceCardsReport, HistoricalEvalOptions,
-    HistoricalEvalReport, PairedBaselineAnalysisReport, ProductProofReport,
-    SemanticPrecisionGateReport,
+    generate_context_cards, generate_experience_cards, generate_fallback_cards,
+    list_candidate_feature_exports, load_benchmark_suite_config, load_benchmark_suite_report,
+    load_candidate_feature_export, paired_baseline_analysis_report,
+    prepare_context_plan_with_paths_and_semantic, prepare_workspace_context_plan,
+    render_pack_inspector_html, render_pack_inspector_markdown, render_pack_markdown,
+    retrieval_policy_experiment_report, run_benchmark_suite, semantic_precision_gate_report,
+    semantic_provider_status_report, write_candidate_feature_export, BenchmarkComparisonReport,
+    BenchmarkRegressionThreshold, BenchmarkSuiteReport, CandidateFeatureComparisonReport,
+    ContextCardsOptions, ContextCardsReport, ExperienceCardsOptions, ExperienceCardsReport,
+    FallbackCardsOptions, FallbackCardsReport, HistoricalEvalOptions, HistoricalEvalReport,
+    PairedBaselineAnalysisReport, ProductProofReport, SemanticPrecisionGateReport,
 };
 use ctxpack_core::{
     run_init, run_setup_check, AgentAdapter, AgentOutcomeComparisonReport, AgentPreviewReport,
@@ -32,19 +32,20 @@ use ctxpack_core::{
 };
 use ctxpack_index::{
     apply_policy_profile, co_change_hints, current_diff_summary, dependency_edges,
-    disable_policy_profile, extract_symbols, import_precision_edges, lexical_search,
-    list_eval_traces, list_feedback_events, list_memory_cards, list_policy_profiles,
-    outcome_comparison_report, policy_quality_report, propose_learned_policy_profile,
-    propose_policy_profile, related_dependency_edges, related_tests, rollback_policy_profile,
-    semantic_search, storage_status_for_repo, summarize_feedback_events, symbol_search,
-    sync_inventory_to_store, sync_semantic_index_to_store, try_append_eval_trace,
-    try_append_feedback_event, update_memory_card_review_status, vacuum_store, write_inventory,
-    CoChangeOptions, CurrentDiffOptions, DependencyOptions, InventoryOptions, InventoryReport,
-    LearnedPolicyOptions, PrecisionImportReport, SearchOptions, SemanticOptions,
-    StorageBenchmarkRunRecord, StorageContextPackRecord, StorageGapRecord, StorageIndexReport,
-    StorageMetricRecord, StorageProofReportRecord, StorageReport, StorageSemanticIndexReport,
-    StorageStatusReport, StoreConfig, SymbolOptions, FEEDBACK_EVENT_SCHEMA_VERSION,
-    WORKSPACE_MANIFEST_SCHEMA_VERSION,
+    disable_policy_profile, discover_precision_edges, extract_symbols, import_precision_edges,
+    lexical_search, list_eval_traces, list_feedback_events, list_memory_cards,
+    list_policy_profiles, outcome_comparison_report, policy_quality_report,
+    propose_learned_policy_profile, propose_policy_profile, related_dependency_edges,
+    related_tests, rollback_policy_profile, semantic_search, storage_status_for_repo,
+    summarize_feedback_events, symbol_search, sync_inventory_to_store,
+    sync_semantic_index_to_store, try_append_eval_trace, try_append_feedback_event,
+    update_memory_card_review_status, vacuum_store, write_inventory, CoChangeOptions,
+    CurrentDiffOptions, DependencyOptions, InventoryOptions, InventoryReport, LearnedPolicyOptions,
+    PrecisionDiscoverOptions, PrecisionDiscoverReport, PrecisionImportReport, SearchOptions,
+    SemanticOptions, StorageBenchmarkRunRecord, StorageContextPackRecord, StorageGapRecord,
+    StorageIndexReport, StorageMetricRecord, StorageProofReportRecord, StorageReport,
+    StorageSemanticIndexReport, StorageStatusReport, StoreConfig, SymbolOptions,
+    FEEDBACK_EVENT_SCHEMA_VERSION, WORKSPACE_MANIFEST_SCHEMA_VERSION,
 };
 use std::collections::BTreeSet;
 use std::fs;
@@ -551,8 +552,25 @@ struct PrecisionArgs {
 
 #[derive(Debug, Subcommand)]
 enum PrecisionCommand {
+    #[command(about = "Discover source-free local precision edges from Tree-sitter symbols")]
+    Discover(PrecisionDiscoverArgs),
     #[command(about = "Import source-free precision edges from a local SCIP/LSP bridge JSON file")]
     Import(PrecisionImportArgs),
+}
+
+#[derive(Debug, Args)]
+struct PrecisionDiscoverArgs {
+    #[arg(long)]
+    repo: Option<PathBuf>,
+    #[arg(long, default_value_t = 500)]
+    limit: usize,
+    #[arg(
+        long,
+        help = "Include non-exported symbols when generating local reference edges."
+    )]
+    include_private_symbols: bool,
+    #[arg(long, value_enum, default_value_t = PackFormat::Markdown)]
+    format: PackFormat,
 }
 
 #[derive(Debug, Args)]
@@ -574,6 +592,8 @@ struct CardsArgs {
 #[derive(Debug, Subcommand)]
 enum CardsCommand {
     Generate(CardsGenerateArgs),
+    #[command(about = "Generate source-free fallback cards for disconnected agent contexts")]
+    Fallback(CardsFallbackArgs),
 }
 
 #[derive(Debug, Args)]
@@ -582,6 +602,22 @@ struct CardsGenerateArgs {
     repo: Option<PathBuf>,
     #[arg(long, default_value_t = 40)]
     limit: usize,
+    #[arg(long, value_enum, default_value_t = PackFormat::Markdown)]
+    format: PackFormat,
+}
+
+#[derive(Debug, Args)]
+struct CardsFallbackArgs {
+    #[arg(long)]
+    repo: Option<PathBuf>,
+    #[arg(long, default_value_t = 40)]
+    limit: usize,
+    #[arg(
+        long,
+        default_value = "generic",
+        help = "codex, claude-code, cursor, opencode, or generic."
+    )]
+    target_agent: String,
     #[arg(long, value_enum, default_value_t = PackFormat::Markdown)]
     format: PackFormat,
 }
@@ -1548,6 +1584,21 @@ fn main() -> Result<()> {
             println!("{}", serde_json::to_string_pretty(&results)?);
         }
         Command::Precision(args) => match args.command {
+            PrecisionCommand::Discover(args) => {
+                let start = args.repo.clone().unwrap_or(std::env::current_dir()?);
+                let repo = RepoRoot::discover_from(&start)?;
+                let report = discover_precision_edges(
+                    &repo.path,
+                    &PrecisionDiscoverOptions {
+                        limit: args.limit,
+                        include_private_symbols: args.include_private_symbols,
+                    },
+                )?;
+                match args.format {
+                    PackFormat::Markdown => print_precision_discover_report(&report),
+                    PackFormat::Json => println!("{}", serde_json::to_string_pretty(&report)?),
+                }
+            }
             PrecisionCommand::Import(args) => {
                 let start = args.repo.clone().unwrap_or(std::env::current_dir()?);
                 let repo = RepoRoot::discover_from(&start)?;
@@ -1691,6 +1742,21 @@ fn main() -> Result<()> {
                     generate_context_cards(&repo.path, &ContextCardsOptions { limit: args.limit })?;
                 match args.format {
                     PackFormat::Markdown => println!("{}", render_cards_report(&report)),
+                    PackFormat::Json => println!("{}", serde_json::to_string_pretty(&report)?),
+                }
+            }
+            CardsCommand::Fallback(args) => {
+                let start = args.repo.clone().unwrap_or(std::env::current_dir()?);
+                let repo = RepoRoot::discover_from(&start)?;
+                let report = generate_fallback_cards(
+                    &repo.path,
+                    &FallbackCardsOptions {
+                        limit: args.limit,
+                        target_agent: args.target_agent,
+                    },
+                )?;
+                match args.format {
+                    PackFormat::Markdown => println!("{}", render_fallback_cards_report(&report)),
                     PackFormat::Json => println!("{}", serde_json::to_string_pretty(&report)?),
                 }
             }
@@ -2791,6 +2857,15 @@ fn print_precision_import_report(report: &PrecisionImportReport) {
     println!("- overlay: {}", report.path);
     println!("- accepted edges: {}", report.accepted_edges);
     println!("- rejected edges: {}", report.rejected_edges);
+    print_diagnostics(&report.diagnostics);
+}
+
+fn print_precision_discover_report(report: &PrecisionDiscoverReport) {
+    println!("Precision edge discovery");
+    println!("- provider: {}", report.provider);
+    println!("- overlay: {}", report.path);
+    println!("- discovered edges: {}", report.discovered_edges);
+    println!("- scanned files: {}", report.scanned_files);
     print_diagnostics(&report.diagnostics);
 }
 
@@ -4742,6 +4817,23 @@ fn render_cards_report(report: &ContextCardsReport) -> String {
             card.memory_card_id
         ));
     }
+    print_diagnostics_to_string(&mut output, &report.diagnostics);
+    output
+}
+
+fn render_fallback_cards_report(report: &FallbackCardsReport) -> String {
+    let mut output = String::from("# ctxpack Fallback Cards\n\n");
+    output.push_str(&format!(
+        "- Repo ID: `{}`\n- Target agent: `{}`\n- Guide: `{}`\n- Cards directory: `{}`\n- Cards available: `{}`\n- Privacy: local-only `{}`\n- Source text logged: `{}`\n\n",
+        report.repo_id,
+        report.target_agent,
+        report.guide_path.display(),
+        report.cards_dir.display(),
+        report.card_count,
+        report.privacy_status.local_only,
+        report.source_text_logged
+    ));
+    output.push_str("Use the guide when local MCP is unavailable; prefer `prepare_task` and `get_pack` when the agent can reach ctxpack.\n");
     print_diagnostics_to_string(&mut output, &report.diagnostics);
     output
 }

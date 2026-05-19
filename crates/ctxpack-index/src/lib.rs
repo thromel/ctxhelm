@@ -11,6 +11,7 @@ mod semantic;
 mod storage;
 mod symbols;
 mod traces;
+mod tree_sitter_backend;
 mod workspace;
 
 pub use artifacts::{
@@ -20,10 +21,11 @@ pub use artifacts::{
     write_team_policy_template, SHARED_ARTIFACT_SCHEMA_VERSION, TEAM_POLICY_SCHEMA_VERSION,
 };
 pub use dependencies::{
-    dependency_edges, dependency_edges_report, import_precision_edges, precision_edges_path,
-    related_dependency_edges, related_dependency_edges_report, DependencyEdge,
-    DependencyEdgesReport, DependencyOptions, PrecisionEdgeRecord, PrecisionEdgesFile,
-    PrecisionImportReport, PRECISION_EDGES_SCHEMA_VERSION,
+    dependency_edges, dependency_edges_report, discover_precision_edges, import_precision_edges,
+    precision_edges_path, related_dependency_edges, related_dependency_edges_report,
+    DependencyEdge, DependencyEdgesReport, DependencyOptions, PrecisionDiscoverOptions,
+    PrecisionDiscoverReport, PrecisionEdgeRecord, PrecisionEdgesFile, PrecisionImportReport,
+    PRECISION_EDGES_SCHEMA_VERSION,
 };
 pub use feedback::{
     append_feedback_event, apply_policy_profile, disable_policy_profile, feedback_path,
@@ -958,6 +960,51 @@ mod tests {
                 && edge.source_path == "src/auth/middleware.ts"
                 && edge.target_path == "src/routes/login.ts"
                 && edge.reason == "local SCIP fixture edge"
+        }));
+
+        std::env::remove_var("CTXPACK_HOME");
+    }
+
+    #[test]
+    fn precision_discovery_generates_source_free_symbol_edges() {
+        let _guard = env_lock();
+        let temp = tempfile::tempdir().unwrap();
+        let repo = temp.path().join("repo");
+        let home = temp.path().join("ctxpack-home");
+        fs::create_dir_all(repo.join(".git")).unwrap();
+        fs::create_dir_all(repo.join("src/auth")).unwrap();
+        fs::create_dir_all(repo.join("src/routes")).unwrap();
+        fs::write(
+            repo.join("src/routes/login.ts"),
+            "export function loginRoute() { return '/login'; }\n",
+        )
+        .unwrap();
+        fs::write(
+            repo.join("src/auth/middleware.ts"),
+            "import { loginRoute } from '../routes/login';\nexport function authMiddleware() { return loginRoute(); }\n",
+        )
+        .unwrap();
+        std::env::set_var("CTXPACK_HOME", &home);
+
+        let report = discover_precision_edges(
+            &repo,
+            &PrecisionDiscoverOptions {
+                limit: 20,
+                include_private_symbols: false,
+            },
+        )
+        .unwrap();
+        let overlay = fs::read_to_string(precision_edges_path(&repo).unwrap()).unwrap();
+        let edges = dependency_edges(&repo, &DependencyOptions { limit: 20 }).unwrap();
+
+        assert_eq!(report.provider, "local_tree_sitter_reference_scan");
+        assert!(report.discovered_edges > 0);
+        assert!(!overlay.contains("return '/login'"));
+        assert!(edges.iter().any(|edge| {
+            edge.kind == "precision:calls"
+                && edge.source_path == "src/auth/middleware.ts"
+                && edge.target_path == "src/routes/login.ts"
+                && edge.reason.contains("loginRoute")
         }));
 
         std::env::remove_var("CTXPACK_HOME");

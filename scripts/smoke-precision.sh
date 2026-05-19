@@ -83,6 +83,23 @@ if not any((edge["sourcePath"], edge["targetPath"]) == expected for edge in edge
     raise SystemExit("java package import edge was not returned")
 PY
 
+discover_json="$work_dir/precision-discover.json"
+CTXPACK_HOME="$home" "$ctxpack_bin" precision discover --repo "$repo" --limit 20 --format json >"$discover_json"
+python3 - "$discover_json" "$repo/.ctxpack/precision-edges.json" <<'PY'
+import json
+import pathlib
+import sys
+
+report = json.loads(pathlib.Path(sys.argv[1]).read_text())
+overlay = pathlib.Path(sys.argv[2]).read_text()
+if report.get("provider") != "local_tree_sitter_reference_scan":
+    raise SystemExit("tree-sitter precision discovery provider was not reported")
+if report.get("discoveredEdges", 0) < 1:
+    raise SystemExit("tree-sitter precision discovery found no edges")
+if "SECRET_SHOULD_NOT_PERSIST" in overlay:
+    raise SystemExit("precision discovery overlay leaked secret marker")
+PY
+
 precision_input="$work_dir/precision.json"
 cat >"$precision_input" <<'JSON'
 {

@@ -10,8 +10,9 @@ mod workspace;
 
 pub use agent_preview::build_agent_preview_report;
 pub use cards::{
-    generate_context_cards, generate_experience_cards, ContextCardsOptions, ContextCardsReport,
-    ExperienceCardsOptions, ExperienceCardsReport, GeneratedContextCard,
+    generate_context_cards, generate_experience_cards, generate_fallback_cards,
+    ContextCardsOptions, ContextCardsReport, ExperienceCardsOptions, ExperienceCardsReport,
+    FallbackCardsOptions, FallbackCardsReport, GeneratedContextCard,
 };
 pub use eval::{
     build_product_proof_report, build_retrieval_health_report, compare_benchmark_suite_reports,
@@ -209,7 +210,7 @@ mod tests {
 
         assert_eq!(plan.target_files[0].path, "src/auth/session.ts");
         assert_eq!(plan.target_files[0].line_range.as_ref().unwrap().start, 31);
-        assert!(markdown.contains("- Lines: 31-31"));
+        assert!(markdown.contains("- Lines: 31-33"));
         assert!(markdown.contains("31: export function requireSession"));
         assert!(markdown.contains("... omitted lines 1-"));
 
@@ -2047,6 +2048,48 @@ mod tests {
         assert!(markdown.contains("## Selected memory"));
         assert!(markdown.contains("Source links"));
         assert!(!markdown.contains("sourceText"));
+
+        std::env::remove_var("CTXPACK_HOME");
+    }
+
+    #[test]
+    fn generate_fallback_cards_writes_disconnected_agent_guide() {
+        let _guard = env_lock();
+        let temp = tempfile::tempdir().unwrap();
+        let repo = temp.path().join("repo");
+        let home = temp.path().join("ctxpack-home");
+        fs::create_dir_all(repo.join("src/auth")).unwrap();
+        run_git(&repo, &["init"]);
+        run_git(&repo, &["config", "user.email", "ctxpack@example.com"]);
+        run_git(&repo, &["config", "user.name", "ctxpack"]);
+        fs::write(
+            repo.join("src/auth/session.ts"),
+            "export function requireSession() { return 'CTXPACK_FALLBACK_SOURCE_SENTINEL'; }\n",
+        )
+        .unwrap();
+        run_git(&repo, &["add", "."]);
+        run_git(&repo, &["commit", "-m", "add session"]);
+        std::env::set_var("CTXPACK_HOME", &home);
+
+        let report = generate_fallback_cards(
+            &repo,
+            &FallbackCardsOptions {
+                limit: 20,
+                target_agent: "codex-cli".to_string(),
+            },
+        )
+        .unwrap();
+        let guide = fs::read_to_string(&report.guide_path).unwrap();
+        let serialized = serde_json::to_string(&report).unwrap();
+
+        assert_eq!(report.target_agent, "codex");
+        assert!(report.card_count >= 3);
+        assert!(guide.contains("ctxpack Disconnected Fallback"));
+        assert!(guide.contains("AGENTS.md"));
+        assert!(guide.contains("Codex cloud or isolated runs"));
+        assert!(!guide.contains("CTXPACK_FALLBACK_SOURCE_SENTINEL"));
+        assert!(!serialized.contains("CTXPACK_FALLBACK_SOURCE_SENTINEL"));
+        assert!(!serialized.contains("\"sourceText\""));
 
         std::env::remove_var("CTXPACK_HOME");
     }

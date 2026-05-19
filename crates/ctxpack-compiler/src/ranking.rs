@@ -235,19 +235,19 @@ pub(crate) fn rank_candidates(input: RankingInput) -> Vec<RankedCandidate> {
     candidates.finish()
 }
 
-pub(crate) fn rerank_with_local_fixture(
+pub(crate) fn rerank_with_local_metadata(
     mut candidates: Vec<RankedCandidate>,
 ) -> Vec<RankedCandidate> {
     candidates.sort_by(|left, right| {
-        fixture_rerank_score(right)
-            .total_cmp(&fixture_rerank_score(left))
+        local_metadata_rerank_score(right)
+            .total_cmp(&local_metadata_rerank_score(left))
             .then_with(|| right.rank_score.total_cmp(&left.rank_score))
             .then_with(|| left.candidate.path.cmp(&right.candidate.path))
     });
     candidates
 }
 
-fn fixture_rerank_score(candidate: &RankedCandidate) -> f32 {
+fn local_metadata_rerank_score(candidate: &RankedCandidate) -> f32 {
     let evidence_score = candidate.candidate.evidence.len() as f32 * 0.05;
     let exact_score = candidate
         .candidate
@@ -1230,7 +1230,7 @@ mod tests {
     }
 
     #[test]
-    fn local_fixture_reranker_is_deterministic_and_source_free() {
+    fn local_metadata_reranker_is_deterministic_and_source_free() {
         let candidates = rank_candidates(RankingInput {
             lexical_results: vec![lexical("src/secondary.ts", 20.0)],
             symbol_results: vec![SymbolSearchResult {
@@ -1254,8 +1254,8 @@ mod tests {
             ..RankingInput::default()
         });
 
-        let reranked = rerank_with_local_fixture(candidates.clone());
-        let reranked_again = rerank_with_local_fixture(candidates);
+        let reranked = rerank_with_local_metadata(candidates.clone());
+        let reranked_again = rerank_with_local_metadata(candidates);
 
         assert_eq!(candidate_paths(&reranked), candidate_paths(&reranked_again));
         assert_eq!(candidate_paths(&reranked).first(), Some(&"src/primary.ts"));

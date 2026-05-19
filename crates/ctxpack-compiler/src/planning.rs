@@ -1,6 +1,6 @@
 use crate::policy::{provider_policy_report, reranker_decision, semantic_provider_decision};
 use crate::ranking::{
-    rank_candidates, rerank_with_local_fixture, select_ranked_candidates, AnchorCandidate,
+    rank_candidates, rerank_with_local_metadata, select_ranked_candidates, AnchorCandidate,
     RankingInput,
 };
 use ctxpack_core::{
@@ -345,14 +345,14 @@ pub(crate) fn prepare_context_plan_with_paths_history_and_semantic(
         push_plan_diagnostic(
             &mut plan,
             Diagnostic {
-                code: "local_fixture_reranker_applied".to_string(),
+                code: "local_metadata_reranker_applied".to_string(),
                 severity: DiagnosticSeverity::Info,
-                message: "Applied deterministic local fixture reranker using source-free candidate metadata.".to_string(),
+                message: "Applied deterministic local metadata reranker using source-free candidate metadata.".to_string(),
                 paths: Vec::new(),
                 count: ranked_candidates.len(),
             },
         );
-        rerank_with_local_fixture(ranked_candidates)
+        rerank_with_local_metadata(ranked_candidates)
     } else {
         ranked_candidates
     };
@@ -1218,7 +1218,7 @@ mod tests {
         assert!(!policy.policy.allow_source_transfer);
         assert!(policy.decisions.iter().any(|decision| decision.status
             == ProviderDecisionStatus::Disabled
-            && decision.provider == "local_fixture"));
+            && decision.provider == "local_metadata"));
         assert!(policy
             .decisions
             .iter()

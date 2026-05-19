@@ -179,6 +179,26 @@ pub fn symbol_search_report(
 }
 
 fn symbols_for_file(file: &FileInventoryEntry, content: &str) -> Vec<CodeSymbol> {
+    if let Some(mut symbols) = crate::tree_sitter_backend::symbols_for_file(file, content) {
+        symbols.sort_by(|left, right| {
+            left.path
+                .cmp(&right.path)
+                .then_with(|| left.start_line.cmp(&right.start_line))
+                .then_with(|| left.end_line.cmp(&right.end_line))
+                .then_with(|| left.name.cmp(&right.name))
+                .then_with(|| format!("{:?}", left.kind).cmp(&format!("{:?}", right.kind)))
+        });
+        symbols.dedup_by(|left, right| {
+            left.path == right.path
+                && left.name == right.name
+                && left.kind == right.kind
+                && left.start_line == right.start_line
+        });
+        if !symbols.is_empty() {
+            return symbols;
+        }
+    }
+
     match file.language.as_deref() {
         Some("typescript" | "javascript") => symbols_for_js_like(file, content),
         Some("python") => symbols_for_python(file, content),

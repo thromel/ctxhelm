@@ -14,6 +14,7 @@ plans, packs, and retrieval-policy experiment reports. The default policy is:
   "allowCloudEmbeddings": false,
   "allowCloudReranking": false,
   "allowSourceTransfer": false,
+  "enableLocalMetadataReranker": false,
   "enableLocalFixtureReranker": false
 }
 ```
@@ -22,7 +23,8 @@ This means local source-free metadata providers such as `local_hash` can run
 when explicitly requested, while cloud embedding providers, cloud rerankers, and
 source-transfer paths are denied by default. Reranking is represented as a
 typed provider decision but remains disabled unless `.ctxpack/provider-policy.json`
-enables the deterministic local fixture reranker for testing.
+enables the deterministic local metadata reranker. The older
+`enableLocalFixtureReranker` key is still accepted as a compatibility alias.
 
 Inspect the local semantic provider:
 
@@ -48,17 +50,17 @@ Optional repo policy lives at:
 .ctxpack/provider-policy.json
 ```
 
-Example local fixture policy:
+Example local metadata policy:
 
 ```json
 {
   "schemaVersion": 1,
-  "name": "local-reranker-fixture",
+  "name": "local-metadata-reranker",
   "allowLocalProviders": true,
   "allowCloudEmbeddings": false,
   "allowCloudReranking": false,
   "allowSourceTransfer": false,
-  "enableLocalFixtureReranker": true,
+  "enableLocalMetadataReranker": true,
   "sourceTextLogged": false
 }
 ```

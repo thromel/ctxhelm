@@ -58,6 +58,17 @@ This writes repo-local guidance and optional adapter snippets:
 
 Codex setup remains copy/paste-oriented. ctxpack prints guidance but does not mutate global Codex configuration.
 
+For cloud or disconnected agent runs where local MCP is unavailable, generate
+source-free fallback cards:
+
+```bash
+ctxpack cards fallback --repo "$REPO" --target-agent codex
+```
+
+Commit or attach the generated `.ctxpack/cards/*.md` files and the matching
+`.ctxpack/fallback/<agent>-context.md` guide only when your repo policy allows
+source-free context artifacts.
+
 ## Validate Setup
 
 ```bash
