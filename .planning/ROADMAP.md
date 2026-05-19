@@ -19,7 +19,7 @@ The milestone builds a real local semantic backend, richer precision-enriched se
 - [x] **Phase 57: Precision-Enriched Semantic Documents** - Maintainers can enrich semantic and graph retrieval with typed symbol/test/docs context and optional SCIP/LSP precision status.
 - [x] **Phase 58: Query Construction And Hybrid Fusion Controls** - Maintainers can inspect and tune task/commit/error query facets and paired hybrid retrieval variants.
 - [x] **Phase 59: Provider And Reranker Policy Gates** - Maintainers can configure optional cloud/local provider and reranker policies without violating local-first defaults.
-- [ ] **Phase 60: Semantic/Precision Evaluation Gates And Release Proof** - Maintainers can prove, block, or roll back semantic/precision defaults using fixed-corpus gates and product proof.
+- [x] **Phase 60: Semantic/Precision Evaluation Gates And Release Proof** - Maintainers can prove, block, or roll back semantic/precision defaults using fixed-corpus gates and product proof.
 
 ## Phase Details
 
@@ -166,7 +166,7 @@ Phases execute in numeric order: 56 -> 57 -> 58 -> 59 -> 60
 | 57. Precision-Enriched Semantic Documents | 1/1 | Complete | 2026-05-20 |
 | 58. Query Construction And Hybrid Fusion Controls | 1/1 | Complete | 2026-05-20 |
 | 59. Provider And Reranker Policy Gates | 1/1 | Complete | 2026-05-20 |
-| 60. Semantic/Precision Evaluation Gates And Release Proof | 1/1 | Planned | - |
+| 60. Semantic/Precision Evaluation Gates And Release Proof | 1/1 | Complete | 2026-05-20 |
 
 ---
 *Roadmap created: 2026-05-19*

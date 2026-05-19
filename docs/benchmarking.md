@@ -171,6 +171,34 @@ When retrieval quality does not improve, inspect `queryTrace` before changing we
 
 If `semanticEnabled` is true but `queryTrace.retrieverQueries.semanticPhrases` contains only weak generic terms, a semantic backend should not be expected to lift Recall@K. Conversely, if explicit paths or stack frames appear in the trace, those anchors should remain protected even when semantic retrieval is enabled.
 
+## v2.4 Semantic/Precision Gate
+
+Phase 60 adds a fixed-corpus gate for semantic, precision, and reranker
+variants:
+
+```bash
+ctxpack eval gate --repo /path/to/repo --limit 20 --budget 10 --format json
+```
+
+The gate emits deterministic variant rows for `lexical_baseline`,
+`ctxpack_default`, `local_semantic`, `precision_enriched_semantic`,
+`semantic_precision_full_hybrid`, and `policy_allowed_reranked`. Policy-blocked
+variants are reported as `skipped`, not omitted.
+
+The report includes Recall@K, precision proxy, MRR where available, Test
+Recall@10, runtime/cache fields, token efficiency, provider policy, precision
+status, named wins, named regressions, and named misses.
+
+Gate decisions:
+
+- `promote`: measured lift clears the quality floor with no named regressions
+  or unsafe provider state.
+- `hold`: mixed or neutral results; keep the feature opt-in.
+- `block`: privacy/policy violation, named regression, or metric regression.
+
+The gate is intentionally conservative. A feature existing is not evidence that
+it should become a default.
+
 ## Product Proof
 
 The product proof is intentionally narrow. It does not claim universal agent improvement. It answers:

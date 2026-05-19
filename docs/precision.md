@@ -41,3 +41,8 @@ ctxpack semantic status --repo /path/to/repo --format json
 The `precisionStatus` field reports whether the local overlay is `unavailable`, `available`, `invalid`, or `degraded`, along with provider, edge count, rejected edge count, overlay path, and diagnostics. Missing or invalid overlays do not disable lexical, graph, test, or semantic-document retrieval. Valid overlays enrich semantic documents as `precision` facets and dependency edges as `precision:*` relations.
 
 Use precision overlays when exact reference/call information is available from a trusted local indexer. Avoid them when the edge export contains raw source snippets or private payloads; strip those fields before importing.
+
+Default promotion is evaluated by `ctxpack eval gate`. If no fresh precision
+overlay is available, precision-specific variants are reported as `skipped`
+rather than silently omitted. This keeps release proof honest about whether
+precision retrieval was actually exercised.

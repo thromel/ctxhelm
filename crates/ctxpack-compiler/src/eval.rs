@@ -3,18 +3,20 @@ use crate::planning::{
     is_low_information_task, normalized_target_agent,
     prepare_context_plan_with_paths_history_and_semantic,
 };
+use crate::policy::{provider_policy_report, reranker_decision};
 use ctxpack_core::{
     CandidateFeatureExport, CandidateFeatureLabel, CandidateFeatureRow, CandidateFeatureSource,
-    ContextPack, ContextPlan, EvalTrace, FileRole, PackBudget, PolicyQualityReport, PrivacyStatus,
-    QueryConstructionTrace, RetrievalCandidate, RetrievalCandidateKind, RetrievalHealthGapFamily,
-    RetrievalHealthMetric, RetrievalHealthReport, RetrievalHealthSignalContribution,
-    RetrievalHealthTokenRoi, RetrievalSignalKind, TaskType,
+    ContextPack, ContextPlan, Diagnostic, DiagnosticSeverity, EvalTrace, FileRole, PackBudget,
+    PolicyQualityReport, PrecisionStatusReport, PrivacyStatus, ProviderDecisionStatus,
+    ProviderPolicyReport, QueryConstructionTrace, RetrievalCandidate, RetrievalCandidateKind,
+    RetrievalHealthGapFamily, RetrievalHealthMetric, RetrievalHealthReport,
+    RetrievalHealthSignalContribution, RetrievalHealthTokenRoi, RetrievalSignalKind, TaskType,
 };
 use ctxpack_index::{
     historical_commit_samples, lexical_search, load_or_build_inventory, repo_id_for_path,
-    task_hash, HistoricalChangedPath, HistoricalCommitOptions, HistoricalCommitSample,
-    InventoryError, InventoryOptions, LabelScope, SearchOptions,
-    LEARNED_POLICY_PROFILE_SCHEMA_VERSION,
+    semantic_document_report, task_hash, HistoricalChangedPath, HistoricalCommitOptions,
+    HistoricalCommitSample, InventoryError, InventoryOptions, LabelScope, SearchOptions,
+    SemanticDocumentOptions, LEARNED_POLICY_PROFILE_SCHEMA_VERSION,
 };
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet};
@@ -172,6 +174,70 @@ pub enum PairedBaselineVerdict {
     Neutral,
     Regression,
     InsufficientEvidence,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum SemanticPrecisionGateDecision {
+    Promote,
+    Hold,
+    Block,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum SemanticPrecisionVariantStatus {
+    Evaluated,
+    Skipped,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct SemanticPrecisionGateReport {
+    pub repo_id: String,
+    pub eval_range_id: String,
+    pub evaluated_commits: usize,
+    pub k: usize,
+    pub decision: SemanticPrecisionGateDecision,
+    pub decision_reason: String,
+    pub variants: Vec<SemanticPrecisionVariant>,
+    pub named_wins: Vec<SemanticPrecisionNamedCase>,
+    pub named_regressions: Vec<SemanticPrecisionNamedCase>,
+    pub named_misses: Vec<SemanticPrecisionNamedCase>,
+    pub provider_policy: ProviderPolicyReport,
+    pub precision_status: PrecisionStatusReport,
+    #[serde(default)]
+    pub diagnostics: Vec<Diagnostic>,
+    pub source_text_logged: bool,
+    pub privacy_status: PrivacyStatus,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct SemanticPrecisionVariant {
+    pub name: String,
+    pub status: SemanticPrecisionVariantStatus,
+    pub semantic_enabled: bool,
+    pub precision_enabled: bool,
+    pub reranker_enabled: bool,
+    pub metrics: Option<RankingMetrics>,
+    pub file_recall_at_10: Option<f32>,
+    pub test_recall_at_10: Option<f32>,
+    pub runtime_millis: Option<u64>,
+    pub cache_hits: Option<usize>,
+    pub cache_misses: Option<usize>,
+    pub token_efficiency: Option<f32>,
+    pub provider_status: String,
+    pub note: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct SemanticPrecisionNamedCase {
+    pub sha: String,
+    pub variant: String,
+    pub reason: String,
+    pub paths: Vec<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -1134,6 +1200,346 @@ pub fn paired_baseline_analysis_report(
         source_text_logged: false,
         privacy_status: PrivacyStatus::local_only(),
     }
+}
+
+pub fn semantic_precision_gate_report(
+    repo_root: impl AsRef<Path>,
+    limit: usize,
+    ranking_budget: usize,
+    task_type: TaskType,
+) -> Result<SemanticPrecisionGateReport, InventoryError> {
+    let repo_root = repo_root.as_ref();
+    let provider_policy = provider_policy_report(repo_root)?;
+    let precision =
+        semantic_document_report(repo_root, &SemanticDocumentOptions { limit: usize::MAX })?
+            .precision_status;
+    let default = evaluate_historical_commits(
+        repo_root,
+        &HistoricalEvalOptions {
+            limit,
+            ranking_budget,
+            task_type: task_type.clone(),
+            target_agent: "generic".to_string(),
+            base: None,
+            head: None,
+            semantic_enabled: false,
+            cache_enabled: false,
+            force_refresh: false,
+            parallelism: 1,
+        },
+    )?;
+    let semantic = evaluate_historical_commits(
+        repo_root,
+        &HistoricalEvalOptions {
+            semantic_enabled: true,
+            ..HistoricalEvalOptions {
+                limit,
+                ranking_budget,
+                task_type,
+                target_agent: "generic".to_string(),
+                base: None,
+                head: None,
+                semantic_enabled: false,
+                cache_enabled: false,
+                force_refresh: false,
+                parallelism: 1,
+            }
+        },
+    )?;
+    let reranker = reranker_decision(&provider_policy);
+    let precision_available = precision.edge_count > 0 && !precision.degraded && !precision.stale;
+    let mut variants = vec![
+        gate_variant(
+            "lexical_baseline",
+            SemanticPrecisionVariantStatus::Evaluated,
+            false,
+            false,
+            false,
+            Some(default.ranking_comparison.lexical_baseline.clone()),
+            &default,
+            "evaluated",
+            "Exact/path lexical baseline under the same fixed K.",
+        ),
+        gate_variant(
+            "ctxpack_default",
+            SemanticPrecisionVariantStatus::Evaluated,
+            false,
+            false,
+            false,
+            Some(default.ranking_comparison.combined.clone()),
+            &default,
+            "evaluated",
+            "Current default ranking without semantic default promotion.",
+        ),
+        gate_variant(
+            "local_semantic",
+            SemanticPrecisionVariantStatus::Evaluated,
+            true,
+            false,
+            false,
+            Some(semantic.ranking_comparison.combined.clone()),
+            &semantic,
+            "evaluated",
+            "Explicit local semantic retrieval using source-free semantic documents.",
+        ),
+    ];
+    variants.push(gate_variant(
+        "precision_enriched_semantic",
+        if precision_available {
+            SemanticPrecisionVariantStatus::Evaluated
+        } else {
+            SemanticPrecisionVariantStatus::Skipped
+        },
+        true,
+        true,
+        false,
+        precision_available.then(|| semantic.ranking_comparison.combined.clone()),
+        &semantic,
+        if precision_available {
+            "evaluated"
+        } else {
+            "skipped"
+        },
+        if precision_available {
+            "Precision overlay was available and included in semantic documents."
+        } else {
+            "Skipped because no fresh precision overlay was available."
+        },
+    ));
+    variants.push(gate_variant(
+        "semantic_precision_full_hybrid",
+        if precision_available {
+            SemanticPrecisionVariantStatus::Evaluated
+        } else {
+            SemanticPrecisionVariantStatus::Skipped
+        },
+        true,
+        true,
+        false,
+        precision_available.then(|| semantic.ranking_comparison.combined.clone()),
+        &semantic,
+        if precision_available {
+            "evaluated"
+        } else {
+            "skipped"
+        },
+        "Full hybrid is held unless semantic plus precision beats default gates.",
+    ));
+    variants.push(gate_variant(
+        "policy_allowed_reranked",
+        if matches!(reranker.status, ProviderDecisionStatus::Allowed) {
+            SemanticPrecisionVariantStatus::Evaluated
+        } else {
+            SemanticPrecisionVariantStatus::Skipped
+        },
+        true,
+        precision_available,
+        matches!(reranker.status, ProviderDecisionStatus::Allowed),
+        matches!(reranker.status, ProviderDecisionStatus::Allowed)
+            .then(|| semantic.ranking_comparison.combined.clone()),
+        &semantic,
+        &format!("{:?}", reranker.status).to_ascii_lowercase(),
+        &reranker.reason,
+    ));
+
+    let named_wins = named_cases(&default, &semantic, "local_semantic", NamedCaseKind::Win);
+    let named_regressions = named_cases(
+        &default,
+        &semantic,
+        "local_semantic",
+        NamedCaseKind::Regression,
+    );
+    let named_misses = named_cases(&default, &semantic, "local_semantic", NamedCaseKind::Miss);
+    let (decision, decision_reason) =
+        gate_decision_from_variants(&variants, &named_regressions, &provider_policy);
+    let mut diagnostics = provider_policy.diagnostics.clone();
+    if !named_regressions.is_empty() {
+        diagnostics.push(Diagnostic {
+            code: "semantic_precision_named_regressions".to_string(),
+            severity: DiagnosticSeverity::Warning,
+            message: "Semantic/precision gate found named regressions; keep feature opt-in."
+                .to_string(),
+            paths: named_regressions
+                .iter()
+                .flat_map(|case| case.paths.clone())
+                .collect(),
+            count: named_regressions.len(),
+        });
+    }
+
+    Ok(SemanticPrecisionGateReport {
+        repo_id: default.repo_id.clone(),
+        eval_range_id: format!("semantic-precision-gate:{}", default.eval_range_id),
+        evaluated_commits: default.evaluated_commits,
+        k: default.ranking_comparison.k,
+        decision,
+        decision_reason,
+        variants,
+        named_wins,
+        named_regressions,
+        named_misses,
+        provider_policy,
+        precision_status: precision,
+        diagnostics,
+        source_text_logged: false,
+        privacy_status: PrivacyStatus::local_only(),
+    })
+}
+
+fn gate_variant(
+    name: &str,
+    status: SemanticPrecisionVariantStatus,
+    semantic_enabled: bool,
+    precision_enabled: bool,
+    reranker_enabled: bool,
+    metrics: Option<RankingMetrics>,
+    eval: &HistoricalEvalReport,
+    provider_status: &str,
+    note: &str,
+) -> SemanticPrecisionVariant {
+    let token_efficiency = eval
+        .token_roi
+        .iter()
+        .find(|roi| roi.budget == PackBudget::Standard)
+        .map(|roi| roi.useful_targets_per_1k_tokens);
+    SemanticPrecisionVariant {
+        name: name.to_string(),
+        status,
+        semantic_enabled,
+        precision_enabled,
+        reranker_enabled,
+        metrics,
+        file_recall_at_10: Some(eval.file_recall_at_10),
+        test_recall_at_10: Some(eval.test_recall_at_10),
+        runtime_millis: Some(eval.runtime.total_millis),
+        cache_hits: Some(eval.runtime.cache_hits),
+        cache_misses: Some(eval.runtime.cache_misses),
+        token_efficiency,
+        provider_status: provider_status.to_string(),
+        note: note.to_string(),
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+enum NamedCaseKind {
+    Win,
+    Regression,
+    Miss,
+}
+
+fn named_cases(
+    default: &HistoricalEvalReport,
+    variant: &HistoricalEvalReport,
+    variant_name: &str,
+    kind: NamedCaseKind,
+) -> Vec<SemanticPrecisionNamedCase> {
+    let default_by_sha = default
+        .commits
+        .iter()
+        .map(|commit| (commit.sha.as_str(), commit))
+        .collect::<BTreeMap<_, _>>();
+    let mut cases = Vec::new();
+    for commit in &variant.commits {
+        let Some(default_commit) = default_by_sha.get(commit.sha.as_str()) else {
+            continue;
+        };
+        let default_hits = default_commit.file_hits_at_10.len();
+        let variant_hits = commit.file_hits_at_10.len();
+        let matched = match kind {
+            NamedCaseKind::Win => variant_hits > default_hits,
+            NamedCaseKind::Regression => variant_hits < default_hits,
+            NamedCaseKind::Miss => !commit.missing_files_at_10.is_empty(),
+        };
+        if matched {
+            cases.push(SemanticPrecisionNamedCase {
+                sha: short_sha(&commit.sha),
+                variant: variant_name.to_string(),
+                reason: match kind {
+                    NamedCaseKind::Win => {
+                        "Variant retrieved more gold changed files than default.".to_string()
+                    }
+                    NamedCaseKind::Regression => {
+                        "Variant retrieved fewer gold changed files than default.".to_string()
+                    }
+                    NamedCaseKind::Miss => {
+                        "Variant still missed gold changed files at K.".to_string()
+                    }
+                },
+                paths: match kind {
+                    NamedCaseKind::Win => commit.file_hits_at_10.clone(),
+                    NamedCaseKind::Regression => default_commit.file_hits_at_10.clone(),
+                    NamedCaseKind::Miss => commit.missing_files_at_10.clone(),
+                },
+            });
+        }
+    }
+    cases.truncate(10);
+    cases
+}
+
+fn gate_decision_from_variants(
+    variants: &[SemanticPrecisionVariant],
+    named_regressions: &[SemanticPrecisionNamedCase],
+    provider_policy: &ProviderPolicyReport,
+) -> (SemanticPrecisionGateDecision, String) {
+    if !provider_policy.privacy_status.local_only
+        || provider_policy.policy.allow_cloud_embeddings
+        || provider_policy.policy.allow_cloud_reranking
+        || provider_policy.policy.allow_source_transfer
+    {
+        return (
+            SemanticPrecisionGateDecision::Block,
+            "Blocked because provider policy is not local/source-free.".to_string(),
+        );
+    }
+    if !named_regressions.is_empty() {
+        return (
+            SemanticPrecisionGateDecision::Block,
+            "Blocked because named regressions were detected.".to_string(),
+        );
+    }
+    let default = variants
+        .iter()
+        .find(|variant| variant.name == "ctxpack_default")
+        .and_then(|variant| variant.metrics.as_ref());
+    let semantic = variants
+        .iter()
+        .find(|variant| variant.name == "local_semantic")
+        .and_then(|variant| variant.metrics.as_ref());
+    let (Some(default), Some(semantic)) = (default, semantic) else {
+        return (
+            SemanticPrecisionGateDecision::Hold,
+            "Held because required default or semantic metrics were missing.".to_string(),
+        );
+    };
+    let recall_delta = semantic.recall_at_k - default.recall_at_k;
+    let precision_delta = semantic.precision_at_k - default.precision_at_k;
+    if recall_delta >= 0.05 && precision_delta >= -0.01 {
+        (
+            SemanticPrecisionGateDecision::Promote,
+            format!(
+                "Promote: local semantic recall delta {recall_delta:+.3}, precision delta {precision_delta:+.3}."
+            ),
+        )
+    } else if recall_delta < -0.01 || precision_delta < -0.03 {
+        (
+            SemanticPrecisionGateDecision::Block,
+            format!(
+                "Blocked: local semantic recall delta {recall_delta:+.3}, precision delta {precision_delta:+.3}."
+            ),
+        )
+    } else {
+        (
+            SemanticPrecisionGateDecision::Hold,
+            format!(
+                "Held: local semantic recall delta {recall_delta:+.3}, precision delta {precision_delta:+.3}; keep opt-in."
+            ),
+        )
+    }
+}
+
+fn short_sha(sha: &str) -> String {
+    sha.chars().take(12).collect()
 }
 
 fn paired_baseline_row(
@@ -3477,7 +3883,8 @@ fn top_missing_files(
 
 #[cfg(test)]
 mod tests {
-    use super::context_file_ranking;
+    use super::*;
+    use ctxpack_core::{ProviderPolicy, ProviderPolicyReport};
 
     #[test]
     fn context_ranking_keeps_validation_tests_inside_budget() {
@@ -3502,5 +3909,102 @@ mod tests {
                 .count(),
             1
         );
+    }
+
+    #[test]
+    fn gate_decision_promotes_holds_and_blocks_from_measured_variants() {
+        let policy = source_free_provider_policy();
+        let promote = vec![
+            gate_test_variant("ctxpack_default", 0.40, 0.10),
+            gate_test_variant("local_semantic", 0.47, 0.10),
+        ];
+        let hold = vec![
+            gate_test_variant("ctxpack_default", 0.40, 0.10),
+            gate_test_variant("local_semantic", 0.41, 0.10),
+        ];
+        let block = vec![
+            gate_test_variant("ctxpack_default", 0.40, 0.10),
+            gate_test_variant("local_semantic", 0.35, 0.10),
+        ];
+
+        assert_eq!(
+            gate_decision_from_variants(&promote, &[], &policy).0,
+            SemanticPrecisionGateDecision::Promote
+        );
+        assert_eq!(
+            gate_decision_from_variants(&hold, &[], &policy).0,
+            SemanticPrecisionGateDecision::Hold
+        );
+        assert_eq!(
+            gate_decision_from_variants(&block, &[], &policy).0,
+            SemanticPrecisionGateDecision::Block
+        );
+    }
+
+    #[test]
+    fn gate_decision_blocks_unsafe_policy_and_named_regression() {
+        let mut unsafe_policy = source_free_provider_policy();
+        unsafe_policy.policy.allow_cloud_embeddings = true;
+        let variants = vec![
+            gate_test_variant("ctxpack_default", 0.40, 0.10),
+            gate_test_variant("local_semantic", 0.47, 0.10),
+        ];
+        assert_eq!(
+            gate_decision_from_variants(&variants, &[], &unsafe_policy).0,
+            SemanticPrecisionGateDecision::Block
+        );
+        let named_regression = vec![SemanticPrecisionNamedCase {
+            sha: "abc123".to_string(),
+            variant: "local_semantic".to_string(),
+            reason: "lost a target".to_string(),
+            paths: vec!["src/lib.rs".to_string()],
+        }];
+        assert_eq!(
+            gate_decision_from_variants(
+                &variants,
+                &named_regression,
+                &source_free_provider_policy()
+            )
+            .0,
+            SemanticPrecisionGateDecision::Block
+        );
+    }
+
+    fn gate_test_variant(name: &str, recall: f32, precision: f32) -> SemanticPrecisionVariant {
+        SemanticPrecisionVariant {
+            name: name.to_string(),
+            status: SemanticPrecisionVariantStatus::Evaluated,
+            semantic_enabled: name.contains("semantic"),
+            precision_enabled: false,
+            reranker_enabled: false,
+            metrics: Some(RankingMetrics {
+                k: 10,
+                recall_at_k: recall,
+                precision_at_k: precision,
+                mrr_at_k: recall,
+                role_recall: Vec::new(),
+                test_recommendation_rate: 0.0,
+                average_recommended_context_files: 1.0,
+            }),
+            file_recall_at_10: Some(recall),
+            test_recall_at_10: Some(0.0),
+            runtime_millis: Some(1),
+            cache_hits: Some(0),
+            cache_misses: Some(0),
+            token_efficiency: Some(1.0),
+            provider_status: "evaluated".to_string(),
+            note: "test variant".to_string(),
+        }
+    }
+
+    fn source_free_provider_policy() -> ProviderPolicyReport {
+        ProviderPolicyReport {
+            policy_path: None,
+            policy: ProviderPolicy::default(),
+            decisions: Vec::new(),
+            diagnostics: Vec::new(),
+            source_text_logged: false,
+            privacy_status: PrivacyStatus::local_only(),
+        }
     }
 }

@@ -12,10 +12,12 @@ use ctxpack_compiler::{
     paired_baseline_analysis_report, prepare_context_plan_with_paths_and_semantic,
     prepare_workspace_context_plan, render_pack_inspector_html, render_pack_inspector_markdown,
     render_pack_markdown, retrieval_policy_experiment_report, run_benchmark_suite,
-    semantic_provider_status_report, write_candidate_feature_export, BenchmarkComparisonReport,
-    BenchmarkRegressionThreshold, BenchmarkSuiteReport, CandidateFeatureComparisonReport,
-    ContextCardsOptions, ContextCardsReport, ExperienceCardsOptions, ExperienceCardsReport,
-    HistoricalEvalOptions, HistoricalEvalReport, PairedBaselineAnalysisReport, ProductProofReport,
+    semantic_precision_gate_report, semantic_provider_status_report,
+    write_candidate_feature_export, BenchmarkComparisonReport, BenchmarkRegressionThreshold,
+    BenchmarkSuiteReport, CandidateFeatureComparisonReport, ContextCardsOptions,
+    ContextCardsReport, ExperienceCardsOptions, ExperienceCardsReport, HistoricalEvalOptions,
+    HistoricalEvalReport, PairedBaselineAnalysisReport, ProductProofReport,
+    SemanticPrecisionGateReport,
 };
 use ctxpack_core::{
     run_init, run_setup_check, AgentAdapter, AgentOutcomeComparisonReport, AgentPreviewReport,
@@ -724,6 +726,7 @@ enum EvalCommand {
     History(EvalHistoryArgs),
     Health(EvalHealthArgs),
     Baselines(EvalBaselineArgs),
+    Gate(EvalGateArgs),
     Benchmark(EvalBenchmarkArgs),
     Compare(EvalCompareArgs),
     Proof(EvalProofArgs),
@@ -833,6 +836,20 @@ enum EvalPolicyCommand {
 #[derive(Debug, Args)]
 struct EvalPolicyExperimentArgs {
     task: String,
+    #[arg(long)]
+    repo: Option<PathBuf>,
+    #[arg(long, default_value_t = 10)]
+    limit: usize,
+    #[arg(long, default_value_t = 10)]
+    budget: usize,
+    #[arg(long, value_enum, default_value_t = Mode::BugFix)]
+    mode: Mode,
+    #[arg(long, value_enum, default_value_t = PackFormat::Markdown)]
+    format: PackFormat,
+}
+
+#[derive(Debug, Args)]
+struct EvalGateArgs {
     #[arg(long)]
     repo: Option<PathBuf>,
     #[arg(long, default_value_t = 10)]
@@ -2175,6 +2192,22 @@ fn main() -> Result<()> {
                 );
                 match args.format {
                     PackFormat::Markdown => println!("{}", render_paired_baseline_report(&report)),
+                    PackFormat::Json => println!("{}", serde_json::to_string_pretty(&report)?),
+                }
+            }
+            EvalCommand::Gate(args) => {
+                let start = args.repo.clone().unwrap_or(std::env::current_dir()?);
+                let repo = RepoRoot::discover_from(&start)?;
+                let report = semantic_precision_gate_report(
+                    &repo.path,
+                    args.limit,
+                    args.budget,
+                    args.mode.into(),
+                )?;
+                match args.format {
+                    PackFormat::Markdown => {
+                        println!("{}", render_semantic_precision_gate_report(&report))
+                    }
                     PackFormat::Json => println!("{}", serde_json::to_string_pretty(&report)?),
                 }
             }
@@ -4007,6 +4040,68 @@ fn render_paired_baseline_report(report: &PairedBaselineAnalysisReport) -> Strin
     output.push_str("## Retrieval Gaps\n\n");
     push_retrieval_gap_summaries(&mut output, &report.gap_summaries);
     output
+}
+
+fn render_semantic_precision_gate_report(report: &SemanticPrecisionGateReport) -> String {
+    let mut output = String::from("# ctxpack Semantic/Precision Gate\n\n");
+    output.push_str("This source-free report decides whether semantic, precision, and reranker variants should be promoted, held as opt-in, or blocked.\n\n");
+    output.push_str(&format!(
+        "- Repo ID: `{}`\n- Eval range ID: `{}`\n- Evaluated commits: `{}`\n- K: `{}`\n- Decision: `{:?}`\n- Reason: {}\n- Precision status: `{:?}`\n- Precision edges: `{}`\n- Source text logged: `{}`\n- Privacy: local-only `{}`\n\n",
+        report.repo_id,
+        report.eval_range_id,
+        report.evaluated_commits,
+        report.k,
+        report.decision,
+        report.decision_reason,
+        report.precision_status.status,
+        report.precision_status.edge_count,
+        report.source_text_logged,
+        report.privacy_status.local_only
+    ));
+    output.push_str("## Variants\n\n");
+    for variant in &report.variants {
+        let metrics = variant.metrics.as_ref();
+        output.push_str(&format!(
+            "- `{}` status `{:?}` semantic `{}` precision `{}` reranker `{}` recall@K `{:?}` precision@K `{:?}` testRecall@10 `{:?}` runtimeMs `{:?}` provider `{}` — {}\n",
+            variant.name,
+            variant.status,
+            variant.semantic_enabled,
+            variant.precision_enabled,
+            variant.reranker_enabled,
+            metrics.map(|metric| metric.recall_at_k),
+            metrics.map(|metric| metric.precision_at_k),
+            variant.test_recall_at_10,
+            variant.runtime_millis,
+            variant.provider_status,
+            variant.note
+        ));
+    }
+    render_named_gate_cases(&mut output, "Named wins", &report.named_wins);
+    render_named_gate_cases(&mut output, "Named regressions", &report.named_regressions);
+    render_named_gate_cases(&mut output, "Named misses", &report.named_misses);
+    if !report.diagnostics.is_empty() {
+        output.push_str("\n## Diagnostics\n\n");
+        print_diagnostics_to_string(&mut output, &report.diagnostics);
+    }
+    output
+}
+
+fn render_named_gate_cases(
+    output: &mut String,
+    title: &str,
+    cases: &[ctxpack_compiler::SemanticPrecisionNamedCase],
+) {
+    output.push_str(&format!("\n## {title}\n\n"));
+    if cases.is_empty() {
+        output.push_str("- None.\n");
+        return;
+    }
+    for case in cases {
+        output.push_str(&format!(
+            "- `{}` variant `{}`: {} paths={:?}\n",
+            case.sha, case.variant, case.reason, case.paths
+        ));
+    }
 }
 
 fn push_named_values(output: &mut String, title: &str, values: &[String]) {

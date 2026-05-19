@@ -23,6 +23,7 @@ smoke_release_governance_script="$repo_root/scripts/smoke-release-governance.sh"
 smoke_semantic_script="$repo_root/scripts/smoke-semantic.sh"
 smoke_precision_script="$repo_root/scripts/smoke-precision.sh"
 smoke_v23_eval_script="$repo_root/scripts/smoke-v23-eval.sh"
+smoke_v24_gate_script="$repo_root/scripts/smoke-v24-gate.sh"
 smoke_mcp_protocol_script="$repo_root/scripts/smoke-mcp-protocol.sh"
 smoke_codex_mcp_script="$repo_root/scripts/smoke-codex-mcp.sh"
 smoke_claude_mcp_script="$repo_root/scripts/smoke-claude-mcp.sh"
@@ -192,6 +193,9 @@ CTXPACK_BIN="$ctxpack_bin" bash "$smoke_precision_script"
 log_step "v2.3 eval smoke"
 CTXPACK_BIN="$ctxpack_bin" bash "$smoke_v23_eval_script"
 
+log_step "v2.4 semantic/precision gate smoke"
+CTXPACK_BIN="$ctxpack_bin" bash "$smoke_v24_gate_script"
+
 log_step "wrong-cwd MCP protocol smoke"
 CTXPACK_BIN="$ctxpack_bin" \
   CTXPACK_ROOT="$repo_root" \
@@ -315,6 +319,7 @@ required_checks = [
     "scripts/smoke-semantic.sh",
     "scripts/smoke-precision.sh",
     "scripts/smoke-v23-eval.sh",
+    "scripts/smoke-v24-gate.sh",
     "scripts/smoke-mcp-protocol.sh",
 ]
 payload = {

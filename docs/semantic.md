@@ -72,6 +72,11 @@ source-free metadata providers are allowed by default; cloud embeddings, cloud
 reranking, source transfer, and reranking execution are denied or disabled until
 repo policy explicitly opts in.
 
+Promotion to a default retrieval signal is controlled by `ctxpack eval gate`.
+The gate compares default retrieval against local semantic, precision-enriched
+semantic, full hybrid, and policy-allowed reranked variants on a fixed corpus.
+Neutral results produce `hold`; regressions or unsafe policy produce `block`.
+
 Semantic defaults are not promoted in Phase 56. Promotion of any production-quality semantic backend remains gated by later evaluation and release criteria.
 
 ## When To Avoid It

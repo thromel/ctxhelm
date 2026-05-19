@@ -169,6 +169,16 @@ paired baseline verdicts, runtime diagnostics, and product proof fields for
 fixed corpus identity, feature-export privacy, learned-policy status, and proof
 boundary language.
 
+The v2.4 gate smoke proves semantic/precision release-gate reporting without
+external repositories. It creates a small local git corpus and exercises
+promote/hold/block decisions, lexical/default/semantic/precision/full-hybrid
+variant rows, policy-blocked reranker skips, provider policy, precision status,
+named-case arrays, and local-only privacy metadata.
+
+```bash
+bash scripts/smoke-v24-gate.sh
+```
+
 The feedback smoke proves source-free feedback ingestion, policy report generation, candidate policy tuning, apply/rollback metadata, and budget outcome comparison.
 
 The workspace smoke proves local multi-repo manifest initialization, source-free workspace status JSON, workspace prepare-task routing, repo-boundary-aware workspace packs, missing source sentinel leakage, and single-repo command compatibility without an explicit workspace manifest.
@@ -195,7 +205,7 @@ ready/deferred/blocked lifecycle states, deterministic protocol proof language,
 optional real-client proof boundaries, Cursor/OpenCode non-claims, and rollback
 safety for marked local candidate directories.
 
-The gate passes the same selected or extracted `CTXPACK_BIN` into the first-pack, storage, memory, feedback, workspace, shared-artifact, inspector, retrieval-health, graph, policy/embedding, agent-preview, semantic, precision, v2.3 eval, MCP protocol, and optional real-client smokes. Demo, distribution metadata, and release governance smokes are source-free metadata checks and do not need the binary. Real-client proof is not required by default. Use these environment variables when needed:
+The gate passes the same selected or extracted `CTXPACK_BIN` into the first-pack, storage, memory, feedback, workspace, shared-artifact, inspector, retrieval-health, graph, policy/embedding, agent-preview, semantic, precision, v2.3 eval, v2.4 semantic/precision gate, MCP protocol, and optional real-client smokes. Demo, distribution metadata, and release governance smokes are source-free metadata checks and do not need the binary. Real-client proof is not required by default. Use these environment variables when needed:
 
 - `CTXPACK_SKIP_REAL_CLIENT=1` keeps Codex and Claude checks deterministic-only after the protocol proof.
 - `CTXPACK_REQUIRE_REAL_CLIENT=1` makes missing Codex or Claude tool-call evidence fail the gate.
