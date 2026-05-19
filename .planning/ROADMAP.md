@@ -63,7 +63,7 @@ Plans:
 
 Plans:
 
-- [ ] 57-precision-enriched-semantic-documents-01-PLAN.md - Build semantic document contracts, precision status reporting, and safe enrichment into retrieval surfaces.
+- [x] 57-precision-enriched-semantic-documents-01-PLAN.md - Build semantic document contracts, precision status reporting, and safe enrichment into retrieval surfaces.
 
 ### Phase 58: Query Construction And Hybrid Fusion Controls
 
@@ -84,7 +84,7 @@ Plans:
 
 Plans:
 
-- [ ] 58-query-construction-hybrid-fusion-controls-01-PLAN.md - Add query facet contracts, debug traces, and paired hybrid variant controls.
+- [x] 58-query-construction-hybrid-fusion-controls-01-PLAN.md - Add query facet contracts, debug traces, and paired hybrid variant controls.
 
 ### Phase 59: Provider And Reranker Policy Gates
 
@@ -105,7 +105,7 @@ Plans:
 
 Plans:
 
-- [ ] 59-provider-reranker-policy-gates-01-PLAN.md - Add provider/reranker policy contracts, privacy warnings, and local/cloud gated execution controls.
+- [x] 59-provider-reranker-policy-gates-01-PLAN.md - Add provider/reranker policy contracts, privacy warnings, and local/cloud gated execution controls.
 
 ### Phase 60: Semantic/Precision Evaluation Gates And Release Proof
 
@@ -126,7 +126,7 @@ Plans:
 
 Plans:
 
-- [ ] 60-semantic-precision-evaluation-gates-release-proof-01-PLAN.md - Add paired backend ablations, promotion gates, docs, release smoke, and proof-boundary reporting.
+- [x] 60-semantic-precision-evaluation-gates-release-proof-01-PLAN.md - Add paired backend ablations, promotion gates, docs, release smoke, and proof-boundary reporting.
 
 ## Requirement Coverage
 
@@ -163,10 +163,10 @@ Phases execute in numeric order: 56 -> 57 -> 58 -> 59 -> 60
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 56. Production Local Semantic Backend | 1/1 | Complete | 2026-05-19 |
-| 57. Precision-Enriched Semantic Documents | 0/1 | Pending | - |
-| 58. Query Construction And Hybrid Fusion Controls | 0/1 | Pending | - |
-| 59. Provider And Reranker Policy Gates | 0/1 | Pending | - |
-| 60. Semantic/Precision Evaluation Gates And Release Proof | 0/1 | Pending | - |
+| 57. Precision-Enriched Semantic Documents | 1/1 | Planned | - |
+| 58. Query Construction And Hybrid Fusion Controls | 1/1 | Planned | - |
+| 59. Provider And Reranker Policy Gates | 1/1 | Planned | - |
+| 60. Semantic/Precision Evaluation Gates And Release Proof | 1/1 | Planned | - |
 
 ---
 *Roadmap created: 2026-05-19*
