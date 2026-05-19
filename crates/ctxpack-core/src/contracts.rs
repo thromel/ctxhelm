@@ -44,7 +44,7 @@ pub struct RelatedTest {
     pub attribution: Vec<RetrievalEvidence>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
 #[serde(rename_all = "lowercase")]
 pub enum RetrievalCandidateKind {
     File,
@@ -108,6 +108,73 @@ pub struct RetrievalCandidate {
     pub signal_scores: Vec<RetrievalSignalScore>,
     #[serde(default)]
     pub evidence: Vec<RetrievalEvidence>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum CandidateFeatureSource {
+    PlanCandidate,
+    HistoricalEval,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum CandidateFeatureLabel {
+    Unknown,
+    Selected,
+    Gold,
+    Read,
+    Edited,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct CandidateFeatureExport {
+    pub export_id: Uuid,
+    pub schema_version: u32,
+    pub repo_id: String,
+    pub task_hash: Option<String>,
+    pub eval_range_id: Option<String>,
+    pub export_source: CandidateFeatureSource,
+    pub task_type: Option<TaskType>,
+    pub target_agent: Option<String>,
+    pub row_count: usize,
+    pub created_at_unix_seconds: u64,
+    #[serde(default)]
+    pub rows: Vec<CandidateFeatureRow>,
+    pub source_text_logged: bool,
+    pub privacy_status: PrivacyStatus,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct CandidateFeatureRow {
+    pub candidate_id: String,
+    pub candidate_kind: RetrievalCandidateKind,
+    pub path: Option<String>,
+    pub role: Option<FileRole>,
+    pub rank: usize,
+    pub selected_rank: Option<usize>,
+    pub confidence: f32,
+    pub reason_code: String,
+    #[serde(default)]
+    pub signal_scores: Vec<RetrievalSignalScore>,
+    pub lexical_score: f32,
+    pub semantic_score: f32,
+    pub graph_score: f32,
+    pub history_score: f32,
+    pub test_score: f32,
+    pub memory_score: f32,
+    pub feedback_score: f32,
+    pub graph_distance: Option<u32>,
+    pub history_commit_count: u32,
+    pub test_relation_confidence: Option<f32>,
+    pub memory_count: u32,
+    pub feedback_event_count: u32,
+    #[serde(default)]
+    pub labels: Vec<CandidateFeatureLabel>,
+    pub label_scope: String,
+    pub source_text_logged: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]

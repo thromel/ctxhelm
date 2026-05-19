@@ -24,10 +24,10 @@ This milestone turns ctxpack's retrieval-quality claims into repeatable, source-
 
 ### Source-Free Candidate Features
 
-- [ ] **FEATURE-01**: Eval output can export source-free candidate feature rows for every considered file, symbol, test, doc, commit, memory, and graph candidate.
-- [ ] **FEATURE-02**: Candidate features include signal scores, rank positions, role/type metadata, graph distance, co-change/history metadata, test relation confidence, memory/feedback counts, and selected/read/edit/gold labels where available.
-- [ ] **FEATURE-03**: Feature exports are privacy-checked and do not include source snippets, prompt text, issue descriptions, terminal logs, stack traces, or secret-bearing values.
-- [ ] **FEATURE-04**: CLI and storage commands can list, inspect, compare, and delete feature exports by suite, run id, repo id, and privacy status.
+- [x] **FEATURE-01**: Eval output can export source-free candidate feature rows for every considered file, symbol, test, doc, commit, memory, and graph candidate.
+- [x] **FEATURE-02**: Candidate features include signal scores, rank positions, role/type metadata, graph distance, co-change/history metadata, test relation confidence, memory/feedback counts, and selected/read/edit/gold labels where available.
+- [x] **FEATURE-03**: Feature exports are privacy-checked and do not include source snippets, prompt text, issue descriptions, terminal logs, stack traces, or secret-bearing values.
+- [x] **FEATURE-04**: CLI and storage commands can list, inspect, compare, and delete feature exports by suite, run id, repo id, and privacy status.
 
 ### Paired Baselines And Ablations
 
@@ -115,10 +115,10 @@ Explicitly excluded from v2.3 to keep the milestone focused on measured quality 
 | SPEED-02 | Phase 51 | Complete |
 | SPEED-03 | Phase 51 | Complete |
 | SPEED-04 | Phase 51 | Complete |
-| FEATURE-01 | Phase 52 | Planned |
-| FEATURE-02 | Phase 52 | Planned |
-| FEATURE-03 | Phase 52 | Planned |
-| FEATURE-04 | Phase 52 | Planned |
+| FEATURE-01 | Phase 52 | Complete |
+| FEATURE-02 | Phase 52 | Complete |
+| FEATURE-03 | Phase 52 | Complete |
+| FEATURE-04 | Phase 52 | Complete |
 | BASELINE-01 | Phase 53 | Planned |
 | BASELINE-02 | Phase 53 | Planned |
 | BASELINE-03 | Phase 53 | Planned |

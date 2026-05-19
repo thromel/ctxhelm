@@ -15,13 +15,16 @@ pub use cards::{
 };
 pub use eval::{
     build_product_proof_report, build_retrieval_health_report, compare_benchmark_suite_reports,
-    eval_trace_for_pack, eval_trace_for_plan, evaluate_historical_commits,
-    load_benchmark_suite_config, load_benchmark_suite_report, run_benchmark_suite,
-    run_benchmark_suite_config, BenchmarkComparisonReport, BenchmarkDefaults,
+    compare_candidate_feature_exports, delete_candidate_feature_export, eval_trace_for_pack,
+    eval_trace_for_plan, evaluate_historical_commits, export_candidate_features_for_task,
+    list_candidate_feature_exports, load_benchmark_suite_config, load_benchmark_suite_report,
+    load_candidate_feature_export, run_benchmark_suite, run_benchmark_suite_config,
+    write_candidate_feature_export, BenchmarkComparisonReport, BenchmarkDefaults,
     BenchmarkGapFamilyDelta, BenchmarkMetricDelta, BenchmarkRegressionThreshold,
     BenchmarkRepoBaseline, BenchmarkRepoBaselineStatus, BenchmarkRepoConfig,
     BenchmarkRepoEffectiveConfig, BenchmarkRepoReport, BenchmarkSuiteConfig, BenchmarkSuiteReport,
-    BenchmarkThresholdCheck, EvalComparison, HistoricalChangedPathLabel, HistoricalCommitEval,
+    BenchmarkThresholdCheck, CandidateFeatureComparisonReport, CandidateFeatureKindDelta,
+    EvalComparison, HistoricalChangedPathLabel, HistoricalCommitEval,
     HistoricalEvalEffectiveFilters, HistoricalEvalOptions, HistoricalEvalRefs,
     HistoricalEvalReport, HistoricalEvalRuntimeSummary, HistoricalMissingFileSummary,
     HistoricalSlowCommitSummary, ProductProofMetric, ProductProofReport, RankingMetrics,
@@ -548,6 +551,100 @@ mod tests {
             .risk_flags
             .iter()
             .any(|flag| flag.code == "dependency_edge"));
+
+        std::env::remove_var("CTXPACK_HOME");
+    }
+
+    #[test]
+    fn candidate_feature_export_persists_source_free_rows() {
+        let _guard = env_lock();
+        let temp = tempfile::tempdir().unwrap();
+        let repo = temp.path().join("repo");
+        let home = temp.path().join("ctxpack-home");
+        fs::create_dir_all(repo.join("src/auth")).unwrap();
+        fs::create_dir_all(repo.join("tests/auth")).unwrap();
+        run_git(&repo, &["init"]);
+        run_git(&repo, &["config", "user.email", "ctxpack@example.com"]);
+        run_git(&repo, &["config", "user.name", "ctxpack"]);
+        fs::write(
+            repo.join("src/auth/session.ts"),
+            "export function requireSession() { return 'CTXPACK_FEATURE_SOURCE_SENTINEL'; }\n",
+        )
+        .unwrap();
+        fs::write(
+            repo.join("tests/auth/session.test.ts"),
+            "import { requireSession } from '../../src/auth/session';\n",
+        )
+        .unwrap();
+        fs::write(
+            repo.join("README.md"),
+            "CTXPACK_FEATURE_DOC_SENTINEL requireSession documentation\n",
+        )
+        .unwrap();
+        fs::write(
+            repo.join("Cargo.toml"),
+            "[package]\nname = \"requireSession-config\"\n",
+        )
+        .unwrap();
+        run_git(&repo, &["add", "."]);
+        run_git(&repo, &["commit", "-m", "add session docs and config"]);
+        fs::write(
+            repo.join("src/auth/session.ts"),
+            "export function requireSession() { return false; }\n",
+        )
+        .unwrap();
+        run_git(&repo, &["add", "."]);
+        run_git(&repo, &["commit", "-m", "fix requireSession behavior"]);
+        std::env::set_var("CTXPACK_HOME", &home);
+
+        let export = export_candidate_features_for_task(
+            &repo,
+            "fix requireSession documentation config",
+            TaskType::BugFix,
+            "codex",
+            100,
+            false,
+        )
+        .unwrap();
+        let kinds = export
+            .rows
+            .iter()
+            .map(|row| row.candidate_kind.clone())
+            .collect::<Vec<_>>();
+        let serialized = serde_json::to_string(&export).unwrap();
+
+        assert_eq!(export.schema_version, 1);
+        assert_eq!(export.target_agent.as_deref(), Some("codex"));
+        assert_eq!(export.row_count, export.rows.len());
+        assert!(kinds.contains(&RetrievalCandidateKind::File));
+        assert!(kinds.contains(&RetrievalCandidateKind::Test));
+        assert!(kinds.contains(&RetrievalCandidateKind::Symbol));
+        assert!(kinds.contains(&RetrievalCandidateKind::Doc));
+        assert!(kinds.contains(&RetrievalCandidateKind::Commit));
+        assert!(kinds.contains(&RetrievalCandidateKind::Config));
+        assert!(export.rows.iter().any(|row| row
+            .labels
+            .contains(&ctxpack_core::CandidateFeatureLabel::Selected)));
+        assert!(export.rows.iter().any(|row| row.lexical_score > 0.0));
+        assert!(export.rows.iter().any(|row| row.history_commit_count > 0));
+        assert!(!export.source_text_logged);
+        assert!(!serialized.contains("CTXPACK_FEATURE_SOURCE_SENTINEL"));
+        assert!(!serialized.contains("CTXPACK_FEATURE_DOC_SENTINEL"));
+        assert!(!serialized.contains("export function"));
+
+        let path = write_candidate_feature_export(&repo, &export).unwrap();
+        assert!(path.exists());
+        let listed = list_candidate_feature_exports(&repo).unwrap();
+        assert_eq!(listed.len(), 1);
+        assert_eq!(listed[0].export_id, export.export_id);
+        let loaded = load_candidate_feature_export(&repo, &export.export_id.to_string()).unwrap();
+        let comparison = compare_candidate_feature_exports(&export, &loaded);
+        assert_eq!(comparison.row_count_delta, 0);
+        assert!(!comparison.source_text_logged);
+        let deleted =
+            delete_candidate_feature_export(&repo, &export.export_id.to_string()).unwrap();
+        assert_eq!(deleted, path);
+        assert!(list_candidate_feature_exports(&repo).unwrap().is_empty());
 
         std::env::remove_var("CTXPACK_HOME");
     }

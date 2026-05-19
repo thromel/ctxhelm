@@ -42,6 +42,8 @@ edit, and shell tools after ctxpack tells them where to look.
 - [Retrieval health](retrieval-health.md) documents source-free context-quality
   reports.
 - [Graph neighborhoods](graph.md) documents source-free relationship reports.
+- [Candidate feature exports](feature-exports.md) document source-free feature
+  rows for learning and diagnostics.
 - [Workspace manifests](workspace.md) documents local multi-repo workspace
   state.
 - [Agent integrations](integrations.md) documents AGENTS.md, MCP, and native

@@ -3,26 +3,30 @@ use clap::{Args, Parser, Subcommand, ValueEnum};
 use ctxpack_compiler::{
     build_agent_preview_report, build_graph_neighborhood_report, build_product_proof_report,
     build_retrieval_health_report, compare_benchmark_suite_reports,
+    compare_candidate_feature_exports,
     compile_context_pack_with_plan_and_paths_for_agent_and_semantic, compile_pack_inspector_view,
-    compile_workspace_context_pack, eval_trace_for_pack, eval_trace_for_plan,
-    evaluate_historical_commits, generate_context_cards, generate_experience_cards,
-    load_benchmark_suite_config, load_benchmark_suite_report,
+    compile_workspace_context_pack, delete_candidate_feature_export, eval_trace_for_pack,
+    eval_trace_for_plan, evaluate_historical_commits, export_candidate_features_for_task,
+    generate_context_cards, generate_experience_cards, list_candidate_feature_exports,
+    load_benchmark_suite_config, load_benchmark_suite_report, load_candidate_feature_export,
     prepare_context_plan_with_paths_and_semantic, prepare_workspace_context_plan,
     render_pack_inspector_html, render_pack_inspector_markdown, render_pack_markdown,
     retrieval_policy_experiment_report, run_benchmark_suite, semantic_provider_status_report,
-    BenchmarkComparisonReport, BenchmarkRegressionThreshold, BenchmarkSuiteReport,
-    ContextCardsOptions, ContextCardsReport, ExperienceCardsOptions, ExperienceCardsReport,
-    HistoricalEvalOptions, HistoricalEvalReport, ProductProofReport,
+    write_candidate_feature_export, BenchmarkComparisonReport, BenchmarkRegressionThreshold,
+    BenchmarkSuiteReport, CandidateFeatureComparisonReport, ContextCardsOptions,
+    ContextCardsReport, ExperienceCardsOptions, ExperienceCardsReport, HistoricalEvalOptions,
+    HistoricalEvalReport, ProductProofReport,
 };
 use ctxpack_core::{
     run_init, run_setup_check, AgentAdapter, AgentOutcomeComparisonReport, AgentPreviewReport,
-    Diagnostic, DiagnosticSeverity, EvalTrace, FeedbackOutcome, FeedbackSummary,
-    GraphNeighborhoodReport, InitAction, InitOptions, InitReport, MemoryReviewStatus, PackBudget,
-    PolicyProfileActionReport, PolicyQualityReport, PrivacyStatus, RepoRoot, RetrievalHealthReport,
-    RetrievalPolicyExperimentReport, RetrievalPolicyProfile, SemanticProviderStatusReport,
-    SessionFeedbackEvent, SetupCheckReport, SetupCheckStatus, SharedArtifactInspectionReport,
-    SharedArtifactManifest, TaskType, TeamPolicyReport, WorkspaceContextPack, WorkspaceContextPlan,
-    WorkspaceInventoryReport, WorkspaceManifest, WorkspaceRepo,
+    CandidateFeatureExport, Diagnostic, DiagnosticSeverity, EvalTrace, FeedbackOutcome,
+    FeedbackSummary, GraphNeighborhoodReport, InitAction, InitOptions, InitReport,
+    MemoryReviewStatus, PackBudget, PolicyProfileActionReport, PolicyQualityReport, PrivacyStatus,
+    RepoRoot, RetrievalHealthReport, RetrievalPolicyExperimentReport, RetrievalPolicyProfile,
+    SemanticProviderStatusReport, SessionFeedbackEvent, SetupCheckReport, SetupCheckStatus,
+    SharedArtifactInspectionReport, SharedArtifactManifest, TaskType, TeamPolicyReport,
+    WorkspaceContextPack, WorkspaceContextPlan, WorkspaceInventoryReport, WorkspaceManifest,
+    WorkspaceRepo,
 };
 use ctxpack_index::{
     apply_policy_profile, co_change_hints, current_diff_summary, dependency_edges,
@@ -714,6 +718,7 @@ enum EvalCommand {
     Checklist(EvalTracesArgs),
     Feedback(EvalFeedbackArgs),
     Policy(EvalPolicyArgs),
+    Features(EvalFeatureArgs),
     Outcome(EvalOutcomeArgs),
     History(EvalHistoryArgs),
     Health(EvalHealthArgs),
@@ -849,6 +854,94 @@ struct EvalPolicyActionArgs {
     profile_id: String,
     #[arg(long)]
     repo: Option<PathBuf>,
+    #[arg(long, value_enum, default_value_t = PackFormat::Markdown)]
+    format: PackFormat,
+}
+
+#[derive(Debug, Args)]
+struct EvalFeatureArgs {
+    #[command(subcommand)]
+    command: EvalFeatureCommand,
+}
+
+#[derive(Debug, Subcommand)]
+enum EvalFeatureCommand {
+    #[command(about = "Export source-free candidate feature rows for a task.")]
+    Export(EvalFeatureExportArgs),
+    #[command(about = "List local source-free candidate feature exports.")]
+    List(EvalFeatureListArgs),
+    #[command(about = "Inspect one source-free candidate feature export.")]
+    Inspect(EvalFeatureInspectArgs),
+    #[command(about = "Compare two source-free candidate feature exports.")]
+    Compare(EvalFeatureCompareArgs),
+    #[command(about = "Delete one local source-free candidate feature export.")]
+    Delete(EvalFeatureDeleteArgs),
+}
+
+#[derive(Debug, Args)]
+struct EvalFeatureExportArgs {
+    task: String,
+    #[arg(long)]
+    repo: Option<PathBuf>,
+    #[arg(long, value_enum, default_value_t = Mode::BugFix)]
+    mode: Mode,
+    #[arg(long, default_value = "generic")]
+    target_agent: String,
+    #[arg(long, default_value_t = 100)]
+    limit: usize,
+    #[arg(
+        long,
+        help = "Enable explicit local semantic retrieval for feature export."
+    )]
+    semantic: bool,
+    #[arg(
+        long,
+        help = "Do not write the source-free export to local ctxpack state."
+    )]
+    no_store: bool,
+    #[arg(long, value_enum, default_value_t = PackFormat::Markdown)]
+    format: PackFormat,
+}
+
+#[derive(Debug, Args)]
+struct EvalFeatureListArgs {
+    #[arg(long)]
+    repo: Option<PathBuf>,
+    #[arg(long, value_enum, default_value_t = PackFormat::Markdown)]
+    format: PackFormat,
+}
+
+#[derive(Debug, Args)]
+struct EvalFeatureInspectArgs {
+    export_id: String,
+    #[arg(long)]
+    repo: Option<PathBuf>,
+    #[arg(long, value_enum, default_value_t = PackFormat::Markdown)]
+    format: PackFormat,
+}
+
+#[derive(Debug, Args)]
+struct EvalFeatureCompareArgs {
+    #[arg(long)]
+    repo: Option<PathBuf>,
+    #[arg(long)]
+    base_export: String,
+    #[arg(long)]
+    head_export: String,
+    #[arg(long, value_enum, default_value_t = PackFormat::Markdown)]
+    format: PackFormat,
+}
+
+#[derive(Debug, Args)]
+struct EvalFeatureDeleteArgs {
+    export_id: String,
+    #[arg(long)]
+    repo: Option<PathBuf>,
+    #[arg(
+        long,
+        help = "Delete the export. Without this flag, deletion is a dry run."
+    )]
+    yes: bool,
     #[arg(long, value_enum, default_value_t = PackFormat::Markdown)]
     format: PackFormat,
 }
@@ -1786,6 +1879,115 @@ fn main() -> Result<()> {
                             println!("{}", render_policy_experiment_report(&report))
                         }
                         PackFormat::Json => println!("{}", serde_json::to_string_pretty(&report)?),
+                    }
+                }
+            },
+            EvalCommand::Features(args) => match args.command {
+                EvalFeatureCommand::Export(args) => {
+                    let start = args.repo.clone().unwrap_or(std::env::current_dir()?);
+                    let repo = RepoRoot::discover_from(&start)?;
+                    let export = export_candidate_features_for_task(
+                        &repo.path,
+                        &args.task,
+                        args.mode.into(),
+                        &args.target_agent,
+                        args.limit,
+                        args.semantic,
+                    )?;
+                    let stored_path = if args.no_store {
+                        None
+                    } else {
+                        Some(write_candidate_feature_export(&repo.path, &export)?)
+                    };
+                    match args.format {
+                        PackFormat::Markdown => {
+                            println!(
+                                "{}",
+                                render_candidate_feature_export(&export, stored_path.as_deref())
+                            )
+                        }
+                        PackFormat::Json => {
+                            println!(
+                                "{}",
+                                serde_json::to_string_pretty(&serde_json::json!({
+                                    "export": export,
+                                    "storedPath": stored_path
+                                }))?
+                            )
+                        }
+                    }
+                }
+                EvalFeatureCommand::List(args) => {
+                    let start = args.repo.clone().unwrap_or(std::env::current_dir()?);
+                    let repo = RepoRoot::discover_from(&start)?;
+                    let exports = list_candidate_feature_exports(&repo.path)?;
+                    match args.format {
+                        PackFormat::Markdown => {
+                            println!("{}", render_candidate_feature_export_list(&exports))
+                        }
+                        PackFormat::Json => println!("{}", serde_json::to_string_pretty(&exports)?),
+                    }
+                }
+                EvalFeatureCommand::Inspect(args) => {
+                    let start = args.repo.clone().unwrap_or(std::env::current_dir()?);
+                    let repo = RepoRoot::discover_from(&start)?;
+                    let export = load_candidate_feature_export(&repo.path, &args.export_id)?;
+                    match args.format {
+                        PackFormat::Markdown => {
+                            println!("{}", render_candidate_feature_export(&export, None))
+                        }
+                        PackFormat::Json => println!("{}", serde_json::to_string_pretty(&export)?),
+                    }
+                }
+                EvalFeatureCommand::Compare(args) => {
+                    let start = args.repo.clone().unwrap_or(std::env::current_dir()?);
+                    let repo = RepoRoot::discover_from(&start)?;
+                    let base = load_candidate_feature_export(&repo.path, &args.base_export)?;
+                    let head = load_candidate_feature_export(&repo.path, &args.head_export)?;
+                    let report = compare_candidate_feature_exports(&base, &head);
+                    match args.format {
+                        PackFormat::Markdown => {
+                            println!("{}", render_candidate_feature_comparison(&report))
+                        }
+                        PackFormat::Json => println!("{}", serde_json::to_string_pretty(&report)?),
+                    }
+                }
+                EvalFeatureCommand::Delete(args) => {
+                    let start = args.repo.clone().unwrap_or(std::env::current_dir()?);
+                    let repo = RepoRoot::discover_from(&start)?;
+                    let path = if args.yes {
+                        Some(delete_candidate_feature_export(
+                            &repo.path,
+                            &args.export_id,
+                        )?)
+                    } else {
+                        None
+                    };
+                    match args.format {
+                        PackFormat::Markdown => {
+                            if let Some(path) = path {
+                                println!(
+                                    "# ctxpack Candidate Feature Export Delete\n\n- Export ID: `{}`\n- Deleted: `true`\n- Path: `{}`\n",
+                                    args.export_id,
+                                    path.display()
+                                );
+                            } else {
+                                println!(
+                                    "# ctxpack Candidate Feature Export Delete\n\n- Export ID: `{}`\n- Deleted: `false`\n- Dry run: `true`\n- Next: pass `--yes` to delete.\n",
+                                    args.export_id
+                                );
+                            }
+                        }
+                        PackFormat::Json => {
+                            println!(
+                                "{}",
+                                serde_json::to_string_pretty(&serde_json::json!({
+                                    "exportId": args.export_id,
+                                    "deleted": path.is_some(),
+                                    "path": path
+                                }))?
+                            );
+                        }
                     }
                 }
             },
@@ -2948,6 +3150,109 @@ fn print_feedback_record_status(event: &SessionFeedbackEvent, status: &ctxpack_c
             println!("- `{}`: {}", diagnostic.code, diagnostic.message);
         }
     }
+}
+
+fn render_candidate_feature_export(
+    export: &CandidateFeatureExport,
+    stored_path: Option<&Path>,
+) -> String {
+    let mut output = String::from("# ctxpack Candidate Feature Export\n\n");
+    output.push_str("This source-free export records retrieval candidate features for learning, diagnostics, and paired analysis. It does not include source snippets, prompt text, terminal logs, or commit subjects.\n\n");
+    output.push_str(&format!(
+        "- Export ID: `{}`\n- Repo ID: `{}`\n- Task hash: `{}`\n- Eval range ID: `{}`\n- Export source: `{:?}`\n- Task type: `{}`\n- Target agent: `{}`\n- Rows: `{}`\n- Source text logged: `{}`\n- Privacy: local-only `{}`\n",
+        export.export_id,
+        export.repo_id,
+        export.task_hash.as_deref().unwrap_or("none"),
+        export.eval_range_id.as_deref().unwrap_or("none"),
+        export.export_source,
+        export
+            .task_type
+            .as_ref()
+            .map(|task_type| format!("{task_type:?}"))
+            .unwrap_or_else(|| "none".to_string()),
+        export.target_agent.as_deref().unwrap_or("none"),
+        export.row_count,
+        export.source_text_logged,
+        export.privacy_status.local_only
+    ));
+    if let Some(path) = stored_path {
+        output.push_str(&format!("- Stored path: `{}`\n", path.display()));
+    }
+    output.push_str("\n## Rows\n\n");
+    if export.rows.is_empty() {
+        output.push_str("No candidate feature rows exported.\n");
+        return output;
+    }
+    for row in export.rows.iter().take(20) {
+        output.push_str(&format!(
+            "- `{}` {:?} rank={} selectedRank={} confidence={:.2} lexical={:.2} semantic={:.2} graph={:.2} history={:.2} test={:.2} memory={:.2} labels={:?}\n",
+            row.path.as_deref().unwrap_or("repo-history"),
+            row.candidate_kind,
+            row.rank,
+            row.selected_rank
+                .map(|rank| rank.to_string())
+                .unwrap_or_else(|| "none".to_string()),
+            row.confidence,
+            row.lexical_score,
+            row.semantic_score,
+            row.graph_score,
+            row.history_score,
+            row.test_score,
+            row.memory_score,
+            row.labels
+        ));
+    }
+    if export.rows.len() > 20 {
+        output.push_str(&format!(
+            "\n{} additional row(s) omitted from Markdown preview.\n",
+            export.rows.len() - 20
+        ));
+    }
+    output
+}
+
+fn render_candidate_feature_export_list(exports: &[CandidateFeatureExport]) -> String {
+    let mut output = String::from("# ctxpack Candidate Feature Exports\n\n");
+    if exports.is_empty() {
+        output.push_str("No candidate feature exports found for this repository.\n");
+        return output;
+    }
+    for export in exports {
+        output.push_str(&format!(
+            "- `{}` rows={} taskHash={} exportSource={:?} localOnly={}\n",
+            export.export_id,
+            export.row_count,
+            export.task_hash.as_deref().unwrap_or("none"),
+            export.export_source,
+            export.privacy_status.local_only
+        ));
+    }
+    output
+}
+
+fn render_candidate_feature_comparison(report: &CandidateFeatureComparisonReport) -> String {
+    let mut output = String::from("# ctxpack Candidate Feature Export Comparison\n\n");
+    output.push_str(&format!(
+        "- Base export: `{}`\n- Head export: `{}`\n- Base rows: `{}`\n- Head rows: `{}`\n- Row delta: `{:+}`\n- Source text logged: `{}`\n- Privacy: local-only `{}`\n\n",
+        report.base_export_id,
+        report.head_export_id,
+        report.base_row_count,
+        report.head_row_count,
+        report.row_count_delta,
+        report.source_text_logged,
+        report.privacy_status.local_only
+    ));
+    output.push_str("## Kind Deltas\n\n");
+    for delta in &report.kind_deltas {
+        output.push_str(&format!(
+            "- `{:?}`: {} -> {} ({:+})\n",
+            delta.kind,
+            delta.base_count,
+            delta.head_count,
+            delta.head_count as isize - delta.base_count as isize
+        ));
+    }
+    output
 }
 
 fn render_feedback_events(events: &[SessionFeedbackEvent]) -> String {

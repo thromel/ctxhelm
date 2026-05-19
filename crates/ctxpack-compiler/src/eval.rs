@@ -4,9 +4,11 @@ use crate::planning::{
     prepare_context_plan_with_paths_history_and_semantic,
 };
 use ctxpack_core::{
+    CandidateFeatureExport, CandidateFeatureLabel, CandidateFeatureRow, CandidateFeatureSource,
     ContextPack, ContextPlan, EvalTrace, FileRole, PackBudget, PolicyQualityReport, PrivacyStatus,
-    RetrievalHealthGapFamily, RetrievalHealthMetric, RetrievalHealthReport,
-    RetrievalHealthSignalContribution, RetrievalHealthTokenRoi, RetrievalSignalKind, TaskType,
+    RetrievalCandidate, RetrievalCandidateKind, RetrievalHealthGapFamily, RetrievalHealthMetric,
+    RetrievalHealthReport, RetrievalHealthSignalContribution, RetrievalHealthTokenRoi,
+    RetrievalSignalKind, TaskType,
 };
 use ctxpack_index::{
     historical_commit_samples, lexical_search, load_or_build_inventory, repo_id_for_path,
@@ -1801,6 +1803,325 @@ fn eval_trace(
             .unwrap_or_default(),
         source_text_logged: false,
     }
+}
+
+pub fn export_candidate_features_for_task(
+    repo_root: impl AsRef<Path>,
+    task: &str,
+    task_type: TaskType,
+    target_agent: &str,
+    limit: usize,
+    semantic_enabled: bool,
+) -> Result<CandidateFeatureExport, InventoryError> {
+    let repo_root = repo_root.as_ref();
+    let plan = prepare_context_plan_with_paths_history_and_semantic(
+        repo_root,
+        task,
+        task_type.clone(),
+        &[],
+        true,
+        semantic_enabled,
+    )?;
+    Ok(candidate_feature_export_from_plan(
+        repo_root,
+        task,
+        &plan,
+        Some(task_type),
+        Some(normalized_target_agent(target_agent)),
+        CandidateFeatureSource::PlanCandidate,
+        None,
+        limit,
+    ))
+}
+
+pub fn write_candidate_feature_export(
+    repo_root: impl AsRef<Path>,
+    export: &CandidateFeatureExport,
+) -> Result<PathBuf, InventoryError> {
+    let path = candidate_feature_export_path(repo_root.as_ref(), &export.export_id.to_string());
+    if let Some(parent) = path.parent() {
+        fs::create_dir_all(parent).map_err(|source| InventoryError::CreateDir {
+            path: parent.to_path_buf(),
+            source,
+        })?;
+    }
+    let json = serde_json::to_string_pretty(export).map_err(InventoryError::Serialize)?;
+    fs::write(&path, json).map_err(|source| InventoryError::Write {
+        path: path.clone(),
+        source,
+    })?;
+    Ok(path)
+}
+
+pub fn list_candidate_feature_exports(
+    repo_root: impl AsRef<Path>,
+) -> Result<Vec<CandidateFeatureExport>, InventoryError> {
+    let dir = candidate_feature_export_dir(repo_root.as_ref());
+    let entries = match fs::read_dir(&dir) {
+        Ok(entries) => entries,
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(Vec::new()),
+        Err(source) => return Err(InventoryError::Read { path: dir, source }),
+    };
+    let mut exports: Vec<CandidateFeatureExport> = Vec::new();
+    for entry in entries {
+        let entry = entry.map_err(|source| InventoryError::Read {
+            path: dir.clone(),
+            source,
+        })?;
+        let path = entry.path();
+        if path.extension().and_then(|extension| extension.to_str()) != Some("json") {
+            continue;
+        }
+        let content = fs::read_to_string(&path).map_err(|source| InventoryError::Read {
+            path: path.clone(),
+            source,
+        })?;
+        exports.push(serde_json::from_str(&content).map_err(|source| {
+            InventoryError::Deserialize {
+                path: path.clone(),
+                source,
+            }
+        })?);
+    }
+    exports.sort_by(|left, right| {
+        right
+            .created_at_unix_seconds
+            .cmp(&left.created_at_unix_seconds)
+            .then_with(|| left.export_id.cmp(&right.export_id))
+    });
+    Ok(exports)
+}
+
+pub fn load_candidate_feature_export(
+    repo_root: impl AsRef<Path>,
+    export_id: &str,
+) -> Result<CandidateFeatureExport, InventoryError> {
+    let path = candidate_feature_export_path(repo_root.as_ref(), export_id);
+    let content = fs::read_to_string(&path).map_err(|source| InventoryError::Read {
+        path: path.clone(),
+        source,
+    })?;
+    serde_json::from_str(&content).map_err(|source| InventoryError::Deserialize { path, source })
+}
+
+pub fn delete_candidate_feature_export(
+    repo_root: impl AsRef<Path>,
+    export_id: &str,
+) -> Result<PathBuf, InventoryError> {
+    let path = candidate_feature_export_path(repo_root.as_ref(), export_id);
+    fs::remove_file(&path).map_err(|source| InventoryError::Write {
+        path: path.clone(),
+        source,
+    })?;
+    Ok(path)
+}
+
+pub fn compare_candidate_feature_exports(
+    base: &CandidateFeatureExport,
+    head: &CandidateFeatureExport,
+) -> CandidateFeatureComparisonReport {
+    let mut base_by_kind = BTreeMap::<RetrievalCandidateKind, usize>::new();
+    let mut head_by_kind = BTreeMap::<RetrievalCandidateKind, usize>::new();
+    for row in &base.rows {
+        *base_by_kind.entry(row.candidate_kind.clone()).or_default() += 1;
+    }
+    for row in &head.rows {
+        *head_by_kind.entry(row.candidate_kind.clone()).or_default() += 1;
+    }
+    let mut keys = base_by_kind.keys().cloned().collect::<BTreeSet<_>>();
+    keys.extend(head_by_kind.keys().cloned());
+    let kind_deltas = keys
+        .into_iter()
+        .map(|kind| CandidateFeatureKindDelta {
+            kind: kind.clone(),
+            base_count: *base_by_kind.get(&kind).unwrap_or(&0),
+            head_count: *head_by_kind.get(&kind).unwrap_or(&0),
+        })
+        .collect::<Vec<_>>();
+
+    CandidateFeatureComparisonReport {
+        base_export_id: base.export_id,
+        head_export_id: head.export_id,
+        base_row_count: base.row_count,
+        head_row_count: head.row_count,
+        row_count_delta: head.row_count as isize - base.row_count as isize,
+        kind_deltas,
+        source_text_logged: base.source_text_logged || head.source_text_logged,
+        privacy_status: PrivacyStatus::local_only(),
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct CandidateFeatureComparisonReport {
+    pub base_export_id: Uuid,
+    pub head_export_id: Uuid,
+    pub base_row_count: usize,
+    pub head_row_count: usize,
+    pub row_count_delta: isize,
+    #[serde(default)]
+    pub kind_deltas: Vec<CandidateFeatureKindDelta>,
+    pub source_text_logged: bool,
+    pub privacy_status: PrivacyStatus,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct CandidateFeatureKindDelta {
+    pub kind: RetrievalCandidateKind,
+    pub base_count: usize,
+    pub head_count: usize,
+}
+
+fn candidate_feature_export_from_plan(
+    repo_root: &Path,
+    task: &str,
+    plan: &ContextPlan,
+    task_type: Option<TaskType>,
+    target_agent: Option<String>,
+    export_source: CandidateFeatureSource,
+    eval_range_id: Option<String>,
+    limit: usize,
+) -> CandidateFeatureExport {
+    let task_hash = Some(task_hash(task));
+    let selected_ranks = selected_candidate_ranks(plan);
+    let rows = plan
+        .retrieval_candidates
+        .iter()
+        .take(limit.max(1))
+        .enumerate()
+        .map(|(index, candidate)| {
+            candidate_feature_row(
+                candidate,
+                index + 1,
+                selected_ranks.get(&candidate.path).copied(),
+            )
+        })
+        .collect::<Vec<_>>();
+    CandidateFeatureExport {
+        export_id: Uuid::new_v4(),
+        schema_version: 1,
+        repo_id: repo_id_for_path(repo_root),
+        task_hash,
+        eval_range_id,
+        export_source,
+        task_type,
+        target_agent,
+        row_count: rows.len(),
+        created_at_unix_seconds: SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .map(|duration| duration.as_secs())
+            .unwrap_or_default(),
+        rows,
+        source_text_logged: false,
+        privacy_status: PrivacyStatus::local_only(),
+    }
+}
+
+fn candidate_feature_row(
+    candidate: &RetrievalCandidate,
+    rank: usize,
+    selected_rank: Option<usize>,
+) -> CandidateFeatureRow {
+    let lexical_score = feature_signal_score(candidate, RetrievalSignalKind::Lexical);
+    let semantic_score = feature_signal_score(candidate, RetrievalSignalKind::Semantic);
+    let dependency_score = feature_signal_score(candidate, RetrievalSignalKind::Dependency);
+    let history_score = feature_signal_score(candidate, RetrievalSignalKind::History)
+        + feature_signal_score(candidate, RetrievalSignalKind::CoChange);
+    let test_score = feature_signal_score(candidate, RetrievalSignalKind::RelatedTest);
+    let memory_score = feature_signal_score(candidate, RetrievalSignalKind::Memory);
+    let feedback_score = 0.0;
+    let history_commit_count = candidate
+        .evidence
+        .iter()
+        .map(|evidence| evidence.commit_count)
+        .sum::<u32>();
+    let test_relation_confidence = candidate
+        .evidence
+        .iter()
+        .find(|evidence| evidence.signal == RetrievalSignalKind::RelatedTest)
+        .map(|evidence| evidence.score);
+    let memory_count = candidate
+        .evidence
+        .iter()
+        .filter(|evidence| evidence.signal == RetrievalSignalKind::Memory)
+        .count() as u32;
+    let graph_distance = if dependency_score > 0.0 {
+        Some(1)
+    } else {
+        None
+    };
+    let mut labels = Vec::new();
+    if selected_rank.is_some() {
+        labels.push(CandidateFeatureLabel::Selected);
+    }
+    if labels.is_empty() {
+        labels.push(CandidateFeatureLabel::Unknown);
+    }
+    CandidateFeatureRow {
+        candidate_id: candidate_feature_id(candidate, rank),
+        candidate_kind: candidate.kind.clone(),
+        path: candidate.path.clone(),
+        role: candidate.role.clone(),
+        rank,
+        selected_rank,
+        confidence: candidate.confidence,
+        reason_code: candidate.reason_code.clone(),
+        signal_scores: candidate.signal_scores.clone(),
+        lexical_score,
+        semantic_score,
+        graph_score: dependency_score,
+        history_score,
+        test_score,
+        memory_score,
+        feedback_score,
+        graph_distance,
+        history_commit_count,
+        test_relation_confidence,
+        memory_count,
+        feedback_event_count: 0,
+        labels,
+        label_scope: "source_free".to_string(),
+        source_text_logged: false,
+    }
+}
+
+fn selected_candidate_ranks(plan: &ContextPlan) -> BTreeMap<Option<String>, usize> {
+    let mut selected = BTreeMap::new();
+    for (index, target) in plan.target_files.iter().enumerate() {
+        selected.insert(Some(target.path.clone()), index + 1);
+    }
+    for (index, test) in plan.related_tests.iter().enumerate() {
+        selected
+            .entry(Some(test.path.clone()))
+            .or_insert(plan.target_files.len() + index + 1);
+    }
+    selected
+}
+
+fn feature_signal_score(candidate: &RetrievalCandidate, signal: RetrievalSignalKind) -> f32 {
+    candidate
+        .signal_scores
+        .iter()
+        .filter(|score| score.signal == signal)
+        .map(|score| score.score * score.weight)
+        .sum()
+}
+
+fn candidate_feature_id(candidate: &RetrievalCandidate, rank: usize) -> String {
+    let path = candidate.path.as_deref().unwrap_or("repo-history");
+    task_hash(&format!("{:?}:{path}:{rank}", candidate.kind))
+}
+
+fn candidate_feature_export_dir(repo_root: &Path) -> PathBuf {
+    ctxpack_cache_root()
+        .join("repos")
+        .join(repo_id_for_path(repo_root))
+        .join("feature-exports")
+}
+
+fn candidate_feature_export_path(repo_root: &Path, export_id: &str) -> PathBuf {
+    candidate_feature_export_dir(repo_root).join(format!("{export_id}.json"))
 }
 
 fn context_file_ranking(

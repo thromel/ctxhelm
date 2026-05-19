@@ -1245,6 +1245,95 @@ fn eval_feedback_records_lists_and_summarizes_source_free_events() {
 }
 
 #[test]
+fn eval_features_exports_and_manages_source_free_rows() {
+    let fixture = fixture_repo();
+    let export = json_stdout(
+        Command::cargo_bin("ctxpack")
+            .unwrap()
+            .env(CTXPACK_HOME_ENV, &fixture.home)
+            .args([
+                "eval",
+                "features",
+                "export",
+                "fix requireSession auth",
+                "--format",
+                "json",
+                "--repo",
+            ])
+            .arg(&fixture.repo)
+            .assert(),
+    );
+    let export_id = export["export"]["exportId"].as_str().unwrap().to_string();
+    assert_eq!(export["export"]["schemaVersion"], 1);
+    assert_eq!(export["export"]["sourceTextLogged"], false);
+    assert_eq!(export["export"]["privacyStatus"]["localOnly"], true);
+    assert!(export["export"]["rows"].as_array().unwrap().len() > 1);
+    assert!(export["storedPath"].as_str().unwrap().ends_with(".json"));
+    assert_no_source_or_prompt_text(&export);
+    let rendered = serde_json::to_string(&export).unwrap();
+    assert!(!rendered.contains("auth required"));
+    assert!(!rendered.contains("token:${userId}"));
+
+    let listed = json_stdout(
+        Command::cargo_bin("ctxpack")
+            .unwrap()
+            .env(CTXPACK_HOME_ENV, &fixture.home)
+            .args(["eval", "features", "list", "--format", "json", "--repo"])
+            .arg(&fixture.repo)
+            .assert(),
+    );
+    assert_eq!(listed.as_array().unwrap().len(), 1);
+    assert_eq!(listed[0]["exportId"], export_id);
+
+    let inspected = json_stdout(
+        Command::cargo_bin("ctxpack")
+            .unwrap()
+            .env(CTXPACK_HOME_ENV, &fixture.home)
+            .args([
+                "eval", "features", "inspect", &export_id, "--format", "json", "--repo",
+            ])
+            .arg(&fixture.repo)
+            .assert(),
+    );
+    assert_eq!(inspected["exportId"], export_id);
+    assert_no_source_or_prompt_text(&inspected);
+
+    let comparison = json_stdout(
+        Command::cargo_bin("ctxpack")
+            .unwrap()
+            .env(CTXPACK_HOME_ENV, &fixture.home)
+            .args([
+                "eval",
+                "features",
+                "compare",
+                "--base-export",
+                &export_id,
+                "--head-export",
+                &export_id,
+                "--format",
+                "json",
+                "--repo",
+            ])
+            .arg(&fixture.repo)
+            .assert(),
+    );
+    assert_eq!(comparison["rowCountDelta"], 0);
+    assert_eq!(comparison["sourceTextLogged"], false);
+
+    let deleted = json_stdout(
+        Command::cargo_bin("ctxpack")
+            .unwrap()
+            .env(CTXPACK_HOME_ENV, &fixture.home)
+            .args([
+                "eval", "features", "delete", &export_id, "--yes", "--format", "json", "--repo",
+            ])
+            .arg(&fixture.repo)
+            .assert(),
+    );
+    assert_eq!(deleted["deleted"], true);
+}
+
+#[test]
 fn eval_policy_and_outcome_reports_are_source_free() {
     let fixture = fixture_repo();
     record_feedback_event(&fixture, "task-1", "brief", "passed");
