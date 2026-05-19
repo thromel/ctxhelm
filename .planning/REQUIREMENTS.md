@@ -1,65 +1,65 @@
-# Requirements: Repo Context Packer v2.2 Release & Distribution Hardening
+# Requirements: Repo Context Packer v2.3 Evaluation Lab & Learned Retrieval Policy
 
-**Defined:** 2026-05-18
-**Milestone:** v2.2 Release & Distribution Hardening
+**Defined:** 2026-05-19
+**Milestone:** v2.3 Evaluation Lab & Learned Retrieval Policy
 **Core Value:** Given a coding task, ctxpack should return the smallest safe evidence set that makes an existing coding agent more likely to inspect the right files, run the right tests, and avoid irrelevant context.
 
-## v2.2 Requirements
+## v2.3 Requirements
 
-This milestone turns the locally complete product into a reproducible, installable, public release without weakening ctxpack's local-first, read-only, source-safe defaults.
+This milestone turns ctxpack's retrieval-quality claims into repeatable, source-free, large-history product proof and introduces an offline learned-policy experiment that remains opt-in until it beats current baselines.
 
-### Release Reproducibility
+### Benchmark Corpora
 
-- [x] **REL-01**: Maintainer can run a clean-checkout release gate that verifies workspace tests, docs, release packaging, artifact audit, selected-binary smokes, MCP protocol proof, diagnostic smokes, and optional benchmark proof without publishing side effects.
-- [x] **REL-02**: Maintainer can produce versioned archives, checksums, release manifest metadata, and artifact audit reports from a clean source tree or explicitly marked validation override.
-- [x] **REL-03**: Maintainer can verify that release artifacts exclude local state, traces, caches, source-control internals, secrets, machine paths, and source-bearing diagnostic leaks.
-- [x] **REL-04**: Maintainer can generate a release proof bundle that records commands run, versions, binary identity, smoke outcomes, benchmark proof status, and privacy status.
+- [ ] **CORPUS-01**: Maintainer can define fixed benchmark corpus manifests with stable repo paths, revisions, commit ranges, budgets, task types, and privacy labels.
+- [ ] **CORPUS-02**: Maintainer can run a locked RefactoringMiner 20-commit regression suite that records the current Recall@10, lexical baseline, runtime, and known gap families as baseline metadata.
+- [ ] **CORPUS-03**: Maintainer can add additional local or public repositories to the same manifest format without storing source text, prompts, snippets, or private issue descriptions in reports.
+- [ ] **CORPUS-04**: Benchmark reports include reproducibility metadata: repo identity, revision range, index/compiler/policy versions, budget, task type, target agent, and source-free privacy status.
 
-### Installation And Upgrade
+### Eval Speed And Reuse
 
-- [x] **INSTALL-01**: User can install ctxpack from source or a release archive with clear commands, absolute binary-path guidance, and checksum verification.
-- [x] **INSTALL-02**: User can upgrade ctxpack safely and verify the active binary version, location, release manifest, and compatibility with existing `.ctxpack` local state.
-- [x] **INSTALL-03**: User can configure Codex CLI, Claude Code, Cursor, OpenCode, or a generic MCP client from release docs without ctxpack mutating global agent config.
-- [x] **INSTALL-04**: User can diagnose PATH, MCP startup, stale binary, incompatible local state, and wrong-cwd setup issues from a single troubleshooting flow.
+- [ ] **SPEED-01**: Historical eval can reuse warm parent snapshot, inventory, index, and candidate metadata when repo state, options, and versions have not changed.
+- [ ] **SPEED-02**: Historical eval can run commit samples in parallel and merge results deterministically with stable ordering and source-free output.
+- [ ] **SPEED-03**: Eval reports include runtime diagnostics for total time, per-commit time, cache hits, slow commits, git diff cost, ranking cost, and pack/compiler cost.
+- [ ] **SPEED-04**: Maintainer can compare stored runs and avoid recomputing unchanged benchmark ranges unless explicitly forced.
 
-### Public Adoption
+### Source-Free Candidate Features
 
-- [ ] **ADOPT-01**: New user can complete a first-pack flow from a fresh repo and understand why ctxpack recommended each file, test, pack, and validation command.
-- [ ] **ADOPT-02**: New user can inspect a static demo pack, retrieval-health report, graph report, policy/embedding report, and agent preview without exposing source code.
-- [ ] **ADOPT-03**: Public README, quickstart, release notes, and examples explain the product wedge: ctxpack improves existing agents by compiling task-conditioned context.
-- [ ] **ADOPT-04**: Portfolio/public project materials describe current capabilities accurately without claiming hosted sync, autonomous editing, or mandatory cloud embeddings.
+- [ ] **FEATURE-01**: Eval output can export source-free candidate feature rows for every considered file, symbol, test, doc, commit, memory, and graph candidate.
+- [ ] **FEATURE-02**: Candidate features include signal scores, rank positions, role/type metadata, graph distance, co-change/history metadata, test relation confidence, memory/feedback counts, and selected/read/edit/gold labels where available.
+- [ ] **FEATURE-03**: Feature exports are privacy-checked and do not include source snippets, prompt text, issue descriptions, terminal logs, stack traces, or secret-bearing values.
+- [ ] **FEATURE-04**: CLI and storage commands can list, inspect, compare, and delete feature exports by suite, run id, repo id, and privacy status.
 
-### Distribution Preparation
+### Paired Baselines And Ablations
 
-- [ ] **DIST-01**: Maintainer can prepare package-manager metadata for future Homebrew/crates.io distribution without making those channels release blockers.
-- [ ] **DIST-02**: Maintainer can generate machine-readable release metadata suitable for future update checks while keeping self-update out of scope.
-- [ ] **DIST-03**: Maintainer can verify release archives on macOS from a clean extraction directory using only documented commands.
-- [ ] **DIST-04**: Maintainer can document signing/notarization gaps and future requirements without pretending signed installers already exist.
+- [ ] **BASELINE-01**: Maintainer can compare ctxpack default ranking against lexical, no-context, graph-only, semantic-only, history-only, test-only, memory-only, and feedback-weighted policy variants on the same fixed corpus.
+- [ ] **BASELINE-02**: Reports include Recall@K, precision proxy, test recall, token ROI, validation coverage, missed-family taxonomy, signal saturation, runtime, and privacy status.
+- [ ] **BASELINE-03**: Product proof distinguishes lift, neutral, regression, and insufficient-evidence verdicts using configured thresholds instead of raw metric deltas alone.
+- [ ] **BASELINE-04**: Reports explicitly flag lexical parity or lexical regression so exact-token search strength is not hidden behind aggregate ctxpack scores.
 
-### Release Governance
+### Learned Retrieval Policy
 
-- [ ] **GOV-01**: Maintainer can mark release readiness, known limitations, optional proof gaps, and unsupported claims in a source-free release checklist.
-- [ ] **GOV-02**: Maintainer can separate deterministic protocol proof from optional real-client proof for Codex, Claude Code, Cursor, and OpenCode.
-- [ ] **GOV-03**: Maintainer can publish or defer a release with explicit status for tests, smokes, benchmark proof, real-client proof, package metadata, and docs.
-- [ ] **GOV-04**: Maintainer can roll back a release candidate by deleting local release artifacts and restoring prior release metadata without affecting repo source.
+- [ ] **POLICY-01**: Offline learner can propose source-free retrieval-policy weights from feature exports, historical eval labels, and feedback/outcome traces.
+- [ ] **POLICY-02**: Learned policy proposals are stored as non-default profiles with provenance, training corpus id, feature schema version, metric summary, and rollback metadata.
+- [ ] **POLICY-03**: Maintainer can compare, apply, disable, and roll back learned profiles through existing local policy controls without changing global defaults silently.
+- [ ] **POLICY-04**: Learned profiles cannot become default unless they beat configured baseline thresholds for recall, precision proxy, token ROI, runtime, validation coverage, and source-free privacy.
+
+### Product Proof And Release Gates
+
+- [ ] **PROOF-01**: Product proof can include a bounded v2.3 eval section covering fixed corpus identity, paired baseline verdicts, runtime diagnostics, feature-export privacy, and learned-policy status.
+- [ ] **PROOF-02**: Release gate can run a small deterministic v2.3 eval smoke without requiring RefactoringMiner or other large external repos by default.
+- [ ] **PROOF-03**: RefactoringMiner and multi-repo proof remain optional external gates with clear skip reasons, reproducible commands, and source-free artifacts.
+- [ ] **PROOF-04**: Docs explain the proof boundary honestly: ctxpack may be useful at lexical parity, but world-class claims require repeated lift under fixed corpora and process-level context metrics.
 
 ## Future Requirements
 
 Deferred into later milestones from the remaining product vision.
-
-### v2.3 Evaluation Lab & Learned Retrieval Policy
-
-- **EVAL-01**: Maintainer can run fixed benchmark corpora with stable revisions and reproducible source-free reports.
-- **EVAL-02**: Maintainer can learn or propose retrieval-policy weights from source-free eval and feedback data.
-- **EVAL-03**: Maintainer can compare learned policies against lexical, graph, semantic, history, test, memory, and current default baselines.
-- **EVAL-04**: Maintainer can enforce regression thresholds for recall, precision, token ROI, and validation coverage.
 
 ### v2.4 Production Semantic & Precision Backends
 
 - **BACKEND-01**: Maintainer can use a production local vector index and real embedding backend with source-free metadata controls.
 - **BACKEND-02**: Maintainer can enable cloud embeddings or reranking only through explicit repo policy gates.
 - **BACKEND-03**: Maintainer can automate SCIP/LSP indexing for supported languages and report degraded precision inputs.
-- **BACKEND-04**: Maintainer can migrate, compare, and roll back provider versions/dimensions.
+- **BACKEND-04**: Maintainer can migrate, compare, and roll back provider versions/dimensions using v2.3 eval gates.
 
 ### v2.5 Agent-Native Deep Integrations
 
@@ -91,47 +91,51 @@ Deferred into later milestones from the remaining product vision.
 
 ## Out of Scope
 
-Explicitly excluded from v2.2 to keep release hardening focused.
+Explicitly excluded from v2.3 to keep the milestone focused on measured quality and learned policy foundations.
 
 | Feature | Reason |
 |---------|--------|
-| Autonomous code editing | ctxpack remains a read-only context broker. |
-| Hosted sync or enterprise admin | Planned for v2.7 after local release trust is stronger. |
-| Learned retrieval weights | Planned for v2.3 after fixed benchmark corpus work. |
-| Production cloud embedding/reranking | Planned for v2.4 behind explicit policy gates. |
-| Desktop app packaging | Planned for v2.6 after release/archive paths stabilize. |
-| Mandatory Homebrew/crates.io/signing | Useful distribution channels, but v2.2 should not block local release readiness on them. |
-| Silent global agent config mutation | Users must choose and review agent configuration changes. |
+| Cloud embeddings or cloud reranking by default | Planned for v2.4 and must be justified by v2.3 eval gates. |
+| Hosted benchmark service | Local-first trust and source-free proof remain the product boundary. |
+| Full SWE-bench Pro execution harness | v2.3 can learn from SWE-bench Pro methodology without taking on full benchmark orchestration. |
+| Production vector backend migration | Planned for v2.4 after source-free measurement proves where semantic retrieval helps. |
+| SCIP/LSP automatic indexer installation | Planned for v2.4 after learned/eval gates can measure precision lift. |
+| Real-client agent outcome execution as a required release blocker | Useful evidence, but environment-dependent and better suited to v2.5 deep integrations. |
+| Learned policy as silent default | Learned profiles must stay opt-in until thresholds prove they improve over current and lexical baselines. |
 
 ## Traceability
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| REL-01 | Phase 45 | Complete |
-| REL-02 | Phase 45 | Complete |
-| REL-03 | Phase 45 | Complete |
-| REL-04 | Phase 45 | Complete |
-| INSTALL-01 | Phase 46 | Complete |
-| INSTALL-02 | Phase 46 | Complete |
-| INSTALL-03 | Phase 46 | Complete |
-| INSTALL-04 | Phase 46 | Complete |
-| ADOPT-01 | Phase 47 | Complete |
-| ADOPT-02 | Phase 47 | Complete |
-| ADOPT-03 | Phase 47 | Complete |
-| ADOPT-04 | Phase 47 | Complete |
-| DIST-01 | Phase 48 | Complete |
-| DIST-02 | Phase 48 | Complete |
-| DIST-03 | Phase 48 | Complete |
-| DIST-04 | Phase 48 | Complete |
-| GOV-01 | Phase 49 | Complete |
-| GOV-02 | Phase 49 | Complete |
-| GOV-03 | Phase 49 | Complete |
-| GOV-04 | Phase 49 | Complete |
+| CORPUS-01 | Phase 50 | Planned |
+| CORPUS-02 | Phase 50 | Planned |
+| CORPUS-03 | Phase 50 | Planned |
+| CORPUS-04 | Phase 50 | Planned |
+| SPEED-01 | Phase 51 | Planned |
+| SPEED-02 | Phase 51 | Planned |
+| SPEED-03 | Phase 51 | Planned |
+| SPEED-04 | Phase 51 | Planned |
+| FEATURE-01 | Phase 52 | Planned |
+| FEATURE-02 | Phase 52 | Planned |
+| FEATURE-03 | Phase 52 | Planned |
+| FEATURE-04 | Phase 52 | Planned |
+| BASELINE-01 | Phase 53 | Planned |
+| BASELINE-02 | Phase 53 | Planned |
+| BASELINE-03 | Phase 53 | Planned |
+| BASELINE-04 | Phase 53 | Planned |
+| POLICY-01 | Phase 54 | Planned |
+| POLICY-02 | Phase 54 | Planned |
+| POLICY-03 | Phase 54 | Planned |
+| POLICY-04 | Phase 54 | Planned |
+| PROOF-01 | Phase 55 | Planned |
+| PROOF-02 | Phase 55 | Planned |
+| PROOF-03 | Phase 55 | Planned |
+| PROOF-04 | Phase 55 | Planned |
 
 **Coverage:**
-- v2.2 requirements: 20 total
-- Mapped to phases: 20
+- v2.3 requirements: 24 total
+- Mapped to phases: 24
 - Unmapped: 0
 
 ---
-*Requirements defined: 2026-05-18*
+*Requirements defined: 2026-05-19*

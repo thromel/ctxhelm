@@ -4,27 +4,28 @@
 
 Repo Context Packer is a local-first, read-only context broker that helps existing coding agents choose better repository context. It does not replace Codex, Claude Code, Cursor, OpenCode, Aider, or similar tools; it exposes task-conditioned file, test, graph, history, and pack guidance through agent-native surfaces such as MCP, AGENTS.md, and thin adapter files.
 
-The current codebase is a Rust workspace with a CLI, MCP server, safe repository inventory, lexical, symbol, semantic, and precision-edge retrieval, related-test inference, dependency hints, current-diff anchors, context packs, generated context cards, local eval traces, historical retrieval evaluation, benchmark suites, source-free retrieval gap reporting, and product proof generation.
+The current codebase is a Rust workspace with a CLI, MCP server, safe repository inventory, lexical, symbol, semantic, and precision-edge retrieval, related-test inference, dependency hints, current-diff anchors, context packs, generated context cards, local eval traces, historical retrieval evaluation, benchmark suites, source-free retrieval gap reporting, product proof generation, release hardening, and diagnostic inspector surfaces.
 
-## Current State: v2.2 Release & Distribution Hardening Planning
+## Current State: v2.3 Evaluation Lab & Learned Retrieval Policy Planning
 
-The v2.1 milestone is complete locally and archived. ctxpack now has source-free pack inspector exports, a local static inspector UI, retrieval-health reports, graph neighborhood/community reports, policy/embedding controls, and agent previews for Codex CLI, Claude Code, Cursor, OpenCode, and generic MCP clients.
+The v2.2 milestone is complete locally and archived in the milestone index. ctxpack now has source-free release packaging, install/upgrade/troubleshooting docs, demo artifacts, distribution metadata, release governance, product proof boundaries, pack inspector exports, a local static inspector UI, retrieval-health reports, graph neighborhood/community reports, policy/embedding controls, and agent previews for Codex CLI, Claude Code, Cursor, OpenCode, and generic MCP clients.
 
-The remaining product vision is now organized into a sequence of post-v2.1 milestones: release/distribution hardening, evaluation at scale and learned retrieval policy, production semantic/precision backends, deeper agent integrations, desktop inspector UX, team/enterprise sync, and the long-term context governor loop.
+The refreshed research confirms that the next product bottleneck is measurement quality, not another retrieval mode. The RefactoringMiner E2E showed real utility but only a small Recall@10 margin over lexical baseline, so v2.3 focuses on fixed corpora, faster evals, source-free candidate features, paired baselines, and an offline learned-policy experiment before v2.4 adds heavier semantic/precision backends.
 
-## Current Milestone: v2.2 Release & Distribution Hardening
+## Current Milestone: v2.3 Evaluation Lab & Learned Retrieval Policy
 
-**Goal:** Turn the locally complete ctxpack product into a reproducible, installable, public release with clean packaging, upgrade, adoption, and proof artifacts.
+**Goal:** Make ctxpack's retrieval-quality claims repeatable across fixed corpora, large histories, policy variants, and source-free learned retrieval experiments.
 
-**Status:** Requirements and roadmap drafted from the remaining product vision.
+**Status:** Requirements, roadmap, and research drafted from refreshed external research plus prior ctxpack evidence.
 
 **Target features:**
 
-- Clean-checkout release gate and archive packaging from a reproducible build path.
-- Binary install and upgrade paths with checksum verification and artifact audits.
-- Public release notes, docs, examples, and portfolio-ready positioning.
-- Optional package manager/distribution preparation without making Homebrew, crates.io, or installers required for local validation.
-- Release proof bundle tying tests, smokes, benchmark proof, agent proof, and source-free privacy guarantees together.
+- Fixed benchmark corpus manifests and a locked RefactoringMiner 20-commit regression suite.
+- Warm historical eval cache, deterministic parallel execution, stored-run reuse, and runtime diagnostics.
+- Source-free candidate feature export for learning, diagnostics, and paired analysis.
+- Paired lexical/no-context/default/ablation reports with lift, neutral, regression, and insufficient-evidence verdicts.
+- Offline learned retrieval-policy experiment that proposes non-default profiles and is threshold-gated before use.
+- Product proof and release gates that distinguish useful lexical parity from repeated measured lift.
 
 ## Core Value
 
@@ -65,19 +66,22 @@ Given a coding task, ctxpack should return the smallest safe evidence set that m
 
 ### Active
 
-- Define and implement v2.2 Release & Distribution Hardening.
-- Keep the release path reproducible from a clean checkout and auditable without publishing side effects.
-- Make install/upgrade docs and checksums practical for first external users.
-- Produce a release proof bundle that ties together workspace tests, smokes, benchmark proof, real-client proof when available, and privacy/source-free guarantees.
-- Preserve the local-first, read-only product boundary in every adoption and distribution artifact.
+- Define and implement v2.3 Evaluation Lab & Learned Retrieval Policy.
+- Keep benchmark corpora and eval reports source-free, reproducible, and local-first.
+- Make large-history eval iteration fast enough to use during development.
+- Export source-free candidate features that can support policy learning without source text or prompt content.
+- Compare ctxpack against lexical, no-context, and retrieval-signal ablations before claiming product lift.
+- Keep learned retrieval profiles opt-in until threshold gates prove they beat current and lexical baselines.
 
 ### Out of Scope
 
 - Autonomous code editing inside ctxpack — existing coding agents already own editing, permissions, approvals, and shell execution.
 - Cloud indexing, cloud embeddings, or cloud reranking by default — local-first trust is part of the product contract.
 - A standalone daily chat app or editor replacement — ctxpack should improve agent-native workflows instead of becoming another coding surface.
-- Hosted backend, team sync, SSO, or enterprise admin — useful later, but not part of v2.2 release hardening.
-- Learned retrieval weights, production embedding backends, and desktop inspector packaging — planned later, after the release path is stable.
+- Hosted backend, team sync, SSO, or enterprise admin — useful later, but not part of v2.3 evaluation and policy learning.
+- Cloud indexing, cloud embeddings, cloud reranking, and production vector backend migration — planned for v2.4 after v2.3 eval gates can prove where those backends help.
+- Full SWE-bench Pro execution harness — v2.3 should learn from contamination-aware benchmark design without taking on a hosted benchmark platform.
+- Real-client agent outcome execution as a required release blocker — useful later, but environment-dependent and better suited to v2.5 deep integrations.
 
 ## Context
 
@@ -91,7 +95,7 @@ The codebase map in `.planning/codebase/` documents the current system:
 - `crates/ctxpack-mcp/src/lib.rs` is the stable facade for JSON-RPC/MCP protocol, tools, resources, prompts, diagnostics, session-scoped pack cache, and tool/resource response shaping implemented in focused MCP modules.
 - `crates/ctxpack/src/main.rs` owns the user-facing CLI and command output.
 
-v1 through v1.1 proved the local context broker, source-free safety model, agent-native protocol surface, packaging path, and setup/release gates. v1.2 proved the adoption claim with measured retrieval-quality evidence. v1.3 converted those measured needs into production-grade local storage. v1.4 used that storage foundation to add local semantic retrieval only as a measured, optional signal inside the existing context compiler. v1.5 added parser and precision-edge coverage where Java-heavy real repos exposed structural gaps. v1.6 turned durable repo summaries and session lessons into selective, source-free memory. v1.7 closed the learning loop by comparing ctxpack recommendations with what agents actually read, edit, test, and validate. v2.0 extended those local, source-free foundations across multi-repo workspaces and team-safe artifacts. v2.1 turned the accumulated evidence into inspectable diagnostic surfaces and added measured graph/embedding controls. v2.2 focuses on making the product installable, reproducible, and credible for public adoption.
+v1 through v1.1 proved the local context broker, source-free safety model, agent-native protocol surface, packaging path, and setup/release gates. v1.2 proved the adoption claim with measured retrieval-quality evidence. v1.3 converted those measured needs into production-grade local storage. v1.4 used that storage foundation to add local semantic retrieval only as a measured, optional signal inside the existing context compiler. v1.5 added parser and precision-edge coverage where Java-heavy real repos exposed structural gaps. v1.6 turned durable repo summaries and session lessons into selective, source-free memory. v1.7 closed the learning loop by comparing ctxpack recommendations with what agents actually read, edit, test, and validate. v2.0 extended those local, source-free foundations across multi-repo workspaces and team-safe artifacts. v2.1 turned the accumulated evidence into inspectable diagnostic surfaces and added measured graph/embedding controls. v2.2 made the product installable, reproducible, and credible for public adoption. v2.3 now turns the research and local evidence into repeatable evaluation, fast iteration, paired baselines, and source-free learned retrieval policy.
 
 Milestone strategy from the original product vision:
 
@@ -101,8 +105,8 @@ Milestone strategy from the original product vision:
 - **v1.7 Adaptive Retrieval Policy & Feedback Loop**: shipped; use benchmark results and real session traces to report/tune retrieval policy and compare agent outcomes.
 - **v2.0 Workspace & Team Layer**: shipped locally; support multi-repo workspaces, shared source-free context cards, benchmark reports, and team policy files.
 - **v2.1 Pack Inspector & GraphRAG Retrieval**: shipped locally; optional diagnostics UI, retrieval health, graph neighborhoods, policy/embedding controls, and agent previews.
-- **v2.2 Release & Distribution Hardening**: active milestone; clean release packaging, install/upgrade paths, public proof bundle, docs, and adoption artifacts.
-- **v2.3 Evaluation Lab & Learned Retrieval Policy**: scale benchmark suites, fixed corpora, policy learning, regression thresholds, and measurable product lift.
+- **v2.2 Release & Distribution Hardening**: shipped locally; clean release packaging, install/upgrade paths, public proof bundle, docs, and adoption artifacts.
+- **v2.3 Evaluation Lab & Learned Retrieval Policy**: active milestone; fixed benchmark corpora, fast historical evals, candidate feature exports, paired baselines, policy learning, regression thresholds, and measurable product lift.
 - **v2.4 Production Semantic & Precision Backends**: production local vector index, optional cloud providers, reranking gates, and deeper SCIP/LSP automation.
 - **v2.5 Agent-Native Deep Integrations**: stronger Codex/Claude/Cursor/OpenCode hooks, prompts, previews, and real-client proof expansion.
 - **v2.6 Desktop Inspector & Local UX**: optional desktop/Tauri inspector shell, graph visualization, onboarding, and diagnostics workflow polish.
@@ -137,6 +141,7 @@ Milestone strategy from the original product vision:
 | Deterministic protocol proof is the required gate | Real Codex/Claude client proof is valuable but remains optional and environment-gated; deterministic MCP proof is the portable release blocker. | ✓ Validated in Phase 8 |
 | Retrieval proof before bigger architecture | Storage, embeddings, parser precision, team features, and UI should be justified by measured retrieval gaps instead of speculative architecture desire. | ✓ Validated in v1.2 |
 | Precision overlays should be source-free bridges first | Direct SCIP/LSP project setup is fragile; a source-free edge overlay gives agents precise structure without making language tooling mandatory. | ✓ Validated in v1.5 |
+| Eval lab before heavier backends | Research and local RefactoringMiner evidence show the next bottleneck is repeatable proof and learned selection policy, not adding another retrieval backend blindly. | Adopted for v2.3 |
 
 ## Evolution
 
@@ -156,4 +161,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-05-18 for v2.2 release and distribution hardening planning*
+*Last updated: 2026-05-19 for v2.3 evaluation lab and learned retrieval policy planning*

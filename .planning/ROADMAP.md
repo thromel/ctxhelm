@@ -2,161 +2,185 @@
 
 ## Overview
 
-This roadmap starts v2.2 Release & Distribution Hardening. v2.1 completed the
-diagnostic inspector, retrieval-health, GraphRAG, embedding-control, and
-agent-preview surfaces. v2.2 turns that local product into a reproducible,
-installable, public release with proof artifacts and clear adoption docs.
+This roadmap starts v2.3 Evaluation Lab & Learned Retrieval Policy. v2.2 completed release and distribution hardening; v2.3 now makes the product's retrieval-quality claims repeatable, fast enough to iterate on, and strong enough to support learned retrieval policy without storing source text.
 
-## v2.2 Release & Distribution Hardening
+The milestone is intentionally evaluation-first. Production semantic backends, cloud rerankers, SCIP automation, and deeper agent integrations remain later milestones until v2.3 can prove which signals actually improve file/test/context selection.
+
+## v2.3 Evaluation Lab & Learned Retrieval Policy
 
 ## Phases
 
 **Phase Numbering:**
-- Integer phases (45, 46, 47, 48, 49): Planned v2.2 work
-- Decimal phases (45.1, 46.1): Urgent insertions if needed
+- Integer phases (50, 51, 52, 53, 54, 55): Planned v2.3 work
+- Decimal phases (50.1, 51.1): Urgent insertions if needed
 
-- [x] **Phase 45: Clean Release Gate & Proof Bundle** - Maintainers can produce a clean, source-free release candidate with a full proof bundle.
-- [x] **Phase 46: Install, Upgrade & Troubleshooting** - Users can install, upgrade, verify, and troubleshoot ctxpack without hidden global mutation.
-- [x] **Phase 47: Public Adoption Docs & Demo Artifacts** - New users can understand the product wedge and inspect safe demo artifacts.
-- [x] **Phase 48: Distribution Metadata & Package Prep** - Maintainers can prepare package-manager metadata and clean extraction verification without making distribution channels blockers.
-- [x] **Phase 49: Release Governance & Candidate Lifecycle** - Maintainers can mark readiness, separate proof levels, publish/defer status, and roll back local candidates.
+- [ ] **Phase 50: Fixed Benchmark Corpus & RefactoringMiner Regression Suite** - Maintainers can define fixed source-free benchmark corpora and lock the first large-history regression suite.
+- [ ] **Phase 51: Historical Eval Cache & Parallel Runner** - Maintainers can run large-history evals faster through cache reuse, parallel samples, and runtime diagnostics.
+- [ ] **Phase 52: Source-Free Candidate Feature Export** - Maintainers can export privacy-safe candidate feature rows for learning, diagnostics, and paired analysis.
+- [ ] **Phase 53: Paired Baseline & Ablation Analysis** - Maintainers can compare ctxpack against lexical, no-context, and signal-ablation baselines with honest verdicts.
+- [ ] **Phase 54: Offline Learned Retrieval Policy Experiment** - Maintainers can generate, compare, apply, disable, and roll back non-default learned policy profiles.
+- [ ] **Phase 55: Product Proof Gates & v2.3 Release Integration** - Maintainers can include bounded v2.3 eval proof in docs and release gates without requiring external repos by default.
 
 ## Phase Details
 
-### Phase 45: Clean Release Gate & Proof Bundle
+### Phase 50: Fixed Benchmark Corpus & RefactoringMiner Regression Suite
 
-**Goal**: Maintainers can produce a clean, source-free release candidate with a full proof bundle.
+**Goal**: Maintainers can define fixed source-free benchmark corpora and lock the first large-history regression suite.
 
-**Depends on**: v1.1 release gate, v1.2 product proof, v2.1 diagnostic smokes
+**Depends on**: v1.2 benchmark/proof reports, v2.2 release proof bundle, RefactoringMiner E2E evidence
 
-**Requirements**: REL-01, REL-02, REL-03, REL-04
+**Requirements**: CORPUS-01, CORPUS-02, CORPUS-03, CORPUS-04
 
 **Success Criteria** (what must be TRUE):
-1. Clean-checkout release gate runs workspace tests, docs checks, package/audit, selected-binary smokes, MCP proof, diagnostic smokes, and optional benchmark proof without publishing.
-2. Release archives include versioned binary artifacts, checksums, release manifest metadata, and artifact audit reports.
-3. Artifact audit rejects local state, traces, caches, source-control internals, secret-looking paths, machine-local paths, and diagnostic source leaks.
-4. Release proof bundle records commands, versions, binary identity, smoke outcomes, benchmark proof status, real-client proof status, and privacy status.
+1. Corpus manifests record repo paths, revisions, commit ranges, budgets, task types, target agents, and privacy labels.
+2. RefactoringMiner 20-commit regression suite records current Recall@10, lexical baseline, runtime, and gap-family baselines.
+3. Additional repos can be added through the same manifest format without storing source, prompts, snippets, or private issue descriptions.
+4. Benchmark reports contain reproducibility metadata and source-free privacy status.
 
 **Plans**: 1 plan
 
 Plans:
-- [x] 45-clean-release-gate-proof-bundle-01-PLAN.md — Harden release-gate execution, release manifest/proof bundle, archive audits, and selected-binary evidence.
+- [ ] 50-fixed-benchmark-corpus-refactoringminer-regression-suite-01-PLAN.md - Build corpus manifests, lock RefactoringMiner baseline metadata, and document reproducible source-free benchmark setup.
 
-### Phase 46: Install, Upgrade & Troubleshooting
+### Phase 51: Historical Eval Cache & Parallel Runner
 
-**Goal**: Users can install, upgrade, verify, and troubleshoot ctxpack without hidden global mutation.
+**Goal**: Maintainers can run large-history evals faster through cache reuse, parallel samples, and runtime diagnostics.
 
-**Depends on**: Phase 45
+**Depends on**: Phase 50
 
-**Requirements**: INSTALL-01, INSTALL-02, INSTALL-03, INSTALL-04
+**Requirements**: SPEED-01, SPEED-02, SPEED-03, SPEED-04
 
 **Success Criteria** (what must be TRUE):
-1. Install docs cover source build and release archive install with checksum verification and absolute binary-path guidance.
-2. Upgrade docs verify active binary version, binary location, release manifest, and compatibility with existing local `.ctxpack` state.
-3. Agent setup docs cover Codex CLI, Claude Code, Cursor, OpenCode, and generic MCP clients while preserving manual config review.
-4. Troubleshooting flow covers PATH, MCP startup, stale binary, incompatible local state, wrong cwd, and setup-check failures.
+1. Historical eval reuses warm parent snapshots, inventories, indexes, and candidate metadata when inputs are unchanged.
+2. Commit samples run in parallel while final output remains deterministic and source-free.
+3. Reports expose total time, per-commit time, cache hits, slow commits, git diff cost, ranking cost, and pack/compiler cost.
+4. Stored run comparison avoids recomputing unchanged benchmark ranges unless explicitly forced.
 
 **Plans**: 1 plan
 
 Plans:
-- [x] 46-install-upgrade-troubleshooting-01-PLAN.md — Build install/upgrade verification, compatibility checks, and troubleshooting docs/tests.
+- [ ] 51-historical-eval-cache-parallel-runner-01-PLAN.md - Add eval cache keys, deterministic parallel execution, stored-run reuse, and runtime diagnostics.
 
-### Phase 47: Public Adoption Docs & Demo Artifacts
+### Phase 52: Source-Free Candidate Feature Export
 
-**Goal**: New users can understand the product wedge and inspect safe demo artifacts.
+**Goal**: Maintainers can export privacy-safe candidate feature rows for learning, diagnostics, and paired analysis.
 
-**Depends on**: Phase 46
+**Depends on**: Phase 51
 
-**Requirements**: ADOPT-01, ADOPT-02, ADOPT-03, ADOPT-04
+**Requirements**: FEATURE-01, FEATURE-02, FEATURE-03, FEATURE-04
 
 **Success Criteria** (what must be TRUE):
-1. First-pack docs walk a fresh user from repo setup to `prepare-task`, `get-pack`, inspector, and validation explanation.
-2. Static demo artifacts show pack inspector, retrieval health, graph neighborhood, policy/embedding, and agent preview outputs without source leakage.
-3. README, quickstart, examples, and release notes state the product wedge as task-conditioned context for existing agents.
-4. Portfolio/public materials accurately describe current capabilities and exclude unsupported claims.
+1. Eval output can emit candidate feature rows for files, symbols, tests, docs, commits, memory cards, feedback, and graph candidates.
+2. Feature rows include signal scores, ranks, role/type metadata, graph distance, history/test/memory/feedback metadata, and source-free labels.
+3. Feature exports reject source snippets, prompt text, issue descriptions, terminal logs, stack traces, and secret-bearing values.
+4. CLI/storage commands can list, inspect, compare, and delete feature exports by run and privacy status.
 
 **Plans**: 1 plan
 
 Plans:
-- [x] 47-public-adoption-docs-demo-artifacts-01-PLAN.md — Create demo artifacts, update public docs/examples, and add source-free demo smoke checks.
+- [ ] 52-source-free-candidate-feature-export-01-PLAN.md - Create feature export contracts, privacy checks, storage operations, and CLI/report surfaces.
 
-### Phase 48: Distribution Metadata & Package Prep
+### Phase 53: Paired Baseline & Ablation Analysis
 
-**Goal**: Maintainers can prepare package-manager metadata and clean extraction verification without making distribution channels blockers.
+**Goal**: Maintainers can compare ctxpack against lexical, no-context, and signal-ablation baselines with honest verdicts.
 
-**Depends on**: Phase 45, Phase 46
+**Depends on**: Phase 52
 
-**Requirements**: DIST-01, DIST-02, DIST-03, DIST-04
+**Requirements**: BASELINE-01, BASELINE-02, BASELINE-03, BASELINE-04
 
 **Success Criteria** (what must be TRUE):
-1. Package-manager metadata templates exist for future Homebrew/crates.io distribution and are validated for consistency.
-2. Machine-readable release metadata can support future update checks without implementing self-update.
-3. Release archives can be verified from a clean extraction directory on macOS using documented commands only.
-4. Signing/notarization gaps and future requirements are documented without claiming signed installers.
+1. Reports compare default ctxpack ranking against lexical, no-context, graph-only, semantic-only, history-only, test-only, memory-only, and feedback-weighted variants on the same corpus.
+2. Reports include Recall@K, precision proxy, test recall, token ROI, validation coverage, missed-family taxonomy, signal saturation, runtime, and privacy status.
+3. Verdicts classify each comparison as lift, neutral, regression, or insufficient evidence using configured thresholds.
+4. Lexical parity and lexical regression are explicitly called out.
 
 **Plans**: 1 plan
 
 Plans:
-- [x] 48-distribution-metadata-package-prep-01-PLAN.md — Add package metadata templates, release metadata, clean extraction verification, and signing-gap docs.
+- [ ] 53-paired-baseline-ablation-analysis-01-PLAN.md - Add paired comparison reports, threshold verdicts, signal saturation diagnostics, and lexical-parity flags.
 
-### Phase 49: Release Governance & Candidate Lifecycle
+### Phase 54: Offline Learned Retrieval Policy Experiment
 
-**Goal**: Maintainers can mark readiness, separate proof levels, publish/defer status, and roll back local candidates.
+**Goal**: Maintainers can generate, compare, apply, disable, and roll back non-default learned policy profiles.
 
-**Depends on**: Phases 45-48
+**Depends on**: Phase 53
 
-**Requirements**: GOV-01, GOV-02, GOV-03, GOV-04
+**Requirements**: POLICY-01, POLICY-02, POLICY-03, POLICY-04
 
 **Success Criteria** (what must be TRUE):
-1. Source-free release checklist records readiness, known limitations, optional proof gaps, and unsupported claims.
-2. Release docs distinguish deterministic protocol proof from optional real-client proof for Codex, Claude Code, Cursor, and OpenCode.
-3. Candidate status can be marked as ready, deferred, or blocked with explicit test/smoke/benchmark/client/package/doc statuses.
-4. Candidate rollback removes local release artifacts and restores prior release metadata without touching repo source.
+1. Offline learner proposes retrieval-policy weights from source-free feature exports, historical labels, and feedback/outcome traces.
+2. Learned proposals are stored as non-default profiles with training provenance, schema version, metrics, and rollback metadata.
+3. Existing policy controls can compare, apply, disable, and roll back learned profiles.
+4. Learned profiles cannot become default unless configured baseline thresholds pass.
 
 **Plans**: 1 plan
 
 Plans:
-- [x] 49-release-governance-candidate-lifecycle-01-PLAN.md — Add release readiness checklist, candidate status/rollback, proof-boundary docs, and final governance smoke.
+- [ ] 54-offline-learned-retrieval-policy-experiment-01-PLAN.md - Implement source-free policy proposal, profile persistence, comparison, and guarded application.
+
+### Phase 55: Product Proof Gates & v2.3 Release Integration
+
+**Goal**: Maintainers can include bounded v2.3 eval proof in docs and release gates without requiring external repos by default.
+
+**Depends on**: Phases 50-54
+
+**Requirements**: PROOF-01, PROOF-02, PROOF-03, PROOF-04
+
+**Success Criteria** (what must be TRUE):
+1. Product proof includes fixed corpus identity, paired baseline verdicts, runtime diagnostics, feature-export privacy, and learned-policy status.
+2. Release gate can run a small deterministic v2.3 eval smoke without external repos.
+3. RefactoringMiner and multi-repo proof remain optional external gates with reproducible commands and skip reasons.
+4. Docs explain that useful context at lexical parity is not the same as world-class lift.
+
+**Plans**: 1 plan
+
+Plans:
+- [ ] 55-product-proof-gates-v23-release-integration-01-PLAN.md - Wire v2.3 proof, docs, release-gate smoke, and proof-boundary language.
 
 ## Requirement Coverage
 
 | Requirement | Phase |
 |-------------|-------|
-| REL-01 | Phase 45 |
-| REL-02 | Phase 45 |
-| REL-03 | Phase 45 |
-| REL-04 | Phase 45 |
-| INSTALL-01 | Phase 46 |
-| INSTALL-02 | Phase 46 |
-| INSTALL-03 | Phase 46 |
-| INSTALL-04 | Phase 46 |
-| ADOPT-01 | Phase 47 |
-| ADOPT-02 | Phase 47 |
-| ADOPT-03 | Phase 47 |
-| ADOPT-04 | Phase 47 |
-| DIST-01 | Phase 48 |
-| DIST-02 | Phase 48 |
-| DIST-03 | Phase 48 |
-| DIST-04 | Phase 48 |
-| GOV-01 | Phase 49 |
-| GOV-02 | Phase 49 |
-| GOV-03 | Phase 49 |
-| GOV-04 | Phase 49 |
+| CORPUS-01 | Phase 50 |
+| CORPUS-02 | Phase 50 |
+| CORPUS-03 | Phase 50 |
+| CORPUS-04 | Phase 50 |
+| SPEED-01 | Phase 51 |
+| SPEED-02 | Phase 51 |
+| SPEED-03 | Phase 51 |
+| SPEED-04 | Phase 51 |
+| FEATURE-01 | Phase 52 |
+| FEATURE-02 | Phase 52 |
+| FEATURE-03 | Phase 52 |
+| FEATURE-04 | Phase 52 |
+| BASELINE-01 | Phase 53 |
+| BASELINE-02 | Phase 53 |
+| BASELINE-03 | Phase 53 |
+| BASELINE-04 | Phase 53 |
+| POLICY-01 | Phase 54 |
+| POLICY-02 | Phase 54 |
+| POLICY-03 | Phase 54 |
+| POLICY-04 | Phase 54 |
+| PROOF-01 | Phase 55 |
+| PROOF-02 | Phase 55 |
+| PROOF-03 | Phase 55 |
+| PROOF-04 | Phase 55 |
 
-**Coverage:** 20/20 v2.2 requirements mapped. No orphaned requirements.
+**Coverage:** 24/24 v2.3 requirements mapped. No orphaned requirements.
 
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 45 -> 46 -> 47 -> 48 -> 49
+Phases execute in numeric order: 50 -> 51 -> 52 -> 53 -> 54 -> 55
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 45. Clean Release Gate & Proof Bundle | 1/1 | Complete | 2026-05-18 |
-| 46. Install, Upgrade & Troubleshooting | 1/1 | Complete | 2026-05-18 |
-| 47. Public Adoption Docs & Demo Artifacts | 0/1 | Not Started | — |
-| 48. Distribution Metadata & Package Prep | 0/1 | Not Started | — |
-| 49. Release Governance & Candidate Lifecycle | 0/1 | Not Started | — |
+| 50. Fixed Benchmark Corpus & RefactoringMiner Regression Suite | 0/1 | Not Started | - |
+| 51. Historical Eval Cache & Parallel Runner | 0/1 | Not Started | - |
+| 52. Source-Free Candidate Feature Export | 0/1 | Not Started | - |
+| 53. Paired Baseline & Ablation Analysis | 0/1 | Not Started | - |
+| 54. Offline Learned Retrieval Policy Experiment | 0/1 | Not Started | - |
+| 55. Product Proof Gates & v2.3 Release Integration | 0/1 | Not Started | - |
 
 ---
-*Roadmap created: 2026-05-18*
+*Roadmap created: 2026-05-19*

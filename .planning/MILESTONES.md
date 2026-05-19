@@ -2,15 +2,38 @@
 
 ## Active
 
+### v2.3 Evaluation Lab & Learned Retrieval Policy
+
+**Goal:** Make ctxpack's retrieval-quality claims repeatable across fixed corpora, large histories, policy variants, and source-free learned retrieval experiments.
+
+**Status:** Requirements, roadmap, and research drafted.
+
+**Planned phases:** 50-55
+
+## Shipped
+
 ### v2.2 Release & Distribution Hardening
 
 **Goal:** Turn the locally complete ctxpack product into a reproducible, installable, public release with clean packaging, upgrade, adoption, and proof artifacts.
 
-**Status:** Requirements and roadmap drafted.
+**Status:** Shipped locally: 2026-05-19.
 
-**Planned phases:** 45-49
+**Phases completed:** Phases 45-49, 5 plans total
 
-## Shipped
+**Key accomplishments:**
+
+- Added clean-checkout release gate and source-free release proof bundle.
+- Added install, upgrade, setup-check, troubleshooting, and agent setup docs.
+- Added public adoption docs, static demo artifacts, and first-pack guidance.
+- Added distribution metadata, clean extraction verification, and signing/notarization gap docs.
+- Added release governance, candidate lifecycle, and rollback documentation.
+
+**Archive:**
+
+- Roadmap: `.planning/milestones/v2.2-ROADMAP.md`
+- Requirements: `.planning/milestones/v2.2-REQUIREMENTS.md`
+- Audit: `.planning/milestones/v2.2-MILESTONE-AUDIT.md`
+- Phases: `.planning/milestones/v2.2-phases/45-clean-release-gate-proof-bundle/` through `.planning/milestones/v2.2-phases/49-release-governance-candidate-lifecycle/`
 
 ### v2.1 Pack Inspector & GraphRAG Retrieval
 
@@ -209,19 +232,6 @@
 - Audit: `.planning/milestones/v1.1-MILESTONE-AUDIT.md`
 
 ## Planned Product Vision
-
-### v2.3 Evaluation Lab & Learned Retrieval Policy
-
-**Goal:** Make ctxpack's retrieval-quality claims repeatable across fixed corpora, large histories, policy variants, and agent outcome comparisons.
-
-**Depends on:** v1.2 benchmark/proof reports, v1.7 feedback, v2.1 retrieval-health and policy experiment reports.
-
-**Expected capabilities:**
-
-- Fixed public/local benchmark corpus manifests with stable revision ranges.
-- Policy learner that proposes graph/semantic/history/test weights from source-free eval and feedback.
-- Regression thresholds for recall, precision, token ROI, validation coverage, and source-free privacy.
-- Product proof reports that distinguish real lift from lexical-baseline parity.
 
 ### v2.4 Production Semantic & Precision Backends
 
