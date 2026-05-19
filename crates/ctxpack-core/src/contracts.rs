@@ -845,14 +845,34 @@ pub struct AgentPreviewReport {
 pub struct RetrievalPolicyProfile {
     pub id: String,
     pub status: PolicyProfileStatus,
+    #[serde(default = "default_policy_profile_schema_version")]
+    pub profile_schema_version: u32,
     pub created_at_unix_seconds: u64,
     pub source_report_event_count: usize,
+    #[serde(default)]
+    pub training_corpus_id: Option<String>,
+    #[serde(default)]
+    pub training_sources: Vec<PolicyTrainingSource>,
+    #[serde(default)]
+    pub metric_summary: Vec<PolicyMetricSummary>,
     pub rationale: String,
     pub weights: Vec<PolicySignalWeight>,
     pub safety_floors: Vec<PolicySafetyFloor>,
     pub regression_warnings: Vec<String>,
+    #[serde(default)]
+    pub baseline_thresholds: Vec<PolicyBaselineThreshold>,
+    #[serde(default = "default_policy_default_eligible")]
+    pub default_eligible: bool,
     pub rollback_profile_id: Option<String>,
     pub source_text_logged: bool,
+}
+
+fn default_policy_profile_schema_version() -> u32 {
+    2
+}
+
+fn default_policy_default_eligible() -> bool {
+    true
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -878,6 +898,32 @@ pub struct PolicySafetyFloor {
     pub signal: RetrievalSignalKind,
     pub minimum_weight: f32,
     pub reason: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct PolicyTrainingSource {
+    pub source_kind: String,
+    pub source_id: Option<String>,
+    pub schema_version: Option<String>,
+    pub row_count: usize,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct PolicyMetricSummary {
+    pub metric: String,
+    pub value: f32,
+    pub unit: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct PolicyBaselineThreshold {
+    pub metric: String,
+    pub value: f32,
+    pub threshold: f32,
+    pub passed: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]

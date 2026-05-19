@@ -1,10 +1,11 @@
 use crate::inventory::{canonicalize, ctxpack_home, repo_id_for_path, InventoryError};
 use ctxpack_core::{
-    AgentOutcomeComparisonReport, BudgetOutcome, Diagnostic, DiagnosticSeverity, FeedbackOutcome,
-    FeedbackSummary, PackBudget, PolicyProfileActionReport, PolicyProfileStatus,
+    AgentOutcomeComparisonReport, BudgetOutcome, CandidateFeatureExport, CandidateFeatureLabel,
+    Diagnostic, DiagnosticSeverity, FeedbackOutcome, FeedbackSummary, PackBudget,
+    PolicyBaselineThreshold, PolicyMetricSummary, PolicyProfileActionReport, PolicyProfileStatus,
     PolicyQualityReport, PolicySafetyFloor, PolicySignalContribution, PolicySignalWeight,
-    PolicyTokenRoi, RepeatedMissingFileFamily, RetrievalPolicyProfile, RetrievalSignalKind,
-    SessionFeedbackEvent, TraceStatus, TraceStatusKind,
+    PolicyTokenRoi, PolicyTrainingSource, RepeatedMissingFileFamily, RetrievalPolicyProfile,
+    RetrievalSignalKind, SessionFeedbackEvent, TraceStatus, TraceStatusKind,
 };
 use std::collections::{BTreeMap, BTreeSet};
 use std::fs::{self, OpenOptions};
@@ -13,6 +14,28 @@ use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 pub const FEEDBACK_EVENT_SCHEMA_VERSION: u32 = 1;
+pub const LEARNED_POLICY_PROFILE_SCHEMA_VERSION: u32 = 2;
+
+#[derive(Debug, Clone)]
+pub struct LearnedPolicyOptions {
+    pub feedback_limit: usize,
+    pub min_context_precision: f32,
+    pub min_validation_coverage: f32,
+    pub min_pass_rate: f32,
+    pub min_gold_or_selected_rows: usize,
+}
+
+impl Default for LearnedPolicyOptions {
+    fn default() -> Self {
+        Self {
+            feedback_limit: 20,
+            min_context_precision: 0.4,
+            min_validation_coverage: 0.2,
+            min_pass_rate: 0.0,
+            min_gold_or_selected_rows: 1,
+        }
+    }
+}
 
 pub fn append_feedback_event(
     repo_root: impl AsRef<Path>,
@@ -183,6 +206,26 @@ pub fn propose_policy_profile(
     let report = policy_quality_report(&repo_root, limit)?;
     let profile = policy_profile_from_report(&report, current_unix_seconds());
     write_policy_profile(repo_root, profile)
+}
+
+pub fn propose_learned_policy_profile(
+    repo_root: impl AsRef<Path>,
+    options: &LearnedPolicyOptions,
+) -> Result<RetrievalPolicyProfile, InventoryError> {
+    let repo_root = canonicalize(repo_root.as_ref())?;
+    let repo_id = repo_id_for_path(&repo_root);
+    let feedback_report = policy_quality_report(&repo_root, options.feedback_limit)?;
+    let outcome_report = outcome_comparison_report(&repo_root, options.feedback_limit)?;
+    let feature_exports = list_policy_feature_exports(&repo_id)?;
+    let profile = learned_policy_profile_from_evidence(
+        &repo_id,
+        &feature_exports,
+        &feedback_report,
+        &outcome_report,
+        options,
+        current_unix_seconds(),
+    );
+    write_policy_profile(&repo_root, profile)
 }
 
 pub fn list_policy_profiles(
@@ -428,8 +471,33 @@ fn policy_profile_from_report(
     RetrievalPolicyProfile {
         id: format!("policy-{}", created_at_unix_seconds),
         status: PolicyProfileStatus::Candidate,
+        profile_schema_version: LEARNED_POLICY_PROFILE_SCHEMA_VERSION,
         created_at_unix_seconds,
         source_report_event_count: report.event_count,
+        training_corpus_id: Some(format!("feedback-events-{}", report.event_count)),
+        training_sources: vec![PolicyTrainingSource {
+            source_kind: "feedback".to_string(),
+            source_id: Some(report.repo_id.clone()),
+            schema_version: Some(FEEDBACK_EVENT_SCHEMA_VERSION.to_string()),
+            row_count: report.event_count,
+        }],
+        metric_summary: vec![
+            PolicyMetricSummary {
+                metric: "context_precision".to_string(),
+                value: report.context_precision,
+                unit: "ratio".to_string(),
+            },
+            PolicyMetricSummary {
+                metric: "validation_coverage".to_string(),
+                value: report.validation_coverage,
+                unit: "ratio".to_string(),
+            },
+            PolicyMetricSummary {
+                metric: "correction_rate".to_string(),
+                value: report.correction_rate,
+                unit: "ratio".to_string(),
+            },
+        ],
         rationale: "Candidate generated from local source-free feedback metrics.".to_string(),
         weights,
         safety_floors: vec![
@@ -463,12 +531,325 @@ fn policy_profile_from_report(
                 ),
             )
             .collect(),
+        baseline_thresholds: Vec::new(),
+        default_eligible: true,
         rollback_profile_id: None,
         source_text_logged: false,
     }
 }
 
-fn write_policy_profile(
+fn learned_policy_profile_from_evidence(
+    repo_id: &str,
+    feature_exports: &[CandidateFeatureExport],
+    feedback_report: &PolicyQualityReport,
+    outcome_report: &AgentOutcomeComparisonReport,
+    options: &LearnedPolicyOptions,
+    created_at_unix_seconds: u64,
+) -> RetrievalPolicyProfile {
+    let feature_row_count = feature_exports
+        .iter()
+        .map(|export| export.rows.len())
+        .sum::<usize>();
+    let selected_or_gold_rows = feature_exports
+        .iter()
+        .flat_map(|export| export.rows.iter())
+        .filter(|row| {
+            row.labels.contains(&CandidateFeatureLabel::Gold)
+                || row.labels.contains(&CandidateFeatureLabel::Selected)
+        })
+        .count();
+    let pass_rate = if outcome_report.event_count == 0 {
+        0.0
+    } else {
+        outcome_report
+            .budgets
+            .iter()
+            .map(|budget| budget.pass_rate * budget.event_count as f32)
+            .sum::<f32>()
+            / outcome_report.event_count as f32
+    };
+
+    let thresholds = vec![
+        PolicyBaselineThreshold {
+            metric: "context_precision".to_string(),
+            value: feedback_report.context_precision,
+            threshold: options.min_context_precision,
+            passed: feedback_report.context_precision >= options.min_context_precision,
+        },
+        PolicyBaselineThreshold {
+            metric: "validation_coverage".to_string(),
+            value: feedback_report.validation_coverage,
+            threshold: options.min_validation_coverage,
+            passed: feedback_report.validation_coverage >= options.min_validation_coverage,
+        },
+        PolicyBaselineThreshold {
+            metric: "pass_rate".to_string(),
+            value: pass_rate,
+            threshold: options.min_pass_rate,
+            passed: pass_rate >= options.min_pass_rate,
+        },
+        PolicyBaselineThreshold {
+            metric: "gold_or_selected_rows".to_string(),
+            value: selected_or_gold_rows as f32,
+            threshold: options.min_gold_or_selected_rows as f32,
+            passed: selected_or_gold_rows >= options.min_gold_or_selected_rows,
+        },
+    ];
+    let default_eligible = thresholds.iter().all(|threshold| threshold.passed);
+    let mut weights = learned_signal_weights(feature_exports, feedback_report);
+    weights.sort_by(|left, right| format!("{:?}", left.signal).cmp(&format!("{:?}", right.signal)));
+
+    RetrievalPolicyProfile {
+        id: format!("learned-policy-{}", created_at_unix_seconds),
+        status: PolicyProfileStatus::Candidate,
+        profile_schema_version: LEARNED_POLICY_PROFILE_SCHEMA_VERSION,
+        created_at_unix_seconds,
+        source_report_event_count: feedback_report.event_count,
+        training_corpus_id: Some(format!(
+            "{}-exports-{}-feedback-{}",
+            repo_id,
+            feature_exports.len(),
+            feedback_report.event_count
+        )),
+        training_sources: learned_training_sources(repo_id, feature_exports, feedback_report),
+        metric_summary: vec![
+            PolicyMetricSummary {
+                metric: "feature_export_rows".to_string(),
+                value: feature_row_count as f32,
+                unit: "rows".to_string(),
+            },
+            PolicyMetricSummary {
+                metric: "gold_or_selected_rows".to_string(),
+                value: selected_or_gold_rows as f32,
+                unit: "rows".to_string(),
+            },
+            PolicyMetricSummary {
+                metric: "context_precision".to_string(),
+                value: feedback_report.context_precision,
+                unit: "ratio".to_string(),
+            },
+            PolicyMetricSummary {
+                metric: "validation_coverage".to_string(),
+                value: feedback_report.validation_coverage,
+                unit: "ratio".to_string(),
+            },
+            PolicyMetricSummary {
+                metric: "pass_rate".to_string(),
+                value: pass_rate,
+                unit: "ratio".to_string(),
+            },
+        ],
+        rationale: "Candidate generated from source-free feature exports, historical labels carried by feature rows, and feedback/outcome traces.".to_string(),
+        weights,
+        safety_floors: learned_safety_floors(),
+        regression_warnings: learned_regression_warnings(
+            feature_exports,
+            feedback_report,
+            selected_or_gold_rows,
+            default_eligible,
+        ),
+        baseline_thresholds: thresholds,
+        default_eligible,
+        rollback_profile_id: None,
+        source_text_logged: feature_exports.iter().any(|export| export.source_text_logged)
+            || feedback_report.source_text_logged
+            || outcome_report.source_text_logged,
+    }
+}
+
+fn list_policy_feature_exports(
+    repo_id: &str,
+) -> Result<Vec<CandidateFeatureExport>, InventoryError> {
+    let dir = ctxpack_home()
+        .join("repos")
+        .join(repo_id)
+        .join("feature-exports");
+    let entries = match fs::read_dir(&dir) {
+        Ok(entries) => entries,
+        Err(error) if error.kind() == io::ErrorKind::NotFound => return Ok(Vec::new()),
+        Err(source) => return Err(InventoryError::Read { path: dir, source }),
+    };
+    let mut exports = Vec::new();
+    for entry in entries {
+        let entry = entry.map_err(|source| InventoryError::Read {
+            path: dir.clone(),
+            source,
+        })?;
+        let path = entry.path();
+        if path.extension().and_then(|extension| extension.to_str()) != Some("json") {
+            continue;
+        }
+        let content = fs::read_to_string(&path).map_err(|source| InventoryError::Read {
+            path: path.clone(),
+            source,
+        })?;
+        exports.push(serde_json::from_str(&content).map_err(|source| {
+            InventoryError::Deserialize {
+                path: path.clone(),
+                source,
+            }
+        })?);
+    }
+    exports.sort_by(
+        |left: &CandidateFeatureExport, right: &CandidateFeatureExport| {
+            right
+                .created_at_unix_seconds
+                .cmp(&left.created_at_unix_seconds)
+                .then_with(|| left.export_id.cmp(&right.export_id))
+        },
+    );
+    Ok(exports)
+}
+
+fn learned_signal_weights(
+    feature_exports: &[CandidateFeatureExport],
+    feedback_report: &PolicyQualityReport,
+) -> Vec<PolicySignalWeight> {
+    let mut lexical_hit = 0.0;
+    let mut semantic_hit = 0.0;
+    let mut dependency_hit = 0.0;
+    let mut history_hit = 0.0;
+    let mut test_hit = 0.0;
+    let mut memory_hit = 0.0;
+    for row in feature_exports.iter().flat_map(|export| export.rows.iter()) {
+        if !(row.labels.contains(&CandidateFeatureLabel::Gold)
+            || row.labels.contains(&CandidateFeatureLabel::Selected)
+            || row.labels.contains(&CandidateFeatureLabel::Read)
+            || row.labels.contains(&CandidateFeatureLabel::Edited))
+        {
+            continue;
+        }
+        lexical_hit += row.lexical_score;
+        semantic_hit += row.semantic_score;
+        dependency_hit += row.graph_score;
+        history_hit += row.history_score;
+        test_hit += row.test_score;
+        memory_hit += row.memory_score;
+    }
+
+    let total = (lexical_hit + semantic_hit + dependency_hit + history_hit + test_hit + memory_hit)
+        .max(1.0);
+    let mut weights = vec![
+        learned_weight(
+            RetrievalSignalKind::Anchor,
+            0.20,
+            "Anchors stay at a conservative floor even when offline rows are sparse.",
+        ),
+        learned_weight(
+            RetrievalSignalKind::Lexical,
+            (lexical_hit / total).clamp(0.15, 0.35),
+            "Learned from selected/gold feature rows while preserving exact-token floor.",
+        ),
+        learned_weight(
+            RetrievalSignalKind::RelatedTest,
+            ((test_hit / total) + feedback_report.validation_coverage * 0.15).clamp(0.10, 0.30),
+            "Validation coverage from feedback controls related-test weight.",
+        ),
+        learned_weight(
+            RetrievalSignalKind::Dependency,
+            (dependency_hit / total).clamp(0.05, 0.25),
+            "Graph contribution is bounded by source-free selected/gold rows.",
+        ),
+        learned_weight(
+            RetrievalSignalKind::CoChange,
+            (history_hit / total).clamp(0.05, 0.20),
+            "History contribution is bounded by source-free selected/gold rows.",
+        ),
+        learned_weight(
+            RetrievalSignalKind::Memory,
+            if memory_hit > 0.0 && feedback_report.correction_rate <= 0.2 {
+                (memory_hit / total).clamp(0.05, 0.10)
+            } else {
+                0.05
+            },
+            "Memory is demoted when feedback correction rate is high.",
+        ),
+    ];
+    if semantic_hit > 0.0 {
+        weights.push(learned_weight(
+            RetrievalSignalKind::Semantic,
+            (semantic_hit / total).clamp(0.05, 0.15),
+            "Semantic remains opt-in and bounded by selected/gold feature evidence.",
+        ));
+    }
+    weights
+}
+
+fn learned_weight(signal: RetrievalSignalKind, weight: f32, rationale: &str) -> PolicySignalWeight {
+    PolicySignalWeight {
+        signal,
+        weight,
+        rationale: rationale.to_string(),
+    }
+}
+
+fn learned_safety_floors() -> Vec<PolicySafetyFloor> {
+    vec![
+        PolicySafetyFloor {
+            signal: RetrievalSignalKind::Anchor,
+            minimum_weight: 0.20,
+            reason: "Explicit user/file anchors remain mandatory.".to_string(),
+        },
+        PolicySafetyFloor {
+            signal: RetrievalSignalKind::Lexical,
+            minimum_weight: 0.15,
+            reason: "Exact identifiers remain mandatory for code tasks.".to_string(),
+        },
+        PolicySafetyFloor {
+            signal: RetrievalSignalKind::RelatedTest,
+            minimum_weight: 0.10,
+            reason: "Validation context must not be removed by learning.".to_string(),
+        },
+    ]
+}
+
+fn learned_training_sources(
+    repo_id: &str,
+    feature_exports: &[CandidateFeatureExport],
+    feedback_report: &PolicyQualityReport,
+) -> Vec<PolicyTrainingSource> {
+    let mut sources = feature_exports
+        .iter()
+        .map(|export| PolicyTrainingSource {
+            source_kind: format!("{:?}", export.export_source).to_lowercase(),
+            source_id: Some(export.export_id.to_string()),
+            schema_version: Some(export.schema_version.to_string()),
+            row_count: export.rows.len(),
+        })
+        .collect::<Vec<_>>();
+    sources.push(PolicyTrainingSource {
+        source_kind: "feedback".to_string(),
+        source_id: Some(repo_id.to_string()),
+        schema_version: Some(FEEDBACK_EVENT_SCHEMA_VERSION.to_string()),
+        row_count: feedback_report.event_count,
+    });
+    sources
+}
+
+fn learned_regression_warnings(
+    feature_exports: &[CandidateFeatureExport],
+    feedback_report: &PolicyQualityReport,
+    selected_or_gold_rows: usize,
+    default_eligible: bool,
+) -> Vec<String> {
+    let mut warnings = Vec::new();
+    if feature_exports.is_empty() {
+        warnings.push("No source-free candidate feature exports were available.".to_string());
+    }
+    if selected_or_gold_rows == 0 {
+        warnings.push("No selected or gold feature rows were available.".to_string());
+    }
+    warnings.extend(feedback_report.sample_warning.clone());
+    if !default_eligible {
+        warnings.push(
+            "Configured thresholds did not pass; profile cannot be applied as active default."
+                .to_string(),
+        );
+    }
+    warnings
+}
+
+pub fn write_policy_profile(
     repo_root: impl AsRef<Path>,
     profile: RetrievalPolicyProfile,
 ) -> Result<RetrievalPolicyProfile, InventoryError> {
@@ -496,6 +877,11 @@ fn update_policy_profile_status(
             profile.status = PolicyProfileStatus::Disabled;
         }
         if profile.id == profile_id {
+            if status == PolicyProfileStatus::Active && !profile.default_eligible {
+                return Err(InventoryError::InvalidInput(format!(
+                    "policy profile {profile_id} is not eligible to become active; inspect baselineThresholds and regressionWarnings"
+                )));
+            }
             profile.status = status.clone();
             found = true;
         }

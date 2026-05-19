@@ -28,8 +28,9 @@ pub use dependencies::{
 pub use feedback::{
     append_feedback_event, apply_policy_profile, disable_policy_profile, feedback_path,
     list_feedback_events, list_policy_profiles, outcome_comparison_report, policy_profiles_path,
-    policy_quality_report, propose_policy_profile, rollback_policy_profile,
-    summarize_feedback_events, try_append_feedback_event, FEEDBACK_EVENT_SCHEMA_VERSION,
+    policy_quality_report, propose_learned_policy_profile, propose_policy_profile,
+    rollback_policy_profile, summarize_feedback_events, try_append_feedback_event,
+    LearnedPolicyOptions, FEEDBACK_EVENT_SCHEMA_VERSION, LEARNED_POLICY_PROFILE_SCHEMA_VERSION,
 };
 pub use freshness::{
     check_inventory_freshness, load_or_refresh_inventory, InventoryFreshness, InventoryLoadReport,

@@ -46,6 +46,8 @@ edit, and shell tools after ctxpack tells them where to look.
   rows for learning and diagnostics.
 - [Paired baselines](paired-baselines.md) documents lexical/no-context,
   signal-only, and ablation comparison reports.
+- [Learned policy](learned-policy.md) documents offline source-free policy
+  profile proposals and threshold gates.
 - [Workspace manifests](workspace.md) documents local multi-repo workspace
   state.
 - [Agent integrations](integrations.md) documents AGENTS.md, MCP, and native

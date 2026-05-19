@@ -53,6 +53,7 @@ as proof that retrieval improved.
 
 ```bash
 ctxpack eval policy tune --repo "$REPO"
+ctxpack eval policy learn --repo "$REPO"
 ctxpack eval policy list --repo "$REPO"
 ctxpack eval policy apply <profile-id> --repo "$REPO"
 ctxpack eval policy disable <profile-id> --repo "$REPO"
@@ -63,6 +64,12 @@ ctxpack eval policy rollback --repo "$REPO"
 feedback evidence. Profiles are inspectable and disabled by default until a
 maintainer applies one. Profiles include rationale, weights, safety floors,
 regression warnings, sample counts, and rollback metadata.
+
+`learn` writes a candidate offline learned profile from local source-free
+candidate feature exports, historical labels carried by those feature rows, and
+feedback/outcome traces. Learned profiles include schema version, training
+corpus ID, training sources, metric summary, baseline thresholds, and a
+`defaultEligible` flag. `apply` refuses profiles whose thresholds did not pass.
 
 Safety floors keep exact anchors, lexical identifiers, and validation context
 from being demoted below conservative minimums.

@@ -1352,6 +1352,123 @@ fn eval_policy_and_outcome_reports_are_source_free() {
     assert!(report["signalContributions"].is_array());
     assert_no_source_or_prompt_text(&report);
 
+    let export = json_stdout(
+        Command::cargo_bin("ctxpack")
+            .unwrap()
+            .env(CTXPACK_HOME_ENV, &fixture.home)
+            .args([
+                "eval",
+                "features",
+                "export",
+                "fix requireSession auth",
+                "--format",
+                "json",
+                "--repo",
+            ])
+            .arg(&fixture.repo)
+            .assert(),
+    );
+    assert_eq!(export["export"]["sourceTextLogged"], false);
+
+    let learned = json_stdout(
+        Command::cargo_bin("ctxpack")
+            .unwrap()
+            .env(CTXPACK_HOME_ENV, &fixture.home)
+            .args([
+                "eval",
+                "policy",
+                "learn",
+                "--min-gold-or-selected-rows",
+                "0",
+                "--format",
+                "json",
+                "--repo",
+            ])
+            .arg(&fixture.repo)
+            .assert(),
+    );
+    let learned_id = learned["id"].as_str().unwrap().to_string();
+    assert!(learned_id.starts_with("learned-policy-"));
+    assert_eq!(learned["profileSchemaVersion"], 2);
+    assert_eq!(learned["status"], "candidate");
+    assert_eq!(learned["defaultEligible"], true);
+    assert!(learned["trainingSources"].as_array().unwrap().len() >= 2);
+    assert!(learned["metricSummary"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .any(|metric| metric["metric"] == "feature_export_rows"
+            && metric["value"].as_f64().unwrap() > 0.0));
+    assert!(learned["baselineThresholds"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .all(|threshold| threshold["passed"].as_bool().unwrap()));
+    assert_no_source_or_prompt_text(&learned);
+
+    let learned_apply = json_stdout(
+        Command::cargo_bin("ctxpack")
+            .unwrap()
+            .env(CTXPACK_HOME_ENV, &fixture.home)
+            .args([
+                "eval",
+                "policy",
+                "apply",
+                &learned_id,
+                "--format",
+                "json",
+                "--repo",
+            ])
+            .arg(&fixture.repo)
+            .assert(),
+    );
+    assert_eq!(learned_apply["activeProfileId"], learned_id);
+    let learned_rollback = json_stdout(
+        Command::cargo_bin("ctxpack")
+            .unwrap()
+            .env(CTXPACK_HOME_ENV, &fixture.home)
+            .args(["eval", "policy", "rollback", "--format", "json", "--repo"])
+            .arg(&fixture.repo)
+            .assert(),
+    );
+    assert_eq!(learned_rollback["profileId"], learned_id);
+
+    let blocked_learned = json_stdout(
+        Command::cargo_bin("ctxpack")
+            .unwrap()
+            .env(CTXPACK_HOME_ENV, &fixture.home)
+            .args([
+                "eval",
+                "policy",
+                "learn",
+                "--min-context-precision",
+                "2.0",
+                "--format",
+                "json",
+                "--repo",
+            ])
+            .arg(&fixture.repo)
+            .assert(),
+    );
+    let blocked_id = blocked_learned["id"].as_str().unwrap().to_string();
+    assert_eq!(blocked_learned["defaultEligible"], false);
+    Command::cargo_bin("ctxpack")
+        .unwrap()
+        .env(CTXPACK_HOME_ENV, &fixture.home)
+        .args([
+            "eval",
+            "policy",
+            "apply",
+            &blocked_id,
+            "--format",
+            "json",
+            "--repo",
+        ])
+        .arg(&fixture.repo)
+        .assert()
+        .failure()
+        .stderr(contains("not eligible"));
+
     let profile = json_stdout(
         Command::cargo_bin("ctxpack")
             .unwrap()

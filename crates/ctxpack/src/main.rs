@@ -32,16 +32,17 @@ use ctxpack_index::{
     apply_policy_profile, co_change_hints, current_diff_summary, dependency_edges,
     disable_policy_profile, extract_symbols, import_precision_edges, lexical_search,
     list_eval_traces, list_feedback_events, list_memory_cards, list_policy_profiles,
-    outcome_comparison_report, policy_quality_report, propose_policy_profile,
-    related_dependency_edges, related_tests, rollback_policy_profile, semantic_search,
-    storage_status_for_repo, summarize_feedback_events, symbol_search, sync_inventory_to_store,
-    sync_semantic_index_to_store, try_append_eval_trace, try_append_feedback_event,
-    update_memory_card_review_status, vacuum_store, write_inventory, CoChangeOptions,
-    CurrentDiffOptions, DependencyOptions, InventoryOptions, InventoryReport,
-    PrecisionImportReport, SearchOptions, SemanticOptions, StorageBenchmarkRunRecord,
-    StorageContextPackRecord, StorageGapRecord, StorageIndexReport, StorageMetricRecord,
-    StorageProofReportRecord, StorageReport, StorageSemanticIndexReport, StorageStatusReport,
-    StoreConfig, SymbolOptions, FEEDBACK_EVENT_SCHEMA_VERSION, WORKSPACE_MANIFEST_SCHEMA_VERSION,
+    outcome_comparison_report, policy_quality_report, propose_learned_policy_profile,
+    propose_policy_profile, related_dependency_edges, related_tests, rollback_policy_profile,
+    semantic_search, storage_status_for_repo, summarize_feedback_events, symbol_search,
+    sync_inventory_to_store, sync_semantic_index_to_store, try_append_eval_trace,
+    try_append_feedback_event, update_memory_card_review_status, vacuum_store, write_inventory,
+    CoChangeOptions, CurrentDiffOptions, DependencyOptions, InventoryOptions, InventoryReport,
+    LearnedPolicyOptions, PrecisionImportReport, SearchOptions, SemanticOptions,
+    StorageBenchmarkRunRecord, StorageContextPackRecord, StorageGapRecord, StorageIndexReport,
+    StorageMetricRecord, StorageProofReportRecord, StorageReport, StorageSemanticIndexReport,
+    StorageStatusReport, StoreConfig, SymbolOptions, FEEDBACK_EVENT_SCHEMA_VERSION,
+    WORKSPACE_MANIFEST_SCHEMA_VERSION,
 };
 use std::collections::BTreeSet;
 use std::fs;
@@ -815,6 +816,8 @@ enum EvalPolicyCommand {
     Report(EvalFeedbackListArgs),
     #[command(about = "Propose a local retrieval policy profile from feedback evidence.")]
     Tune(EvalFeedbackListArgs),
+    #[command(about = "Propose an offline learned policy profile from source-free evidence.")]
+    Learn(EvalPolicyLearnArgs),
     #[command(about = "List local retrieval policy profiles.")]
     List(EvalPolicyListArgs),
     #[command(about = "Apply a local retrieval policy profile.")]
@@ -846,6 +849,24 @@ struct EvalPolicyExperimentArgs {
 struct EvalPolicyListArgs {
     #[arg(long)]
     repo: Option<PathBuf>,
+    #[arg(long, value_enum, default_value_t = PackFormat::Markdown)]
+    format: PackFormat,
+}
+
+#[derive(Debug, Args)]
+struct EvalPolicyLearnArgs {
+    #[arg(long)]
+    repo: Option<PathBuf>,
+    #[arg(long, default_value_t = 20)]
+    feedback_limit: usize,
+    #[arg(long, default_value_t = 0.4)]
+    min_context_precision: f32,
+    #[arg(long, default_value_t = 0.2)]
+    min_validation_coverage: f32,
+    #[arg(long, default_value_t = 0.0)]
+    min_pass_rate: f32,
+    #[arg(long, default_value_t = 1)]
+    min_gold_or_selected_rows: usize,
     #[arg(long, value_enum, default_value_t = PackFormat::Markdown)]
     format: PackFormat,
 }
@@ -1876,6 +1897,24 @@ fn main() -> Result<()> {
                     let start = args.repo.clone().unwrap_or(std::env::current_dir()?);
                     let repo = RepoRoot::discover_from(&start)?;
                     let profile = propose_policy_profile(&repo.path, args.limit)?;
+                    match args.format {
+                        PackFormat::Markdown => println!("{}", render_policy_profiles(&[profile])),
+                        PackFormat::Json => println!("{}", serde_json::to_string_pretty(&profile)?),
+                    }
+                }
+                EvalPolicyCommand::Learn(args) => {
+                    let start = args.repo.clone().unwrap_or(std::env::current_dir()?);
+                    let repo = RepoRoot::discover_from(&start)?;
+                    let profile = propose_learned_policy_profile(
+                        &repo.path,
+                        &LearnedPolicyOptions {
+                            feedback_limit: args.feedback_limit,
+                            min_context_precision: args.min_context_precision,
+                            min_validation_coverage: args.min_validation_coverage,
+                            min_pass_rate: args.min_pass_rate,
+                            min_gold_or_selected_rows: args.min_gold_or_selected_rows,
+                        },
+                    )?;
                     match args.format {
                         PackFormat::Markdown => println!("{}", render_policy_profiles(&[profile])),
                         PackFormat::Json => println!("{}", serde_json::to_string_pretty(&profile)?),
@@ -3448,14 +3487,37 @@ fn render_policy_profiles(profiles: &[RetrievalPolicyProfile]) -> String {
     }
     for profile in profiles {
         output.push_str(&format!(
-            "## `{}`\n\n- Status: `{:?}`\n- Events: `{}`\n- Created at: `{}`\n- Source text logged: `{}`\n- Rationale: {}\n\n",
+            "## `{}`\n\n- Status: `{:?}`\n- Schema: `{}`\n- Events: `{}`\n- Training corpus: `{:?}`\n- Default eligible: `{}`\n- Created at: `{}`\n- Source text logged: `{}`\n- Rationale: {}\n\n",
             profile.id,
             profile.status,
+            profile.profile_schema_version,
             profile.source_report_event_count,
+            profile.training_corpus_id,
+            profile.default_eligible,
             profile.created_at_unix_seconds,
             profile.source_text_logged,
             profile.rationale
         ));
+        if !profile.training_sources.is_empty() {
+            output.push_str("### Training Sources\n\n");
+            for source in &profile.training_sources {
+                output.push_str(&format!(
+                    "- `{}` id `{:?}` schema `{:?}` rows `{}`\n",
+                    source.source_kind, source.source_id, source.schema_version, source.row_count
+                ));
+            }
+            output.push('\n');
+        }
+        if !profile.metric_summary.is_empty() {
+            output.push_str("### Metrics\n\n");
+            for metric in &profile.metric_summary {
+                output.push_str(&format!(
+                    "- `{}`: `{:.2}` `{}`\n",
+                    metric.metric, metric.value, metric.unit
+                ));
+            }
+            output.push('\n');
+        }
         output.push_str("### Weights\n\n");
         for weight in &profile.weights {
             output.push_str(&format!(
@@ -3469,6 +3531,15 @@ fn render_policy_profiles(profiles: &[RetrievalPolicyProfile]) -> String {
                 "- `{:?}`: min `{:.2}` — {}\n",
                 floor.signal, floor.minimum_weight, floor.reason
             ));
+        }
+        if !profile.baseline_thresholds.is_empty() {
+            output.push_str("\n### Baseline Thresholds\n\n");
+            for threshold in &profile.baseline_thresholds {
+                output.push_str(&format!(
+                    "- `{}`: value `{:.2}`, threshold `{:.2}`, passed `{}`\n",
+                    threshold.metric, threshold.value, threshold.threshold, threshold.passed
+                ));
+            }
         }
         if !profile.regression_warnings.is_empty() {
             output.push_str("\n### Regression Warnings\n\n");

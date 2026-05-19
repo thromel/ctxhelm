@@ -2007,7 +2007,7 @@ fn eval_trace(
 ) -> EvalTrace {
     EvalTrace {
         id: Uuid::new_v4(),
-        repo_id: repo_id_for_path(repo_root),
+        repo_id: feature_repo_id(repo_root),
         task_hash: task_hash(task),
         task_type: plan.task_type.clone(),
         pack_id,
@@ -2347,12 +2347,17 @@ fn candidate_feature_id(candidate: &RetrievalCandidate, rank: usize) -> String {
 fn candidate_feature_export_dir(repo_root: &Path) -> PathBuf {
     ctxpack_cache_root()
         .join("repos")
-        .join(repo_id_for_path(repo_root))
+        .join(feature_repo_id(repo_root))
         .join("feature-exports")
 }
 
 fn candidate_feature_export_path(repo_root: &Path, export_id: &str) -> PathBuf {
     candidate_feature_export_dir(repo_root).join(format!("{export_id}.json"))
+}
+
+fn feature_repo_id(repo_root: &Path) -> String {
+    let stable_root = fs::canonicalize(repo_root).unwrap_or_else(|_| repo_root.to_path_buf());
+    repo_id_for_path(&stable_root)
 }
 
 fn context_file_ranking(

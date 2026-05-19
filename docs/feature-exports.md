@@ -52,6 +52,8 @@ Each row includes:
 - source-free labels such as `selected` or `unknown`;
 - `sourceTextLogged: false`.
 
-The first implementation exports plan candidates. Historical gold labels,
-feedback read/edit labels, and paired baseline feature rows build on this
-contract in later v2.3 phases.
+Plan-candidate exports are consumed by `ctxpack eval policy learn` as
+source-free offline training evidence. Historical gold labels and feedback
+read/edit labels are represented through the same label field when available.
+The learner treats missing labels as insufficient evidence rather than silently
+promoting a profile.

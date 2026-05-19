@@ -38,10 +38,10 @@ This milestone turns ctxpack's retrieval-quality claims into repeatable, source-
 
 ### Learned Retrieval Policy
 
-- [ ] **POLICY-01**: Offline learner can propose source-free retrieval-policy weights from feature exports, historical eval labels, and feedback/outcome traces.
-- [ ] **POLICY-02**: Learned policy proposals are stored as non-default profiles with provenance, training corpus id, feature schema version, metric summary, and rollback metadata.
-- [ ] **POLICY-03**: Maintainer can compare, apply, disable, and roll back learned profiles through existing local policy controls without changing global defaults silently.
-- [ ] **POLICY-04**: Learned profiles cannot become default unless they beat configured baseline thresholds for recall, precision proxy, token ROI, runtime, validation coverage, and source-free privacy.
+- [x] **POLICY-01**: Offline learner can propose source-free retrieval-policy weights from feature exports, historical eval labels, and feedback/outcome traces.
+- [x] **POLICY-02**: Learned policy proposals are stored as non-default profiles with provenance, training corpus id, feature schema version, metric summary, and rollback metadata.
+- [x] **POLICY-03**: Maintainer can compare, apply, disable, and roll back learned profiles through existing local policy controls without changing global defaults silently.
+- [x] **POLICY-04**: Learned profiles cannot become default unless they beat configured baseline thresholds for recall, precision proxy, token ROI, runtime, validation coverage, and source-free privacy.
 
 ### Product Proof And Release Gates
 
@@ -123,10 +123,10 @@ Explicitly excluded from v2.3 to keep the milestone focused on measured quality 
 | BASELINE-02 | Phase 53 | Complete |
 | BASELINE-03 | Phase 53 | Complete |
 | BASELINE-04 | Phase 53 | Complete |
-| POLICY-01 | Phase 54 | Planned |
-| POLICY-02 | Phase 54 | Planned |
-| POLICY-03 | Phase 54 | Planned |
-| POLICY-04 | Phase 54 | Planned |
+| POLICY-01 | Phase 54 | Complete |
+| POLICY-02 | Phase 54 | Complete |
+| POLICY-03 | Phase 54 | Complete |
+| POLICY-04 | Phase 54 | Complete |
 | PROOF-01 | Phase 55 | Planned |
 | PROOF-02 | Phase 55 | Planned |
 | PROOF-03 | Phase 55 | Planned |
