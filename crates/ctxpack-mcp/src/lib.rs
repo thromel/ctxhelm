@@ -1136,11 +1136,11 @@ mod tests {
         assert!(co_change_paths.contains(&"tests/auth/session.test.ts"));
         assert_eq!(
             response["result"]["structuredContent"]["dependencyEdges"][0]["sourcePath"],
-            "src/auth/session.ts"
+            "tests/auth/session.test.ts"
         );
         assert_eq!(
             response["result"]["structuredContent"]["dependencyEdges"][0]["targetPath"],
-            "src/auth/cookies.ts"
+            "src/auth/session.ts"
         );
         std::env::remove_var("CTXPACK_HOME");
     }
@@ -1201,6 +1201,10 @@ mod tests {
         );
         assert_eq!(
             response["result"]["structuredContent"]["dependencyEdges"][0]["sourcePath"],
+            "tests/auth/session.test.ts"
+        );
+        assert_eq!(
+            response["result"]["structuredContent"]["dependencyEdges"][0]["targetPath"],
             "src/auth/session.ts"
         );
         std::env::remove_var("CTXPACK_HOME");

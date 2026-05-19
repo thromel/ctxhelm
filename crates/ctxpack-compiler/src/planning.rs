@@ -588,7 +588,7 @@ fn search_limit(task_type: &TaskType) -> usize {
 
 fn co_change_limit(task_type: &TaskType) -> usize {
     match task_type {
-        TaskType::BugFix | TaskType::Refactor | TaskType::Review => 8,
+        TaskType::BugFix | TaskType::Refactor | TaskType::Review => 30,
         TaskType::Feature | TaskType::Test | TaskType::Explain => 5,
     }
 }

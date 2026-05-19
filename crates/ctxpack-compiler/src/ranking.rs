@@ -65,10 +65,11 @@ pub(crate) fn rank_candidates(input: RankingInput) -> Vec<RankedCandidate> {
             commit_count: 0,
             line_range: None,
             command: None,
+            lexical_rank: None,
         });
     }
 
-    for result in input.lexical_results {
+    for (lexical_rank, result) in input.lexical_results.into_iter().enumerate() {
         let kind = candidate_kind_for_role(&result.role);
         let role = result.role;
         let path = result.path;
@@ -86,6 +87,7 @@ pub(crate) fn rank_candidates(input: RankingInput) -> Vec<RankedCandidate> {
             commit_count: 0,
             line_range: None,
             command: None,
+            lexical_rank: Some(lexical_rank),
         });
     }
 
@@ -107,6 +109,7 @@ pub(crate) fn rank_candidates(input: RankingInput) -> Vec<RankedCandidate> {
             commit_count: 0,
             line_range: None,
             command: None,
+            lexical_rank: None,
         });
     }
 
@@ -131,6 +134,7 @@ pub(crate) fn rank_candidates(input: RankingInput) -> Vec<RankedCandidate> {
             commit_count: 0,
             line_range: line_range.clone(),
             command: None,
+            lexical_rank: None,
         });
         candidates.add_path_signal(PathSignal {
             kind: RetrievalCandidateKind::Symbol,
@@ -145,6 +149,7 @@ pub(crate) fn rank_candidates(input: RankingInput) -> Vec<RankedCandidate> {
             commit_count: 0,
             line_range,
             command: None,
+            lexical_rank: None,
         });
     }
 
@@ -173,6 +178,7 @@ pub(crate) fn rank_candidates(input: RankingInput) -> Vec<RankedCandidate> {
             commit_count: 0,
             line_range: None,
             command: None,
+            lexical_rank: None,
         });
     }
 
@@ -191,6 +197,7 @@ pub(crate) fn rank_candidates(input: RankingInput) -> Vec<RankedCandidate> {
             commit_count: 0,
             line_range: None,
             command: test.command,
+            lexical_rank: None,
         });
     }
 
@@ -215,6 +222,7 @@ pub(crate) fn rank_candidates(input: RankingInput) -> Vec<RankedCandidate> {
             commit_count: hint.commit_count as u32,
             line_range: None,
             command: None,
+            lexical_rank: None,
         });
     }
 
@@ -238,11 +246,7 @@ pub(crate) fn select_ranked_candidates(
         .iter()
         .map(|candidate| candidate.candidate.clone())
         .collect::<Vec<_>>();
-    let target_files = candidates
-        .iter()
-        .filter_map(|candidate| candidate.target_file.clone())
-        .take(file_budget)
-        .collect::<Vec<_>>();
+    let target_files = select_target_files(candidates, file_budget);
     let related_tests = candidates
         .iter()
         .filter_map(|candidate| candidate.related_test.clone())
@@ -267,12 +271,97 @@ pub(crate) fn select_ranked_candidates(
     }
 }
 
+fn select_target_files(candidates: &[RankedCandidate], file_budget: usize) -> Vec<TargetFile> {
+    if file_budget == 0 {
+        return Vec::new();
+    }
+
+    let mut selected = Vec::new();
+    let mut selected_paths = BTreeSet::new();
+    let mut lexical_floor = candidates
+        .iter()
+        .filter(|candidate| candidate.target_file.is_some())
+        .filter_map(|candidate| {
+            let lexical_score = signal_score(&candidate.candidate, RetrievalSignalKind::Lexical)?;
+            if lexical_score < 0.90 {
+                return None;
+            }
+            Some((lexical_score, candidate))
+        })
+        .collect::<Vec<_>>();
+    lexical_floor.sort_by(|(left_score, left), (right_score, right)| {
+        right_score
+            .total_cmp(left_score)
+            .then_with(|| left.lexical_rank.cmp(&right.lexical_rank))
+            .then_with(|| right.rank_score.total_cmp(&left.rank_score))
+            .then_with(|| left.candidate.path.cmp(&right.candidate.path))
+    });
+
+    for (_, candidate) in lexical_floor.into_iter().take(7) {
+        push_target(candidate, &mut selected, &mut selected_paths, file_budget);
+    }
+    let mut history_floor = candidates
+        .iter()
+        .filter(|candidate| candidate.target_file.is_some())
+        .filter_map(|candidate| {
+            let history_score = signal_score(&candidate.candidate, RetrievalSignalKind::CoChange)?;
+            if history_score < 0.50 {
+                return None;
+            }
+            Some((history_score, candidate))
+        })
+        .collect::<Vec<_>>();
+    history_floor.sort_by(|(left_score, left), (right_score, right)| {
+        right_score
+            .total_cmp(left_score)
+            .then_with(|| right.rank_score.total_cmp(&left.rank_score))
+            .then_with(|| left.candidate.path.cmp(&right.candidate.path))
+    });
+    for (_, candidate) in history_floor.into_iter().take(4) {
+        push_target(candidate, &mut selected, &mut selected_paths, file_budget);
+    }
+    for candidate in candidates {
+        if selected.len() >= file_budget {
+            break;
+        }
+        push_target(candidate, &mut selected, &mut selected_paths, file_budget);
+    }
+
+    selected
+}
+
+fn push_target(
+    candidate: &RankedCandidate,
+    selected: &mut Vec<TargetFile>,
+    selected_paths: &mut BTreeSet<String>,
+    file_budget: usize,
+) {
+    if selected.len() >= file_budget {
+        return;
+    }
+    let Some(target) = candidate.target_file.clone() else {
+        return;
+    };
+    if selected_paths.insert(target.path.clone()) {
+        selected.push(target);
+    }
+}
+
+fn signal_score(candidate: &RetrievalCandidate, signal: RetrievalSignalKind) -> Option<f32> {
+    candidate
+        .signal_scores
+        .iter()
+        .find(|score| score.signal == signal)
+        .map(|score| score.score * score.weight)
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub(crate) struct RankedCandidate {
     pub candidate: RetrievalCandidate,
     pub target_file: Option<TargetFile>,
     pub related_test: Option<RelatedTest>,
     pub rank_score: f32,
+    pub lexical_rank: Option<usize>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
@@ -292,6 +381,7 @@ struct CandidateBuilder {
     target_file: Option<TargetFile>,
     related_test: Option<RelatedTest>,
     rank_score: f32,
+    lexical_rank: Option<usize>,
 }
 
 #[derive(Default)]
@@ -312,6 +402,7 @@ struct PathSignal {
     commit_count: u32,
     line_range: Option<LineRange>,
     command: Option<String>,
+    lexical_rank: Option<usize>,
 }
 
 impl CandidateAccumulator {
@@ -334,7 +425,13 @@ impl CandidateAccumulator {
                 target_file: target_file_for(&signal, weighted_score),
                 related_test: related_test_for(&signal, weighted_score),
                 rank_score: 0.0,
+                lexical_rank: signal.lexical_rank,
             });
+        builder.lexical_rank = match (builder.lexical_rank, signal.lexical_rank) {
+            (Some(existing), Some(incoming)) => Some(existing.min(incoming)),
+            (None, Some(incoming)) => Some(incoming),
+            (existing, None) => existing,
+        };
         builder.rank_score += weighted_score;
         merge_signal_score(
             &mut builder.signal_scores,
@@ -423,6 +520,7 @@ impl CandidateAccumulator {
                 target_file: None,
                 related_test: None,
                 rank_score: 0.0,
+                lexical_rank: None,
             });
         builder.rank_score += score * weight;
         merge_signal_score(&mut builder.signal_scores, signal.clone(), score, weight);
@@ -464,6 +562,7 @@ impl CandidateAccumulator {
                     target_file: builder.target_file,
                     related_test: builder.related_test,
                     rank_score: builder.rank_score,
+                    lexical_rank: builder.lexical_rank,
                 }
             })
             .collect::<Vec<_>>();
@@ -603,9 +702,9 @@ fn signal_weight(signal: &RetrievalSignalKind) -> f32 {
         RetrievalSignalKind::Symbol => 1.05,
         RetrievalSignalKind::Lexical => 1.00,
         RetrievalSignalKind::Semantic => 0.45,
-        RetrievalSignalKind::Dependency => 0.85,
+        RetrievalSignalKind::Dependency => 0.45,
         RetrievalSignalKind::RelatedTest => 0.90,
-        RetrievalSignalKind::CoChange => 0.75,
+        RetrievalSignalKind::CoChange => 1.35,
         RetrievalSignalKind::History => 0.65,
         RetrievalSignalKind::Config => 0.25,
         RetrievalSignalKind::Docs => 0.20,
@@ -859,6 +958,99 @@ mod tests {
                 .collect::<Vec<_>>(),
             vec!["tests/a.test.ts"]
         );
+    }
+
+    #[test]
+    fn selection_preserves_strong_lexical_targets_when_symbols_dominate() {
+        let candidates = rank_candidates(RankingInput {
+            lexical_results: vec![
+                SearchResult {
+                    path: "documentation/mcp.md".to_string(),
+                    role: FileRole::Docs,
+                    language: Some("markdown".to_string()),
+                    score: 24.0,
+                    reason: "strong doc match".to_string(),
+                },
+                lexical("src/target.ts", 24.0),
+            ],
+            symbol_results: (0..8)
+                .map(|index| SymbolSearchResult {
+                    symbol: CodeSymbol {
+                        name: format!("Exact{index}"),
+                        kind: SymbolKind::Function,
+                        path: format!("src/noisy-{index}.ts"),
+                        language: Some("typescript".to_string()),
+                        start_line: 1,
+                        end_line: 1,
+                        signature: format!("function Exact{index}() {{}}"),
+                        exported: true,
+                    },
+                    score: 25.0,
+                    reason: "symbol name match".to_string(),
+                })
+                .collect(),
+            roles: roles([
+                ("documentation/mcp.md", FileRole::Docs),
+                ("src/target.ts", FileRole::Source),
+                ("src/noisy-0.ts", FileRole::Source),
+                ("src/noisy-1.ts", FileRole::Source),
+                ("src/noisy-2.ts", FileRole::Source),
+                ("src/noisy-3.ts", FileRole::Source),
+                ("src/noisy-4.ts", FileRole::Source),
+                ("src/noisy-5.ts", FileRole::Source),
+                ("src/noisy-6.ts", FileRole::Source),
+                ("src/noisy-7.ts", FileRole::Source),
+            ]),
+            ..RankingInput::default()
+        });
+
+        let selection = select_ranked_candidates(&candidates, 3, 0);
+        let paths = selection
+            .target_files
+            .iter()
+            .map(|target| target.path.as_str())
+            .collect::<Vec<_>>();
+
+        assert!(paths.contains(&"documentation/mcp.md"));
+        assert!(paths.contains(&"src/target.ts"));
+    }
+
+    #[test]
+    fn selection_preserves_strong_cochange_targets() {
+        let candidates = rank_candidates(RankingInput {
+            lexical_results: vec![
+                lexical("src/a.ts", 24.0),
+                lexical("src/b.ts", 24.0),
+                lexical("src/c.ts", 24.0),
+                lexical("src/d.ts", 24.0),
+                lexical("src/e.ts", 24.0),
+            ],
+            co_change_hints: vec![CoChangeHint {
+                path: "src/historical.ts".to_string(),
+                commit_count: 2,
+                confidence: 0.8,
+                sample_commits: vec!["abc1234".to_string(), "def5678".to_string()],
+                reason: "changed together".to_string(),
+            }],
+            roles: roles([
+                ("src/a.ts", FileRole::Source),
+                ("src/b.ts", FileRole::Source),
+                ("src/c.ts", FileRole::Source),
+                ("src/d.ts", FileRole::Source),
+                ("src/e.ts", FileRole::Source),
+                ("src/historical.ts", FileRole::Source),
+            ]),
+            ..RankingInput::default()
+        });
+
+        let selection = select_ranked_candidates(&candidates, 6, 0);
+        let paths = selection
+            .target_files
+            .iter()
+            .map(|target| target.path.as_str())
+            .collect::<Vec<_>>();
+
+        assert!(paths.contains(&"src/historical.ts"));
     }
 
     #[test]

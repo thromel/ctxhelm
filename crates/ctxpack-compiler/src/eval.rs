@@ -1488,11 +1488,15 @@ fn context_file_ranking(
     ranking_budget: usize,
 ) -> Vec<String> {
     let mut seen = BTreeSet::new();
+    let ranking_budget = ranking_budget.max(1);
+    let primary_file_budget = ranking_budget.saturating_sub(3).max(1);
     recommended_files
         .iter()
+        .take(primary_file_budget)
         .chain(recommended_tests.iter())
+        .chain(recommended_files.iter().skip(primary_file_budget))
         .filter_map(|path| seen.insert(path.clone()).then_some(path.clone()))
-        .take(ranking_budget.max(1))
+        .take(ranking_budget)
         .collect()
 }
 
@@ -2245,4 +2249,34 @@ fn top_missing_files(
     });
     missing.truncate(limit.max(1));
     missing
+}
+
+#[cfg(test)]
+mod tests {
+    use super::context_file_ranking;
+
+    #[test]
+    fn context_ranking_keeps_validation_tests_inside_budget() {
+        let files = (0..10)
+            .map(|index| format!("src/file-{index}.ts"))
+            .collect::<Vec<_>>();
+        let tests = vec![
+            "tests/file-0.test.ts".to_string(),
+            "tests/file-1.test.ts".to_string(),
+            "src/file-1.ts".to_string(),
+        ];
+
+        let ranking = context_file_ranking(&files, &tests, 10);
+
+        assert_eq!(ranking.len(), 10);
+        assert!(ranking.contains(&"tests/file-0.test.ts".to_string()));
+        assert!(ranking.contains(&"tests/file-1.test.ts".to_string()));
+        assert_eq!(
+            ranking
+                .iter()
+                .filter(|path| path.as_str() == "src/file-1.ts")
+                .count(),
+            1
+        );
+    }
 }

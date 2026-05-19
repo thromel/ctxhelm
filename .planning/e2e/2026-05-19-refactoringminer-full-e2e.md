@@ -27,12 +27,13 @@ What works:
 - Memory storage and selection work after card generation.
 - Claude Code can call ctxpack through MCP against the real RefactoringMiner clone.
 - Historical eval now evaluates real commits after fixing a sampler bug found by this run.
+- A follow-up ranking fix moved historical Recall@10 above the lexical baseline on this slice.
 
 What is not good enough yet:
 
-- Retrieval quality underperforms lexical baseline on this RefactoringMiner historical slice.
-- Related-test selection is noisy and lacks Gradle/JUnit class-level commands.
-- Some relevant docs/source files are missed.
+- Retrieval quality is only slightly above lexical baseline at Recall@10 and only tied at Recall@5.
+- Related-test selection is still noisy on sparse Java/AST tasks.
+- Some relevant source files remain unrecoverable from sparse historical commit titles without stronger semantic or repository-history signals.
 - Deep eval is expensive on large histories.
 
 ## Correctness
@@ -55,9 +56,9 @@ Gold changed files:
 
 Result:
 
-- `prepare-task` hit 4 of 5 gold files.
-- Missed `documentation/mcp.md`.
-- Historical eval for the same commit also hit the four Java/test MCP files and missed `documentation/mcp.md`.
+- Initial `prepare-task` hit 4 of 5 gold files and missed `documentation/mcp.md`.
+- After the ranking fixes, the task context hit all 5 gold files across target files plus related tests.
+- Historical eval for the same commit also hit all 5 gold files after context ranking was changed to keep validation tests inside the fixed budget.
 
 Top target files:
 
@@ -85,10 +86,9 @@ Gold changed files:
 
 Result:
 
-- `prepare-task` hit 1 of 2 gold files.
-- It found `VariableDeclaration.java`.
-- It missed `MethodMatcher.java`.
-- It over-selected broad `RefactoringMiner`, API, and extension AST nodes.
+- Initial `prepare-task` hit 1 of 2 gold files.
+- After the ranking fixes, live `prepare-task` hit both `VariableDeclaration.java` and `MethodMatcher.java`.
+- Historical eval still misses `MethodMatcher.java` from the parent snapshot because the commit title has no lexical/symbol signal for that file; the live repo can recover it through co-change history after that history exists.
 
 ## Historical Eval
 
@@ -124,6 +124,24 @@ Interpretation:
 - The eval system now works on this large repo.
 - The current retrieval policy is worse than lexical baseline for this slice and needs ranking work before we can claim better context selection.
 
+Follow-up ranking result after debugging:
+
+- `evaluatedCommits: 20`
+- `fileRecallAt5: 0.4532`
+- `fileRecallAt10: 0.5186`
+- `lexicalBaselineRecallAt5: 0.4532`
+- `lexicalBaselineRecallAt10: 0.5008`
+- `ctxpackLiftAt5: 0.0`
+- `ctxpackLiftAt10: 0.0179`
+- `sourceRecallAt10: 0.4611`
+- `testRecallAt10: 0.4722`
+- real time: 279.18s
+
+Interpretation:
+
+- The hybrid policy is no longer worse than lexical on this real slice.
+- The lift is small; this is a correctness recovery, not a strong product win yet.
+
 Top retrieval gaps:
 
 1. MCP source files with `no_candidate_signal`.
@@ -153,6 +171,7 @@ Patched local-binary timings:
 | Operation | Time |
 | --- | ---: |
 | `eval history --limit 20` after sampler fix | 265.65s |
+| `eval history --limit 20` after ranking fixes | 279.18s |
 | `agent preview --target-agent all` after shared-plan fix | 45.41s |
 
 Efficiency conclusions:
@@ -252,27 +271,84 @@ Remaining issue:
 
 - Debug-build runtime is still 45.41s on RefactoringMiner, so more caching or preview-specific lightweight planning is needed.
 
+### REF-E2E-003: Hybrid Ranking Dropped Strong Lexical Evidence
+
+Status: fixed.
+
+Problem:
+
+- Strong exact lexical hits such as `documentation/mcp.md` and `RefactoringMinerMcpService.java` were present in candidates but fell outside the selected context because symbol, graph, and history candidates saturated the top ranks.
+
+Fix:
+
+- Added a lexical floor to target selection.
+- Preserved original lexical rank through candidate fusion so exact-search ordering survives score saturation.
+- Reduced generic `node` query weight and ignored common task verbs such as `fix`, `handle`, `default`, and `support`.
+
+Files:
+
+- `crates/ctxpack-index/src/search.rs`
+- `crates/ctxpack-compiler/src/ranking.rs`
+
+### REF-E2E-004: History and Graph Signals Were Misweighted
+
+Status: improved.
+
+Problem:
+
+- Dependency expansion was too greedy and co-change evidence was too weak for bug-fix style tasks.
+
+Fix:
+
+- Prioritized incoming dependency edges before outgoing dependency edges.
+- Increased bug/refactor/review co-change candidate coverage.
+- Added a co-change floor to target selection.
+- Lowered dependency signal weight and raised co-change signal weight.
+
+Files:
+
+- `crates/ctxpack-index/src/dependencies.rs`
+- `crates/ctxpack-compiler/src/planning.rs`
+- `crates/ctxpack-compiler/src/ranking.rs`
+
+### REF-E2E-005: Java Tests Had No Runnable Commands
+
+Status: fixed.
+
+Problem:
+
+- RefactoringMiner related tests were returned without useful Gradle/JUnit class-level commands.
+
+Fix:
+
+- Added Java test command inference for Gradle and Maven.
+- RefactoringMiner MCP tests now return commands such as `./gradlew test --tests org.refactoringminer.mcp.RefactoringMinerMcpToolsTest`.
+
+Files:
+
+- `crates/ctxpack-index/src/related_tests.rs`
+
 ## Remaining Product Gaps
 
-### REF-E2E-003: Retrieval Policy Underperforms Lexical Baseline
+### REF-E2E-006: Retrieval Policy Has Only Small Lift Over Lexical
 
-Status: open.
+Status: partially fixed.
 
 Evidence:
 
-- ctxpack file recall@10: `0.2569`
+- original ctxpack file recall@10: `0.2569`
+- fixed ctxpack file recall@10: `0.5186`
 - lexical baseline recall@10: `0.5008`
 
 Likely causes:
 
-- Java package/path families are not weighted strongly enough.
-- Exact title-token matches are not dominating enough for historical commit eval.
-- Docs and tests are demoted too aggressively in bug-fix mode.
-- Graph/test/history candidates sometimes add noise before improving recall.
+- Sparse commit titles still leave files with no recoverable lexical/symbol signal.
+- Java package/path families need better precision than import-only graph expansion.
+- Graph/test/history candidates can still add noise before improving recall.
 
-### REF-E2E-004: Docs Missed for MCP Task
+### REF-E2E-007: Docs Missed for MCP Task
 
-Status: open.
+Status: fixed for the observed task.
 
 Evidence:
 
@@ -283,34 +359,36 @@ Needed:
 
 - Docs should be preserved for tasks with explicit integration/tool names like MCP, CLI, setup, docs, config, or user-facing behavior.
 
-### REF-E2E-005: NPE Task Misses MethodMatcher
+### REF-E2E-008: Historical NPE Task Still Misses MethodMatcher
 
-Status: open.
+Status: partially fixed.
 
 Evidence:
 
 - NPE task hit `VariableDeclaration.java` but missed `MethodMatcher.java`.
+- Live `prepare-task` now includes `MethodMatcher.java`.
+- Parent-snapshot historical eval still misses `MethodMatcher.java`.
 
 Needed:
 
 - Stronger exact-symbol extraction for Java method names and AST wrapper class names.
 - Better history/co-change weighting around recent AST-diff files.
 
-### REF-E2E-006: Related Tests Are Noisy
+### REF-E2E-009: Related Tests Are Noisy
 
 Status: open.
 
 Evidence:
 
-- Related test output included GUI and broad regression tests for narrow MCP and NPE tasks.
-- Commands were not useful Gradle/JUnit class-level commands.
+- Related test output still includes GUI and broad regression tests for sparse NPE tasks.
+- Commands are now useful Gradle/JUnit class-level commands.
 
 Needed:
 
 - Java/Gradle test command mapping.
 - Package-proximity and class-name matching should dominate broad resource/test references.
 
-### REF-E2E-007: Deep Historical Eval Is Expensive
+### REF-E2E-010: Deep Historical Eval Is Expensive
 
 Status: open.
 
@@ -329,6 +407,8 @@ Needed:
 Commands passed:
 
 ```bash
+cargo fmt --check
+git diff --check
 CARGO_INCREMENTAL=0 cargo test --workspace
 CARGO_INCREMENTAL=0 cargo run -p ctxpack -- --help
 ```
@@ -338,6 +418,11 @@ Targeted tests passed:
 ```bash
 CARGO_INCREMENTAL=0 cargo test -p ctxpack-index historical_commit_collection_skips_per_commit_diff_failures -- --nocapture
 CARGO_INCREMENTAL=0 cargo test -p ctxpack-compiler agent_preview -- --nocapture
+CARGO_INCREMENTAL=0 cargo test -p ctxpack-compiler ranking -- --nocapture
+CARGO_INCREMENTAL=0 cargo test -p ctxpack-index lexical_search_ignores_common_task_verbs -- --nocapture
+CARGO_INCREMENTAL=0 cargo test -p ctxpack-index related_tests_uses_gradle_java_test_class_command -- --nocapture
+CARGO_INCREMENTAL=0 cargo test -p ctxpack --test cli_compat search_related_tests_dependencies_and_eval_history_emit_json_shapes -- --nocapture
+CARGO_INCREMENTAL=0 cargo test -p ctxpack-mcp related_call -- --nocapture
 ```
 
 Claude Code e2e passed:

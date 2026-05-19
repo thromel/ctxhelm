@@ -498,6 +498,39 @@ mod tests {
     }
 
     #[test]
+    fn lexical_search_ignores_common_task_verbs() {
+        let _guard = env_lock();
+        let temp = tempfile::tempdir().unwrap();
+        let repo = temp.path().join("repo");
+        let home = temp.path().join("ctxpack-home");
+        fs::create_dir_all(repo.join(".git")).unwrap();
+        fs::create_dir_all(repo.join("src")).unwrap();
+        fs::write(
+            repo.join("src/noisy.ts"),
+            "handle handle handle handle handle handle handle handle\n",
+        )
+        .unwrap();
+        fs::write(
+            repo.join("src/scope.ts"),
+            "function getScopeNode() { return iswc4jast; }\n",
+        )
+        .unwrap();
+        std::env::set_var("CTXPACK_HOME", &home);
+
+        let results = lexical_search(
+            &repo,
+            "Handle NPE in getScopeNode(ISwc4jAst node)",
+            &SearchOptions { limit: 5 },
+        )
+        .unwrap();
+
+        assert_eq!(results[0].path, "src/scope.ts");
+        assert!(!results.iter().any(|result| result.path == "src/noisy.ts"));
+
+        std::env::remove_var("CTXPACK_HOME");
+    }
+
+    #[test]
     fn extract_symbols_finds_language_aware_definitions() {
         let _guard = env_lock();
         let temp = tempfile::tempdir().unwrap();
@@ -858,6 +891,7 @@ mod tests {
 
         assert!(pairs.contains(&("src/auth/session.ts", "src/auth/cookies.ts")));
         assert!(pairs.contains(&("src/app.ts", "src/auth/session.ts")));
+        assert_eq!(pairs[0], ("src/app.ts", "src/auth/session.ts"));
 
         std::env::remove_var("CTXPACK_HOME");
     }
@@ -1080,6 +1114,42 @@ mod tests {
         assert_eq!(
             results[0].command.as_deref(),
             Some("cargo test --test auth")
+        );
+
+        std::env::remove_var("CTXPACK_HOME");
+    }
+
+    #[test]
+    fn related_tests_uses_gradle_java_test_class_command() {
+        let _guard = env_lock();
+        let temp = tempfile::tempdir().unwrap();
+        let repo = temp.path().join("repo");
+        let home = temp.path().join("ctxpack-home");
+        fs::create_dir_all(repo.join(".git")).unwrap();
+        fs::create_dir_all(repo.join("src/main/java/org/example/auth")).unwrap();
+        fs::create_dir_all(repo.join("src/test/java/org/example/auth")).unwrap();
+        fs::write(repo.join("build.gradle"), "plugins { id 'java' }\n").unwrap();
+        fs::write(
+            repo.join("src/main/java/org/example/auth/SessionService.java"),
+            "package org.example.auth; class SessionService {}\n",
+        )
+        .unwrap();
+        fs::write(
+            repo.join("src/test/java/org/example/auth/SessionServiceTest.java"),
+            "package org.example.auth; class SessionServiceTest { SessionService service; }\n",
+        )
+        .unwrap();
+        std::env::set_var("CTXPACK_HOME", &home);
+
+        let results = related_tests(
+            &repo,
+            &["src/main/java/org/example/auth/SessionService.java".to_string()],
+        )
+        .unwrap();
+
+        assert_eq!(
+            results[0].command.as_deref(),
+            Some("./gradlew test --tests org.example.auth.SessionServiceTest")
         );
 
         std::env::remove_var("CTXPACK_HOME");

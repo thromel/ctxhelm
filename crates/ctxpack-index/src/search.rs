@@ -190,13 +190,23 @@ pub(crate) fn query_term_weight(term: &str) -> f32 {
             | "as"
             | "be"
             | "by"
+            | "change"
+            | "changed"
+            | "changes"
+            | "default"
+            | "fix"
+            | "fixed"
+            | "fixes"
             | "for"
             | "from"
+            | "handle"
             | "in"
             | "is"
             | "of"
             | "on"
             | "or"
+            | "support"
+            | "supports"
             | "the"
             | "to"
             | "with"
@@ -219,6 +229,10 @@ pub(crate) fn query_term_weight(term: &str) -> f32 {
             | "ts"
     ) {
         return 0.25;
+    }
+
+    if matches!(term, "node" | "nodes") {
+        return 0.10;
     }
 
     1.0

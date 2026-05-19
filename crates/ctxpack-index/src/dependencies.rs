@@ -716,8 +716,8 @@ fn edge_anchor_rank(edge: &DependencyEdge, anchors: &BTreeSet<String>) -> u8 {
         anchors.contains(&edge.source_path),
         anchors.contains(&edge.target_path),
     ) {
-        (true, false) => 0,
-        (false, true) => 1,
+        (false, true) => 0,
+        (true, false) => 1,
         (true, true) => 2,
         (false, false) => 3,
     }

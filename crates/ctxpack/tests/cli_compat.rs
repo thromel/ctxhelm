@@ -985,8 +985,8 @@ fn search_related_tests_dependencies_and_eval_history_emit_json_shapes() {
         first_edge,
         &["sourcePath", "targetPath", "kind", "confidence", "reason"],
     );
-    assert_eq!(first_edge["sourcePath"], "src/auth/session.ts");
-    assert_eq!(first_edge["targetPath"], "src/auth/token.ts");
+    assert_eq!(first_edge["sourcePath"], "tests/auth/session.test.ts");
+    assert_eq!(first_edge["targetPath"], "src/auth/session.ts");
     assert_eq!(first_edge["kind"], "imports");
 
     let precision_input = fixture.home.join("precision.json");

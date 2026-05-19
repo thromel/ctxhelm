@@ -149,6 +149,7 @@ fn source_key(path: &str) -> SourceKey {
     let stem = source_stem(file_name);
     let mut identifiers = query_terms(&stem);
     identifiers.extend(query_terms(&normalized));
+    identifiers.retain(|identifier| !is_generic_test_identifier(identifier));
     identifiers.sort();
     identifiers.dedup();
 
@@ -254,9 +255,31 @@ fn test_command_for(repo_root: &Path, path: &str) -> Option<String> {
         || lower.ends_with(".jsx")
     {
         Some(javascript_test_command(repo_root, path))
+    } else if lower.ends_with(".java") {
+        java_test_command(repo_root, path)
     } else {
         None
     }
+}
+
+fn java_test_command(repo_root: &Path, path: &str) -> Option<String> {
+    let class_name = path.rsplit('/').next()?.strip_suffix(".java")?;
+    let fqcn = path
+        .strip_prefix("src/test/java/")
+        .and_then(|rest| rest.strip_suffix(".java"))
+        .map(|rest| rest.replace('/', "."));
+    let selector = fqcn.as_deref().unwrap_or(class_name);
+
+    if repo_root.join("gradlew").is_file()
+        || repo_root.join("build.gradle").is_file()
+        || repo_root.join("build.gradle.kts").is_file()
+    {
+        return Some(format!("./gradlew test --tests {selector}"));
+    }
+    if repo_root.join("pom.xml").is_file() {
+        return Some(format!("mvn -Dtest={class_name} test"));
+    }
+    Some(format!("java test {path}"))
 }
 
 fn rust_test_command(path: &str) -> String {
@@ -381,4 +404,21 @@ fn package_dir(path: &str) -> String {
         .map(|(directory, _)| directory)
         .unwrap_or(".")
         .to_string()
+}
+
+fn is_generic_test_identifier(identifier: &str) -> bool {
+    matches!(
+        identifier,
+        "src"
+            | "main"
+            | "test"
+            | "tests"
+            | "java"
+            | "kotlin"
+            | "org"
+            | "com"
+            | "net"
+            | "io"
+            | "github"
+    )
 }
