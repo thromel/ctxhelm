@@ -2145,9 +2145,28 @@ mod tests {
         assert_eq!(reused.created_records, 0);
         assert_eq!(reused.updated_records, 0);
         assert_eq!(reused.reused_records, 1);
+        let second_provider = persist_semantic_vector_records(
+            &repo,
+            &config,
+            &[StorageSemanticVectorRecord {
+                path: "src/lib.rs".to_string(),
+                safe_hash: "safe-hash".to_string(),
+                provider: "local_fastembed".to_string(),
+                model: "JinaEmbeddingsV2BaseCode".to_string(),
+                dimensions: 768,
+                distance_metric: "cosine".to_string(),
+                vector: vec![0.4, 0.5, 0.6],
+                privacy_status: "local_only".to_string(),
+            }],
+        )
+        .unwrap();
+        assert_eq!(second_provider.semantic_vector_records, 1);
+        assert_eq!(second_provider.created_records, 1);
         let bytes = fs::read(&status.database_path).unwrap();
         let database_text = String::from_utf8_lossy(&bytes);
         assert!(!database_text.contains("CTXPACK_SEMANTIC_SOURCE_SENTINEL"));
+        assert!(database_text.contains("local_fastembed"));
+        assert!(database_text.contains("JinaEmbeddingsV2BaseCode"));
 
         drop(temp);
     }

@@ -8,9 +8,14 @@ readme.workspace = true
 description.workspace = true
 rust-version.workspace = true
 
+[features]
+default = []
+local-embeddings = ["dep:fastembed"]
+
 [dependencies]
 blake3.workspace = true
 ctxpack-core = { path = "../ctxpack-core" }
+fastembed = { workspace = true, optional = true }
 ignore.workspace = true
 rusqlite.workspace = true
 serde.workspace = true

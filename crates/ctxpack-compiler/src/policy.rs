@@ -7,8 +7,8 @@ use ctxpack_core::{
     RetrievalPolicyExperimentRow, SemanticProviderStatusReport, SemanticUsageSummary, TaskType,
 };
 use ctxpack_index::{
-    semantic_vector_records, storage_status_for_repo, task_hash, InventoryError, SemanticOptions,
-    SemanticProviderConfig, StoreConfig,
+    normalized_provider, semantic_vector_records, storage_status_for_repo, task_hash,
+    InventoryError, SemanticOptions, SemanticProviderConfig, StoreConfig,
 };
 use std::path::Path;
 
@@ -18,7 +18,7 @@ pub fn semantic_provider_status_report(
     task_type: TaskType,
 ) -> Result<SemanticProviderStatusReport, InventoryError> {
     let repo_root = repo_root.as_ref();
-    let provider = SemanticProviderConfig::default();
+    let provider = normalized_provider(&SemanticProviderConfig::default());
     let local_records = semantic_vector_records(
         repo_root,
         &SemanticOptions {
@@ -59,6 +59,17 @@ pub fn semantic_provider_status_report(
         model_id: provider.model,
         dimensions: provider.dimensions,
         distance_metric: provider.distance_metric,
+        provider_role: provider.provider_role,
+        quality_backend: provider.quality_backend,
+        local_only: provider.local_only,
+        provider_available: provider.available,
+        provider_status: if provider.available {
+            "available".to_string()
+        } else {
+            "unavailable".to_string()
+        },
+        cache_location: "local ctxpack semantic_vectors store".to_string(),
+        degraded: !provider.available,
         enabled_by_default: false,
         cloud_embeddings_allowed: false,
         cloud_reranking_allowed: false,

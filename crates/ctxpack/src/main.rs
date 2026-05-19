@@ -3825,12 +3825,19 @@ fn render_graph_neighborhood_report(report: &GraphNeighborhoodReport) -> String 
 fn render_semantic_provider_status(report: &SemanticProviderStatusReport) -> String {
     let mut output = String::from("# ctxpack Semantic Provider Status\n\n");
     output.push_str(&format!(
-        "- Repo ID: `{}`\n- Provider: `{}`\n- Model: `{}`\n- Dimensions: `{}`\n- Distance metric: `{}`\n- Enabled by default: `{}`\n- Cloud embeddings allowed: `{}`\n- Cloud reranking allowed: `{}`\n- Local vector count: `{}`\n- Stored vector count: `{}`\n- Indexing freshness: `{}`\n- Source text logged: `{}`\n- Privacy: local-only `{}`\n\n",
+        "- Repo ID: `{}`\n- Provider: `{}`\n- Model: `{}`\n- Dimensions: `{}`\n- Distance metric: `{}`\n- Provider role: `{}`\n- Quality backend: `{}`\n- Local only: `{}`\n- Provider available: `{}`\n- Provider status: `{}`\n- Cache location: `{}`\n- Degraded: `{}`\n- Enabled by default: `{}`\n- Cloud embeddings allowed: `{}`\n- Cloud reranking allowed: `{}`\n- Local vector count: `{}`\n- Stored vector count: `{}`\n- Indexing freshness: `{}`\n- Source text logged: `{}`\n- Privacy: local-only `{}`\n\n",
         report.repo_id,
         report.provider_kind,
         report.model_id,
         report.dimensions,
         report.distance_metric,
+        report.provider_role,
+        report.quality_backend,
+        report.local_only,
+        report.provider_available,
+        report.provider_status,
+        report.cache_location,
+        report.degraded,
         report.enabled_by_default,
         report.cloud_embeddings_allowed,
         report.cloud_reranking_allowed,

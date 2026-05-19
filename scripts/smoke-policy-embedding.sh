@@ -74,6 +74,10 @@ EXPERIMENT_JSON="${TMP_DIR}/policy-experiments.json"
 )
 
 require_text "${STATUS_JSON}" '"providerKind": "local_hash"'
+require_text "${STATUS_JSON}" '"providerRole": "deterministic_scaffold"'
+require_text "${STATUS_JSON}" '"qualityBackend": false'
+require_text "${STATUS_JSON}" '"localOnly": true'
+require_text "${STATUS_JSON}" '"providerAvailable": true'
 require_text "${STATUS_JSON}" '"enabledByDefault": false'
 require_text "${STATUS_JSON}" '"cloudEmbeddingsAllowed": false'
 require_text "${STATUS_JSON}" '"cloudRerankingAllowed": false'

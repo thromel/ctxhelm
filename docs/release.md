@@ -158,7 +158,7 @@ The optional real-client evidence wrappers are:
 - `scripts/smoke-codex-mcp.sh`
 - `scripts/smoke-claude-mcp.sh`
 
-The semantic smoke proves explicit local semantic retrieval, source-free vector metadata, semantic provenance in plans, semantic-enabled eval metadata, and cloud-disabled privacy status. It does not call cloud embedding or reranking services.
+The semantic smoke proves explicit local semantic retrieval, source-free vector metadata, semantic provenance in plans, semantic-enabled eval metadata, scaffold/provider status for `local_hash`, and cloud-disabled privacy status. It does not call cloud embedding or reranking services. The optional `local_fastembed` backend remains behind the `local-embeddings` Cargo feature and is not a default release requirement.
 
 The precision smoke proves Java/Kotlin symbol extraction, Java/Kotlin package import edges, source-free precision edge import, rejection of sensitive paths, and additive precision dependency output.
 
@@ -181,7 +181,7 @@ The retrieval-health smoke proves source-free health JSON and Markdown reports f
 
 The graph smoke proves source-free graph neighborhood JSON and Markdown reports from real dependency/test edges, including nodes, edges, communities, cap-safe metadata, and absence of source sentinel leakage.
 
-The policy/embedding smoke proves semantic provider status reporting, explicit cloud-disabled policy flags, source-free policy experiment rows, graph comparison metadata, and absence of source sentinel leakage.
+The policy/embedding smoke proves semantic provider status reporting, `deterministic_scaffold` labeling for `local_hash`, explicit cloud-disabled policy flags, source-free policy experiment rows, graph comparison metadata, and absence of source sentinel leakage.
 
 The agent-preview smoke proves Codex, Claude Code, Cursor, OpenCode, and generic MCP preview metadata, including MCP tools/resources, guidance paths, read/edit boundary notes, source-free flags, and absence of source sentinel leakage.
 

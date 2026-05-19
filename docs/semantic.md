@@ -13,7 +13,9 @@ ctxpack get-pack "fix payment webhook validation" --repo /path/to/repo --semanti
 ctxpack eval history --repo /path/to/repo --semantic
 ```
 
-The current provider is `local_hash` with model `ctxpack-local-hash-v1`, cosine similarity, and local vector metadata only. It is a deterministic local provider meant to prove the semantic-retrieval contract without introducing cloud defaults.
+The default provider is `local_hash` with model `ctxpack-local-hash-v1`, cosine similarity, and local vector metadata only. `local_hash` is deterministic scaffold/test behavior. It exists to prove the semantic-retrieval contract, storage privacy boundary, and agent provenance without claiming production retrieval quality.
+
+Phase 56 also defines `local_fastembed` as the optional real local embedding backend. It is compiled only when `ctxpack-index` is built with the `local-embeddings` Cargo feature. Normal workspace builds keep `local_fastembed` unavailable and return the warning diagnostic `semantic_provider_unavailable` if it is requested, rather than falling back silently or calling a cloud provider.
 
 ## Index Vector Metadata
 
@@ -24,13 +26,15 @@ ctxpack index --repo /path/to/repo --semantic
 ctxpack storage status --repo /path/to/repo
 ```
 
-`--semantic` implies a safe inventory storage sync. The store records provider, model, dimensions, distance metric, file path, safe hash, privacy label, and numeric vector JSON. It does not store raw file contents, prompts, snippets, secrets, or cloud payloads.
+`--semantic` implies a safe inventory storage sync. The store records provider, model, dimensions, distance metric, file path, safe hash, privacy label, and numeric vector JSON for providers such as `local_hash` and `local_fastembed`. It does not store raw file contents, prompts, snippets, secrets, or cloud payloads.
 
 ## Agent And MCP Use
 
 MCP `prepare_task`, `get_pack`, and `search` accept `semantic: true`. The field is optional and additive, so existing agents keep their lexical, symbol, graph, test, and history behavior unless they explicitly request semantic retrieval.
 
-Semantic evidence appears as the `semantic` retrieval signal with provider metadata in source-free provenance. It is intentionally weighted below exact path, active diff, symbol, lexical, graph, and test evidence so conceptual matches cannot crowd out stronger code signals.
+Semantic evidence appears as the `semantic` retrieval signal with provider metadata in source-free provenance. Provider reports expose `providerRole`, `qualityBackend`, `localOnly`, `providerAvailable`, `providerStatus`, `cacheLocation`, and `degraded` so agents and release checks can distinguish deterministic scaffold behavior from a production local backend.
+
+Semantic retrieval is intentionally weighted below exact path, active diff, symbol, lexical, graph, and test evidence so conceptual matches cannot crowd out stronger code signals.
 
 ## Privacy Boundary
 
@@ -43,6 +47,8 @@ Semantic retrieval uses:
 - no cloud embedding or reranking calls
 
 Cloud embeddings and cloud reranking remain out of scope for the default product.
+
+Semantic defaults are not promoted in Phase 56. Promotion of any production-quality semantic backend remains gated by later evaluation and release criteria.
 
 ## When To Avoid It
 

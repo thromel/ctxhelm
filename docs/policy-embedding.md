@@ -11,9 +11,15 @@ Inspect the local semantic provider:
 ctxpack semantic status --repo /path/to/repo --query "payment webhook validation"
 ```
 
-The current provider is `local_hash` with model ID `ctxpack-local-hash-v1`.
-It is deterministic, source-free in reports, and exists to make semantic
-policy paths testable without enabling cloud embeddings or cloud reranking.
+The default provider is `local_hash` with model ID `ctxpack-local-hash-v1`.
+It is deterministic scaffold/test behavior, source-free in reports, and exists
+to make semantic policy paths testable without enabling cloud embeddings or
+cloud reranking.
+
+The optional production-local backend is `local_fastembed`. It is available only
+in builds compiled with the `local-embeddings` Cargo feature. When that feature
+is absent, requesting `local_fastembed` reports `semantic_provider_unavailable`
+and keeps `remoteEmbeddingsUsed: false`.
 
 Compare retrieval-policy experiment rows without changing default ranking:
 
@@ -28,10 +34,11 @@ graph neighborhood, and current default rows. It is report-only and includes
 ## Source Boundary
 
 These reports are metadata-only. They include provider kind, model ID,
-dimensions, vector counts, semantic usage counts, graph node/edge counts,
-recall metrics, diagnostics, and explicit cloud-disabled flags. They do not
-include raw source text, prompts, terminal logs, model transcripts, cloud
-payloads, or vector-provider request bodies.
+dimensions, provider role, quality-backend status, local-only status, provider
+availability, cache/freshness/degraded status, vector counts, semantic usage
+counts, graph node/edge counts, recall metrics, diagnostics, and explicit
+cloud-disabled flags. They do not include raw source text, prompts, terminal
+logs, model transcripts, cloud payloads, or vector-provider request bodies.
 
 ## Smoke Test
 

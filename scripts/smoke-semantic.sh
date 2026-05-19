@@ -40,6 +40,7 @@ export CTXPACK_HOME="$home"
 
 "$ctxpack_bin" index --repo "$repo" --semantic --store-path "$store" >"$work_dir/index.txt"
 "$ctxpack_bin" storage status --repo "$repo" --path "$store" >"$work_dir/status.txt"
+"$ctxpack_bin" semantic status --repo "$repo" --format json >"$work_dir/semantic-status.json"
 "$ctxpack_bin" search "payment webhook validation" --repo "$repo" --limit 5 --semantic >"$search_json"
 "$ctxpack_bin" prepare-task "fix payment webhook validation" \
   --repo "$repo" \
@@ -63,20 +64,40 @@ export CTXPACK_HOME="$home"
 grep -F -- "Semantic storage sync" "$work_dir/index.txt" >/dev/null
 grep -F -- "Semantic vector records:" "$work_dir/status.txt" >/dev/null
 
-python3 - "$search_json" "$plan_json" "$pack_json" "$eval_json" <<'PY'
+python3 - "$work_dir/semantic-status.json" "$search_json" "$plan_json" "$pack_json" "$eval_json" <<'PY'
 import json
 import sys
 
-search_path, plan_path, pack_path, eval_path = sys.argv[1:]
+status_path, search_path, plan_path, pack_path, eval_path = sys.argv[1:]
+status = json.load(open(status_path, encoding="utf-8"))
 search = json.load(open(search_path, encoding="utf-8"))
 plan = json.load(open(plan_path, encoding="utf-8"))
 pack = json.load(open(pack_path, encoding="utf-8"))
 evaluation = json.load(open(eval_path, encoding="utf-8"))
 
+if status.get("providerKind") != "local_hash":
+    raise SystemExit("semantic status did not report local_hash")
+if status.get("providerRole") != "deterministic_scaffold":
+    raise SystemExit("semantic status did not label local_hash as scaffold behavior")
+if status.get("qualityBackend"):
+    raise SystemExit("semantic status marked local_hash as a quality backend")
+if not status.get("localOnly"):
+    raise SystemExit("semantic status did not report localOnly")
+if not status.get("providerAvailable"):
+    raise SystemExit("semantic status did not report default provider availability")
+if status.get("cloudEmbeddingsAllowed") or status.get("cloudRerankingAllowed"):
+    raise SystemExit("semantic status allowed cloud embeddings or reranking")
+if status.get("privacyStatus", {}).get("remoteEmbeddingsUsed"):
+    raise SystemExit("semantic status reported remote embeddings")
+
 if not search:
     raise SystemExit("semantic search returned no results")
 if search[0]["provider"]["provider"] != "local_hash":
     raise SystemExit("semantic search did not use the local_hash provider")
+if search[0]["provider"].get("providerRole") != "deterministic_scaffold":
+    raise SystemExit("semantic search did not expose scaffold provider role")
+if search[0]["provider"].get("qualityBackend"):
+    raise SystemExit("semantic search marked local_hash as a quality backend")
 if search[0]["path"] != "src/payments/webhooks.ts":
     raise SystemExit(f"unexpected top semantic path: {search[0]['path']}")
 

@@ -50,8 +50,10 @@ ctxpack index --repo "$REPO" --semantic
 
 Semantic indexing is explicit and local-only. It stores provider name, model,
 dimensions, distance metric, safe file hash, privacy label, and numeric vector
-metadata. It uses the same safe inventory and source-read policy as packs, and it
-does not store raw file contents, prompt text, secrets, or cloud payloads.
+metadata for both the deterministic `local_hash` scaffold and optional
+`local_fastembed` backend. It uses the same safe inventory and source-read policy
+as packs, and it does not store raw file contents, prompt text, secrets, or cloud
+payloads.
 
 ## Pack And Eval Metadata
 
