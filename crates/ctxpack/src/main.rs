@@ -4499,6 +4499,56 @@ fn render_product_proof_report(report: &ProductProofReport) -> String {
     }
     output.push('\n');
 
+    output.push_str("## v2.3 Eval Summary\n\n");
+    output.push_str(&format!(
+        "- Manifest version: `{}`\n- Fixed corpus ID: `{}`\n- Privacy label: `{}`\n- Runtime total millis: `{}`\n- Feature export privacy: local-only `{}`, source text logged `{}`, source-free labels only `{}`\n- Learned policy status: schema `{}`, available `{}`, default requires thresholds `{}`, silent default allowed `{}`\n\n",
+        report.v23_eval_summary.manifest_version,
+        report.v23_eval_summary.fixed_corpus_id,
+        report
+            .v23_eval_summary
+            .privacy_label
+            .as_deref()
+            .unwrap_or("unspecified"),
+        report.v23_eval_summary.runtime_total_millis,
+        report.v23_eval_summary.feature_export_privacy.local_only,
+        report.v23_eval_summary.feature_export_privacy.source_text_logged,
+        report
+            .v23_eval_summary
+            .feature_export_privacy
+            .source_free_labels_only,
+        report
+            .v23_eval_summary
+            .learned_policy_status
+            .profile_schema_version,
+        report.v23_eval_summary.learned_policy_status.available,
+        report
+            .v23_eval_summary
+            .learned_policy_status
+            .default_requires_thresholds,
+        report
+            .v23_eval_summary
+            .learned_policy_status
+            .silent_default_allowed
+    ));
+    output.push_str("### Paired Baseline Verdicts\n\n");
+    if report.v23_eval_summary.paired_baseline_verdicts.is_empty() {
+        output.push_str("- No evaluated repositories produced paired baseline verdicts.\n");
+    } else {
+        for verdict in &report.v23_eval_summary.paired_baseline_verdicts {
+            output.push_str(&format!(
+                "- `{}`: lexical delta at `{}` = `{:.3}`, status `{:?}`, commits `{}`\n",
+                verdict.repository,
+                verdict.k,
+                verdict.lexical_delta_at_k,
+                verdict.lexical_status,
+                verdict.evaluated_commits
+            ));
+        }
+    }
+    output.push_str("\n### Proof Boundary\n\n");
+    output.push_str(&report.v23_eval_summary.proof_boundary);
+    output.push_str("\n\n");
+
     output.push_str("## When It Helps\n\n");
     for item in &report.helps_when {
         output.push_str(&format!("- {item}\n"));

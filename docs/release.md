@@ -141,6 +141,7 @@ The release gate runs these required checks:
 - `scripts/smoke-release-governance.sh`
 - `scripts/smoke-semantic.sh`
 - `scripts/smoke-precision.sh`
+- `scripts/smoke-v23-eval.sh`
 - `scripts/smoke-mcp-protocol.sh` from a wrong cwd with an explicit `--repo`/MCP `repo` argument
 - optional `ctxpack eval proof` benchmark product proof when `CTXPACK_BENCHMARK_CONFIG` is set
 
@@ -160,6 +161,13 @@ The optional real-client evidence wrappers are:
 The semantic smoke proves explicit local semantic retrieval, source-free vector metadata, semantic provenance in plans, semantic-enabled eval metadata, and cloud-disabled privacy status. It does not call cloud embedding or reranking services.
 
 The precision smoke proves Java/Kotlin symbol extraction, Java/Kotlin package import edges, source-free precision edge import, rejection of sensitive paths, and additive precision dependency output.
+
+The v2.3 eval smoke proves the fixed-corpus proof path without external
+repositories. It creates a small local git corpus and exercises source-free
+candidate feature export, feedback recording, offline learned-policy proposal,
+paired baseline verdicts, runtime diagnostics, and product proof fields for
+fixed corpus identity, feature-export privacy, learned-policy status, and proof
+boundary language.
 
 The feedback smoke proves source-free feedback ingestion, policy report generation, candidate policy tuning, apply/rollback metadata, and budget outcome comparison.
 
@@ -187,12 +195,26 @@ ready/deferred/blocked lifecycle states, deterministic protocol proof language,
 optional real-client proof boundaries, Cursor/OpenCode non-claims, and rollback
 safety for marked local candidate directories.
 
-The gate passes the same selected or extracted `CTXPACK_BIN` into the first-pack, storage, memory, feedback, workspace, shared-artifact, inspector, retrieval-health, graph, policy/embedding, agent-preview, semantic, precision, MCP protocol, and optional real-client smokes. Demo, distribution metadata, and release governance smokes are source-free metadata checks and do not need the binary. Real-client proof is not required by default. Use these environment variables when needed:
+The gate passes the same selected or extracted `CTXPACK_BIN` into the first-pack, storage, memory, feedback, workspace, shared-artifact, inspector, retrieval-health, graph, policy/embedding, agent-preview, semantic, precision, v2.3 eval, MCP protocol, and optional real-client smokes. Demo, distribution metadata, and release governance smokes are source-free metadata checks and do not need the binary. Real-client proof is not required by default. Use these environment variables when needed:
 
 - `CTXPACK_SKIP_REAL_CLIENT=1` keeps Codex and Claude checks deterministic-only after the protocol proof.
 - `CTXPACK_REQUIRE_REAL_CLIENT=1` makes missing Codex or Claude tool-call evidence fail the gate.
 - `CTXPACK_REAL_CLIENT_EVIDENCE_DIR=/absolute/path/to/evidence` writes stable JSON evidence files with client version, ctxpack version, repo path, `prepare_task`, and `get_pack` proof when real-client checks run.
-- `CTXPACK_BENCHMARK_CONFIG=/absolute/path/to/suite.json` runs `ctxpack eval proof --config ... --format json` and fails on report-generation or local-only privacy regressions.
+- `CTXPACK_BENCHMARK_CONFIG=/absolute/path/to/suite.json` runs `ctxpack eval proof --config ... --format json` and fails on report-generation, local-only privacy regressions, missing v2.3 product proof summary, missing paired baseline verdict contract, feature-export privacy regressions, learned-policy status regressions, or missing proof-boundary language.
+
+RefactoringMiner and multi-repo proof are optional external gates. They are
+skipped by default because they require a separate local checkout and longer
+runtime. To reproduce the large-history gate, keep the repository local and run:
+
+```bash
+CTXPACK_BENCHMARK_CONFIG="$(pwd)/.ctxpack/benchmarks/refactoringminer-v23.json" bash scripts/release-gate.sh
+```
+
+To run a broader corpus, add more local repositories to a suite JSON and pass
+that suite through `CTXPACK_BENCHMARK_CONFIG`. If the external repo is missing,
+record the skip reason as "external corpus unavailable" rather than treating it
+as a product regression. The mandatory gate remains `scripts/smoke-v23-eval.sh`,
+which proves the v2.3 contract without external repos.
 
 The release gate does not publish, upload, or create GitHub releases, and does not create tags. It does not mutate global agent config and does not run user project tests. Cursor and OpenCode real-client proof is not claimed for v1.1.0.
 

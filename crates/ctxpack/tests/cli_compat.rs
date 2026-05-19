@@ -1790,7 +1790,10 @@ fn eval_proof_generates_source_free_product_report() {
     fs::write(
         &suite_path,
         serde_json::to_string_pretty(&json!({
+            "manifestVersion": "ctxpack-benchmark-corpus-v2.3",
             "name": "phase-twelve-proof-smoke",
+            "corpusId": "ctxpack-proof-fixture-v23",
+            "privacyLabel": "local-fixture-source-free",
             "defaults": {
                 "limit": 1,
                 "rankingBudget": 4,
@@ -1822,6 +1825,47 @@ fn eval_proof_generates_source_free_product_report() {
     );
     assert_eq!(value["suiteName"], "phase-twelve-proof-smoke");
     assert_eq!(value["privacyStatus"]["localOnly"], true);
+    assert_eq!(
+        value["v23EvalSummary"]["manifestVersion"],
+        "ctxpack-benchmark-corpus-v2.3"
+    );
+    assert_eq!(
+        value["v23EvalSummary"]["fixedCorpusId"],
+        "ctxpack-proof-fixture-v23"
+    );
+    assert_eq!(
+        value["v23EvalSummary"]["privacyLabel"],
+        "local-fixture-source-free"
+    );
+    assert!(value["v23EvalSummary"]["pairedBaselineVerdicts"].is_array());
+    assert_eq!(
+        value["v23EvalSummary"]["featureExportPrivacy"]["localOnly"],
+        true
+    );
+    assert_eq!(
+        value["v23EvalSummary"]["featureExportPrivacy"]["sourceTextLogged"],
+        false
+    );
+    assert_eq!(
+        value["v23EvalSummary"]["featureExportPrivacy"]["sourceFreeLabelsOnly"],
+        true
+    );
+    assert_eq!(
+        value["v23EvalSummary"]["learnedPolicyStatus"]["profileSchemaVersion"],
+        2
+    );
+    assert_eq!(
+        value["v23EvalSummary"]["learnedPolicyStatus"]["defaultRequiresThresholds"],
+        true
+    );
+    assert_eq!(
+        value["v23EvalSummary"]["learnedPolicyStatus"]["silentDefaultAllowed"],
+        false
+    );
+    assert!(value["v23EvalSummary"]["proofBoundary"]
+        .as_str()
+        .unwrap()
+        .contains("world-class claims require repeated lift"));
     assert!(value["headlineMetrics"]
         .as_array()
         .unwrap()
@@ -1845,6 +1889,9 @@ fn eval_proof_generates_source_free_product_report() {
         .assert()
         .success()
         .stdout(contains("# ctxpack Product Proof"))
+        .stdout(contains("v2.3 Eval Summary"))
+        .stdout(contains("Paired Baseline Verdicts"))
+        .stdout(contains("Proof Boundary"))
         .stdout(contains("When It Helps"))
         .stdout(contains("When It Does Not Help"))
         .stdout(contains("Limitations"))

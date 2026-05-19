@@ -45,10 +45,10 @@ This milestone turns ctxpack's retrieval-quality claims into repeatable, source-
 
 ### Product Proof And Release Gates
 
-- [ ] **PROOF-01**: Product proof can include a bounded v2.3 eval section covering fixed corpus identity, paired baseline verdicts, runtime diagnostics, feature-export privacy, and learned-policy status.
-- [ ] **PROOF-02**: Release gate can run a small deterministic v2.3 eval smoke without requiring RefactoringMiner or other large external repos by default.
-- [ ] **PROOF-03**: RefactoringMiner and multi-repo proof remain optional external gates with clear skip reasons, reproducible commands, and source-free artifacts.
-- [ ] **PROOF-04**: Docs explain the proof boundary honestly: ctxpack may be useful at lexical parity, but world-class claims require repeated lift under fixed corpora and process-level context metrics.
+- [x] **PROOF-01**: Product proof can include a bounded v2.3 eval section covering fixed corpus identity, paired baseline verdicts, runtime diagnostics, feature-export privacy, and learned-policy status.
+- [x] **PROOF-02**: Release gate can run a small deterministic v2.3 eval smoke without requiring RefactoringMiner or other large external repos by default.
+- [x] **PROOF-03**: RefactoringMiner and multi-repo proof remain optional external gates with clear skip reasons, reproducible commands, and source-free artifacts.
+- [x] **PROOF-04**: Docs explain the proof boundary honestly: ctxpack may be useful at lexical parity, but world-class claims require repeated lift under fixed corpora and process-level context metrics.
 
 ## Future Requirements
 
@@ -127,10 +127,10 @@ Explicitly excluded from v2.3 to keep the milestone focused on measured quality 
 | POLICY-02 | Phase 54 | Complete |
 | POLICY-03 | Phase 54 | Complete |
 | POLICY-04 | Phase 54 | Complete |
-| PROOF-01 | Phase 55 | Planned |
-| PROOF-02 | Phase 55 | Planned |
-| PROOF-03 | Phase 55 | Planned |
-| PROOF-04 | Phase 55 | Planned |
+| PROOF-01 | Phase 55 | Complete |
+| PROOF-02 | Phase 55 | Complete |
+| PROOF-03 | Phase 55 | Complete |
+| PROOF-04 | Phase 55 | Complete |
 
 **Coverage:**
 - v2.3 requirements: 24 total

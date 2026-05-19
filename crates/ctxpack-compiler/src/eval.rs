@@ -14,6 +14,7 @@ use ctxpack_index::{
     historical_commit_samples, lexical_search, load_or_build_inventory, repo_id_for_path,
     task_hash, HistoricalChangedPath, HistoricalCommitOptions, HistoricalCommitSample,
     InventoryError, InventoryOptions, LabelScope, SearchOptions,
+    LEARNED_POLICY_PROFILE_SCHEMA_VERSION,
 };
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet};
@@ -313,6 +314,7 @@ pub struct ProductProofReport {
     pub evaluated_repository_count: usize,
     pub evaluated_commit_count: usize,
     pub headline_metrics: Vec<ProductProofMetric>,
+    pub v23_eval_summary: ProductProofV23Summary,
     pub limitations: Vec<String>,
     pub helps_when: Vec<String>,
     pub does_not_help_when: Vec<String>,
@@ -327,6 +329,47 @@ pub struct ProductProofMetric {
     pub label: String,
     pub value: f32,
     pub unit: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct ProductProofV23Summary {
+    pub manifest_version: String,
+    pub fixed_corpus_id: String,
+    pub privacy_label: Option<String>,
+    pub paired_baseline_verdicts: Vec<ProductProofBaselineVerdict>,
+    pub runtime_total_millis: u64,
+    pub feature_export_privacy: ProductProofFeatureExportPrivacy,
+    pub learned_policy_status: ProductProofLearnedPolicyStatus,
+    pub proof_boundary: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct ProductProofBaselineVerdict {
+    pub repository: String,
+    pub lexical_delta_at_k: f32,
+    pub lexical_status: PairedBaselineVerdict,
+    pub evaluated_commits: usize,
+    pub k: usize,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct ProductProofFeatureExportPrivacy {
+    pub schema_version: u32,
+    pub local_only: bool,
+    pub source_text_logged: bool,
+    pub source_free_labels_only: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct ProductProofLearnedPolicyStatus {
+    pub profile_schema_version: u32,
+    pub available: bool,
+    pub default_requires_thresholds: bool,
+    pub silent_default_allowed: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -699,6 +742,7 @@ pub fn build_product_proof_report(benchmark_report: BenchmarkSuiteReport) -> Pro
         .map(|report| token_roi_value(report, &PackBudget::Brief))
         .sum::<f32>()
         / repo_count;
+    let v23_eval_summary = product_proof_v23_summary(&benchmark_report, &evaluated_reports);
 
     ProductProofReport {
         suite_name: benchmark_report.suite_name.clone(),
@@ -732,11 +776,13 @@ pub fn build_product_proof_report(benchmark_report: BenchmarkSuiteReport) -> Pro
                 unit: "useful_targets_per_1k_tokens".to_string(),
             },
         ],
+        v23_eval_summary,
         limitations: vec![
             "Historical commit subjects are only proxies for real developer prompts.".to_string(),
             "No-context baseline is zero-file until editor anchor traces are available."
                 .to_string(),
             "Token ROI is estimated from budget presets, not measured model billing.".to_string(),
+            "Useful context at lexical parity is not world-class lift; repeated fixed-corpus lift and process-level context metrics are required.".to_string(),
         ],
         helps_when: vec![
             "Tasks require choosing target files and tests across a repository.".to_string(),
@@ -757,6 +803,55 @@ pub fn build_product_proof_report(benchmark_report: BenchmarkSuiteReport) -> Pro
         ],
         benchmark_report,
         privacy_status: PrivacyStatus::local_only(),
+    }
+}
+
+fn product_proof_v23_summary(
+    benchmark_report: &BenchmarkSuiteReport,
+    evaluated_reports: &[&HistoricalEvalReport],
+) -> ProductProofV23Summary {
+    let paired_baseline_verdicts = benchmark_report
+        .repositories
+        .iter()
+        .filter_map(|repo| {
+            let historical = repo.report.as_ref()?;
+            let paired = paired_baseline_analysis_report(historical, 0.03, 0.03);
+            Some(ProductProofBaselineVerdict {
+                repository: repo.name.clone(),
+                lexical_delta_at_k: paired.lexical_delta_at_k,
+                lexical_status: paired.lexical_status,
+                evaluated_commits: paired.evaluated_commits,
+                k: paired.k,
+            })
+        })
+        .collect::<Vec<_>>();
+    let runtime_total_millis = evaluated_reports
+        .iter()
+        .map(|report| report.runtime.total_millis)
+        .sum();
+
+    ProductProofV23Summary {
+        manifest_version: benchmark_report.manifest_version.clone(),
+        fixed_corpus_id: benchmark_report
+            .corpus_id
+            .clone()
+            .unwrap_or_else(|| benchmark_report.suite_id.clone()),
+        privacy_label: benchmark_report.privacy_label.clone(),
+        paired_baseline_verdicts,
+        runtime_total_millis,
+        feature_export_privacy: ProductProofFeatureExportPrivacy {
+            schema_version: 1,
+            local_only: true,
+            source_text_logged: false,
+            source_free_labels_only: true,
+        },
+        learned_policy_status: ProductProofLearnedPolicyStatus {
+            profile_schema_version: LEARNED_POLICY_PROFILE_SCHEMA_VERSION,
+            available: true,
+            default_requires_thresholds: true,
+            silent_default_allowed: false,
+        },
+        proof_boundary: "ctxpack may be useful at lexical parity, but world-class claims require repeated lift on fixed corpora plus process-level context metrics.".to_string(),
     }
 }
 

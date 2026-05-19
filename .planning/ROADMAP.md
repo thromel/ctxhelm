@@ -19,7 +19,7 @@ The milestone is intentionally evaluation-first. Production semantic backends, c
 - [x] **Phase 52: Source-Free Candidate Feature Export** - Maintainers can export privacy-safe candidate feature rows for learning, diagnostics, and paired analysis.
 - [x] **Phase 53: Paired Baseline & Ablation Analysis** - Maintainers can compare ctxpack against lexical, no-context, and signal-ablation baselines with honest verdicts.
 - [x] **Phase 54: Offline Learned Retrieval Policy Experiment** - Maintainers can generate, compare, apply, disable, and roll back non-default learned policy profiles.
-- [ ] **Phase 55: Product Proof Gates & v2.3 Release Integration** - Maintainers can include bounded v2.3 eval proof in docs and release gates without requiring external repos by default.
+- [x] **Phase 55: Product Proof Gates & v2.3 Release Integration** - Maintainers can include bounded v2.3 eval proof in docs and release gates without requiring external repos by default.
 
 ## Phase Details
 
@@ -135,7 +135,7 @@ Plans:
 **Plans**: 1 plan
 
 Plans:
-- [ ] 55-product-proof-gates-v23-release-integration-01-PLAN.md - Wire v2.3 proof, docs, release-gate smoke, and proof-boundary language.
+- [x] 55-product-proof-gates-v23-release-integration-01-PLAN.md - Wire v2.3 proof, docs, release-gate smoke, and proof-boundary language.
 
 ## Requirement Coverage
 
@@ -180,7 +180,7 @@ Phases execute in numeric order: 50 -> 51 -> 52 -> 53 -> 54 -> 55
 | 52. Source-Free Candidate Feature Export | 1/1 | Complete | 2026-05-19 |
 | 53. Paired Baseline & Ablation Analysis | 1/1 | Complete | 2026-05-19 |
 | 54. Offline Learned Retrieval Policy Experiment | 1/1 | Complete | 2026-05-19 |
-| 55. Product Proof Gates & v2.3 Release Integration | 0/1 | Not Started | - |
+| 55. Product Proof Gates & v2.3 Release Integration | 1/1 | Complete | 2026-05-19 |
 
 ---
 *Roadmap created: 2026-05-19*

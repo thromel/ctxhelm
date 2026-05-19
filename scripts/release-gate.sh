@@ -22,6 +22,7 @@ smoke_distribution_metadata_script="$repo_root/scripts/smoke-distribution-metada
 smoke_release_governance_script="$repo_root/scripts/smoke-release-governance.sh"
 smoke_semantic_script="$repo_root/scripts/smoke-semantic.sh"
 smoke_precision_script="$repo_root/scripts/smoke-precision.sh"
+smoke_v23_eval_script="$repo_root/scripts/smoke-v23-eval.sh"
 smoke_mcp_protocol_script="$repo_root/scripts/smoke-mcp-protocol.sh"
 smoke_codex_mcp_script="$repo_root/scripts/smoke-codex-mcp.sh"
 smoke_claude_mcp_script="$repo_root/scripts/smoke-claude-mcp.sh"
@@ -188,6 +189,9 @@ CTXPACK_BIN="$ctxpack_bin" bash "$smoke_semantic_script"
 log_step "precision smoke"
 CTXPACK_BIN="$ctxpack_bin" bash "$smoke_precision_script"
 
+log_step "v2.3 eval smoke"
+CTXPACK_BIN="$ctxpack_bin" bash "$smoke_v23_eval_script"
+
 log_step "wrong-cwd MCP protocol smoke"
 CTXPACK_BIN="$ctxpack_bin" \
   CTXPACK_ROOT="$repo_root" \
@@ -213,6 +217,19 @@ if not report.get("benchmarkReport", {}).get("privacyStatus", {}).get("localOnly
     raise SystemExit("embedded benchmark privacyStatus.localOnly was not true")
 if not report.get("headlineMetrics"):
     raise SystemExit("product proof headlineMetrics were empty")
+summary = report.get("v23EvalSummary", {})
+if not summary.get("fixedCorpusId"):
+    raise SystemExit("product proof v23EvalSummary.fixedCorpusId was empty")
+if not isinstance(summary.get("pairedBaselineVerdicts"), list):
+    raise SystemExit("product proof paired baseline verdicts were missing")
+feature_privacy = summary.get("featureExportPrivacy", {})
+if not feature_privacy.get("localOnly") or feature_privacy.get("sourceTextLogged"):
+    raise SystemExit("product proof feature-export privacy contract failed")
+learned_status = summary.get("learnedPolicyStatus", {})
+if not learned_status.get("defaultRequiresThresholds") or learned_status.get("silentDefaultAllowed"):
+    raise SystemExit("product proof learned-policy status contract failed")
+if "world-class claims require repeated lift" not in summary.get("proofBoundary", ""):
+    raise SystemExit("product proof boundary language was missing")
 PY
   benchmark_status="passed"
 else
@@ -297,6 +314,7 @@ required_checks = [
     "scripts/smoke-release-governance.sh",
     "scripts/smoke-semantic.sh",
     "scripts/smoke-precision.sh",
+    "scripts/smoke-v23-eval.sh",
     "scripts/smoke-mcp-protocol.sh",
 ]
 payload = {

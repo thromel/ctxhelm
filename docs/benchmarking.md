@@ -94,7 +94,7 @@ ctxpack eval compare --base-report previous.json --head-report current.json --th
 ctxpack eval proof --config .ctxpack/benchmarks/retrieval-quality.json
 ```
 
-The Markdown report is meant for local inspection. The JSON report is the stable contract for future release gates, portfolio tables, and regression comparison. `ctxpack eval baselines` runs a paired source-free comparison for default ctxpack, lexical, no-context, signal-only, and ablation variants on the same historical corpus. `ctxpack eval compare` consumes two benchmark JSON reports and emits source-free metric deltas, retrieval-gap family deltas, and threshold pass/fail checks. `ctxpack eval proof` runs the configured benchmark suite and emits the adoption-facing proof report with headline metrics, limitations, when ctxpack helps, when it does not, and future work from measured gaps.
+The Markdown report is meant for local inspection. The JSON report is the stable contract for future release gates, portfolio tables, and regression comparison. `ctxpack eval baselines` runs a paired source-free comparison for default ctxpack, lexical, no-context, signal-only, and ablation variants on the same historical corpus. `ctxpack eval compare` consumes two benchmark JSON reports and emits source-free metric deltas, retrieval-gap family deltas, and threshold pass/fail checks. `ctxpack eval proof` runs the configured benchmark suite and emits the adoption-facing proof report with headline metrics, v2.3 fixed-corpus identity, paired baseline verdicts, runtime diagnostics, feature-export privacy, learned-policy status, limitations, when ctxpack helps, when it does not, and future work from measured gaps.
 
 ## Privacy Boundary
 
@@ -163,12 +163,25 @@ Use this as the first large-history regression target, not as a broad product cl
 The product proof is intentionally narrow. It does not claim universal agent improvement. It answers:
 
 - what local benchmark suite was run;
+- which fixed corpus ID, manifest version, and privacy label define the run;
 - how many repositories and commits were evaluated;
 - headline recall, baseline lift, test recall, and token ROI metrics;
+- paired lexical-baseline verdicts for each evaluated repository;
+- total historical-eval runtime across the proof run;
+- whether feature export remained local-only and source-free;
+- whether learned retrieval policy is available only behind thresholded status;
 - when ctxpack helps;
 - when ctxpack does not help;
 - limitations in the benchmark design;
 - which future milestone should address repeated gap families.
+
+Useful context at lexical parity is not world-class lift. If ctxpack matches
+lexical retrieval, the proof can still show product usefulness around related
+tests, token ROI, privacy-safe diagnostics, and process guidance, but it should
+not be described as state-of-the-art retrieval. World-class claims require
+repeated lift on fixed corpora, paired baseline verdicts that clear thresholds,
+runtime that stays acceptable, and process-level context metrics from real
+agent sessions.
 
 The release gate can run this proof optionally:
 
@@ -176,4 +189,27 @@ The release gate can run this proof optionally:
 CTXPACK_BENCHMARK_CONFIG=/absolute/path/to/retrieval-quality.json bash scripts/release-gate.sh
 ```
 
-When enabled, the gate fails if the proof cannot be generated or if the proof/embedded benchmark privacy status is not local-only.
+When enabled, the gate fails if the proof cannot be generated, if the
+proof/embedded benchmark privacy status is not local-only, if the v2.3 summary
+is missing fixed corpus identity or paired baseline verdict fields, if
+feature-export privacy regresses, if learned-policy status allows silent
+defaults, or if proof-boundary language is missing.
+
+The deterministic release smoke is:
+
+```bash
+bash scripts/smoke-v23-eval.sh
+```
+
+It creates a small local git repository and checks source-free feature export,
+feedback recording, offline learned policy, paired baselines, runtime
+diagnostics, and product proof. RefactoringMiner and multi-repo suites remain
+optional external gates:
+
+```bash
+ctxpack eval benchmark --config .ctxpack/benchmarks/refactoringminer-v23.json --format markdown
+CTXPACK_BENCHMARK_CONFIG="$(pwd)/.ctxpack/benchmarks/refactoringminer-v23.json" bash scripts/release-gate.sh
+```
+
+If the external checkout is not available, skip with the reason "external corpus unavailable." The skip is acceptable for the default release gate; it is
+not evidence that the large-history proof passed.
