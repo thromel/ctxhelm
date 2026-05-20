@@ -15,6 +15,32 @@ ctxpack eval history --repo /path/to/repo --semantic
 
 The default provider is `local_hash` with model `ctxpack-local-hash-v1`, cosine similarity, and local vector metadata only. `local_hash` is deterministic scaffold/test behavior. It exists to prove the semantic-retrieval contract, storage privacy boundary, and agent provenance without claiming production retrieval quality.
 
+To request the production local embedding backend, pass the provider explicitly:
+
+```bash
+ctxpack semantic status --repo /path/to/repo \
+  --semantic-provider local_fastembed \
+  --format json
+
+ctxpack index --repo /path/to/repo \
+  --semantic \
+  --semantic-provider local_fastembed
+
+ctxpack prepare-task "find payment webhook validation" \
+  --repo /path/to/repo \
+  --semantic \
+  --semantic-provider local_fastembed
+
+ctxpack eval history --repo /path/to/repo \
+  --semantic \
+  --semantic-provider local_fastembed
+```
+
+`local_fastembed` remains local-only and source-free. It requires a binary built
+with the `local-embeddings` Cargo feature; otherwise status and plans report the
+provider as unavailable instead of falling back silently or calling a cloud
+provider.
+
 ## Source-Free Semantic Documents
 
 Semantic retrieval now indexes source-free semantic documents instead of raw file bodies. A semantic document is built from safe repository metadata:
@@ -42,6 +68,7 @@ To persist source-free vector metadata in the local SQLite store:
 
 ```bash
 ctxpack index --repo /path/to/repo --semantic
+ctxpack index --repo /path/to/repo --semantic --semantic-provider local_fastembed
 ctxpack storage status --repo /path/to/repo
 ```
 

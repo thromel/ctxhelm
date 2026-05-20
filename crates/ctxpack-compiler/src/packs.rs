@@ -1,7 +1,4 @@
-use crate::planning::{
-    normalized_target_agent, prepare_context_plan_with_paths,
-    prepare_context_plan_with_paths_and_semantic,
-};
+use crate::planning::{normalized_target_agent, prepare_context_plan_with_paths};
 use ctxpack_core::{
     ContextPack, ContextPlan, Diagnostic, DiagnosticSeverity, InspectorCandidateView,
     InspectorContentKind, InspectorMemoryView, InspectorRelatedTestView, InspectorSectionView,
@@ -9,7 +6,8 @@ use ctxpack_core::{
 };
 use ctxpack_index::{
     load_or_refresh_inventory, read_safe_source, repo_id_for_path, task_hash, InventoryError,
-    InventoryOptions, RepoInventory, SourceReadStatus, SOURCE_READ_MAX_BYTES,
+    InventoryOptions, RepoInventory, SemanticProviderConfig, SourceReadStatus,
+    SOURCE_READ_MAX_BYTES,
 };
 use std::collections::BTreeSet;
 use std::fs;
@@ -105,14 +103,37 @@ pub fn compile_context_pack_with_plan_and_paths_for_agent_and_semantic(
     target_agent: &str,
     semantic_enabled: bool,
 ) -> Result<(ContextPlan, ContextPack), InventoryError> {
+    compile_context_pack_with_plan_and_paths_for_agent_and_semantic_provider(
+        repo_root,
+        task,
+        task_type,
+        budget,
+        anchor_paths,
+        target_agent,
+        semantic_enabled,
+        SemanticProviderConfig::default(),
+    )
+}
+
+pub fn compile_context_pack_with_plan_and_paths_for_agent_and_semantic_provider(
+    repo_root: impl AsRef<Path>,
+    task: &str,
+    task_type: TaskType,
+    budget: PackBudget,
+    anchor_paths: &[String],
+    target_agent: &str,
+    semantic_enabled: bool,
+    semantic_provider: SemanticProviderConfig,
+) -> Result<(ContextPlan, ContextPack), InventoryError> {
     let repo_root = repo_root.as_ref();
     let plan = if semantic_enabled {
-        prepare_context_plan_with_paths_and_semantic(
+        crate::planning::prepare_context_plan_with_paths_and_semantic_provider(
             repo_root,
             task,
             task_type,
             anchor_paths,
             true,
+            semantic_provider,
         )?
     } else {
         prepare_context_plan_with_paths(repo_root, task, task_type, anchor_paths)?

@@ -89,6 +89,7 @@ Fields:
 ctxpack eval benchmark --config .ctxpack/benchmarks/retrieval-quality.json --format markdown
 ctxpack eval benchmark --config .ctxpack/benchmarks/retrieval-quality.json --format json
 ctxpack eval history --repo /path/to/repo --semantic --format json
+ctxpack eval history --repo /path/to/repo --semantic --semantic-provider local_fastembed --format json
 ctxpack eval history --repo /path/to/repo --cache --parallelism 4 --format markdown
 ctxpack eval history --repo /path/to/repo --cache --force --parallelism 4 --format json
 ctxpack eval baselines --repo /path/to/repo --limit 20 --budget 10 --format markdown
@@ -167,6 +168,7 @@ When retrieval quality does not improve, inspect `queryTrace` before changing we
 - `facets`: source-free extracted evidence such as `explicit_path`, `stack_frame`, `symbol`, `error_text`, `domain_phrase`, `commit_clue`, and `current_diff_path`.
 - `retrieverQueries`: the terms sent to lexical, semantic, symbol, graph, history, and test retrieval.
 - `fusionControls`: the guardrails used for anchor dominance, exact-evidence protection, semantic cap, and semantic weight.
+- `effectiveFilters.semanticProvider`: the selected semantic provider when semantic retrieval is enabled, so cached eval ranges and reports distinguish `local_hash` from `local_fastembed`.
 - `sourceTextLogged`: must remain `false`.
 
 If `semanticEnabled` is true but `queryTrace.retrieverQueries.semanticPhrases` contains only weak generic terms, a semantic backend should not be expected to lift Recall@K. Conversely, if explicit paths or stack frames appear in the trace, those anchors should remain protected even when semantic retrieval is enabled.

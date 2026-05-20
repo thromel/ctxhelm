@@ -1,7 +1,6 @@
 use crate::eval::{evaluate_historical_commits, HistoricalEvalOptions};
 use crate::graph::build_graph_neighborhood_report;
 use crate::packs::pack_repo_id;
-use crate::planning::prepare_context_plan_with_paths_and_semantic;
 use ctxpack_core::{
     Diagnostic, DiagnosticSeverity, PrivacyStatus, ProviderCapability, ProviderDataClass,
     ProviderDecision, ProviderDecisionStatus, ProviderPolicy, ProviderPolicyReport,
@@ -258,9 +257,25 @@ pub fn semantic_provider_status_report(
     query: Option<&str>,
     task_type: TaskType,
 ) -> Result<SemanticProviderStatusReport, InventoryError> {
+    semantic_provider_status_report_with_provider(
+        repo_root,
+        query,
+        task_type,
+        SemanticProviderConfig::default(),
+    )
+}
+
+pub fn semantic_provider_status_report_with_provider(
+    repo_root: impl AsRef<Path>,
+    query: Option<&str>,
+    task_type: TaskType,
+    semantic_provider: SemanticProviderConfig,
+) -> Result<SemanticProviderStatusReport, InventoryError> {
     let repo_root = repo_root.as_ref();
-    let provider = normalized_provider(&SemanticProviderConfig::default());
-    let provider_policy = provider_policy_report(repo_root)?;
+    let provider = normalized_provider(&semantic_provider);
+    let mut provider_policy = provider_policy_report(repo_root)?;
+    let selected_provider_decision = semantic_provider_decision(&provider_policy, &provider, true);
+    provider_policy.decisions.push(selected_provider_decision);
     let document_report =
         semantic_document_report(repo_root, &SemanticDocumentOptions { limit: usize::MAX })?;
     let local_records = semantic_vector_records(
@@ -276,8 +291,14 @@ pub fn semantic_provider_status_report(
         .unwrap_or_default();
     let mut usage = Vec::new();
     if let Some(query) = query {
-        let plan =
-            prepare_context_plan_with_paths_and_semantic(repo_root, query, task_type, &[], true)?;
+        let plan = crate::planning::prepare_context_plan_with_paths_and_semantic_provider(
+            repo_root,
+            query,
+            task_type,
+            &[],
+            true,
+            provider.clone(),
+        )?;
         let semantic_candidate_count = plan
             .retrieval_candidates
             .iter()
@@ -349,6 +370,7 @@ pub fn retrieval_policy_experiment_report(
             base: None,
             head: None,
             semantic_enabled: false,
+            semantic_provider: SemanticProviderConfig::default(),
             cache_enabled: false,
             force_refresh: false,
             parallelism: 1,
@@ -364,6 +386,7 @@ pub fn retrieval_policy_experiment_report(
             base: None,
             head: None,
             semantic_enabled: true,
+            semantic_provider: SemanticProviderConfig::default(),
             cache_enabled: false,
             force_refresh: false,
             parallelism: 1,

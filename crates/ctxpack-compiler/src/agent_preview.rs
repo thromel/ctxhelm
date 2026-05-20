@@ -1,11 +1,10 @@
 use crate::packs::compile_context_pack_from_plan_for_agent;
 use crate::planning::normalized_target_agent;
-use crate::planning::prepare_context_plan_with_paths_and_semantic;
 use ctxpack_core::{
     AgentPreview, AgentPreviewReport, AgentPreviewStep, AgentPreviewSurface,
     AgentPreviewSurfaceKind, Diagnostic, DiagnosticSeverity, PackBudget, PrivacyStatus, TaskType,
 };
-use ctxpack_index::{task_hash, InventoryError};
+use ctxpack_index::{task_hash, InventoryError, SemanticProviderConfig};
 use std::path::Path;
 
 pub fn build_agent_preview_report(
@@ -17,14 +16,37 @@ pub fn build_agent_preview_report(
     paths: &[String],
     semantic_enabled: bool,
 ) -> Result<AgentPreviewReport, InventoryError> {
+    build_agent_preview_report_with_provider(
+        repo_root,
+        task,
+        task_type,
+        budget,
+        target_agent,
+        paths,
+        semantic_enabled,
+        SemanticProviderConfig::default(),
+    )
+}
+
+pub fn build_agent_preview_report_with_provider(
+    repo_root: impl AsRef<Path>,
+    task: &str,
+    task_type: TaskType,
+    budget: PackBudget,
+    target_agent: &str,
+    paths: &[String],
+    semantic_enabled: bool,
+    semantic_provider: SemanticProviderConfig,
+) -> Result<AgentPreviewReport, InventoryError> {
     let repo_root = repo_root.as_ref();
     let target_agents = expand_target_agents(target_agent);
-    let plan = prepare_context_plan_with_paths_and_semantic(
+    let plan = crate::planning::prepare_context_plan_with_paths_and_semantic_provider(
         repo_root,
         task,
         task_type.clone(),
         paths,
         semantic_enabled,
+        semantic_provider,
     )?;
     let pack_target_agent = target_agents
         .first()

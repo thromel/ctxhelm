@@ -41,6 +41,7 @@ export CTXPACK_HOME="$home"
 "$ctxpack_bin" index --repo "$repo" --semantic --store-path "$store" >"$work_dir/index.txt"
 "$ctxpack_bin" storage status --repo "$repo" --path "$store" >"$work_dir/status.txt"
 "$ctxpack_bin" semantic status --repo "$repo" --format json >"$work_dir/semantic-status.json"
+"$ctxpack_bin" semantic status --repo "$repo" --semantic-provider local_fastembed --format json >"$work_dir/semantic-fastembed-status.json"
 "$ctxpack_bin" search "verifyPaymentWebhook payments webhooks" --repo "$repo" --limit 5 --semantic >"$search_json"
 "$ctxpack_bin" prepare-task "verifyPaymentWebhook payments webhooks" \
   --repo "$repo" \
@@ -64,12 +65,13 @@ export CTXPACK_HOME="$home"
 grep -F -- "Semantic storage sync" "$work_dir/index.txt" >/dev/null
 grep -F -- "Semantic vector records:" "$work_dir/status.txt" >/dev/null
 
-python3 - "$work_dir/semantic-status.json" "$search_json" "$plan_json" "$pack_json" "$eval_json" <<'PY'
+python3 - "$work_dir/semantic-status.json" "$work_dir/semantic-fastembed-status.json" "$search_json" "$plan_json" "$pack_json" "$eval_json" <<'PY'
 import json
 import sys
 
-status_path, search_path, plan_path, pack_path, eval_path = sys.argv[1:]
+status_path, fastembed_status_path, search_path, plan_path, pack_path, eval_path = sys.argv[1:]
 status = json.load(open(status_path, encoding="utf-8"))
+fastembed_status = json.load(open(fastembed_status_path, encoding="utf-8"))
 search = json.load(open(search_path, encoding="utf-8"))
 plan = json.load(open(plan_path, encoding="utf-8"))
 pack = json.load(open(pack_path, encoding="utf-8"))
@@ -89,6 +91,16 @@ if status.get("cloudEmbeddingsAllowed") or status.get("cloudRerankingAllowed"):
     raise SystemExit("semantic status allowed cloud embeddings or reranking")
 if status.get("privacyStatus", {}).get("remoteEmbeddingsUsed"):
     raise SystemExit("semantic status reported remote embeddings")
+if fastembed_status.get("providerKind") != "local_fastembed":
+    raise SystemExit("semantic status did not accept local_fastembed provider selection")
+if fastembed_status.get("providerRole") != "production_local":
+    raise SystemExit("local_fastembed provider did not report production_local role")
+if not fastembed_status.get("qualityBackend"):
+    raise SystemExit("local_fastembed provider was not marked as a quality backend")
+if not fastembed_status.get("localOnly"):
+    raise SystemExit("local_fastembed provider did not stay local only")
+if fastembed_status.get("privacyStatus", {}).get("remoteEmbeddingsUsed"):
+    raise SystemExit("local_fastembed status reported remote embeddings")
 
 if not search:
     raise SystemExit("semantic search returned no results")
@@ -116,6 +128,8 @@ if pack.get("privacyStatus", {}).get("remoteEmbeddingsUsed"):
     raise SystemExit("get-pack reported remote embeddings")
 if not evaluation.get("effectiveFilters", {}).get("semanticEnabled"):
     raise SystemExit("eval history did not record semanticEnabled")
+if evaluation.get("effectiveFilters", {}).get("semanticProvider") != "local_hash":
+    raise SystemExit("eval history did not record selected semantic provider")
 if not evaluation.get("privacyStatus", {}).get("localOnly"):
     raise SystemExit("eval history privacyStatus.localOnly was not true")
 PY

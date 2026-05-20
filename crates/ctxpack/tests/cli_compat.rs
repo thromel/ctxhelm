@@ -697,6 +697,66 @@ fn index_semantic_persists_source_free_vector_metadata() {
 }
 
 #[test]
+fn local_semantic_provider_selection_is_source_free_and_policy_visible() {
+    let fixture = fixture_repo();
+
+    let status = json_stdout(
+        Command::cargo_bin("ctxpack")
+            .unwrap()
+            .env(CTXPACK_HOME_ENV, &fixture.home)
+            .args(["semantic", "status", "--repo"])
+            .arg(&fixture.repo)
+            .args([
+                "--semantic-provider",
+                "local_fastembed",
+                "--query",
+                "fix requireSession auth bug",
+                "--format",
+                "json",
+            ])
+            .assert(),
+    );
+
+    assert_eq!(status["providerKind"], "local_fastembed");
+    assert_eq!(status["modelId"], "JinaEmbeddingsV2BaseCode");
+    assert_eq!(status["providerRole"], "production_local");
+    assert_eq!(status["qualityBackend"], true);
+    assert_eq!(status["localOnly"], true);
+    assert_eq!(status["privacyStatus"]["remoteEmbeddingsUsed"], false);
+    assert!(status["providerPolicy"]["decisions"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .any(|decision| decision["provider"] == "local_fastembed"
+            && (decision["status"] == "allowed" || decision["status"] == "unavailable")));
+    assert_eq!(status["sourceTextLogged"], false);
+    assert_no_source_or_prompt_text(&status);
+
+    let plan = json_stdout(
+        Command::cargo_bin("ctxpack")
+            .unwrap()
+            .env(CTXPACK_HOME_ENV, &fixture.home)
+            .args(["prepare-task", "fix requireSession auth bug", "--repo"])
+            .arg(&fixture.repo)
+            .args([
+                "--semantic",
+                "--semantic-provider",
+                "local_fastembed",
+                "--no-trace",
+            ])
+            .assert(),
+    );
+
+    assert!(plan["providerPolicy"]["decisions"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .any(|decision| decision["provider"] == "local_fastembed"
+            && (decision["status"] == "allowed" || decision["status"] == "unavailable")));
+    assert_no_source_or_prompt_text(&plan);
+}
+
+#[test]
 fn prepare_task_outputs_context_plan_shape() {
     let fixture = fixture_repo();
 

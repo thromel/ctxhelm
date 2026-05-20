@@ -8,7 +8,7 @@ mod policy;
 mod ranking;
 mod workspace;
 
-pub use agent_preview::build_agent_preview_report;
+pub use agent_preview::{build_agent_preview_report, build_agent_preview_report_with_provider};
 pub use cards::{
     generate_context_cards, generate_experience_cards, generate_fallback_cards,
     ContextCardsOptions, ContextCardsReport, ExperienceCardsOptions, ExperienceCardsReport,
@@ -41,15 +41,18 @@ pub use packs::{
     compile_context_pack_with_plan, compile_context_pack_with_plan_and_paths,
     compile_context_pack_with_plan_and_paths_for_agent,
     compile_context_pack_with_plan_and_paths_for_agent_and_semantic,
+    compile_context_pack_with_plan_and_paths_for_agent_and_semantic_provider,
     compile_context_pack_with_plan_for_agent, compile_pack_inspector_view,
     render_pack_inspector_html, render_pack_inspector_markdown, render_pack_markdown,
 };
 pub use planning::{
     empty_plan_for_task, prepare_context_plan, prepare_context_plan_with_paths,
     prepare_context_plan_with_paths_and_semantic,
+    prepare_context_plan_with_paths_and_semantic_provider,
 };
 pub use policy::{
     provider_policy_report, retrieval_policy_experiment_report, semantic_provider_status_report,
+    semantic_provider_status_report_with_provider,
 };
 pub use workspace::{compile_workspace_context_pack, prepare_workspace_context_plan};
 
@@ -58,7 +61,9 @@ use ctxpack_core::{
     FileRole, PackBudget, PrivacyStatus, RetrievalCandidateKind, RetrievalSignalKind, TaskType,
 };
 #[cfg(test)]
-use ctxpack_index::{repo_id_for_path, task_hash, write_inventory, InventoryOptions};
+use ctxpack_index::{
+    repo_id_for_path, task_hash, write_inventory, InventoryOptions, SemanticProviderConfig,
+};
 #[cfg(test)]
 use eval::HistoricalEvalWorktree;
 #[cfg(test)]
@@ -1089,6 +1094,7 @@ mod tests {
                 base: None,
                 head: None,
                 semantic_enabled: false,
+                semantic_provider: SemanticProviderConfig::default(),
                 cache_enabled: false,
                 force_refresh: false,
                 parallelism: 1,
@@ -1275,6 +1281,7 @@ mod tests {
                 base: None,
                 head: None,
                 semantic_enabled: false,
+                semantic_provider: SemanticProviderConfig::default(),
                 cache_enabled: false,
                 force_refresh: false,
                 parallelism: 1,
@@ -1356,6 +1363,7 @@ mod tests {
             base: None,
             head: None,
             semantic_enabled: false,
+            semantic_provider: SemanticProviderConfig::default(),
             cache_enabled: true,
             force_refresh: false,
             parallelism: 2,
@@ -1412,6 +1420,7 @@ mod tests {
                 target_agent: "codex".to_string(),
                 budget: PackBudget::Standard,
                 semantic_enabled: false,
+                semantic_provider: None,
             },
             refs: HistoricalEvalRefs {
                 base: Some("base".to_string()),
@@ -1701,6 +1710,7 @@ mod tests {
                 base: None,
                 head: None,
                 semantic_enabled: false,
+                semantic_provider: SemanticProviderConfig::default(),
                 cache_enabled: false,
                 force_refresh: false,
                 parallelism: 1,
@@ -1741,6 +1751,7 @@ mod tests {
                 target_agent: "codex".to_string(),
                 budget: PackBudget::Standard,
                 semantic_enabled: false,
+                semantic_provider: None,
             },
             refs: HistoricalEvalRefs {
                 base: None,
@@ -1893,6 +1904,7 @@ mod tests {
                 base: None,
                 head: None,
                 semantic_enabled: false,
+                semantic_provider: SemanticProviderConfig::default(),
                 cache_enabled: false,
                 force_refresh: false,
                 parallelism: 1,

@@ -12,10 +12,10 @@ use ctxpack_core::{
 };
 use ctxpack_index::{
     co_change_hints_report, current_diff_summary_report, lexical_search_report, list_memory_cards,
-    load_or_refresh_inventory, related_dependency_edges_report, related_tests_report,
-    semantic_search_report, symbol_search_report, task_hash, CoChangeOptions, CurrentDiffOptions,
-    DependencyOptions, InventoryError, InventoryOptions, SearchOptions, SemanticOptions,
-    StoreConfig, SymbolOptions,
+    load_or_refresh_inventory, normalized_provider, related_dependency_edges_report,
+    related_tests_report, semantic_search_report, symbol_search_report, task_hash, CoChangeOptions,
+    CurrentDiffOptions, DependencyOptions, InventoryError, InventoryOptions, SearchOptions,
+    SemanticOptions, SemanticProviderConfig, StoreConfig, SymbolOptions,
 };
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::{Component, Path};
@@ -51,6 +51,24 @@ pub fn prepare_context_plan_with_paths_and_semantic(
     anchor_paths: &[String],
     semantic_enabled: bool,
 ) -> Result<ContextPlan, InventoryError> {
+    prepare_context_plan_with_paths_and_semantic_provider(
+        repo_root,
+        task,
+        task_type,
+        anchor_paths,
+        semantic_enabled,
+        SemanticProviderConfig::default(),
+    )
+}
+
+pub fn prepare_context_plan_with_paths_and_semantic_provider(
+    repo_root: impl AsRef<Path>,
+    task: &str,
+    task_type: TaskType,
+    anchor_paths: &[String],
+    semantic_enabled: bool,
+    semantic_provider: SemanticProviderConfig,
+) -> Result<ContextPlan, InventoryError> {
     prepare_context_plan_with_paths_history_and_semantic(
         repo_root,
         task,
@@ -58,6 +76,7 @@ pub fn prepare_context_plan_with_paths_and_semantic(
         anchor_paths,
         true,
         semantic_enabled,
+        semantic_provider,
     )
 }
 
@@ -75,6 +94,7 @@ pub(crate) fn prepare_context_plan_with_paths_and_history(
         anchor_paths,
         include_history,
         false,
+        SemanticProviderConfig::default(),
     )
 }
 
@@ -85,6 +105,7 @@ pub(crate) fn prepare_context_plan_with_paths_history_and_semantic(
     anchor_paths: &[String],
     include_history: bool,
     semantic_enabled: bool,
+    semantic_provider: SemanticProviderConfig,
 ) -> Result<ContextPlan, InventoryError> {
     let repo_root = repo_root.as_ref();
     let mut plan = base_plan(task_type);
@@ -169,7 +190,7 @@ pub(crate) fn prepare_context_plan_with_paths_history_and_semantic(
     for result in &search_results {
         roles.insert(result.path.clone(), result.role.clone());
     }
-    let semantic_provider = SemanticOptions::default().provider;
+    let semantic_provider = normalized_provider(&semantic_provider);
     let semantic_decision =
         semantic_provider_decision(&provider_policy, &semantic_provider, semantic_enabled);
     provider_policy.decisions.push(semantic_decision.clone());
@@ -182,7 +203,7 @@ pub(crate) fn prepare_context_plan_with_paths_history_and_semantic(
             &SemanticOptions {
                 limit: search_limit(&plan.task_type),
                 enabled: true,
-                ..SemanticOptions::default()
+                provider: semantic_provider.clone(),
             },
         )?;
         extend_plan_diagnostics(&mut plan, semantic_report.diagnostics);
@@ -1175,6 +1196,7 @@ mod tests {
             &[],
             false,
             false,
+            SemanticProviderConfig::default(),
         )
         .unwrap();
 
@@ -1209,6 +1231,7 @@ mod tests {
             &[],
             false,
             true,
+            SemanticProviderConfig::default(),
         )
         .unwrap();
         let policy = plan.provider_policy.expect("provider policy");

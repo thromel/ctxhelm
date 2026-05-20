@@ -16,7 +16,7 @@ use ctxpack_index::{
     historical_commit_samples, lexical_search, load_or_build_inventory, repo_id_for_path,
     semantic_document_report, task_hash, HistoricalChangedPath, HistoricalCommitOptions,
     HistoricalCommitSample, InventoryError, InventoryOptions, LabelScope, SearchOptions,
-    SemanticDocumentOptions, LEARNED_POLICY_PROFILE_SCHEMA_VERSION,
+    SemanticDocumentOptions, SemanticProviderConfig, LEARNED_POLICY_PROFILE_SCHEMA_VERSION,
 };
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet};
@@ -40,6 +40,8 @@ pub struct HistoricalEvalOptions {
     pub head: Option<String>,
     #[serde(default)]
     pub semantic_enabled: bool,
+    #[serde(default)]
+    pub semantic_provider: SemanticProviderConfig,
     #[serde(default)]
     pub cache_enabled: bool,
     #[serde(default)]
@@ -66,6 +68,7 @@ pub struct HistoricalEvalEffectiveFilters {
     pub target_agent: String,
     pub budget: PackBudget,
     pub semantic_enabled: bool,
+    pub semantic_provider: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -1223,6 +1226,7 @@ pub fn semantic_precision_gate_report(
             base: None,
             head: None,
             semantic_enabled: false,
+            semantic_provider: SemanticProviderConfig::default(),
             cache_enabled: false,
             force_refresh: false,
             parallelism: 1,
@@ -1240,6 +1244,7 @@ pub fn semantic_precision_gate_report(
                 base: None,
                 head: None,
                 semantic_enabled: false,
+                semantic_provider: SemanticProviderConfig::default(),
                 cache_enabled: false,
                 force_refresh: false,
                 parallelism: 1,
@@ -1679,6 +1684,7 @@ fn run_benchmark_repo(
         base: effective_config.base.clone(),
         head: effective_config.head.clone(),
         semantic_enabled: effective_config.semantic_enabled,
+        semantic_provider: SemanticProviderConfig::default(),
         cache_enabled: effective_config.cache_enabled,
         force_refresh: effective_config.force_refresh,
         parallelism: effective_config.parallelism,
@@ -2000,6 +2006,9 @@ pub fn evaluate_historical_commits(
         target_agent: target_agent.clone(),
         budget: budget.clone(),
         semantic_enabled: options.semantic_enabled,
+        semantic_provider: options
+            .semantic_enabled
+            .then(|| options.semantic_provider.provider.clone()),
     };
     let eval_range_id = historical_eval_range_id(&repo_id, &effective_filters, &refs);
 
@@ -2237,6 +2246,7 @@ fn evaluate_historical_commit_sample(
         &[],
         false,
         options.semantic_enabled,
+        options.semantic_provider.clone(),
     )?;
     let pack_compiler_millis = elapsed_millis(plan_started);
     let ranking_started = Instant::now();
@@ -2556,6 +2566,7 @@ pub fn export_candidate_features_for_task(
         &[],
         true,
         semantic_enabled,
+        SemanticProviderConfig::default(),
     )?;
     Ok(candidate_feature_export_from_plan(
         repo_root,
@@ -2972,13 +2983,14 @@ fn historical_eval_range_id(
     refs: &HistoricalEvalRefs,
 ) -> String {
     task_hash(&format!(
-        "version={HISTORICAL_EVAL_CACHE_SCHEMA_VERSION}\nrepo={repo_id}\nlimit={}\nrankingBudget={}\nmode={:?}\ntarget={}\nbudget={:?}\nsemantic={}\nbase={}\nhead={}",
+        "version={HISTORICAL_EVAL_CACHE_SCHEMA_VERSION}\nrepo={repo_id}\nlimit={}\nrankingBudget={}\nmode={:?}\ntarget={}\nbudget={:?}\nsemantic={}\nsemanticProvider={}\nbase={}\nhead={}",
         filters.limit,
         filters.ranking_budget,
         filters.mode,
         filters.target_agent,
         filters.budget,
         filters.semantic_enabled,
+        filters.semantic_provider.as_deref().unwrap_or(""),
         refs.base.as_deref().unwrap_or(""),
         refs.head.as_deref().unwrap_or("")
     ))

@@ -1,23 +1,24 @@
 use anyhow::Result;
 use clap::{Args, Parser, Subcommand, ValueEnum};
 use ctxpack_compiler::{
-    build_agent_preview_report, build_graph_neighborhood_report, build_product_proof_report,
-    build_retrieval_health_report, compare_benchmark_suite_reports,
+    build_agent_preview_report_with_provider, build_graph_neighborhood_report,
+    build_product_proof_report, build_retrieval_health_report, compare_benchmark_suite_reports,
     compare_candidate_feature_exports,
-    compile_context_pack_with_plan_and_paths_for_agent_and_semantic, compile_pack_inspector_view,
-    compile_workspace_context_pack, delete_candidate_feature_export, eval_trace_for_pack,
-    eval_trace_for_plan, evaluate_historical_commits, export_candidate_features_for_task,
-    generate_context_cards, generate_experience_cards, generate_fallback_cards,
-    list_candidate_feature_exports, load_benchmark_suite_config, load_benchmark_suite_report,
-    load_candidate_feature_export, paired_baseline_analysis_report,
-    prepare_context_plan_with_paths_and_semantic, prepare_workspace_context_plan,
+    compile_context_pack_with_plan_and_paths_for_agent_and_semantic_provider,
+    compile_pack_inspector_view, compile_workspace_context_pack, delete_candidate_feature_export,
+    eval_trace_for_pack, eval_trace_for_plan, evaluate_historical_commits,
+    export_candidate_features_for_task, generate_context_cards, generate_experience_cards,
+    generate_fallback_cards, list_candidate_feature_exports, load_benchmark_suite_config,
+    load_benchmark_suite_report, load_candidate_feature_export, paired_baseline_analysis_report,
+    prepare_context_plan_with_paths_and_semantic_provider, prepare_workspace_context_plan,
     render_pack_inspector_html, render_pack_inspector_markdown, render_pack_markdown,
     retrieval_policy_experiment_report, run_benchmark_suite, semantic_precision_gate_report,
-    semantic_provider_status_report, write_candidate_feature_export, BenchmarkComparisonReport,
-    BenchmarkRegressionThreshold, BenchmarkSuiteReport, CandidateFeatureComparisonReport,
-    ContextCardsOptions, ContextCardsReport, ExperienceCardsOptions, ExperienceCardsReport,
-    FallbackCardsOptions, FallbackCardsReport, HistoricalEvalOptions, HistoricalEvalReport,
-    PairedBaselineAnalysisReport, ProductProofReport, SemanticPrecisionGateReport,
+    semantic_provider_status_report_with_provider, write_candidate_feature_export,
+    BenchmarkComparisonReport, BenchmarkRegressionThreshold, BenchmarkSuiteReport,
+    CandidateFeatureComparisonReport, ContextCardsOptions, ContextCardsReport,
+    ExperienceCardsOptions, ExperienceCardsReport, FallbackCardsOptions, FallbackCardsReport,
+    HistoricalEvalOptions, HistoricalEvalReport, PairedBaselineAnalysisReport, ProductProofReport,
+    SemanticPrecisionGateReport,
 };
 use ctxpack_core::{
     run_init, run_setup_check, AgentAdapter, AgentOutcomeComparisonReport, AgentPreviewReport,
@@ -42,9 +43,9 @@ use ctxpack_index::{
     update_memory_card_review_status, vacuum_store, write_inventory, CoChangeOptions,
     CurrentDiffOptions, DependencyOptions, InventoryOptions, InventoryReport, LearnedPolicyOptions,
     PrecisionDiscoverOptions, PrecisionDiscoverReport, PrecisionImportReport, SearchOptions,
-    SemanticOptions, StorageBenchmarkRunRecord, StorageContextPackRecord, StorageGapRecord,
-    StorageIndexReport, StorageMetricRecord, StorageProofReportRecord, StorageReport,
-    StorageSemanticIndexReport, StorageStatusReport, StoreConfig, SymbolOptions,
+    SemanticOptions, SemanticProviderConfig, StorageBenchmarkRunRecord, StorageContextPackRecord,
+    StorageGapRecord, StorageIndexReport, StorageMetricRecord, StorageProofReportRecord,
+    StorageReport, StorageSemanticIndexReport, StorageStatusReport, StoreConfig, SymbolOptions,
     FEEDBACK_EVENT_SCHEMA_VERSION, WORKSPACE_MANIFEST_SCHEMA_VERSION,
 };
 use std::collections::BTreeSet;
@@ -84,6 +85,8 @@ enum Command {
             help = "Use explicit local semantic retrieval instead of lexical search."
         )]
         semantic: bool,
+        #[command(flatten)]
+        semantic_provider: SemanticProviderArgs,
     },
     Symbols(SymbolsArgs),
     RelatedTests(RelatedTestsArgs),
@@ -159,8 +162,30 @@ struct IndexArgs {
         help = "Also build local source-free semantic vector metadata in SQLite storage."
     )]
     semantic: bool,
+    #[command(flatten)]
+    semantic_provider: SemanticProviderArgs,
     #[arg(long, help = "Override the SQLite storage database path.")]
     store_path: Option<PathBuf>,
+}
+
+#[derive(Debug, Clone, Args)]
+struct SemanticProviderArgs {
+    #[arg(
+        long = "semantic-provider",
+        default_value = "local_hash",
+        help = "Local semantic provider to use when --semantic is enabled: local_hash or local_fastembed."
+    )]
+    provider: String,
+    #[arg(
+        long = "semantic-model",
+        help = "Optional local semantic model id. For local_fastembed, defaults to JinaEmbeddingsV2BaseCode."
+    )]
+    model: Option<String>,
+    #[arg(
+        long = "semantic-dimensions",
+        help = "Optional semantic vector dimensions override."
+    )]
+    dimensions: Option<usize>,
 }
 
 #[derive(Debug, Args)]
@@ -250,6 +275,8 @@ struct SemanticStatusArgs {
     query: Option<String>,
     #[arg(long, value_enum, default_value_t = Mode::Explain)]
     mode: Mode,
+    #[command(flatten)]
+    semantic_provider: SemanticProviderArgs,
     #[arg(long, value_enum, default_value_t = PackFormat::Markdown)]
     format: PackFormat,
 }
@@ -285,6 +312,8 @@ struct AgentPreviewArgs {
         help = "Enable explicit local semantic retrieval in the preview planner."
     )]
     semantic: bool,
+    #[command(flatten)]
+    semantic_provider: SemanticProviderArgs,
     #[arg(long, value_enum, default_value_t = PackFormat::Markdown)]
     format: PackFormat,
 }
@@ -348,6 +377,8 @@ struct InspectorExportArgs {
         help = "Enable explicit local semantic retrieval in the context pack planner."
     )]
     semantic: bool,
+    #[command(flatten)]
+    semantic_provider: SemanticProviderArgs,
     #[arg(long, value_enum, default_value_t = InspectorFormat::Json)]
     format: InspectorFormat,
     #[arg(long, help = "Write the artifact to a file instead of stdout.")]
@@ -699,6 +730,8 @@ struct PrepareTaskArgs {
         help = "Enable explicit local semantic retrieval in the context planner."
     )]
     semantic: bool,
+    #[command(flatten)]
+    semantic_provider: SemanticProviderArgs,
     #[arg(
         long,
         help = "Disable local eval trace recording for this read command."
@@ -734,6 +767,8 @@ struct GetPackArgs {
         help = "Enable explicit local semantic retrieval in the context pack planner."
     )]
     semantic: bool,
+    #[command(flatten)]
+    semantic_provider: SemanticProviderArgs,
     #[arg(
         long,
         help = "Disable local eval trace recording for this read command."
@@ -1066,6 +1101,8 @@ struct EvalHistoryArgs {
         help = "Enable explicit local semantic retrieval during historical eval."
     )]
     semantic: bool,
+    #[command(flatten)]
+    semantic_provider: SemanticProviderArgs,
     #[arg(
         long,
         help = "Reuse source-free historical eval report cache when available."
@@ -1115,6 +1152,8 @@ struct EvalHealthArgs {
         help = "Enable explicit local semantic retrieval during historical eval."
     )]
     semantic: bool,
+    #[command(flatten)]
+    semantic_provider: SemanticProviderArgs,
     #[arg(
         long,
         help = "Reuse source-free historical eval report cache when available."
@@ -1160,6 +1199,8 @@ struct EvalBaselineArgs {
         help = "Enable explicit local semantic retrieval during historical eval."
     )]
     semantic: bool,
+    #[command(flatten)]
+    semantic_provider: SemanticProviderArgs,
     #[arg(
         long,
         help = "Reuse source-free historical eval report cache when available."
@@ -1348,11 +1389,7 @@ fn main() -> Result<()> {
             if args.semantic {
                 let storage = sync_semantic_index_to_store(
                     &repo.path,
-                    &SemanticOptions {
-                        enabled: true,
-                        limit: usize::MAX,
-                        ..SemanticOptions::default()
-                    },
+                    &semantic_options(true, usize::MAX, &args.semantic_provider),
                     &StoreConfig {
                         path_override: args.store_path.clone(),
                     },
@@ -1364,12 +1401,13 @@ fn main() -> Result<()> {
             let start = args.repo.clone().unwrap_or(std::env::current_dir()?);
             let repo = RepoRoot::discover_from(&start)?;
             let paths = context_anchor_paths(&repo.path, args.paths, args.include_current_diff)?;
-            let mut plan = prepare_context_plan_with_paths_and_semantic(
+            let mut plan = prepare_context_plan_with_paths_and_semantic_provider(
                 &repo.path,
                 &args.task,
                 args.mode.into(),
                 &paths,
                 args.semantic,
+                semantic_provider_config(&args.semantic_provider),
             )?;
             if args.no_trace {
                 plan.diagnostics.push(trace_disabled_diagnostic());
@@ -1384,15 +1422,17 @@ fn main() -> Result<()> {
             let start = args.repo.clone().unwrap_or(std::env::current_dir()?);
             let repo = RepoRoot::discover_from(&start)?;
             let paths = context_anchor_paths(&repo.path, args.paths, args.include_current_diff)?;
-            let (plan, mut pack) = compile_context_pack_with_plan_and_paths_for_agent_and_semantic(
-                &repo.path,
-                &args.task,
-                args.mode.into(),
-                args.budget.into(),
-                &paths,
-                &args.target_agent,
-                args.semantic,
-            )?;
+            let (plan, mut pack) =
+                compile_context_pack_with_plan_and_paths_for_agent_and_semantic_provider(
+                    &repo.path,
+                    &args.task,
+                    args.mode.into(),
+                    args.budget.into(),
+                    &paths,
+                    &args.target_agent,
+                    args.semantic,
+                    semantic_provider_config(&args.semantic_provider),
+                )?;
             if args.no_trace {
                 pack.diagnostics.push(trace_disabled_diagnostic());
             } else {
@@ -1445,15 +1485,17 @@ fn main() -> Result<()> {
                 let repo = RepoRoot::discover_from(&start)?;
                 let paths =
                     context_anchor_paths(&repo.path, args.paths, args.include_current_diff)?;
-                let (plan, pack) = compile_context_pack_with_plan_and_paths_for_agent_and_semantic(
-                    &repo.path,
-                    &args.task,
-                    args.mode.into(),
-                    args.budget.into(),
-                    &paths,
-                    &args.target_agent,
-                    args.semantic,
-                )?;
+                let (plan, pack) =
+                    compile_context_pack_with_plan_and_paths_for_agent_and_semantic_provider(
+                        &repo.path,
+                        &args.task,
+                        args.mode.into(),
+                        args.budget.into(),
+                        &paths,
+                        &args.target_agent,
+                        args.semantic,
+                        semantic_provider_config(&args.semantic_provider),
+                    )?;
                 let view = compile_pack_inspector_view(&plan, &pack);
                 let artifact = match args.format {
                     InspectorFormat::Json => serde_json::to_string_pretty(&view)?,
@@ -1467,7 +1509,7 @@ fn main() -> Result<()> {
             AgentCommand::Preview(args) => {
                 let start = args.repo.clone().unwrap_or(std::env::current_dir()?);
                 let repo = RepoRoot::discover_from(&start)?;
-                let report = build_agent_preview_report(
+                let report = build_agent_preview_report_with_provider(
                     &repo.path,
                     &args.task,
                     args.mode.into(),
@@ -1475,6 +1517,7 @@ fn main() -> Result<()> {
                     &args.target_agent,
                     &args.paths,
                     args.semantic,
+                    semantic_provider_config(&args.semantic_provider),
                 )?;
                 match args.format {
                     PackFormat::Markdown => println!("{}", render_agent_preview_report(&report)),
@@ -1506,10 +1549,11 @@ fn main() -> Result<()> {
             SemanticCommand::Status(args) => {
                 let start = args.repo.clone().unwrap_or(std::env::current_dir()?);
                 let repo = RepoRoot::discover_from(&start)?;
-                let report = semantic_provider_status_report(
+                let report = semantic_provider_status_report_with_provider(
                     &repo.path,
                     args.query.as_deref(),
                     args.mode.into(),
+                    semantic_provider_config(&args.semantic_provider),
                 )?;
                 match args.format {
                     PackFormat::Markdown => {
@@ -1524,6 +1568,7 @@ fn main() -> Result<()> {
             repo,
             limit,
             semantic,
+            semantic_provider,
         } => {
             let start = repo.unwrap_or(std::env::current_dir()?);
             let repo = RepoRoot::discover_from(&start)?;
@@ -1531,11 +1576,7 @@ fn main() -> Result<()> {
                 let results = semantic_search(
                     &repo.path,
                     &query,
-                    &SemanticOptions {
-                        enabled: true,
-                        limit,
-                        ..SemanticOptions::default()
-                    },
+                    &semantic_options(true, limit, &semantic_provider),
                 )?;
                 println!("{}", serde_json::to_string_pretty(&results)?);
             } else {
@@ -1886,6 +1927,7 @@ fn main() -> Result<()> {
                         base: None,
                         head: None,
                         semantic_enabled: false,
+                        semantic_provider: SemanticProviderConfig::default(),
                         cache_enabled: false,
                         force_refresh: false,
                         parallelism: 1,
@@ -2185,6 +2227,7 @@ fn main() -> Result<()> {
                         base: args.base,
                         head: args.head,
                         semantic_enabled: args.semantic,
+                        semantic_provider: semantic_provider_config(&args.semantic_provider),
                         cache_enabled: args.cache,
                         force_refresh: args.force,
                         parallelism: args.parallelism,
@@ -2221,6 +2264,7 @@ fn main() -> Result<()> {
                         base: args.base,
                         head: args.head,
                         semantic_enabled: args.semantic,
+                        semantic_provider: semantic_provider_config(&args.semantic_provider),
                         cache_enabled: args.cache,
                         force_refresh: args.force,
                         parallelism: args.parallelism,
@@ -2246,6 +2290,7 @@ fn main() -> Result<()> {
                         base: args.base,
                         head: args.head,
                         semantic_enabled: args.semantic,
+                        semantic_provider: semantic_provider_config(&args.semantic_provider),
                         cache_enabled: args.cache,
                         force_refresh: args.force,
                         parallelism: args.parallelism,
@@ -3293,6 +3338,28 @@ fn json_label<T: serde::Serialize>(value: &T) -> String {
         .unwrap_or_else(|_| "unknown".to_string())
 }
 
+fn semantic_provider_config(args: &SemanticProviderArgs) -> SemanticProviderConfig {
+    let default = SemanticProviderConfig::default();
+    SemanticProviderConfig {
+        provider: args.provider.clone(),
+        model: args.model.clone().unwrap_or_default(),
+        dimensions: args.dimensions.unwrap_or(default.dimensions),
+        distance_metric: default.distance_metric,
+        provider_role: default.provider_role,
+        quality_backend: default.quality_backend,
+        local_only: true,
+        available: true,
+    }
+}
+
+fn semantic_options(enabled: bool, limit: usize, args: &SemanticProviderArgs) -> SemanticOptions {
+    SemanticOptions {
+        enabled,
+        limit,
+        provider: semantic_provider_config(args),
+    }
+}
+
 fn write_or_print(output_path: Option<&Path>, artifact: &str) -> Result<()> {
     if let Some(path) = output_path {
         fs::write(path, artifact)?;
@@ -4277,7 +4344,7 @@ fn render_historical_eval_report(report: &HistoricalEvalReport) -> String {
     let mut output = String::from("# ctxpack Historical Retrieval Eval\n\n");
     output.push_str("This source-free report replays recent commit subjects through `prepare_task` and compares recommended context paths with the safe files changed by each commit.\n\n");
     output.push_str(&format!(
-        "- Eval range ID: `{}`\n- Repo ID: `{}`\n- Evaluated commits: `{}`\n- Budget: `{:?}`\n- Effective limit: `{}`\n- Ranking budget K: `{}`\n- Effective mode: `{:?}`\n- Effective target agent: `{}`\n- Semantic enabled: `{}`\n- Base: `{}`\n- Head: `{}`\n- File Recall@5: `{:.2}`\n- File Recall@10: `{:.2}`\n- Lexical Baseline Recall@5: `{:.2}`\n- Lexical Baseline Recall@10: `{:.2}`\n- ctxpack Lift@5: `{:+.2}`\n- ctxpack Lift@10: `{:+.2}`\n- Recall@K: `{:.2}`\n- Precision@K: `{:.2}`\n- MRR@K: `{:.2}`\n- Lexical Recall@K: `{:.2}`\n- No-context Recall@K: `{:.2}`\n- ctxpack Lift@K: `{:+.2}`\n- ctxpack Lift vs No-context@K: `{:+.2}`\n- Source Recall@5: `{:.2}`\n- Source Recall@10: `{:.2}`\n- Test Recall@5: `{:.2}`\n- Test Recall@10: `{:.2}`\n- Test recommendation rate: `{:.2}`\n- Average recommended context files: `{:.2}`\n- Runtime total ms: `{}`\n- Runtime commit-loop ms: `{}`\n- Runtime overhead ms: `{}`\n- Runtime average commit ms: `{:.2}`\n- Runtime git sample ms: `{}`\n- Runtime ranking ms: `{}`\n- Runtime pack/compiler ms: `{}`\n- Eval cache hits: `{}`\n- Eval cache misses: `{}`\n- Eval parallelism: `{}`\n- Low-information commits: `{}`\n- Privacy: local-only `{}`\n\n",
+        "- Eval range ID: `{}`\n- Repo ID: `{}`\n- Evaluated commits: `{}`\n- Budget: `{:?}`\n- Effective limit: `{}`\n- Ranking budget K: `{}`\n- Effective mode: `{:?}`\n- Effective target agent: `{}`\n- Semantic enabled: `{}`\n- Semantic provider: `{}`\n- Base: `{}`\n- Head: `{}`\n- File Recall@5: `{:.2}`\n- File Recall@10: `{:.2}`\n- Lexical Baseline Recall@5: `{:.2}`\n- Lexical Baseline Recall@10: `{:.2}`\n- ctxpack Lift@5: `{:+.2}`\n- ctxpack Lift@10: `{:+.2}`\n- Recall@K: `{:.2}`\n- Precision@K: `{:.2}`\n- MRR@K: `{:.2}`\n- Lexical Recall@K: `{:.2}`\n- No-context Recall@K: `{:.2}`\n- ctxpack Lift@K: `{:+.2}`\n- ctxpack Lift vs No-context@K: `{:+.2}`\n- Source Recall@5: `{:.2}`\n- Source Recall@10: `{:.2}`\n- Test Recall@5: `{:.2}`\n- Test Recall@10: `{:.2}`\n- Test recommendation rate: `{:.2}`\n- Average recommended context files: `{:.2}`\n- Runtime total ms: `{}`\n- Runtime commit-loop ms: `{}`\n- Runtime overhead ms: `{}`\n- Runtime average commit ms: `{:.2}`\n- Runtime git sample ms: `{}`\n- Runtime ranking ms: `{}`\n- Runtime pack/compiler ms: `{}`\n- Eval cache hits: `{}`\n- Eval cache misses: `{}`\n- Eval parallelism: `{}`\n- Low-information commits: `{}`\n- Privacy: local-only `{}`\n\n",
         report.eval_range_id,
         report.repo_id,
         report.evaluated_commits,
@@ -4287,6 +4354,11 @@ fn render_historical_eval_report(report: &HistoricalEvalReport) -> String {
         report.effective_filters.mode,
         report.effective_filters.target_agent,
         report.effective_filters.semantic_enabled,
+        report
+            .effective_filters
+            .semantic_provider
+            .as_deref()
+            .unwrap_or("default"),
         report.base.as_deref().unwrap_or("HEAD history"),
         report.head.as_deref().unwrap_or("HEAD"),
         report.file_recall_at_5,
@@ -4978,6 +5050,7 @@ mod tests {
                 target_agent: "codex".to_string(),
                 budget: PackBudget::Standard,
                 semantic_enabled: false,
+                semantic_provider: None,
             },
             refs: ctxpack_compiler::HistoricalEvalRefs {
                 base: Some("abc000".to_string()),
