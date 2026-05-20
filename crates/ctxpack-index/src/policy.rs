@@ -197,6 +197,7 @@ fn is_sensitive_path(lower: &str, name: &str) -> bool {
 fn is_generated_path(lower: &str, name: &str) -> bool {
     lower.contains("/node_modules/")
         || lower.contains("/.gradle/")
+        || lower.contains("/.fastembed_cache/")
         || lower.contains("/target/")
         || lower.contains("/dist/")
         || lower.contains("/build/")
@@ -209,6 +210,7 @@ fn is_generated_path(lower: &str, name: &str) -> bool {
         || lower.contains("/resources/web/monaco/")
         || lower.starts_with("node_modules/")
         || lower.starts_with(".gradle/")
+        || lower.starts_with(".fastembed_cache/")
         || lower.starts_with("target/")
         || lower.starts_with("dist/")
         || lower.starts_with("build/")
@@ -333,6 +335,7 @@ mod tests {
 
         for path in [
             "node_modules/react/index.js",
+            ".fastembed_cache/models--jinaai--jina-embeddings-v2-base-code/blobs/model.onnx",
             "target/debug/app",
             "dist/app.js",
             "build/output.js",

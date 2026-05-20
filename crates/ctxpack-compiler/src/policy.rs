@@ -11,6 +11,7 @@ use ctxpack_index::{
     normalized_provider, semantic_document_report, semantic_vector_records,
     storage_status_for_repo, task_hash, team_policy_report, InventoryError,
     SemanticDocumentOptions, SemanticOptions, SemanticProviderConfig, StoreConfig,
+    DEFAULT_SEMANTIC_PROVIDER,
 };
 use std::fs;
 use std::path::Path;
@@ -278,14 +279,19 @@ pub fn semantic_provider_status_report_with_provider(
     provider_policy.decisions.push(selected_provider_decision);
     let document_report =
         semantic_document_report(repo_root, &SemanticDocumentOptions { limit: usize::MAX })?;
-    let local_records = semantic_vector_records(
-        repo_root,
-        &SemanticOptions {
-            enabled: true,
-            limit: usize::MAX,
-            provider: provider.clone(),
-        },
-    )?;
+    let local_vector_count = if provider.provider == DEFAULT_SEMANTIC_PROVIDER {
+        semantic_vector_records(
+            repo_root,
+            &SemanticOptions {
+                enabled: true,
+                limit: usize::MAX,
+                provider: provider.clone(),
+            },
+        )?
+        .len()
+    } else {
+        0
+    };
     let stored_vector_count = storage_status_for_repo(repo_root, &StoreConfig::default())
         .map(|status| status.semantic_vector_records)
         .unwrap_or_default();
@@ -341,7 +347,7 @@ pub fn semantic_provider_status_report_with_provider(
         semantic_document_count: document_report.document_count,
         semantic_facet_count: document_report.facet_count,
         precision_status: document_report.precision_status,
-        local_vector_count: local_records.len(),
+        local_vector_count,
         stored_vector_count,
         indexing_freshness: "safe_inventory_current_or_refreshed".to_string(),
         usage,
@@ -548,5 +554,28 @@ mod tests {
         assert_eq!(enabled.provider, "local_metadata");
         assert!(!enabled.remote_allowed);
         assert!(!enabled.source_text_allowed);
+    }
+
+    #[test]
+    fn semantic_status_does_not_materialize_non_default_provider_vectors() {
+        let temp = tempfile::tempdir().unwrap();
+        let repo = temp.path();
+        fs::create_dir_all(repo.join("src")).unwrap();
+        fs::write(repo.join("src/session.rs"), "pub fn require_session() {}\n").unwrap();
+
+        let report = semantic_provider_status_report_with_provider(
+            repo,
+            None,
+            TaskType::Explain,
+            SemanticProviderConfig {
+                provider: "local_fastembed".to_string(),
+                ..SemanticProviderConfig::default()
+            },
+        )
+        .unwrap();
+
+        assert_eq!(report.provider_kind, "local_fastembed");
+        assert_eq!(report.local_vector_count, 0);
+        assert!(!report.privacy_status.remote_embeddings_used);
     }
 }

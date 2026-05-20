@@ -8,6 +8,11 @@ repo_input="${CTXPACK_SMOKE_REPO:-$PWD}"
 task="${CTXPACK_SMOKE_TASK:-fix requireSession auth bug}"
 anchor_path="${CTXPACK_SMOKE_PATH:-crates/ctxpack-mcp/src/lib.rs}"
 query="${CTXPACK_SMOKE_QUERY:-prepare_task}"
+semantic="${CTXPACK_SMOKE_SEMANTIC:-0}"
+semantic_provider="${CTXPACK_SMOKE_SEMANTIC_PROVIDER:-}"
+semantic_model="${CTXPACK_SMOKE_SEMANTIC_MODEL:-}"
+semantic_dimensions="${CTXPACK_SMOKE_SEMANTIC_DIMENSIONS:-}"
+client_timeout_seconds="${CTXPACK_REAL_CLIENT_TIMEOUT_SECONDS:-180}"
 require_real="${CTXPACK_REQUIRE_REAL_CLIENT:-0}"
 run_real="${CTXPACK_RUN_REAL_CLIENT:-0}"
 
@@ -40,12 +45,12 @@ fail_or_skip() {
 
 write_evidence() {
   local evidence_file="$1"
-  python3 - "$evidence_file" "$repo" "$client_version" "$ctxpack_version" "$require_real" <<'PY'
+  python3 - "$evidence_file" "$repo" "$client_version" "$ctxpack_version" "$require_real" "$semantic" "$semantic_provider" "$semantic_model" "$semantic_dimensions" <<'PY'
 import json
 import pathlib
 import sys
 
-path, repo, client_version, ctxpack_version, required = sys.argv[1:]
+path, repo, client_version, ctxpack_version, required, semantic, provider, model, dimensions = sys.argv[1:]
 evidence = {
     "client": "claude",
     "clientVersion": client_version,
@@ -55,6 +60,14 @@ evidence = {
     "getPack": True,
     "required": required == "1",
 }
+if semantic == "1":
+    evidence["semantic"] = True
+    if provider:
+        evidence["semanticProvider"] = provider
+    if model:
+        evidence["semanticModel"] = model
+    if dimensions:
+        evidence["semanticDimensions"] = int(dimensions)
 payload = json.dumps(evidence, sort_keys=True)
 if path:
     target = pathlib.Path(path)
@@ -138,34 +151,35 @@ with open(config_path, "w", encoding="utf-8") as handle:
     )
 PY
 
+semantic_instruction=""
+if [[ "$semantic" == "1" ]]; then
+  semantic_instruction='Also pass semantic true'
+  if [[ -n "$semantic_provider" ]]; then
+    semantic_instruction="$semantic_instruction, semanticProvider \"$semantic_provider\""
+  fi
+  if [[ -n "$semantic_model" ]]; then
+    semantic_instruction="$semantic_instruction, semanticModel \"$semantic_model\""
+  fi
+  if [[ -n "$semantic_dimensions" ]]; then
+    semantic_instruction="$semantic_instruction, semanticDimensions $semantic_dimensions"
+  fi
+  semantic_instruction="$semantic_instruction in both tool calls."
+fi
+
 prompt=$(cat <<EOF
 Use only the ctxpack MCP tools. Call prepare_task first with explicit repo "$repo" and task "$task".
 Then call get_pack with the same explicit repo "$repo", the same task, budget "brief", format "json", and recordTrace false.
+$semantic_instruction
 Do not use shell commands for this smoke. The smoke requires machine-checkable tool-call evidence for prepare_task and get_pack with the repo argument.
 EOF
 )
 
-set +e
-(
-  cd "$outside_cwd"
-  claude -p \
-    --no-session-persistence \
-    --strict-mcp-config \
-    --mcp-config "$mcp_config" \
-    --allowedTools "mcp__ctxpack__prepare_task,mcp__ctxpack__get_pack" \
-    --permission-mode bypassPermissions \
-    --verbose \
-    --output-format stream-json \
-    "$prompt"
-) >"$events" 2>"$stderr_log"
-client_status=$?
-set -e
-
-if python3 - "$request_log" "$repo" <<'PY'
+check_request_evidence() {
+  python3 - "$request_log" "$repo" "$semantic" "$semantic_provider" "$semantic_model" "$semantic_dimensions" <<'PY'
 import json
 import sys
 
-log_path, expected_repo = sys.argv[1:]
+log_path, expected_repo, semantic, expected_provider, expected_model, expected_dimensions = sys.argv[1:]
 seen = {"prepare_task": False, "get_pack": False}
 
 try:
@@ -185,14 +199,76 @@ for line in lines:
     params = payload.get("params") or {}
     name = params.get("name")
     arguments = params.get("arguments") or {}
-    if name in seen and arguments.get("repo") == expected_repo:
-        seen[name] = True
+    if name not in seen or arguments.get("repo") != expected_repo:
+        continue
+    if semantic == "1":
+        if arguments.get("semantic") is not True:
+            continue
+        if expected_provider and arguments.get("semanticProvider") != expected_provider:
+            continue
+        if expected_model and arguments.get("semanticModel") != expected_model:
+            continue
+        if expected_dimensions:
+            try:
+                actual_dimensions = int(arguments.get("semanticDimensions"))
+            except (TypeError, ValueError):
+                continue
+            if actual_dimensions != int(expected_dimensions):
+                continue
+    seen[name] = True
 
 missing = [name for name, found in seen.items() if not found]
 if missing:
-    raise SystemExit("missing explicit-repo tool calls: " + ", ".join(missing))
+    requirement = "explicit-repo"
+    if semantic == "1":
+        requirement += " semantic-provider"
+    raise SystemExit(f"missing {requirement} tool calls: " + ", ".join(missing))
 PY
-then
+}
+
+set +e
+(
+  cd "$outside_cwd"
+  claude -p \
+    --no-session-persistence \
+    --strict-mcp-config \
+    --mcp-config "$mcp_config" \
+    --allowedTools "mcp__ctxpack__prepare_task,mcp__ctxpack__get_pack" \
+    --permission-mode bypassPermissions \
+    --verbose \
+    --output-format stream-json \
+    "$prompt"
+) >"$events" 2>"$stderr_log" &
+client_pid=$!
+client_status=0
+evidence_found=0
+deadline=$((SECONDS + client_timeout_seconds))
+while kill -0 "$client_pid" 2>/dev/null; do
+  if check_request_evidence >/dev/null 2>&1; then
+    evidence_found=1
+    kill "$client_pid" >/dev/null 2>&1 || true
+    wait "$client_pid" >/dev/null 2>&1 || true
+    client_status=0
+    break
+  fi
+  if (( SECONDS >= deadline )); then
+    kill "$client_pid" >/dev/null 2>&1 || true
+    wait "$client_pid" >/dev/null 2>&1 || true
+    client_status=124
+    break
+  fi
+  sleep 2
+done
+if [[ "$evidence_found" != "1" && "$client_status" == "0" ]]; then
+  wait "$client_pid"
+  client_status=$?
+  if check_request_evidence >/dev/null 2>&1; then
+    evidence_found=1
+  fi
+fi
+set -e
+
+if [[ "$evidence_found" == "1" ]]; then
   evidence_path=""
   if [[ -n "${CTXPACK_REAL_CLIENT_EVIDENCE_DIR:-}" ]]; then
     evidence_path="${CTXPACK_REAL_CLIENT_EVIDENCE_DIR}/claude-mcp-evidence.json"

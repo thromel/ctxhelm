@@ -163,6 +163,10 @@ mod tests {
         fs::create_dir_all(repo.join("tests")).unwrap();
         fs::create_dir_all(repo.join("dist")).unwrap();
         fs::create_dir_all(repo.join(".gradle/7.4")).unwrap();
+        fs::create_dir_all(
+            repo.join(".fastembed_cache/models--jinaai--jina-embeddings-v2-base-code/blobs"),
+        )
+        .unwrap();
         fs::create_dir_all(repo.join("build 2/tmp")).unwrap();
         fs::create_dir_all(repo.join("src/test/resources/oracle/commits")).unwrap();
         fs::create_dir_all(repo.join("src/test/resources/astDiff/defects4j")).unwrap();
@@ -177,6 +181,13 @@ mod tests {
         fs::write(repo.join("private.key"), "secret\n").unwrap();
         fs::write(repo.join("dist/app.min.js"), "minified\n").unwrap();
         fs::write(repo.join(".gradle/7.4/fileHashes.bin"), "cache\n").unwrap();
+        fs::write(
+            repo.join(
+                ".fastembed_cache/models--jinaai--jina-embeddings-v2-base-code/blobs/model.onnx",
+            ),
+            "local model cache\n",
+        )
+        .unwrap();
         fs::write(repo.join("build 2/tmp/cache.bin"), "cache\n").unwrap();
         fs::write(
             repo.join("src/test/resources/oracle/commits/example.json"),
@@ -218,6 +229,9 @@ mod tests {
         assert!(!paths.contains(&"private.key"));
         assert!(!paths.contains(&"dist/app.min.js"));
         assert!(!paths.contains(&".gradle/7.4/fileHashes.bin"));
+        assert!(!paths.contains(
+            &".fastembed_cache/models--jinaai--jina-embeddings-v2-base-code/blobs/model.onnx"
+        ));
         assert!(!paths.contains(&"build 2/tmp/cache.bin"));
         assert!(!paths.contains(&"src/test/resources/oracle/commits/example.json"));
         assert!(!paths.contains(&"src/test/resources/astDiff/defects4j/example.json"));

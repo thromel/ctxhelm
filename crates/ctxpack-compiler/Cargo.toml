@@ -8,6 +8,10 @@ readme.workspace = true
 description.workspace = true
 rust-version.workspace = true
 
+[features]
+default = []
+local-embeddings = ["ctxpack-index/local-embeddings"]
+
 [dependencies]
 ctxpack-core = { path = "../ctxpack-core" }
 ctxpack-index = { path = "../ctxpack-index" }

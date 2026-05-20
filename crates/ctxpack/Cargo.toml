@@ -8,6 +8,14 @@ readme.workspace = true
 description.workspace = true
 rust-version.workspace = true
 
+[features]
+default = []
+local-embeddings = [
+  "ctxpack-compiler/local-embeddings",
+  "ctxpack-index/local-embeddings",
+  "ctxpack-mcp/local-embeddings",
+]
+
 [dependencies]
 anyhow.workspace = true
 clap.workspace = true

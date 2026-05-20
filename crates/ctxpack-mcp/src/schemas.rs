@@ -136,6 +136,20 @@ pub(crate) fn tools_list_result() -> Value {
                             "type": "boolean",
                             "description": "Explicitly enable local-only semantic retrieval for this task."
                         },
+                        "semanticProvider": {
+                            "type": "string",
+                            "description": "Optional local semantic provider id, such as local_hash or local_fastembed."
+                        },
+                        "semanticModel": {
+                            "type": "string",
+                            "description": "Optional local semantic model name for the selected provider."
+                        },
+                        "semanticDimensions": {
+                            "type": "integer",
+                            "minimum": 8,
+                            "maximum": 4096,
+                            "description": "Optional embedding dimension count for the selected local provider."
+                        },
                         "recordTrace": {
                             "type": "boolean",
                             "description": "When false, skip local eval trace recording for this read call."
@@ -169,6 +183,20 @@ pub(crate) fn tools_list_result() -> Value {
                         "semantic": {
                             "type": "boolean",
                             "description": "When true, use the explicit local semantic provider for file results."
+                        },
+                        "semanticProvider": {
+                            "type": "string",
+                            "description": "Optional local semantic provider id, such as local_hash or local_fastembed."
+                        },
+                        "semanticModel": {
+                            "type": "string",
+                            "description": "Optional local semantic model name for the selected provider."
+                        },
+                        "semanticDimensions": {
+                            "type": "integer",
+                            "minimum": 8,
+                            "maximum": 4096,
+                            "description": "Optional embedding dimension count for the selected local provider."
                         },
                         "kinds": {
                             "type": "array",
@@ -270,6 +298,20 @@ pub(crate) fn tools_list_result() -> Value {
                         "semantic": {
                             "type": "boolean",
                             "description": "Explicitly enable local-only semantic retrieval while compiling the pack."
+                        },
+                        "semanticProvider": {
+                            "type": "string",
+                            "description": "Optional local semantic provider id, such as local_hash or local_fastembed."
+                        },
+                        "semanticModel": {
+                            "type": "string",
+                            "description": "Optional local semantic model name for the selected provider."
+                        },
+                        "semanticDimensions": {
+                            "type": "integer",
+                            "minimum": 8,
+                            "maximum": 4096,
+                            "description": "Optional embedding dimension count for the selected local provider."
                         },
                         "recordTrace": {
                             "type": "boolean",

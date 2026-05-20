@@ -1,15 +1,16 @@
 use crate::protocol::RpcError;
 use crate::resources::{cache_pack_resources, discover_repo};
 use ctxpack_compiler::{
-    compile_context_pack_with_plan_and_paths_for_agent_and_semantic, eval_trace_for_pack,
-    eval_trace_for_plan, prepare_context_plan_with_paths_and_semantic, render_pack_markdown,
+    compile_context_pack_with_plan_and_paths_for_agent_and_semantic_provider, eval_trace_for_pack,
+    eval_trace_for_plan, prepare_context_plan_with_paths_and_semantic_provider,
+    render_pack_markdown,
 };
 use ctxpack_core::{CacheStatus, Diagnostic, PackBudget, TaskType};
 use ctxpack_index::{
     co_change_hints_report, current_diff_summary, current_diff_summary_report,
     lexical_search_report, related_dependency_edges_report, related_tests_report,
     symbol_search_report, try_append_eval_trace, CoChangeOptions, CurrentDiffOptions,
-    DependencyOptions, SearchOptions, SymbolOptions,
+    DependencyOptions, SearchOptions, SemanticProviderConfig, SymbolOptions,
 };
 use serde::Deserialize;
 use serde_json::{json, Value};
@@ -41,6 +42,12 @@ struct PrepareTaskArgs {
     target_agent: Option<String>,
     #[serde(default)]
     semantic: bool,
+    #[serde(default)]
+    semantic_provider: Option<String>,
+    #[serde(default)]
+    semantic_model: Option<String>,
+    #[serde(default)]
+    semantic_dimensions: Option<usize>,
     #[serde(default = "default_record_trace")]
     record_trace: bool,
 }
@@ -65,6 +72,12 @@ struct GetPackArgs {
     target_agent: Option<String>,
     #[serde(default)]
     semantic: bool,
+    #[serde(default)]
+    semantic_provider: Option<String>,
+    #[serde(default)]
+    semantic_model: Option<String>,
+    #[serde(default)]
+    semantic_dimensions: Option<usize>,
     #[serde(default = "default_record_trace")]
     record_trace: bool,
 }
@@ -79,6 +92,12 @@ struct SearchArgs {
     limit: Option<usize>,
     #[serde(default)]
     semantic: bool,
+    #[serde(default)]
+    semantic_provider: Option<String>,
+    #[serde(default)]
+    semantic_model: Option<String>,
+    #[serde(default)]
+    semantic_dimensions: Option<usize>,
     #[serde(default)]
     kinds: Vec<SearchKind>,
 }
@@ -167,12 +186,18 @@ fn call_prepare_task(arguments: Value) -> Result<Value, RpcError> {
 
     let repo = discover_repo(args.repo)?;
     let paths = context_anchor_paths(&repo.path, args.paths, args.include_current_diff)?;
-    let mut plan = prepare_context_plan_with_paths_and_semantic(
+    let semantic_provider = semantic_provider_config(
+        args.semantic_provider.as_deref(),
+        args.semantic_model.as_deref(),
+        args.semantic_dimensions,
+    );
+    let mut plan = prepare_context_plan_with_paths_and_semantic_provider(
         &repo.path,
         &args.task,
         args.mode.unwrap_or(TaskType::Explain),
         &paths,
         args.semantic,
+        semantic_provider,
     )
     .map_err(|error| RpcError::invalid_params(format!("failed to prepare task: {error}")))?;
     if args.record_trace {
@@ -221,12 +246,18 @@ fn call_search(arguments: Value) -> Result<Value, RpcError> {
 
     let (files, semantic_files, mut diagnostics, cache_status, semantic_status) = if include_files {
         if args.semantic {
+            let semantic_provider = semantic_provider_config(
+                args.semantic_provider.as_deref(),
+                args.semantic_model.as_deref(),
+                args.semantic_dimensions,
+            );
             let report = ctxpack_index::semantic_search_report(
                 &repo.path,
                 &args.query,
                 &ctxpack_index::SemanticOptions {
                     enabled: true,
                     limit,
+                    provider: semantic_provider,
                     ..ctxpack_index::SemanticOptions::default()
                 },
             )
@@ -483,16 +514,23 @@ fn call_get_pack(arguments: Value) -> Result<Value, RpcError> {
     let paths = context_anchor_paths(&repo.path, args.paths, args.include_current_diff)?;
     let budget = args.budget.unwrap_or(PackBudget::Brief);
     let target_agent = args.target_agent.as_deref().unwrap_or("generic");
-    let (plan, mut pack) = compile_context_pack_with_plan_and_paths_for_agent_and_semantic(
-        &repo.path,
-        &args.task,
-        args.mode.unwrap_or(TaskType::Explain),
-        budget,
-        &paths,
-        target_agent,
-        args.semantic,
-    )
-    .map_err(|error| RpcError::invalid_params(format!("failed to compile pack: {error}")))?;
+    let semantic_provider = semantic_provider_config(
+        args.semantic_provider.as_deref(),
+        args.semantic_model.as_deref(),
+        args.semantic_dimensions,
+    );
+    let (plan, mut pack) =
+        compile_context_pack_with_plan_and_paths_for_agent_and_semantic_provider(
+            &repo.path,
+            &args.task,
+            args.mode.unwrap_or(TaskType::Explain),
+            budget,
+            &paths,
+            target_agent,
+            args.semantic,
+            semantic_provider,
+        )
+        .map_err(|error| RpcError::invalid_params(format!("failed to compile pack: {error}")))?;
     if args.record_trace {
         let trace = eval_trace_for_pack(&repo.path, &args.task, target_agent, &plan, &pack);
         pack.diagnostics
@@ -565,6 +603,32 @@ fn bounded_limit(limit: Option<usize>, default: usize) -> usize {
 
 fn default_record_trace() -> bool {
     true
+}
+
+fn semantic_provider_config(
+    provider: Option<&str>,
+    model: Option<&str>,
+    dimensions: Option<usize>,
+) -> SemanticProviderConfig {
+    let default = SemanticProviderConfig::default();
+    SemanticProviderConfig {
+        provider: provider
+            .map(str::trim)
+            .filter(|value| !value.is_empty())
+            .unwrap_or(&default.provider)
+            .to_string(),
+        model: model
+            .map(str::trim)
+            .filter(|value| !value.is_empty())
+            .unwrap_or(&default.model)
+            .to_string(),
+        dimensions: dimensions.unwrap_or(default.dimensions),
+        distance_metric: default.distance_metric,
+        provider_role: default.provider_role,
+        quality_backend: default.quality_backend,
+        local_only: true,
+        available: true,
+    }
 }
 
 fn tool_json_result(value: impl serde::Serialize) -> Result<Value, RpcError> {

@@ -130,7 +130,15 @@ mod tests {
             tools[0]["inputSchema"]["properties"]["recordTrace"]["type"],
             "boolean"
         );
+        assert_eq!(
+            tools[0]["inputSchema"]["properties"]["semanticProvider"]["type"],
+            "string"
+        );
         assert_eq!(tools[1]["name"], "search");
+        assert_eq!(
+            tools[1]["inputSchema"]["properties"]["semanticDimensions"]["maximum"],
+            4096
+        );
         assert_eq!(tools[2]["name"], "related");
         assert_eq!(
             tools[2]["inputSchema"]["properties"]["includeCurrentDiff"]["type"],
@@ -149,6 +157,10 @@ mod tests {
         assert_eq!(
             tools[3]["inputSchema"]["properties"]["recordTrace"]["type"],
             "boolean"
+        );
+        assert_eq!(
+            tools[3]["inputSchema"]["properties"]["semanticModel"]["type"],
+            "string"
         );
         assert_eq!(tools[4]["name"], "related_tests");
         assert_eq!(tools[5]["name"], "current_diff");
@@ -1049,7 +1061,7 @@ mod tests {
         std::env::set_var("CTXPACK_HOME", &repo.home);
 
         let search = handle_line(&format!(
-            r#"{{"jsonrpc":"2.0","id":86,"method":"tools/call","params":{{"name":"search","arguments":{{"query":"auth required","repo":"{}","limit":10,"semantic":true}}}}}}"#,
+            r#"{{"jsonrpc":"2.0","id":86,"method":"tools/call","params":{{"name":"search","arguments":{{"query":"auth required","repo":"{}","limit":10,"semantic":true,"semanticProvider":"local_hash","semanticModel":"ctxpack-mcp-test","semanticDimensions":128}}}}}}"#,
             repo.repo.display()
         ))
         .unwrap();
@@ -1062,12 +1074,20 @@ mod tests {
             "local_hash"
         );
         assert_eq!(
+            search["result"]["structuredContent"]["semanticProvider"]["model"],
+            "ctxpack-mcp-test"
+        );
+        assert_eq!(
+            search["result"]["structuredContent"]["semanticProvider"]["dimensions"],
+            128
+        );
+        assert_eq!(
             search["result"]["structuredContent"]["privacyStatus"]["sourceTextReturned"],
             false
         );
 
         let prepare = handle_line(&format!(
-            r#"{{"jsonrpc":"2.0","id":87,"method":"tools/call","params":{{"name":"prepare_task","arguments":{{"task":"fix auth required flow","repo":"{}","mode":"bug_fix","semantic":true,"recordTrace":false}}}}}}"#,
+            r#"{{"jsonrpc":"2.0","id":87,"method":"tools/call","params":{{"name":"prepare_task","arguments":{{"task":"fix auth required flow","repo":"{}","mode":"bug_fix","semantic":true,"semanticProvider":"local_hash","semanticModel":"ctxpack-mcp-test","semanticDimensions":128,"recordTrace":false}}}}}}"#,
             repo.repo.display()
         ))
         .unwrap();
@@ -1083,6 +1103,19 @@ mod tests {
                     .any(|signal| signal["signal"] == "semantic")
             });
         assert!(has_semantic);
+
+        let pack = handle_line(&format!(
+            r#"{{"jsonrpc":"2.0","id":88,"method":"tools/call","params":{{"name":"get_pack","arguments":{{"task":"fix auth required flow","repo":"{}","mode":"bug_fix","semantic":true,"semanticProvider":"ctxpack_mcp_unknown_provider","recordTrace":false,"format":"json"}}}}}}"#,
+            repo.repo.display()
+        ))
+        .unwrap();
+        let decisions = pack["result"]["structuredContent"]["providerPolicy"]["decisions"]
+            .as_array()
+            .unwrap();
+        assert!(decisions.iter().any(|decision| {
+            decision["provider"] == "ctxpack_mcp_unknown_provider"
+                && decision["status"] == "unavailable"
+        }));
 
         std::env::remove_var("CTXPACK_HOME");
     }

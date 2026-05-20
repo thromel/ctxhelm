@@ -41,6 +41,10 @@ with the `local-embeddings` Cargo feature; otherwise status and plans report the
 provider as unavailable instead of falling back silently or calling a cloud
 provider.
 
+```bash
+cargo build -p ctxpack --features local-embeddings
+```
+
 ## Source-Free Semantic Documents
 
 Semantic retrieval now indexes source-free semantic documents instead of raw file bodies. A semantic document is built from safe repository metadata:
@@ -60,7 +64,7 @@ ctxpack semantic status --repo /path/to/repo --format json
 
 The report includes `semanticDocumentCount`, `semanticFacetCount`, `precisionStatus`, `sourceTextLogged`, and `privacyStatus`. `sourceTextLogged` remains `false`; raw source bodies are not embedded, exported, or persisted by the default semantic document path.
 
-Phase 56 also defines `local_fastembed` as the optional real local embedding backend. It is compiled only when `ctxpack-index` is built with the `local-embeddings` Cargo feature. Normal workspace builds keep `local_fastembed` unavailable and return the warning diagnostic `semantic_provider_unavailable` if it is requested, rather than falling back silently or calling a cloud provider.
+Phase 56 also defines `local_fastembed` as the optional real local embedding backend. It is compiled only when the `ctxpack` binary, `ctxpack-mcp`, `ctxpack-compiler`, or `ctxpack-index` is built with the `local-embeddings` Cargo feature. Normal workspace builds keep `local_fastembed` unavailable and return the warning diagnostic `semantic_provider_unavailable` if it is requested, rather than falling back silently or calling a cloud provider.
 
 ## Index Vector Metadata
 
