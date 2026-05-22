@@ -2,171 +2,171 @@
 
 ## Overview
 
-This roadmap starts v2.4 Production Semantic & Precision Backends. v2.3 proved that ctxpack can run source-free fixed-corpus evaluation and showed a hard product truth: the current semantic scaffold does not improve RefactoringMiner Recall@10 and increases runtime. v2.4 therefore treats semantic and precision retrieval as measured hypotheses, not default features.
+This roadmap starts v2.5 Production Retrieval Quality. v2.4 made semantic, precision, provider, and reranker paths source-safe and policy-gated, then the fresh RefactoringMiner proof fixed a semantic fusion regression. The current product gap is quality lift: default and `local_hash` now match each other at Recall@10 `0.6355`, but lexical baseline remains ahead at `0.6665`.
 
-The milestone builds a real local semantic backend, richer precision-enriched semantic documents, structured query construction, provider/reranker policy gates, and hard eval gates for promotion or rollback.
+v2.5 therefore focuses on measured retrieval quality, not more surface area. The milestone must prove whether production local embeddings, reranking, graph/test/history fixes, and learned fusion can beat lexical baseline on real repositories while staying local-first and source-safe.
 
-## v2.4 Production Semantic & Precision Backends
+## v2.5 Production Retrieval Quality
 
 ## Phases
 
 **Phase Numbering:**
 
-- Integer phases (56, 57, 58, 59, 60): Planned v2.4 work
-- Decimal phases (56.1, 57.1): Urgent insertions if needed
+- Integer phases (61, 62, 63, 64, 65): Planned v2.5 work
+- Decimal phases (61.1, 62.1): Urgent insertions if needed
 
-- [x] **Phase 56: Production Local Semantic Backend** - Maintainers can build, inspect, and evaluate a real local embedding-backed semantic index without uploading source code.
-- [x] **Phase 57: Precision-Enriched Semantic Documents** - Maintainers can enrich semantic and graph retrieval with typed symbol/test/docs context and optional SCIP/LSP precision status.
-- [x] **Phase 58: Query Construction And Hybrid Fusion Controls** - Maintainers can inspect and tune task/commit/error query facets and paired hybrid retrieval variants.
-- [x] **Phase 59: Provider And Reranker Policy Gates** - Maintainers can configure optional cloud/local provider and reranker policies without violating local-first defaults.
-- [x] **Phase 60: Semantic/Precision Evaluation Gates And Release Proof** - Maintainers can prove, block, or roll back semantic/precision defaults using fixed-corpus gates and product proof.
+- [x] **Phase 61: Multi-Repo Quality Baselines** - Maintainers can run source-free paired baselines across RefactoringMiner and a second real repository with stable comparison artifacts.
+- [ ] **Phase 62: Production Local Embedding Quality** - Maintainers can evaluate production local embeddings against lexical/default baselines with bounded local cache and provider metadata.
+- [ ] **Phase 63: Reranker And Fusion Promotion** - Maintainers can compare reranker/fusion variants under promotion gates that protect anchors and exact evidence.
+- [ ] **Phase 64: Gap-Family Retrieval Improvements** - Maintainers can convert repeated gap families into targeted retrieval fixes with before/after proof.
+- [ ] **Phase 65: v2.5 Product Proof And Release Gate** - Maintainers can ship or hold v2.5 variants using multi-repo proof, docs, and release gates.
 
 ## Phase Details
 
-### Phase 56: Production Local Semantic Backend
+### Phase 61: Multi-Repo Quality Baselines
 
-**Goal**: Maintainers can build, inspect, and evaluate a real local embedding-backed semantic index without uploading source code.
+**Goal**: Maintainers can run source-free paired baselines across RefactoringMiner and a second real repository with stable comparison artifacts.
 
-**Depends on**: v1.4 semantic scaffold, v1.3 storage, v2.3 fixed-corpus eval
+**Depends on**: v2.3 fixed-corpus eval, v2.4 semantic proof
 
-**Requirements**: SEM-01, SEM-02, SEM-03, SEM-04
+**Requirements**: BASE-01, BASE-02, BASE-03, BASE-04
 
-**Success Criteria** (what must be TRUE):
+**Success Criteria**:
 
-1. A real local embedding provider can embed safe semantic documents and persist source-free vector/provider metadata.
-2. `local_hash` remains available only as deterministic test/scaffold behavior and is labeled accordingly.
-3. CLI and reports expose provider model id, dimensions, freshness, cache status, privacy status, and degraded/error state.
-4. Semantic candidates carry typed provenance and source-free eval features without breaking existing CLI/MCP contracts.
-
-**Plans**: 1 plan
-
-Plans:
-
-- [x] 56-production-local-semantic-backend-01-PLAN.md - Add the real local embedding provider, vector metadata persistence, provider status, and scaffold/backward compatibility boundaries.
-
-### Phase 57: Precision-Enriched Semantic Documents
-
-**Goal**: Maintainers can enrich semantic and graph retrieval with typed symbol/test/docs context and optional SCIP/LSP precision status.
-
-**Depends on**: Phase 56, v1.5 precision bridge, Tree-sitter symbol extraction
-
-**Requirements**: PREC-01, PREC-02, PREC-03, PREC-04
-
-**Success Criteria** (what must be TRUE):
-
-1. Semantic documents include safe path, role, language, symbol, signature, import/export, test, docs/card, and precision facets.
-2. SCIP/LSP precision inputs report unavailable/present/stale/failed/partial/degraded status.
-3. Existing `prepare-task`, `search`, `related`, and `get-pack` use precision-enriched evidence additively when available.
-4. Eval exports, reports, and product proof remain source-free.
+1. Baseline command/report covers at least RefactoringMiner and one second real repo.
+2. Reports include stable corpus identity, revision range, provider status, runtime, cache, privacy, and named gap families.
+3. Default, lexical, graph, semantic, reranked, and learned-policy variants can be compared deterministically.
+4. Reports remain source-free.
 
 **Plans**: 1 plan
 
 Plans:
 
-- [x] 57-precision-enriched-semantic-documents-01-PLAN.md - Build semantic document contracts, precision status reporting, and safe enrichment into retrieval surfaces.
+- [x] 61-multi-repo-quality-baselines-01-PLAN.md - Build the multi-repo baseline manifest/report path and prove it on real repos.
 
-### Phase 58: Query Construction And Hybrid Fusion Controls
+### Phase 62: Production Local Embedding Quality
 
-**Goal**: Maintainers can inspect and tune task/commit/error query facets and paired hybrid retrieval variants.
+**Goal**: Maintainers can evaluate production local embeddings against lexical/default baselines with bounded local cache and provider metadata.
 
-**Depends on**: Phases 56-57
+**Depends on**: Phase 61, v2.4 local provider policy
 
-**Requirements**: QUERY-01, QUERY-02, QUERY-03, QUERY-04
+**Requirements**: EMBED-01, EMBED-02, EMBED-03, EMBED-04
 
-**Success Criteria** (what must be TRUE):
+**Success Criteria**:
 
-1. Task, commit, current-diff, explicit-path, symbol, and error-like inputs become structured query facets.
-2. CLI/eval output can expose source-free query construction traces.
-3. Fusion distinguishes lexical, semantic, precision, graph, history, test, memory, feedback, and active-anchor signals.
-4. Fixed-budget variants can compare semantic and precision changes against the same baseline.
-
-**Plans**: 1 plan
-
-Plans:
-
-- [x] 58-query-construction-hybrid-fusion-controls-01-PLAN.md - Add query facet contracts, debug traces, and paired hybrid variant controls.
-
-### Phase 59: Provider And Reranker Policy Gates
-
-**Goal**: Maintainers can configure optional cloud/local provider and reranker policies without violating local-first defaults.
-
-**Depends on**: Phase 58
-
-**Requirements**: PROVIDER-01, PROVIDER-02, PROVIDER-03, PROVIDER-04
-
-**Success Criteria** (what must be TRUE):
-
-1. Cloud embeddings and reranking stay disabled until explicit repo policy enables them.
-2. Provider policies record allowed data classes, source-snippet permissions, provider/model/version/dimensions, cost/runtime notes, and rollback targets.
-3. Optional reranking can score first-stage candidates without adding noisy MCP tools.
-4. CLI/MCP outputs include privacy warnings whenever non-default provider policy affects candidates.
+1. Production local embedding backend runs from CLI/eval without cloud transfer.
+2. Cache behavior is bounded, ignored by inventory, and visible in status reports.
+3. Quality is measured against lexical/default before promotion.
+4. `local_hash` remains scaffold-labeled.
 
 **Plans**: 1 plan
 
 Plans:
 
-- [x] 59-provider-reranker-policy-gates-01-PLAN.md - Add provider/reranker policy contracts, privacy warnings, and local/cloud gated execution controls.
+- [ ] 62-production-local-embedding-quality-01-PLAN.md - Harden local embedding quality, cache behavior, and provider evidence.
 
-### Phase 60: Semantic/Precision Evaluation Gates And Release Proof
+### Phase 63: Reranker And Fusion Promotion
 
-**Goal**: Maintainers can prove, block, or roll back semantic/precision defaults using fixed-corpus gates and product proof.
+**Goal**: Maintainers can compare reranker/fusion variants under promotion gates that protect anchors and exact evidence.
 
-**Depends on**: Phases 56-59
+**Depends on**: Phases 61-62
 
-**Requirements**: GATE-01, GATE-02, GATE-03, GATE-04
+**Requirements**: RANK-01, RANK-02, RANK-03, RANK-04
 
-**Success Criteria** (what must be TRUE):
+**Success Criteria**:
 
-1. Fixed-corpus ablations compare default, lexical, local semantic, precision-enriched semantic, semantic-plus-precision, and reranked variants.
-2. Reports include Recall@K, MRR@K, test recall, precision proxy, runtime, cache-hit rate, token ROI, failure-family deltas, provider status, and privacy status.
-3. Default promotion is blocked unless thresholds beat baseline quality, runtime, token ROI, and privacy gates.
-4. Product proof and docs honestly state whether v2.4 produced lift, neutral results, or regressions.
+1. Reranker/fusion variants are source-safe and do not expand MCP tool surface.
+2. Anchors, current diff, exact lexical, and strong symbols are protected.
+3. Promotion gates compare quality, runtime, token ROI, and privacy.
+4. Named regressions block promotion.
 
 **Plans**: 1 plan
 
 Plans:
 
-- [x] 60-semantic-precision-evaluation-gates-release-proof-01-PLAN.md - Add paired backend ablations, promotion gates, docs, release smoke, and proof-boundary reporting.
+- [ ] 63-reranker-and-fusion-promotion-01-PLAN.md - Implement and evaluate promotion-safe reranking/fusion variants.
+
+### Phase 64: Gap-Family Retrieval Improvements
+
+**Goal**: Maintainers can convert repeated gap families into targeted retrieval fixes with before/after proof.
+
+**Depends on**: Phase 61
+
+**Requirements**: GAP-01, GAP-02, GAP-03, GAP-04
+
+**Success Criteria**:
+
+1. Gap families are grouped into actionable tasks.
+2. At least one high-impact RefactoringMiner gap family improves with measured before/after proof.
+3. Test recommendation quality is evaluated separately from target-file recall.
+4. Graph expansion stays budgeted and seed-safe.
+
+**Plans**: 1 plan
+
+Plans:
+
+- [ ] 64-gap-family-retrieval-improvements-01-PLAN.md - Fix one or more measured gap families and prove improvement.
+
+### Phase 65: v2.5 Product Proof And Release Gate
+
+**Goal**: Maintainers can ship or hold v2.5 variants using multi-repo proof, docs, and release gates.
+
+**Depends on**: Phases 61-64
+
+**Requirements**: PROOF-01, PROOF-02, PROOF-03, PROOF-04
+
+**Success Criteria**:
+
+1. Product proof states beat/match/trail status per corpus and variant.
+2. Release gate blocks neutral, mixed, unsafe, or too-expensive defaults.
+3. Docs tell users which retrieval mode to use today.
+4. Workspace validation and source-free E2E proof pass.
+
+**Plans**: 1 plan
+
+Plans:
+
+- [ ] 65-v25-product-proof-release-gate-01-PLAN.md - Finalize measured proof, docs, and release gates.
 
 ## Requirement Coverage
 
 | Requirement | Phase |
 |-------------|-------|
-| SEM-01 | Phase 56 |
-| SEM-02 | Phase 56 |
-| SEM-03 | Phase 56 |
-| SEM-04 | Phase 56 |
-| PREC-01 | Phase 57 |
-| PREC-02 | Phase 57 |
-| PREC-03 | Phase 57 |
-| PREC-04 | Phase 57 |
-| QUERY-01 | Phase 58 |
-| QUERY-02 | Phase 58 |
-| QUERY-03 | Phase 58 |
-| QUERY-04 | Phase 58 |
-| PROVIDER-01 | Phase 59 |
-| PROVIDER-02 | Phase 59 |
-| PROVIDER-03 | Phase 59 |
-| PROVIDER-04 | Phase 59 |
-| GATE-01 | Phase 60 |
-| GATE-02 | Phase 60 |
-| GATE-03 | Phase 60 |
-| GATE-04 | Phase 60 |
+| BASE-01 | Phase 61 |
+| BASE-02 | Phase 61 |
+| BASE-03 | Phase 61 |
+| BASE-04 | Phase 61 |
+| EMBED-01 | Phase 62 |
+| EMBED-02 | Phase 62 |
+| EMBED-03 | Phase 62 |
+| EMBED-04 | Phase 62 |
+| RANK-01 | Phase 63 |
+| RANK-02 | Phase 63 |
+| RANK-03 | Phase 63 |
+| RANK-04 | Phase 63 |
+| GAP-01 | Phase 64 |
+| GAP-02 | Phase 64 |
+| GAP-03 | Phase 64 |
+| GAP-04 | Phase 64 |
+| PROOF-01 | Phase 65 |
+| PROOF-02 | Phase 65 |
+| PROOF-03 | Phase 65 |
+| PROOF-04 | Phase 65 |
 
-**Coverage:** 20/20 v2.4 requirements mapped. No orphaned requirements.
+**Coverage:** 20/20 v2.5 requirements mapped. No orphaned requirements.
 
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 56 -> 57 -> 58 -> 59 -> 60
+Phases execute in numeric order: 61 -> 62 -> 63 -> 64 -> 65
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 56. Production Local Semantic Backend | 1/1 | Complete | 2026-05-19 |
-| 57. Precision-Enriched Semantic Documents | 1/1 | Complete | 2026-05-20 |
-| 58. Query Construction And Hybrid Fusion Controls | 1/1 | Complete | 2026-05-20 |
-| 59. Provider And Reranker Policy Gates | 1/1 | Complete | 2026-05-20 |
-| 60. Semantic/Precision Evaluation Gates And Release Proof | 1/1 | Complete | 2026-05-20 |
+| 61. Multi-Repo Quality Baselines | 1/1 | Complete | 2026-05-22 |
+| 62. Production Local Embedding Quality | 0/1 | Planned | |
+| 63. Reranker And Fusion Promotion | 0/1 | Planned | |
+| 64. Gap-Family Retrieval Improvements | 0/1 | Planned | |
+| 65. v2.5 Product Proof And Release Gate | 0/1 | Planned | |
 
 ---
-*Roadmap created: 2026-05-19*
+*Roadmap created: 2026-05-22*

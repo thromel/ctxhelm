@@ -6,7 +6,7 @@ ctxpack v1.2 uses source-free benchmark suites to answer the product question:
 
 The benchmark runner reuses `ctxpack eval history` for each configured repository. It records file/test recall, lexical and no-context baseline comparison, signal ablations, token ROI, grouped retrieval gaps, skipped path counts, runtime diagnostics, and privacy status without storing source snippets, prompt text, or commit subjects.
 
-v2.3 treats benchmark suites as fixed corpus manifests. Older suite files still work, but v2.3 manifests should include a manifest version, corpus ID, privacy label, revision range ID, and optional locked baseline metadata so quality claims are reproducible.
+v2.3 treats benchmark suites as fixed corpus manifests. Older suite files still work, but v2.3+ manifests should include a manifest version, corpus ID, privacy label, revision range ID, and optional locked baseline metadata so quality claims are reproducible.
 
 Phase 58 adds source-free query construction traces to prepare-task and historical eval commit rows. These traces record extracted paths, stack frames, symbols, error terms, domain terms, commit clues, retriever query sets, and fusion controls. They intentionally store task hashes and bounded facets instead of raw prompts or source snippets.
 
@@ -146,6 +146,29 @@ It intentionally uses a source-free baseline from the May 19 E2E run:
 - total historical eval runtime baseline: `265650` ms
 
 Use this as the first large-history regression target, not as a broad product claim.
+
+## v2.5 Multi-Repo Quality Baseline
+
+v2.5 uses the same benchmark-suite command as the default multi-repo proof path:
+
+```bash
+ctxpack eval benchmark --config .ctxpack/e2e/v25-multirepo-baseline-config.json --format json
+```
+
+The Phase 61 baseline ran RefactoringMiner plus ctxpack itself:
+
+| Repo | Commits | Default Recall@10 | Lexical Recall@10 | Lift@10 |
+| --- | ---: | ---: | ---: | ---: |
+| RefactoringMiner | 10 | 0.7767 | 0.7792 | -0.0025 |
+| ctxpack | 10 | 0.2270 | 0.2742 | -0.0472 |
+
+Interpretation:
+
+- RefactoringMiner is near lexical parity in this bounded run.
+- ctxpack trails lexical and exposes repeated docs/scripts/planning and compiler-source gap families.
+- Production embeddings, rerankers, or learned policies should not be promoted unless they improve this multi-repo proof under the same source-free privacy boundary.
+
+The concise Phase 61 evidence lives at `.planning/e2e/2026-05-22-v25-multirepo-baseline.md`.
 
 ## Interpreting Metrics
 

@@ -1,72 +1,65 @@
-# Requirements: Repo Context Packer v2.4 Production Semantic & Precision Backends
+# Requirements: Repo Context Packer v2.5 Production Retrieval Quality
 
-**Defined:** 2026-05-19
-**Milestone:** v2.4 Production Semantic & Precision Backends
+**Defined:** 2026-05-22
+**Milestone:** v2.5 Production Retrieval Quality
 **Core Value:** Given a coding task, ctxpack should return the smallest safe evidence set that makes an existing coding agent more likely to inspect the right files, run the right tests, and avoid irrelevant context.
 
-## v2.4 Requirements
+## v2.5 Requirements
 
-This milestone turns semantic and precision retrieval from measured scaffolding into production-quality, policy-gated retrieval infrastructure. The milestone must preserve the local-first and source-safe product contract, and it must not promote semantic defaults unless fixed-corpus gates show measurable lift.
+v2.4 made semantic, precision, provider, and reranker machinery policy-gated and source-safe. The fresh RefactoringMiner proof fixed the semantic regression, but showed the product truth: default and `local_hash` are parity-safe, not quality-leading. v2.5 must turn retrieval quality into measured lift across real repositories.
 
-### Production Local Semantic Backend
+### Multi-Repo Quality Baselines
 
-- [ ] **SEM-01**: Maintainer can build a local semantic index using a real embedding backend while keeping source text local and storing only source-free provider/vector metadata in reports.
-- [ ] **SEM-02**: Maintainer can inspect semantic provider status, model id, provider version, dimensions, cache location, freshness, privacy status, and degraded/error state through CLI and source-free reports.
-- [ ] **SEM-03**: Existing `local_hash` semantic behavior remains available only as deterministic test/scaffold behavior and is clearly labeled as not a quality backend.
-- [ ] **SEM-04**: Semantic search results expose typed candidate provenance, provider metadata, score/rank fields, and source-free eval features without changing existing CLI/MCP contracts incompatibly.
+- [x] **BASE-01**: Maintainer can run paired fixed-corpus quality baselines on at least RefactoringMiner and one second real repository using the same source-free report contract.
+- [x] **BASE-02**: Reports preserve stable corpus identity, revision range, command options, provider status, runtime, cache status, and privacy status.
+- [x] **BASE-03**: Reports identify named wins, misses, regressions, and repeated gap families without logging source text.
+- [x] **BASE-04**: Baseline results can be compared across default, lexical, graph, semantic, reranked, and learned-policy variants with deterministic output.
 
-### Precision-Enriched Semantic Documents
+### Production Local Embedding Quality
 
-- [ ] **PREC-01**: Maintainer can build typed semantic documents from safe inventory, paths, roles, symbols, signatures, imports, tests, docs/cards, and optional precision edges.
-- [ ] **PREC-02**: Maintainer can import or discover SCIP/LSP precision inputs and receive explicit status for unavailable, present, stale, failed, partial, or degraded precision data.
-- [ ] **PREC-03**: `prepare-task`, `search`, `related`, and `get-pack` can use precision-enriched semantic/graph evidence when available while falling back safely when precision is missing.
-- [ ] **PREC-04**: Precision-enriched outputs remain source-safe in eval exports, product proof, and diagnostic summaries.
+- [ ] **EMBED-01**: `local_fastembed` or equivalent production local embedding backend can be built, indexed, queried, and evaluated without cloud transfer.
+- [ ] **EMBED-02**: Embedding cache behavior is bounded, source-safe, ignored by inventory, and reported with model/version/dimension metadata.
+- [ ] **EMBED-03**: Semantic retrieval quality is measured against lexical and default baselines before any default promotion.
+- [ ] **EMBED-04**: `local_hash` remains scaffold-labeled and cannot be mistaken for a quality backend in reports, docs, or MCP output.
 
-### Query Construction And Fusion
+### Reranker And Fusion Promotion
 
-- [ ] **QUERY-01**: Task, commit, current-diff, explicit-path, symbol, and error-like inputs are converted into structured query facets used consistently by lexical, semantic, graph, history, test, and rerank stages.
-- [ ] **QUERY-02**: Maintainer can inspect a source-free query construction trace showing which facets influenced each retrieval signal.
-- [ ] **QUERY-03**: Candidate fusion distinguishes lexical, semantic, precision, graph, history, test, memory, feedback, and active-anchor signals without letting semantic candidates crowd out explicit anchors.
-- [ ] **QUERY-04**: Retrieval ranking can run semantic and precision variants under fixed budget so comparisons are paired and reproducible.
+- [ ] **RANK-01**: Local reranker/fusion variants can score first-stage candidates without adding MCP tool surface or exposing source text in reports.
+- [ ] **RANK-02**: Fusion policies protect explicit anchors, current diff, exact lexical evidence, and high-confidence symbols from semantic/graph crowd-out.
+- [ ] **RANK-03**: Promotion gates compare Recall@K, MRR@K, precision proxy, test recall, token ROI, and runtime before enabling any stronger default.
+- [ ] **RANK-04**: Regression cases are named and block promotion when they touch critical paths or exceed configured thresholds.
 
-### Provider And Reranker Policy Gates
+### Gap-Family Retrieval Improvements
 
-- [ ] **PROVIDER-01**: Cloud embedding and cloud reranking providers are disabled by default and require explicit repo policy before any source-bearing data can be sent remotely.
-- [ ] **PROVIDER-02**: Provider policy records allowed data classes, redaction/source-snippet permissions, provider/model/version/dimensions, cost/runtime notes, and rollback target.
-- [ ] **PROVIDER-03**: Optional reranking can score first-stage lexical/semantic candidates through a local or cloud provider without expanding the default MCP tool surface.
-- [ ] **PROVIDER-04**: CLI/MCP outputs include provider privacy status and warnings whenever semantic or reranker candidates depend on non-default policy.
+- [ ] **GAP-01**: Repeated `no_candidate_signal`, `lexical_only_miss`, `ranked_below_budget_*`, and test-mapping gaps are grouped into actionable work items.
+- [ ] **GAP-02**: At least one high-impact gap family from RefactoringMiner is improved with a targeted retrieval change and before/after proof.
+- [ ] **GAP-03**: Test recommendation quality is evaluated separately from source-file recall and does not silently trade away target files under tight budgets.
+- [ ] **GAP-04**: Graph expansion remains budgeted and does not recurse from weak semantic-only seeds when exact seeds exist.
 
-### Evaluation Gates And Product Proof
+### Product Proof And Release Gate
 
-- [ ] **GATE-01**: Maintainer can run paired fixed-corpus ablations for default, lexical, local semantic, precision-enriched semantic, semantic-plus-precision, and reranked variants.
-- [ ] **GATE-02**: Reports include File Recall@K, MRR@K, test recall, precision proxy, runtime, cache-hit rate, token ROI, failure-family deltas, provider status, and privacy status.
-- [ ] **GATE-03**: Semantic/precision/reranker defaults are blocked unless configured thresholds beat baseline Recall@10, MRR@10, runtime, token ROI, and privacy gates.
-- [ ] **GATE-04**: Product proof and docs explain whether v2.4 produced lift, neutral results, or regressions on RefactoringMiner and any added semantic fixture corpus.
+- [ ] **PROOF-01**: v2.5 product proof states honestly whether production retrieval variants beat, match, or trail lexical baseline on each corpus.
+- [ ] **PROOF-02**: Release gate blocks default promotion for neutral, mixed, unsafe, or high-runtime variants.
+- [ ] **PROOF-03**: Docs explain which retrieval modes users should choose today and why.
+- [ ] **PROOF-04**: Workspace validation includes unit tests, CLI help, source-free E2E proof, and diff hygiene.
 
 ## Future Requirements
 
 Deferred into later milestones from the remaining product vision.
 
-### v2.5 Agent-Native Deep Integrations
+### v2.6 Agent-Native Deep Integrations
 
 - **AGENT-01**: User can verify Codex and Claude Code real-client tool-call evidence from release docs.
 - **AGENT-02**: User can verify Cursor and OpenCode integration behavior where clients expose machine-checkable proof.
 - **AGENT-03**: User can install thin prompts/hooks/rules without broad static context injection.
 - **AGENT-04**: User can use disconnected/cloud fallback cards when local MCP is unavailable.
 
-### v2.6 Desktop Inspector & Local UX
+### v2.7 Desktop Inspector & Local UX
 
 - **UX-01**: User can open an optional desktop/local inspector shell for diagnostic review.
 - **UX-02**: User can visualize graph neighborhoods and retrieval health interactively.
 - **UX-03**: User can run setup/status checks from the UX without editing source files.
 - **UX-04**: User can keep daily coding inside existing agents; the UX remains diagnostic.
-
-### v2.7 Team Sync & Enterprise Controls
-
-- **TEAM-01**: Team can optionally sync source-free shared artifacts and policy metadata.
-- **TEAM-02**: Admin can configure enterprise privacy/audit controls and SSO.
-- **TEAM-03**: Team can expose a remote MCP endpoint only after explicit data-sharing review.
-- **TEAM-04**: User can keep a fully local-only fallback when sync is disabled.
 
 ### v3.0 Context Governor
 
@@ -77,48 +70,45 @@ Deferred into later milestones from the remaining product vision.
 
 ## Out of Scope
 
-Explicitly excluded from v2.4 to keep the milestone focused on measured backend quality.
-
 | Feature | Reason |
 |---------|--------|
-| Cloud embeddings or cloud reranking by default | Local-first trust remains the product contract; cloud providers require explicit repo policy. |
-| Hosted vector database | Too heavy for local-first v2.4 and unnecessary before local eval proves value. |
-| Silent semantic default promotion | The May 19 semantic ablation showed no Recall@10 lift and worse runtime, so defaults require hard gates. |
-| Mandatory SCIP/LSP generation | Precision inputs are valuable but operationally fragile; normal `prepare_task` must work without them. |
-| Desktop inspector UX | v2.6 owns optional desktop/local UX. |
-| Deep Codex/Claude/Cursor/OpenCode hooks | v2.5 owns deeper agent-native integration proof. |
-| Autonomous source edits or test execution | Existing coding agents own editing, permissions, and shell execution. |
+| Cloud embeddings or cloud reranking by default | Local-first trust remains the product contract. |
+| Hosted vector database | v2.5 must prove local quality before adding hosted infrastructure. |
+| Default semantic promotion without lift | RefactoringMiner still shows lexical baseline ahead of default/local_hash. |
+| Autonomous edits or test execution | Existing coding agents own editing, shell permissions, and validation execution. |
+| Desktop inspector UX | v2.7 owns optional local UX. |
+| Deep native hooks | v2.6 owns agent-native deep integration proof. |
 
 ## Traceability
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| SEM-01 | Phase 56 | Planned |
-| SEM-02 | Phase 56 | Planned |
-| SEM-03 | Phase 56 | Planned |
-| SEM-04 | Phase 56 | Planned |
-| PREC-01 | Phase 57 | Planned |
-| PREC-02 | Phase 57 | Planned |
-| PREC-03 | Phase 57 | Planned |
-| PREC-04 | Phase 57 | Planned |
-| QUERY-01 | Phase 58 | Planned |
-| QUERY-02 | Phase 58 | Planned |
-| QUERY-03 | Phase 58 | Planned |
-| QUERY-04 | Phase 58 | Planned |
-| PROVIDER-01 | Phase 59 | Planned |
-| PROVIDER-02 | Phase 59 | Planned |
-| PROVIDER-03 | Phase 59 | Planned |
-| PROVIDER-04 | Phase 59 | Planned |
-| GATE-01 | Phase 60 | Planned |
-| GATE-02 | Phase 60 | Planned |
-| GATE-03 | Phase 60 | Planned |
-| GATE-04 | Phase 60 | Planned |
+| BASE-01 | Phase 61 | Complete |
+| BASE-02 | Phase 61 | Complete |
+| BASE-03 | Phase 61 | Complete |
+| BASE-04 | Phase 61 | Complete |
+| EMBED-01 | Phase 62 | Planned |
+| EMBED-02 | Phase 62 | Planned |
+| EMBED-03 | Phase 62 | Planned |
+| EMBED-04 | Phase 62 | Planned |
+| RANK-01 | Phase 63 | Planned |
+| RANK-02 | Phase 63 | Planned |
+| RANK-03 | Phase 63 | Planned |
+| RANK-04 | Phase 63 | Planned |
+| GAP-01 | Phase 64 | Planned |
+| GAP-02 | Phase 64 | Planned |
+| GAP-03 | Phase 64 | Planned |
+| GAP-04 | Phase 64 | Planned |
+| PROOF-01 | Phase 65 | Planned |
+| PROOF-02 | Phase 65 | Planned |
+| PROOF-03 | Phase 65 | Planned |
+| PROOF-04 | Phase 65 | Planned |
 
 **Coverage:**
 
-- v2.4 requirements: 20 total
+- v2.5 requirements: 20 total
 - Mapped to phases: 20
 - Unmapped: 0
 
 ---
-*Requirements defined: 2026-05-19*
+*Requirements defined: 2026-05-22*

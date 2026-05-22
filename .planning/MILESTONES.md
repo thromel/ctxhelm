@@ -2,10 +2,31 @@
 
 ## Active
 
-No active implementation milestone.
+### v2.5 Production Retrieval Quality
 
-Next recommended milestone: v2.5 Production Retrieval Quality, focused on
-production local embeddings, reranker promotion gates, and multi-repo proof.
+**Goal:** Prove and improve retrieval quality across real repositories so production local embeddings, reranking, graph/test/history fixes, and learned fusion can beat lexical baseline while staying local-first and source-safe.
+
+**Status:** Active: 2026-05-22. Phase 61 complete.
+
+**Phases planned:** Phases 61-65, 5 plans total
+
+**Planned capabilities:**
+
+- Multi-repo fixed-corpus baselines across RefactoringMiner and a second real repository.
+- Production local embedding quality proof with bounded local cache and provider metadata.
+- Reranker and fusion promotion gates that protect anchors, current diff, lexical evidence, and symbols.
+- Gap-family retrieval fixes with before/after proof on real misses.
+- v2.5 product proof and release gate that honestly reports beat/match/trail status per corpus and variant.
+
+**Active artifacts:**
+
+- Roadmap: `.planning/ROADMAP.md`
+- Requirements: `.planning/REQUIREMENTS.md`
+- Phases: `.planning/phases/61-multi-repo-quality-baselines/` through `.planning/phases/65-v25-product-proof-release-gate/`
+
+**Current evidence:**
+
+- Phase 61 E2E: `.planning/e2e/2026-05-22-v25-multirepo-baseline.md`
 
 ## Shipped
 
