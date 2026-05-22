@@ -198,6 +198,8 @@ fn is_generated_path(lower: &str, name: &str) -> bool {
     lower.contains("/node_modules/")
         || lower.contains("/.gradle/")
         || lower.contains("/.fastembed_cache/")
+        || lower.contains("/src/main 2/")
+        || lower.contains("/src/test 2/")
         || lower.contains("/target/")
         || lower.contains("/dist/")
         || lower.contains("/build/")
@@ -211,6 +213,8 @@ fn is_generated_path(lower: &str, name: &str) -> bool {
         || lower.starts_with("node_modules/")
         || lower.starts_with(".gradle/")
         || lower.starts_with(".fastembed_cache/")
+        || lower.starts_with("src/main 2/")
+        || lower.starts_with("src/test 2/")
         || lower.starts_with("target/")
         || lower.starts_with("dist/")
         || lower.starts_with("build/")
@@ -336,6 +340,8 @@ mod tests {
         for path in [
             "node_modules/react/index.js",
             ".fastembed_cache/models--jinaai--jina-embeddings-v2-base-code/blobs/model.onnx",
+            "src/main 2/java/org/example/Copied.java",
+            "src/test 2/java/org/example/CopiedTest.java",
             "target/debug/app",
             "dist/app.js",
             "build/output.js",

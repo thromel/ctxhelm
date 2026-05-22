@@ -21,7 +21,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::path::{Component, Path};
 use uuid::Uuid;
 
-pub(crate) const PREPARE_TASK_TARGET_LIMIT: usize = 8;
+pub(crate) const PREPARE_TASK_TARGET_LIMIT: usize = 10;
 
 pub fn empty_plan_for_task(task_type: TaskType) -> ContextPlan {
     base_plan(task_type)
@@ -1037,8 +1037,15 @@ fn expansion_seed_paths(
                 .map(|result| result.symbol.path.clone()),
         )
         .chain(search_results.iter().map(|result| result.path.clone()))
-        .chain(semantic_results.iter().map(|result| result.path.clone()))
     {
+        if seen.insert(path.clone()) {
+            paths.push(path);
+        }
+    }
+    if !paths.is_empty() {
+        return paths;
+    }
+    for path in semantic_results.iter().map(|result| result.path.clone()) {
         if seen.insert(path.clone()) {
             paths.push(path);
         }
@@ -1214,6 +1221,35 @@ mod tests {
             .iter()
             .any(|facet| facet.kind == QueryFacetKind::ExplicitPath
                 && facet.value == "src/auth/session.ts"));
+    }
+
+    #[test]
+    fn expansion_seeds_use_semantic_only_when_exact_seeds_are_absent() {
+        let lexical = ctxpack_index::SearchResult {
+            path: "src/exact.ts".to_string(),
+            role: FileRole::Source,
+            language: Some("typescript".to_string()),
+            score: 12.0,
+            reason: "term match".to_string(),
+        };
+        let semantic = ctxpack_index::SemanticSearchResult {
+            path: "src/semantic.ts".to_string(),
+            role: FileRole::Source,
+            language: Some("typescript".to_string()),
+            score: 0.95,
+            reason: "local semantic similarity".to_string(),
+            provider: SemanticProviderConfig::default(),
+            document_id: Some("semantic_doc".to_string()),
+            matched_facets: Vec::new(),
+            precision_status: None,
+        };
+
+        let exact_seeded =
+            expansion_seed_paths(&[], &[], &[lexical], std::slice::from_ref(&semantic));
+        assert_eq!(exact_seeded, vec!["src/exact.ts".to_string()]);
+
+        let semantic_seeded = expansion_seed_paths(&[], &[], &[], &[semantic]);
+        assert_eq!(semantic_seeded, vec!["src/semantic.ts".to_string()]);
     }
 
     #[test]

@@ -2,29 +2,39 @@
 
 ## Active
 
+No active implementation milestone.
+
+Next recommended milestone: v2.5 Production Retrieval Quality, focused on
+production local embeddings, reranker promotion gates, and multi-repo proof.
+
+## Shipped
+
 ### v2.4 Production Semantic & Precision Backends
 
 **Goal:** Convert semantic and precision retrieval from local scaffolding into measured, policy-gated retrieval-quality improvements without breaking ctxpack's local-first and source-safe contract.
 
-**Status:** Planned.
+**Status:** Shipped locally: 2026-05-20.
 
-**Phases planned:** Phases 56-60, 5 plans total
+**Phases completed:** Phases 56-60, 5 plans total
 
-**Planned capabilities:**
+**Key accomplishments:**
 
-- Production local semantic backend with real embedding provider and source-free vector/provider metadata.
-- Precision-enriched semantic documents using safe inventory, symbols, tests, docs/cards, and optional SCIP/LSP status.
-- Structured query construction and hybrid fusion controls for task, commit, path, symbol, and error-like inputs.
-- Provider and reranker policy gates with cloud disabled by default.
-- Fixed-corpus semantic/precision evaluation gates and release proof that block neutral or regressive defaults.
+- Added an optional production-local `local_fastembed` backend behind the `local-embeddings` feature, while keeping `local_hash` as deterministic scaffold behavior.
+- Rebuilt semantic retrieval around source-free semantic documents enriched with safe inventory, symbols, dependency edges, related tests, docs/cards, and precision status.
+- Added source-free query construction traces and hybrid fusion controls for task, commit, path, symbol, and error-like inputs.
+- Added provider and reranker policy gates with cloud embeddings, source transfer, and cloud reranking disabled by default.
+- Added semantic/precision evaluation gates and release proof boundaries so defaults are not promoted without measured lift.
+- Verified Claude Code can pass semantic provider/model/dimension controls through MCP.
+- Ran the fresh RefactoringMiner paired proof: default and `local_hash` are now at parity after the semantic seed fix, but both still trail lexical baseline.
 
-**Active artifacts:**
+**Artifacts:**
 
 - Roadmap: `.planning/ROADMAP.md`
 - Requirements: `.planning/REQUIREMENTS.md`
 - Research: `.planning/research/`
-
-## Shipped
+- Audit: `.planning/milestones/v2.4-MILESTONE-AUDIT.md`
+- Fresh E2E: `.planning/e2e/2026-05-22-refactoringminer-semantic-fusion-regression.md`
+- Phases: `.planning/phases/56-production-local-semantic-backend/` through `.planning/phases/60-semantic-precision-evaluation-gates-and-release-proof/`
 
 ### v2.3 Evaluation Lab & Learned Retrieval Policy
 

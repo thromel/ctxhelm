@@ -2,6 +2,7 @@
 /target/
 /dist/
 /.ctxpack/cache/
+/.ctxpack/e2e/
 /.ctxpack/index/
 *.log
 .DS_Store

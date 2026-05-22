@@ -343,6 +343,10 @@ fn select_target_files(candidates: &[RankedCandidate], file_budget: usize) -> Ve
 
     let mut selected = Vec::new();
     let mut selected_paths = BTreeSet::new();
+    let has_active_context = candidates.iter().any(|candidate| {
+        signal_score(&candidate.candidate, RetrievalSignalKind::Anchor).is_some()
+            || signal_score(&candidate.candidate, RetrievalSignalKind::CurrentDiff).is_some()
+    });
 
     for candidate in candidates
         .iter()
@@ -360,7 +364,8 @@ fn select_target_files(candidates: &[RankedCandidate], file_budget: usize) -> Ve
         .filter(|candidate| candidate.target_file.is_some())
         .filter_map(|candidate| {
             let lexical_score = signal_score(&candidate.candidate, RetrievalSignalKind::Lexical)?;
-            if lexical_score < 0.90 {
+            let minimum_lexical_score = if has_active_context { 0.90 } else { 0.30 };
+            if lexical_score < minimum_lexical_score {
                 return None;
             }
             Some((lexical_score, candidate))
@@ -374,7 +379,12 @@ fn select_target_files(candidates: &[RankedCandidate], file_budget: usize) -> Ve
             .then_with(|| left.candidate.path.cmp(&right.candidate.path))
     });
 
-    for (_, candidate) in lexical_floor.into_iter().take(7) {
+    let lexical_floor_limit = if has_active_context {
+        7.min(file_budget)
+    } else {
+        file_budget.saturating_sub(1).max(1)
+    };
+    for (_, candidate) in lexical_floor.into_iter().take(lexical_floor_limit) {
         push_target(candidate, &mut selected, &mut selected_paths, file_budget);
     }
     let mut history_floor = candidates
@@ -1024,7 +1034,60 @@ mod tests {
     }
 
     #[test]
-    fn selection_uses_fixed_budgets_and_path_tie_breaks() {
+    fn selection_uses_stronger_lexical_floor_without_active_context() {
+        let candidates = rank_candidates(RankingInput {
+            lexical_results: (0..5)
+                .map(|index| lexical(&format!("src/lexical-{index}.ts"), 8.0))
+                .collect(),
+            semantic_results: (0..5)
+                .map(|index| SemanticSearchResult {
+                    path: format!("src/semantic-{index}.ts"),
+                    role: FileRole::Source,
+                    language: Some("typescript".to_string()),
+                    score: 0.95,
+                    reason: "local semantic similarity".to_string(),
+                    provider: SemanticProviderConfig::default(),
+                    document_id: Some(format!("sem_doc_{index}")),
+                    matched_facets: Vec::new(),
+                    precision_status: None,
+                })
+                .collect(),
+            roles: roles([
+                ("src/lexical-0.ts", FileRole::Source),
+                ("src/lexical-1.ts", FileRole::Source),
+                ("src/lexical-2.ts", FileRole::Source),
+                ("src/lexical-3.ts", FileRole::Source),
+                ("src/lexical-4.ts", FileRole::Source),
+                ("src/semantic-0.ts", FileRole::Source),
+                ("src/semantic-1.ts", FileRole::Source),
+                ("src/semantic-2.ts", FileRole::Source),
+                ("src/semantic-3.ts", FileRole::Source),
+                ("src/semantic-4.ts", FileRole::Source),
+            ]),
+            ..RankingInput::default()
+        });
+
+        let selection = select_ranked_candidates(&candidates, 5, 0);
+        let paths = selection
+            .target_files
+            .iter()
+            .map(|target| target.path.as_str())
+            .collect::<Vec<_>>();
+
+        assert_eq!(
+            &paths[..4],
+            [
+                "src/lexical-0.ts",
+                "src/lexical-1.ts",
+                "src/lexical-2.ts",
+                "src/lexical-3.ts"
+            ]
+        );
+        assert!(paths.iter().any(|path| path.starts_with("src/semantic-")));
+    }
+
+    #[test]
+    fn selection_uses_fixed_budgets_and_lexical_rank_order() {
         let candidates = rank_candidates(RankingInput {
             lexical_results: vec![
                 lexical("src/b.ts", 10.0),
@@ -1063,7 +1126,7 @@ mod tests {
                 .iter()
                 .map(|target| target.path.as_str())
                 .collect::<Vec<_>>(),
-            vec!["src/a.ts", "src/b.ts"]
+            vec!["src/b.ts", "src/a.ts"]
         );
         assert_eq!(
             selection
