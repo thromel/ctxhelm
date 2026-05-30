@@ -4,23 +4,23 @@ milestone: v2.5
 milestone_name: Production Retrieval Quality
 status: active
 last_updated: "2026-05-22T00:00:00Z"
-last_activity: 2026-05-30 -- Phase 62 production local embedding quality complete
+last_activity: 2026-05-30 -- Phase 63 reranker and fusion promotion complete
 progress:
   total_phases: 5
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 5
-  completed_plans: 2
-  percent: 40
+  completed_plans: 3
+  percent: 60
 ---
 
 # Project State
 
 ## Current Position
 
-Phase: 63 - Reranker And Fusion Promotion
-Plan: 63-reranker-and-fusion-promotion-01-PLAN.md
+Phase: 64 - Gap-Family Retrieval Improvements
+Plan: 64-gap-family-retrieval-improvements-01-PLAN.md
 Status: Planned
-Last activity: 2026-05-30 -- Phase 62 measured local_fastembed on the two-repo corpus and held it opt-in because recall matched default while runtime was much higher
+Last activity: 2026-05-30 -- Phase 63 added eval-only local metadata reranker comparison, protected-evidence promotion gates, and blocked reranker promotion on named regressions
 
 ## Project Reference
 
@@ -40,7 +40,7 @@ Planned phases:
 
 - Phase 61: Multi-Repo Quality Baselines (complete)
 - Phase 62: Production Local Embedding Quality (complete)
-- Phase 63: Reranker And Fusion Promotion (planned)
+- Phase 63: Reranker And Fusion Promotion (complete)
 - Phase 64: Gap-Family Retrieval Improvements (planned)
 - Phase 65: v2.5 Product Proof And Release Gate (planned)
 
@@ -60,9 +60,9 @@ Planned phases:
 
 ## Next Step
 
-Plan and execute Phase 63: Reranker And Fusion Promotion.
+Plan and execute Phase 64: Gap-Family Retrieval Improvements.
 
 ## Operator Next Steps
 
-- Use Phase 62 evidence to keep production local embeddings opt-in until they clear runtime and quality gates.
-- Compare reranker/fusion variants against the same fixed corpus without weakening anchors or exact evidence.
+- Use Phase 63 evidence to keep the local metadata reranker gated until protected-evidence regressions are fixed.
+- Target the measured Phase 63 gap families before attempting another default promotion.

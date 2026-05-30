@@ -250,13 +250,36 @@ ctxpack eval gate --repo /path/to/repo --limit 20 --budget 10 --format json
 ```
 
 The gate emits deterministic variant rows for `lexical_baseline`,
-`ctxpack_default`, `local_semantic`, `precision_enriched_semantic`,
-`semantic_precision_full_hybrid`, and `policy_allowed_reranked`. Policy-blocked
-variants are reported as `skipped`, not omitted.
+`ctxpack_default`, `local_metadata_reranked`, `local_semantic`,
+`precision_enriched_semantic`, `semantic_precision_full_hybrid`, and
+`policy_allowed_reranked`. Policy-blocked variants are reported as `skipped`,
+not omitted.
 
 The report includes Recall@K, precision proxy, MRR where available, Test
 Recall@10, runtime/cache fields, token efficiency, provider policy, precision
-status, named wins, named regressions, and named misses.
+status, protected-evidence miss rate, named wins, named regressions, and named
+misses.
+
+Protected evidence is source-free metadata for paths that carry explicit anchor,
+current-diff, lexical, or symbol signals. Promotion gates treat a variant that
+demotes protected paths kept by the default ranking as a named regression. This
+prevents semantic, graph, or metadata reranking experiments from hiding exact
+evidence behind aggregate Recall@K gains.
+
+Benchmark suites can evaluate the local metadata reranker without changing MCP
+tools or default agent behavior:
+
+```json
+{
+  "defaults": {
+    "localMetadataReranker": true
+  }
+}
+```
+
+This switch only affects historical eval ranking. It reorders first-stage
+candidates using local source-free metadata such as signal scores, protected
+signals, confidence, and evidence count.
 
 Gate decisions:
 
@@ -267,6 +290,29 @@ Gate decisions:
 
 The gate is intentionally conservative. A feature existing is not evidence that
 it should become a default.
+
+## v2.5 Phase 63 Local Reranker Gate
+
+Phase 63 compared default ranking with the eval-only local metadata reranker on
+the same two-repo corpus used by Phase 62.
+
+```bash
+ctxpack eval benchmark --config .ctxpack/e2e/phase62-default-config.json --format json
+ctxpack eval benchmark --config .ctxpack/e2e/phase63-local-reranker-config.json --format json
+ctxpack eval gate --limit 5 --budget 10 --format json
+```
+
+Results:
+
+| Repo | Default Recall@10 | Reranked Recall@10 | Delta | Default MRR@K | Reranked MRR@K | Test Recall@10 delta | Protected miss-rate delta | Runtime delta |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| RefactoringMiner | 0.1375 | 0.6642 | +0.5267 | 0.1500 | 0.6125 | +1.0000 | +0.1509 | +13.4s |
+| ctxpack | 0.2049 | 0.1927 | -0.0122 | 0.6333 | 0.7167 | +0.5000 | +0.0000 | -0.6s |
+
+Decision: hold/block default promotion. The reranker produced a large
+RefactoringMiner lift, but it regressed ctxpack Recall@10 and the gate named
+protected-evidence demotions. The next work is Phase 64 gap-family retrieval
+improvements, not default reranker promotion.
 
 ## Product Proof
 

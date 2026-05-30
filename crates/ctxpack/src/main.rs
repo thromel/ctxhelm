@@ -1928,6 +1928,7 @@ fn main() -> Result<()> {
                         head: None,
                         semantic_enabled: false,
                         semantic_provider: SemanticProviderConfig::default(),
+                        local_metadata_reranker: false,
                         cache_enabled: false,
                         force_refresh: false,
                         parallelism: 1,
@@ -2228,6 +2229,7 @@ fn main() -> Result<()> {
                         head: args.head,
                         semantic_enabled: args.semantic,
                         semantic_provider: semantic_provider_config(&args.semantic_provider),
+                        local_metadata_reranker: false,
                         cache_enabled: args.cache,
                         force_refresh: args.force,
                         parallelism: args.parallelism,
@@ -2265,6 +2267,7 @@ fn main() -> Result<()> {
                         head: args.head,
                         semantic_enabled: args.semantic,
                         semantic_provider: semantic_provider_config(&args.semantic_provider),
+                        local_metadata_reranker: false,
                         cache_enabled: args.cache,
                         force_refresh: args.force,
                         parallelism: args.parallelism,
@@ -2291,6 +2294,7 @@ fn main() -> Result<()> {
                         head: args.head,
                         semantic_enabled: args.semantic,
                         semantic_provider: semantic_provider_config(&args.semantic_provider),
+                        local_metadata_reranker: false,
                         cache_enabled: args.cache,
                         force_refresh: args.force,
                         parallelism: args.parallelism,
@@ -4204,7 +4208,7 @@ fn render_semantic_precision_gate_report(report: &SemanticPrecisionGateReport) -
     for variant in &report.variants {
         let metrics = variant.metrics.as_ref();
         output.push_str(&format!(
-            "- `{}` status `{:?}` semantic `{}` precision `{}` reranker `{}` recall@K `{:?}` precision@K `{:?}` testRecall@10 `{:?}` runtimeMs `{:?}` provider `{}` — {}\n",
+            "- `{}` status `{:?}` semantic `{}` precision `{}` reranker `{}` recall@K `{:?}` precision@K `{:?}` testRecall@10 `{:?}` protectedEvidenceMissRate@10 `{:?}` runtimeMs `{:?}` tokenEfficiency `{:?}` provider `{}` — {}\n",
             variant.name,
             variant.status,
             variant.semantic_enabled,
@@ -4213,7 +4217,9 @@ fn render_semantic_precision_gate_report(report: &SemanticPrecisionGateReport) -
             metrics.map(|metric| metric.recall_at_k),
             metrics.map(|metric| metric.precision_at_k),
             variant.test_recall_at_10,
+            variant.protected_evidence_miss_rate_at_10,
             variant.runtime_millis,
+            variant.token_efficiency,
             variant.provider_status,
             variant.note
         ));
@@ -4344,7 +4350,7 @@ fn render_historical_eval_report(report: &HistoricalEvalReport) -> String {
     let mut output = String::from("# ctxpack Historical Retrieval Eval\n\n");
     output.push_str("This source-free report replays recent commit subjects through `prepare_task` and compares recommended context paths with the safe files changed by each commit.\n\n");
     output.push_str(&format!(
-        "- Eval range ID: `{}`\n- Repo ID: `{}`\n- Evaluated commits: `{}`\n- Budget: `{:?}`\n- Effective limit: `{}`\n- Ranking budget K: `{}`\n- Effective mode: `{:?}`\n- Effective target agent: `{}`\n- Semantic enabled: `{}`\n- Semantic provider: `{}`\n- Base: `{}`\n- Head: `{}`\n- File Recall@5: `{:.2}`\n- File Recall@10: `{:.2}`\n- Lexical Baseline Recall@5: `{:.2}`\n- Lexical Baseline Recall@10: `{:.2}`\n- ctxpack Lift@5: `{:+.2}`\n- ctxpack Lift@10: `{:+.2}`\n- Recall@K: `{:.2}`\n- Precision@K: `{:.2}`\n- MRR@K: `{:.2}`\n- Lexical Recall@K: `{:.2}`\n- No-context Recall@K: `{:.2}`\n- ctxpack Lift@K: `{:+.2}`\n- ctxpack Lift vs No-context@K: `{:+.2}`\n- Source Recall@5: `{:.2}`\n- Source Recall@10: `{:.2}`\n- Test Recall@5: `{:.2}`\n- Test Recall@10: `{:.2}`\n- Test recommendation rate: `{:.2}`\n- Average recommended context files: `{:.2}`\n- Runtime total ms: `{}`\n- Runtime commit-loop ms: `{}`\n- Runtime overhead ms: `{}`\n- Runtime average commit ms: `{:.2}`\n- Runtime git sample ms: `{}`\n- Runtime ranking ms: `{}`\n- Runtime pack/compiler ms: `{}`\n- Eval cache hits: `{}`\n- Eval cache misses: `{}`\n- Eval parallelism: `{}`\n- Low-information commits: `{}`\n- Privacy: local-only `{}`\n\n",
+        "- Eval range ID: `{}`\n- Repo ID: `{}`\n- Evaluated commits: `{}`\n- Budget: `{:?}`\n- Effective limit: `{}`\n- Ranking budget K: `{}`\n- Effective mode: `{:?}`\n- Effective target agent: `{}`\n- Semantic enabled: `{}`\n- Semantic provider: `{}`\n- Local metadata reranker: `{}`\n- Base: `{}`\n- Head: `{}`\n- File Recall@5: `{:.2}`\n- File Recall@10: `{:.2}`\n- Lexical Baseline Recall@5: `{:.2}`\n- Lexical Baseline Recall@10: `{:.2}`\n- ctxpack Lift@5: `{:+.2}`\n- ctxpack Lift@10: `{:+.2}`\n- Recall@K: `{:.2}`\n- Precision@K: `{:.2}`\n- MRR@K: `{:.2}`\n- Lexical Recall@K: `{:.2}`\n- No-context Recall@K: `{:.2}`\n- ctxpack Lift@K: `{:+.2}`\n- ctxpack Lift vs No-context@K: `{:+.2}`\n- Source Recall@5: `{:.2}`\n- Source Recall@10: `{:.2}`\n- Test Recall@5: `{:.2}`\n- Test Recall@10: `{:.2}`\n- Test recommendation rate: `{:.2}`\n- Average recommended context files: `{:.2}`\n- Protected evidence candidates: `{}`\n- Protected evidence missed@10: `{}`\n- Protected evidence miss rate@10: `{:.2}`\n- Runtime total ms: `{}`\n- Runtime commit-loop ms: `{}`\n- Runtime overhead ms: `{}`\n- Runtime average commit ms: `{:.2}`\n- Runtime git sample ms: `{}`\n- Runtime ranking ms: `{}`\n- Runtime pack/compiler ms: `{}`\n- Eval cache hits: `{}`\n- Eval cache misses: `{}`\n- Eval parallelism: `{}`\n- Low-information commits: `{}`\n- Privacy: local-only `{}`\n\n",
         report.eval_range_id,
         report.repo_id,
         report.evaluated_commits,
@@ -4359,6 +4365,7 @@ fn render_historical_eval_report(report: &HistoricalEvalReport) -> String {
             .semantic_provider
             .as_deref()
             .unwrap_or("default"),
+        report.effective_filters.local_metadata_reranker,
         report.base.as_deref().unwrap_or("HEAD history"),
         report.head.as_deref().unwrap_or("HEAD"),
         report.file_recall_at_5,
@@ -4380,6 +4387,9 @@ fn render_historical_eval_report(report: &HistoricalEvalReport) -> String {
         report.test_recall_at_10,
         report.test_recommendation_rate,
         report.average_recommended_context_files,
+        report.protected_evidence.candidate_count,
+        report.protected_evidence.missed_at_10_count,
+        report.protected_evidence.miss_rate_at_10,
         report.runtime.total_millis,
         report.runtime.commit_millis,
         report.runtime.overhead_millis,
@@ -4617,7 +4627,7 @@ fn render_benchmark_suite_report(report: &BenchmarkSuiteReport) -> String {
             repo.privacy_status.local_only
         ));
         output.push_str(&format!(
-            "- Semantic enabled: `{}`\n- Semantic provider: `{}`\n- Semantic model: `{}`\n- Semantic dimensions: `{}`\n- Semantic provider role: `{}`\n- Semantic quality backend: `{}`\n",
+            "- Semantic enabled: `{}`\n- Semantic provider: `{}`\n- Semantic model: `{}`\n- Semantic dimensions: `{}`\n- Semantic provider role: `{}`\n- Semantic quality backend: `{}`\n- Local metadata reranker: `{}`\n",
             repo.effective_config.semantic_enabled,
             repo.effective_config.semantic_provider,
             repo.effective_config
@@ -4629,7 +4639,8 @@ fn render_benchmark_suite_report(report: &BenchmarkSuiteReport) -> String {
                 .map(|dimensions| dimensions.to_string())
                 .unwrap_or_else(|| "provider default".to_string()),
             repo.effective_config.semantic_provider_role,
-            repo.effective_config.semantic_quality_backend
+            repo.effective_config.semantic_quality_backend,
+            repo.effective_config.local_metadata_reranker
         ));
 
         if let Some(error) = &repo.error {
@@ -4642,7 +4653,7 @@ fn render_benchmark_suite_report(report: &BenchmarkSuiteReport) -> String {
             continue;
         };
         output.push_str(&format!(
-            "- File Recall@5: `{:.2}`\n- File Recall@10: `{:.2}`\n- Lexical Baseline Recall@5: `{:.2}`\n- Lexical Baseline Recall@10: `{:.2}`\n- No-context Recall@K: `{:.2}`\n- ctxpack Lift@5: `{:+.2}`\n- ctxpack Lift@10: `{:+.2}`\n- ctxpack Lift vs No-context@K: `{:+.2}`\n- Source Recall@10: `{:.2}`\n- Test Recall@10: `{:.2}`\n- Test recommendation rate: `{:.2}`\n- Average recommended context files: `{:.2}`\n\n",
+            "- File Recall@5: `{:.2}`\n- File Recall@10: `{:.2}`\n- Lexical Baseline Recall@5: `{:.2}`\n- Lexical Baseline Recall@10: `{:.2}`\n- No-context Recall@K: `{:.2}`\n- ctxpack Lift@5: `{:+.2}`\n- ctxpack Lift@10: `{:+.2}`\n- ctxpack Lift vs No-context@K: `{:+.2}`\n- Source Recall@10: `{:.2}`\n- Test Recall@10: `{:.2}`\n- Test recommendation rate: `{:.2}`\n- Average recommended context files: `{:.2}`\n- Protected evidence missed@10: `{}` / `{}` (`{:.2}`)\n\n",
             eval.file_recall_at_5,
             eval.file_recall_at_10,
             eval.lexical_baseline_recall_at_5,
@@ -4654,7 +4665,10 @@ fn render_benchmark_suite_report(report: &BenchmarkSuiteReport) -> String {
             eval.source_recall_at_10,
             eval.test_recall_at_10,
             eval.test_recommendation_rate,
-            eval.average_recommended_context_files
+            eval.average_recommended_context_files,
+            eval.protected_evidence.missed_at_10_count,
+            eval.protected_evidence.candidate_count,
+            eval.protected_evidence.miss_rate_at_10
         ));
 
         if let Some(status) = &repo.baseline_status {
@@ -5066,6 +5080,7 @@ mod tests {
                 budget: PackBudget::Standard,
                 semantic_enabled: false,
                 semantic_provider: None,
+                local_metadata_reranker: false,
             },
             refs: ctxpack_compiler::HistoricalEvalRefs {
                 base: Some("abc000".to_string()),
@@ -5194,6 +5209,7 @@ mod tests {
             test_recall_at_10: 0.0,
             test_recommendation_rate: 1.0,
             average_recommended_context_files: 2.0,
+            protected_evidence: ctxpack_compiler::ProtectedEvidenceSummary::default(),
             top_missing_files: vec![ctxpack_compiler::HistoricalMissingFileSummary {
                 path: "README.md".to_string(),
                 role: ctxpack_core::FileRole::Docs,
@@ -5223,6 +5239,7 @@ mod tests {
                 recommended_commands: vec!["pnpm test tests/auth.test.ts".to_string()],
                 lexical_baseline_files: vec!["README.md".to_string()],
                 signal_baseline_files: Vec::new(),
+                protected_evidence: Vec::new(),
                 file_hits_at_5: vec!["src/auth.ts".to_string()],
                 file_hits_at_10: vec!["src/auth.ts".to_string()],
                 lexical_baseline_hits_at_5: vec![],
@@ -5250,6 +5267,7 @@ mod tests {
         assert!(markdown.contains("Budget: `Standard`"));
         assert!(markdown.contains("Effective limit: `5`"));
         assert!(markdown.contains("Effective target agent: `codex`"));
+        assert!(markdown.contains("Local metadata reranker: `false`"));
         assert!(markdown.contains("Base: `abc000`"));
         assert!(markdown.contains("Head: `def111`"));
         assert!(markdown.contains("Low-information commits: `1`"));
@@ -5260,6 +5278,7 @@ mod tests {
         assert!(markdown.contains("ctxpack Lift vs No-context@K: `+1.00`"));
         assert!(markdown.contains("Source Recall@10: `1.00`"));
         assert!(markdown.contains("Test Recall@10: `0.00`"));
+        assert!(markdown.contains("Protected evidence miss rate@10: `0.00`"));
         assert!(markdown.contains("Runtime total ms: `250`"));
         assert!(markdown.contains("Runtime commit-loop ms: `250`"));
         assert!(markdown.contains("Runtime overhead ms: `0`"));

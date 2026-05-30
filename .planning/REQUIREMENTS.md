@@ -24,10 +24,10 @@ v2.4 made semantic, precision, provider, and reranker machinery policy-gated and
 
 ### Reranker And Fusion Promotion
 
-- [ ] **RANK-01**: Local reranker/fusion variants can score first-stage candidates without adding MCP tool surface or exposing source text in reports.
-- [ ] **RANK-02**: Fusion policies protect explicit anchors, current diff, exact lexical evidence, and high-confidence symbols from semantic/graph crowd-out.
-- [ ] **RANK-03**: Promotion gates compare Recall@K, MRR@K, precision proxy, test recall, token ROI, and runtime before enabling any stronger default.
-- [ ] **RANK-04**: Regression cases are named and block promotion when they touch critical paths or exceed configured thresholds.
+- [x] **RANK-01**: Local reranker/fusion variants can score first-stage candidates without adding MCP tool surface or exposing source text in reports.
+- [x] **RANK-02**: Fusion policies protect explicit anchors, current diff, exact lexical evidence, and high-confidence symbols from semantic/graph crowd-out.
+- [x] **RANK-03**: Promotion gates compare Recall@K, MRR@K, precision proxy, test recall, token ROI, and runtime before enabling any stronger default.
+- [x] **RANK-04**: Regression cases are named and block promotion when they touch critical paths or exceed configured thresholds.
 
 ### Gap-Family Retrieval Improvements
 
@@ -91,10 +91,10 @@ Deferred into later milestones from the remaining product vision.
 | EMBED-02 | Phase 62 | Complete |
 | EMBED-03 | Phase 62 | Complete |
 | EMBED-04 | Phase 62 | Complete |
-| RANK-01 | Phase 63 | Planned |
-| RANK-02 | Phase 63 | Planned |
-| RANK-03 | Phase 63 | Planned |
-| RANK-04 | Phase 63 | Planned |
+| RANK-01 | Phase 63 | Complete |
+| RANK-02 | Phase 63 | Complete |
+| RANK-03 | Phase 63 | Complete |
+| RANK-04 | Phase 63 | Complete |
 | GAP-01 | Phase 64 | Planned |
 | GAP-02 | Phase 64 | Planned |
 | GAP-03 | Phase 64 | Planned |

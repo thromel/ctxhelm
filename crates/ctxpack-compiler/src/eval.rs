@@ -43,6 +43,8 @@ pub struct HistoricalEvalOptions {
     #[serde(default)]
     pub semantic_provider: SemanticProviderConfig,
     #[serde(default)]
+    pub local_metadata_reranker: bool,
+    #[serde(default)]
     pub cache_enabled: bool,
     #[serde(default)]
     pub force_refresh: bool,
@@ -69,6 +71,7 @@ pub struct HistoricalEvalEffectiveFilters {
     pub budget: PackBudget,
     pub semantic_enabled: bool,
     pub semantic_provider: Option<String>,
+    pub local_metadata_reranker: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -230,6 +233,7 @@ pub struct SemanticPrecisionVariant {
     pub cache_hits: Option<usize>,
     pub cache_misses: Option<usize>,
     pub token_efficiency: Option<f32>,
+    pub protected_evidence_miss_rate_at_10: Option<f32>,
     pub provider_status: String,
     pub note: String,
 }
@@ -470,9 +474,28 @@ pub struct HistoricalEvalReport {
     pub test_recall_at_10: f32,
     pub test_recommendation_rate: f32,
     pub average_recommended_context_files: f32,
+    #[serde(default)]
+    pub protected_evidence: ProtectedEvidenceSummary,
     pub top_missing_files: Vec<HistoricalMissingFileSummary>,
     pub commits: Vec<HistoricalCommitEval>,
     pub privacy_status: PrivacyStatus,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct ProtectedEvidenceSummary {
+    pub candidate_count: usize,
+    pub missed_at_10_count: usize,
+    pub miss_rate_at_10: f32,
+    pub by_signal: Vec<ProtectedEvidenceSignalSummary>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct ProtectedEvidenceSignalSummary {
+    pub signal: RetrievalSignalKind,
+    pub candidate_count: usize,
+    pub missed_at_10_count: usize,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -512,6 +535,8 @@ pub struct BenchmarkDefaults {
     #[serde(default)]
     pub semantic_dimensions: Option<usize>,
     #[serde(default)]
+    pub local_metadata_reranker: bool,
+    #[serde(default)]
     pub cache_enabled: bool,
     #[serde(default)]
     pub force_refresh: bool,
@@ -532,6 +557,7 @@ impl Default for BenchmarkDefaults {
             semantic_provider: default_benchmark_semantic_provider(),
             semantic_model: None,
             semantic_dimensions: None,
+            local_metadata_reranker: false,
             cache_enabled: false,
             force_refresh: false,
             parallelism: default_benchmark_parallelism(),
@@ -569,6 +595,8 @@ pub struct BenchmarkRepoConfig {
     pub semantic_model: Option<String>,
     #[serde(default)]
     pub semantic_dimensions: Option<usize>,
+    #[serde(default)]
+    pub local_metadata_reranker: Option<bool>,
     #[serde(default)]
     pub cache_enabled: Option<bool>,
     #[serde(default)]
@@ -631,6 +659,7 @@ pub struct BenchmarkRepoEffectiveConfig {
     pub semantic_dimensions: Option<usize>,
     pub semantic_provider_role: String,
     pub semantic_quality_backend: bool,
+    pub local_metadata_reranker: bool,
     pub cache_enabled: bool,
     pub force_refresh: bool,
     pub parallelism: usize,
@@ -695,6 +724,8 @@ pub struct HistoricalCommitEval {
     pub lexical_baseline_files: Vec<String>,
     #[serde(default)]
     pub signal_baseline_files: Vec<HistoricalSignalRanking>,
+    #[serde(default)]
+    pub protected_evidence: Vec<HistoricalProtectedEvidenceFile>,
     pub file_hits_at_5: Vec<String>,
     pub file_hits_at_10: Vec<String>,
     pub lexical_baseline_hits_at_5: Vec<String>,
@@ -713,6 +744,14 @@ pub struct HistoricalCommitEval {
     #[serde(default)]
     pub elapsed_millis: u64,
     pub source_text_logged: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct HistoricalProtectedEvidenceFile {
+    pub path: String,
+    pub signals: Vec<RetrievalSignalKind>,
+    pub selected_at_10: bool,
 }
 
 pub fn load_benchmark_suite_config(
@@ -1247,6 +1286,7 @@ pub fn semantic_precision_gate_report(
             head: None,
             semantic_enabled: false,
             semantic_provider: SemanticProviderConfig::default(),
+            local_metadata_reranker: false,
             cache_enabled: false,
             force_refresh: false,
             parallelism: 1,
@@ -1259,16 +1299,34 @@ pub fn semantic_precision_gate_report(
             ..HistoricalEvalOptions {
                 limit,
                 ranking_budget,
-                task_type,
+                task_type: task_type.clone(),
                 target_agent: "generic".to_string(),
                 base: None,
                 head: None,
                 semantic_enabled: false,
                 semantic_provider: SemanticProviderConfig::default(),
+                local_metadata_reranker: false,
                 cache_enabled: false,
                 force_refresh: false,
                 parallelism: 1,
             }
+        },
+    )?;
+    let reranked = evaluate_historical_commits(
+        repo_root,
+        &HistoricalEvalOptions {
+            limit,
+            ranking_budget,
+            task_type,
+            target_agent: "generic".to_string(),
+            base: None,
+            head: None,
+            semantic_enabled: false,
+            semantic_provider: SemanticProviderConfig::default(),
+            local_metadata_reranker: true,
+            cache_enabled: false,
+            force_refresh: false,
+            parallelism: 1,
         },
     )?;
     let reranker = reranker_decision(&provider_policy);
@@ -1295,6 +1353,17 @@ pub fn semantic_precision_gate_report(
             &default,
             "evaluated",
             "Current default ranking without semantic default promotion.",
+        ),
+        gate_variant(
+            "local_metadata_reranked",
+            SemanticPrecisionVariantStatus::Evaluated,
+            false,
+            false,
+            true,
+            Some(reranked.ranking_comparison.combined.clone()),
+            &reranked,
+            "evaluated",
+            "Eval-only deterministic local metadata reranker over source-free candidate metadata.",
         ),
         gate_variant(
             "local_semantic",
@@ -1368,12 +1437,28 @@ pub fn semantic_precision_gate_report(
     ));
 
     let named_wins = named_cases(&default, &semantic, "local_semantic", NamedCaseKind::Win);
-    let named_regressions = named_cases(
+    let mut named_regressions = named_cases(
         &default,
         &semantic,
         "local_semantic",
         NamedCaseKind::Regression,
     );
+    named_regressions.extend(named_cases(
+        &default,
+        &reranked,
+        "local_metadata_reranked",
+        NamedCaseKind::Regression,
+    ));
+    named_regressions.extend(protected_evidence_regressions(
+        &default,
+        &semantic,
+        "local_semantic",
+    ));
+    named_regressions.extend(protected_evidence_regressions(
+        &default,
+        &reranked,
+        "local_metadata_reranked",
+    ));
     let named_misses = named_cases(&default, &semantic, "local_semantic", NamedCaseKind::Miss);
     let (decision, decision_reason) =
         gate_decision_from_variants(&variants, &named_regressions, &provider_policy);
@@ -1440,6 +1525,7 @@ fn gate_variant(
         cache_hits: Some(eval.runtime.cache_hits),
         cache_misses: Some(eval.runtime.cache_misses),
         token_efficiency,
+        protected_evidence_miss_rate_at_10: Some(eval.protected_evidence.miss_rate_at_10),
         provider_status: provider_status.to_string(),
         note: note.to_string(),
     }
@@ -1502,6 +1588,112 @@ fn named_cases(
     cases
 }
 
+fn protected_evidence_regressions(
+    default: &HistoricalEvalReport,
+    variant: &HistoricalEvalReport,
+    variant_name: &str,
+) -> Vec<SemanticPrecisionNamedCase> {
+    let default_by_sha = default
+        .commits
+        .iter()
+        .map(|commit| (commit.sha.as_str(), commit))
+        .collect::<BTreeMap<_, _>>();
+    let mut cases = Vec::new();
+
+    for commit in &variant.commits {
+        let Some(default_commit) = default_by_sha.get(commit.sha.as_str()) else {
+            continue;
+        };
+        let default_selected = default_commit
+            .protected_evidence
+            .iter()
+            .filter(|evidence| evidence.selected_at_10)
+            .map(|evidence| evidence.path.as_str())
+            .collect::<BTreeSet<_>>();
+        let demoted_paths = commit
+            .protected_evidence
+            .iter()
+            .filter(|evidence| {
+                default_selected.contains(evidence.path.as_str()) && !evidence.selected_at_10
+            })
+            .map(|evidence| evidence.path.clone())
+            .collect::<Vec<_>>();
+        if demoted_paths.is_empty() {
+            continue;
+        }
+
+        let mut paths = demoted_paths;
+        paths.sort();
+        paths.dedup();
+        paths.truncate(5);
+        cases.push(SemanticPrecisionNamedCase {
+            sha: short_sha(&commit.sha),
+            variant: variant_name.to_string(),
+            reason: format!(
+                "Variant demoted {} protected anchor/current-diff/lexical/symbol path(s) that default kept within K.",
+                paths.len()
+            ),
+            paths,
+        });
+    }
+
+    cases.truncate(10);
+    cases
+}
+
+fn protected_evidence_miss_rate_delta(
+    default: Option<&SemanticPrecisionVariant>,
+    variant: Option<&SemanticPrecisionVariant>,
+) -> f32 {
+    match (
+        default.and_then(|variant| variant.protected_evidence_miss_rate_at_10),
+        variant.and_then(|variant| variant.protected_evidence_miss_rate_at_10),
+    ) {
+        (Some(default_miss_rate), Some(variant_miss_rate)) => variant_miss_rate - default_miss_rate,
+        _ => 0.0,
+    }
+}
+
+fn token_efficiency_delta(
+    default: Option<&SemanticPrecisionVariant>,
+    variant: Option<&SemanticPrecisionVariant>,
+) -> f32 {
+    match (
+        default.and_then(|variant| variant.token_efficiency),
+        variant.and_then(|variant| variant.token_efficiency),
+    ) {
+        (Some(default_efficiency), Some(variant_efficiency)) => {
+            variant_efficiency - default_efficiency
+        }
+        _ => 0.0,
+    }
+}
+
+fn runtime_ratio(
+    default: Option<&SemanticPrecisionVariant>,
+    variant: Option<&SemanticPrecisionVariant>,
+) -> f32 {
+    match (
+        default.and_then(|variant| variant.runtime_millis),
+        variant.and_then(|variant| variant.runtime_millis),
+    ) {
+        (Some(default_runtime), Some(variant_runtime)) if default_runtime > 0 => {
+            variant_runtime as f32 / default_runtime as f32
+        }
+        _ => 1.0,
+    }
+}
+
+fn evaluated_variant_metrics<'a>(
+    variants: &'a [SemanticPrecisionVariant],
+    name: &str,
+) -> Option<(&'a SemanticPrecisionVariant, &'a RankingMetrics)> {
+    variants
+        .iter()
+        .find(|variant| variant.name == name)
+        .and_then(|variant| variant.metrics.as_ref().map(|metrics| (variant, metrics)))
+}
+
 fn gate_decision_from_variants(
     variants: &[SemanticPrecisionVariant],
     named_regressions: &[SemanticPrecisionNamedCase],
@@ -1523,15 +1715,15 @@ fn gate_decision_from_variants(
             "Blocked because named regressions were detected.".to_string(),
         );
     }
-    let default = variants
-        .iter()
-        .find(|variant| variant.name == "ctxpack_default")
-        .and_then(|variant| variant.metrics.as_ref());
-    let semantic = variants
-        .iter()
-        .find(|variant| variant.name == "local_semantic")
-        .and_then(|variant| variant.metrics.as_ref());
-    let (Some(default), Some(semantic)) = (default, semantic) else {
+    let Some((default_variant, default)) = evaluated_variant_metrics(variants, "ctxpack_default")
+    else {
+        return (
+            SemanticPrecisionGateDecision::Hold,
+            "Held because required default or semantic metrics were missing.".to_string(),
+        );
+    };
+    let Some((semantic_variant, semantic)) = evaluated_variant_metrics(variants, "local_semantic")
+    else {
         return (
             SemanticPrecisionGateDecision::Hold,
             "Held because required default or semantic metrics were missing.".to_string(),
@@ -1539,11 +1731,33 @@ fn gate_decision_from_variants(
     };
     let recall_delta = semantic.recall_at_k - default.recall_at_k;
     let precision_delta = semantic.precision_at_k - default.precision_at_k;
+    let runtime_ratio = runtime_ratio(Some(default_variant), Some(semantic_variant));
+    let token_efficiency_delta =
+        token_efficiency_delta(Some(default_variant), Some(semantic_variant));
+    let protected_miss_delta =
+        protected_evidence_miss_rate_delta(Some(default_variant), Some(semantic_variant));
+
+    if runtime_ratio > 2.0 && recall_delta < 0.10 {
+        return (
+            SemanticPrecisionGateDecision::Hold,
+            format!(
+                "Held: runtime ratio {runtime_ratio:.2}x with recall delta {recall_delta:+.3}; promotion requires stronger quality lift."
+            ),
+        );
+    }
+    if token_efficiency_delta < -0.05 && recall_delta < 0.10 {
+        return (
+            SemanticPrecisionGateDecision::Hold,
+            format!(
+                "Held: token efficiency delta {token_efficiency_delta:+.3} with recall delta {recall_delta:+.3}; promotion requires token ROI parity or stronger lift."
+            ),
+        );
+    }
     if recall_delta >= 0.05 && precision_delta >= -0.01 {
         (
             SemanticPrecisionGateDecision::Promote,
             format!(
-                "Promote: local semantic recall delta {recall_delta:+.3}, precision delta {precision_delta:+.3}."
+                "Promote: local semantic recall delta {recall_delta:+.3}, precision delta {precision_delta:+.3}, runtime ratio {runtime_ratio:.2}x, token efficiency delta {token_efficiency_delta:+.3}, protected miss-rate delta {protected_miss_delta:+.3}."
             ),
         )
     } else if recall_delta < -0.01 || precision_delta < -0.03 {
@@ -1696,6 +1910,9 @@ fn run_benchmark_repo(
             .or(defaults.semantic_dimensions),
         semantic_provider_role: String::new(),
         semantic_quality_backend: false,
+        local_metadata_reranker: repo_config
+            .local_metadata_reranker
+            .unwrap_or(defaults.local_metadata_reranker),
         cache_enabled: repo_config.cache_enabled.unwrap_or(defaults.cache_enabled),
         force_refresh: repo_config.force_refresh.unwrap_or(defaults.force_refresh),
         parallelism: repo_config
@@ -1724,6 +1941,7 @@ fn run_benchmark_repo(
         head: effective_config.head.clone(),
         semantic_enabled: effective_config.semantic_enabled,
         semantic_provider,
+        local_metadata_reranker: effective_config.local_metadata_reranker,
         cache_enabled: effective_config.cache_enabled,
         force_refresh: effective_config.force_refresh,
         parallelism: effective_config.parallelism,
@@ -1957,7 +2175,7 @@ fn benchmark_suite_id(
     );
     for repo in repositories {
         input.push_str(&format!(
-            "repo={}\nrepoId={}\nrevisionRangeId={}\nprivacy={}\nbase={}\nhead={}\nlimit={}\nrankingBudget={}\nparallelism={}\ncache={}\nforceRefresh={}\nmode={:?}\ntarget={}\nroles={:?}\ncommits={}\nerror={}\n",
+            "repo={}\nrepoId={}\nrevisionRangeId={}\nprivacy={}\nbase={}\nhead={}\nlimit={}\nrankingBudget={}\nparallelism={}\ncache={}\nforceRefresh={}\nmode={:?}\ntarget={}\nlocalMetadataReranker={}\nroles={:?}\ncommits={}\nerror={}\n",
             repo.name,
             repo.repo_id.as_deref().unwrap_or(""),
             repo.effective_config.revision_range_id.as_deref().unwrap_or(""),
@@ -1971,6 +2189,7 @@ fn benchmark_suite_id(
             repo.effective_config.force_refresh,
             repo.effective_config.mode,
             repo.effective_config.target_agent,
+            repo.effective_config.local_metadata_reranker,
             repo.effective_config.role_filters,
             repo.evaluated_commits,
             repo.error.as_deref().unwrap_or("")
@@ -2070,6 +2289,7 @@ pub fn evaluate_historical_commits(
         semantic_provider: options
             .semantic_enabled
             .then(|| options.semantic_provider.provider.clone()),
+        local_metadata_reranker: options.local_metadata_reranker,
     };
     let eval_range_id = historical_eval_range_id(&repo_id, &effective_filters, &refs);
 
@@ -2155,6 +2375,7 @@ pub fn evaluate_historical_commits(
         &labels_by_path,
         10,
     );
+    let protected_evidence = protected_evidence_summary(&commits);
     let runtime = historical_eval_runtime_summary(
         &commits,
         elapsed_millis(eval_started),
@@ -2195,6 +2416,7 @@ pub fn evaluate_historical_commits(
         test_recall_at_10: average_role_recall(&commits, FileRole::Test, 10),
         test_recommendation_rate: test_recommendation_rate(&commits),
         average_recommended_context_files: average_recommended_context_files(&commits),
+        protected_evidence,
         top_missing_files: top_missing_files(&commits, &roles_by_label_path, 10),
         commits,
         privacy_status: PrivacyStatus::local_only(),
@@ -2327,9 +2549,14 @@ fn evaluate_historical_commit_sample(
         .iter()
         .map(|command| command.command.clone())
         .collect::<Vec<_>>();
-    let recommended_context_files =
-        context_file_ranking(&recommended_files, &recommended_tests, ranking_budget);
+    let recommended_context_files = if options.local_metadata_reranker {
+        local_metadata_reranked_context_files(&plan, ranking_budget)
+    } else {
+        context_file_ranking(&recommended_files, &recommended_tests, ranking_budget)
+    };
     let lexical_baseline_files = lexical_baseline_context_files(eval_root, &task, ranking_budget)?;
+    let protected_evidence =
+        protected_evidence_files(&signals_by_path, &recommended_context_files, 10);
     let file_hits_at_5 =
         changed_file_hits(&sample.safe_changed_files, &recommended_context_files, 5);
     let file_hits_at_10 =
@@ -2388,6 +2615,7 @@ fn evaluate_historical_commit_sample(
             recommended_commands,
             lexical_baseline_files,
             signal_baseline_files,
+            protected_evidence,
             file_hits_at_5,
             file_hits_at_10,
             lexical_baseline_hits_at_5,
@@ -2951,6 +3179,41 @@ fn context_file_ranking(
         .collect()
 }
 
+fn local_metadata_reranked_context_files(plan: &ContextPlan, ranking_budget: usize) -> Vec<String> {
+    let mut candidates = plan
+        .retrieval_candidates
+        .iter()
+        .filter_map(|candidate| {
+            candidate
+                .path
+                .as_ref()
+                .map(|path| (path.clone(), local_metadata_candidate_score(candidate)))
+        })
+        .collect::<Vec<_>>();
+    candidates.sort_by(|(left_path, left_score), (right_path, right_score)| {
+        right_score
+            .total_cmp(left_score)
+            .then_with(|| left_path.cmp(right_path))
+    });
+
+    let mut seen = BTreeSet::new();
+    candidates
+        .into_iter()
+        .filter_map(|(path, _)| seen.insert(path.clone()).then_some(path))
+        .take(ranking_budget.max(1))
+        .collect()
+}
+
+fn local_metadata_candidate_score(candidate: &RetrievalCandidate) -> f32 {
+    let exact_score = candidate
+        .signal_scores
+        .iter()
+        .filter(|score| is_protected_evidence_signal(&score.signal))
+        .map(|score| score.score * score.weight)
+        .sum::<f32>();
+    candidate.confidence + exact_score + candidate.evidence.len() as f32 * 0.05
+}
+
 fn lexical_baseline_context_files(
     repo_root: &Path,
     task: &str,
@@ -3041,7 +3304,7 @@ fn historical_eval_range_id(
     refs: &HistoricalEvalRefs,
 ) -> String {
     task_hash(&format!(
-        "version={HISTORICAL_EVAL_CACHE_SCHEMA_VERSION}\nrepo={repo_id}\nlimit={}\nrankingBudget={}\nmode={:?}\ntarget={}\nbudget={:?}\nsemantic={}\nsemanticProvider={}\nbase={}\nhead={}",
+        "version={HISTORICAL_EVAL_CACHE_SCHEMA_VERSION}\nrepo={repo_id}\nlimit={}\nrankingBudget={}\nmode={:?}\ntarget={}\nbudget={:?}\nsemantic={}\nsemanticProvider={}\nlocalMetadataReranker={}\nbase={}\nhead={}",
         filters.limit,
         filters.ranking_budget,
         filters.mode,
@@ -3049,6 +3312,7 @@ fn historical_eval_range_id(
         filters.budget,
         filters.semantic_enabled,
         filters.semantic_provider.as_deref().unwrap_or(""),
+        filters.local_metadata_reranker,
         refs.base.as_deref().unwrap_or(""),
         refs.head.as_deref().unwrap_or("")
     ))
@@ -3195,6 +3459,98 @@ fn signal_baseline_rankings(
             signal,
         })
         .collect()
+}
+
+fn protected_evidence_files(
+    signals_by_path: &BTreeMap<String, Vec<RetrievalSignalKind>>,
+    recommended_context_files: &[String],
+    limit: usize,
+) -> Vec<HistoricalProtectedEvidenceFile> {
+    let selected = recommended_context_files
+        .iter()
+        .take(limit)
+        .cloned()
+        .collect::<BTreeSet<_>>();
+    signals_by_path
+        .iter()
+        .filter_map(|(path, signals)| {
+            let protected_signals = signals
+                .iter()
+                .filter(|signal| is_protected_evidence_signal(signal))
+                .cloned()
+                .collect::<Vec<_>>();
+            (!protected_signals.is_empty()).then(|| HistoricalProtectedEvidenceFile {
+                path: path.clone(),
+                signals: protected_signals,
+                selected_at_10: selected.contains(path),
+            })
+        })
+        .collect()
+}
+
+fn protected_evidence_summary(commits: &[HistoricalCommitEval]) -> ProtectedEvidenceSummary {
+    let mut candidate_count = 0usize;
+    let mut missed_at_10_count = 0usize;
+
+    for commit in commits {
+        for evidence in &commit.protected_evidence {
+            candidate_count += 1;
+            if !evidence.selected_at_10 {
+                missed_at_10_count += 1;
+            }
+        }
+    }
+
+    ProtectedEvidenceSummary {
+        candidate_count,
+        missed_at_10_count,
+        miss_rate_at_10: if candidate_count == 0 {
+            0.0
+        } else {
+            missed_at_10_count as f32 / candidate_count as f32
+        },
+        by_signal: protected_evidence_signal_order()
+            .into_iter()
+            .map(|signal| {
+                let mut candidate_count = 0usize;
+                let mut missed_at_10_count = 0usize;
+                for commit in commits {
+                    for evidence in &commit.protected_evidence {
+                        if evidence.signals.contains(&signal) {
+                            candidate_count += 1;
+                            if !evidence.selected_at_10 {
+                                missed_at_10_count += 1;
+                            }
+                        }
+                    }
+                }
+                ProtectedEvidenceSignalSummary {
+                    signal,
+                    candidate_count,
+                    missed_at_10_count,
+                }
+            })
+            .collect(),
+    }
+}
+
+fn protected_evidence_signal_order() -> Vec<RetrievalSignalKind> {
+    vec![
+        RetrievalSignalKind::Anchor,
+        RetrievalSignalKind::CurrentDiff,
+        RetrievalSignalKind::Lexical,
+        RetrievalSignalKind::Symbol,
+    ]
+}
+
+fn is_protected_evidence_signal(signal: &RetrievalSignalKind) -> bool {
+    matches!(
+        signal,
+        RetrievalSignalKind::Anchor
+            | RetrievalSignalKind::CurrentDiff
+            | RetrievalSignalKind::Lexical
+            | RetrievalSignalKind::Symbol
+    )
 }
 
 fn signal_baseline_signals() -> Vec<RetrievalSignalKind> {
@@ -4040,6 +4396,122 @@ mod tests {
         );
     }
 
+    #[test]
+    fn gate_decision_holds_slow_or_token_inefficient_variants() {
+        let mut default = gate_test_variant("ctxpack_default", 0.40, 0.10);
+        default.runtime_millis = Some(100);
+        default.token_efficiency = Some(1.00);
+        let mut slow = gate_test_variant("local_semantic", 0.46, 0.10);
+        slow.runtime_millis = Some(250);
+        slow.token_efficiency = Some(1.00);
+        assert_eq!(
+            gate_decision_from_variants(
+                &[default.clone(), slow],
+                &[],
+                &source_free_provider_policy()
+            )
+            .0,
+            SemanticPrecisionGateDecision::Hold
+        );
+
+        let mut inefficient = gate_test_variant("local_semantic", 0.46, 0.10);
+        inefficient.runtime_millis = Some(110);
+        inefficient.token_efficiency = Some(0.80);
+        assert_eq!(
+            gate_decision_from_variants(
+                &[default, inefficient],
+                &[],
+                &source_free_provider_policy()
+            )
+            .0,
+            SemanticPrecisionGateDecision::Hold
+        );
+    }
+
+    #[test]
+    fn protected_evidence_regressions_name_demoted_default_paths() {
+        let mut default = empty_historical_eval_report("same");
+        default.commits[0].protected_evidence = vec![HistoricalProtectedEvidenceFile {
+            path: "src/exact.ts".to_string(),
+            signals: vec![RetrievalSignalKind::Lexical],
+            selected_at_10: true,
+        }];
+        let mut variant = empty_historical_eval_report("same");
+        variant.commits[0].protected_evidence = vec![HistoricalProtectedEvidenceFile {
+            path: "src/exact.ts".to_string(),
+            signals: vec![RetrievalSignalKind::Lexical],
+            selected_at_10: false,
+        }];
+
+        let regressions = protected_evidence_regressions(&default, &variant, "local_semantic");
+
+        assert_eq!(regressions.len(), 1);
+        assert_eq!(regressions[0].paths, vec!["src/exact.ts".to_string()]);
+        assert!(regressions[0].reason.contains("demoted"));
+    }
+
+    #[test]
+    fn protected_evidence_summary_counts_misses_by_signal() {
+        let commits = vec![HistoricalCommitEval {
+            sha: "abc123".to_string(),
+            task_hash: "task".to_string(),
+            task_type: TaskType::BugFix,
+            target_agent: "generic".to_string(),
+            changed_path_labels: Vec::new(),
+            safe_changed_files: Vec::new(),
+            excluded_changed_file_count: 0,
+            recommended_files: Vec::new(),
+            recommended_tests: Vec::new(),
+            recommended_context_files: Vec::new(),
+            recommended_commands: Vec::new(),
+            lexical_baseline_files: Vec::new(),
+            signal_baseline_files: Vec::new(),
+            protected_evidence: vec![
+                HistoricalProtectedEvidenceFile {
+                    path: "src/exact.ts".to_string(),
+                    signals: vec![RetrievalSignalKind::Lexical],
+                    selected_at_10: true,
+                },
+                HistoricalProtectedEvidenceFile {
+                    path: "src/symbol.ts".to_string(),
+                    signals: vec![RetrievalSignalKind::Symbol],
+                    selected_at_10: false,
+                },
+            ],
+            file_hits_at_5: Vec::new(),
+            file_hits_at_10: Vec::new(),
+            lexical_baseline_hits_at_5: Vec::new(),
+            lexical_baseline_hits_at_10: Vec::new(),
+            missing_files_at_10: Vec::new(),
+            source_files_changed: 0,
+            source_hits_at_5: 0,
+            source_hits_at_10: 0,
+            test_files_changed: 0,
+            test_hits_at_5: 0,
+            test_hits_at_10: 0,
+            low_information_task: false,
+            confidence: 0.5,
+            query_trace: None,
+            elapsed_millis: 0,
+            source_text_logged: false,
+        }];
+
+        let summary = protected_evidence_summary(&commits);
+
+        assert_eq!(summary.candidate_count, 2);
+        assert_eq!(summary.missed_at_10_count, 1);
+        assert_eq!(summary.miss_rate_at_10, 0.5);
+        assert_eq!(
+            summary
+                .by_signal
+                .iter()
+                .find(|row| row.signal == RetrievalSignalKind::Symbol)
+                .unwrap()
+                .missed_at_10_count,
+            1
+        );
+    }
+
     fn gate_test_variant(name: &str, recall: f32, precision: f32) -> SemanticPrecisionVariant {
         SemanticPrecisionVariant {
             name: name.to_string(),
@@ -4062,8 +4534,134 @@ mod tests {
             cache_hits: Some(0),
             cache_misses: Some(0),
             token_efficiency: Some(1.0),
+            protected_evidence_miss_rate_at_10: Some(0.0),
             provider_status: "evaluated".to_string(),
             note: "test variant".to_string(),
+        }
+    }
+
+    fn empty_historical_eval_report(sha_suffix: &str) -> HistoricalEvalReport {
+        HistoricalEvalReport {
+            eval_range_id: "range".to_string(),
+            repo_id: "repo".to_string(),
+            evaluated_commits: 1,
+            budget: PackBudget::Standard,
+            effective_filters: HistoricalEvalEffectiveFilters {
+                limit: 1,
+                ranking_budget: 10,
+                mode: TaskType::BugFix,
+                target_agent: "generic".to_string(),
+                budget: PackBudget::Standard,
+                semantic_enabled: false,
+                semantic_provider: None,
+                local_metadata_reranker: false,
+            },
+            refs: HistoricalEvalRefs {
+                base: None,
+                head: None,
+            },
+            base: None,
+            head: None,
+            ranking_comparison: EvalComparison {
+                k: 10,
+                combined: RankingMetrics {
+                    k: 10,
+                    recall_at_k: 0.0,
+                    precision_at_k: 0.0,
+                    mrr_at_k: 0.0,
+                    role_recall: Vec::new(),
+                    test_recommendation_rate: 0.0,
+                    average_recommended_context_files: 0.0,
+                },
+                lexical_baseline: RankingMetrics {
+                    k: 10,
+                    recall_at_k: 0.0,
+                    precision_at_k: 0.0,
+                    mrr_at_k: 0.0,
+                    role_recall: Vec::new(),
+                    test_recommendation_rate: 0.0,
+                    average_recommended_context_files: 0.0,
+                },
+                no_context_baseline: RankingMetrics {
+                    k: 10,
+                    recall_at_k: 0.0,
+                    precision_at_k: 0.0,
+                    mrr_at_k: 0.0,
+                    role_recall: Vec::new(),
+                    test_recommendation_rate: 0.0,
+                    average_recommended_context_files: 0.0,
+                },
+                recall_lift_at_k: 0.0,
+                precision_lift_at_k: 0.0,
+                mrr_lift_at_k: 0.0,
+                recall_lift_vs_no_context_at_k: 0.0,
+                precision_lift_vs_no_context_at_k: 0.0,
+                mrr_lift_vs_no_context_at_k: 0.0,
+            },
+            signal_ablations: Vec::new(),
+            token_roi: Vec::new(),
+            retrieval_gap_summaries: Vec::new(),
+            runtime: HistoricalEvalRuntimeSummary {
+                total_millis: 1,
+                commit_millis: 1,
+                overhead_millis: 0,
+                average_commit_millis: 1.0,
+                cache_hits: 0,
+                cache_misses: 0,
+                parallelism: 1,
+                git_sample_millis: 0,
+                ranking_millis: 0,
+                pack_compiler_millis: 0,
+                slow_commits: Vec::new(),
+            },
+            low_information_commit_count: 0,
+            file_recall_at_5: 0.0,
+            file_recall_at_10: 0.0,
+            lexical_baseline_recall_at_5: 0.0,
+            lexical_baseline_recall_at_10: 0.0,
+            ctxpack_lift_at_5: 0.0,
+            ctxpack_lift_at_10: 0.0,
+            source_recall_at_5: 0.0,
+            source_recall_at_10: 0.0,
+            test_recall_at_5: 0.0,
+            test_recall_at_10: 0.0,
+            test_recommendation_rate: 0.0,
+            average_recommended_context_files: 0.0,
+            protected_evidence: ProtectedEvidenceSummary::default(),
+            top_missing_files: Vec::new(),
+            commits: vec![HistoricalCommitEval {
+                sha: format!("abc123{sha_suffix}"),
+                task_hash: "task".to_string(),
+                task_type: TaskType::BugFix,
+                target_agent: "generic".to_string(),
+                changed_path_labels: Vec::new(),
+                safe_changed_files: Vec::new(),
+                excluded_changed_file_count: 0,
+                recommended_files: Vec::new(),
+                recommended_tests: Vec::new(),
+                recommended_context_files: Vec::new(),
+                recommended_commands: Vec::new(),
+                lexical_baseline_files: Vec::new(),
+                signal_baseline_files: Vec::new(),
+                protected_evidence: Vec::new(),
+                file_hits_at_5: Vec::new(),
+                file_hits_at_10: Vec::new(),
+                lexical_baseline_hits_at_5: Vec::new(),
+                lexical_baseline_hits_at_10: Vec::new(),
+                missing_files_at_10: Vec::new(),
+                source_files_changed: 0,
+                source_hits_at_5: 0,
+                source_hits_at_10: 0,
+                test_files_changed: 0,
+                test_hits_at_5: 0,
+                test_hits_at_10: 0,
+                low_information_task: false,
+                confidence: 0.0,
+                query_trace: None,
+                elapsed_millis: 0,
+                source_text_logged: false,
+            }],
+            privacy_status: PrivacyStatus::local_only(),
         }
     }
 
