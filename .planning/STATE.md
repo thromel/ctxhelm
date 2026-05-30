@@ -3,11 +3,11 @@ gsd_state_version: 1.0
 milestone: v2.5
 milestone_name: Production Retrieval Quality
 status: active
-last_updated: "2026-05-30T23:20:00Z"
-last_activity: 2026-05-30 -- Phase 83 made context-vs-all-file divergence explicit and machine-checkable in product proof
+last_updated: "2026-05-31T00:10:00Z"
+last_activity: 2026-05-31 -- Phase 84 added broad-scope task accounting and scoped dependency source floors
 progress:
-  total_phases: 22
-  completed_phases: 22
+  total_phases: 23
+  completed_phases: 23
   total_plans: 7
   completed_plans: 7
   percent: 100
@@ -17,10 +17,10 @@ progress:
 
 ## Current Position
 
-Phase: 83 - Context Divergence Accounting
-Plan: 83-context-divergence-accounting
+Phase: 84 - Broad Scope Dependency Floors
+Plan: 84-broad-scope-dependency-floors
 Status: Complete
-Last activity: 2026-05-30 -- Phase 83 adds explicit context-vs-all-file deltas and `allFileDivergenceExplained` verdict fields. Product proof and the source-free checker now block unexplained all-file lexical deficits while accepting measured deficits caused by separating context targets from validation targets.
+Last activity: 2026-05-31 -- Phase 84 flags broad multi-area workflow/eval/lint prompts, records `broadScopeCommitCount` / `broadScopeTask` in historical eval JSON, and reserves bounded dependency source neighbors only for broad-scope tasks. The broader proof still promotes and improves VeriSchema Source Recall@10 from `0.249` to `0.304` without regressing the other corpora.
 
 ## Project Reference
 
@@ -60,6 +60,7 @@ Planned phases:
 - Phase 81: Warm Cache Latency Proof (complete follow-up)
 - Phase 82: Warm Cache Release Gate (complete follow-up)
 - Phase 83: Context Divergence Accounting (complete follow-up)
+- Phase 84: Broad Scope Dependency Floors (complete follow-up)
 
 ## Last Completed Milestone
 
@@ -77,7 +78,7 @@ Planned phases:
 
 ## Next Step
 
-Continue production-readiness work from remaining measured gaps: parser/precision dependency misses and low-information/multi-area task detection.
+Continue production-readiness work from remaining measured gaps: remaining parser/precision `no_candidate_signal` families and test-mapping misses.
 
 ## Operator Next Steps
 
@@ -102,6 +103,8 @@ Continue production-readiness work from remaining measured gaps: parser/precisio
 - Latest warm-cache warm proof: `.ctxpack/e2e/phase81-warm-cache-warm-proof.json`; warm proof promotes with cache hits on all four corpora and `1ms` reported runtime for each cached repo on this run.
 - Latest warm-cache release-gate proof: `.planning/e2e/2026-05-30-phase82-warm-cache-gate.md`, `.ctxpack/e2e/phase82-warm-cache-gate-cold-proof.json`, and `.ctxpack/e2e/phase82-warm-cache-gate-warm-proof.json`; warm-cache regressions now block product-proof promotion.
 - Latest context-divergence accounting proof: `.planning/e2e/2026-05-30-phase83-context-divergence-accounting.md` and `.ctxpack/e2e/phase83-context-divergence-proof.json`; product-proof verdicts now expose context-vs-all-file deltas and require all-file lexical deficits to be explained by non-regressed context plus validation channels.
+- Latest broad-scope dependency proof: `.planning/e2e/2026-05-31-phase84-broad-scope-dependency-floors.md` and `.ctxpack/e2e/phase84-broad-scope-dependency-proof.json`; broad multi-area tasks are now counted separately and get a bounded dependency source floor.
 - Latest real-client proof: `.planning/e2e/2026-05-30-phase70-real-client-mcp-proof.md`.
 - RefactoringMiner and ReAgent still trail lexical on all-file recall in the broader proof, but those deficits are now machine-checkable as explained by the context/validation split instead of only prose notes.
-- Next work should target low-information/multi-area task detection and parser precision.
+- Phase 84 improves VeriSchema Source Recall@10 from `0.249` to `0.304` on the broader fixed corpus while keeping RefactoringMiner, ctxpack, and ReAgent stable.
+- Next work should target remaining parser/precision `no_candidate_signal` families and test-mapping misses.

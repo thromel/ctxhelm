@@ -70,7 +70,8 @@ use ctxpack_index::{
 use eval::HistoricalEvalWorktree;
 #[cfg(test)]
 use planning::{
-    is_low_information_task, plan_confidence, PREPARE_TASK_TARGET_LIMIT, PREPARE_TASK_TEST_LIMIT,
+    is_low_information_task, is_multi_area_task, plan_confidence, PREPARE_TASK_TARGET_LIMIT,
+    PREPARE_TASK_TEST_LIMIT,
 };
 
 #[cfg(test)]
@@ -106,6 +107,17 @@ mod tests {
             "Improve signature for nested functions in TypeScript"
         ));
         assert!(!is_low_information_task("Add test for #1060"));
+    }
+
+    #[test]
+    fn multi_area_task_detection_flags_broad_workflow_prompts() {
+        assert!(is_multi_area_task("stabilize lint workflow"));
+        assert!(is_multi_area_task("qwen3.5 eval harden smoke workflow"));
+        assert!(is_multi_area_task("pvldb run orchestration"));
+        assert!(!is_multi_area_task("fix requireSession bug"));
+        assert!(!is_multi_area_task(
+            "Improve signature for nested functions in TypeScript"
+        ));
     }
 
     #[test]
@@ -893,6 +905,35 @@ mod tests {
                 || question.contains("symbol")
                 || question.contains("error")
         }));
+
+        std::env::remove_var("CTXPACK_HOME");
+    }
+
+    #[test]
+    fn prepare_context_plan_reports_multi_area_task_diagnostics() {
+        let _guard = env_lock();
+        let temp = tempfile::tempdir().unwrap();
+        let repo = temp.path().join("repo");
+        let home = temp.path().join("ctxpack-home");
+        fs::create_dir_all(repo.join("src")).unwrap();
+        fs::write(
+            repo.join("src/workflow.ts"),
+            "export const workflow = true;\n",
+        )
+        .unwrap();
+        std::env::set_var("CTXPACK_HOME", &home);
+
+        let plan =
+            prepare_context_plan(&repo, "stabilize lint workflow", TaskType::BugFix).unwrap();
+
+        assert!(plan
+            .diagnostics
+            .iter()
+            .any(|diagnostic| diagnostic.code == "multi_area_task"));
+        assert!(plan
+            .risk_flags
+            .iter()
+            .any(|flag| flag.code == "multi_area_task"));
 
         std::env::remove_var("CTXPACK_HOME");
     }
@@ -1702,6 +1743,7 @@ mod tests {
                 }],
             },
             low_information_commit_count: 0,
+            broad_scope_commit_count: 0,
             file_recall_at_5: 0.5,
             file_recall_at_10: 1.0,
             lexical_baseline_recall_at_5: 0.25,
@@ -1759,6 +1801,7 @@ mod tests {
                 validation_command_hits: 0,
                 effective_validation_hits_at_10: 0,
                 low_information_task: false,
+                broad_scope_task: false,
                 confidence: 0.8,
                 query_trace: None,
                 elapsed_millis: 120,
@@ -2091,6 +2134,7 @@ mod tests {
                 slow_commits: Vec::new(),
             },
             low_information_commit_count: 0,
+            broad_scope_commit_count: 0,
             file_recall_at_5: 0.0,
             file_recall_at_10: 0.0,
             lexical_baseline_recall_at_5: 1.0,

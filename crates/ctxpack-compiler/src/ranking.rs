@@ -320,16 +320,26 @@ fn semantic_facet_label(result: &SemanticSearchResult) -> String {
     }
 }
 
+#[cfg(test)]
 pub(crate) fn select_ranked_candidates(
     candidates: &[RankedCandidate],
     file_budget: usize,
     test_budget: usize,
 ) -> RankedSelection {
+    select_ranked_candidates_for_scope(candidates, file_budget, test_budget, false)
+}
+
+pub(crate) fn select_ranked_candidates_for_scope(
+    candidates: &[RankedCandidate],
+    file_budget: usize,
+    test_budget: usize,
+    broad_scope: bool,
+) -> RankedSelection {
     let retrieval_candidates = candidates
         .iter()
         .map(|candidate| candidate.candidate.clone())
         .collect::<Vec<_>>();
-    let target_files = select_target_files(candidates, file_budget);
+    let target_files = select_target_files(candidates, file_budget, broad_scope);
     let related_tests = select_related_tests(candidates, test_budget);
     let mut command_set = BTreeSet::new();
     let recommended_commands = related_tests
@@ -389,7 +399,11 @@ fn push_related_test(
     }
 }
 
-fn select_target_files(candidates: &[RankedCandidate], file_budget: usize) -> Vec<TargetFile> {
+fn select_target_files(
+    candidates: &[RankedCandidate],
+    file_budget: usize,
+    broad_scope: bool,
+) -> Vec<TargetFile> {
     if file_budget == 0 {
         return Vec::new();
     }
@@ -428,6 +442,19 @@ fn select_target_files(candidates: &[RankedCandidate], file_budget: usize) -> Ve
             push_target(candidate, &mut selected, &mut selected_paths, file_budget);
             if selected.len() > before {
                 source_symbol_floor_selected += 1;
+            }
+        }
+        if broad_scope {
+            let mut source_dependency_floor_selected = 0usize;
+            for (_, candidate) in source_dependency_floor(candidates) {
+                if source_dependency_floor_selected >= source_dependency_floor_limit(file_budget) {
+                    break;
+                }
+                let before = selected.len();
+                push_target(candidate, &mut selected, &mut selected_paths, file_budget);
+                if selected.len() > before {
+                    source_dependency_floor_selected += 1;
+                }
             }
         }
         for (_, candidate) in governance_doc_floor(candidates)
@@ -632,6 +659,30 @@ fn source_symbol_floor(candidates: &[RankedCandidate]) -> Vec<(f32, &RankedCandi
 }
 
 fn source_symbol_floor_limit(file_budget: usize) -> usize {
+    file_budget.div_ceil(4).clamp(1, 3)
+}
+
+fn source_dependency_floor(candidates: &[RankedCandidate]) -> Vec<(f32, &RankedCandidate)> {
+    let mut source_dependency_floor = candidates
+        .iter()
+        .filter(|candidate| candidate.target_file.is_some())
+        .filter(|candidate| candidate.candidate.role == Some(FileRole::Source))
+        .filter_map(|candidate| {
+            let dependency_score =
+                signal_score(&candidate.candidate, RetrievalSignalKind::Dependency)?;
+            Some((dependency_score, candidate))
+        })
+        .collect::<Vec<_>>();
+    source_dependency_floor.sort_by(|(left_score, left), (right_score, right)| {
+        right_score
+            .total_cmp(left_score)
+            .then_with(|| right.rank_score.total_cmp(&left.rank_score))
+            .then_with(|| left.candidate.path.cmp(&right.candidate.path))
+    });
+    source_dependency_floor
+}
+
+fn source_dependency_floor_limit(file_budget: usize) -> usize {
     file_budget.div_ceil(4).clamp(1, 3)
 }
 
@@ -1440,7 +1491,7 @@ mod tests {
             ..RankingInput::default()
         });
 
-        let selection = select_ranked_candidates(&candidates, 5, 0);
+        let selection = select_ranked_candidates_for_scope(&candidates, 5, 0, true);
         let paths = selection
             .target_files
             .iter()
@@ -1682,6 +1733,62 @@ mod tests {
         assert!(paths.contains(&"src/protected-0.ts"));
         assert!(paths.contains(&"src/protected-1.ts"));
         assert!(paths.contains(&"src/protected-2.ts"));
+    }
+
+    #[test]
+    fn selection_reserves_dependency_source_neighbors_when_lexical_docs_fill_budget() {
+        let candidates = rank_candidates(RankingInput {
+            lexical_results: (0..8)
+                .map(|index| SearchResult {
+                    path: format!("docs/noisy-{index}.md"),
+                    role: FileRole::Docs,
+                    language: Some("markdown".to_string()),
+                    score: 90.0 - index as f32,
+                    reason: "doc match".to_string(),
+                })
+                .collect(),
+            dependency_edges: vec![
+                DependencyEdge {
+                    source_path: "src/seed.ts".to_string(),
+                    target_path: "src/dependency-a.ts".to_string(),
+                    kind: "imports".to_string(),
+                    confidence: 0.9,
+                    reason: "typescript import".to_string(),
+                },
+                DependencyEdge {
+                    source_path: "src/seed.ts".to_string(),
+                    target_path: "src/dependency-b.ts".to_string(),
+                    kind: "precision:references".to_string(),
+                    confidence: 0.8,
+                    reason: "source-free precision edge".to_string(),
+                },
+            ],
+            roles: roles([
+                ("src/seed.ts", FileRole::Source),
+                ("src/dependency-a.ts", FileRole::Source),
+                ("src/dependency-b.ts", FileRole::Source),
+                ("docs/noisy-0.md", FileRole::Docs),
+                ("docs/noisy-1.md", FileRole::Docs),
+                ("docs/noisy-2.md", FileRole::Docs),
+                ("docs/noisy-3.md", FileRole::Docs),
+                ("docs/noisy-4.md", FileRole::Docs),
+                ("docs/noisy-5.md", FileRole::Docs),
+                ("docs/noisy-6.md", FileRole::Docs),
+                ("docs/noisy-7.md", FileRole::Docs),
+            ]),
+            expansion_seeds: vec!["src/seed.ts".to_string()],
+            ..RankingInput::default()
+        });
+
+        let selection = select_ranked_candidates_for_scope(&candidates, 5, 0, true);
+        let paths = selection
+            .target_files
+            .iter()
+            .map(|target| target.path.as_str())
+            .collect::<Vec<_>>();
+
+        assert!(paths.contains(&"src/dependency-a.ts"));
+        assert!(paths.contains(&"src/dependency-b.ts"));
     }
 
     #[test]

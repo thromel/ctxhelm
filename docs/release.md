@@ -283,6 +283,16 @@ covered validation targets. The latest broader proof artifact is
 RefactoringMiner and ReAgent all-file lexical deficits marked as explained by
 the context/validation split.
 
+Phase 84 adds broad-scope task accounting and scoped dependency source floors.
+Historical eval JSON now includes report-level `broadScopeCommitCount` and
+per-commit `broadScopeTask`; prepare-task emits `multi_area_task` diagnostics
+for workflow/eval/lint prompts. Dependency source floors are enabled only for
+those broad-scope prompts so ordinary lexical/doc targets are not displaced.
+The latest broader proof artifact is
+`.ctxpack/e2e/phase84-broad-scope-dependency-proof.json`; it promotes and
+improves VeriSchema Source Recall@10 from `0.249` to `0.304` while preserving
+RefactoringMiner, ctxpack, and ReAgent metrics.
+
 Latest optional real-client proof: Codex CLI `0.130.0` and Claude Code
 `2.1.158` both passed the smoke wrappers on 2026-05-30 with server-side
 `prepare_task` and `get_pack` evidence against an explicit repo path. See

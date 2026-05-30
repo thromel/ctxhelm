@@ -4351,7 +4351,7 @@ fn render_historical_eval_report(report: &HistoricalEvalReport) -> String {
     let mut output = String::from("# ctxpack Historical Retrieval Eval\n\n");
     output.push_str("This source-free report replays recent commit subjects through `prepare_task` and compares recommended context paths with the safe files changed by each commit.\n\n");
     output.push_str(&format!(
-        "- Eval range ID: `{}`\n- Repo ID: `{}`\n- Evaluated commits: `{}`\n- Budget: `{:?}`\n- Effective limit: `{}`\n- Ranking budget K: `{}`\n- Effective mode: `{:?}`\n- Effective target agent: `{}`\n- Semantic enabled: `{}`\n- Semantic provider: `{}`\n- Local metadata reranker: `{}`\n- Base: `{}`\n- Head: `{}`\n- File Recall@5: `{:.2}`\n- File Recall@10: `{:.2}`\n- Lexical Baseline Recall@5: `{:.2}`\n- Lexical Baseline Recall@10: `{:.2}`\n- ctxpack Lift@5: `{:+.2}`\n- ctxpack Lift@10: `{:+.2}`\n- Recall@K: `{:.2}`\n- Precision@K: `{:.2}`\n- MRR@K: `{:.2}`\n- Lexical Recall@K: `{:.2}`\n- No-context Recall@K: `{:.2}`\n- ctxpack Lift@K: `{:+.2}`\n- ctxpack Lift vs No-context@K: `{:+.2}`\n- Source Recall@5: `{:.2}`\n- Source Recall@10: `{:.2}`\n- Test Recall@5: `{:.2}`\n- Test Recall@10: `{:.2}`\n- Validation command recall: `{:.2}`\n- Effective validation recall@10: `{:.2}`\n- Test recommendation rate: `{:.2}`\n- Average recommended context files: `{:.2}`\n- Protected evidence candidates: `{}`\n- Protected evidence missed@10: `{}`\n- Protected evidence miss rate@10: `{:.2}`\n- Protected retrieval-target evidence candidates: `{}`\n- Protected retrieval-target evidence missed@10: `{}`\n- Protected retrieval-target evidence miss rate@10: `{:.2}`\n- Runtime total ms: `{}`\n- Runtime commit-loop ms: `{}`\n- Runtime overhead ms: `{}`\n- Runtime average commit ms: `{:.2}`\n- Runtime git sample ms: `{}`\n- Runtime ranking ms: `{}`\n- Runtime pack/compiler ms: `{}`\n- Eval cache hits: `{}`\n- Eval cache misses: `{}`\n- Eval parallelism: `{}`\n- Low-information commits: `{}`\n- Privacy: local-only `{}`\n\n",
+        "- Eval range ID: `{}`\n- Repo ID: `{}`\n- Evaluated commits: `{}`\n- Budget: `{:?}`\n- Effective limit: `{}`\n- Ranking budget K: `{}`\n- Effective mode: `{:?}`\n- Effective target agent: `{}`\n- Semantic enabled: `{}`\n- Semantic provider: `{}`\n- Local metadata reranker: `{}`\n- Base: `{}`\n- Head: `{}`\n- File Recall@5: `{:.2}`\n- File Recall@10: `{:.2}`\n- Lexical Baseline Recall@5: `{:.2}`\n- Lexical Baseline Recall@10: `{:.2}`\n- ctxpack Lift@5: `{:+.2}`\n- ctxpack Lift@10: `{:+.2}`\n- Recall@K: `{:.2}`\n- Precision@K: `{:.2}`\n- MRR@K: `{:.2}`\n- Lexical Recall@K: `{:.2}`\n- No-context Recall@K: `{:.2}`\n- ctxpack Lift@K: `{:+.2}`\n- ctxpack Lift vs No-context@K: `{:+.2}`\n- Source Recall@5: `{:.2}`\n- Source Recall@10: `{:.2}`\n- Test Recall@5: `{:.2}`\n- Test Recall@10: `{:.2}`\n- Validation command recall: `{:.2}`\n- Effective validation recall@10: `{:.2}`\n- Test recommendation rate: `{:.2}`\n- Average recommended context files: `{:.2}`\n- Protected evidence candidates: `{}`\n- Protected evidence missed@10: `{}`\n- Protected evidence miss rate@10: `{:.2}`\n- Protected retrieval-target evidence candidates: `{}`\n- Protected retrieval-target evidence missed@10: `{}`\n- Protected retrieval-target evidence miss rate@10: `{:.2}`\n- Runtime total ms: `{}`\n- Runtime commit-loop ms: `{}`\n- Runtime overhead ms: `{}`\n- Runtime average commit ms: `{:.2}`\n- Runtime git sample ms: `{}`\n- Runtime ranking ms: `{}`\n- Runtime pack/compiler ms: `{}`\n- Eval cache hits: `{}`\n- Eval cache misses: `{}`\n- Eval parallelism: `{}`\n- Low-information commits: `{}`\n- Broad-scope commits: `{}`\n- Privacy: local-only `{}`\n\n",
         report.eval_range_id,
         report.repo_id,
         report.evaluated_commits,
@@ -4407,6 +4407,7 @@ fn render_historical_eval_report(report: &HistoricalEvalReport) -> String {
         report.runtime.cache_misses,
         report.runtime.parallelism,
         report.low_information_commit_count,
+        report.broad_scope_commit_count,
         report.privacy_status.local_only
     ));
 
@@ -5241,6 +5242,7 @@ mod tests {
                 }],
             },
             low_information_commit_count: 1,
+            broad_scope_commit_count: 0,
             file_recall_at_5: 1.0,
             file_recall_at_10: 1.0,
             lexical_baseline_recall_at_5: 0.5,
@@ -5301,6 +5303,7 @@ mod tests {
                 validation_command_hits: 0,
                 effective_validation_hits_at_10: 0,
                 low_information_task: true,
+                broad_scope_task: false,
                 confidence: 0.85,
                 query_trace: None,
                 elapsed_millis: 250,
@@ -5320,6 +5323,7 @@ mod tests {
         assert!(markdown.contains("Base: `abc000`"));
         assert!(markdown.contains("Head: `def111`"));
         assert!(markdown.contains("Low-information commits: `1`"));
+        assert!(markdown.contains("Broad-scope commits: `0`"));
         assert!(markdown.contains("File Recall@5: `1.00`"));
         assert!(markdown.contains("Lexical Baseline Recall@5: `0.50`"));
         assert!(markdown.contains("No-context Recall@K: `0.00`"));

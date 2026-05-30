@@ -1,6 +1,6 @@
 use crate::packs::pack_repo_id;
 use crate::planning::{
-    is_low_information_task, normalized_target_agent,
+    is_low_information_task, is_multi_area_task, normalized_target_agent,
     prepare_context_plan_with_paths_history_and_semantic,
     prepare_context_plan_with_paths_history_mode_and_semantic, HistoryMode,
 };
@@ -515,6 +515,8 @@ pub struct HistoricalEvalReport {
     pub retrieval_gap_summaries: Vec<RetrievalGapSummary>,
     pub runtime: HistoricalEvalRuntimeSummary,
     pub low_information_commit_count: usize,
+    #[serde(default)]
+    pub broad_scope_commit_count: usize,
     pub file_recall_at_5: f32,
     pub file_recall_at_10: f32,
     pub lexical_baseline_recall_at_5: f32,
@@ -815,6 +817,8 @@ pub struct HistoricalCommitEval {
     #[serde(default)]
     pub effective_validation_hits_at_10: usize,
     pub low_information_task: bool,
+    #[serde(default)]
+    pub broad_scope_task: bool,
     pub confidence: f32,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub query_trace: Option<QueryConstructionTrace>,
@@ -2848,6 +2852,10 @@ pub fn evaluate_historical_commits(
             .iter()
             .filter(|commit| commit.low_information_task)
             .count(),
+        broad_scope_commit_count: commits
+            .iter()
+            .filter(|commit| commit.broad_scope_task)
+            .count(),
         file_recall_at_5,
         file_recall_at_10,
         lexical_baseline_recall_at_5,
@@ -3069,6 +3077,9 @@ fn evaluate_historical_commit_sample(
         &recommended_tests,
         &recommended_commands,
     );
+    let broad_scope_task = is_multi_area_task(&task)
+        || retrieval_target_files.len() >= 12
+        || source_changed_files.len() >= 8;
     let ranking_millis = elapsed_millis(ranking_started);
 
     Ok(HistoricalCommitEvalResult {
@@ -3102,6 +3113,7 @@ fn evaluate_historical_commit_sample(
             validation_command_hits,
             effective_validation_hits_at_10,
             low_information_task: is_low_information_task(&task),
+            broad_scope_task,
             confidence: plan.confidence,
             query_trace: plan.query_trace.clone(),
             elapsed_millis: elapsed_millis(commit_started),
@@ -5189,6 +5201,7 @@ mod tests {
             validation_command_hits: 0,
             effective_validation_hits_at_10: 0,
             low_information_task: false,
+            broad_scope_task: false,
             confidence: 0.5,
             query_trace: None,
             elapsed_millis: 0,
@@ -5879,6 +5892,7 @@ mod tests {
                 slow_commits: Vec::new(),
             },
             low_information_commit_count: 0,
+            broad_scope_commit_count: 0,
             file_recall_at_5: 0.0,
             file_recall_at_10: 0.0,
             lexical_baseline_recall_at_5: 0.0,
@@ -5925,6 +5939,7 @@ mod tests {
                 validation_command_hits: 0,
                 effective_validation_hits_at_10: 0,
                 low_information_task: false,
+                broad_scope_task: false,
                 confidence: 0.0,
                 query_trace: None,
                 elapsed_millis: 0,

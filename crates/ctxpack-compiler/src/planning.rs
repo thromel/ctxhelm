@@ -1,7 +1,7 @@
 use crate::policy::{provider_policy_report, reranker_decision, semantic_provider_decision};
 use crate::ranking::{
-    rank_candidates, rerank_with_local_metadata, select_ranked_candidates, AnchorCandidate,
-    RankingInput,
+    rank_candidates, rerank_with_local_metadata, select_ranked_candidates_for_scope,
+    AnchorCandidate, RankingInput,
 };
 use ctxpack_core::{
     Command, ContextPlan, Diagnostic, DiagnosticSeverity, FileRole, FusionControlSummary,
@@ -175,6 +175,23 @@ pub(crate) fn prepare_context_plan_with_paths_history_mode_and_semantic(
         plan.missing_info_questions.push(
             "Provide a file path, symbol name, stack trace, or concrete error text for stronger context.".to_string(),
         );
+    }
+    let multi_area_task = is_multi_area_task(task);
+    if multi_area_task {
+        push_plan_diagnostic(
+            &mut plan,
+            Diagnostic {
+                code: "multi_area_task".to_string(),
+                severity: DiagnosticSeverity::Warning,
+                message: "Task appears to span multiple implementation or validation areas; inspect the suggested files as a scoped starting point and run broad validation when available.".to_string(),
+                paths: Vec::new(),
+                count: 0,
+            },
+        );
+        plan.risk_flags.push(RiskFlag {
+            code: "multi_area_task".to_string(),
+            message: "Prompt has broad workflow/eval/lint-style terms, so no small context pack can cover every changed area.".to_string(),
+        });
     }
 
     let (mut roles, inventory_diagnostics) = inventory_roles(repo_root)?;
@@ -428,10 +445,11 @@ pub(crate) fn prepare_context_plan_with_paths_history_mode_and_semantic(
     } else {
         ranked_candidates
     };
-    let selection = select_ranked_candidates(
+    let selection = select_ranked_candidates_for_scope(
         &ranked_candidates,
         PREPARE_TASK_TARGET_LIMIT,
         PREPARE_TASK_TEST_LIMIT,
+        multi_area_task,
     );
     plan.target_files = selection.target_files;
     plan.related_tests = selection.related_tests;
@@ -1307,6 +1325,33 @@ pub(crate) fn is_low_information_task(task: &str) -> bool {
         .sum::<usize>();
 
     information_score < 2
+}
+
+pub(crate) fn is_multi_area_task(task: &str) -> bool {
+    let terms = terms(task);
+    if terms.is_empty() {
+        return false;
+    }
+    let broad_term_count = [
+        "ci",
+        "eval",
+        "evaluation",
+        "harden",
+        "lint",
+        "orchestration",
+        "run",
+        "runs",
+        "smoke",
+        "stabilize",
+        "workflow",
+    ]
+    .into_iter()
+    .filter(|term| terms.contains(*term))
+    .count();
+    broad_term_count >= 2
+        || terms.contains("workflow")
+            && (terms.contains("lint") || terms.contains("smoke") || terms.contains("eval"))
+        || terms.contains("orchestration") && (terms.contains("run") || terms.contains("eval"))
 }
 
 fn search_limit(task_type: &TaskType) -> usize {

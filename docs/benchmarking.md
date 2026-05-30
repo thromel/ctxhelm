@@ -32,6 +32,12 @@ v2.3 treats benchmark suites as fixed corpus manifests. Older suite files still 
 
 Phase 58 adds source-free query construction traces to prepare-task and historical eval commit rows. These traces record extracted paths, stack frames, symbols, error terms, domain terms, commit clues, retriever query sets, and fusion controls. They intentionally store task hashes and bounded facets instead of raw prompts or source snippets.
 
+Historical eval also records broad multi-area task pressure. `broadScopeTask`
+marks commits whose prompt or changed-file surface spans workflow/eval/lint
+style changes that cannot be fully covered by a small K=10 context budget, and
+`broadScopeCommitCount` summarizes that count at report level. These fields are
+source-free diagnostics; they do not remove targets from recall denominators.
+
 ## Suite File
 
 Benchmark suites are JSON files. Paths may be absolute or relative to the suite file.
@@ -445,6 +451,10 @@ Recommendation today:
   Product-proof verdicts now include context-vs-all-file deltas and
   `allFileDivergenceExplained`; the checker fails if an all-file lexical
   deficit is not explained by the separate context and validation channels.
+- Phase 84 adds `multi_area_task` diagnostics, source-free broad-scope eval
+  fields, and a bounded dependency source floor that only activates for broad
+  workflow/eval/lint tasks. The broader proof still promotes and improves
+  VeriSchema Source Recall@10 from `0.249` to `0.304`.
 - Keep `local_metadata_reranked` eval-only until named regressions and protected
   evidence behavior clear the gate.
 - Keep `local_fastembed` opt-in for experiments and conceptual queries; it is
