@@ -1354,15 +1354,23 @@ fn is_project_governance_task(task: &str) -> bool {
             "benchmark"
                 | "benchmarks"
                 | "eval"
+                | "evaluate"
                 | "evaluation"
                 | "gate"
                 | "gates"
+                | "historical"
+                | "measure"
+                | "measured"
+                | "metric"
+                | "metrics"
                 | "milestone"
                 | "milestones"
                 | "phase"
                 | "phases"
                 | "planning"
                 | "proof"
+                | "promote"
+                | "promotion"
                 | "recall"
                 | "release"
                 | "retrieval"
@@ -1643,15 +1651,28 @@ pub(crate) fn is_multi_area_task(task: &str) -> bool {
     }
     let broad_term_count = [
         "ci",
+        "channel",
         "eval",
+        "evaluate",
         "evaluation",
         "harden",
+        "historical",
         "lint",
+        "measure",
+        "measured",
+        "metric",
+        "metrics",
         "orchestration",
+        "product",
+        "promote",
+        "promotion",
+        "proof",
         "run",
         "runs",
         "smoke",
         "stabilize",
+        "target",
+        "targets",
         "workflow",
     ]
     .into_iter()
@@ -1986,7 +2007,7 @@ mod tests {
         extend_project_governance_docs(
             &mut search_results,
             &roles,
-            "measure retrieval recall in release proof",
+            "evaluate retrievable historical targets",
         );
         let paths = search_results
             .iter()
@@ -2010,6 +2031,15 @@ mod tests {
         extend_project_governance_docs(&mut search_results, &roles, "fix auth session cookie");
 
         assert!(search_results.is_empty());
+    }
+
+    #[test]
+    fn product_proof_and_historical_eval_tasks_are_multi_area() {
+        assert!(is_multi_area_task("promote channel aware product proof"));
+        assert!(is_multi_area_task(
+            "evaluate retrievable historical targets"
+        ));
+        assert!(!is_multi_area_task("fix auth session cookie"));
     }
 
     #[test]

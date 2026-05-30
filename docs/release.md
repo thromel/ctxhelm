@@ -415,6 +415,18 @@ proof is `.ctxpack/e2e/phase96-context-area-resources-proof.json` and reports
 `0.31067252`, Test Recall@10 remains `0.7089947`, Effective Validation
 Recall@10 remains `1.0`, and the six-tool MCP surface is unchanged.
 
+Phase 97 improves broad governance/proof/eval task classification. Historical
+commit tasks with wording such as "evaluate retrievable historical targets" and
+"promote channel aware product proof" now receive governance planning docs and
+broad source-area signals. The evidence artifact is
+`.planning/e2e/2026-05-31-phase97-broad-governance-classification.md`; the
+committed proof is
+`.ctxpack/e2e/phase97-broad-governance-classification-proof.json` and reports
+`releaseGate.decision = promote`. ctxpack File Recall@10 improves from
+`0.44603175` to `0.47460318`, Source Recall@10 improves from `0.6333333` to
+`0.7166667`, and broad context-area recall improves from `0.0` to `1.0`.
+VeriSchema file/source/test/validation metrics remain stable.
+
 Latest optional real-client proof: Codex CLI `0.130.0` and Claude Code
 `2.1.158` both passed the smoke wrappers on 2026-05-30 with server-side
 `prepare_task` and `get_pack` evidence against an explicit repo path. See
