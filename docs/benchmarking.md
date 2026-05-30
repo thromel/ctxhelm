@@ -370,18 +370,24 @@ retrieval variant:
 - `trail`: ctxpack falls behind lexical by more than the proof threshold.
 - `insufficient_evidence`: the repository failed or produced no eval report.
 
-The current v2.5 two-repo proof blocks default promotion:
+The current v2.5 fixed two-repo proof promotes default local retrieval under
+the channel-aware release gate. Context recall is evaluated on non-test target
+context, and validation-test recall is evaluated through the dedicated
+`recommended_tests` channel:
 
 | Corpus | Variant | Status | ctxpack Recall@10 | Lexical Recall@10 | Delta | Test Recall@10 |
 | --- | --- | --- | ---: | ---: | ---: | ---: |
-| RefactoringMiner | `ctxpack_default` | `trail` | 0.739 | 0.779 | -0.040 | 1.000 |
-| ctxpack | `ctxpack_default` | `match` | 0.228 | 0.233 | -0.005 | 1.000 |
+| RefactoringMiner | `ctxpack_default` | `beat` | 0.778 | 0.741 | +0.037 | 1.000 |
+| ctxpack | `ctxpack_default` | `beat` | 0.333 | 0.286 | +0.048 | 1.000 |
 
 Recommendation today:
 
 - Use `ctxpack_default` through MCP/agent-native integrations for progressive
   task plans, related tests, source-free diagnostics, and graph/history context.
-- Do not claim v2.5 default retrieval beats lexical on the fixed corpus yet.
+- It is valid to claim default local retrieval beats lexical on the fixed
+  channel-aware two-repo proof. Do not generalize that to every repository or
+  every evidence channel; all-file recall, protected evidence pressure, and
+  parser/precision gaps still need follow-up.
 - Keep `local_metadata_reranked` eval-only until named regressions and protected
   evidence behavior clear the gate.
 - Keep `local_fastembed` opt-in for experiments and conceptual queries; it is

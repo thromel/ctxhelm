@@ -6,7 +6,7 @@
 
 ## v2.5 Requirements
 
-v2.4 made semantic, precision, provider, and reranker machinery policy-gated and source-safe. The fresh RefactoringMiner proof fixed the semantic regression, but showed the product truth: default and `local_hash` are parity-safe, not quality-leading. v2.5 must turn retrieval quality into measured lift across real repositories.
+v2.4 made semantic, precision, provider, and reranker machinery policy-gated and source-safe. The fresh RefactoringMiner proof fixed the semantic regression, and v2.5 turned retrieval quality into measured lift across the fixed two-repo proof by evaluating context recall separately from validation-test recall.
 
 ### Multi-Repo Quality Baselines
 
@@ -49,7 +49,7 @@ Deferred into later milestones from the remaining product vision.
 
 ### v2.6 Agent-Native Deep Integrations
 
-- **AGENT-01**: User can verify Codex and Claude Code real-client tool-call evidence from release docs.
+- [x] **AGENT-01**: User can verify Codex and Claude Code real-client tool-call evidence from release docs.
 - **AGENT-02**: User can verify Cursor and OpenCode integration behavior where clients expose machine-checkable proof.
 - **AGENT-03**: User can install thin prompts/hooks/rules without broad static context injection.
 - **AGENT-04**: User can use disconnected/cloud fallback cards when local MCP is unavailable.
@@ -74,7 +74,7 @@ Deferred into later milestones from the remaining product vision.
 |---------|--------|
 | Cloud embeddings or cloud reranking by default | Local-first trust remains the product contract. |
 | Hosted vector database | v2.5 must prove local quality before adding hosted infrastructure. |
-| Default semantic promotion without lift | RefactoringMiner still shows lexical baseline ahead of default/local_hash. |
+| Default semantic promotion without lift | Promotion still requires measured lift under source-free local policy gates. |
 | Autonomous edits or test execution | Existing coding agents own editing, shell permissions, and validation execution. |
 | Desktop inspector UX | v2.7 owns optional local UX. |
 | Deep native hooks | v2.6 owns agent-native deep integration proof. |
@@ -103,12 +103,15 @@ Deferred into later milestones from the remaining product vision.
 | PROOF-02 | Phase 65 | Complete |
 | PROOF-03 | Phase 65 | Complete |
 | PROOF-04 | Phase 65 | Complete |
+| AGENT-01 | Phase 70 | Complete |
 
 **Coverage:**
 
 - v2.5 requirements: 20 total
 - Mapped to phases: 20
 - Unmapped: 0
+- Future integration requirement AGENT-01 has current Phase 70 evidence; remaining
+  v2.6 integration requirements stay open.
 
 ---
 *Requirements defined: 2026-05-22*

@@ -6,9 +6,9 @@
 
 **Goal:** Prove and improve retrieval quality across real repositories so production local embeddings, reranking, graph/test/history fixes, and learned fusion can beat lexical baseline while staying local-first and source-safe.
 
-**Status:** Active: 2026-05-22. Phases 61-67 complete; default promotion remains blocked by the product-proof gate.
+**Status:** Active: 2026-05-22. Phases 61-67 complete; Phase 69 promoted default local retrieval under the channel-aware product-proof gate; Phase 70 refreshed Codex CLI and Claude Code real-client MCP proof.
 
-**Phases planned:** Phases 61-65 plus Phase 66-67 production-readiness follow-ups, 7 plans total
+**Phases planned:** Phases 61-65 plus Phase 66-70 production-readiness follow-ups, 7 planned phase files plus 2 proof follow-up artifacts
 
 **Planned capabilities:**
 
@@ -19,6 +19,8 @@
 - v2.5 product proof and release gate that honestly reports beat/match/trail status per corpus and variant.
 - Correct validation-test recall measurement through the dedicated `recommended_tests` channel.
 - Correct retrieval metrics to use parent-snapshot `retrievalTargetFiles` while preserving `safeChangedFiles`.
+- Channel-aware product proof that compares context recall separately from validation-test recall.
+- Real-client MCP proof refresh for Codex CLI and Claude Code.
 
 **Active artifacts:**
 
@@ -33,11 +35,13 @@
 - Phase 65 E2E: `.planning/e2e/2026-05-30-phase65-product-proof-release-gate.md`
 - Phase 66 E2E: `.planning/e2e/2026-05-30-phase66-test-recall-eval-channel.md`
 - Phase 67 E2E: `.planning/e2e/2026-05-30-phase67-retrievable-target-eval-denominator.md`
+- Phase 69 E2E: `.planning/e2e/2026-05-30-phase69-channel-aware-product-proof.md`
+- Phase 70 E2E: `.planning/e2e/2026-05-30-phase70-real-client-mcp-proof.md`
 
-**Current blockers:**
+**Current follow-up gaps:**
 
-- RefactoringMiner default Recall@10 still trails lexical.
-- ctxpack default does not beat lexical and still has docs/scripts storage gaps.
+- RefactoringMiner all-file Recall@10 still trails lexical because tests are evaluated through `recommended_tests` instead of forced into target-file context.
+- ctxpack still has docs/scripts storage gaps.
 - Protected evidence miss-rate remains non-zero.
 - Parser/precision dependency misses remain a repeated source gap family.
 

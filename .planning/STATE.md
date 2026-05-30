@@ -3,11 +3,11 @@ gsd_state_version: 1.0
 milestone: v2.5
 milestone_name: Production Retrieval Quality
 status: active
-last_updated: "2026-05-30T14:30:00Z"
-last_activity: 2026-05-30 -- Phase 69 channel-aware product proof promotes default local retrieval on the fixed two-repo suite
+last_updated: "2026-05-30T14:32:00Z"
+last_activity: 2026-05-30 -- Phase 70 refreshed Codex CLI and Claude Code real-client MCP proof after Phase 69 promotion
 progress:
-  total_phases: 7
-  completed_phases: 7
+  total_phases: 9
+  completed_phases: 9
   total_plans: 7
   completed_plans: 7
   percent: 100
@@ -17,10 +17,10 @@ progress:
 
 ## Current Position
 
-Phase: 69 - Channel-Aware Product Proof Gate
-Plan: 69-channel-aware-product-proof-gate
+Phase: 70 - Real-Client MCP Proof Refresh
+Plan: 70-real-client-mcp-proof-refresh
 Status: Complete
-Last activity: 2026-05-30 -- Phase 69 product proof promotes default local retrieval after evaluating non-test context recall separately from validation-test recall. RefactoringMiner context Recall@10 is 0.7778 vs lexical 0.7407, ctxpack context Recall@10 is 0.3333 vs lexical 0.2857, and Test Recall@10 is 1.0 on both corpora.
+Last activity: 2026-05-30 -- Phase 70 refreshed optional real-client MCP proof. Codex CLI 0.130.0 and Claude Code 2.1.158 both passed deterministic protocol gates and recorded server-side `prepare_task` plus `get_pack` evidence with explicit repo `/Users/romel/Documents/GitHub/Agent Memory`.
 
 ## Project Reference
 
@@ -45,6 +45,8 @@ Planned phases:
 - Phase 65: v2.5 Product Proof And Release Gate (complete)
 - Phase 66: Test Recall Evaluation Channel (complete follow-up)
 - Phase 67: Retrievable Target Eval Denominator (complete follow-up)
+- Phase 69: Channel-Aware Product Proof Gate (complete follow-up)
+- Phase 70: Real-Client MCP Proof Refresh (complete follow-up)
 
 ## Last Completed Milestone
 
@@ -62,12 +64,13 @@ Planned phases:
 
 ## Next Step
 
-Continue production-readiness work from remaining measured gaps: protected evidence budget pressure, parser/precision dependency misses, docs/scripts storage gaps, real-client outcome proof, and broader multi-repo repeated-lift validation.
+Continue production-readiness work from remaining measured gaps: protected evidence budget pressure, parser/precision dependency misses, docs/scripts storage gaps, and broader multi-repo repeated-lift validation.
 
 ## Operator Next Steps
 
 - Default local retrieval now passes the fixed two-repo product proof under the channel-aware release gate.
 - The gate compares non-test context recall against lexical and checks validation-test recall separately.
 - Latest local proof: `.ctxpack/e2e/phase69-channel-scoped-governance-proof.json` with `releaseGate.decision = promote`.
+- Latest real-client proof: `.planning/e2e/2026-05-30-phase70-real-client-mcp-proof.md`.
 - RefactoringMiner still trails lexical on all-file recall because tests are no longer forced into the target-file context budget; this is explicitly recorded in corpus verdict notes.
-- Next work should target protected evidence budget pressure, parser precision, broader repeated-lift corpora, and real-client outcome proof.
+- Next work should target protected evidence budget pressure, parser precision, and broader repeated-lift corpora.

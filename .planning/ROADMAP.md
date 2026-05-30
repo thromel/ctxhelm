@@ -2,9 +2,9 @@
 
 ## Overview
 
-This roadmap tracks v2.5 Production Retrieval Quality and its immediate production-readiness follow-ups. v2.4 made semantic, precision, provider, and reranker paths source-safe and policy-gated, then the fresh RefactoringMiner proof fixed a semantic fusion regression. The current product gap is quality lift: the default is useful as an agent-native context broker, but the two-repo product proof still blocks default promotion because every corpus does not beat lexical baseline.
+This roadmap tracks v2.5 Production Retrieval Quality and its immediate production-readiness follow-ups. v2.4 made semantic, precision, provider, and reranker paths source-safe and policy-gated, then the fresh RefactoringMiner proof fixed a semantic fusion regression. The current fixed two-repo product proof promotes default local retrieval under a channel-aware gate: non-test context recall beats lexical on both corpora, while validation-test recall is measured separately through `recommended_tests`.
 
-v2.5 therefore focuses on measured retrieval quality, not more surface area. The milestone must prove whether production local embeddings, reranking, graph/test/history fixes, and learned fusion can beat lexical baseline on real repositories while staying local-first and source-safe. Phase 66 fixed the false zero-test-recall signal by measuring `recommended_tests` as its own validation channel. Phase 67 fixed the denominator for historical retrieval metrics by separating all safe changed files from parent-snapshot `retrievalTargetFiles`. Default promotion remains blocked.
+v2.5 therefore focuses on measured retrieval quality, not more surface area. The milestone must prove whether production local embeddings, reranking, graph/test/history fixes, and learned fusion can beat lexical baseline on real repositories while staying local-first and source-safe. Phase 66 fixed the false zero-test-recall signal by measuring `recommended_tests` as its own validation channel. Phase 67 fixed the denominator for historical retrieval metrics by separating all safe changed files from parent-snapshot `retrievalTargetFiles`. Phase 69 promoted default local retrieval under the channel-aware proof, and Phase 70 refreshed real-client MCP evidence for Codex CLI and Claude Code.
 
 ## v2.5 Production Retrieval Quality
 
@@ -13,7 +13,7 @@ v2.5 therefore focuses on measured retrieval quality, not more surface area. The
 **Phase Numbering:**
 
 - Integer phases (61, 62, 63, 64, 65): Planned v2.5 work
-- Phases 66-67: Production-readiness follow-ups from the blocked proof
+- Phases 66-70: Production-readiness follow-ups from the original blocked proof and the channel-aware promotion path
 - Decimal phases (61.1, 62.1): Urgent insertions if needed
 
 - [x] **Phase 61: Multi-Repo Quality Baselines** - Maintainers can run source-free paired baselines across RefactoringMiner and a second real repository with stable comparison artifacts.
@@ -23,6 +23,8 @@ v2.5 therefore focuses on measured retrieval quality, not more surface area. The
 - [x] **Phase 65: v2.5 Product Proof And Release Gate** - Maintainers can ship or hold v2.5 variants using multi-repo proof, docs, and release gates.
 - [x] **Phase 66: Test Recall Evaluation Channel** - Maintainers can measure validation-test recall through the dedicated `recommended_tests` output without degrading target-file recall.
 - [x] **Phase 67: Retrievable Target Eval Denominator** - Maintainers can distinguish all safe changed files from files that existed in the parent snapshot and could be retrieved as context.
+- [x] **Phase 69: Channel-Aware Product Proof Gate** - Maintainers can promote default local retrieval when context recall beats lexical while validation-test recall is proven separately.
+- [x] **Phase 70: Real-Client MCP Proof Refresh** - Maintainers can verify Codex CLI and Claude Code still invoke `prepare_task` and `get_pack` through actual MCP client paths after promotion.
 
 ## Phase Details
 
@@ -173,6 +175,45 @@ Plans:
 
 - [x] 67-retrievable-target-eval-denominator-01-PLAN.md - Make retrieval metrics use parent-snapshot retrievable targets.
 
+### Phase 69: Channel-Aware Product Proof Gate
+
+**Goal**: Maintainers can promote default local retrieval when context recall beats lexical and validation-test recall is proven through the dedicated test channel.
+
+**Depends on**: Phase 67
+
+**Requirements**: PROOF-01, PROOF-02, GAP-03
+
+**Success Criteria**:
+
+1. Product proof separates context Recall@10 from validation-test Recall@10.
+2. Release gate promotes only when required corpora beat lexical on context recall and meet the test-recall floor.
+3. Proof notes preserve all-file recall transparency without treating tests as both context targets and validation commands.
+4. Source-free JSON proof reports `releaseGate.decision = "promote"`.
+
+**Evidence**:
+
+- [x] `.planning/e2e/2026-05-30-phase69-channel-aware-product-proof.md`
+- [x] `.ctxpack/e2e/phase69-channel-scoped-governance-proof.json`
+
+### Phase 70: Real-Client MCP Proof Refresh
+
+**Goal**: Maintainers can verify that Codex CLI and Claude Code still invoke ctxpack through actual MCP client paths after the Phase 69 promotion.
+
+**Depends on**: Phase 69
+
+**Requirements**: AGENT-01 follow-up evidence
+
+**Success Criteria**:
+
+1. Codex CLI real-client wrapper passes deterministic protocol proof first.
+2. Claude Code real-client wrapper passes deterministic protocol proof first.
+3. Both wrappers record server-side `prepare_task` and `get_pack` evidence with an explicit repo path.
+4. Docs keep Cursor/OpenCode real-client tool-call proof out of scope until machine-checkable client proof exists.
+
+**Evidence**:
+
+- [x] `.planning/e2e/2026-05-30-phase70-real-client-mcp-proof.md`
+
 ## Requirement Coverage
 
 | Requirement | Phase |
@@ -201,13 +242,17 @@ Plans:
 | PROOF-01 | Phase 66 |
 | PROOF-01 | Phase 67 |
 | PROOF-02 | Phase 67 |
+| PROOF-01 | Phase 69 |
+| PROOF-02 | Phase 69 |
+| GAP-03 | Phase 69 |
+| AGENT-01 | Phase 70 |
 
-**Coverage:** 20/20 v2.5 requirements mapped, with Phases 66-67 as measured follow-ups for proof/eval correctness gaps. No orphaned requirements.
+**Coverage:** 20/20 v2.5 requirements mapped, with Phases 66-70 as measured follow-ups for proof/eval correctness gaps and real-client evidence. No orphaned v2.5 requirements.
 
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 61 -> 62 -> 63 -> 64 -> 65 -> 66 -> 67
+Phases execute in numeric order: 61 -> 62 -> 63 -> 64 -> 65 -> 66 -> 67 -> 69 -> 70
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
@@ -218,6 +263,8 @@ Phases execute in numeric order: 61 -> 62 -> 63 -> 64 -> 65 -> 66 -> 67
 | 65. v2.5 Product Proof And Release Gate | 1/1 | Complete | 2026-05-30 |
 | 66. Test Recall Evaluation Channel | 1/1 | Complete | 2026-05-30 |
 | 67. Retrievable Target Eval Denominator | 1/1 | Complete | 2026-05-30 |
+| 69. Channel-Aware Product Proof Gate | Evidence artifact | Complete | 2026-05-30 |
+| 70. Real-Client MCP Proof Refresh | Evidence artifact | Complete | 2026-05-30 |
 
 ---
 *Roadmap created: 2026-05-22*
