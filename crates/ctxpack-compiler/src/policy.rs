@@ -339,7 +339,7 @@ pub fn semantic_provider_status_report_with_provider(
         } else {
             "unavailable".to_string()
         },
-        cache_location: "local ctxpack semantic_vectors store".to_string(),
+        cache_location: "local ctxpack semantic_vectors store; local_fastembed model cache defaults to repo .ctxpack/cache/fastembed or CTXPACK_HOME/cache/fastembed (override with CTXPACK_FASTEMBED_CACHE_DIR)".to_string(),
         degraded: !provider.available,
         enabled_by_default: false,
         cloud_embeddings_allowed: false,

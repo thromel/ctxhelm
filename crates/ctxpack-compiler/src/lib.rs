@@ -2214,6 +2214,9 @@ mod tests {
                 mode: TaskType::BugFix,
                 target_agent: "codex".to_string(),
                 semantic_enabled: false,
+                semantic_provider: "local_hash".to_string(),
+                semantic_model: None,
+                semantic_dimensions: None,
                 cache_enabled: false,
                 force_refresh: false,
                 parallelism: 1,
@@ -2232,6 +2235,9 @@ mod tests {
                     mode: None,
                     target_agent: None,
                     semantic_enabled: None,
+                    semantic_provider: None,
+                    semantic_model: None,
+                    semantic_dimensions: None,
                     cache_enabled: None,
                     force_refresh: None,
                     parallelism: None,
@@ -2256,6 +2262,9 @@ mod tests {
                     mode: Some(TaskType::Feature),
                     target_agent: Some("claude-code".to_string()),
                     semantic_enabled: Some(false),
+                    semantic_provider: Some("local_hash".to_string()),
+                    semantic_model: None,
+                    semantic_dimensions: None,
                     cache_enabled: Some(false),
                     force_refresh: Some(false),
                     parallelism: Some(1),
@@ -2299,6 +2308,32 @@ mod tests {
         assert_eq!(
             report.repositories[1].effective_config.mode,
             TaskType::Feature
+        );
+        assert_eq!(
+            report.repositories[1].effective_config.semantic_provider,
+            "local_hash"
+        );
+        assert_eq!(
+            report.repositories[1]
+                .effective_config
+                .semantic_model
+                .as_deref(),
+            Some("ctxpack-local-hash-v1")
+        );
+        assert_eq!(
+            report.repositories[1].effective_config.semantic_dimensions,
+            Some(64)
+        );
+        assert_eq!(
+            report.repositories[1]
+                .effective_config
+                .semantic_provider_role,
+            "deterministic_scaffold"
+        );
+        assert!(
+            !report.repositories[1]
+                .effective_config
+                .semantic_quality_backend
         );
         assert_eq!(
             report.repositories[1].effective_config.role_filters,

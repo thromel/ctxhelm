@@ -6,7 +6,7 @@
 
 **Goal:** Prove and improve retrieval quality across real repositories so production local embeddings, reranking, graph/test/history fixes, and learned fusion can beat lexical baseline while staying local-first and source-safe.
 
-**Status:** Active: 2026-05-22. Phase 61 complete.
+**Status:** Active: 2026-05-22. Phases 61-62 complete.
 
 **Phases planned:** Phases 61-65, 5 plans total
 
@@ -27,6 +27,7 @@
 **Current evidence:**
 
 - Phase 61 E2E: `.planning/e2e/2026-05-22-v25-multirepo-baseline.md`
+- Phase 62 E2E: `.planning/e2e/2026-05-30-phase62-production-local-embedding-quality.md`
 
 ## Shipped
 

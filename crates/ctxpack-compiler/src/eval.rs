@@ -505,6 +505,12 @@ pub struct BenchmarkDefaults {
     pub target_agent: String,
     #[serde(default)]
     pub semantic_enabled: bool,
+    #[serde(default = "default_benchmark_semantic_provider")]
+    pub semantic_provider: String,
+    #[serde(default)]
+    pub semantic_model: Option<String>,
+    #[serde(default)]
+    pub semantic_dimensions: Option<usize>,
     #[serde(default)]
     pub cache_enabled: bool,
     #[serde(default)]
@@ -523,6 +529,9 @@ impl Default for BenchmarkDefaults {
             mode: default_benchmark_task_type(),
             target_agent: default_benchmark_target_agent(),
             semantic_enabled: false,
+            semantic_provider: default_benchmark_semantic_provider(),
+            semantic_model: None,
+            semantic_dimensions: None,
             cache_enabled: false,
             force_refresh: false,
             parallelism: default_benchmark_parallelism(),
@@ -554,6 +563,12 @@ pub struct BenchmarkRepoConfig {
     pub target_agent: Option<String>,
     #[serde(default)]
     pub semantic_enabled: Option<bool>,
+    #[serde(default)]
+    pub semantic_provider: Option<String>,
+    #[serde(default)]
+    pub semantic_model: Option<String>,
+    #[serde(default)]
+    pub semantic_dimensions: Option<usize>,
     #[serde(default)]
     pub cache_enabled: Option<bool>,
     #[serde(default)]
@@ -611,6 +626,11 @@ pub struct BenchmarkRepoEffectiveConfig {
     pub mode: TaskType,
     pub target_agent: String,
     pub semantic_enabled: bool,
+    pub semantic_provider: String,
+    pub semantic_model: Option<String>,
+    pub semantic_dimensions: Option<usize>,
+    pub semantic_provider_role: String,
+    pub semantic_quality_backend: bool,
     pub cache_enabled: bool,
     pub force_refresh: bool,
     pub parallelism: usize,
@@ -1639,7 +1659,7 @@ fn run_benchmark_repo(
     defaults: &BenchmarkDefaults,
     repo_config: &BenchmarkRepoConfig,
 ) -> BenchmarkRepoReport {
-    let effective_config = BenchmarkRepoEffectiveConfig {
+    let mut effective_config = BenchmarkRepoEffectiveConfig {
         revision_range_id: repo_config.revision_range_id.clone(),
         privacy_label: repo_config
             .privacy_label
@@ -1663,6 +1683,19 @@ fn run_benchmark_repo(
         semantic_enabled: repo_config
             .semantic_enabled
             .unwrap_or(defaults.semantic_enabled),
+        semantic_provider: repo_config
+            .semantic_provider
+            .clone()
+            .unwrap_or_else(|| defaults.semantic_provider.clone()),
+        semantic_model: repo_config
+            .semantic_model
+            .clone()
+            .or_else(|| defaults.semantic_model.clone()),
+        semantic_dimensions: repo_config
+            .semantic_dimensions
+            .or(defaults.semantic_dimensions),
+        semantic_provider_role: String::new(),
+        semantic_quality_backend: false,
         cache_enabled: repo_config.cache_enabled.unwrap_or(defaults.cache_enabled),
         force_refresh: repo_config.force_refresh.unwrap_or(defaults.force_refresh),
         parallelism: repo_config
@@ -1675,6 +1708,12 @@ fn run_benchmark_repo(
             repo_config.role_filters.clone()
         },
     };
+    let semantic_provider = benchmark_semantic_provider(&effective_config);
+    effective_config.semantic_provider = semantic_provider.provider.clone();
+    effective_config.semantic_model = Some(semantic_provider.model.clone());
+    effective_config.semantic_dimensions = Some(semantic_provider.dimensions);
+    effective_config.semantic_provider_role = semantic_provider.provider_role.clone();
+    effective_config.semantic_quality_backend = semantic_provider.quality_backend;
     let repo_path = resolve_benchmark_repo_path(config_dir, &repo_config.path);
     let options = HistoricalEvalOptions {
         limit: effective_config.limit,
@@ -1684,7 +1723,7 @@ fn run_benchmark_repo(
         base: effective_config.base.clone(),
         head: effective_config.head.clone(),
         semantic_enabled: effective_config.semantic_enabled,
-        semantic_provider: SemanticProviderConfig::default(),
+        semantic_provider,
         cache_enabled: effective_config.cache_enabled,
         force_refresh: effective_config.force_refresh,
         parallelism: effective_config.parallelism,
@@ -1887,6 +1926,24 @@ fn resolve_benchmark_repo_path(config_dir: &Path, repo_path: &Path) -> PathBuf {
     }
 }
 
+fn benchmark_semantic_provider(config: &BenchmarkRepoEffectiveConfig) -> SemanticProviderConfig {
+    let default = SemanticProviderConfig::default();
+    ctxpack_index::normalized_provider(&SemanticProviderConfig {
+        provider: if config.semantic_provider.trim().is_empty() {
+            default.provider
+        } else {
+            config.semantic_provider.clone()
+        },
+        model: config.semantic_model.clone().unwrap_or(default.model),
+        dimensions: config.semantic_dimensions.unwrap_or(default.dimensions),
+        distance_metric: default.distance_metric,
+        provider_role: default.provider_role,
+        quality_backend: default.quality_backend,
+        local_only: true,
+        available: true,
+    })
+}
+
 fn benchmark_suite_id(
     config: &BenchmarkSuiteConfig,
     repositories: &[BenchmarkRepoReport],
@@ -1962,7 +2019,7 @@ fn baseline_status_for_error(
 }
 
 fn default_benchmark_manifest_version() -> String {
-    "ctxpack-benchmark-corpus-v2.3".to_string()
+    "ctxpack-benchmark-corpus-v2.5".to_string()
 }
 
 fn default_benchmark_limit() -> usize {
@@ -1983,6 +2040,10 @@ fn default_benchmark_task_type() -> TaskType {
 
 fn default_benchmark_target_agent() -> String {
     "generic".to_string()
+}
+
+fn default_benchmark_semantic_provider() -> String {
+    SemanticProviderConfig::default().provider
 }
 
 pub fn evaluate_historical_commits(

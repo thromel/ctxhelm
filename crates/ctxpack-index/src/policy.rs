@@ -197,6 +197,7 @@ fn is_sensitive_path(lower: &str, name: &str) -> bool {
 fn is_generated_path(lower: &str, name: &str) -> bool {
     lower.contains("/node_modules/")
         || lower.contains("/.gradle/")
+        || lower.contains("/.ctxpack/cache/")
         || lower.contains("/.fastembed_cache/")
         || lower.contains("/src/main 2/")
         || lower.contains("/src/test 2/")
@@ -212,6 +213,7 @@ fn is_generated_path(lower: &str, name: &str) -> bool {
         || lower.contains("/resources/web/monaco/")
         || lower.starts_with("node_modules/")
         || lower.starts_with(".gradle/")
+        || lower.starts_with(".ctxpack/cache/")
         || lower.starts_with(".fastembed_cache/")
         || lower.starts_with("src/main 2/")
         || lower.starts_with("src/test 2/")
@@ -339,6 +341,7 @@ mod tests {
 
         for path in [
             "node_modules/react/index.js",
+            ".ctxpack/cache/fastembed/models--jinaai--jina-embeddings-v2-base-code/blobs/model.onnx",
             ".fastembed_cache/models--jinaai--jina-embeddings-v2-base-code/blobs/model.onnx",
             "src/main 2/java/org/example/Copied.java",
             "src/test 2/java/org/example/CopiedTest.java",

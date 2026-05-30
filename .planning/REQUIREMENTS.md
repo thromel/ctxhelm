@@ -17,10 +17,10 @@ v2.4 made semantic, precision, provider, and reranker machinery policy-gated and
 
 ### Production Local Embedding Quality
 
-- [ ] **EMBED-01**: `local_fastembed` or equivalent production local embedding backend can be built, indexed, queried, and evaluated without cloud transfer.
-- [ ] **EMBED-02**: Embedding cache behavior is bounded, source-safe, ignored by inventory, and reported with model/version/dimension metadata.
-- [ ] **EMBED-03**: Semantic retrieval quality is measured against lexical and default baselines before any default promotion.
-- [ ] **EMBED-04**: `local_hash` remains scaffold-labeled and cannot be mistaken for a quality backend in reports, docs, or MCP output.
+- [x] **EMBED-01**: `local_fastembed` or equivalent production local embedding backend can be built, indexed, queried, and evaluated without cloud transfer.
+- [x] **EMBED-02**: Embedding cache behavior is bounded, source-safe, ignored by inventory, and reported with model/version/dimension metadata.
+- [x] **EMBED-03**: Semantic retrieval quality is measured against lexical and default baselines before any default promotion.
+- [x] **EMBED-04**: `local_hash` remains scaffold-labeled and cannot be mistaken for a quality backend in reports, docs, or MCP output.
 
 ### Reranker And Fusion Promotion
 
@@ -87,10 +87,10 @@ Deferred into later milestones from the remaining product vision.
 | BASE-02 | Phase 61 | Complete |
 | BASE-03 | Phase 61 | Complete |
 | BASE-04 | Phase 61 | Complete |
-| EMBED-01 | Phase 62 | Planned |
-| EMBED-02 | Phase 62 | Planned |
-| EMBED-03 | Phase 62 | Planned |
-| EMBED-04 | Phase 62 | Planned |
+| EMBED-01 | Phase 62 | Complete |
+| EMBED-02 | Phase 62 | Complete |
+| EMBED-03 | Phase 62 | Complete |
+| EMBED-04 | Phase 62 | Complete |
 | RANK-01 | Phase 63 | Planned |
 | RANK-02 | Phase 63 | Planned |
 | RANK-03 | Phase 63 | Planned |

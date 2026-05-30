@@ -45,6 +45,36 @@ provider.
 cargo build -p ctxpack --features local-embeddings
 ```
 
+## Production Local Embedding Status
+
+Phase 62 measured `local_fastembed` on the same two-repo corpus as the v2.5
+baseline. The production-local provider is source-free and correctly reports its
+provider role, model, dimensions, and cache location, but it is not promoted as a
+default retrieval signal because it did not improve Recall@10 and was materially
+slower than default retrieval.
+
+Measured Phase 62 status:
+
+- `local_hash`: deterministic scaffold, model `ctxpack-local-hash-v1`, 64 dimensions, not a quality backend.
+- `local_fastembed`: production-local backend, quality backend `true`, local-only, no cloud source transfer.
+- Jina code model status: available as `JinaEmbeddingsV2BaseCode` with 768 dimensions, but too slow for the full two-repo eval loop in this implementation.
+- Phase 62 benchmark model: `AllMiniLML6V2Q` with 384 dimensions.
+- Model cache: defaults to repo `.ctxpack/cache/fastembed` when run inside a git repo, otherwise `CTXPACK_HOME/cache/fastembed`; override with `CTXPACK_FASTEMBED_CACHE_DIR`.
+- Query-time vector cache: bounded in-process cache for repeated source-free document embeddings.
+- Expensive model prefilter: `local_fastembed` embeds at most 128 source-free candidate documents per query by default; override with `CTXPACK_FASTEMBED_DOCUMENT_LIMIT`.
+
+Phase 62 result:
+
+| Variant | RefactoringMiner Recall@10 | ctxpack Recall@10 | Repo Runtime |
+| --- | ---: | ---: | ---: |
+| Default, semantic off | 0.7767 | 0.2299 | 26.3s |
+| `local_hash` | 0.7767 | 0.2299 | 57.8s |
+| `local_fastembed` `AllMiniLML6V2Q` | 0.7767 | 0.2299 | 183.7s |
+
+Decision: keep `local_fastembed` opt-in for experiments and conceptual queries.
+Do not promote it by default until a later retrieval path proves recall lift with
+acceptable runtime.
+
 ## Source-Free Semantic Documents
 
 Semantic retrieval now indexes source-free semantic documents instead of raw file bodies. A semantic document is built from safe repository metadata:

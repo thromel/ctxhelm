@@ -27,6 +27,9 @@ Benchmark suites are JSON files. Paths may be absolute or relative to the suite 
     "mode": "bug_fix",
     "targetAgent": "codex",
     "semanticEnabled": false,
+    "semanticProvider": "local_hash",
+    "semanticModel": "ctxpack-local-hash-v1",
+    "semanticDimensions": 64,
     "cacheEnabled": true,
     "forceRefresh": false,
     "parallelism": 4,
@@ -71,6 +74,9 @@ Fields:
 - `defaults.mode`: task type used when replaying commit titles.
 - `defaults.targetAgent`: source-free agent label in eval metadata.
 - `defaults.semanticEnabled`: explicit opt-in for local semantic retrieval during historical eval.
+- `defaults.semanticProvider`: semantic provider used when semantic retrieval is enabled. Defaults to `local_hash`.
+- `defaults.semanticModel`: optional provider model override. Benchmark reports resolve provider defaults into effective metadata.
+- `defaults.semanticDimensions`: optional provider dimension override. Benchmark reports resolve provider defaults into effective metadata.
 - `defaults.cacheEnabled`: reuse source-free stored historical eval reports when the repo/range/options/cache schema are unchanged.
 - `defaults.forceRefresh`: recompute and overwrite a cached historical eval report for the same source-free range.
 - `defaults.parallelism`: number of historical commit samples to evaluate concurrently. Output ordering remains deterministic.
@@ -80,7 +86,7 @@ Fields:
 - `repositories[*].revisionRangeId`: source-free stable label for the revision range.
 - `repositories[*].privacyLabel`: expected repo privacy class.
 - `repositories[*].base` / `head`: optional stable revision range.
-- `repositories[*].limit`, `rankingBudget`, `mode`, `targetAgent`, `semanticEnabled`, `cacheEnabled`, `forceRefresh`, `parallelism`, `roleFilters`: per-repo overrides.
+- `repositories[*].limit`, `rankingBudget`, `mode`, `targetAgent`, `semanticEnabled`, `semanticProvider`, `semanticModel`, `semanticDimensions`, `cacheEnabled`, `forceRefresh`, `parallelism`, `roleFilters`: per-repo overrides.
 - `repositories[*].baseline`: optional locked source-free baseline metadata for regression suites. Supported fields are `fileRecallAt10`, `lexicalBaselineRecallAt10`, `totalMillis`, `gapFamilies`, and `notes`.
 
 ## Run
@@ -169,6 +175,44 @@ Interpretation:
 - Production embeddings, rerankers, or learned policies should not be promoted unless they improve this multi-repo proof under the same source-free privacy boundary.
 
 The concise Phase 61 evidence lives at `.planning/e2e/2026-05-22-v25-multirepo-baseline.md`.
+
+## v2.5 Production Local Embedding Quality
+
+Phase 62 used the Phase 61 two-repo corpus to compare default retrieval,
+`local_hash`, and a production local fastembed model. The benchmark reports now
+resolve semantic provider metadata in `effectiveConfig`, including
+`semanticProvider`, `semanticModel`, `semanticDimensions`,
+`semanticProviderRole`, and `semanticQualityBackend`.
+
+Commands:
+
+```bash
+cargo run -p ctxpack --features local-embeddings -- \
+  eval benchmark --config .ctxpack/e2e/phase62-default-config.json --format json
+
+cargo run -p ctxpack --features local-embeddings -- \
+  eval benchmark --config .ctxpack/e2e/phase62-local-hash-config.json --format json
+
+cargo run -p ctxpack --features local-embeddings -- \
+  eval benchmark --config .ctxpack/e2e/phase62-local-fastembed-config.json --format json
+```
+
+Results:
+
+| Variant | Provider role | Quality backend | RefactoringMiner Recall@10 | ctxpack Recall@10 | Total repo runtime |
+| --- | --- | --- | ---: | ---: | ---: |
+| Default, semantic off | `deterministic_scaffold` | false | 0.7767 | 0.2299 | 26.3s |
+| `local_hash` | `deterministic_scaffold` | false | 0.7767 | 0.2299 | 57.8s |
+| `local_fastembed` `AllMiniLML6V2Q` | `production_local` | true | 0.7767 | 0.2299 | 183.7s |
+
+Interpretation:
+
+- `local_fastembed` is source-free, local-only, and usable behind the `local-embeddings` feature.
+- The Jina code model is available but too slow for the current full historical eval path.
+- The model cache defaults to repo `.ctxpack/cache/fastembed` inside a git repo, otherwise `CTXPACK_HOME/cache/fastembed`.
+- The measured fastembed variant matched default recall but did not beat lexical/default retrieval.
+- Runtime cost blocks default promotion.
+- v2.5 should proceed to reranker/fusion and gap-family work before attempting semantic promotion again.
 
 ## Interpreting Metrics
 

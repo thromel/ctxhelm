@@ -28,6 +28,21 @@ pub const LOCAL_FASTEMBED_PROVIDER: &str = "local_fastembed";
 pub const LOCAL_FASTEMBED_MODEL: &str = "JinaEmbeddingsV2BaseCode";
 pub const LOCAL_FASTEMBED_DIMENSIONS: usize = 768;
 pub const LOCAL_FASTEMBED_PROVIDER_ROLE: &str = "production_local";
+#[cfg(feature = "local-embeddings")]
+const LOCAL_FASTEMBED_VECTOR_CACHE_LIMIT: usize = 10_000;
+const DEFAULT_LOCAL_FASTEMBED_DOCUMENT_PREFILTER_LIMIT: usize = 128;
+
+#[cfg(feature = "local-embeddings")]
+struct CachedFastembedModel {
+    model_id: String,
+    model: fastembed::TextEmbedding,
+}
+
+#[cfg(feature = "local-embeddings")]
+thread_local! {
+    static LOCAL_FASTEMBED_MODEL_CACHE: std::cell::RefCell<Option<CachedFastembedModel>> = const { std::cell::RefCell::new(None) };
+    static LOCAL_FASTEMBED_VECTOR_CACHE: std::cell::RefCell<BTreeMap<String, Vec<f32>>> = const { std::cell::RefCell::new(BTreeMap::new()) };
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
@@ -368,12 +383,26 @@ pub fn semantic_search_report(
     let document_report =
         semantic_document_report(&repo_root, &SemanticDocumentOptions { limit: usize::MAX })?;
     diagnostics.extend(document_report.diagnostics);
-    let candidate_texts = document_report
-        .documents
+    let original_document_count = document_report.documents.len();
+    let candidate_documents =
+        prefilter_semantic_documents(query, document_report.documents, &provider);
+    if candidate_documents.len() < original_document_count {
+        diagnostics.push(Diagnostic {
+            code: "semantic_document_prefiltered".to_string(),
+            severity: DiagnosticSeverity::Info,
+            message: format!(
+                "Local production semantic retrieval bounded source-free candidate documents from {} to {} before embedding.",
+                original_document_count,
+                candidate_documents.len()
+            ),
+            paths: Vec::new(),
+            count: original_document_count - candidate_documents.len(),
+        });
+    }
+    let candidate_texts = candidate_documents
         .iter()
         .map(render_semantic_document_text)
         .collect::<Vec<_>>();
-    let candidate_documents = document_report.documents;
 
     let mut texts = Vec::with_capacity(candidate_texts.len() + 1);
     texts.push(query.to_string());
@@ -673,6 +702,60 @@ fn render_semantic_document_text(document: &SemanticDocument) -> String {
     lines.join("\n")
 }
 
+fn prefilter_semantic_documents(
+    query: &str,
+    mut documents: Vec<SemanticDocument>,
+    provider: &SemanticProviderConfig,
+) -> Vec<SemanticDocument> {
+    if provider.provider != LOCAL_FASTEMBED_PROVIDER
+        || documents.len() <= local_fastembed_document_prefilter_limit()
+    {
+        return documents;
+    }
+    let terms = query_terms(query);
+    documents.sort_by(|left, right| {
+        semantic_prefilter_score(right, &terms)
+            .total_cmp(&semantic_prefilter_score(left, &terms))
+            .then_with(|| left.path.cmp(&right.path))
+    });
+    documents.truncate(local_fastembed_document_prefilter_limit());
+    documents
+}
+
+fn local_fastembed_document_prefilter_limit() -> usize {
+    std::env::var("CTXPACK_FASTEMBED_DOCUMENT_LIMIT")
+        .ok()
+        .and_then(|value| value.parse::<usize>().ok())
+        .filter(|limit| *limit > 0)
+        .unwrap_or(DEFAULT_LOCAL_FASTEMBED_DOCUMENT_PREFILTER_LIMIT)
+}
+
+fn semantic_prefilter_score(document: &SemanticDocument, terms: &[String]) -> f32 {
+    if terms.is_empty() {
+        return 0.0;
+    }
+    let path = document.path.to_ascii_lowercase();
+    let summary = document.summary.to_ascii_lowercase();
+    let mut score = 0.0;
+    for term in terms {
+        if path.contains(term) {
+            score += 3.0;
+        }
+        if summary.contains(term) {
+            score += 0.5;
+        }
+        for facet in &document.facets {
+            let facet_path = facet.path.as_deref().unwrap_or("");
+            let text =
+                format!("{} {} {}", facet.label, facet.value, facet_path).to_ascii_lowercase();
+            if text.contains(term) {
+                score += facet.weight.max(0.1);
+            }
+        }
+    }
+    score
+}
+
 fn matched_semantic_facets(query: &str, document: &SemanticDocument) -> Vec<SemanticDocumentFacet> {
     let terms = query_terms(query).into_iter().collect::<BTreeSet<_>>();
     let mut matched = document
@@ -747,18 +830,20 @@ pub fn normalized_provider(provider: &SemanticProviderConfig) -> SemanticProvide
     let default = SemanticProviderConfig::default();
     let provider_id = empty_to_default(&provider.provider, &default.provider);
     if provider_id == LOCAL_FASTEMBED_PROVIDER {
+        let model = if provider.model.trim().is_empty() || provider.model == DEFAULT_SEMANTIC_MODEL
+        {
+            LOCAL_FASTEMBED_MODEL.to_string()
+        } else {
+            provider.model.trim().to_string()
+        };
         return SemanticProviderConfig {
             provider: provider_id,
-            model: if provider.model.trim().is_empty() || provider.model == DEFAULT_SEMANTIC_MODEL {
-                LOCAL_FASTEMBED_MODEL.to_string()
-            } else {
-                provider.model.trim().to_string()
-            },
             dimensions: if provider.dimensions == DEFAULT_SEMANTIC_DIMENSIONS {
-                LOCAL_FASTEMBED_DIMENSIONS
+                local_fastembed_model_dimensions(&model)
             } else {
                 provider.dimensions.clamp(8, 4096)
             },
+            model,
             distance_metric: empty_to_default(&provider.distance_metric, &default.distance_metric),
             provider_role: LOCAL_FASTEMBED_PROVIDER_ROLE.to_string(),
             quality_backend: true,
@@ -770,7 +855,11 @@ pub fn normalized_provider(provider: &SemanticProviderConfig) -> SemanticProvide
         return SemanticProviderConfig {
             provider: provider_id,
             model: empty_to_default(&provider.model, &default.model),
-            dimensions: provider.dimensions.clamp(8, 4096),
+            dimensions: if provider.dimensions == DEFAULT_SEMANTIC_DIMENSIONS {
+                DEFAULT_SEMANTIC_DIMENSIONS
+            } else {
+                provider.dimensions.clamp(8, 4096)
+            },
             distance_metric: empty_to_default(&provider.distance_metric, &default.distance_metric),
             provider_role: "unsupported".to_string(),
             quality_backend: false,
@@ -800,6 +889,13 @@ fn default_true() -> bool {
 
 fn local_fastembed_available() -> bool {
     cfg!(feature = "local-embeddings")
+}
+
+fn local_fastembed_model_dimensions(model: &str) -> usize {
+    match model {
+        "AllMiniLML6V2" | "AllMiniLML6V2Q" | "AllMiniLML12V2" | "AllMiniLML12V2Q" => 384,
+        _ => LOCAL_FASTEMBED_DIMENSIONS,
+    }
 }
 
 fn semantic_provider_unavailable_diagnostic(provider: &SemanticProviderConfig) -> Diagnostic {
@@ -854,21 +950,139 @@ fn local_fastembed_vectors(
             )
         })?
     };
-    let model = TextEmbedding::try_new(
-        InitOptions::new(embedding_model).with_show_download_progress(false),
+
+    let keys = texts
+        .iter()
+        .map(|text| local_fastembed_vector_cache_key(provider, text))
+        .collect::<Vec<_>>();
+    let mut vectors = LOCAL_FASTEMBED_VECTOR_CACHE.with(|cache| {
+        let cache = cache.borrow();
+        keys.iter()
+            .map(|key| cache.get(key).cloned())
+            .collect::<Vec<_>>()
+    });
+    let mut missing_texts = Vec::new();
+    let mut missing_keys = Vec::new();
+    for (index, (key, vector)) in keys.iter().zip(vectors.iter()).enumerate() {
+        if vector.is_none() {
+            missing_texts.push(texts[index].clone());
+            missing_keys.push((index, key.clone()));
+        }
+    }
+
+    if !missing_texts.is_empty() {
+        let embedded_vectors = LOCAL_FASTEMBED_MODEL_CACHE.with(|cache| {
+            let mut cached = cache.borrow_mut();
+            let cache_miss = cached
+                .as_ref()
+                .is_none_or(|cached| cached.model_id != provider.model);
+            if cache_miss {
+                let cache_dir = local_fastembed_model_cache_dir();
+                fs::create_dir_all(&cache_dir).map_err(|error| {
+                    format!(
+                        "Semantic provider {} could not create local model cache {}: {}",
+                        provider.provider,
+                        cache_dir.display(),
+                        error
+                    )
+                })?;
+                let model = TextEmbedding::try_new(
+                    InitOptions::new(embedding_model)
+                        .with_cache_dir(cache_dir)
+                        .with_show_download_progress(false),
+                )
+                .map_err(|error| {
+                    format!(
+                        "Semantic provider {} failed to initialize local model {}: {}",
+                        provider.provider, provider.model, error
+                    )
+                })?;
+                *cached = Some(CachedFastembedModel {
+                    model_id: provider.model.clone(),
+                    model,
+                });
+            }
+            let model = &cached
+                .as_ref()
+                .expect("local fastembed model cache initialized")
+                .model;
+            model.embed(missing_texts, None).map_err(|error| {
+                format!(
+                    "Semantic provider {} failed to embed with local model {}: {}",
+                    provider.provider, provider.model, error
+                )
+            })
+        })?;
+        if embedded_vectors.len() != missing_keys.len() {
+            return Err(format!(
+                "Semantic provider {} returned {} vectors for {} inputs.",
+                provider.provider,
+                embedded_vectors.len(),
+                missing_keys.len()
+            ));
+        }
+        LOCAL_FASTEMBED_VECTOR_CACHE.with(|cache| {
+            let mut cache = cache.borrow_mut();
+            for ((index, key), vector) in missing_keys.into_iter().zip(embedded_vectors) {
+                vectors[index] = Some(vector.clone());
+                cache.insert(key, vector);
+            }
+            while cache.len() > LOCAL_FASTEMBED_VECTOR_CACHE_LIMIT {
+                let Some(first_key) = cache.keys().next().cloned() else {
+                    break;
+                };
+                cache.remove(&first_key);
+            }
+        });
+    }
+
+    vectors
+        .into_iter()
+        .collect::<Option<Vec<_>>>()
+        .ok_or_else(|| {
+            format!(
+                "Semantic provider {} failed to resolve all local embedding vectors.",
+                provider.provider
+            )
+        })
+}
+
+#[cfg(feature = "local-embeddings")]
+fn local_fastembed_vector_cache_key(provider: &SemanticProviderConfig, text: &str) -> String {
+    let digest = blake3::hash(text.as_bytes());
+    format!(
+        "{}:{}:{}:{}",
+        provider.provider,
+        provider.model,
+        provider.dimensions,
+        digest.to_hex()
     )
-    .map_err(|error| {
-        format!(
-            "Semantic provider {} failed to initialize local model {}: {}",
-            provider.provider, provider.model, error
-        )
-    })?;
-    model.embed(texts.to_vec(), None).map_err(|error| {
-        format!(
-            "Semantic provider {} failed to embed with local model {}: {}",
-            provider.provider, provider.model, error
-        )
-    })
+}
+
+#[cfg(feature = "local-embeddings")]
+fn local_fastembed_model_cache_dir() -> std::path::PathBuf {
+    std::env::var("CTXPACK_FASTEMBED_CACHE_DIR")
+        .or_else(|_| std::env::var("FASTEMBED_CACHE_DIR"))
+        .map(std::path::PathBuf::from)
+        .unwrap_or_else(|_| {
+            std::env::current_dir()
+                .ok()
+                .and_then(|cwd| nearest_git_root(&cwd))
+                .map(|root| root.join(".ctxpack").join("cache").join("fastembed"))
+                .unwrap_or_else(|| {
+                    crate::inventory::ctxpack_home()
+                        .join("cache")
+                        .join("fastembed")
+                })
+        })
+}
+
+#[cfg(feature = "local-embeddings")]
+fn nearest_git_root(start: &Path) -> Option<std::path::PathBuf> {
+    start
+        .ancestors()
+        .find(|path| path.join(".git").exists())
+        .map(Path::to_path_buf)
 }
 
 #[cfg(not(feature = "local-embeddings"))]
@@ -978,6 +1192,22 @@ mod tests {
         assert!(!report.provider.quality_backend);
         assert!(report.results[0].document_id.is_some());
         assert!(!report.results[0].matched_facets.is_empty());
+    }
+
+    #[test]
+    fn local_fastembed_provider_resolves_model_dimensions_and_role() {
+        let provider = normalized_provider(&SemanticProviderConfig {
+            provider: LOCAL_FASTEMBED_PROVIDER.to_string(),
+            model: "AllMiniLML6V2Q".to_string(),
+            ..SemanticProviderConfig::default()
+        });
+
+        assert_eq!(provider.provider, LOCAL_FASTEMBED_PROVIDER);
+        assert_eq!(provider.model, "AllMiniLML6V2Q");
+        assert_eq!(provider.dimensions, 384);
+        assert_eq!(provider.provider_role, LOCAL_FASTEMBED_PROVIDER_ROLE);
+        assert!(provider.quality_backend);
+        assert!(provider.local_only);
     }
 
     #[test]

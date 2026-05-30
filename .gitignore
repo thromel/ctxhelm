@@ -4,5 +4,6 @@
 /.ctxpack/cache/
 /.ctxpack/e2e/
 /.ctxpack/index/
+/.fastembed_cache/
 *.log
 .DS_Store

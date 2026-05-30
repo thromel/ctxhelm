@@ -4616,6 +4616,21 @@ fn render_benchmark_suite_report(report: &BenchmarkSuiteReport) -> String {
             role_filter_label(&repo.effective_config.role_filters),
             repo.privacy_status.local_only
         ));
+        output.push_str(&format!(
+            "- Semantic enabled: `{}`\n- Semantic provider: `{}`\n- Semantic model: `{}`\n- Semantic dimensions: `{}`\n- Semantic provider role: `{}`\n- Semantic quality backend: `{}`\n",
+            repo.effective_config.semantic_enabled,
+            repo.effective_config.semantic_provider,
+            repo.effective_config
+                .semantic_model
+                .as_deref()
+                .unwrap_or("provider default"),
+            repo.effective_config
+                .semantic_dimensions
+                .map(|dimensions| dimensions.to_string())
+                .unwrap_or_else(|| "provider default".to_string()),
+            repo.effective_config.semantic_provider_role,
+            repo.effective_config.semantic_quality_backend
+        ));
 
         if let Some(error) = &repo.error {
             output.push_str(&format!("- Error: `{error}`\n\n"));
