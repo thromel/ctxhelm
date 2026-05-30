@@ -2669,8 +2669,10 @@ pub fn evaluate_historical_commits(
 
     if options.cache_enabled && !options.force_refresh {
         if let Some(mut cached) = load_historical_eval_cache(&repo_id, &eval_range_id)? {
-            cached.runtime.cache_hits += 1;
-            cached.runtime.cache_misses = 0;
+            cached.runtime = cached_historical_eval_runtime_summary(
+                &cached.runtime,
+                elapsed_millis(eval_started),
+            );
             return Ok(cached);
         }
     }
@@ -4766,6 +4768,25 @@ fn historical_eval_runtime_summary(
     }
 }
 
+fn cached_historical_eval_runtime_summary(
+    cached: &HistoricalEvalRuntimeSummary,
+    total_millis: u64,
+) -> HistoricalEvalRuntimeSummary {
+    HistoricalEvalRuntimeSummary {
+        total_millis,
+        commit_millis: 0,
+        overhead_millis: total_millis,
+        average_commit_millis: 0.0,
+        cache_hits: cached.cache_hits.saturating_add(1),
+        cache_misses: 0,
+        parallelism: cached.parallelism.max(1),
+        git_sample_millis: 0,
+        ranking_millis: 0,
+        pack_compiler_millis: 0,
+        slow_commits: Vec::new(),
+    }
+}
+
 fn elapsed_millis(started: Instant) -> u64 {
     started.elapsed().as_millis().try_into().unwrap_or(u64::MAX)
 }
@@ -5279,6 +5300,44 @@ mod tests {
             .release_gate
             .decision_reason
             .contains("runtime exceeded"));
+    }
+
+    #[test]
+    fn cached_eval_runtime_reports_warm_lookup_cost() {
+        let cold = HistoricalEvalRuntimeSummary {
+            total_millis: 12_000,
+            commit_millis: 10_000,
+            overhead_millis: 2_000,
+            average_commit_millis: 2_000.0,
+            cache_hits: 0,
+            cache_misses: 1,
+            parallelism: 4,
+            git_sample_millis: 500,
+            ranking_millis: 600,
+            pack_compiler_millis: 8_000,
+            slow_commits: vec![HistoricalSlowCommitSummary {
+                sha: "abc123".to_string(),
+                elapsed_millis: 2_500,
+                safe_changed_file_count: 3,
+                recommended_context_file_count: 10,
+                missing_file_count_at_10: 1,
+                low_information_task: false,
+            }],
+        };
+
+        let warm = cached_historical_eval_runtime_summary(&cold, 7);
+
+        assert_eq!(warm.total_millis, 7);
+        assert_eq!(warm.commit_millis, 0);
+        assert_eq!(warm.overhead_millis, 7);
+        assert_eq!(warm.average_commit_millis, 0.0);
+        assert_eq!(warm.cache_hits, 1);
+        assert_eq!(warm.cache_misses, 0);
+        assert_eq!(warm.parallelism, 4);
+        assert_eq!(warm.git_sample_millis, 0);
+        assert_eq!(warm.ranking_millis, 0);
+        assert_eq!(warm.pack_compiler_millis, 0);
+        assert!(warm.slow_commits.is_empty());
     }
 
     #[test]

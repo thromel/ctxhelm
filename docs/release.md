@@ -260,6 +260,13 @@ latest broader proof is
 `.ctxpack/e2e/phase80-broader-unique-symbol-floor-proof.json`. Both promote
 with protected retrieval-target miss-rate `0.0` across measured corpora.
 
+Phase 81 fixes warm-cache runtime reporting. The current cold/warm cache proof
+uses `.planning/e2e/2026-05-30-phase81-warm-cache-proof-config.json` and
+produces `.ctxpack/e2e/phase81-warm-cache-cold-proof.json` plus
+`.ctxpack/e2e/phase81-warm-cache-warm-proof.json`. Both promote. The warm proof
+records cache hits on every corpus, zero cache misses, zero commit-loop time,
+and zero slow-commit diagnostics.
+
 Latest optional real-client proof: Codex CLI `0.130.0` and Claude Code
 `2.1.158` both passed the smoke wrappers on 2026-05-30 with server-side
 `prepare_task` and `get_pack` evidence against an explicit repo path. See

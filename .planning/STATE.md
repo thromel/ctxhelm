@@ -3,11 +3,11 @@ gsd_state_version: 1.0
 milestone: v2.5
 milestone_name: Production Retrieval Quality
 status: active
-last_updated: "2026-05-30T21:05:00Z"
-last_activity: 2026-05-30 -- Phase 80 fixed symbol-floor duplicate accounting and cleared protected target misses in the required and broader proofs
+last_updated: "2026-05-30T21:40:00Z"
+last_activity: 2026-05-30 -- Phase 81 fixed cache-hit runtime reporting and added cold/warm product-proof latency evidence
 progress:
-  total_phases: 19
-  completed_phases: 19
+  total_phases: 20
+  completed_phases: 20
   total_plans: 7
   completed_plans: 7
   percent: 100
@@ -17,10 +17,10 @@ progress:
 
 ## Current Position
 
-Phase: 80 - Unique Symbol Floor Accounting
-Plan: 80-unique-symbol-floor
+Phase: 81 - Warm Cache Latency Proof
+Plan: 81-warm-cache-latency
 Status: Complete
-Last activity: 2026-05-30 -- Phase 80 makes source-symbol and general symbol floors count unique newly selected files instead of duplicate already-selected candidates. Required and broader proofs still promote, and all protected retrieval-target miss-rates are now zero in the measured corpora.
+Last activity: 2026-05-30 -- Phase 81 makes cached historical eval reports show warm lookup runtime instead of stale cold timings. The four-repo warm proof promotes with cache hits on every corpus, zero warm commit-loop time, and protected retrieval-target miss-rate `0.0`.
 
 ## Project Reference
 
@@ -57,6 +57,7 @@ Planned phases:
 - Phase 78: Ceiling-Aware Broader Gate (complete follow-up)
 - Phase 79: Protected Target Floors (complete follow-up)
 - Phase 80: Unique Symbol Floor Accounting (complete follow-up)
+- Phase 81: Warm Cache Latency Proof (complete follow-up)
 
 ## Last Completed Milestone
 
@@ -74,7 +75,7 @@ Planned phases:
 
 ## Next Step
 
-Continue production-readiness work from remaining measured gaps: parser/precision dependency misses, context-vs-all-file corpus divergence, and steady-state latency/quality hardening.
+Continue production-readiness work from remaining measured gaps: parser/precision dependency misses, context-vs-all-file corpus divergence, and release-grade steady-state latency thresholds.
 
 ## Operator Next Steps
 
@@ -94,6 +95,9 @@ Continue production-readiness work from remaining measured gaps: parser/precisio
 - Latest broader protected-target floor proof: `.ctxpack/e2e/phase79-broader-protected-target-floors-proof.json`; broader proof promotes, VeriSchema protected target miss-rate is `0.0`, and ctxpack broader protected target miss-rate remains `0.100`.
 - Latest unique-symbol floor proof: `.ctxpack/e2e/phase80-unique-symbol-floor-proof.json`; required proof promotes and required protected target miss-rates are `0.0` across measured corpora.
 - Latest broader unique-symbol floor proof: `.ctxpack/e2e/phase80-broader-unique-symbol-floor-proof.json`; broader proof promotes and protected target miss-rates are `0.0` across measured corpora.
+- Latest warm-cache latency proof config: `.planning/e2e/2026-05-30-phase81-warm-cache-proof-config.json`.
+- Latest warm-cache cold proof: `.ctxpack/e2e/phase81-warm-cache-cold-proof.json`; cold proof promotes and populates source-free eval caches.
+- Latest warm-cache warm proof: `.ctxpack/e2e/phase81-warm-cache-warm-proof.json`; warm proof promotes with cache hits on all four corpora and `1ms` reported runtime for each cached repo on this run.
 - Latest real-client proof: `.planning/e2e/2026-05-30-phase70-real-client-mcp-proof.md`.
 - RefactoringMiner still trails lexical on all-file recall because tests are no longer forced into the target-file context budget; this is explicitly recorded in corpus verdict notes.
-- Next work should target context-vs-all-file corpus divergence, low-information/multi-area task detection, parser precision, and warm-cache latency characterization.
+- Next work should target context-vs-all-file corpus divergence, low-information/multi-area task detection, parser precision, and release-grade steady-state latency thresholds.

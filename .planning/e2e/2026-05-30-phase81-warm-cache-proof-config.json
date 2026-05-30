@@ -1,0 +1,49 @@
+{
+  "manifestVersion": "ctxpack-benchmark-corpus-v2.5",
+  "name": "phase81-warm-cache-proof",
+  "corpusId": "phase81-warm-cache-proof-2026-05-30",
+  "privacyLabel": "source_free_local",
+  "description": "Production-readiness proof that source-free historical eval cache hits report warm lookup latency rather than stale cold runtime.",
+  "defaults": {
+    "limit": 5,
+    "rankingBudget": 10,
+    "mode": "bug_fix",
+    "targetAgent": "generic",
+    "semanticEnabled": false,
+    "cacheEnabled": true,
+    "forceRefresh": false,
+    "parallelism": 4,
+    "roleFilters": []
+  },
+  "repositories": [
+    {
+      "name": "RefactoringMiner",
+      "path": "../../../RefactoringMiner",
+      "revisionRangeId": "phase81-refminer-949bdd-only",
+      "base": "c16c031d048618c8389f474f80c2feee21a06ad1",
+      "head": "949bddcd3509a805f5e3bcc55fcdb71a691b0dac",
+      "privacyLabel": "source_free_local"
+    },
+    {
+      "name": "ctxpack",
+      "path": "../..",
+      "revisionRangeId": "phase81-ctxpack-head-history-limit-5",
+      "head": "7f439fa1b1f2784aed6425b695d7c35944ea7955",
+      "privacyLabel": "source_free_local"
+    },
+    {
+      "name": "ReAgent",
+      "path": "../../../ReAgent",
+      "revisionRangeId": "phase81-reagent-head-history-limit-5",
+      "head": "44277ff7d89a8e2e2a1cbdf8d350c409e379786d",
+      "privacyLabel": "source_free_local"
+    },
+    {
+      "name": "VeriSchema",
+      "path": "../../../VeriSchema",
+      "revisionRangeId": "phase81-verischema-head-history-limit-5",
+      "head": "b5cfb2a551d026514f505c45863db31277bcd1ad",
+      "privacyLabel": "source_free_local"
+    }
+  ]
+}
