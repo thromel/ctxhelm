@@ -223,32 +223,7 @@ log_step "optional benchmark product proof"
 if [[ -n "${CTXPACK_BENCHMARK_CONFIG:-}" ]]; then
   proof_report="$work_dir/product-proof.json"
   "$ctxpack_bin" eval proof --config "$CTXPACK_BENCHMARK_CONFIG" --format json >"$proof_report"
-  python3 - "$proof_report" <<'PY'
-import json
-import pathlib
-import sys
-
-report = json.loads(pathlib.Path(sys.argv[1]).read_text())
-if not report.get("privacyStatus", {}).get("localOnly"):
-    raise SystemExit("product proof privacyStatus.localOnly was not true")
-if not report.get("benchmarkReport", {}).get("privacyStatus", {}).get("localOnly"):
-    raise SystemExit("embedded benchmark privacyStatus.localOnly was not true")
-if not report.get("headlineMetrics"):
-    raise SystemExit("product proof headlineMetrics were empty")
-summary = report.get("v23EvalSummary", {})
-if not summary.get("fixedCorpusId"):
-    raise SystemExit("product proof v23EvalSummary.fixedCorpusId was empty")
-if not isinstance(summary.get("pairedBaselineVerdicts"), list):
-    raise SystemExit("product proof paired baseline verdicts were missing")
-feature_privacy = summary.get("featureExportPrivacy", {})
-if not feature_privacy.get("localOnly") or feature_privacy.get("sourceTextLogged"):
-    raise SystemExit("product proof feature-export privacy contract failed")
-learned_status = summary.get("learnedPolicyStatus", {})
-if not learned_status.get("defaultRequiresThresholds") or learned_status.get("silentDefaultAllowed"):
-    raise SystemExit("product proof learned-policy status contract failed")
-if "world-class claims require repeated lift" not in summary.get("proofBoundary", ""):
-    raise SystemExit("product proof boundary language was missing")
-PY
+  python3 "$repo_root/scripts/check-product-proof.py" "$proof_report"
   benchmark_status="passed"
 else
   echo "benchmark product proof skipped: set CTXPACK_BENCHMARK_CONFIG=/path/to/suite.json"

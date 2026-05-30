@@ -238,6 +238,7 @@ fn release_gate_script_contract() {
         "scripts/smoke-semantic.sh",
         "scripts/smoke-precision.sh",
         "scripts/smoke-v23-eval.sh",
+        "scripts/check-product-proof.py",
         "scripts/smoke-mcp-protocol.sh",
         "scripts/smoke-codex-mcp.sh",
         "scripts/smoke-claude-mcp.sh",
@@ -248,11 +249,7 @@ fn release_gate_script_contract() {
         "CTXPACK_PROOF_DIR",
         "CTXPACK_BENCHMARK_CONFIG",
         "eval proof",
-        "v23EvalSummary",
-        "pairedBaselineVerdicts",
-        "featureExportPrivacy",
-        "learnedPolicyStatus",
-        "product proof privacyStatus.localOnly",
+        "check-product-proof.py",
         "release proof bundle",
         "release-proof-summary.json",
         "binaryIdentity",
@@ -308,6 +305,70 @@ fn release_gate_script_contract() {
             "release gate must not contain publishing behavior: {forbidden}"
         );
     }
+}
+
+#[test]
+fn product_proof_checker_accepts_promote_and_rejects_block() {
+    let repo_root = workspace_root();
+    let script = repo_root.join("scripts/check-product-proof.py");
+    assert!(script.exists(), "product proof checker is missing");
+
+    let temp = TempDir::new().unwrap();
+    let promote_path = temp.path().join("promote.json");
+    let block_path = temp.path().join("block.json");
+    fs::write(&promote_path, product_proof_json("promote", true, "beat")).unwrap();
+    fs::write(&block_path, product_proof_json("block", false, "match")).unwrap();
+
+    let promote = Command::new("python3")
+        .arg(&script)
+        .arg(&promote_path)
+        .current_dir(&repo_root)
+        .output()
+        .unwrap();
+    assert!(
+        promote.status.success(),
+        "promote proof should pass: {}",
+        String::from_utf8_lossy(&promote.stderr)
+    );
+
+    let block = Command::new("python3")
+        .arg(&script)
+        .arg(&block_path)
+        .current_dir(&repo_root)
+        .output()
+        .unwrap();
+    assert!(
+        !block.status.success(),
+        "block proof should fail release checker"
+    );
+    let stderr = String::from_utf8_lossy(&block.stderr);
+    assert!(
+        stderr.contains("releaseGate.decision was not promote")
+            || stderr.contains("corpus did not beat lexical"),
+        "unexpected checker error: {stderr}"
+    );
+}
+
+fn product_proof_json(decision: &str, default_promotion_allowed: bool, status: &str) -> String {
+    format!(
+        r#"{{
+  "privacyStatus": {{"localOnly": true}},
+  "benchmarkReport": {{"privacyStatus": {{"localOnly": true}}}},
+  "headlineMetrics": [{{"label": "averageCtxpackLiftAt10", "value": 0.1}}],
+  "v23EvalSummary": {{
+    "fixedCorpusId": "fixture",
+    "pairedBaselineVerdicts": [],
+    "featureExportPrivacy": {{"localOnly": true, "sourceTextLogged": false}},
+    "learnedPolicyStatus": {{"defaultRequiresThresholds": true, "silentDefaultAllowed": false}},
+    "proofBoundary": "world-class claims require repeated lift"
+  }},
+  "releaseGate": {{
+    "decision": "{decision}",
+    "defaultPromotionAllowed": {default_promotion_allowed},
+    "corpusVerdicts": [{{"repository": "fixture", "status": "{status}"}}]
+  }}
+}}"#
+    )
 }
 
 #[test]

@@ -1974,6 +1974,9 @@ fn eval_proof_generates_source_free_product_report() {
         .unwrap()
         .iter()
         .any(|metric| metric["label"] == "averageCtxpackLiftAt10"));
+    assert_eq!(value["releaseGate"]["decision"], "block");
+    assert_eq!(value["releaseGate"]["defaultPromotionAllowed"], false);
+    assert!(value["releaseGate"]["corpusVerdicts"].is_array());
     assert!(value["limitations"].is_array());
     assert!(value["helpsWhen"].is_array());
     assert!(value["doesNotHelpWhen"].is_array());
@@ -1992,9 +1995,11 @@ fn eval_proof_generates_source_free_product_report() {
         .assert()
         .success()
         .stdout(contains("# ctxpack Product Proof"))
-        .stdout(contains("v2.3 Eval Summary"))
+        .stdout(contains("Fixed-Corpus Eval Summary"))
         .stdout(contains("Paired Baseline Verdicts"))
         .stdout(contains("Proof Boundary"))
+        .stdout(contains("Release Gate Decision"))
+        .stdout(contains("Corpus Verdicts"))
         .stdout(contains("When It Helps"))
         .stdout(contains("When It Does Not Help"))
         .stdout(contains("Limitations"))

@@ -388,6 +388,7 @@ pub struct ProductProofReport {
     pub evaluated_commit_count: usize,
     pub headline_metrics: Vec<ProductProofMetric>,
     pub v23_eval_summary: ProductProofV23Summary,
+    pub release_gate: ProductProofReleaseGate,
     pub limitations: Vec<String>,
     pub helps_when: Vec<String>,
     pub does_not_help_when: Vec<String>,
@@ -402,6 +403,39 @@ pub struct ProductProofMetric {
     pub label: String,
     pub value: f32,
     pub unit: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct ProductProofReleaseGate {
+    pub decision: SemanticPrecisionGateDecision,
+    pub decision_reason: String,
+    pub default_promotion_allowed: bool,
+    pub corpus_verdicts: Vec<ProductProofCorpusVerdict>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct ProductProofCorpusVerdict {
+    pub repository: String,
+    pub variant: String,
+    pub status: ProductProofCorpusStatus,
+    pub file_recall_at_10: f32,
+    pub lexical_baseline_recall_at_10: f32,
+    pub lexical_delta_at_10: f32,
+    pub test_recall_at_10: f32,
+    pub protected_evidence_miss_rate_at_10: f32,
+    pub runtime_millis: u64,
+    pub notes: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum ProductProofCorpusStatus {
+    Beat,
+    Match,
+    Trail,
+    InsufficientEvidence,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -873,6 +907,7 @@ pub fn build_product_proof_report(benchmark_report: BenchmarkSuiteReport) -> Pro
         .sum::<f32>()
         / repo_count;
     let v23_eval_summary = product_proof_v23_summary(&benchmark_report, &evaluated_reports);
+    let release_gate = product_proof_release_gate(&benchmark_report);
 
     ProductProofReport {
         suite_name: benchmark_report.suite_name.clone(),
@@ -907,6 +942,7 @@ pub fn build_product_proof_report(benchmark_report: BenchmarkSuiteReport) -> Pro
             },
         ],
         v23_eval_summary,
+        release_gate,
         limitations: vec![
             "Historical commit subjects are only proxies for real developer prompts.".to_string(),
             "No-context baseline is zero-file until editor anchor traces are available."
@@ -929,10 +965,157 @@ pub fn build_product_proof_report(benchmark_report: BenchmarkSuiteReport) -> Pro
             "v2.3: keep fixed corpus manifests and paired baseline verdicts current.".to_string(),
             "v2.4: add production semantic and precision backends only where eval gates show lift."
                 .to_string(),
-            "v2.5: expand machine-checkable real-client agent outcome proof.".to_string(),
+            "v2.5: ship only variants that beat lexical on every required corpus without unsafe privacy, runtime, or protected-evidence regressions.".to_string(),
         ],
         benchmark_report,
         privacy_status: PrivacyStatus::local_only(),
+    }
+}
+
+fn product_proof_release_gate(benchmark_report: &BenchmarkSuiteReport) -> ProductProofReleaseGate {
+    let corpus_verdicts = benchmark_report
+        .repositories
+        .iter()
+        .map(product_proof_corpus_verdict)
+        .collect::<Vec<_>>();
+    let decision = product_proof_release_decision(benchmark_report, &corpus_verdicts);
+    ProductProofReleaseGate {
+        default_promotion_allowed: decision.0 == SemanticPrecisionGateDecision::Promote,
+        decision: decision.0,
+        decision_reason: decision.1,
+        corpus_verdicts,
+    }
+}
+
+fn product_proof_release_decision(
+    benchmark_report: &BenchmarkSuiteReport,
+    corpus_verdicts: &[ProductProofCorpusVerdict],
+) -> (SemanticPrecisionGateDecision, String) {
+    if !benchmark_report.privacy_status.local_only {
+        return (
+            SemanticPrecisionGateDecision::Block,
+            "Blocked because benchmark proof is not local-only.".to_string(),
+        );
+    }
+    if corpus_verdicts.is_empty() {
+        return (
+            SemanticPrecisionGateDecision::Block,
+            "Blocked because no repositories produced product-proof verdicts.".to_string(),
+        );
+    }
+    let failed = corpus_verdicts
+        .iter()
+        .filter(|verdict| {
+            matches!(
+                verdict.status,
+                ProductProofCorpusStatus::Trail
+                    | ProductProofCorpusStatus::Match
+                    | ProductProofCorpusStatus::InsufficientEvidence
+            )
+        })
+        .map(|verdict| format!("{}:{:?}", verdict.repository, verdict.status))
+        .collect::<Vec<_>>();
+    if !failed.is_empty() {
+        return (
+            SemanticPrecisionGateDecision::Block,
+            format!(
+                "Blocked because default promotion requires every corpus to beat lexical; failing corpora: {}.",
+                failed.join(", ")
+            ),
+        );
+    }
+    let slow = corpus_verdicts
+        .iter()
+        .filter(|verdict| {
+            let commits = benchmark_report
+                .repositories
+                .iter()
+                .find(|repo| repo.name == verdict.repository)
+                .map(|repo| repo.evaluated_commits.max(1) as u64)
+                .unwrap_or(1);
+            verdict.runtime_millis / commits > 5_000
+        })
+        .map(|verdict| verdict.repository.clone())
+        .collect::<Vec<_>>();
+    if !slow.is_empty() {
+        return (
+            SemanticPrecisionGateDecision::Block,
+            format!(
+                "Blocked because proof runtime exceeded 5000ms per commit for: {}.",
+                slow.join(", ")
+            ),
+        );
+    }
+    (
+        SemanticPrecisionGateDecision::Promote,
+        "Promote: every evaluated corpus beat lexical under local-only proof thresholds."
+            .to_string(),
+    )
+}
+
+fn product_proof_corpus_verdict(repo: &BenchmarkRepoReport) -> ProductProofCorpusVerdict {
+    let variant = product_proof_variant_label(&repo.effective_config);
+    let Some(report) = repo.report.as_ref() else {
+        return ProductProofCorpusVerdict {
+            repository: repo.name.clone(),
+            variant,
+            status: ProductProofCorpusStatus::InsufficientEvidence,
+            file_recall_at_10: 0.0,
+            lexical_baseline_recall_at_10: 0.0,
+            lexical_delta_at_10: 0.0,
+            test_recall_at_10: 0.0,
+            protected_evidence_miss_rate_at_10: 1.0,
+            runtime_millis: 0,
+            notes: vec![repo
+                .error
+                .clone()
+                .unwrap_or_else(|| "repository did not produce an eval report".to_string())],
+        };
+    };
+    let lexical_delta_at_10 = report.file_recall_at_10 - report.lexical_baseline_recall_at_10;
+    let status = if report.evaluated_commits == 0 {
+        ProductProofCorpusStatus::InsufficientEvidence
+    } else if lexical_delta_at_10 > 0.03 {
+        ProductProofCorpusStatus::Beat
+    } else if lexical_delta_at_10 < -0.03 {
+        ProductProofCorpusStatus::Trail
+    } else {
+        ProductProofCorpusStatus::Match
+    };
+    let mut notes = Vec::new();
+    if report.test_recall_at_10 == 0.0 {
+        notes.push("test recall at 10 is zero".to_string());
+    }
+    if report.protected_evidence.miss_rate_at_10 > 0.0 {
+        notes.push(format!(
+            "protected evidence miss rate at 10 is {:.3}",
+            report.protected_evidence.miss_rate_at_10
+        ));
+    }
+    ProductProofCorpusVerdict {
+        repository: repo.name.clone(),
+        variant,
+        status,
+        file_recall_at_10: report.file_recall_at_10,
+        lexical_baseline_recall_at_10: report.lexical_baseline_recall_at_10,
+        lexical_delta_at_10,
+        test_recall_at_10: report.test_recall_at_10,
+        protected_evidence_miss_rate_at_10: report.protected_evidence.miss_rate_at_10,
+        runtime_millis: report.runtime.total_millis,
+        notes,
+    }
+}
+
+fn product_proof_variant_label(config: &BenchmarkRepoEffectiveConfig) -> String {
+    match (
+        config.semantic_enabled,
+        config.semantic_quality_backend,
+        config.local_metadata_reranker,
+    ) {
+        (_, _, true) => "local_metadata_reranked".to_string(),
+        (true, true, false) => "production_semantic".to_string(),
+        (true, false, false) => "semantic_scaffold".to_string(),
+        (false, _, false) => "ctxpack_default".to_string(),
     }
 }
 
@@ -4570,6 +4753,56 @@ mod tests {
         assert!(files[0].selected_at_10);
     }
 
+    #[test]
+    fn product_proof_release_gate_blocks_mixed_or_trailing_corpora() {
+        let mut beat = empty_historical_eval_report("beat");
+        set_recall_metrics(&mut beat, 0.50, 0.40);
+        let mut trail = empty_historical_eval_report("trail");
+        set_recall_metrics(&mut trail, 0.39, 0.43);
+
+        let report = build_product_proof_report(benchmark_report_with_repos(vec![
+            ("beat-repo", beat),
+            ("trail-repo", trail),
+        ]));
+
+        assert_eq!(
+            report.release_gate.decision,
+            SemanticPrecisionGateDecision::Block
+        );
+        assert!(!report.release_gate.default_promotion_allowed);
+        assert!(report
+            .release_gate
+            .corpus_verdicts
+            .iter()
+            .any(|verdict| verdict.repository == "beat-repo"
+                && verdict.status == ProductProofCorpusStatus::Beat));
+        assert!(report
+            .release_gate
+            .corpus_verdicts
+            .iter()
+            .any(|verdict| verdict.repository == "trail-repo"
+                && verdict.status == ProductProofCorpusStatus::Trail));
+    }
+
+    #[test]
+    fn product_proof_release_gate_promotes_only_all_beat_local_corpora() {
+        let mut left = empty_historical_eval_report("left");
+        set_recall_metrics(&mut left, 0.50, 0.40);
+        let mut right = empty_historical_eval_report("right");
+        set_recall_metrics(&mut right, 0.61, 0.55);
+
+        let report = build_product_proof_report(benchmark_report_with_repos(vec![
+            ("left", left),
+            ("right", right),
+        ]));
+
+        assert_eq!(
+            report.release_gate.decision,
+            SemanticPrecisionGateDecision::Promote
+        );
+        assert!(report.release_gate.default_promotion_allowed);
+    }
+
     fn gate_test_variant(name: &str, recall: f32, precision: f32) -> SemanticPrecisionVariant {
         SemanticPrecisionVariant {
             name: name.to_string(),
@@ -4596,6 +4829,77 @@ mod tests {
             provider_status: "evaluated".to_string(),
             note: "test variant".to_string(),
         }
+    }
+
+    fn benchmark_report_with_repos(
+        reports: Vec<(&str, HistoricalEvalReport)>,
+    ) -> BenchmarkSuiteReport {
+        let evaluated_commit_count = reports
+            .iter()
+            .map(|(_, report)| report.evaluated_commits)
+            .sum::<usize>();
+        let repositories = reports
+            .into_iter()
+            .map(|(name, report)| BenchmarkRepoReport {
+                name: name.to_string(),
+                repo_id: Some(report.repo_id.clone()),
+                effective_config: benchmark_effective_config(),
+                baseline: None,
+                baseline_status: None,
+                evaluated_commits: report.evaluated_commits,
+                excluded_changed_file_count: 0,
+                skipped_path_count: 0,
+                report: Some(report),
+                error: None,
+                privacy_status: PrivacyStatus::local_only(),
+            })
+            .collect::<Vec<_>>();
+        BenchmarkSuiteReport {
+            manifest_version: "ctxpack-benchmark-corpus-test".to_string(),
+            suite_name: "test-suite".to_string(),
+            suite_id: "suite-id".to_string(),
+            corpus_id: Some("fixed-test-corpus".to_string()),
+            privacy_label: Some("source_free_local".to_string()),
+            description: None,
+            generated_at_unix_seconds: 0,
+            repository_count: repositories.len(),
+            evaluated_repository_count: repositories.len(),
+            evaluated_commit_count,
+            repositories,
+            privacy_status: PrivacyStatus::local_only(),
+        }
+    }
+
+    fn benchmark_effective_config() -> BenchmarkRepoEffectiveConfig {
+        BenchmarkRepoEffectiveConfig {
+            revision_range_id: Some("test-range".to_string()),
+            privacy_label: Some("source_free_local".to_string()),
+            base: None,
+            head: None,
+            limit: 1,
+            ranking_budget: 10,
+            mode: TaskType::BugFix,
+            target_agent: "generic".to_string(),
+            semantic_enabled: false,
+            semantic_provider: "local_hash".to_string(),
+            semantic_model: None,
+            semantic_dimensions: None,
+            semantic_provider_role: "scaffold".to_string(),
+            semantic_quality_backend: false,
+            local_metadata_reranker: false,
+            cache_enabled: false,
+            force_refresh: false,
+            parallelism: 1,
+            role_filters: Vec::new(),
+        }
+    }
+
+    fn set_recall_metrics(report: &mut HistoricalEvalReport, ctxpack: f32, lexical: f32) {
+        report.file_recall_at_10 = ctxpack;
+        report.lexical_baseline_recall_at_10 = lexical;
+        report.ctxpack_lift_at_10 = ctxpack - lexical;
+        report.ranking_comparison.combined.recall_at_k = ctxpack;
+        report.ranking_comparison.lexical_baseline.recall_at_k = lexical;
     }
 
     fn empty_historical_eval_report(sha_suffix: &str) -> HistoricalEvalReport {

@@ -218,7 +218,13 @@ The gate passes the same selected or extracted `CTXPACK_BIN` into the first-pack
 - `CTXPACK_SKIP_REAL_CLIENT=1` keeps Codex and Claude checks deterministic-only after the protocol proof.
 - `CTXPACK_REQUIRE_REAL_CLIENT=1` makes missing Codex or Claude tool-call evidence fail the gate.
 - `CTXPACK_REAL_CLIENT_EVIDENCE_DIR=/absolute/path/to/evidence` writes stable JSON evidence files with client version, ctxpack version, repo path, `prepare_task`, and `get_pack` proof when real-client checks run.
-- `CTXPACK_BENCHMARK_CONFIG=/absolute/path/to/suite.json` runs `ctxpack eval proof --config ... --format json` and fails on report-generation, local-only privacy regressions, missing v2.3 product proof summary, missing paired baseline verdict contract, feature-export privacy regressions, learned-policy status regressions, or missing proof-boundary language.
+- `CTXPACK_BENCHMARK_CONFIG=/absolute/path/to/suite.json` runs `ctxpack eval proof --config ... --format json` and fails on report-generation, local-only privacy regressions, missing v2.3 product proof summary, missing paired baseline verdict contract, feature-export privacy regressions, learned-policy status regressions, missing proof-boundary language, or a non-promote `releaseGate.decision`. Neutral, mixed, unsafe, or too-expensive default retrieval proof blocks publication.
+
+Current v2.5 proof status: the two-repo production-retrieval proof blocks
+default promotion because RefactoringMiner trails lexical and ctxpack only
+matches lexical. The tool remains useful as an agent-native context broker, but
+release announcements should not claim lexical-beating retrieval until
+`releaseGate.decision` is `promote`.
 
 RefactoringMiner and multi-repo proof are optional external gates. They are
 skipped by default because they require a separate local checkout and longer

@@ -326,6 +326,9 @@ The product proof is intentionally narrow. It does not claim universal agent imp
 - how many repositories and commits were evaluated;
 - headline recall, baseline lift, test recall, and token ROI metrics;
 - paired lexical-baseline verdicts for each evaluated repository;
+- beat/match/trail release-gate status per corpus and retrieval variant;
+- whether the default retrieval mode is allowed to ship from the configured
+  proof;
 - total historical-eval runtime across the proof run;
 - whether feature export remained local-only and source-free;
 - whether learned retrieval policy is available only behind thresholded status;
@@ -342,6 +345,36 @@ repeated lift on fixed corpora, paired baseline verdicts that clear thresholds,
 runtime that stays acceptable, and process-level context metrics from real
 agent sessions.
 
+### v2.5 Release-Proof Status
+
+Phase 65 adds a machine-checkable `releaseGate` section to product proof JSON
+and Markdown. Each required corpus receives a verdict for the configured
+retrieval variant:
+
+- `beat`: ctxpack exceeds lexical Recall@10 by more than the proof threshold.
+- `match`: ctxpack is within the proof threshold of lexical.
+- `trail`: ctxpack falls behind lexical by more than the proof threshold.
+- `insufficient_evidence`: the repository failed or produced no eval report.
+
+The current v2.5 two-repo proof blocks default promotion:
+
+| Corpus | Variant | Status | ctxpack Recall@10 | Lexical Recall@10 | Delta | Test Recall@10 |
+| --- | --- | --- | ---: | ---: | ---: | ---: |
+| RefactoringMiner | `ctxpack_default` | `trail` | 0.739 | 0.779 | -0.040 | 0.000 |
+| ctxpack | `ctxpack_default` | `match` | 0.197 | 0.202 | -0.005 | 0.000 |
+
+Recommendation today:
+
+- Use `ctxpack_default` through MCP/agent-native integrations for progressive
+  task plans, related tests, source-free diagnostics, and graph/history context.
+- Do not claim v2.5 default retrieval beats lexical on the fixed corpus yet.
+- Keep `local_metadata_reranked` eval-only until named regressions and protected
+  evidence behavior clear the gate.
+- Keep `local_fastembed` opt-in for experiments and conceptual queries; it is
+  local-only but not a default quality win.
+- Treat cloud embeddings/reranking as disabled unless an explicit repo policy
+  allows them.
+
 The release gate can run this proof optionally:
 
 ```bash
@@ -352,7 +385,9 @@ When enabled, the gate fails if the proof cannot be generated, if the
 proof/embedded benchmark privacy status is not local-only, if the v2.3 summary
 is missing fixed corpus identity or paired baseline verdict fields, if
 feature-export privacy regresses, if learned-policy status allows silent
-defaults, or if proof-boundary language is missing.
+defaults, if proof-boundary language is missing, or if
+`releaseGate.decision != "promote"`. A configured proof where any required
+corpus only matches or trails lexical retrieval blocks default promotion.
 
 The deterministic release smoke is:
 

@@ -4808,7 +4808,7 @@ fn render_product_proof_report(report: &ProductProofReport) -> String {
     }
     output.push('\n');
 
-    output.push_str("## v2.3 Eval Summary\n\n");
+    output.push_str("## Fixed-Corpus Eval Summary\n\n");
     output.push_str(&format!(
         "- Manifest version: `{}`\n- Fixed corpus ID: `{}`\n- Privacy label: `{}`\n- Runtime total millis: `{}`\n- Feature export privacy: local-only `{}`, source text logged `{}`, source-free labels only `{}`\n- Learned policy status: schema `{}`, available `{}`, default requires thresholds `{}`, silent default allowed `{}`\n\n",
         report.v23_eval_summary.manifest_version,
@@ -4857,6 +4857,38 @@ fn render_product_proof_report(report: &ProductProofReport) -> String {
     output.push_str("\n### Proof Boundary\n\n");
     output.push_str(&report.v23_eval_summary.proof_boundary);
     output.push_str("\n\n");
+
+    output.push_str("## Release Gate Decision\n\n");
+    output.push_str(&format!(
+        "- Decision: `{:?}`\n- Default promotion allowed: `{}`\n- Reason: {}\n\n",
+        report.release_gate.decision,
+        report.release_gate.default_promotion_allowed,
+        report.release_gate.decision_reason
+    ));
+    output.push_str("### Corpus Verdicts\n\n");
+    if report.release_gate.corpus_verdicts.is_empty() {
+        output.push_str("- No corpus verdicts were produced.\n");
+    } else {
+        for verdict in &report.release_gate.corpus_verdicts {
+            output.push_str(&format!(
+                "- `{}` variant `{}`: status `{:?}`, recall@10 `{:.3}`, lexical recall@10 `{:.3}`, delta `{:+.3}`, test recall@10 `{:.3}`, protected miss-rate@10 `{:.3}`, runtime `{}` ms",
+                verdict.repository,
+                verdict.variant,
+                verdict.status,
+                verdict.file_recall_at_10,
+                verdict.lexical_baseline_recall_at_10,
+                verdict.lexical_delta_at_10,
+                verdict.test_recall_at_10,
+                verdict.protected_evidence_miss_rate_at_10,
+                verdict.runtime_millis
+            ));
+            if !verdict.notes.is_empty() {
+                output.push_str(&format!(" — {}", verdict.notes.join("; ")));
+            }
+            output.push('\n');
+        }
+    }
+    output.push('\n');
 
     output.push_str("## When It Helps\n\n");
     for item in &report.helps_when {

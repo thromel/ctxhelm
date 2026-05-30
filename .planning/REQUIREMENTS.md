@@ -31,17 +31,17 @@ v2.4 made semantic, precision, provider, and reranker machinery policy-gated and
 
 ### Gap-Family Retrieval Improvements
 
-- [ ] **GAP-01**: Repeated `no_candidate_signal`, `lexical_only_miss`, `ranked_below_budget_*`, and test-mapping gaps are grouped into actionable work items.
-- [ ] **GAP-02**: At least one high-impact gap family from RefactoringMiner is improved with a targeted retrieval change and before/after proof.
-- [ ] **GAP-03**: Test recommendation quality is evaluated separately from source-file recall and does not silently trade away target files under tight budgets.
-- [ ] **GAP-04**: Graph expansion remains budgeted and does not recurse from weak semantic-only seeds when exact seeds exist.
+- [x] **GAP-01**: Repeated `no_candidate_signal`, `lexical_only_miss`, `ranked_below_budget_*`, and test-mapping gaps are grouped into actionable work items.
+- [x] **GAP-02**: At least one high-impact gap family from RefactoringMiner is improved with a targeted retrieval change and before/after proof.
+- [x] **GAP-03**: Test recommendation quality is evaluated separately from source-file recall and does not silently trade away target files under tight budgets.
+- [x] **GAP-04**: Graph expansion remains budgeted and does not recurse from weak semantic-only seeds when exact seeds exist.
 
 ### Product Proof And Release Gate
 
-- [ ] **PROOF-01**: v2.5 product proof states honestly whether production retrieval variants beat, match, or trail lexical baseline on each corpus.
-- [ ] **PROOF-02**: Release gate blocks default promotion for neutral, mixed, unsafe, or high-runtime variants.
-- [ ] **PROOF-03**: Docs explain which retrieval modes users should choose today and why.
-- [ ] **PROOF-04**: Workspace validation includes unit tests, CLI help, source-free E2E proof, and diff hygiene.
+- [x] **PROOF-01**: v2.5 product proof states honestly whether production retrieval variants beat, match, or trail lexical baseline on each corpus.
+- [x] **PROOF-02**: Release gate blocks default promotion for neutral, mixed, unsafe, or high-runtime variants.
+- [x] **PROOF-03**: Docs explain which retrieval modes users should choose today and why.
+- [x] **PROOF-04**: Workspace validation includes unit tests, CLI help, source-free E2E proof, and diff hygiene.
 
 ## Future Requirements
 
@@ -95,14 +95,14 @@ Deferred into later milestones from the remaining product vision.
 | RANK-02 | Phase 63 | Complete |
 | RANK-03 | Phase 63 | Complete |
 | RANK-04 | Phase 63 | Complete |
-| GAP-01 | Phase 64 | Planned |
-| GAP-02 | Phase 64 | Planned |
-| GAP-03 | Phase 64 | Planned |
-| GAP-04 | Phase 64 | Planned |
-| PROOF-01 | Phase 65 | Planned |
-| PROOF-02 | Phase 65 | Planned |
-| PROOF-03 | Phase 65 | Planned |
-| PROOF-04 | Phase 65 | Planned |
+| GAP-01 | Phase 64 | Complete |
+| GAP-02 | Phase 64 | Complete |
+| GAP-03 | Phase 64 | Complete |
+| GAP-04 | Phase 64 | Complete |
+| PROOF-01 | Phase 65 | Complete |
+| PROOF-02 | Phase 65 | Complete |
+| PROOF-03 | Phase 65 | Complete |
+| PROOF-04 | Phase 65 | Complete |
 
 **Coverage:**
 

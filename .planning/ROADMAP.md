@@ -126,7 +126,7 @@ Plans:
 
 Plans:
 
-- [ ] 65-v25-product-proof-release-gate-01-PLAN.md - Finalize measured proof, docs, and release gates.
+- [x] 65-v25-product-proof-release-gate-01-PLAN.md - Finalize measured proof, docs, and release gates.
 
 ## Requirement Coverage
 
@@ -164,9 +164,9 @@ Phases execute in numeric order: 61 -> 62 -> 63 -> 64 -> 65
 |-------|----------------|--------|-----------|
 | 61. Multi-Repo Quality Baselines | 1/1 | Complete | 2026-05-22 |
 | 62. Production Local Embedding Quality | 1/1 | Complete | 2026-05-30 |
-| 63. Reranker And Fusion Promotion | 0/1 | Planned | |
-| 64. Gap-Family Retrieval Improvements | 0/1 | Planned | |
-| 65. v2.5 Product Proof And Release Gate | 0/1 | Planned | |
+| 63. Reranker And Fusion Promotion | 1/1 | Complete | 2026-05-30 |
+| 64. Gap-Family Retrieval Improvements | 1/1 | Complete | 2026-05-30 |
+| 65. v2.5 Product Proof And Release Gate | 1/1 | Complete | 2026-05-30 |
 
 ---
 *Roadmap created: 2026-05-22*
