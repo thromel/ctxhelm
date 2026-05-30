@@ -1,11 +1,11 @@
 use crate::freshness::load_or_refresh_inventory;
 use crate::inventory::{
-    canonicalize, normalize_input_path, FileInventoryEntry, InventoryError, InventoryOptions,
-    RepoInventory,
+    canonicalize, inventory_path, normalize_input_path, FileInventoryEntry, InventoryError,
+    InventoryOptions, RepoInventory,
 };
 use crate::policy::{read_safe_source, SourceReadStatus, SOURCE_READ_MAX_BYTES};
 use crate::symbols::{extract_symbols_report, CodeSymbol};
-use ctxpack_core::{CacheStatus, Diagnostic, DiagnosticSeverity, FileRole};
+use ctxpack_core::{CacheStatus, CacheStatusKind, Diagnostic, DiagnosticSeverity, FileRole};
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
@@ -131,6 +131,18 @@ pub fn dependency_edges_report(
         .iter()
         .map(|file| file.path.clone())
         .collect::<BTreeSet<_>>();
+    let cache_path = dependency_edges_cache_path(&inventory_report.inventory, options.limit);
+    if let Ok(json) = fs::read_to_string(&cache_path) {
+        if let Ok(mut cached) = serde_json::from_str::<DependencyEdgesReport>(&json) {
+            cached.cache_status = CacheStatus {
+                status: CacheStatusKind::Hit,
+                path: Some(cache_path.to_string_lossy().to_string()),
+                diagnostics: Vec::new(),
+            };
+            return Ok(cached);
+        }
+    }
+
     let mut seen = BTreeSet::new();
     let mut edges = Vec::new();
 
@@ -208,11 +220,56 @@ pub fn dependency_edges_report(
             .then_with(|| left.target_path.cmp(&right.target_path))
     });
     edges.truncate(options.limit.max(1));
-    Ok(DependencyEdgesReport {
+    let report = DependencyEdgesReport {
         edges,
         diagnostics,
         cache_status,
-    })
+    };
+    let _ = persist_dependency_edges_cache(&cache_path, &report);
+    Ok(report)
+}
+
+fn persist_dependency_edges_cache(
+    path: &Path,
+    report: &DependencyEdgesReport,
+) -> Result<(), InventoryError> {
+    if let Some(parent) = path.parent() {
+        fs::create_dir_all(parent).map_err(|source| InventoryError::CreateDir {
+            path: parent.to_path_buf(),
+            source,
+        })?;
+    }
+    let json = serde_json::to_string(report).map_err(InventoryError::Serialize)?;
+    fs::write(path, json).map_err(|source| InventoryError::Write {
+        path: path.to_path_buf(),
+        source,
+    })?;
+    Ok(())
+}
+
+fn dependency_edges_cache_path(inventory: &RepoInventory, limit: usize) -> PathBuf {
+    let mut key = blake3::Hasher::new();
+    key.update(b"dependency-edges-cache-v1");
+    key.update(&limit.max(1).to_le_bytes());
+    for file in &inventory.files {
+        key.update(file.path.as_bytes());
+        key.update(b"\0");
+        key.update(file.hash.as_bytes());
+        key.update(b"\0");
+        key.update(format!("{:?}", file.role).as_bytes());
+        key.update(b"\0");
+        if let Some(language) = &file.language {
+            key.update(language.as_bytes());
+        }
+        key.update(b"\0");
+    }
+    let repo_cache_dir = inventory_path(&inventory.repo_id)
+        .parent()
+        .map(Path::to_path_buf)
+        .unwrap_or_else(|| PathBuf::from(".ctxpack"));
+    repo_cache_dir
+        .join("dependency-edges")
+        .join(format!("{}.json", key.finalize().to_hex()))
 }
 
 fn partial_diagnostic(code: &str, message: &str, paths: Vec<String>) -> Diagnostic {

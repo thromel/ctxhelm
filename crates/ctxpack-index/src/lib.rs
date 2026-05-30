@@ -412,6 +412,88 @@ mod tests {
     }
 
     #[test]
+    fn symbol_search_reuses_extraction_cache_until_inventory_changes() {
+        let _guard = env_lock();
+        let temp = tempfile::tempdir().unwrap();
+        let repo = temp.path().join("repo");
+        let home = temp.path().join("ctxpack-home");
+        fs::create_dir_all(repo.join(".git")).unwrap();
+        fs::create_dir_all(repo.join("src")).unwrap();
+        fs::write(
+            repo.join("src/session.ts"),
+            "export function requireSession() { return true; }\n",
+        )
+        .unwrap();
+        std::env::set_var("CTXPACK_HOME", &home);
+
+        let first =
+            symbol_search_report(&repo, "requireSession", &SymbolOptions { limit: 5 }).unwrap();
+        let second =
+            symbol_search_report(&repo, "requireSession", &SymbolOptions { limit: 5 }).unwrap();
+        fs::write(
+            repo.join("src/user.ts"),
+            "export function requireUser() { return true; }\n",
+        )
+        .unwrap();
+        let third =
+            symbol_search_report(&repo, "requireUser", &SymbolOptions { limit: 5 }).unwrap();
+
+        assert_eq!(first.results[0].symbol.path, "src/session.ts");
+        assert_eq!(
+            second.cache_status.status,
+            ctxpack_core::CacheStatusKind::Hit
+        );
+        assert!(second
+            .cache_status
+            .path
+            .as_deref()
+            .is_some_and(|path| path.contains("symbols") && path.ends_with(".json")));
+        assert_eq!(third.results[0].symbol.path, "src/user.ts");
+
+        std::env::remove_var("CTXPACK_HOME");
+    }
+
+    #[test]
+    fn dependency_edges_reuse_cache_until_inventory_changes() {
+        let _guard = env_lock();
+        let temp = tempfile::tempdir().unwrap();
+        let repo = temp.path().join("repo");
+        let home = temp.path().join("ctxpack-home");
+        fs::create_dir_all(repo.join(".git")).unwrap();
+        fs::create_dir_all(repo.join("src")).unwrap();
+        fs::write(repo.join("src/a.ts"), "import { b } from './b';\n").unwrap();
+        fs::write(repo.join("src/b.ts"), "export const b = 1;\n").unwrap();
+        std::env::set_var("CTXPACK_HOME", &home);
+
+        let first = dependency_edges_report(&repo, &DependencyOptions { limit: 10 }).unwrap();
+        let second = dependency_edges_report(&repo, &DependencyOptions { limit: 10 }).unwrap();
+        fs::write(repo.join("src/c.ts"), "export const c = 1;\n").unwrap();
+        fs::write(
+            repo.join("src/a.ts"),
+            "import { b } from './b';\nimport { c } from './c';\n",
+        )
+        .unwrap();
+        let third = dependency_edges_report(&repo, &DependencyOptions { limit: 10 }).unwrap();
+
+        assert_eq!(first.edges.len(), 1);
+        assert_eq!(
+            second.cache_status.status,
+            ctxpack_core::CacheStatusKind::Hit
+        );
+        assert!(second
+            .cache_status
+            .path
+            .as_deref()
+            .is_some_and(|path| { path.contains("dependency-edges") && path.ends_with(".json") }));
+        assert!(third
+            .edges
+            .iter()
+            .any(|edge| edge.target_path == "src/c.ts"));
+
+        std::env::remove_var("CTXPACK_HOME");
+    }
+
+    #[test]
     fn lexical_search_dampens_planning_archive_artifacts_without_excluding_them() {
         let _guard = env_lock();
         let temp = tempfile::tempdir().unwrap();

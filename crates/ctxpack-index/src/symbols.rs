@@ -1,9 +1,13 @@
 use crate::freshness::load_or_refresh_inventory;
-use crate::inventory::{canonicalize, FileInventoryEntry, InventoryError, InventoryOptions};
+use crate::inventory::{
+    canonicalize, inventory_path, FileInventoryEntry, InventoryError, InventoryOptions,
+    RepoInventory,
+};
 use crate::policy::{read_safe_source, SourceReadStatus, SOURCE_READ_MAX_BYTES};
 use crate::search::{query_term_weight, query_terms};
-use ctxpack_core::{CacheStatus, Diagnostic, DiagnosticSeverity, FileRole};
+use ctxpack_core::{CacheStatus, CacheStatusKind, Diagnostic, DiagnosticSeverity, FileRole};
 use serde::{Deserialize, Serialize};
+use std::fs;
 use std::path::Path;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -81,6 +85,18 @@ pub fn extract_symbols_report(
     let inventory_report = load_or_refresh_inventory(&repo_root, &InventoryOptions::default())?;
     let mut diagnostics = inventory_report.diagnostics.clone();
     let cache_status = inventory_report.cache_status.clone();
+    let cache_path = symbol_extraction_cache_path(&inventory_report.inventory);
+    if let Ok(json) = fs::read_to_string(&cache_path) {
+        if let Ok(mut cached) = serde_json::from_str::<SymbolExtractionReport>(&json) {
+            cached.cache_status = CacheStatus {
+                status: CacheStatusKind::Hit,
+                path: Some(cache_path.to_string_lossy().to_string()),
+                diagnostics: Vec::new(),
+            };
+            return Ok(cached);
+        }
+    }
+
     let mut symbols = Vec::new();
 
     for file in &inventory_report.inventory.files {
@@ -118,11 +134,55 @@ pub fn extract_symbols_report(
             .then_with(|| left.start_line.cmp(&right.start_line))
             .then_with(|| left.name.cmp(&right.name))
     });
-    Ok(SymbolExtractionReport {
+    let report = SymbolExtractionReport {
         symbols,
         diagnostics,
         cache_status,
-    })
+    };
+    let _ = persist_symbol_extraction_cache(&cache_path, &report);
+    Ok(report)
+}
+
+fn persist_symbol_extraction_cache(
+    path: &Path,
+    report: &SymbolExtractionReport,
+) -> Result<(), InventoryError> {
+    if let Some(parent) = path.parent() {
+        fs::create_dir_all(parent).map_err(|source| InventoryError::CreateDir {
+            path: parent.to_path_buf(),
+            source,
+        })?;
+    }
+    let json = serde_json::to_string(report).map_err(InventoryError::Serialize)?;
+    fs::write(path, json).map_err(|source| InventoryError::Write {
+        path: path.to_path_buf(),
+        source,
+    })?;
+    Ok(())
+}
+
+fn symbol_extraction_cache_path(inventory: &RepoInventory) -> std::path::PathBuf {
+    let mut key = blake3::Hasher::new();
+    key.update(b"symbol-extraction-cache-v1");
+    for file in &inventory.files {
+        key.update(file.path.as_bytes());
+        key.update(b"\0");
+        key.update(file.hash.as_bytes());
+        key.update(b"\0");
+        key.update(format!("{:?}", file.role).as_bytes());
+        key.update(b"\0");
+        if let Some(language) = &file.language {
+            key.update(language.as_bytes());
+        }
+        key.update(b"\0");
+    }
+    let repo_cache_dir = inventory_path(&inventory.repo_id)
+        .parent()
+        .map(Path::to_path_buf)
+        .unwrap_or_else(|| std::path::PathBuf::from(".ctxpack"));
+    repo_cache_dir
+        .join("symbols")
+        .join(format!("{}.json", key.finalize().to_hex()))
 }
 
 fn partial_diagnostic(code: &str, message: &str, paths: Vec<String>) -> Diagnostic {

@@ -370,6 +370,19 @@ kept as `.ctxpack/e2e/phase92-area-aware-gap-taxonomy-clean-force-proof.json`;
 it preserves quality but documents that clean RefactoringMiner still exceeds
 the hard cold runtime ceiling without cached historical reports.
 
+Phase 93 adds source-free symbol extraction and dependency edge report caches
+for repeated planner work during historical eval. The caches are keyed by the
+inventory file path, hash, role, language, and cache-version marker, and are
+stored under the ctxpack cache path derived from the repo inventory rather than
+the source tree. The evidence artifact is
+`.planning/e2e/2026-05-31-phase93-source-free-index-cache.md`; the committed
+proof is `.ctxpack/e2e/phase93-index-cache-cold-proof.json` and reports
+`releaseGate.decision = promote`. The clean detached RefactoringMiner
+force-refresh row now runs in `4517ms` with context Recall@10 `1.0`, Test
+Recall@10 `1.0`, Effective Validation Recall@10 `1.0`, and protected target
+miss-rate `0.0`, removing the Phase 92 cold runtime blocker without release
+threshold tuning.
+
 Latest optional real-client proof: Codex CLI `0.130.0` and Claude Code
 `2.1.158` both passed the smoke wrappers on 2026-05-30 with server-side
 `prepare_task` and `get_pack` evidence against an explicit repo path. See
