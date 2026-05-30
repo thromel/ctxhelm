@@ -86,6 +86,8 @@
 - Phase 85 E2E: `.planning/e2e/2026-05-31-phase85-broad-context-areas.md`
 - Phase 85 proof: `.ctxpack/e2e/phase85-context-areas-warm-proof.json`
 - Phase 86 E2E: `.planning/e2e/2026-05-31-phase86-python-package-reexports.md`
+- Phase 87 E2E: `.planning/e2e/2026-05-31-phase87-validation-gap-accounting.md`
+- Phase 87 proof: `.ctxpack/e2e/phase87-validation-gap-accounting-proof.json`
 
 **Current follow-up gaps:**
 
@@ -94,7 +96,8 @@
 - Parser/precision dependency misses remain a repeated source gap family, but Phase 84 reduces the measured VeriSchema source miss pressure by reserving dependency neighbors only for broad-scope tasks.
 - Phase 85 improves broad-task agent guidance without claiming a recall lift: broad fixed-corpus quality metrics stayed flat, cold proofs still hit the existing RefactoringMiner runtime gate, and the warm-cache proof promotes.
 - Phase 86 adds Python package re-export graph candidates, but broad fixed-corpus Recall@10 remains flat; the remaining VeriSchema gap is selection/budget pressure as much as parser coverage.
-- The broad corpora now have a pinned optional fixture that promotes, Phase 82 enforces warm-cache runtime thresholds, Phase 83 makes context-vs-all-file divergence auditable, Phase 84 records broad-scope tasks, Phase 85 exposes broad context-area hints, and Phase 86 improves Python package graph coverage. It should remain an optional production-readiness probe until remaining parser/precision `no_candidate_signal`, selection/diversity, and test-mapping gaps are addressed further.
+- Phase 87 fixes validation accounting: Java class-selector commands now count as validation coverage, and validation-covered tests no longer appear as unresolved test-mapping gap summaries. A broad source-area diversity selector was tested and rejected because it worsened VeriSchema file recall and protected target miss-rate.
+- The broad corpora now have a pinned optional fixture that promotes, Phase 82 enforces warm-cache runtime thresholds, Phase 83 makes context-vs-all-file divergence auditable, Phase 84 records broad-scope tasks, Phase 85 exposes broad context-area hints, Phase 86 improves Python package graph coverage, and Phase 87 keeps gap reports aligned with validation coverage. It should remain an optional production-readiness probe until remaining parser/precision `no_candidate_signal` and protected-safe selection/budget gaps are addressed further.
 
 ## Shipped
 

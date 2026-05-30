@@ -471,6 +471,13 @@ Recommendation today:
   re-exported modules as dependency candidates. The broader proof stays
   Recall@10-flat, which keeps the remaining VeriSchema gap focused on
   selection/budget pressure rather than only missing graph candidates.
+- Phase 87 keeps retrieval-gap diagnostics aligned with the validation channel.
+  Specific Java selectors such as `./gradlew test --tests <FQCN>` and
+  `mvn -Dtest=<ClassName> test` now count as validation coverage, and
+  validation-covered test files no longer appear as unresolved test-mapping
+  gap summaries. RefactoringMiner validation-command recall improves from
+  `0.0` to `1.0` with no recall or protected-target regression in the broader
+  proof.
 - Keep `local_metadata_reranked` eval-only until named regressions and protected
   evidence behavior clear the gate.
 - Keep `local_fastembed` opt-in for experiments and conceptual queries; it is

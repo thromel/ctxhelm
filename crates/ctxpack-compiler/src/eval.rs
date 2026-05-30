@@ -3778,11 +3778,19 @@ fn effective_validation_hits_at_10(
     recommended_tests: &[String],
     commands: &[String],
 ) -> usize {
+    effective_validation_hit_paths(test_changed_files, recommended_tests, commands).len()
+}
+
+fn effective_validation_hit_paths(
+    test_changed_files: &[String],
+    recommended_tests: &[String],
+    commands: &[String],
+) -> BTreeSet<String> {
     let mut hits = changed_file_hits(test_changed_files, recommended_tests, 10)
         .into_iter()
         .collect::<BTreeSet<_>>();
     hits.extend(validation_command_hits(test_changed_files, commands));
-    hits.len()
+    hits
 }
 
 fn validation_command_covers_path(command: &str, path: &str) -> bool {
@@ -3803,6 +3811,18 @@ fn validation_command_covers_path(command: &str, path: &str) -> bool {
     if matches!(command, "./gradlew test" | "gradle test" | "mvn test") {
         return lower_path.ends_with(".java") || lower_path.ends_with(".kt");
     }
+    if let Some(selector) = command
+        .strip_prefix("./gradlew test --tests ")
+        .or_else(|| command.strip_prefix("gradle test --tests "))
+    {
+        return java_selector_covers_path(selector, path);
+    }
+    if command.starts_with("mvn ") && command.contains("-Dtest=") {
+        return command
+            .split_whitespace()
+            .find_map(|arg| arg.strip_prefix("-Dtest="))
+            .is_some_and(|selector| java_selector_covers_path(selector, path));
+    }
     if matches!(
         command,
         "pnpm vitest run"
@@ -3822,6 +3842,34 @@ fn validation_command_covers_path(command: &str, path: &str) -> bool {
     }
 
     false
+}
+
+fn java_selector_covers_path(selector: &str, path: &str) -> bool {
+    let selector = selector
+        .split('#')
+        .next()
+        .unwrap_or(selector)
+        .trim_matches('"')
+        .trim_matches('\'')
+        .trim();
+    if selector.is_empty() {
+        return false;
+    }
+    let Some(class_path) = path
+        .strip_prefix("src/test/java/")
+        .or_else(|| path.strip_prefix("src/test/kotlin/"))
+    else {
+        return false;
+    };
+    let Some(class_path) = class_path
+        .strip_suffix(".java")
+        .or_else(|| class_path.strip_suffix(".kt"))
+    else {
+        return false;
+    };
+    let fqcn = class_path.replace('/', ".");
+    let class_name = fqcn.rsplit('.').next().unwrap_or(fqcn.as_str());
+    selector == class_name || selector == fqcn
 }
 
 fn pytest_args_cover_path(args: &str, path: &str) -> bool {
@@ -4741,11 +4789,23 @@ fn retrieval_gap_summaries(
 ) -> Vec<RetrievalGapSummary> {
     let mut summaries = Vec::<RetrievalGapSummary>::new();
     for (commit, gap_reasons) in commits.iter().zip(gap_reasons_by_commit.iter()) {
+        let validation_hit_paths = effective_validation_hit_paths(
+            &filter_changed_labels_by_role(
+                &commit.changed_path_labels,
+                &commit.retrieval_target_files,
+                |role| matches!(role, FileRole::Test),
+            ),
+            &commit.recommended_tests,
+            &commit.recommended_commands,
+        );
         for path in &commit.missing_files_at_10 {
             let role = roles_by_path
                 .get(path)
                 .cloned()
                 .unwrap_or(FileRole::Unknown);
+            if role == FileRole::Test && validation_hit_paths.contains(path) {
+                continue;
+            }
             let signal_gap = gap_reasons
                 .get(path)
                 .cloned()
@@ -5704,6 +5764,101 @@ mod tests {
 
         assert_eq!(validation_command_hits(&tests, &commands).len(), 2);
         assert_eq!(effective_validation_hits_at_10(&tests, &[], &commands), 2);
+    }
+
+    #[test]
+    fn validation_command_coverage_recognizes_java_class_selectors() {
+        let tests = vec![
+            "src/test/java/org/refactoringminer/mcp/RefactoringMinerMcpToolsTest.java".to_string(),
+            "src/test/java/org/refactoringminer/mcp/RefactoringMinerMcpServiceRepositoryTest.java"
+                .to_string(),
+        ];
+        let commands = vec![
+            "./gradlew test --tests org.refactoringminer.mcp.RefactoringMinerMcpToolsTest"
+                .to_string(),
+            "mvn -Dtest=RefactoringMinerMcpServiceRepositoryTest test".to_string(),
+        ];
+
+        assert_eq!(validation_command_hits(&tests, &commands), tests);
+        assert_eq!(effective_validation_hits_at_10(&tests, &[], &commands), 2);
+    }
+
+    #[test]
+    fn retrieval_gap_summaries_skip_validation_covered_tests() {
+        let commit = HistoricalCommitEval {
+            sha: "abc123".to_string(),
+            task_hash: "task".to_string(),
+            task_type: TaskType::BugFix,
+            target_agent: "generic".to_string(),
+            changed_path_labels: vec![
+                historical_changed_path_label("src/auth/session.ts", FileRole::Source),
+                historical_changed_path_label("tests/auth/session.test.ts", FileRole::Test),
+            ],
+            safe_changed_files: vec![
+                "src/auth/session.ts".to_string(),
+                "tests/auth/session.test.ts".to_string(),
+            ],
+            retrieval_target_files: vec![
+                "src/auth/session.ts".to_string(),
+                "tests/auth/session.test.ts".to_string(),
+            ],
+            excluded_changed_file_count: 0,
+            recommended_files: Vec::new(),
+            recommended_tests: vec!["tests/auth/session.test.ts".to_string()],
+            recommended_context_files: Vec::new(),
+            recommended_commands: Vec::new(),
+            lexical_baseline_files: Vec::new(),
+            signal_baseline_files: Vec::new(),
+            protected_evidence: Vec::new(),
+            file_hits_at_5: Vec::new(),
+            file_hits_at_10: Vec::new(),
+            lexical_baseline_hits_at_5: Vec::new(),
+            lexical_baseline_hits_at_10: Vec::new(),
+            missing_files_at_10: vec![
+                "src/auth/session.ts".to_string(),
+                "tests/auth/session.test.ts".to_string(),
+            ],
+            source_files_changed: 1,
+            source_hits_at_5: 0,
+            source_hits_at_10: 0,
+            test_files_changed: 1,
+            test_hits_at_5: 1,
+            test_hits_at_10: 1,
+            validation_command_hits: 0,
+            effective_validation_hits_at_10: 1,
+            low_information_task: false,
+            broad_scope_task: false,
+            confidence: 0.5,
+            query_trace: None,
+            elapsed_millis: 0,
+            source_text_logged: false,
+        };
+        let mut roles_by_path = BTreeMap::new();
+        roles_by_path.insert("src/auth/session.ts".to_string(), FileRole::Source);
+        roles_by_path.insert("tests/auth/session.test.ts".to_string(), FileRole::Test);
+        let labels_by_path = labels_by_path_from_commits(std::slice::from_ref(&commit));
+        let gap_reasons = BTreeMap::from([
+            (
+                "src/auth/session.ts".to_string(),
+                "no_candidate_signal".to_string(),
+            ),
+            (
+                "tests/auth/session.test.ts".to_string(),
+                "lexical_only_miss".to_string(),
+            ),
+        ]);
+
+        let summaries = retrieval_gap_summaries(
+            &[commit],
+            &[gap_reasons],
+            &roles_by_path,
+            &labels_by_path,
+            10,
+        );
+
+        assert_eq!(summaries.len(), 1);
+        assert_eq!(summaries[0].role, FileRole::Source);
+        assert_eq!(summaries[0].example_paths, vec!["src/auth/session.ts"]);
     }
 
     fn gate_test_variant(name: &str, recall: f32, precision: f32) -> SemanticPrecisionVariant {

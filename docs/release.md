@@ -315,6 +315,13 @@ without enabling general depth-2 graph expansion. The evidence artifact is
 proof remains Recall@10-flat and non-regressing, so the next production gap is
 selection/budget pressure rather than only missing Python package edges.
 
+Phase 87 fixes validation gap accounting. Specific Java test selectors now count
+as validation-command coverage, and validation-covered tests are no longer
+reported as unresolved retrieval-gap summaries simply because they are absent
+from context-file top 10. The evidence artifact is
+`.planning/e2e/2026-05-31-phase87-validation-gap-accounting.md`; the committed
+proof is `.ctxpack/e2e/phase87-validation-gap-accounting-proof.json`.
+
 Latest optional real-client proof: Codex CLI `0.130.0` and Claude Code
 `2.1.158` both passed the smoke wrappers on 2026-05-30 with server-side
 `prepare_task` and `get_pack` evidence against an explicit repo path. See
