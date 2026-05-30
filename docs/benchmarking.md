@@ -6,6 +6,13 @@ ctxpack v1.2 uses source-free benchmark suites to answer the product question:
 
 The benchmark runner reuses `ctxpack eval history` for each configured repository. It records file/test recall, lexical and no-context baseline comparison, signal ablations, token ROI, grouped retrieval gaps, skipped path counts, runtime diagnostics, and privacy status without storing source snippets, prompt text, or commit subjects.
 
+Historical eval reports keep two changed-file views:
+
+- `safeChangedFiles`: the full source-free safe patch surface after generated, sensitive, deleted, and otherwise excluded paths are removed.
+- `retrievalTargetFiles`: the subset of safe changed files that existed in the parent snapshot and could therefore be retrieved as context before the patch.
+
+Recall, MRR, token ROI, missing-file analysis, and gap summaries use `retrievalTargetFiles`. This avoids treating newly-created files as retrieval failures while still preserving the full changed-file audit trail.
+
 v2.3 treats benchmark suites as fixed corpus manifests. Older suite files still work, but v2.3+ manifests should include a manifest version, corpus ID, privacy label, revision range ID, and optional locked baseline metadata so quality claims are reproducible.
 
 Phase 58 adds source-free query construction traces to prepare-task and historical eval commit rows. These traces record extracted paths, stack frames, symbols, error terms, domain terms, commit clues, retriever query sets, and fusion controls. They intentionally store task hashes and bounded facets instead of raw prompts or source snippets.
@@ -360,8 +367,8 @@ The current v2.5 two-repo proof blocks default promotion:
 
 | Corpus | Variant | Status | ctxpack Recall@10 | Lexical Recall@10 | Delta | Test Recall@10 |
 | --- | --- | --- | ---: | ---: | ---: | ---: |
-| RefactoringMiner | `ctxpack_default` | `trail` | 0.739 | 0.779 | -0.040 | 0.000 |
-| ctxpack | `ctxpack_default` | `match` | 0.197 | 0.202 | -0.005 | 0.000 |
+| RefactoringMiner | `ctxpack_default` | `trail` | 0.739 | 0.779 | -0.040 | 1.000 |
+| ctxpack | `ctxpack_default` | `match` | 0.228 | 0.233 | -0.005 | 1.000 |
 
 Recommendation today:
 

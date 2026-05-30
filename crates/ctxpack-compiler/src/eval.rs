@@ -750,6 +750,8 @@ pub struct HistoricalCommitEval {
     pub target_agent: String,
     pub changed_path_labels: Vec<HistoricalChangedPathLabel>,
     pub safe_changed_files: Vec<String>,
+    #[serde(default)]
+    pub retrieval_target_files: Vec<String>,
     pub excluded_changed_file_count: usize,
     pub recommended_files: Vec<String>,
     pub recommended_tests: Vec<String>,
@@ -2738,22 +2740,22 @@ fn evaluate_historical_commit_sample(
         context_file_ranking(&recommended_files, &recommended_tests, ranking_budget)
     };
     let lexical_baseline_files = lexical_baseline_context_files(eval_root, &task, ranking_budget)?;
+    let retrieval_target_files = retrieval_target_files(eval_root, &sample.safe_changed_files);
     let protected_evidence = protected_evidence_files(
         &signals_by_path,
         &budgeted_protected_evidence_paths(&plan, 10),
         &recommended_context_files,
         10,
     );
-    let file_hits_at_5 =
-        changed_file_hits(&sample.safe_changed_files, &recommended_context_files, 5);
+    let file_hits_at_5 = changed_file_hits(&retrieval_target_files, &recommended_context_files, 5);
     let file_hits_at_10 =
-        changed_file_hits(&sample.safe_changed_files, &recommended_context_files, 10);
+        changed_file_hits(&retrieval_target_files, &recommended_context_files, 10);
     let lexical_baseline_hits_at_5 =
-        changed_file_hits(&sample.safe_changed_files, &lexical_baseline_files, 5);
+        changed_file_hits(&retrieval_target_files, &lexical_baseline_files, 5);
     let lexical_baseline_hits_at_10 =
-        changed_file_hits(&sample.safe_changed_files, &lexical_baseline_files, 10);
+        changed_file_hits(&retrieval_target_files, &lexical_baseline_files, 10);
     let missing_files_at_10 =
-        missing_changed_files(&sample.safe_changed_files, &recommended_context_files, 10);
+        missing_changed_files(&retrieval_target_files, &recommended_context_files, 10);
     let ablation_rankings = ablation_signals()
         .into_iter()
         .map(|signal| {
@@ -2770,11 +2772,11 @@ fn evaluate_historical_commit_sample(
     let signal_baseline_files =
         signal_baseline_rankings(&recommended_context_files, &signals_by_path);
     let source_changed_files =
-        filter_changed_labels_by_role(&changed_path_labels, &sample.safe_changed_files, |role| {
+        filter_changed_labels_by_role(&changed_path_labels, &retrieval_target_files, |role| {
             matches!(role, FileRole::Source)
         });
     let test_changed_files =
-        filter_changed_labels_by_role(&changed_path_labels, &sample.safe_changed_files, |role| {
+        filter_changed_labels_by_role(&changed_path_labels, &retrieval_target_files, |role| {
             matches!(role, FileRole::Test)
         });
     let source_hits_at_5 =
@@ -2793,6 +2795,7 @@ fn evaluate_historical_commit_sample(
             target_agent: target_agent.to_string(),
             changed_path_labels,
             safe_changed_files: sample.safe_changed_files,
+            retrieval_target_files,
             excluded_changed_file_count: sample.excluded_changed_file_count,
             recommended_files,
             recommended_tests,
@@ -3364,6 +3367,14 @@ fn context_file_ranking(
         .collect()
 }
 
+fn retrieval_target_files(eval_root: &Path, safe_changed_files: &[String]) -> Vec<String> {
+    safe_changed_files
+        .iter()
+        .filter(|path| eval_root.join(path).is_file())
+        .cloned()
+        .collect()
+}
+
 fn local_metadata_reranked_context_files(plan: &ContextPlan, ranking_budget: usize) -> Vec<String> {
     let mut candidates = plan
         .retrieval_candidates
@@ -3836,7 +3847,7 @@ fn average_recall(commits: &[HistoricalCommitEval], limit: usize) -> f32 {
     let total = commits
         .iter()
         .map(|commit| {
-            if commit.safe_changed_files.is_empty() {
+            if commit.retrieval_target_files.is_empty() {
                 0.0
             } else {
                 let hit_count = if limit <= 5 {
@@ -3844,7 +3855,7 @@ fn average_recall(commits: &[HistoricalCommitEval], limit: usize) -> f32 {
                 } else {
                     commit.file_hits_at_10.len()
                 };
-                hit_count as f32 / commit.safe_changed_files.len() as f32
+                hit_count as f32 / commit.retrieval_target_files.len() as f32
             }
         })
         .sum::<f32>();
@@ -3860,7 +3871,7 @@ fn average_lexical_baseline_recall(commits: &[HistoricalCommitEval], limit: usiz
     let total = commits
         .iter()
         .map(|commit| {
-            if commit.safe_changed_files.is_empty() {
+            if commit.retrieval_target_files.is_empty() {
                 0.0
             } else {
                 let hit_count = if limit <= 5 {
@@ -3868,7 +3879,7 @@ fn average_lexical_baseline_recall(commits: &[HistoricalCommitEval], limit: usiz
                 } else {
                     commit.lexical_baseline_hits_at_10.len()
                 };
-                hit_count as f32 / commit.safe_changed_files.len() as f32
+                hit_count as f32 / commit.retrieval_target_files.len() as f32
             }
         })
         .sum::<f32>();
@@ -3982,11 +3993,11 @@ fn ranking_metrics(
     let recall_at_k = commits
         .iter()
         .map(|commit| {
-            if commit.safe_changed_files.is_empty() {
+            if commit.retrieval_target_files.is_empty() {
                 0.0
             } else {
                 ranking_hits(commit, k, family).len() as f32
-                    / commit.safe_changed_files.len() as f32
+                    / commit.retrieval_target_files.len() as f32
             }
         })
         .sum::<f32>()
@@ -4030,11 +4041,11 @@ fn signal_only_ranking_metrics(
         .iter()
         .map(|commit| {
             let ranking = signal_ranking_for_commit(commit, &signal);
-            if commit.safe_changed_files.is_empty() {
+            if commit.retrieval_target_files.is_empty() {
                 0.0
             } else {
-                changed_file_hits(&commit.safe_changed_files, &ranking, k).len() as f32
-                    / commit.safe_changed_files.len() as f32
+                changed_file_hits(&commit.retrieval_target_files, &ranking, k).len() as f32
+                    / commit.retrieval_target_files.len() as f32
             }
         })
         .sum::<f32>()
@@ -4043,7 +4054,7 @@ fn signal_only_ranking_metrics(
         .iter()
         .map(|commit| {
             let ranking = signal_ranking_for_commit(commit, &signal);
-            changed_file_hits(&commit.safe_changed_files, &ranking, k).len() as f32 / k as f32
+            changed_file_hits(&commit.retrieval_target_files, &ranking, k).len() as f32 / k as f32
         })
         .sum::<f32>()
         / commits.len() as f32;
@@ -4051,7 +4062,7 @@ fn signal_only_ranking_metrics(
         .iter()
         .map(|commit| {
             let ranking = signal_ranking_for_commit(commit, &signal);
-            reciprocal_rank_for_files(&commit.safe_changed_files, &ranking, k)
+            reciprocal_rank_for_files(&commit.retrieval_target_files, &ranking, k)
         })
         .sum::<f32>()
         / commits.len() as f32;
@@ -4137,7 +4148,7 @@ fn token_roi_metrics(
     ];
     let safe_targets = commits
         .iter()
-        .map(|commit| commit.safe_changed_files.len())
+        .map(|commit| commit.retrieval_target_files.len())
         .sum::<usize>();
     let mut previous_useful_targets = 0usize;
     specs
@@ -4176,18 +4187,21 @@ fn token_roi_metrics(
 
 fn ranking_hits(commit: &HistoricalCommitEval, k: usize, family: RankingFamily) -> Vec<String> {
     changed_file_hits(
-        &commit.safe_changed_files,
+        &commit.retrieval_target_files,
         ranking_for_family(commit, family),
         k,
     )
 }
 
 fn reciprocal_rank(commit: &HistoricalCommitEval, k: usize, family: RankingFamily) -> f32 {
-    let safe_changed_files = commit.safe_changed_files.iter().collect::<BTreeSet<_>>();
+    let retrieval_target_files = commit
+        .retrieval_target_files
+        .iter()
+        .collect::<BTreeSet<_>>();
     ranking_for_family(commit, family)
         .iter()
         .take(k)
-        .position(|path| safe_changed_files.contains(path))
+        .position(|path| retrieval_target_files.contains(path))
         .map(|index| 1.0 / (index + 1) as f32)
         .unwrap_or(0.0)
 }
@@ -4223,7 +4237,7 @@ fn role_recall_metrics(
                     .filter(|label| {
                         label.label_scope == LabelScope::Safe
                             && label.role == role
-                            && commit.safe_changed_files.contains(&label.path)
+                            && commit.retrieval_target_files.contains(&label.path)
                     })
                     .map(|label| label.path.clone())
                     .collect::<Vec<_>>();
@@ -4673,6 +4687,7 @@ mod tests {
             target_agent: "generic".to_string(),
             changed_path_labels: Vec::new(),
             safe_changed_files: Vec::new(),
+            retrieval_target_files: Vec::new(),
             excluded_changed_file_count: 0,
             recommended_files: Vec::new(),
             recommended_tests: Vec::new(),
@@ -4996,6 +5011,7 @@ mod tests {
                 target_agent: "generic".to_string(),
                 changed_path_labels: Vec::new(),
                 safe_changed_files: Vec::new(),
+                retrieval_target_files: Vec::new(),
                 excluded_changed_file_count: 0,
                 recommended_files: Vec::new(),
                 recommended_tests: Vec::new(),

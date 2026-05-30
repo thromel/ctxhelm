@@ -4,7 +4,7 @@
 
 This roadmap tracks v2.5 Production Retrieval Quality and its immediate production-readiness follow-ups. v2.4 made semantic, precision, provider, and reranker paths source-safe and policy-gated, then the fresh RefactoringMiner proof fixed a semantic fusion regression. The current product gap is quality lift: the default is useful as an agent-native context broker, but the two-repo product proof still blocks default promotion because every corpus does not beat lexical baseline.
 
-v2.5 therefore focuses on measured retrieval quality, not more surface area. The milestone must prove whether production local embeddings, reranking, graph/test/history fixes, and learned fusion can beat lexical baseline on real repositories while staying local-first and source-safe. Phase 66 fixed the false zero-test-recall signal by measuring `recommended_tests` as its own validation channel; default promotion remains blocked.
+v2.5 therefore focuses on measured retrieval quality, not more surface area. The milestone must prove whether production local embeddings, reranking, graph/test/history fixes, and learned fusion can beat lexical baseline on real repositories while staying local-first and source-safe. Phase 66 fixed the false zero-test-recall signal by measuring `recommended_tests` as its own validation channel. Phase 67 fixed the denominator for historical retrieval metrics by separating all safe changed files from parent-snapshot `retrievalTargetFiles`. Default promotion remains blocked.
 
 ## v2.5 Production Retrieval Quality
 
@@ -13,7 +13,7 @@ v2.5 therefore focuses on measured retrieval quality, not more surface area. The
 **Phase Numbering:**
 
 - Integer phases (61, 62, 63, 64, 65): Planned v2.5 work
-- Phase 66: Production-readiness follow-up from the blocked proof
+- Phases 66-67: Production-readiness follow-ups from the blocked proof
 - Decimal phases (61.1, 62.1): Urgent insertions if needed
 
 - [x] **Phase 61: Multi-Repo Quality Baselines** - Maintainers can run source-free paired baselines across RefactoringMiner and a second real repository with stable comparison artifacts.
@@ -22,6 +22,7 @@ v2.5 therefore focuses on measured retrieval quality, not more surface area. The
 - [x] **Phase 64: Gap-Family Retrieval Improvements** - Maintainers can convert repeated gap families into targeted retrieval fixes with before/after proof.
 - [x] **Phase 65: v2.5 Product Proof And Release Gate** - Maintainers can ship or hold v2.5 variants using multi-repo proof, docs, and release gates.
 - [x] **Phase 66: Test Recall Evaluation Channel** - Maintainers can measure validation-test recall through the dedicated `recommended_tests` output without degrading target-file recall.
+- [x] **Phase 67: Retrievable Target Eval Denominator** - Maintainers can distinguish all safe changed files from files that existed in the parent snapshot and could be retrieved as context.
 
 ## Phase Details
 
@@ -151,6 +152,27 @@ Plans:
 
 - [x] 66-test-recall-eval-channel-01-PLAN.md - Correct the validation-test evaluation channel and prove the result.
 
+### Phase 67: Retrievable Target Eval Denominator
+
+**Goal**: Maintainers can evaluate retrieval quality against files that existed in the parent snapshot while preserving the full source-free patch audit list.
+
+**Depends on**: Phase 66
+
+**Requirements**: PROOF-01, PROOF-02
+
+**Success Criteria**:
+
+1. Historical eval emits `retrievalTargetFiles`.
+2. `safeChangedFiles` continues to show the full safe patch surface.
+3. Recall, MRR, token ROI, role recall, missing-file, and gap metrics use retrievable parent-snapshot targets.
+4. Product proof remains blocked unless every corpus beats lexical.
+
+**Plans**: 1 plan
+
+Plans:
+
+- [x] 67-retrievable-target-eval-denominator-01-PLAN.md - Make retrieval metrics use parent-snapshot retrievable targets.
+
 ## Requirement Coverage
 
 | Requirement | Phase |
@@ -177,13 +199,15 @@ Plans:
 | PROOF-04 | Phase 65 |
 | GAP-03 | Phase 66 |
 | PROOF-01 | Phase 66 |
+| PROOF-01 | Phase 67 |
+| PROOF-02 | Phase 67 |
 
-**Coverage:** 20/20 v2.5 requirements mapped, with Phase 66 as a measured follow-up for the test-recall proof gap. No orphaned requirements.
+**Coverage:** 20/20 v2.5 requirements mapped, with Phases 66-67 as measured follow-ups for proof/eval correctness gaps. No orphaned requirements.
 
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 61 -> 62 -> 63 -> 64 -> 65 -> 66
+Phases execute in numeric order: 61 -> 62 -> 63 -> 64 -> 65 -> 66 -> 67
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
@@ -193,6 +217,7 @@ Phases execute in numeric order: 61 -> 62 -> 63 -> 64 -> 65 -> 66
 | 64. Gap-Family Retrieval Improvements | 1/1 | Complete | 2026-05-30 |
 | 65. v2.5 Product Proof And Release Gate | 1/1 | Complete | 2026-05-30 |
 | 66. Test Recall Evaluation Channel | 1/1 | Complete | 2026-05-30 |
+| 67. Retrievable Target Eval Denominator | 1/1 | Complete | 2026-05-30 |
 
 ---
 *Roadmap created: 2026-05-22*

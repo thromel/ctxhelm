@@ -6,9 +6,9 @@
 
 **Goal:** Prove and improve retrieval quality across real repositories so production local embeddings, reranking, graph/test/history fixes, and learned fusion can beat lexical baseline while staying local-first and source-safe.
 
-**Status:** Active: 2026-05-22. Phases 61-66 complete; default promotion remains blocked by the product-proof gate.
+**Status:** Active: 2026-05-22. Phases 61-67 complete; default promotion remains blocked by the product-proof gate.
 
-**Phases planned:** Phases 61-65 plus Phase 66 production-readiness follow-up, 6 plans total
+**Phases planned:** Phases 61-65 plus Phase 66-67 production-readiness follow-ups, 7 plans total
 
 **Planned capabilities:**
 
@@ -18,6 +18,7 @@
 - Gap-family retrieval fixes with before/after proof on real misses.
 - v2.5 product proof and release gate that honestly reports beat/match/trail status per corpus and variant.
 - Correct validation-test recall measurement through the dedicated `recommended_tests` channel.
+- Correct retrieval metrics to use parent-snapshot `retrievalTargetFiles` while preserving `safeChangedFiles`.
 
 **Active artifacts:**
 
@@ -31,6 +32,7 @@
 - Phase 62 E2E: `.planning/e2e/2026-05-30-phase62-production-local-embedding-quality.md`
 - Phase 65 E2E: `.planning/e2e/2026-05-30-phase65-product-proof-release-gate.md`
 - Phase 66 E2E: `.planning/e2e/2026-05-30-phase66-test-recall-eval-channel.md`
+- Phase 67 E2E: `.planning/e2e/2026-05-30-phase67-retrievable-target-eval-denominator.md`
 
 **Current blockers:**
 

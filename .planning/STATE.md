@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v2.5
 milestone_name: Production Retrieval Quality
 status: active
-last_updated: "2026-05-30T08:20:00Z"
-last_activity: 2026-05-30 -- Phase 66 fixed the false zero-test-recall signal by evaluating the dedicated related-tests channel; default promotion remains blocked
+last_updated: "2026-05-30T09:05:00Z"
+last_activity: 2026-05-30 -- Phase 67 separated safe changed files from retrievable parent-snapshot targets; default promotion remains blocked
 progress:
-  total_phases: 6
-  completed_phases: 6
-  total_plans: 6
-  completed_plans: 6
+  total_phases: 7
+  completed_phases: 7
+  total_plans: 7
+  completed_plans: 7
   percent: 100
 ---
 
@@ -17,10 +17,10 @@ progress:
 
 ## Current Position
 
-Phase: 66 - Test Recall Evaluation Channel
-Plan: 66-test-recall-eval-channel-01-PLAN.md
+Phase: 67 - Retrievable Target Eval Denominator
+Plan: 67-retrievable-target-eval-denominator-01-PLAN.md
 Status: Complete
-Last activity: 2026-05-30 -- Phase 66 product proof reports Test Recall@10 = 1.0 on both corpora through `recommended_tests`; release gate still blocks default promotion because Recall@10 does not beat lexical
+Last activity: 2026-05-30 -- Phase 67 product proof reports ctxpack Recall@10 0.2277 vs lexical 0.2326 after using parent-snapshot `retrievalTargetFiles`; release gate still blocks default promotion
 
 ## Project Reference
 
@@ -44,6 +44,7 @@ Planned phases:
 - Phase 64: Gap-Family Retrieval Improvements (complete)
 - Phase 65: v2.5 Product Proof And Release Gate (complete)
 - Phase 66: Test Recall Evaluation Channel (complete follow-up)
+- Phase 67: Retrievable Target Eval Denominator (complete follow-up)
 
 ## Last Completed Milestone
 
@@ -67,4 +68,5 @@ Continue production-readiness work from remaining measured gaps: RefactoringMine
 
 - Do not claim v2.5 beats lexical; the product proof intentionally blocks default promotion for the current two-repo suite.
 - Test Recall@10 is now measured through the validation channel and reports 1.0 on both proof corpora.
-- Next work should target RefactoringMiner lexical trailing status, ctxpack source/file recall, docs/scripts storage coverage, parser precision, and protected symbol budget pressure.
+- Historical eval now reports `retrievalTargetFiles` and uses it for retrieval metrics so newly-created files do not create false context-retrieval misses.
+- Next work should target RefactoringMiner lexical trailing status, ctxpack existing docs/scripts candidate coverage, parser precision, and protected symbol budget pressure.

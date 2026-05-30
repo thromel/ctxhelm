@@ -5261,6 +5261,7 @@ mod tests {
                     excluded_reason: None,
                 }],
                 safe_changed_files: vec!["src/auth.ts".to_string()],
+                retrieval_target_files: vec!["src/auth.ts".to_string()],
                 excluded_changed_file_count: 1,
                 recommended_files: vec!["src/auth.ts".to_string()],
                 recommended_tests: vec!["tests/auth.test.ts".to_string()],

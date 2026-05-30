@@ -1250,6 +1250,74 @@ mod tests {
     }
 
     #[test]
+    fn historical_eval_separates_new_files_from_retrievable_context_targets() {
+        let _guard = env_lock();
+        let temp = tempfile::tempdir().unwrap();
+        let repo = temp.path().join("repo");
+        let home = temp.path().join("ctxpack-home");
+        fs::create_dir_all(repo.join("src/auth")).unwrap();
+        fs::create_dir_all(repo.join("docs")).unwrap();
+        run_git(&repo, &["init"]);
+        run_git(&repo, &["config", "user.email", "ctxpack@example.com"]);
+        run_git(&repo, &["config", "user.name", "ctxpack"]);
+        fs::write(
+            repo.join("src/auth/session.ts"),
+            "export function requireSession() { return false; }\n",
+        )
+        .unwrap();
+        run_git(&repo, &["add", "."]);
+        run_git(&repo, &["commit", "-m", "seed auth session"]);
+        fs::write(
+            repo.join("src/auth/session.ts"),
+            "export function requireSession() { return true; }\n",
+        )
+        .unwrap();
+        fs::write(repo.join("docs/auth-session.md"), "auth session docs\n").unwrap();
+        run_git(&repo, &["add", "."]);
+        run_git(&repo, &["commit", "-m", "fix auth session docs"]);
+        std::env::set_var("CTXPACK_HOME", &home);
+
+        let report = evaluate_historical_commits(
+            &repo,
+            &HistoricalEvalOptions {
+                limit: 1,
+                ranking_budget: 10,
+                task_type: TaskType::BugFix,
+                target_agent: "codex".to_string(),
+                base: None,
+                head: None,
+                semantic_enabled: false,
+                semantic_provider: SemanticProviderConfig::default(),
+                local_metadata_reranker: false,
+                cache_enabled: false,
+                force_refresh: false,
+                parallelism: 1,
+            },
+        )
+        .unwrap();
+
+        let commit = &report.commits[0];
+        assert!(commit
+            .safe_changed_files
+            .contains(&"docs/auth-session.md".to_string()));
+        assert_eq!(
+            commit.retrieval_target_files,
+            vec!["src/auth/session.ts".to_string()]
+        );
+        assert_eq!(
+            commit.file_hits_at_10,
+            vec!["src/auth/session.ts".to_string()]
+        );
+        assert_eq!(report.file_recall_at_10, 1.0);
+        assert!(report
+            .top_missing_files
+            .iter()
+            .all(|missing| missing.path != "docs/auth-session.md"));
+
+        std::env::remove_var("CTXPACK_HOME");
+    }
+
+    #[test]
     fn paired_baseline_analysis_reports_variant_verdicts_without_source_text() {
         let _guard = env_lock();
         let temp = tempfile::tempdir().unwrap();
@@ -1575,6 +1643,7 @@ mod tests {
                     excluded_reason: None,
                 }],
                 safe_changed_files: vec!["src/lib.rs".to_string()],
+                retrieval_target_files: vec!["src/lib.rs".to_string()],
                 excluded_changed_file_count: 0,
                 recommended_files: vec!["src/lib.rs".to_string()],
                 recommended_tests: Vec::new(),
@@ -1733,6 +1802,7 @@ mod tests {
             report.commits[0].safe_changed_files,
             vec!["src/future/widget.ts"]
         );
+        assert!(report.commits[0].retrieval_target_files.is_empty());
         assert_eq!(
             report.commits[0].changed_path_labels[0].label_scope,
             ctxpack_index::LabelScope::Safe
@@ -1742,7 +1812,7 @@ mod tests {
             .contains(&"src/future/widget.ts".to_string()));
         assert_eq!(report.file_recall_at_10, 0.0);
         assert_eq!(report.lexical_baseline_recall_at_10, 0.0);
-        assert_eq!(report.top_missing_files[0].path, "src/future/widget.ts");
+        assert!(report.top_missing_files.is_empty());
 
         std::env::remove_var("CTXPACK_HOME");
     }
