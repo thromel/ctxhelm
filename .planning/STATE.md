@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v2.5
 milestone_name: Production Retrieval Quality
 status: active
-last_updated: "2026-05-30T15:05:00Z"
-last_activity: 2026-05-30 -- Phase 71 reduced ctxpack archive-artifact retrieval noise while preserving the promotion gate
+last_updated: "2026-05-30T15:16:39Z"
+last_activity: 2026-05-30 -- Phase 72 broadened repeated-lift validation and improved validation-test recall seeding while preserving the required two-repo promotion gate
 progress:
   total_phases: 10
   completed_phases: 10
@@ -17,10 +17,10 @@ progress:
 
 ## Current Position
 
-Phase: 71 - Archive Artifact Dampening
-Plan: 71-archive-artifact-dampening
+Phase: 72 - Broader Repeated-Lift Validation
+Plan: 72-broader-repeated-lift-validation
 Status: Complete
-Last activity: 2026-05-30 -- Phase 71 dampened `.planning/milestones/**` and `.planning/e2e/**/*.json` lexical archive artifacts without excluding them. Current-history proof still promotes and improves ctxpack context Recall@10 from 0.3117 to 0.5195, file Recall@10 from 0.2909 to 0.4986, and protected miss-rate@10 from 0.2500 to 0.1633 while leaving RefactoringMiner unchanged.
+Last activity: 2026-05-30 -- Phase 72 increased the related-test selection budget to 10 and seeded related-test discovery from co-changed/dependency-neighbor source files. The required fixed two-repo proof still promotes, with Test Recall@10 at 1.0 on both required corpora. A broader four-repo probe improved VeriSchema Test Recall@10 from 0.2434 to 0.6614 but still blocks broader promotion because VeriSchema remains below the 0.80 validation-test floor and RefactoringMiner matches rather than beats on the newest-5-commit probe.
 
 ## Project Reference
 
@@ -48,6 +48,7 @@ Planned phases:
 - Phase 69: Channel-Aware Product Proof Gate (complete follow-up)
 - Phase 70: Real-Client MCP Proof Refresh (complete follow-up)
 - Phase 71: Archive Artifact Dampening (complete follow-up)
+- Phase 72: Broader Repeated-Lift Validation (complete follow-up)
 
 ## Last Completed Milestone
 
@@ -65,13 +66,14 @@ Planned phases:
 
 ## Next Step
 
-Continue production-readiness work from remaining measured gaps: parser/precision dependency misses and broader multi-repo repeated-lift validation.
+Continue production-readiness work from remaining measured gaps: large multi-area validation-test recall, parser/precision dependency misses, protected evidence miss-rate, and fixed-corpus broad benchmark selection.
 
 ## Operator Next Steps
 
 - Default local retrieval now passes the fixed two-repo product proof under the channel-aware release gate.
 - The gate compares non-test context recall against lexical and checks validation-test recall separately.
-- Latest local proof: `.ctxpack/e2e/phase71-archive-artifact-dampening-proof.json` with `releaseGate.decision = promote`.
+- Latest required local proof: `.ctxpack/e2e/phase72-two-repo-post-test-seed-proof.json` with `releaseGate.decision = promote`.
+- Latest broader probe: `.ctxpack/e2e/phase72-broader-repeated-lift-proof.json` with `releaseGate.decision = block`; VeriSchema Test Recall@10 improved from `0.2434` to `0.6614` but remains below the broader 0.80 floor.
 - Latest real-client proof: `.planning/e2e/2026-05-30-phase70-real-client-mcp-proof.md`.
 - RefactoringMiner still trails lexical on all-file recall because tests are no longer forced into the target-file context budget; this is explicitly recorded in corpus verdict notes.
-- Next work should target parser precision and broader repeated-lift corpora.
+- Next work should target large multi-area validation-test ranking, parser precision, protected evidence misses, and converting broader corpora into stable committed fixtures.

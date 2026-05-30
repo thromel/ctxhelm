@@ -69,7 +69,9 @@ use ctxpack_index::{
 #[cfg(test)]
 use eval::HistoricalEvalWorktree;
 #[cfg(test)]
-use planning::{is_low_information_task, plan_confidence, PREPARE_TASK_TARGET_LIMIT};
+use planning::{
+    is_low_information_task, plan_confidence, PREPARE_TASK_TARGET_LIMIT, PREPARE_TASK_TEST_LIMIT,
+};
 
 #[cfg(test)]
 mod tests {
@@ -179,6 +181,93 @@ mod tests {
             .target_files
             .iter()
             .any(|target| target.path.as_str() >= "src/auth/session_5.ts"));
+
+        std::env::remove_var("CTXPACK_HOME");
+    }
+
+    #[test]
+    fn prepare_context_plan_keeps_validation_tests_up_to_recall_at_ten() {
+        let _guard = env_lock();
+        let temp = tempfile::tempdir().unwrap();
+        let repo = temp.path().join("repo");
+        let home = temp.path().join("ctxpack-home");
+        fs::create_dir_all(repo.join("src/auth")).unwrap();
+        fs::create_dir_all(repo.join("tests/auth")).unwrap();
+        run_git(&repo, &["init"]);
+        run_git(&repo, &["config", "user.email", "ctxpack@example.com"]);
+        run_git(&repo, &["config", "user.name", "ctxpack"]);
+        fs::write(
+            repo.join("src/auth/session.ts"),
+            "export function sessionFlow() { return 'auth session'; }\n",
+        )
+        .unwrap();
+        for index in 0..10 {
+            fs::write(
+                repo.join(format!("tests/auth/session_flow_{index}.test.ts")),
+                "import '../src/auth/session';\nit('covers auth session flow', () => {});\n",
+            )
+            .unwrap();
+        }
+        run_git(&repo, &["add", "."]);
+        run_git(&repo, &["commit", "-m", "add auth session tests"]);
+        std::env::set_var("CTXPACK_HOME", &home);
+
+        let plan = prepare_context_plan(&repo, "fix auth session flow", TaskType::BugFix).unwrap();
+
+        assert_eq!(plan.related_tests.len(), PREPARE_TASK_TEST_LIMIT);
+
+        std::env::remove_var("CTXPACK_HOME");
+    }
+
+    #[test]
+    fn prepare_context_plan_uses_cochange_sources_for_related_tests() {
+        let _guard = env_lock();
+        let temp = tempfile::tempdir().unwrap();
+        let repo = temp.path().join("repo");
+        let home = temp.path().join("ctxpack-home");
+        fs::create_dir_all(repo.join("src/auth")).unwrap();
+        fs::create_dir_all(repo.join("tests/auth")).unwrap();
+        run_git(&repo, &["init"]);
+        run_git(&repo, &["config", "user.email", "ctxpack@example.com"]);
+        run_git(&repo, &["config", "user.name", "ctxpack"]);
+        fs::write(
+            repo.join("src/auth/middleware.ts"),
+            "export function authMiddleware() { return 'middleware'; }\n",
+        )
+        .unwrap();
+        fs::write(
+            repo.join("src/auth/session.ts"),
+            "export function getSession() { return 'session'; }\n",
+        )
+        .unwrap();
+        fs::write(
+            repo.join("tests/auth/session.test.ts"),
+            "import { getSession } from '../../src/auth/session';\nit('checks getSession', () => {});\n",
+        )
+        .unwrap();
+        run_git(&repo, &["add", "."]);
+        run_git(&repo, &["commit", "-m", "add auth files"]);
+        fs::write(
+            repo.join("src/auth/middleware.ts"),
+            "export function authMiddleware() { return 'middleware redirect'; }\n",
+        )
+        .unwrap();
+        fs::write(
+            repo.join("src/auth/session.ts"),
+            "export function getSession() { return 'session redirect'; }\n",
+        )
+        .unwrap();
+        run_git(&repo, &["add", "."]);
+        run_git(&repo, &["commit", "-m", "change middleware with session"]);
+        std::env::set_var("CTXPACK_HOME", &home);
+
+        let plan =
+            prepare_context_plan(&repo, "fix authMiddleware redirect", TaskType::BugFix).unwrap();
+
+        assert!(plan
+            .related_tests
+            .iter()
+            .any(|test| test.path == "tests/auth/session.test.ts"));
 
         std::env::remove_var("CTXPACK_HOME");
     }

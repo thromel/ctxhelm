@@ -224,12 +224,14 @@ Current v2.5 proof status: the fixed two-repo production-retrieval proof
 promotes default local retrieval under the channel-aware release gate. The gate
 compares non-test context recall against lexical retrieval and validates tests
 through the dedicated `recommended_tests` channel. The current source-free proof
-is `.ctxpack/e2e/phase71-archive-artifact-dampening-proof.json`, where
+is `.ctxpack/e2e/phase72-two-repo-post-test-seed-proof.json`, where
 `releaseGate.decision` is `promote`. RefactoringMiner context Recall@10 is
-`0.7778` vs lexical `0.7407`; ctxpack context Recall@10 is `0.5195` vs lexical
-`0.4805`; Test Recall@10 is `1.0` on both corpora. The Phase 71 proof also
-reduces ctxpack protected miss-rate@10 from `0.2500` to `0.1633` on the
-current-history A/B run.
+`0.7778` vs lexical `0.7407`; ctxpack context Recall@10 is `0.5063` vs lexical
+`0.4684`; Test Recall@10 is `1.0` on both corpora. The latest optional
+four-repo probe in `.ctxpack/e2e/phase72-broader-repeated-lift-proof.json`
+improves VeriSchema Test Recall@10 from `0.2434` to `0.6614`, but still blocks
+broader promotion because VeriSchema remains below the 0.80 validation-test
+floor and the newest-5-commit RefactoringMiner probe matches rather than beats.
 
 Latest optional real-client proof: Codex CLI `0.130.0` and Claude Code
 `2.1.158` both passed the smoke wrappers on 2026-05-30 with server-side

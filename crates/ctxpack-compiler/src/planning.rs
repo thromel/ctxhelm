@@ -22,6 +22,7 @@ use std::path::{Component, Path};
 use uuid::Uuid;
 
 pub(crate) const PREPARE_TASK_TARGET_LIMIT: usize = 10;
+pub(crate) const PREPARE_TASK_TEST_LIMIT: usize = 10;
 
 pub fn empty_plan_for_task(task_type: TaskType) -> ContextPlan {
     base_plan(task_type)
@@ -282,10 +283,6 @@ pub(crate) fn prepare_context_plan_with_paths_history_and_semantic(
         .cloned()
         .collect::<Vec<_>>();
 
-    let test_report = related_tests_report(repo_root, &source_seed_paths)?;
-    extend_plan_diagnostics(&mut plan, test_report.diagnostics);
-    let test_results = test_report.results;
-
     let mut has_history = false;
     let mut co_change_hints = Vec::new();
     if include_history {
@@ -350,6 +347,16 @@ pub(crate) fn prepare_context_plan_with_paths_history_and_semantic(
         });
     }
 
+    let test_seed_paths = related_test_seed_paths(
+        &source_seed_paths,
+        &co_change_hints,
+        &dependency_edges,
+        &roles,
+    );
+    let test_report = related_tests_report(repo_root, &test_seed_paths)?;
+    extend_plan_diagnostics(&mut plan, test_report.diagnostics);
+    let test_results = test_report.results;
+
     let ranked_candidates = rank_candidates(RankingInput {
         anchors,
         lexical_results: search_results,
@@ -379,7 +386,11 @@ pub(crate) fn prepare_context_plan_with_paths_history_and_semantic(
     } else {
         ranked_candidates
     };
-    let selection = select_ranked_candidates(&ranked_candidates, PREPARE_TASK_TARGET_LIMIT, 5);
+    let selection = select_ranked_candidates(
+        &ranked_candidates,
+        PREPARE_TASK_TARGET_LIMIT,
+        PREPARE_TASK_TEST_LIMIT,
+    );
     plan.target_files = selection.target_files;
     plan.related_tests = selection.related_tests;
     plan.recommended_commands = selection.recommended_commands;
@@ -403,6 +414,39 @@ pub(crate) fn prepare_context_plan_with_paths_history_and_semantic(
     );
 
     Ok(plan)
+}
+
+fn related_test_seed_paths(
+    source_seed_paths: &[String],
+    co_change_hints: &[ctxpack_index::CoChangeHint],
+    dependency_edges: &[ctxpack_index::DependencyEdge],
+    roles: &BTreeMap<String, FileRole>,
+) -> Vec<String> {
+    let mut seed_paths = Vec::new();
+    for path in source_seed_paths {
+        push_source_test_seed(&mut seed_paths, roles, path);
+    }
+    for hint in co_change_hints {
+        push_source_test_seed(&mut seed_paths, roles, &hint.path);
+    }
+    for edge in dependency_edges {
+        push_source_test_seed(&mut seed_paths, roles, &edge.source_path);
+        push_source_test_seed(&mut seed_paths, roles, &edge.target_path);
+    }
+    seed_paths
+}
+
+fn push_source_test_seed(
+    seed_paths: &mut Vec<String>,
+    roles: &BTreeMap<String, FileRole>,
+    path: &str,
+) {
+    if roles
+        .get(path)
+        .is_none_or(|role| matches!(role, FileRole::Source))
+    {
+        push_unique(seed_paths, path.to_string());
+    }
 }
 
 fn extend_plan_diagnostics(plan: &mut ContextPlan, diagnostics: Vec<Diagnostic>) {
