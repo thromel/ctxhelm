@@ -6,9 +6,9 @@
 
 **Goal:** Prove and improve retrieval quality across real repositories so production local embeddings, reranking, graph/test/history fixes, and learned fusion can beat lexical baseline while staying local-first and source-safe.
 
-**Status:** Active: 2026-05-22. Phases 61-67 complete; Phase 69 promoted default local retrieval under the channel-aware product-proof gate; Phase 70 refreshed Codex CLI and Claude Code real-client MCP proof; Phase 71 reduced ctxpack archive-artifact retrieval noise; Phase 72 broadened repeated-lift validation and improved validation-test recall seeding; Phase 73 committed a pinned broader fixed-corpus probe; Phase 74 separated protected retrieval-target misses from non-target protected pressure; Phase 75 restored parent-bounded eval history and reserved co-changed validation tests; Phase 76 split historical parent history into validation-only mode and enriched co-changed test commands; Phase 77 added broad validation fallback commands and effective validation-command coverage metrics; Phase 78 made the broader proof gate ceiling-aware and promoted the fixed four-repo corpus; Phase 79 added protected target floors; Phase 80 fixed symbol-floor duplicate accounting and cleared protected target misses; Phase 81 fixed warm-cache runtime reporting; Phase 82 made warm-cache runtime enforceable; Phase 83 made context-vs-all-file divergence machine-checkable; Phase 84 added broad-scope accounting and scoped dependency source floors; Phase 85 added source-free context-area hints for broad prepare-task plans and packs; Phase 86 added bounded Python package re-export graph coverage; Phase 87 fixed validation gap accounting; Phase 88 added broad source-area candidates; Phase 89 reduced inventory freshness overhead and promoted the broader release proof; Phase 90 proved the packaged release gate from a clean worktree with the broad benchmark enabled; Phase 91 added broad context-area recall metrics and implementation-first area ordering.
+**Status:** Active: 2026-05-22. Phases 61-67 complete; Phase 69 promoted default local retrieval under the channel-aware product-proof gate; Phase 70 refreshed Codex CLI and Claude Code real-client MCP proof; Phase 71 reduced ctxpack archive-artifact retrieval noise; Phase 72 broadened repeated-lift validation and improved validation-test recall seeding; Phase 73 committed a pinned broader fixed-corpus probe; Phase 74 separated protected retrieval-target misses from non-target protected pressure; Phase 75 restored parent-bounded eval history and reserved co-changed validation tests; Phase 76 split historical parent history into validation-only mode and enriched co-changed test commands; Phase 77 added broad validation fallback commands and effective validation-command coverage metrics; Phase 78 made the broader proof gate ceiling-aware and promoted the fixed four-repo corpus; Phase 79 added protected target floors; Phase 80 fixed symbol-floor duplicate accounting and cleared protected target misses; Phase 81 fixed warm-cache runtime reporting; Phase 82 made warm-cache runtime enforceable; Phase 83 made context-vs-all-file divergence machine-checkable; Phase 84 added broad-scope accounting and scoped dependency source floors; Phase 85 added source-free context-area hints for broad prepare-task plans and packs; Phase 86 added bounded Python package re-export graph coverage; Phase 87 fixed validation gap accounting; Phase 88 added broad source-area candidates; Phase 89 reduced inventory freshness overhead and promoted the broader release proof; Phase 90 proved the packaged release gate from a clean worktree with the broad benchmark enabled; Phase 91 added broad context-area recall metrics and implementation-first area ordering; Phase 92 added area-aware gap taxonomy, clean large-repo warm proof, historical eval cache invalidation, and large-repo eval runtime caching.
 
-**Phases planned:** Phases 61-65 plus Phase 66-86 production-readiness follow-ups, 7 planned phase files plus measured proof follow-up artifacts
+**Phases planned:** Phases 61-65 plus Phase 66-92 production-readiness follow-ups, 7 planned phase files plus measured proof follow-up artifacts
 
 **Planned capabilities:**
 
@@ -33,6 +33,8 @@
 - Source-free context-area hints for broad prepare-task plans and packs without displacing target-file or validation budgets.
 - Source-free broad context-area recall metrics that show whether broad tasks expose the right implementation areas beyond the top-10 file budget.
 - Bounded Python package re-export graph coverage without general depth-2 graph expansion.
+- Area-aware retrieval-gap taxonomy that distinguishes files covered by surfaced context areas from true no-candidate failures.
+- Clean large-repo proof fixtures and warm-cache evidence that do not depend on dirty interactive checkouts.
 
 **Active artifacts:**
 
@@ -97,6 +99,9 @@
 - Phase 90 E2E: `.planning/e2e/2026-05-31-phase90-packaged-release-gate.md`
 - Phase 91 E2E: `.planning/e2e/2026-05-31-phase91-broad-context-area-eval.md`
 - Phase 91 release proof: `.ctxpack/e2e/phase91-broad-context-area-release-proof.json`
+- Phase 92 E2E: `.planning/e2e/2026-05-31-phase92-area-aware-gap-taxonomy.md`
+- Phase 92 clean force proof: `.ctxpack/e2e/phase92-area-aware-gap-taxonomy-clean-force-proof.json`
+- Phase 92 warm proof: `.ctxpack/e2e/phase92-area-aware-gap-taxonomy-warm-proof.json`
 
 **Current follow-up gaps:**
 
@@ -110,7 +115,8 @@
 - Phase 89 replaces full source re-hashing on inventory cache-hit freshness checks with metadata manifest comparison. The pinned broader release proof promotes with Phase 88 quality metrics preserved.
 - Phase 90 runs the complete release gate in a clean worktree with the broader benchmark proof enabled. The packaged archive, audit, extraction, extracted binary smokes, MCP protocol checks, Cursor/OpenCode setup checks, and broad product proof all pass; optional Codex/Claude real-client tool-call evidence remains skipped unless explicitly required.
 - Phase 91 records `changedContextAreas`, `contextAreaHits`, and `broadContextAreaRecall` in historical eval. The hard VeriSchema lint/workflow commit surfaces 11 of 14 changed areas, and the broader release proof promotes with VeriSchema broad context-area recall `0.64708996`.
-- The broad corpora now have a pinned optional fixture that promotes in release mode, Phase 82 enforces warm-cache runtime thresholds, Phase 83 makes context-vs-all-file divergence auditable, Phase 84 records broad-scope tasks, Phase 85 exposes broad context-area hints, Phase 86 improves Python package graph coverage, Phase 87 keeps gap reports aligned with validation coverage, Phase 88 improves broad source candidate coverage, Phase 89 reduces broad-proof runtime overhead, Phase 90 proves the packaged release gate, and Phase 91 makes broad area coverage measurable. Remaining parser/precision `no_candidate_signal` gaps are quality improvements rather than current release blockers.
+- Phase 92 classifies files inside surfaced context areas as `area_context_only` / `contextPlanning`, bumps the historical eval cache schema, and proves the clean four-repo fixture in warm-cache mode. Clean RefactoringMiner still exceeds the hard cold runtime ceiling without cached reports, making a real lexical/symbol index the next performance target.
+- The broad corpora now have a pinned optional fixture that promotes in release/warm-cache mode, Phase 82 enforces warm-cache runtime thresholds, Phase 83 makes context-vs-all-file divergence auditable, Phase 84 records broad-scope tasks, Phase 85 exposes broad context-area hints, Phase 86 improves Python package graph coverage, Phase 87 keeps gap reports aligned with validation coverage, Phase 88 improves broad source candidate coverage, Phase 89 reduces broad-proof runtime overhead, Phase 90 proves the packaged release gate, Phase 91 makes broad area coverage measurable, and Phase 92 makes broad-area gap taxonomy honest. Remaining true `no_candidate_signal` gaps and cold large-repo runtime are quality improvements rather than current warm-cache release blockers.
 
 ## Shipped
 

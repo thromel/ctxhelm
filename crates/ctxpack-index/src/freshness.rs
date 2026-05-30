@@ -76,6 +76,33 @@ pub fn load_or_refresh_inventory(
     let repo_id = repo_id_for_path(&repo_root);
     let path = inventory_path(&repo_id);
 
+    if repo_root.join(".ctxpack/eval-history.json").is_file() {
+        return match load_inventory(&repo_id) {
+            Ok(cached) => Ok(InventoryLoadReport {
+                inventory: cached,
+                diagnostics: Vec::new(),
+                freshness: InventoryFreshness {
+                    fresh: true,
+                    reasons: Vec::new(),
+                    diagnostics: Vec::new(),
+                },
+                cache_status: cache_status(CacheStatusKind::Hit, &path, Vec::new()),
+            }),
+            Err(InventoryError::Read { .. }) => rebuild_inventory_report(
+                &repo_root,
+                options,
+                vec![diagnostic(
+                    "immutable_eval_snapshot_inventory_cache_miss",
+                    DiagnosticSeverity::Info,
+                    "Immutable historical eval snapshot inventory cache was missing and was rebuilt.",
+                    Vec::new(),
+                )],
+                &path,
+            ),
+            Err(error) => Err(error),
+        };
+    }
+
     match load_inventory(&repo_id) {
         Ok(cached) => {
             let cached_freshness = check_inventory_freshness(&repo_root, &cached, options)?;
@@ -598,6 +625,34 @@ mod tests {
             .diagnostics
             .iter()
             .any(|diagnostic| diagnostic.code == "inventory_rebuilt"));
+
+        std::env::remove_var("CTXPACK_HOME");
+    }
+
+    #[test]
+    fn load_or_refresh_trusts_cached_immutable_eval_snapshot_inventory() {
+        let _guard = env_lock();
+        let temp = tempfile::tempdir().unwrap();
+        let repo = temp.path().join("repo");
+        let home = temp.path().join("ctxpack-home");
+        fs::create_dir_all(repo.join(".git")).unwrap();
+        fs::create_dir_all(repo.join(".ctxpack")).unwrap();
+        fs::create_dir_all(repo.join("src")).unwrap();
+        fs::write(repo.join(".ctxpack/eval-history.json"), "{}\n").unwrap();
+        fs::write(repo.join("src/lib.rs"), "pub fn cached() {}\n").unwrap();
+        std::env::set_var("CTXPACK_HOME", &home);
+
+        write_inventory(&repo, &InventoryOptions::default()).unwrap();
+        fs::write(repo.join("src/new.rs"), "pub fn should_not_refresh() {}\n").unwrap();
+
+        let report = load_or_refresh_inventory(&repo, &InventoryOptions::default()).unwrap();
+
+        assert_eq!(paths(&report.inventory), vec!["src/lib.rs"]);
+        assert_eq!(
+            report.cache_status.status,
+            ctxpack_core::CacheStatusKind::Hit
+        );
+        assert!(report.freshness.fresh);
 
         std::env::remove_var("CTXPACK_HOME");
     }

@@ -352,6 +352,24 @@ and reports `releaseGate.decision = promote`. VeriSchema broad-scope commits
 now report `broadContextAreaRecall = 0.64708996` while existing file/source,
 validation, protected-target, and runtime gates stay stable.
 
+Phase 92 makes retrieval-gap taxonomy area-aware. Missed files inside surfaced
+context areas now report `area_context_only` and map to the `contextPlanning`
+recommendation area instead of false `no_candidate_signal` storage/candidate
+failures. The historical eval cache schema was bumped so cached reports cannot
+hide new broad-area or area-aware fields. The clean RefactoringMiner proof path
+now uses a detached fixture worktree at
+`/Users/romel/Documents/GitHub/RefactoringMiner-ctxpack-proof`; the original
+interactive checkout was dirty and is not used for committed evidence. The
+evidence artifact is
+`.planning/e2e/2026-05-31-phase92-area-aware-gap-taxonomy.md`. The committed
+warm-cache proof is
+`.ctxpack/e2e/phase92-area-aware-gap-taxonomy-warm-proof.json` and reports
+`releaseGate.decision = promote` with VeriSchema
+`broadContextAreaRecall = 0.64708996`. The clean force-refresh proof is also
+kept as `.ctxpack/e2e/phase92-area-aware-gap-taxonomy-clean-force-proof.json`;
+it preserves quality but documents that clean RefactoringMiner still exceeds
+the hard cold runtime ceiling without cached historical reports.
+
 Latest optional real-client proof: Codex CLI `0.130.0` and Claude Code
 `2.1.158` both passed the smoke wrappers on 2026-05-30 with server-side
 `prepare_task` and `get_pack` evidence against an explicit repo path. See

@@ -14,10 +14,10 @@ use ctxpack_core::{
     RetrievalHealthSignalContribution, RetrievalHealthTokenRoi, RetrievalSignalKind, TaskType,
 };
 use ctxpack_index::{
-    historical_commit_samples, lexical_search, load_or_build_inventory, repo_id_for_path,
-    semantic_document_report, task_hash, write_eval_history_sidecar, HistoricalChangedPath,
-    HistoricalCommitOptions, HistoricalCommitSample, InventoryError, InventoryOptions, LabelScope,
-    SearchOptions, SemanticDocumentOptions, SemanticProviderConfig,
+    historical_commit_samples_with_safe_paths, lexical_search, load_or_build_inventory,
+    repo_id_for_path, semantic_document_report, task_hash, write_eval_history_sidecar,
+    HistoricalChangedPath, HistoricalCommitOptions, HistoricalCommitSample, InventoryError,
+    InventoryOptions, LabelScope, SearchOptions, SemanticDocumentOptions, SemanticProviderConfig,
     LEARNED_POLICY_PROFILE_SCHEMA_VERSION,
 };
 use serde::{Deserialize, Serialize};
@@ -29,7 +29,7 @@ use std::thread;
 use std::time::{Instant, SystemTime, UNIX_EPOCH};
 use uuid::Uuid;
 
-const HISTORICAL_EVAL_CACHE_SCHEMA_VERSION: &str = "historical-eval-cache-v2.3.2";
+const HISTORICAL_EVAL_CACHE_SCHEMA_VERSION: &str = "historical-eval-cache-v2.3.3";
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
@@ -319,6 +319,7 @@ pub enum RetrievalGapTargetStatus {
 #[serde(rename_all = "camelCase")]
 pub enum RetrievalGapRecommendationArea {
     Storage,
+    ContextPlanning,
     SemanticRetrieval,
     ParserPrecision,
     TestMapping,
@@ -2763,19 +2764,21 @@ pub fn evaluate_historical_commits(
         .iter()
         .map(|file| file.path.clone())
         .collect::<Vec<_>>();
+    let safe_paths = snapshot_paths.iter().cloned().collect::<BTreeSet<_>>();
     let roles_by_path = inventory
         .files
         .iter()
         .map(|file| (file.path.clone(), file.role.clone()))
         .collect::<BTreeMap<_, _>>();
     let git_sample_started = Instant::now();
-    let samples = historical_commit_samples(
+    let samples = historical_commit_samples_with_safe_paths(
         repo_root,
         &HistoricalCommitOptions {
             limit: options.limit,
             base: options.base.clone(),
             head: options.head.clone(),
         },
+        &safe_paths,
     )?;
     let git_sample_millis = elapsed_millis(git_sample_started);
     let parallelism = options.parallelism.max(1).min(samples.len().max(1));
@@ -3058,11 +3061,6 @@ fn evaluate_historical_commit_sample(
             (signal, ranking)
         })
         .collect::<Vec<_>>();
-    let gap_reasons = retrieval_gap_reasons(
-        &missing_files_at_10,
-        &lexical_baseline_files,
-        &signals_by_path,
-    );
     let signal_baseline_files =
         signal_baseline_rankings(&recommended_context_files, &signals_by_path);
     let source_changed_files =
@@ -3095,6 +3093,12 @@ fn evaluate_historical_commit_sample(
         &changed_context_areas,
         &plan.context_areas,
         &recommended_context_files,
+    );
+    let gap_reasons = retrieval_gap_reasons(
+        &missing_files_at_10,
+        &lexical_baseline_files,
+        &signals_by_path,
+        &context_area_hits,
     );
     let ranking_millis = elapsed_millis(ranking_started);
 
@@ -3159,6 +3163,16 @@ impl<'a> HistoricalEvalWorktree<'a> {
             });
         };
 
+        if let Some(cached_path) =
+            cached_historical_eval_parent_worktree(source_repo, parent_sha, snapshot_paths)?
+        {
+            return Ok(Self {
+                path: cached_path,
+                _source_repo: source_repo,
+                _temp_dir: None,
+            });
+        }
+
         let temp_dir = tempfile::Builder::new()
             .prefix("ctxpack-historical-eval-")
             .tempdir()
@@ -3175,6 +3189,7 @@ impl<'a> HistoricalEvalWorktree<'a> {
             git_existing_paths_at_revision(source_repo, parent_sha, snapshot_paths)?;
         git_extract_revision_paths(source_repo, parent_sha, &revision_paths, &path)?;
         let _ = write_eval_history_sidecar(source_repo, parent_sha, &path);
+        persist_historical_eval_parent_worktree(source_repo, parent_sha, snapshot_paths, &path)?;
 
         Ok(Self {
             path,
@@ -3186,6 +3201,114 @@ impl<'a> HistoricalEvalWorktree<'a> {
     pub(crate) fn path(&self) -> &Path {
         &self.path
     }
+}
+
+fn cached_historical_eval_parent_worktree(
+    source_repo: &Path,
+    parent_sha: &str,
+    snapshot_paths: &[String],
+) -> Result<Option<PathBuf>, InventoryError> {
+    let path = historical_eval_parent_cache_repo_path(source_repo, parent_sha, snapshot_paths);
+    if !path.join(".ctxpack/eval-history.json").is_file() {
+        return Ok(None);
+    }
+    Ok(Some(path))
+}
+
+fn persist_historical_eval_parent_worktree(
+    source_repo: &Path,
+    parent_sha: &str,
+    snapshot_paths: &[String],
+    extracted_path: &Path,
+) -> Result<(), InventoryError> {
+    let path = historical_eval_parent_cache_repo_path(source_repo, parent_sha, snapshot_paths);
+    if path.join(".ctxpack/eval-history.json").is_file() {
+        return Ok(());
+    }
+    let Some(parent) = path.parent() else {
+        return Ok(());
+    };
+    fs::create_dir_all(parent).map_err(|source| InventoryError::CreateDir {
+        path: parent.to_path_buf(),
+        source,
+    })?;
+    if path.exists() {
+        fs::remove_dir_all(&path).map_err(|source| InventoryError::Write {
+            path: path.clone(),
+            source,
+        })?;
+    }
+    copy_dir_recursively(extracted_path, &path)?;
+    Ok(())
+}
+
+fn historical_eval_parent_cache_repo_path(
+    source_repo: &Path,
+    parent_sha: &str,
+    snapshot_paths: &[String],
+) -> PathBuf {
+    let parent_prefix = parent_sha.chars().take(12).collect::<String>();
+    source_repo
+        .join(".ctxpack")
+        .join("eval-worktrees")
+        .join(format!(
+            "{}-{}",
+            parent_prefix,
+            snapshot_paths_fingerprint(snapshot_paths)
+        ))
+}
+
+fn snapshot_paths_fingerprint(snapshot_paths: &[String]) -> String {
+    let mut fingerprint_source = format!(
+        "historical-eval-parent-snapshot-v1\n{}\n",
+        snapshot_paths.len()
+    );
+    for path in snapshot_paths {
+        fingerprint_source.push_str(path);
+        fingerprint_source.push('\n');
+    }
+    task_hash(&fingerprint_source)[..16].to_string()
+}
+
+fn copy_dir_recursively(source: &Path, destination: &Path) -> Result<(), InventoryError> {
+    fs::create_dir_all(destination).map_err(|source_error| InventoryError::CreateDir {
+        path: destination.to_path_buf(),
+        source: source_error,
+    })?;
+    for entry in fs::read_dir(source).map_err(|source_error| InventoryError::Read {
+        path: source.to_path_buf(),
+        source: source_error,
+    })? {
+        let entry = entry.map_err(|source_error| InventoryError::Read {
+            path: source.to_path_buf(),
+            source: source_error,
+        })?;
+        let source_path = entry.path();
+        let destination_path = destination.join(entry.file_name());
+        let file_type = entry
+            .file_type()
+            .map_err(|source_error| InventoryError::Read {
+                path: source_path.clone(),
+                source: source_error,
+            })?;
+        if file_type.is_dir() {
+            copy_dir_recursively(&source_path, &destination_path)?;
+        } else if file_type.is_file() {
+            if let Some(parent) = destination_path.parent() {
+                fs::create_dir_all(parent).map_err(|source_error| InventoryError::CreateDir {
+                    path: parent.to_path_buf(),
+                    source: source_error,
+                })?;
+            }
+            fs::copy(&source_path, &destination_path).map_err(|source_error| {
+                InventoryError::Write {
+                    path: destination_path,
+                    source: source_error,
+                }
+            })?;
+        }
+    }
+    Ok(())
 }
 
 fn git_existing_paths_at_revision(
@@ -4841,8 +4964,10 @@ fn retrieval_gap_reasons(
     missing_files: &[String],
     lexical_baseline_files: &[String],
     signals_by_path: &BTreeMap<String, Vec<RetrievalSignalKind>>,
+    context_area_hits: &[String],
 ) -> BTreeMap<String, String> {
     let lexical_paths = lexical_baseline_files.iter().collect::<BTreeSet<_>>();
+    let context_area_hits = context_area_hits.iter().collect::<BTreeSet<_>>();
     missing_files
         .iter()
         .map(|path| {
@@ -4850,6 +4975,8 @@ fn retrieval_gap_reasons(
                 "lexical_only_miss".to_string()
             } else if let Some(signals) = signals_by_path.get(path) {
                 format!("ranked_below_budget_{}", signal_family_code(signals))
+            } else if context_area_hits.contains(&context_area_for_path(path)) {
+                "area_context_only".to_string()
             } else {
                 "no_candidate_signal".to_string()
             };
@@ -5050,6 +5177,9 @@ fn recommendation_area_for_gap(signal_gap: &str, role: FileRole) -> RetrievalGap
     }
     if signal_gap == "lexical_only_miss" {
         return RetrievalGapRecommendationArea::LexicalRanking;
+    }
+    if signal_gap == "area_context_only" {
+        return RetrievalGapRecommendationArea::ContextPlanning;
     }
     if signal_gap.contains("history") || signal_gap.contains("co_change") {
         return RetrievalGapRecommendationArea::HistoryRanking;
@@ -5910,6 +6040,25 @@ mod tests {
         }];
 
         assert_eq!(average_broad_context_area_recall(&commits), 0.5);
+    }
+
+    #[test]
+    fn retrieval_gap_reasons_distinguish_area_only_context() {
+        let reasons = retrieval_gap_reasons(
+            &["schema_agent/core/fd_registry.py".to_string()],
+            &[],
+            &BTreeMap::new(),
+            &["schema_agent/core".to_string()],
+        );
+
+        assert_eq!(
+            reasons.get("schema_agent/core/fd_registry.py"),
+            Some(&"area_context_only".to_string())
+        );
+        assert_eq!(
+            recommendation_area_for_gap("area_context_only", FileRole::Source),
+            RetrievalGapRecommendationArea::ContextPlanning
+        );
     }
 
     #[test]

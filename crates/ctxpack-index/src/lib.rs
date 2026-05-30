@@ -40,10 +40,11 @@ pub use freshness::{
 };
 pub use git::{
     co_change_hints, co_change_hints_report, current_diff_summary, current_diff_summary_report,
-    historical_commit_samples, historical_commit_samples_report, write_eval_history_sidecar,
-    ChangeKind, CoChangeHint, CoChangeOptions, CoChangeReport, CurrentDiffExcluded,
-    CurrentDiffOptions, CurrentDiffPrivacyStatus, CurrentDiffReport, CurrentDiffSummary,
-    HistoricalChangedPath, HistoricalCommitOptions, HistoricalCommitReport, HistoricalCommitSample,
+    historical_commit_samples, historical_commit_samples_report,
+    historical_commit_samples_with_safe_paths, write_eval_history_sidecar, ChangeKind,
+    CoChangeHint, CoChangeOptions, CoChangeReport, CurrentDiffExcluded, CurrentDiffOptions,
+    CurrentDiffPrivacyStatus, CurrentDiffReport, CurrentDiffSummary, HistoricalChangedPath,
+    HistoricalCommitOptions, HistoricalCommitReport, HistoricalCommitSample,
     HistoricalPathExclusionReason, LabelScope,
 };
 pub use inventory::{
@@ -361,6 +362,51 @@ mod tests {
 
         let results = lexical_search(&repo, "session test", &SearchOptions { limit: 5 }).unwrap();
         assert_eq!(results[0].path, "tests/auth/session.test.ts");
+
+        std::env::remove_var("CTXPACK_HOME");
+    }
+
+    #[test]
+    fn lexical_search_reuses_query_cache_until_inventory_changes() {
+        let _guard = env_lock();
+        let temp = tempfile::tempdir().unwrap();
+        let repo = temp.path().join("repo");
+        let home = temp.path().join("ctxpack-home");
+        fs::create_dir_all(repo.join(".git")).unwrap();
+        fs::create_dir_all(repo.join("src")).unwrap();
+        fs::write(
+            repo.join("src/session.ts"),
+            "export const loginToken = true;\n",
+        )
+        .unwrap();
+        std::env::set_var("CTXPACK_HOME", &home);
+
+        let first =
+            lexical_search_report(&repo, "loginToken", &SearchOptions { limit: 5 }).unwrap();
+        let second =
+            lexical_search_report(&repo, "loginToken", &SearchOptions { limit: 5 }).unwrap();
+        fs::write(
+            repo.join("src/other.ts"),
+            "export const loginToken = 'fresh';\n",
+        )
+        .unwrap();
+        let third =
+            lexical_search_report(&repo, "loginToken", &SearchOptions { limit: 5 }).unwrap();
+
+        assert_eq!(first.results[0].path, "src/session.ts");
+        assert_eq!(
+            second.cache_status.status,
+            ctxpack_core::CacheStatusKind::Hit
+        );
+        assert!(second
+            .cache_status
+            .path
+            .as_deref()
+            .is_some_and(|path| { path.contains("lexical-search") && path.ends_with(".json") }));
+        assert!(third
+            .results
+            .iter()
+            .any(|result| result.path == "src/other.ts"));
 
         std::env::remove_var("CTXPACK_HOME");
     }

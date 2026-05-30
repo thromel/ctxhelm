@@ -414,6 +414,26 @@ pub fn historical_commit_samples(
     Ok(historical_commit_samples_report(repo_root, options)?.samples)
 }
 
+pub fn historical_commit_samples_with_safe_paths(
+    repo_root: impl AsRef<Path>,
+    options: &HistoricalCommitOptions,
+    safe_paths: &BTreeSet<String>,
+) -> Result<Vec<HistoricalCommitSample>, InventoryError> {
+    let repo_root = canonicalize(repo_root.as_ref())?;
+    let commits = git_commit_subject_file_sets(
+        &repo_root,
+        options.limit.max(1),
+        options.base.as_deref(),
+        options.head.as_deref(),
+    )?;
+    Ok(label_historical_commit_samples(
+        &repo_root,
+        options.limit,
+        safe_paths,
+        commits,
+    ))
+}
+
 pub fn historical_commit_samples_report(
     repo_root: impl AsRef<Path>,
     options: &HistoricalCommitOptions,
@@ -443,11 +463,24 @@ pub fn historical_commit_samples_report(
             });
         }
     };
+    let samples = label_historical_commit_samples(&repo_root, options.limit, &safe_paths, commits);
+    Ok(HistoricalCommitReport {
+        samples,
+        diagnostics: inventory_report.diagnostics,
+        cache_status: inventory_report.cache_status,
+    })
+}
+
+fn label_historical_commit_samples(
+    repo_root: &Path,
+    limit: usize,
+    safe_paths: &BTreeSet<String>,
+    commits: Vec<GitCommitSubjectFiles>,
+) -> Vec<HistoricalCommitSample> {
     let mut samples = commits
         .into_iter()
         .filter_map(|commit| {
-            let changed_paths =
-                label_historical_changed_paths(&repo_root, &safe_paths, commit.files);
+            let changed_paths = label_historical_changed_paths(repo_root, safe_paths, commit.files);
             let mut safe_changed_files = changed_paths
                 .iter()
                 .filter(|label| label.label_scope == LabelScope::Safe)
@@ -473,12 +506,8 @@ pub fn historical_commit_samples_report(
         })
         .collect::<Vec<_>>();
 
-    samples.truncate(options.limit.max(1));
-    Ok(HistoricalCommitReport {
-        samples,
-        diagnostics: inventory_report.diagnostics,
-        cache_status: inventory_report.cache_status,
-    })
+    samples.truncate(limit.max(1));
+    samples
 }
 
 fn git_partial_diagnostics(error: &InventoryError, partial_code: &str) -> Vec<Diagnostic> {
