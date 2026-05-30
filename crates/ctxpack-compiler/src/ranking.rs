@@ -369,6 +369,21 @@ fn select_target_files(candidates: &[RankedCandidate], file_budget: usize) -> Ve
         push_target(candidate, &mut selected, &mut selected_paths, file_budget);
     }
 
+    if !has_active_context {
+        for (_, candidate) in source_lexical_floor(candidates)
+            .into_iter()
+            .take(source_lexical_floor_limit(file_budget))
+        {
+            push_target(candidate, &mut selected, &mut selected_paths, file_budget);
+        }
+        for (_, candidate) in governance_doc_floor(candidates)
+            .into_iter()
+            .take(governance_doc_floor_limit(file_budget))
+        {
+            push_target(candidate, &mut selected, &mut selected_paths, file_budget);
+        }
+    }
+
     let mut lexical_floor = candidates
         .iter()
         .filter(|candidate| candidate.target_file.is_some())
@@ -424,29 +439,9 @@ fn select_target_files(candidates: &[RankedCandidate], file_budget: usize) -> Ve
     }
 
     if !has_active_context && selected.len() < file_budget {
-        let mut source_lexical_floor = candidates
-            .iter()
-            .filter(|candidate| candidate.target_file.is_some())
-            .filter(|candidate| candidate.candidate.role == Some(FileRole::Source))
-            .filter_map(|candidate| {
-                let lexical_score = lexical_signal_score(&candidate.candidate)?;
-                if lexical_score < 0.30 {
-                    return None;
-                }
-                Some((lexical_score, candidate))
-            })
-            .collect::<Vec<_>>();
-        source_lexical_floor.sort_by(|(left_score, left), (right_score, right)| {
-            right_score
-                .total_cmp(left_score)
-                .then_with(|| left.lexical_rank.cmp(&right.lexical_rank))
-                .then_with(|| right.rank_score.total_cmp(&left.rank_score))
-                .then_with(|| left.candidate.path.cmp(&right.candidate.path))
-        });
-        let source_lexical_floor_limit = file_budget.div_ceil(2).clamp(1, 4);
-        for (_, candidate) in source_lexical_floor
+        for (_, candidate) in source_lexical_floor(candidates)
             .into_iter()
-            .take(source_lexical_floor_limit)
+            .take(source_lexical_floor_limit(file_budget))
         {
             push_target(candidate, &mut selected, &mut selected_paths, file_budget);
         }
@@ -479,6 +474,103 @@ fn select_target_files(candidates: &[RankedCandidate], file_budget: usize) -> Ve
     }
 
     selected
+}
+
+fn source_lexical_floor(candidates: &[RankedCandidate]) -> Vec<(f32, &RankedCandidate)> {
+    let mut source_lexical_floor = candidates
+        .iter()
+        .filter(|candidate| candidate.target_file.is_some())
+        .filter(|candidate| candidate.candidate.role == Some(FileRole::Source))
+        .filter_map(|candidate| {
+            let lexical_score = lexical_signal_score(&candidate.candidate)?;
+            if lexical_score < 0.30 {
+                return None;
+            }
+            Some((lexical_score, candidate))
+        })
+        .collect::<Vec<_>>();
+    source_lexical_floor.sort_by(|(left_score, left), (right_score, right)| {
+        right_score
+            .total_cmp(left_score)
+            .then_with(|| left.lexical_rank.cmp(&right.lexical_rank))
+            .then_with(|| right.rank_score.total_cmp(&left.rank_score))
+            .then_with(|| left.candidate.path.cmp(&right.candidate.path))
+    });
+    source_lexical_floor
+}
+
+fn source_lexical_floor_limit(file_budget: usize) -> usize {
+    file_budget.div_ceil(2).clamp(1, 4)
+}
+
+fn governance_doc_floor(candidates: &[RankedCandidate]) -> Vec<(f32, &RankedCandidate)> {
+    let has_project_planning_docs = candidates.iter().any(|candidate| {
+        candidate
+            .candidate
+            .path
+            .as_deref()
+            .is_some_and(is_root_planning_doc_path)
+    });
+    if !has_project_planning_docs {
+        return Vec::new();
+    }
+
+    let mut governance_floor = candidates
+        .iter()
+        .filter(|candidate| candidate.target_file.is_some())
+        .filter(|candidate| {
+            candidate
+                .candidate
+                .path
+                .as_deref()
+                .is_some_and(is_root_governance_doc_path)
+        })
+        .filter_map(|candidate| {
+            let lexical_score = lexical_signal_score(&candidate.candidate)?;
+            if lexical_score < 0.30 {
+                return None;
+            }
+            Some((lexical_score, candidate))
+        })
+        .collect::<Vec<_>>();
+    governance_floor.sort_by(|(left_score, left), (right_score, right)| {
+        right_score
+            .total_cmp(left_score)
+            .then_with(|| left.lexical_rank.cmp(&right.lexical_rank))
+            .then_with(|| left.candidate.path.cmp(&right.candidate.path))
+    });
+    governance_floor
+}
+
+fn governance_doc_floor_limit(file_budget: usize) -> usize {
+    (file_budget / 4).clamp(1, 3)
+}
+
+fn is_root_governance_doc_path(path: &str) -> bool {
+    matches!(
+        path,
+        ".planning/STATE.md"
+            | ".planning/ROADMAP.md"
+            | ".planning/MILESTONES.md"
+            | ".planning/REQUIREMENTS.md"
+            | ".planning/PROJECT.md"
+            | "AGENTS.md"
+            | "README.md"
+            | "docs/benchmarking.md"
+            | "docs/release.md"
+            | "docs/semantic.md"
+    )
+}
+
+fn is_root_planning_doc_path(path: &str) -> bool {
+    matches!(
+        path,
+        ".planning/STATE.md"
+            | ".planning/ROADMAP.md"
+            | ".planning/MILESTONES.md"
+            | ".planning/REQUIREMENTS.md"
+            | ".planning/PROJECT.md"
+    )
 }
 
 fn push_target(
@@ -1342,6 +1434,166 @@ mod tests {
             .and_then(|candidate| candidate.candidate.signal_scores.first())
             .map(|score| score.signal.clone());
         assert_eq!(source_signal, Some(RetrievalSignalKind::LexicalExpansion));
+    }
+
+    #[test]
+    fn selection_applies_source_lexical_reserve_before_docs_fill_budget() {
+        let candidates = rank_candidates(RankingInput {
+            lexical_results: vec![
+                SearchResult {
+                    path: "docs/old-0.md".to_string(),
+                    role: FileRole::Docs,
+                    language: Some("markdown".to_string()),
+                    score: 60.0,
+                    reason: "doc match".to_string(),
+                },
+                SearchResult {
+                    path: "docs/old-1.md".to_string(),
+                    role: FileRole::Docs,
+                    language: Some("markdown".to_string()),
+                    score: 59.0,
+                    reason: "doc match".to_string(),
+                },
+                SearchResult {
+                    path: "docs/old-2.md".to_string(),
+                    role: FileRole::Docs,
+                    language: Some("markdown".to_string()),
+                    score: 58.0,
+                    reason: "doc match".to_string(),
+                },
+                SearchResult {
+                    path: "docs/old-3.md".to_string(),
+                    role: FileRole::Docs,
+                    language: Some("markdown".to_string()),
+                    score: 57.0,
+                    reason: "doc match".to_string(),
+                },
+                SearchResult {
+                    path: "src/eval.rs".to_string(),
+                    role: FileRole::Source,
+                    language: Some("rust".to_string()),
+                    score: 12.0,
+                    reason: "source match".to_string(),
+                },
+            ],
+            protected_lexical_limit: Some(4),
+            roles: roles([
+                ("docs/old-0.md", FileRole::Docs),
+                ("docs/old-1.md", FileRole::Docs),
+                ("docs/old-2.md", FileRole::Docs),
+                ("docs/old-3.md", FileRole::Docs),
+                ("src/eval.rs", FileRole::Source),
+            ]),
+            ..RankingInput::default()
+        });
+
+        let selection = select_ranked_candidates(&candidates, 4, 0);
+        let paths = selection
+            .target_files
+            .iter()
+            .map(|target| target.path.as_str())
+            .collect::<Vec<_>>();
+
+        assert!(paths.contains(&"src/eval.rs"));
+        assert_eq!(paths.len(), 4);
+    }
+
+    #[test]
+    fn selection_reserves_governance_docs_for_project_planning_candidates() {
+        let candidates = rank_candidates(RankingInput {
+            lexical_results: vec![
+                SearchResult {
+                    path: "crates/ctxpack-compiler/src/eval.rs".to_string(),
+                    role: FileRole::Source,
+                    language: Some("rust".to_string()),
+                    score: 18.0,
+                    reason: "source match".to_string(),
+                },
+                SearchResult {
+                    path: ".planning/milestones/v2.5/summary.md".to_string(),
+                    role: FileRole::Docs,
+                    language: Some("markdown".to_string()),
+                    score: 80.0,
+                    reason: "milestone match".to_string(),
+                },
+                SearchResult {
+                    path: ".planning/e2e/old-proof.json".to_string(),
+                    role: FileRole::Docs,
+                    language: Some("json".to_string()),
+                    score: 79.0,
+                    reason: "proof match".to_string(),
+                },
+                SearchResult {
+                    path: ".planning/STATE.md".to_string(),
+                    role: FileRole::Docs,
+                    language: Some("markdown".to_string()),
+                    score: 16.0,
+                    reason: "governance match".to_string(),
+                },
+            ],
+            roles: roles([
+                ("crates/ctxpack-compiler/src/eval.rs", FileRole::Source),
+                (".planning/milestones/v2.5/summary.md", FileRole::Docs),
+                (".planning/e2e/old-proof.json", FileRole::Docs),
+                (".planning/STATE.md", FileRole::Docs),
+            ]),
+            ..RankingInput::default()
+        });
+
+        let selection = select_ranked_candidates(&candidates, 3, 0);
+        let paths = selection
+            .target_files
+            .iter()
+            .map(|target| target.path.as_str())
+            .collect::<Vec<_>>();
+
+        assert!(paths.contains(&"crates/ctxpack-compiler/src/eval.rs"));
+        assert!(paths.contains(&".planning/STATE.md"));
+        assert_eq!(paths.len(), 3);
+    }
+
+    #[test]
+    fn selection_does_not_reserve_generic_governance_docs_without_planning_docs() {
+        let candidates = rank_candidates(RankingInput {
+            lexical_results: vec![
+                SearchResult {
+                    path: "src/main.rs".to_string(),
+                    role: FileRole::Source,
+                    language: Some("rust".to_string()),
+                    score: 18.0,
+                    reason: "source match".to_string(),
+                },
+                SearchResult {
+                    path: "docs/benchmarking.md".to_string(),
+                    role: FileRole::Docs,
+                    language: Some("markdown".to_string()),
+                    score: 16.0,
+                    reason: "generic doc match".to_string(),
+                },
+                SearchResult {
+                    path: "docs/noisy.md".to_string(),
+                    role: FileRole::Docs,
+                    language: Some("markdown".to_string()),
+                    score: 90.0,
+                    reason: "higher doc match".to_string(),
+                },
+            ],
+            roles: roles([
+                ("src/main.rs", FileRole::Source),
+                ("docs/benchmarking.md", FileRole::Docs),
+                ("docs/noisy.md", FileRole::Docs),
+            ]),
+            ..RankingInput::default()
+        });
+
+        let selection = select_ranked_candidates(&candidates, 2, 0);
+        let paths = selection
+            .target_files
+            .iter()
+            .map(|target| target.path.as_str())
+            .collect::<Vec<_>>();
+
+        assert!(!paths.contains(&"docs/benchmarking.md"));
     }
 
     #[test]

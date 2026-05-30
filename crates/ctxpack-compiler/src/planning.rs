@@ -15,7 +15,7 @@ use ctxpack_index::{
     load_or_refresh_inventory, normalized_provider, related_dependency_edges_report,
     related_tests_report, semantic_search_report, symbol_search_report, task_hash, CoChangeOptions,
     CurrentDiffOptions, DependencyOptions, InventoryError, InventoryOptions, SearchOptions,
-    SemanticOptions, SemanticProviderConfig, StoreConfig, SymbolOptions,
+    SearchResult, SemanticOptions, SemanticProviderConfig, StoreConfig, SymbolOptions,
 };
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::{Component, Path};
@@ -186,7 +186,8 @@ pub(crate) fn prepare_context_plan_with_paths_history_and_semantic(
         },
     )?;
     extend_plan_diagnostics(&mut plan, search_report.diagnostics);
-    let search_results = search_report.results;
+    let mut search_results = search_report.results;
+    extend_project_governance_docs(&mut search_results, &roles, task);
     for result in &search_results {
         roles.insert(result.path.clone(), result.role.clone());
     }
@@ -734,6 +735,89 @@ fn push_unique(values: &mut Vec<String>, value: String) {
     }
 }
 
+fn extend_project_governance_docs(
+    search_results: &mut Vec<SearchResult>,
+    roles: &BTreeMap<String, FileRole>,
+    task: &str,
+) {
+    if !is_project_governance_task(task) {
+        return;
+    }
+
+    let mut seen = search_results
+        .iter()
+        .map(|result| result.path.clone())
+        .collect::<BTreeSet<_>>();
+    for (index, path) in project_governance_doc_paths().into_iter().enumerate() {
+        let Some(role) = roles.get(path).cloned() else {
+            continue;
+        };
+        if !matches!(role, FileRole::Docs | FileRole::Config | FileRole::Unknown) {
+            continue;
+        }
+        if !seen.insert(path.to_string()) {
+            continue;
+        }
+        search_results.push(SearchResult {
+            path: path.to_string(),
+            role,
+            language: language_for_governance_doc(path),
+            score: 16.0 - index.min(10) as f32,
+            reason: "project governance artifact for planning/eval/release task".to_string(),
+        });
+    }
+}
+
+fn is_project_governance_task(task: &str) -> bool {
+    let task_terms = terms(task);
+    task_terms.iter().any(|term| {
+        matches!(
+            term.as_str(),
+            "benchmark"
+                | "benchmarks"
+                | "eval"
+                | "evaluation"
+                | "gate"
+                | "gates"
+                | "milestone"
+                | "milestones"
+                | "phase"
+                | "phases"
+                | "planning"
+                | "proof"
+                | "recall"
+                | "release"
+                | "retrieval"
+                | "roadmap"
+                | "validation"
+        )
+    })
+}
+
+fn project_governance_doc_paths() -> [&'static str; 10] {
+    [
+        ".planning/STATE.md",
+        ".planning/ROADMAP.md",
+        ".planning/MILESTONES.md",
+        ".planning/REQUIREMENTS.md",
+        ".planning/PROJECT.md",
+        "AGENTS.md",
+        "README.md",
+        "docs/benchmarking.md",
+        "docs/release.md",
+        "docs/semantic.md",
+    ]
+}
+
+fn language_for_governance_doc(path: &str) -> Option<String> {
+    path.rsplit_once('.')
+        .and_then(|(_, extension)| match extension {
+            "md" => Some("markdown".to_string()),
+            "toml" => Some("toml".to_string()),
+            _ => None,
+        })
+}
+
 const QUERY_STOP_WORDS: &[&str] = &[
     "the", "and", "for", "with", "that", "this", "from", "into", "when", "then", "fix", "add",
     "update", "remove", "refactor", "support", "test", "task", "code", "file",
@@ -1272,6 +1356,54 @@ mod tests {
             lexical_candidate_limit(&TaskType::Explain),
             search_limit(&TaskType::Explain)
         );
+    }
+
+    #[test]
+    fn governance_tasks_add_root_planning_docs_as_candidates() {
+        let mut search_results = vec![SearchResult {
+            path: "crates/ctxpack-compiler/src/eval.rs".to_string(),
+            role: FileRole::Source,
+            language: Some("rust".to_string()),
+            score: 20.0,
+            reason: "source match".to_string(),
+        }];
+        let roles = [
+            (".planning/STATE.md".to_string(), FileRole::Docs),
+            (".planning/ROADMAP.md".to_string(), FileRole::Docs),
+            (".planning/MILESTONES.md".to_string(), FileRole::Docs),
+            ("docs/benchmarking.md".to_string(), FileRole::Docs),
+            ("src/auth.ts".to_string(), FileRole::Source),
+        ]
+        .into_iter()
+        .collect::<BTreeMap<_, _>>();
+
+        extend_project_governance_docs(
+            &mut search_results,
+            &roles,
+            "measure retrieval recall in release proof",
+        );
+        let paths = search_results
+            .iter()
+            .map(|result| result.path.as_str())
+            .collect::<Vec<_>>();
+
+        assert!(paths.contains(&".planning/STATE.md"));
+        assert!(paths.contains(&".planning/ROADMAP.md"));
+        assert!(paths.contains(&".planning/MILESTONES.md"));
+        assert!(paths.contains(&"docs/benchmarking.md"));
+        assert!(!paths.contains(&"src/auth.ts"));
+    }
+
+    #[test]
+    fn non_governance_tasks_do_not_add_root_planning_docs() {
+        let mut search_results = Vec::new();
+        let roles = [(".planning/STATE.md".to_string(), FileRole::Docs)]
+            .into_iter()
+            .collect::<BTreeMap<_, _>>();
+
+        extend_project_governance_docs(&mut search_results, &roles, "fix auth session cookie");
+
+        assert!(search_results.is_empty());
     }
 
     #[test]

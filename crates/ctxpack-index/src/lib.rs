@@ -915,6 +915,56 @@ mod tests {
     }
 
     #[test]
+    fn related_dependency_edges_preserve_anchor_order_within_same_direction() {
+        let _guard = env_lock();
+        let temp = tempfile::tempdir().unwrap();
+        let repo = temp.path().join("repo");
+        let home = temp.path().join("ctxpack-home");
+        fs::create_dir_all(repo.join(".git")).unwrap();
+        fs::create_dir_all(repo.join("src/auth")).unwrap();
+        fs::write(
+            repo.join("src/app.ts"),
+            "import { requireSession } from './auth/session';\nexport const app = requireSession();\n",
+        )
+        .unwrap();
+        fs::write(
+            repo.join("src/admin.ts"),
+            "import { requireAdmin } from './auth/admin';\nexport const admin = requireAdmin();\n",
+        )
+        .unwrap();
+        fs::write(
+            repo.join("src/auth/session.ts"),
+            "export function requireSession() { return true; }\n",
+        )
+        .unwrap();
+        fs::write(
+            repo.join("src/auth/admin.ts"),
+            "export function requireAdmin() { return true; }\n",
+        )
+        .unwrap();
+        std::env::set_var("CTXPACK_HOME", &home);
+
+        let edges = related_dependency_edges(
+            &repo,
+            &[
+                "src/auth/admin.ts".to_string(),
+                "src/auth/session.ts".to_string(),
+            ],
+            &DependencyOptions { limit: 2 },
+        )
+        .unwrap();
+        let pairs = edges
+            .iter()
+            .map(|edge| (edge.source_path.as_str(), edge.target_path.as_str()))
+            .collect::<Vec<_>>();
+
+        assert_eq!(pairs[0], ("src/admin.ts", "src/auth/admin.ts"));
+        assert_eq!(pairs[1], ("src/app.ts", "src/auth/session.ts"));
+
+        std::env::remove_var("CTXPACK_HOME");
+    }
+
+    #[test]
     fn precision_edge_import_is_source_free_and_additive() {
         let _guard = env_lock();
         let temp = tempfile::tempdir().unwrap();

@@ -13,6 +13,13 @@ Historical eval reports keep two changed-file views:
 
 Recall, MRR, token ROI, missing-file analysis, and gap summaries use `retrievalTargetFiles`. This avoids treating newly-created files as retrieval failures while still preserving the full changed-file audit trail.
 
+The product-proof release gate evaluates two channels:
+
+- **Context channel:** non-test `retrievalTargetFiles` are compared against the lexical baseline at K=10.
+- **Validation channel:** changed tests are measured through `recommendedTests` and targeted commands.
+
+This matches the product contract: ctxpack returns source/docs/config as task context and tests as validation context. All-file recall remains in reports for transparency, but default promotion is decided by context lift plus validation-test recall so tests are not double-counted as both target files and validation commands.
+
 v2.3 treats benchmark suites as fixed corpus manifests. Older suite files still work, but v2.3+ manifests should include a manifest version, corpus ID, privacy label, revision range ID, and optional locked baseline metadata so quality claims are reproducible.
 
 Phase 58 adds source-free query construction traces to prepare-task and historical eval commit rows. These traces record extracted paths, stack frames, symbols, error terms, domain terms, commit clues, retriever query sets, and fusion controls. They intentionally store task hashes and bounded facets instead of raw prompts or source snippets.

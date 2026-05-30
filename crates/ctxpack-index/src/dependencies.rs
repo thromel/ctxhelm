@@ -7,7 +7,7 @@ use crate::policy::{read_safe_source, SourceReadStatus, SOURCE_READ_MAX_BYTES};
 use crate::symbols::{extract_symbols_report, CodeSymbol};
 use ctxpack_core::{CacheStatus, Diagnostic, DiagnosticSeverity, FileRole};
 use serde::{Deserialize, Serialize};
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
 use std::path::{Component, Path, PathBuf};
 
@@ -239,11 +239,14 @@ pub fn related_dependency_edges_report(
     options: &DependencyOptions,
 ) -> Result<DependencyEdgesReport, InventoryError> {
     let repo_root = canonicalize(repo_root.as_ref())?;
-    let anchors = anchor_paths
-        .iter()
-        .map(|path| normalize_input_path(&repo_root, path))
-        .filter(|path| !path.is_empty())
-        .collect::<BTreeSet<_>>();
+    let mut anchor_order = BTreeMap::new();
+    for (index, path) in anchor_paths.iter().enumerate() {
+        let normalized = normalize_input_path(&repo_root, path);
+        if !normalized.is_empty() {
+            anchor_order.entry(normalized).or_insert(index);
+        }
+    }
+    let anchors = anchor_order.keys().cloned().collect::<BTreeSet<_>>();
     if anchors.is_empty() {
         let report = load_or_refresh_inventory(&repo_root, &InventoryOptions::default())?;
         return Ok(DependencyEdgesReport {
@@ -263,6 +266,10 @@ pub fn related_dependency_edges_report(
     edges.sort_by(|left, right| {
         edge_anchor_rank(left, &anchors)
             .cmp(&edge_anchor_rank(right, &anchors))
+            .then_with(|| {
+                edge_anchor_order(left, &anchor_order).cmp(&edge_anchor_order(right, &anchor_order))
+            })
+            .then_with(|| right.confidence.total_cmp(&left.confidence))
             .then_with(|| left.source_path.cmp(&right.source_path))
             .then_with(|| left.target_path.cmp(&right.target_path))
     });
@@ -887,4 +894,16 @@ fn edge_anchor_rank(edge: &DependencyEdge, anchors: &BTreeSet<String>) -> u8 {
         (true, true) => 2,
         (false, false) => 3,
     }
+}
+
+fn edge_anchor_order(edge: &DependencyEdge, anchor_order: &BTreeMap<String, usize>) -> usize {
+    [
+        anchor_order.get(&edge.source_path),
+        anchor_order.get(&edge.target_path),
+    ]
+    .into_iter()
+    .flatten()
+    .copied()
+    .min()
+    .unwrap_or(usize::MAX)
 }

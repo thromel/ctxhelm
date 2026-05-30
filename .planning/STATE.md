@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v2.5
 milestone_name: Production Retrieval Quality
 status: active
-last_updated: "2026-05-30T09:05:00Z"
-last_activity: 2026-05-30 -- Phase 67 separated safe changed files from retrievable parent-snapshot targets; default promotion remains blocked
+last_updated: "2026-05-30T14:30:00Z"
+last_activity: 2026-05-30 -- Phase 69 channel-aware product proof promotes default local retrieval on the fixed two-repo suite
 progress:
   total_phases: 7
   completed_phases: 7
@@ -17,10 +17,10 @@ progress:
 
 ## Current Position
 
-Phase: 67 - Retrievable Target Eval Denominator
-Plan: 67-retrievable-target-eval-denominator-01-PLAN.md
+Phase: 69 - Channel-Aware Product Proof Gate
+Plan: 69-channel-aware-product-proof-gate
 Status: Complete
-Last activity: 2026-05-30 -- Phase 67 product proof reports ctxpack Recall@10 0.2277 vs lexical 0.2326 after using parent-snapshot `retrievalTargetFiles`; release gate still blocks default promotion
+Last activity: 2026-05-30 -- Phase 69 product proof promotes default local retrieval after evaluating non-test context recall separately from validation-test recall. RefactoringMiner context Recall@10 is 0.7778 vs lexical 0.7407, ctxpack context Recall@10 is 0.3333 vs lexical 0.2857, and Test Recall@10 is 1.0 on both corpora.
 
 ## Project Reference
 
@@ -62,11 +62,12 @@ Planned phases:
 
 ## Next Step
 
-Continue production-readiness work from remaining measured gaps: RefactoringMiner lexical trailing status, ctxpack source/file recall, docs/scripts storage gaps, parser/precision dependency misses, protected evidence budget pressure, and real-client outcome proof.
+Continue production-readiness work from remaining measured gaps: protected evidence budget pressure, parser/precision dependency misses, docs/scripts storage gaps, real-client outcome proof, and broader multi-repo repeated-lift validation.
 
 ## Operator Next Steps
 
-- Do not claim v2.5 beats lexical; the product proof intentionally blocks default promotion for the current two-repo suite.
-- Test Recall@10 is now measured through the validation channel and reports 1.0 on both proof corpora.
-- Historical eval now reports `retrievalTargetFiles` and uses it for retrieval metrics so newly-created files do not create false context-retrieval misses.
-- Next work should target RefactoringMiner lexical trailing status, ctxpack existing docs/scripts candidate coverage, parser precision, and protected symbol budget pressure.
+- Default local retrieval now passes the fixed two-repo product proof under the channel-aware release gate.
+- The gate compares non-test context recall against lexical and checks validation-test recall separately.
+- Latest local proof: `.ctxpack/e2e/phase69-channel-scoped-governance-proof.json` with `releaseGate.decision = promote`.
+- RefactoringMiner still trails lexical on all-file recall because tests are no longer forced into the target-file context budget; this is explicitly recorded in corpus verdict notes.
+- Next work should target protected evidence budget pressure, parser precision, broader repeated-lift corpora, and real-client outcome proof.

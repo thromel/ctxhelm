@@ -423,6 +423,9 @@ pub struct ProductProofCorpusVerdict {
     pub file_recall_at_10: f32,
     pub lexical_baseline_recall_at_10: f32,
     pub lexical_delta_at_10: f32,
+    pub context_recall_at_10: f32,
+    pub lexical_context_recall_at_10: f32,
+    pub context_delta_at_10: f32,
     pub test_recall_at_10: f32,
     pub protected_evidence_miss_rate_at_10: f32,
     pub runtime_millis: u64,
@@ -1021,7 +1024,7 @@ fn product_proof_release_decision(
         return (
             SemanticPrecisionGateDecision::Block,
             format!(
-                "Blocked because default promotion requires every corpus to beat lexical; failing corpora: {}.",
+                "Blocked because default promotion requires every corpus to beat lexical on the non-test context channel and maintain validation-test recall; failing corpora: {}.",
                 failed.join(", ")
             ),
         );
@@ -1050,7 +1053,7 @@ fn product_proof_release_decision(
     }
     (
         SemanticPrecisionGateDecision::Promote,
-        "Promote: every evaluated corpus beat lexical under local-only proof thresholds."
+        "Promote: every evaluated corpus beat lexical on non-test context recall and maintained validation-test recall under local-only proof thresholds."
             .to_string(),
     )
 }
@@ -1065,6 +1068,9 @@ fn product_proof_corpus_verdict(repo: &BenchmarkRepoReport) -> ProductProofCorpu
             file_recall_at_10: 0.0,
             lexical_baseline_recall_at_10: 0.0,
             lexical_delta_at_10: 0.0,
+            context_recall_at_10: 0.0,
+            lexical_context_recall_at_10: 0.0,
+            context_delta_at_10: 0.0,
             test_recall_at_10: 0.0,
             protected_evidence_miss_rate_at_10: 1.0,
             runtime_millis: 0,
@@ -1075,18 +1081,32 @@ fn product_proof_corpus_verdict(repo: &BenchmarkRepoReport) -> ProductProofCorpu
         };
     };
     let lexical_delta_at_10 = report.file_recall_at_10 - report.lexical_baseline_recall_at_10;
+    let context_comparison = context_recall_comparison_at_10(report);
+    let validation_target_count = report
+        .commits
+        .iter()
+        .map(|commit| commit.test_files_changed)
+        .sum::<usize>();
     let status = if report.evaluated_commits == 0 {
         ProductProofCorpusStatus::InsufficientEvidence
-    } else if lexical_delta_at_10 > 0.03 {
+    } else if validation_target_count > 0 && report.test_recall_at_10 < 0.80 {
+        ProductProofCorpusStatus::Trail
+    } else if context_comparison.delta > 0.03 {
         ProductProofCorpusStatus::Beat
-    } else if lexical_delta_at_10 < -0.03 {
+    } else if context_comparison.delta < -0.03 {
         ProductProofCorpusStatus::Trail
     } else {
         ProductProofCorpusStatus::Match
     };
     let mut notes = Vec::new();
-    if report.test_recall_at_10 == 0.0 {
+    if validation_target_count > 0 && report.test_recall_at_10 == 0.0 {
         notes.push("test recall at 10 is zero".to_string());
+    }
+    if lexical_delta_at_10 < -0.03 && context_comparison.delta > 0.03 {
+        notes.push(
+            "all-file recall trails because validation tests are evaluated in the separate test channel"
+                .to_string(),
+        );
     }
     if report.protected_evidence.miss_rate_at_10 > 0.0 {
         notes.push(format!(
@@ -1101,10 +1121,73 @@ fn product_proof_corpus_verdict(repo: &BenchmarkRepoReport) -> ProductProofCorpu
         file_recall_at_10: report.file_recall_at_10,
         lexical_baseline_recall_at_10: report.lexical_baseline_recall_at_10,
         lexical_delta_at_10,
+        context_recall_at_10: context_comparison.ctxpack,
+        lexical_context_recall_at_10: context_comparison.lexical,
+        context_delta_at_10: context_comparison.delta,
         test_recall_at_10: report.test_recall_at_10,
         protected_evidence_miss_rate_at_10: report.protected_evidence.miss_rate_at_10,
         runtime_millis: report.runtime.total_millis,
         notes,
+    }
+}
+
+struct ContextRecallComparison {
+    ctxpack: f32,
+    lexical: f32,
+    delta: f32,
+}
+
+fn context_recall_comparison_at_10(report: &HistoricalEvalReport) -> ContextRecallComparison {
+    let mut context_targets = 0usize;
+    let mut ctxpack_hits = 0usize;
+    let mut lexical_hits = 0usize;
+    for commit in &report.commits {
+        let roles = commit
+            .changed_path_labels
+            .iter()
+            .map(|label| (label.path.as_str(), &label.role))
+            .collect::<BTreeMap<_, _>>();
+        let recommended = commit
+            .recommended_context_files
+            .iter()
+            .take(10)
+            .map(String::as_str)
+            .collect::<BTreeSet<_>>();
+        let lexical = commit
+            .lexical_baseline_files
+            .iter()
+            .take(10)
+            .map(String::as_str)
+            .collect::<BTreeSet<_>>();
+        for path in &commit.retrieval_target_files {
+            if roles
+                .get(path.as_str())
+                .is_some_and(|role| matches!(**role, FileRole::Test))
+            {
+                continue;
+            }
+            context_targets += 1;
+            if recommended.contains(path.as_str()) {
+                ctxpack_hits += 1;
+            }
+            if lexical.contains(path.as_str()) {
+                lexical_hits += 1;
+            }
+        }
+    }
+    if context_targets == 0 {
+        return ContextRecallComparison {
+            ctxpack: report.file_recall_at_10,
+            lexical: report.lexical_baseline_recall_at_10,
+            delta: report.file_recall_at_10 - report.lexical_baseline_recall_at_10,
+        };
+    }
+    let ctxpack = ctxpack_hits as f32 / context_targets as f32;
+    let lexical = lexical_hits as f32 / context_targets as f32;
+    ContextRecallComparison {
+        ctxpack,
+        lexical,
+        delta: ctxpack - lexical,
     }
 }
 
@@ -4814,6 +4897,50 @@ mod tests {
             SemanticPrecisionGateDecision::Promote
         );
         assert!(report.release_gate.default_promotion_allowed);
+    }
+
+    #[test]
+    fn product_proof_release_gate_separates_context_and_validation_channels() {
+        let mut eval = empty_historical_eval_report("channels");
+        set_recall_metrics(&mut eval, 0.50, 0.50);
+        eval.test_recall_at_10 = 1.0;
+        let commit = &mut eval.commits[0];
+        commit.changed_path_labels = vec![
+            HistoricalChangedPathLabel {
+                path: "src/auth/session.ts".to_string(),
+                change_kind: ctxpack_index::ChangeKind::Modified,
+                role: FileRole::Source,
+                label_scope: LabelScope::Safe,
+                excluded_reason: None,
+                old_path: None,
+            },
+            HistoricalChangedPathLabel {
+                path: "tests/auth/session.test.ts".to_string(),
+                change_kind: ctxpack_index::ChangeKind::Modified,
+                role: FileRole::Test,
+                label_scope: LabelScope::Safe,
+                excluded_reason: None,
+                old_path: None,
+            },
+        ];
+        commit.retrieval_target_files = vec![
+            "src/auth/session.ts".to_string(),
+            "tests/auth/session.test.ts".to_string(),
+        ];
+        commit.recommended_context_files = vec!["src/auth/session.ts".to_string()];
+        commit.lexical_baseline_files = vec!["tests/auth/session.test.ts".to_string()];
+        commit.recommended_tests = vec!["tests/auth/session.test.ts".to_string()];
+        commit.test_files_changed = 1;
+        commit.test_hits_at_10 = 1;
+
+        let report =
+            build_product_proof_report(benchmark_report_with_repos(vec![("channel-repo", eval)]));
+        let verdict = &report.release_gate.corpus_verdicts[0];
+
+        assert_eq!(verdict.status, ProductProofCorpusStatus::Beat);
+        assert_eq!(verdict.context_recall_at_10, 1.0);
+        assert_eq!(verdict.lexical_context_recall_at_10, 0.0);
+        assert_eq!(verdict.test_recall_at_10, 1.0);
     }
 
     fn gate_test_variant(name: &str, recall: f32, precision: f32) -> SemanticPrecisionVariant {
