@@ -430,6 +430,9 @@ Recommendation today:
 - Phase 81 fixes cache-hit runtime reporting. Warm cached proof reports the
   cache lookup runtime with zero commit-loop and slow-commit timings, while
   preserving the cached source-free quality metrics.
+- Phase 82 makes warm-cache runtime enforceable. Product proofs block cached
+  reports that mix cache misses, retain stale cold timings, retain slow-commit
+  diagnostics, or exceed `1000ms` warm lookup runtime.
 - Keep `local_metadata_reranked` eval-only until named regressions and protected
   evidence behavior clear the gate.
 - Keep `local_fastembed` opt-in for experiments and conceptual queries; it is

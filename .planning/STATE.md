@@ -3,11 +3,11 @@ gsd_state_version: 1.0
 milestone: v2.5
 milestone_name: Production Retrieval Quality
 status: active
-last_updated: "2026-05-30T21:40:00Z"
-last_activity: 2026-05-30 -- Phase 81 fixed cache-hit runtime reporting and added cold/warm product-proof latency evidence
+last_updated: "2026-05-30T22:10:00Z"
+last_activity: 2026-05-30 -- Phase 82 added an enforceable warm-cache release gate for cached product-proof runtime
 progress:
-  total_phases: 20
-  completed_phases: 20
+  total_phases: 21
+  completed_phases: 21
   total_plans: 7
   completed_plans: 7
   percent: 100
@@ -17,10 +17,10 @@ progress:
 
 ## Current Position
 
-Phase: 81 - Warm Cache Latency Proof
-Plan: 81-warm-cache-latency
+Phase: 82 - Warm Cache Release Gate
+Plan: 82-warm-cache-gate
 Status: Complete
-Last activity: 2026-05-30 -- Phase 81 makes cached historical eval reports show warm lookup runtime instead of stale cold timings. The four-repo warm proof promotes with cache hits on every corpus, zero warm commit-loop time, and protected retrieval-target miss-rate `0.0`.
+Last activity: 2026-05-30 -- Phase 82 blocks cached product-proof reports that carry stale cold timings or exceed the warm lookup threshold. Clean cold/warm proof replay promotes; the warm proof records cache hits on every corpus, zero warm commit-loop time, and `1ms` runtime per cached repo on this run.
 
 ## Project Reference
 
@@ -58,6 +58,7 @@ Planned phases:
 - Phase 79: Protected Target Floors (complete follow-up)
 - Phase 80: Unique Symbol Floor Accounting (complete follow-up)
 - Phase 81: Warm Cache Latency Proof (complete follow-up)
+- Phase 82: Warm Cache Release Gate (complete follow-up)
 
 ## Last Completed Milestone
 
@@ -75,7 +76,7 @@ Planned phases:
 
 ## Next Step
 
-Continue production-readiness work from remaining measured gaps: parser/precision dependency misses, context-vs-all-file corpus divergence, and release-grade steady-state latency thresholds.
+Continue production-readiness work from remaining measured gaps: parser/precision dependency misses and context-vs-all-file corpus divergence.
 
 ## Operator Next Steps
 
@@ -98,6 +99,7 @@ Continue production-readiness work from remaining measured gaps: parser/precisio
 - Latest warm-cache latency proof config: `.planning/e2e/2026-05-30-phase81-warm-cache-proof-config.json`.
 - Latest warm-cache cold proof: `.ctxpack/e2e/phase81-warm-cache-cold-proof.json`; cold proof promotes and populates source-free eval caches.
 - Latest warm-cache warm proof: `.ctxpack/e2e/phase81-warm-cache-warm-proof.json`; warm proof promotes with cache hits on all four corpora and `1ms` reported runtime for each cached repo on this run.
+- Latest warm-cache release-gate proof: `.planning/e2e/2026-05-30-phase82-warm-cache-gate.md`, `.ctxpack/e2e/phase82-warm-cache-gate-cold-proof.json`, and `.ctxpack/e2e/phase82-warm-cache-gate-warm-proof.json`; warm-cache regressions now block product-proof promotion.
 - Latest real-client proof: `.planning/e2e/2026-05-30-phase70-real-client-mcp-proof.md`.
 - RefactoringMiner still trails lexical on all-file recall because tests are no longer forced into the target-file context budget; this is explicitly recorded in corpus verdict notes.
-- Next work should target context-vs-all-file corpus divergence, low-information/multi-area task detection, parser precision, and release-grade steady-state latency thresholds.
+- Next work should target context-vs-all-file corpus divergence, low-information/multi-area task detection, and parser precision.

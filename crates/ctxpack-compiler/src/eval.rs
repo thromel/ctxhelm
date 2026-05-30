@@ -1058,6 +1058,21 @@ fn product_proof_release_decision(
             ),
         );
     }
+    let stale_or_slow_warm_cache = benchmark_report
+        .repositories
+        .iter()
+        .filter(|repo| product_proof_warm_cache_runtime_blocks_promotion(repo))
+        .map(|repo| repo.name.clone())
+        .collect::<Vec<_>>();
+    if !stale_or_slow_warm_cache.is_empty() {
+        return (
+            SemanticPrecisionGateDecision::Block,
+            format!(
+                "Blocked because cached proof runtime did not satisfy warm-cache thresholds for: {}.",
+                stale_or_slow_warm_cache.join(", ")
+            ),
+        );
+    }
     let slow = corpus_verdicts
         .iter()
         .filter(|verdict| {
@@ -1086,6 +1101,23 @@ fn product_proof_release_decision(
         "Promote: every evaluated corpus beat lexical or reached a perfect lexical ceiling on non-test context recall, while maintaining validation-test recall under local-only proof thresholds."
             .to_string(),
     )
+}
+
+fn product_proof_warm_cache_runtime_blocks_promotion(repo: &BenchmarkRepoReport) -> bool {
+    let Some(report) = repo.report.as_ref() else {
+        return false;
+    };
+    let runtime = &report.runtime;
+    if runtime.cache_hits == 0 {
+        return false;
+    }
+    runtime.cache_misses > 0
+        || runtime.total_millis > 1_000
+        || runtime.commit_millis > 0
+        || runtime.git_sample_millis > 0
+        || runtime.ranking_millis > 0
+        || runtime.pack_compiler_millis > 0
+        || !runtime.slow_commits.is_empty()
 }
 
 fn product_proof_runtime_blocks_promotion(
@@ -1211,6 +1243,12 @@ fn product_proof_corpus_verdict(repo: &BenchmarkRepoReport) -> ProductProofCorpu
             "single-commit cold proof exceeded 5000ms but stayed under the cold-start diagnostic ceiling"
                 .to_string(),
         );
+    }
+    if report.runtime.cache_hits > 0 {
+        notes.push(format!(
+            "warm cache proof hit {} cached report(s) in {}ms",
+            report.runtime.cache_hits, report.runtime.total_millis
+        ));
     }
     ProductProofCorpusVerdict {
         repository: repo.name.clone(),
@@ -5338,6 +5376,84 @@ mod tests {
         assert_eq!(warm.ranking_millis, 0);
         assert_eq!(warm.pack_compiler_millis, 0);
         assert!(warm.slow_commits.is_empty());
+    }
+
+    #[test]
+    fn product_proof_release_gate_blocks_stale_warm_cache_runtime() {
+        let mut cached = empty_historical_eval_report("cached-stale-runtime");
+        set_recall_metrics(&mut cached, 0.60, 0.40);
+        cached.runtime.total_millis = 12;
+        cached.runtime.commit_millis = 9_000;
+        cached.runtime.average_commit_millis = 9_000.0;
+        cached.runtime.cache_hits = 1;
+        cached.runtime.cache_misses = 0;
+        cached.runtime.slow_commits = vec![HistoricalSlowCommitSummary {
+            sha: "abc123".to_string(),
+            elapsed_millis: 9_000,
+            safe_changed_file_count: 1,
+            recommended_context_file_count: 10,
+            missing_file_count_at_10: 0,
+            low_information_task: false,
+        }];
+
+        let report =
+            build_product_proof_report(benchmark_report_with_repos(vec![("cached", cached)]));
+
+        assert_eq!(
+            report.release_gate.decision,
+            SemanticPrecisionGateDecision::Block
+        );
+        assert!(report
+            .release_gate
+            .decision_reason
+            .contains("warm-cache thresholds"));
+    }
+
+    #[test]
+    fn product_proof_release_gate_blocks_slow_warm_cache_lookup() {
+        let mut cached = empty_historical_eval_report("cached-slow-runtime");
+        set_recall_metrics(&mut cached, 0.60, 0.40);
+        cached.runtime.total_millis = 1_001;
+        cached.runtime.commit_millis = 0;
+        cached.runtime.overhead_millis = 1_001;
+        cached.runtime.average_commit_millis = 0.0;
+        cached.runtime.cache_hits = 1;
+        cached.runtime.cache_misses = 0;
+        cached.runtime.git_sample_millis = 0;
+        cached.runtime.ranking_millis = 0;
+        cached.runtime.pack_compiler_millis = 0;
+        cached.runtime.slow_commits = Vec::new();
+
+        let report =
+            build_product_proof_report(benchmark_report_with_repos(vec![("cached", cached)]));
+
+        assert_eq!(
+            report.release_gate.decision,
+            SemanticPrecisionGateDecision::Block
+        );
+        assert!(report
+            .release_gate
+            .decision_reason
+            .contains("warm-cache thresholds"));
+    }
+
+    #[test]
+    fn product_proof_release_gate_promotes_fast_warm_cache_lookup() {
+        let mut cached = empty_historical_eval_report("cached-fast-runtime");
+        set_recall_metrics(&mut cached, 0.60, 0.40);
+        cached.runtime = cached_historical_eval_runtime_summary(&cached.runtime, 7);
+
+        let report =
+            build_product_proof_report(benchmark_report_with_repos(vec![("cached", cached)]));
+
+        assert_eq!(
+            report.release_gate.decision,
+            SemanticPrecisionGateDecision::Promote
+        );
+        assert!(report.release_gate.corpus_verdicts[0]
+            .notes
+            .iter()
+            .any(|note| note.contains("warm cache proof hit")));
     }
 
     #[test]
