@@ -109,6 +109,8 @@ Design constraints:
 - use resource URIs for larger context
 - keep context-area resources source-free; agents must use native reads for
   source text
+- expose path counts, role buckets, path families, and next-read batches in
+  context-area resources so broad tasks can progress without extra tools
 - keep pack resources session-scoped
 - never mutate source files or global agent config
 

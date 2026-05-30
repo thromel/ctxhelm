@@ -360,10 +360,33 @@ mod tests {
             .as_str()
             .unwrap()
             .contains("\"sourceTextLogged\": false"));
-        assert!(context_area["result"]["contents"][0]["text"]
+        let context_area_text = context_area["result"]["contents"][0]["text"]
             .as_str()
+            .unwrap();
+        assert!(context_area_text.contains("src/auth/session.ts"));
+        let context_area_json: serde_json::Value = serde_json::from_str(context_area_text).unwrap();
+        assert_eq!(
+            context_area_json["roleBuckets"]["source"]
+                .as_array()
+                .unwrap()
+                .len(),
+            2
+        );
+        assert!(context_area_json["nextReadBatches"]
+            .as_array()
             .unwrap()
-            .contains("src/auth/session.ts"));
+            .iter()
+            .any(|batch| batch["kind"] == "primary"
+                && batch["paths"]
+                    .as_array()
+                    .unwrap()
+                    .iter()
+                    .any(|path| path == "src/auth/session.ts")));
+        assert!(context_area_json["pathFamilies"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|family| family["family"] == "src/auth/*.ts"));
         assert!(shared_artifacts["result"]["contents"][0]["text"]
             .as_str()
             .unwrap()

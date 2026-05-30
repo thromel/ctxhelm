@@ -298,6 +298,7 @@ fn repo_context_areas(repo: &Path) -> Result<Value, RpcError> {
                 "resourceUri": context_area_resource_uri(&area),
                 "pathCount": accumulator.path_count,
                 "roleCounts": accumulator.role_counts,
+                "pathFamilies": accumulator.path_families_json(8),
                 "representativePaths": accumulator.representative_paths,
                 "sourceTextLogged": false
             })
@@ -355,7 +356,10 @@ fn repo_context_area(repo: &Path, uri: &str) -> Result<Value, RpcError> {
         "resourceUri": context_area_resource_uri(&area),
         "pathCount": accumulator.path_count,
         "roleCounts": accumulator.role_counts,
+        "pathFamilies": accumulator.path_families_json(16),
         "representativePaths": accumulator.representative_paths,
+        "roleBuckets": accumulator.role_buckets_json(24),
+        "nextReadBatches": accumulator.next_read_batches_json(),
         "sourceTextLogged": false,
         "diagnostics": diagnostics,
         "privacyStatus": {
@@ -370,19 +374,118 @@ fn repo_context_area(repo: &Path, uri: &str) -> Result<Value, RpcError> {
 struct AreaResourceAccumulator {
     path_count: usize,
     role_counts: BTreeMap<String, usize>,
+    role_paths: BTreeMap<String, Vec<String>>,
+    path_families: BTreeMap<String, usize>,
     representative_paths: Vec<String>,
 }
 
 impl AreaResourceAccumulator {
     fn record(&mut self, path: &str, role: &FileRole) {
+        let role_key = context_area_role_key(role);
         self.path_count += 1;
-        *self
-            .role_counts
-            .entry(context_area_role_key(role))
-            .or_default() += 1;
+        *self.role_counts.entry(role_key.clone()).or_default() += 1;
+        *self.path_families.entry(path_family(path)).or_default() += 1;
+        self.role_paths
+            .entry(role_key)
+            .or_default()
+            .push(path.to_string());
         if self.representative_paths.len() < 20 {
             self.representative_paths.push(path.to_string());
         }
+    }
+
+    fn path_families_json(&self, limit: usize) -> Vec<Value> {
+        let mut families = self
+            .path_families
+            .iter()
+            .map(|(family, path_count)| (family.as_str(), *path_count))
+            .collect::<Vec<_>>();
+        families.sort_by(|(left_family, left_count), (right_family, right_count)| {
+            right_count
+                .cmp(left_count)
+                .then_with(|| left_family.cmp(right_family))
+        });
+        families
+            .into_iter()
+            .take(limit)
+            .map(|(family, path_count)| {
+                json!({
+                    "family": family,
+                    "pathCount": path_count
+                })
+            })
+            .collect()
+    }
+
+    fn role_buckets_json(&self, limit_per_role: usize) -> Value {
+        let mut buckets = serde_json::Map::new();
+        for role in ["source", "config", "schema", "test", "docs"] {
+            let paths = self
+                .role_paths
+                .get(role)
+                .map(|paths| {
+                    paths
+                        .iter()
+                        .take(limit_per_role)
+                        .cloned()
+                        .collect::<Vec<_>>()
+                })
+                .unwrap_or_default();
+            buckets.insert(role.to_string(), json!(paths));
+        }
+        Value::Object(buckets)
+    }
+
+    fn next_read_batches_json(&self) -> Vec<Value> {
+        let primary = self.paths_for_roles(&["source", "config", "schema"], 12);
+        let validation = self.paths_for_roles(&["test"], 8);
+        let docs = self.paths_for_roles(&["docs"], 8);
+        [
+            (
+                "primary",
+                "Inspect these source/config/schema paths first when this area is relevant.",
+                primary,
+            ),
+            (
+                "validation",
+                "Use these tests after the primary paths explain the likely change.",
+                validation,
+            ),
+            (
+                "docs",
+                "Use these docs for architecture or release constraints.",
+                docs,
+            ),
+        ]
+        .into_iter()
+        .filter(|(_, _, paths)| !paths.is_empty())
+        .map(|(kind, reason, paths)| {
+            json!({
+                "kind": kind,
+                "reason": reason,
+                "paths": paths,
+                "sourceTextLogged": false
+            })
+        })
+        .collect()
+    }
+
+    fn paths_for_roles(&self, roles: &[&str], limit: usize) -> Vec<String> {
+        let mut paths = Vec::new();
+        for role in roles {
+            let Some(role_paths) = self.role_paths.get(*role) else {
+                continue;
+            };
+            for path in role_paths {
+                if paths.len() >= limit {
+                    return paths;
+                }
+                if !paths.contains(path) {
+                    paths.push(path.clone());
+                }
+            }
+        }
+        paths
     }
 }
 
@@ -405,6 +508,15 @@ fn context_area_role_key(role: &FileRole) -> String {
         FileRole::Unknown => "unknown",
     }
     .to_string()
+}
+
+fn path_family(path: &str) -> String {
+    let (parent, file_name) = path.rsplit_once('/').unwrap_or((".", path));
+    let extension = file_name.rsplit_once('.').map(|(_, extension)| extension);
+    match extension {
+        Some(extension) if !extension.is_empty() => format!("{parent}/*.{extension}"),
+        _ => format!("{parent}/*"),
+    }
 }
 
 fn workspace_status_resource(repo: &Path) -> Result<Value, RpcError> {

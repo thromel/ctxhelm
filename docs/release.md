@@ -432,6 +432,27 @@ committed proof is
 `0.7166667`, and broad context-area recall improves from `0.0` to `1.0`.
 VeriSchema file/source/test/validation metrics remain stable.
 
+Phase 98 splits source-free broad classification from target-file source-floor
+spending. Archive/docs retrieval tasks now get context-area guidance, but they
+do not spend target-file slots on broad source floors unless they match the
+stricter implementation/eval gate. The evidence artifact is
+`.planning/e2e/2026-05-31-phase98-progressive-broad-classification.md`; the
+committed proof is
+`.ctxpack/e2e/phase98-broader-broad-task-classification-proof.json` and reports
+`releaseGate.decision = promote`. ctxpack File Recall@10 remains
+`0.47460318`, Source Recall@10 remains `0.7166667`, and broad context-area
+recall remains `1.0`.
+
+Phase 99 deepens dynamic context-area resources. The
+`ctxpack://repo/context-area/{encoded-area}` resource now returns source-free
+`roleBuckets`, `pathFamilies`, and `nextReadBatches` so agents can choose
+primary, validation, and docs reads without loading source text through MCP. The
+evidence artifact is
+`.planning/e2e/2026-05-31-phase99-context-area-read-batches.md`; the committed
+proof is `.ctxpack/e2e/phase99-context-area-read-batches-proof.json` and
+reports `releaseGate.decision = promote`. File/source/test/validation and broad
+context-area metrics are unchanged from Phase 98 across the four-repo proof.
+
 Latest optional real-client proof: Codex CLI `0.130.0` and Claude Code
 `2.1.158` both passed the smoke wrappers on 2026-05-30 with server-side
 `prepare_task` and `get_pack` evidence against an explicit repo path. See
