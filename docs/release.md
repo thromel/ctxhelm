@@ -145,6 +145,11 @@ The release gate runs these required checks:
 - `scripts/smoke-mcp-protocol.sh` from a wrong cwd with an explicit `--repo`/MCP `repo` argument
 - optional `ctxpack eval proof` benchmark product proof when `CTXPACK_BENCHMARK_CONFIG` is set
 
+For broad workflow/eval/lint tasks, `prepare-task` and generated packs include
+`contextAreas`. This field is source-free and additive: it gives agents
+area-level inspection hints while preserving the top target-file and validation
+channels used by release proof metrics.
+
 After all required checks pass, the gate writes a source-free proof bundle summary. By default it lives in the gate's temporary workspace; pass `CTXPACK_PROOF_DIR=/absolute/path/to/proof` to persist it:
 
 ```bash
@@ -292,6 +297,15 @@ The latest broader proof artifact is
 `.ctxpack/e2e/phase84-broad-scope-dependency-proof.json`; it promotes and
 improves VeriSchema Source Recall@10 from `0.249` to `0.304` while preserving
 RefactoringMiner, ctxpack, and ReAgent metrics.
+
+Phase 85 adds source-free `contextAreas` to broad multi-area prepare-task plans
+and packs. This gives agents area-level inspection hints without changing the
+target-file, test, validation-command, or protected-evidence budgets. The
+latest evidence artifact is
+`.planning/e2e/2026-05-31-phase85-broad-context-areas.md`; the committed
+warm-cache proof is `.ctxpack/e2e/phase85-context-areas-warm-proof.json` and
+promotes. Cold broad and required proofs kept quality metrics stable but still
+hit the existing local RefactoringMiner runtime threshold.
 
 Latest optional real-client proof: Codex CLI `0.130.0` and Claude Code
 `2.1.158` both passed the smoke wrappers on 2026-05-30 with server-side

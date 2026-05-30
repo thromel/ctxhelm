@@ -44,6 +44,17 @@ pub struct RelatedTest {
     pub attribution: Vec<RetrievalEvidence>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct ContextArea {
+    pub area: String,
+    pub reason: String,
+    #[serde(default)]
+    pub representative_paths: Vec<String>,
+    pub candidate_count: usize,
+    pub selected_count: usize,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
 #[serde(rename_all = "lowercase")]
 pub enum RetrievalCandidateKind {
@@ -325,6 +336,8 @@ pub struct ContextPlan {
     pub confidence: f32,
     pub target_files: Vec<TargetFile>,
     pub related_tests: Vec<RelatedTest>,
+    #[serde(default)]
+    pub context_areas: Vec<ContextArea>,
     pub recommended_commands: Vec<Command>,
     pub pack_options: Vec<PackOption>,
     pub missing_info_questions: Vec<String>,
@@ -1483,6 +1496,13 @@ mod tests {
                 attribution: Vec::new(),
             }],
             related_tests: vec![],
+            context_areas: vec![ContextArea {
+                area: "src".to_string(),
+                reason: "broad task candidate area".to_string(),
+                representative_paths: vec!["src/lib.rs".to_string()],
+                candidate_count: 1,
+                selected_count: 1,
+            }],
             recommended_commands: vec![],
             pack_options: vec![PackOption {
                 budget: PackBudget::Brief,
@@ -1520,6 +1540,13 @@ mod tests {
                 "attribution": []
             }],
             "relatedTests": [],
+            "contextAreas": [{
+                "area": "src",
+                "reason": "broad task candidate area",
+                "representativePaths": ["src/lib.rs"],
+                "candidateCount": 1,
+                "selectedCount": 1
+            }],
             "recommendedCommands": [],
             "packOptions": [{
                 "budget": "brief",
@@ -1553,6 +1580,7 @@ mod tests {
             "confidence",
             "targetFiles",
             "relatedTests",
+            "contextAreas",
             "recommendedCommands",
             "packOptions",
             "missingInfoQuestions",
@@ -1666,6 +1694,13 @@ mod tests {
                 confidence: 0.7,
                 attribution: attribution.clone(),
             }],
+            context_areas: vec![ContextArea {
+                area: "src".to_string(),
+                reason: "broad task candidate area".to_string(),
+                representative_paths: vec!["src/lib.rs".to_string()],
+                candidate_count: 1,
+                selected_count: 1,
+            }],
             recommended_commands: vec![],
             pack_options: vec![],
             missing_info_questions: vec![],
@@ -1693,8 +1728,10 @@ mod tests {
         let value = serde_json::to_value(&plan).unwrap();
 
         assert!(value.get("retrievalCandidates").is_some());
+        assert!(value.get("contextAreas").is_some());
         assert!(value["targetFiles"][0].get("attribution").is_some());
         assert!(value["relatedTests"][0].get("attribution").is_some());
+        assert_eq!(value["contextAreas"][0]["area"], "src");
         assert_eq!(value["retrievalCandidates"][0]["kind"], "file");
         assert_eq!(
             value["retrievalCandidates"][0]["signalScores"][0]["signal"],
@@ -2301,6 +2338,7 @@ mod tests {
             confidence: 0.7,
             target_files: Vec::new(),
             related_tests: Vec::new(),
+            context_areas: Vec::new(),
             recommended_commands: Vec::new(),
             pack_options: Vec::new(),
             missing_info_questions: Vec::new(),

@@ -4,11 +4,11 @@ use crate::ranking::{
     AnchorCandidate, RankingInput,
 };
 use ctxpack_core::{
-    Command, ContextPlan, Diagnostic, DiagnosticSeverity, FileRole, FusionControlSummary,
-    MemoryCard, MemoryFreshness, MemoryReviewStatus, PackBudget, PackOption, PrivacyStatus,
-    ProviderDecisionStatus, QueryConstructionTrace, QueryFacet, QueryFacetKind, RetrievalCandidate,
-    RetrievalCandidateKind, RetrievalEvidence, RetrievalSignalKind, RetrievalSignalScore,
-    RetrieverQuerySet, RiskFlag, SelectedMemory, TargetFile, TaskType,
+    Command, ContextArea, ContextPlan, Diagnostic, DiagnosticSeverity, FileRole,
+    FusionControlSummary, MemoryCard, MemoryFreshness, MemoryReviewStatus, PackBudget, PackOption,
+    PrivacyStatus, ProviderDecisionStatus, QueryConstructionTrace, QueryFacet, QueryFacetKind,
+    RetrievalCandidate, RetrievalCandidateKind, RetrievalEvidence, RetrievalSignalKind,
+    RetrievalSignalScore, RetrieverQuerySet, RiskFlag, SelectedMemory, TargetFile, TaskType,
 };
 use ctxpack_index::{
     co_change_hints_report, current_diff_summary_report, lexical_search_report, list_memory_cards,
@@ -451,6 +451,7 @@ pub(crate) fn prepare_context_plan_with_paths_history_mode_and_semantic(
         PREPARE_TASK_TEST_LIMIT,
         multi_area_task,
     );
+    plan.context_areas = context_areas_for_plan(&selection, multi_area_task);
     plan.target_files = selection.target_files;
     plan.related_tests = selection.related_tests;
     plan.recommended_commands = selection.recommended_commands;
@@ -495,6 +496,106 @@ fn related_test_seed_paths(
         push_source_test_seed(&mut seed_paths, roles, &edge.target_path);
     }
     seed_paths
+}
+
+fn context_areas_for_plan(
+    selection: &crate::ranking::RankedSelection,
+    multi_area_task: bool,
+) -> Vec<ContextArea> {
+    if !multi_area_task {
+        return Vec::new();
+    }
+
+    let selected_paths = selection
+        .target_files
+        .iter()
+        .map(|target| target.path.as_str())
+        .chain(
+            selection
+                .related_tests
+                .iter()
+                .map(|test| test.path.as_str()),
+        )
+        .collect::<BTreeSet<_>>();
+    let mut areas = BTreeMap::<String, AreaAccumulator>::new();
+
+    for candidate in &selection.retrieval_candidates {
+        let Some(path) = candidate.path.as_deref() else {
+            continue;
+        };
+        if !matches!(
+            candidate.role,
+            Some(FileRole::Source | FileRole::Test | FileRole::Config | FileRole::Schema)
+        ) {
+            continue;
+        }
+        let area = context_area_for_path(path);
+        let entry = areas.entry(area).or_default();
+        if entry.unique_paths.insert(path.to_string()) {
+            entry.candidate_count += 1;
+            if entry.representative_paths.len() < 3 {
+                entry.representative_paths.push(path.to_string());
+            }
+            if selected_paths.contains(path) {
+                entry.selected_count += 1;
+            }
+        }
+    }
+
+    let mut areas = areas
+        .into_iter()
+        .map(|(area, accumulator)| ContextArea {
+            area: area.clone(),
+            reason: format!(
+                "Broad task candidate area with {} candidate path(s) and {} selected path(s).",
+                accumulator.candidate_count, accumulator.selected_count
+            ),
+            representative_paths: accumulator.representative_paths,
+            candidate_count: accumulator.candidate_count,
+            selected_count: accumulator.selected_count,
+        })
+        .collect::<Vec<_>>();
+    areas.sort_by(|left, right| {
+        right
+            .selected_count
+            .cmp(&left.selected_count)
+            .then_with(|| right.candidate_count.cmp(&left.candidate_count))
+            .then_with(|| left.area.cmp(&right.area))
+    });
+    areas.truncate(8);
+    areas
+}
+
+#[derive(Default)]
+struct AreaAccumulator {
+    unique_paths: BTreeSet<String>,
+    representative_paths: Vec<String>,
+    candidate_count: usize,
+    selected_count: usize,
+}
+
+fn context_area_for_path(path: &str) -> String {
+    let mut components = path
+        .split('/')
+        .filter(|component| !component.is_empty())
+        .collect::<Vec<_>>();
+    if components.is_empty() {
+        return ".".to_string();
+    }
+    if components[0].starts_with('.') {
+        if components.len() >= 2 {
+            return format!("{}/{}", components[0], components[1]);
+        }
+        return components[0].to_string();
+    }
+    if components.len() == 1 {
+        return ".".to_string();
+    }
+    if components.len() == 2 && components[1].contains('.') {
+        return components[0].to_string();
+    }
+    components.truncate(2);
+    components.join("/")
 }
 
 fn extend_cochanged_test_results(
@@ -1101,6 +1202,7 @@ fn base_plan(task_type: TaskType) -> ContextPlan {
         confidence: 0.0,
         target_files: Vec::new(),
         related_tests: Vec::new(),
+        context_areas: Vec::new(),
         recommended_commands: Vec::new(),
         pack_options: vec![
             PackOption {

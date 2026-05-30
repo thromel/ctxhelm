@@ -4,7 +4,7 @@
 
 This roadmap tracks v2.5 Production Retrieval Quality and its immediate production-readiness follow-ups. v2.4 made semantic, precision, provider, and reranker paths source-safe and policy-gated, then the fresh RefactoringMiner proof fixed a semantic fusion regression. The current fixed two-repo product proof promotes default local retrieval under a channel-aware gate: non-test context recall beats lexical on both corpora, while validation-test recall is measured separately through `recommended_tests`.
 
-v2.5 therefore focuses on measured retrieval quality, not more surface area. The milestone must prove whether production local embeddings, reranking, graph/test/history fixes, and learned fusion can beat lexical baseline on real repositories while staying local-first and source-safe. Phase 66 fixed the false zero-test-recall signal by measuring `recommended_tests` as its own validation channel. Phase 67 fixed the denominator for historical retrieval metrics by separating all safe changed files from parent-snapshot `retrievalTargetFiles`. Phase 69 promoted default local retrieval under the channel-aware proof, Phase 70 refreshed real-client MCP evidence for Codex CLI and Claude Code, Phase 71 reduced archive-artifact retrieval noise in ctxpack's own history, Phase 72 broadened repeated-lift validation while improving validation-test recall seeding, Phase 73 pinned a broader optional fixed-corpus probe, Phase 76 split partial-snapshot history into validation-only mode for historical eval, Phase 77 added broad validation-command coverage for multi-area smoke/eval tasks, Phase 78 made the broader proof gate lexical-ceiling aware, Phase 79 added protected target floors, Phase 80 fixed symbol-floor duplicate accounting, Phase 81 made warm-cache runtime proof trustworthy, Phase 82 made warm-cache runtime enforceable, Phase 83 made context-vs-all-file divergence machine-checkable, and Phase 84 added broad-scope task accounting plus scoped dependency source floors.
+v2.5 therefore focuses on measured retrieval quality, not more surface area. The milestone must prove whether production local embeddings, reranking, graph/test/history fixes, and learned fusion can beat lexical baseline on real repositories while staying local-first and source-safe. Phase 66 fixed the false zero-test-recall signal by measuring `recommended_tests` as its own validation channel. Phase 67 fixed the denominator for historical retrieval metrics by separating all safe changed files from parent-snapshot `retrievalTargetFiles`. Phase 69 promoted default local retrieval under the channel-aware proof, Phase 70 refreshed real-client MCP evidence for Codex CLI and Claude Code, Phase 71 reduced archive-artifact retrieval noise in ctxpack's own history, Phase 72 broadened repeated-lift validation while improving validation-test recall seeding, Phase 73 pinned a broader optional fixed-corpus probe, Phase 76 split partial-snapshot history into validation-only mode for historical eval, Phase 77 added broad validation-command coverage for multi-area smoke/eval tasks, Phase 78 made the broader proof gate lexical-ceiling aware, Phase 79 added protected target floors, Phase 80 fixed symbol-floor duplicate accounting, Phase 81 made warm-cache runtime proof trustworthy, Phase 82 made warm-cache runtime enforceable, Phase 83 made context-vs-all-file divergence machine-checkable, Phase 84 added broad-scope task accounting plus scoped dependency source floors, and Phase 85 added source-free context-area hints for broad prepare-task plans and packs.
 
 ## v2.5 Production Retrieval Quality
 
@@ -13,7 +13,7 @@ v2.5 therefore focuses on measured retrieval quality, not more surface area. The
 **Phase Numbering:**
 
 - Integer phases (61, 62, 63, 64, 65): Planned v2.5 work
-- Phases 66-84: Production-readiness follow-ups from the original blocked proof and the channel-aware promotion path
+- Phases 66-85: Production-readiness follow-ups from the original blocked proof and the channel-aware promotion path
 - Decimal phases (61.1, 62.1): Urgent insertions if needed
 
 - [x] **Phase 61: Multi-Repo Quality Baselines** - Maintainers can run source-free paired baselines across RefactoringMiner and a second real repository with stable comparison artifacts.
@@ -39,6 +39,7 @@ v2.5 therefore focuses on measured retrieval quality, not more surface area. The
 - [x] **Phase 82: Warm Cache Release Gate** - Maintainers can block product-proof promotion when cached runtime evidence is stale or too slow.
 - [x] **Phase 83: Context Divergence Accounting** - Maintainers can distinguish useful context-channel lift from all-file lexical deficits caused by validation targets.
 - [x] **Phase 84: Broad Scope Dependency Floors** - Maintainers can identify broad multi-area tasks and preserve bounded dependency source evidence for them.
+- [x] **Phase 85: Broad Context Areas** - Agents can inspect source-free area hints for broad multi-area tasks without displacing target files or validation channels.
 
 ## Phase Details
 
@@ -537,6 +538,31 @@ spans many files.
 - [x] `.planning/e2e/2026-05-31-phase84-broad-scope-dependency-floors.md`
 - [x] `.ctxpack/e2e/phase84-broad-scope-dependency-proof.json`
 
+### Phase 85: Broad Context Areas
+
+**Goal**: Broad multi-area prepare-task plans and packs should expose adjacent
+repository areas as source-free guidance without changing protected target-file,
+test, or validation budgets.
+
+**Depends on**: Phase 84
+
+**Requirements**: GAP-02, GAP-04, PROOF-01
+
+**Success Criteria**:
+
+1. `ContextPlan` exposes typed additive `contextAreas`.
+2. `prepare-task` populates `contextAreas` only for broad multi-area tasks.
+3. Packs render context areas as inspection hints after risk flags.
+4. Focused tests cover the public JSON shape, source-free contract, and
+   multi-area diagnostics.
+5. Proof documents that broad fixed-corpus quality metrics are unchanged and
+   the warm-cache proof still promotes.
+
+**Evidence**:
+
+- [x] `.planning/e2e/2026-05-31-phase85-broad-context-areas.md`
+- [x] `.ctxpack/e2e/phase85-context-areas-warm-proof.json`
+
 ## Requirement Coverage
 
 | Requirement | Phase |
@@ -606,13 +632,16 @@ spans many files.
 | GAP-02 | Phase 84 |
 | GAP-04 | Phase 84 |
 | PROOF-01 | Phase 84 |
+| GAP-02 | Phase 85 |
+| GAP-04 | Phase 85 |
+| PROOF-01 | Phase 85 |
 
-**Coverage:** 20/20 v2.5 requirements mapped, with Phases 66-84 as measured follow-ups for proof/eval correctness gaps, real-client evidence, archive-noise reduction, broader validation, fixed-corpus reproducibility, protected-evidence diagnostics, parent-bounded history/test reservation, validation-only historical eval history, validation-command coverage, lexical-ceiling proof semantics, protected target floors, symbol-floor accounting, warm-cache runtime proof, warm-cache release gating, context-vs-all-file divergence accounting, and broad-scope dependency source floors. No orphaned v2.5 requirements.
+**Coverage:** 20/20 v2.5 requirements mapped, with Phases 66-85 as measured follow-ups for proof/eval correctness gaps, real-client evidence, archive-noise reduction, broader validation, fixed-corpus reproducibility, protected-evidence diagnostics, parent-bounded history/test reservation, validation-only historical eval history, validation-command coverage, lexical-ceiling proof semantics, protected target floors, symbol-floor accounting, warm-cache runtime proof, warm-cache release gating, context-vs-all-file divergence accounting, broad-scope dependency source floors, and broad context-area hints. No orphaned v2.5 requirements.
 
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 61 -> 62 -> 63 -> 64 -> 65 -> 66 -> 67 -> 69 -> 70 -> 71 -> 72 -> 73 -> 74 -> 75 -> 76 -> 77 -> 78 -> 79 -> 80 -> 81 -> 82 -> 83 -> 84
+Phases execute in numeric order: 61 -> 62 -> 63 -> 64 -> 65 -> 66 -> 67 -> 69 -> 70 -> 71 -> 72 -> 73 -> 74 -> 75 -> 76 -> 77 -> 78 -> 79 -> 80 -> 81 -> 82 -> 83 -> 84 -> 85
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
@@ -637,6 +666,9 @@ Phases execute in numeric order: 61 -> 62 -> 63 -> 64 -> 65 -> 66 -> 67 -> 69 ->
 | 80. Unique Symbol Floor Accounting | Evidence artifact | Complete | 2026-05-30 |
 | 81. Warm Cache Latency Proof | Evidence artifact | Complete | 2026-05-30 |
 | 82. Warm Cache Release Gate | Evidence artifact | Complete | 2026-05-30 |
+| 83. Context Divergence Accounting | Evidence artifact | Complete | 2026-05-30 |
+| 84. Broad Scope Dependency Floors | Evidence artifact | Complete | 2026-05-31 |
+| 85. Broad Context Areas | Evidence artifact | Complete | 2026-05-31 |
 
 ---
 *Roadmap created: 2026-05-22*

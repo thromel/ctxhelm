@@ -38,6 +38,13 @@ style changes that cannot be fully covered by a small K=10 context budget, and
 `broadScopeCommitCount` summarizes that count at report level. These fields are
 source-free diagnostics; they do not remove targets from recall denominators.
 
+Prepare-task plans now expose `contextAreas` for broad multi-area prompts. This
+is an additive, source-free channel that groups candidate paths by repository
+area, reports how many candidate and selected paths each area contributed, and
+lists a few representative paths. It lets agents inspect likely adjacent areas
+without forcing those areas into the protected top-10 file budget, so retrieval
+quality metrics remain comparable to earlier proofs.
+
 ## Suite File
 
 Benchmark suites are JSON files. Paths may be absolute or relative to the suite file.
@@ -455,6 +462,10 @@ Recommendation today:
   fields, and a bounded dependency source floor that only activates for broad
   workflow/eval/lint tasks. The broader proof still promotes and improves
   VeriSchema Source Recall@10 from `0.249` to `0.304`.
+- Phase 85 adds `contextAreas` to broad multi-area prepare-task plans and packs.
+  The field improves agent inspection guidance without changing top-10 ranking:
+  broad fixed-corpus quality metrics stayed flat and the warm-cache proof still
+  promotes.
 - Keep `local_metadata_reranked` eval-only until named regressions and protected
   evidence behavior clear the gate.
 - Keep `local_fastembed` opt-in for experiments and conceptual queries; it is

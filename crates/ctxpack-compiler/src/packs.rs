@@ -192,6 +192,13 @@ fn compile_pack_from_plan(
     if !plan.risk_flags.is_empty() {
         sections.push(section("Risk flags", "risk_flags", render_risk_flags(plan)));
     }
+    if !plan.context_areas.is_empty() {
+        sections.push(section(
+            "Context areas",
+            "context_areas",
+            render_context_areas(plan),
+        ));
+    }
     if !plan.selected_memory.is_empty() {
         sections.push(section(
             "Selected memory",
@@ -973,6 +980,28 @@ fn render_risk_flags(plan: &ContextPlan) -> String {
     plan.risk_flags
         .iter()
         .map(|flag| format!("- `{}`: {}", flag.code, flag.message))
+        .collect::<Vec<_>>()
+        .join("\n")
+}
+
+fn render_context_areas(plan: &ContextPlan) -> String {
+    plan.context_areas
+        .iter()
+        .map(|area| {
+            let representatives = if area.representative_paths.is_empty() {
+                "none".to_string()
+            } else {
+                area.representative_paths
+                    .iter()
+                    .map(|path| format!("`{path}`"))
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            };
+            format!(
+                "- `{}`: {} Representative paths: {}",
+                area.area, area.reason, representatives
+            )
+        })
         .collect::<Vec<_>>()
         .join("\n")
 }

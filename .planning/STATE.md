@@ -3,11 +3,11 @@ gsd_state_version: 1.0
 milestone: v2.5
 milestone_name: Production Retrieval Quality
 status: active
-last_updated: "2026-05-31T00:10:00Z"
-last_activity: 2026-05-31 -- Phase 84 added broad-scope task accounting and scoped dependency source floors
+last_updated: "2026-05-31T01:00:00Z"
+last_activity: 2026-05-31 -- Phase 85 added broad context areas for multi-area prepare-task plans and packs
 progress:
-  total_phases: 23
-  completed_phases: 23
+  total_phases: 24
+  completed_phases: 24
   total_plans: 7
   completed_plans: 7
   percent: 100
@@ -17,10 +17,10 @@ progress:
 
 ## Current Position
 
-Phase: 84 - Broad Scope Dependency Floors
-Plan: 84-broad-scope-dependency-floors
+Phase: 85 - Broad Context Areas
+Plan: 85-broad-context-areas
 Status: Complete
-Last activity: 2026-05-31 -- Phase 84 flags broad multi-area workflow/eval/lint prompts, records `broadScopeCommitCount` / `broadScopeTask` in historical eval JSON, and reserves bounded dependency source neighbors only for broad-scope tasks. The broader proof still promotes and improves VeriSchema Source Recall@10 from `0.249` to `0.304` without regressing the other corpora.
+Last activity: 2026-05-31 -- Phase 85 adds source-free `contextAreas` to broad multi-area prepare-task plans and packs. The field gives agents adjacent area hints without displacing target files, tests, validation commands, or protected top-10 evidence. Focused behavior tests pass; the broad cold proof keeps quality metrics unchanged but blocks on the existing RefactoringMiner runtime gate, while the committed warm-cache proof promotes.
 
 ## Project Reference
 
@@ -61,6 +61,7 @@ Planned phases:
 - Phase 82: Warm Cache Release Gate (complete follow-up)
 - Phase 83: Context Divergence Accounting (complete follow-up)
 - Phase 84: Broad Scope Dependency Floors (complete follow-up)
+- Phase 85: Broad Context Areas (complete follow-up)
 
 ## Last Completed Milestone
 
@@ -78,7 +79,7 @@ Planned phases:
 
 ## Next Step
 
-Continue production-readiness work from remaining measured gaps: remaining parser/precision `no_candidate_signal` families and test-mapping misses.
+Continue production-readiness work from remaining measured gaps: task-aware area diversity only with proof, remaining parser/precision `no_candidate_signal` families, and test-mapping misses.
 
 ## Operator Next Steps
 
@@ -104,7 +105,9 @@ Continue production-readiness work from remaining measured gaps: remaining parse
 - Latest warm-cache release-gate proof: `.planning/e2e/2026-05-30-phase82-warm-cache-gate.md`, `.ctxpack/e2e/phase82-warm-cache-gate-cold-proof.json`, and `.ctxpack/e2e/phase82-warm-cache-gate-warm-proof.json`; warm-cache regressions now block product-proof promotion.
 - Latest context-divergence accounting proof: `.planning/e2e/2026-05-30-phase83-context-divergence-accounting.md` and `.ctxpack/e2e/phase83-context-divergence-proof.json`; product-proof verdicts now expose context-vs-all-file deltas and require all-file lexical deficits to be explained by non-regressed context plus validation channels.
 - Latest broad-scope dependency proof: `.planning/e2e/2026-05-31-phase84-broad-scope-dependency-floors.md` and `.ctxpack/e2e/phase84-broad-scope-dependency-proof.json`; broad multi-area tasks are now counted separately and get a bounded dependency source floor.
+- Latest broad context-area proof: `.planning/e2e/2026-05-31-phase85-broad-context-areas.md` and `.ctxpack/e2e/phase85-context-areas-warm-proof.json`; broad multi-area prepare-task plans and packs now include source-free `contextAreas` that do not perturb target-file recall.
 - Latest real-client proof: `.planning/e2e/2026-05-30-phase70-real-client-mcp-proof.md`.
 - RefactoringMiner and ReAgent still trail lexical on all-file recall in the broader proof, but those deficits are now machine-checkable as explained by the context/validation split instead of only prose notes.
 - Phase 84 improves VeriSchema Source Recall@10 from `0.249` to `0.304` on the broader fixed corpus while keeping RefactoringMiner, ctxpack, and ReAgent stable.
-- Next work should target remaining parser/precision `no_candidate_signal` families and test-mapping misses.
+- Phase 85 intentionally keeps broad fixed-corpus quality metrics flat while improving agent guidance through non-displacing context-area hints; cold proofs block on the existing RefactoringMiner runtime threshold, while the warm-cache proof promotes.
+- Next work should target task-aware area diversity only with protected-evidence proof, plus remaining parser/precision `no_candidate_signal` families and test-mapping misses.
