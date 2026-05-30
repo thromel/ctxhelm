@@ -4,7 +4,7 @@
 
 This roadmap tracks v2.5 Production Retrieval Quality and its immediate production-readiness follow-ups. v2.4 made semantic, precision, provider, and reranker paths source-safe and policy-gated, then the fresh RefactoringMiner proof fixed a semantic fusion regression. The current fixed two-repo product proof promotes default local retrieval under a channel-aware gate: non-test context recall beats lexical on both corpora, while validation-test recall is measured separately through `recommended_tests`.
 
-v2.5 therefore focuses on measured retrieval quality, not more surface area. The milestone must prove whether production local embeddings, reranking, graph/test/history fixes, and learned fusion can beat lexical baseline on real repositories while staying local-first and source-safe. Phase 66 fixed the false zero-test-recall signal by measuring `recommended_tests` as its own validation channel. Phase 67 fixed the denominator for historical retrieval metrics by separating all safe changed files from parent-snapshot `retrievalTargetFiles`. Phase 69 promoted default local retrieval under the channel-aware proof, Phase 70 refreshed real-client MCP evidence for Codex CLI and Claude Code, Phase 71 reduced archive-artifact retrieval noise in ctxpack's own history, Phase 72 broadened repeated-lift validation while improving validation-test recall seeding, Phase 73 pinned a broader optional fixed-corpus probe, Phase 76 split partial-snapshot history into validation-only mode for historical eval, Phase 77 added broad validation-command coverage for multi-area smoke/eval tasks, Phase 78 made the broader proof gate lexical-ceiling aware, and Phase 79 added protected target floors.
+v2.5 therefore focuses on measured retrieval quality, not more surface area. The milestone must prove whether production local embeddings, reranking, graph/test/history fixes, and learned fusion can beat lexical baseline on real repositories while staying local-first and source-safe. Phase 66 fixed the false zero-test-recall signal by measuring `recommended_tests` as its own validation channel. Phase 67 fixed the denominator for historical retrieval metrics by separating all safe changed files from parent-snapshot `retrievalTargetFiles`. Phase 69 promoted default local retrieval under the channel-aware proof, Phase 70 refreshed real-client MCP evidence for Codex CLI and Claude Code, Phase 71 reduced archive-artifact retrieval noise in ctxpack's own history, Phase 72 broadened repeated-lift validation while improving validation-test recall seeding, Phase 73 pinned a broader optional fixed-corpus probe, Phase 76 split partial-snapshot history into validation-only mode for historical eval, Phase 77 added broad validation-command coverage for multi-area smoke/eval tasks, Phase 78 made the broader proof gate lexical-ceiling aware, Phase 79 added protected target floors, and Phase 80 fixed symbol-floor duplicate accounting.
 
 ## v2.5 Production Retrieval Quality
 
@@ -13,7 +13,7 @@ v2.5 therefore focuses on measured retrieval quality, not more surface area. The
 **Phase Numbering:**
 
 - Integer phases (61, 62, 63, 64, 65): Planned v2.5 work
-- Phases 66-79: Production-readiness follow-ups from the original blocked proof and the channel-aware promotion path
+- Phases 66-80: Production-readiness follow-ups from the original blocked proof and the channel-aware promotion path
 - Decimal phases (61.1, 62.1): Urgent insertions if needed
 
 - [x] **Phase 61: Multi-Repo Quality Baselines** - Maintainers can run source-free paired baselines across RefactoringMiner and a second real repository with stable comparison artifacts.
@@ -34,6 +34,7 @@ v2.5 therefore focuses on measured retrieval quality, not more surface area. The
 - [x] **Phase 77: Validation Command Coverage** - Maintainers can represent broad multi-area validation tasks with suite-level fallback commands and effective validation recall.
 - [x] **Phase 78: Ceiling-Aware Broader Gate** - Maintainers can promote broader proof when a corpus reaches a safe lexical ceiling instead of falsely requiring impossible recall lift.
 - [x] **Phase 79: Protected Target Floors** - Maintainers can reduce protected retrieval-target misses by reserving bounded source/config/governance evidence and deferring archive artifacts.
+- [x] **Phase 80: Unique Symbol Floor Accounting** - Maintainers can keep symbol-only source evidence inside budget when duplicate already-selected symbol files appear first.
 
 ## Phase Details
 
@@ -417,6 +418,27 @@ fallback context.
 - [x] `.ctxpack/e2e/phase79-protected-target-floors-proof.json`
 - [x] `.ctxpack/e2e/phase79-broader-protected-target-floors-proof.json`
 
+### Phase 80: Unique Symbol Floor Accounting
+
+**Goal**: Symbol floor limits should count unique newly selected files, not
+duplicate attempts for files already selected by lexical floors.
+
+**Depends on**: Phase 79
+
+**Requirements**: PROOF-01, PROOF-02, RANK-02
+
+**Success Criteria**:
+
+1. Source-symbol floor runs before governance/doc fill for no-active-context tasks.
+2. Source-symbol and general symbol floors count only newly selected files against their limits.
+3. Required and broader proofs promote with protected retrieval-target miss-rate `0.0` in measured corpora.
+
+**Evidence**:
+
+- [x] `.planning/e2e/2026-05-30-phase80-unique-symbol-floor.md`
+- [x] `.ctxpack/e2e/phase80-unique-symbol-floor-proof.json`
+- [x] `.ctxpack/e2e/phase80-broader-unique-symbol-floor-proof.json`
+
 ## Requirement Coverage
 
 | Requirement | Phase |
@@ -474,13 +496,16 @@ fallback context.
 | PROOF-01 | Phase 79 |
 | PROOF-02 | Phase 79 |
 | RANK-02 | Phase 79 |
+| PROOF-01 | Phase 80 |
+| PROOF-02 | Phase 80 |
+| RANK-02 | Phase 80 |
 
-**Coverage:** 20/20 v2.5 requirements mapped, with Phases 66-79 as measured follow-ups for proof/eval correctness gaps, real-client evidence, archive-noise reduction, broader validation, fixed-corpus reproducibility, protected-evidence diagnostics, parent-bounded history/test reservation, validation-only historical eval history, validation-command coverage, lexical-ceiling proof semantics, and protected target floors. No orphaned v2.5 requirements.
+**Coverage:** 20/20 v2.5 requirements mapped, with Phases 66-80 as measured follow-ups for proof/eval correctness gaps, real-client evidence, archive-noise reduction, broader validation, fixed-corpus reproducibility, protected-evidence diagnostics, parent-bounded history/test reservation, validation-only historical eval history, validation-command coverage, lexical-ceiling proof semantics, protected target floors, and symbol-floor accounting. No orphaned v2.5 requirements.
 
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 61 -> 62 -> 63 -> 64 -> 65 -> 66 -> 67 -> 69 -> 70 -> 71 -> 72 -> 73 -> 74 -> 75 -> 76 -> 77 -> 78 -> 79
+Phases execute in numeric order: 61 -> 62 -> 63 -> 64 -> 65 -> 66 -> 67 -> 69 -> 70 -> 71 -> 72 -> 73 -> 74 -> 75 -> 76 -> 77 -> 78 -> 79 -> 80
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
@@ -502,6 +527,7 @@ Phases execute in numeric order: 61 -> 62 -> 63 -> 64 -> 65 -> 66 -> 67 -> 69 ->
 | 77. Validation Command Coverage | Evidence artifact | Complete | 2026-05-30 |
 | 78. Ceiling-Aware Broader Gate | Evidence artifact | Complete | 2026-05-30 |
 | 79. Protected Target Floors | Evidence artifact | Complete | 2026-05-30 |
+| 80. Unique Symbol Floor Accounting | Evidence artifact | Complete | 2026-05-30 |
 
 ---
 *Roadmap created: 2026-05-22*

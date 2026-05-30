@@ -254,6 +254,12 @@ promote. Required RefactoringMiner and broader VeriSchema protected
 retrieval-target miss-rates are `0.0`; ctxpack still reports one residual
 protected source-symbol miss in each proof.
 
+Phase 80 fixes symbol-floor duplicate accounting. The current latest required
+proof is `.ctxpack/e2e/phase80-unique-symbol-floor-proof.json`, and the current
+latest broader proof is
+`.ctxpack/e2e/phase80-broader-unique-symbol-floor-proof.json`. Both promote
+with protected retrieval-target miss-rate `0.0` across measured corpora.
+
 Latest optional real-client proof: Codex CLI `0.130.0` and Claude Code
 `2.1.158` both passed the smoke wrappers on 2026-05-30 with server-side
 `prepare_task` and `get_pack` evidence against an explicit repo path. See

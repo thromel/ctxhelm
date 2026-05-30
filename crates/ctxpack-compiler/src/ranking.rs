@@ -419,6 +419,17 @@ fn select_target_files(candidates: &[RankedCandidate], file_budget: usize) -> Ve
         {
             push_target(candidate, &mut selected, &mut selected_paths, file_budget);
         }
+        let mut source_symbol_floor_selected = 0usize;
+        for (_, candidate) in source_symbol_floor(candidates) {
+            if source_symbol_floor_selected >= source_symbol_floor_limit(file_budget) {
+                break;
+            }
+            let before = selected.len();
+            push_target(candidate, &mut selected, &mut selected_paths, file_budget);
+            if selected.len() > before {
+                source_symbol_floor_selected += 1;
+            }
+        }
         for (_, candidate) in governance_doc_floor(candidates)
             .into_iter()
             .take(governance_doc_floor_limit(file_budget))
@@ -514,8 +525,16 @@ fn select_target_files(candidates: &[RankedCandidate], file_budget: usize) -> Ve
                 .then_with(|| left.candidate.path.cmp(&right.candidate.path))
         });
         let symbol_floor_limit = symbol_floor_limit(file_budget, has_active_context);
-        for (_, candidate) in symbol_floor.into_iter().take(symbol_floor_limit) {
+        let mut symbol_floor_selected = 0usize;
+        for (_, candidate) in symbol_floor {
+            if symbol_floor_selected >= symbol_floor_limit {
+                break;
+            }
+            let before = selected.len();
             push_target(candidate, &mut selected, &mut selected_paths, file_budget);
+            if selected.len() > before {
+                symbol_floor_selected += 1;
+            }
         }
     }
 
@@ -591,6 +610,29 @@ fn source_lexical_floor(candidates: &[RankedCandidate]) -> Vec<(f32, &RankedCand
 
 fn source_lexical_floor_limit(file_budget: usize) -> usize {
     file_budget.div_ceil(2).clamp(1, 5)
+}
+
+fn source_symbol_floor(candidates: &[RankedCandidate]) -> Vec<(f32, &RankedCandidate)> {
+    let mut source_symbol_floor = candidates
+        .iter()
+        .filter(|candidate| candidate.target_file.is_some())
+        .filter(|candidate| candidate.candidate.role == Some(FileRole::Source))
+        .filter_map(|candidate| {
+            let symbol_score = signal_score(&candidate.candidate, RetrievalSignalKind::Symbol)?;
+            Some((symbol_score, candidate))
+        })
+        .collect::<Vec<_>>();
+    source_symbol_floor.sort_by(|(left_score, left), (right_score, right)| {
+        right_score
+            .total_cmp(left_score)
+            .then_with(|| right.rank_score.total_cmp(&left.rank_score))
+            .then_with(|| left.candidate.path.cmp(&right.candidate.path))
+    });
+    source_symbol_floor
+}
+
+fn source_symbol_floor_limit(file_budget: usize) -> usize {
+    file_budget.div_ceil(4).clamp(1, 3)
 }
 
 fn has_symbol_target_candidates(candidates: &[RankedCandidate]) -> bool {
@@ -1683,6 +1725,102 @@ mod tests {
             .collect::<Vec<_>>();
 
         assert!(paths.contains(&"src/lib.ts"));
+    }
+
+    #[test]
+    fn selection_counts_unique_source_symbol_floor_additions() {
+        let candidates = rank_candidates(RankingInput {
+            lexical_results: vec![
+                lexical("src/eval.rs", 30.0),
+                lexical("src/git.rs", 29.0),
+                lexical("src/main.rs", 28.0),
+                SearchResult {
+                    path: "docs/validation.md".to_string(),
+                    role: FileRole::Docs,
+                    language: Some("markdown".to_string()),
+                    score: 27.0,
+                    reason: "validation docs".to_string(),
+                },
+            ],
+            symbol_results: vec![
+                SymbolSearchResult {
+                    symbol: CodeSymbol {
+                        name: "EvalReport".to_string(),
+                        kind: SymbolKind::Class,
+                        path: "src/eval.rs".to_string(),
+                        language: Some("rust".to_string()),
+                        start_line: 1,
+                        end_line: 2,
+                        signature: "struct EvalReport".to_string(),
+                        exported: true,
+                    },
+                    score: 50.0,
+                    reason: "symbol duplicate".to_string(),
+                },
+                SymbolSearchResult {
+                    symbol: CodeSymbol {
+                        name: "GitHistory".to_string(),
+                        kind: SymbolKind::Class,
+                        path: "src/git.rs".to_string(),
+                        language: Some("rust".to_string()),
+                        start_line: 1,
+                        end_line: 2,
+                        signature: "struct GitHistory".to_string(),
+                        exported: true,
+                    },
+                    score: 49.0,
+                    reason: "symbol duplicate".to_string(),
+                },
+                SymbolSearchResult {
+                    symbol: CodeSymbol {
+                        name: "PlanningContext".to_string(),
+                        kind: SymbolKind::Class,
+                        path: "src/planning.rs".to_string(),
+                        language: Some("rust".to_string()),
+                        start_line: 1,
+                        end_line: 2,
+                        signature: "struct PlanningContext".to_string(),
+                        exported: true,
+                    },
+                    score: 48.0,
+                    reason: "symbol-only source evidence".to_string(),
+                },
+                SymbolSearchResult {
+                    symbol: CodeSymbol {
+                        name: "RelatedTestMap".to_string(),
+                        kind: SymbolKind::Class,
+                        path: "src/related_tests.rs".to_string(),
+                        language: Some("rust".to_string()),
+                        start_line: 1,
+                        end_line: 2,
+                        signature: "struct RelatedTestMap".to_string(),
+                        exported: true,
+                    },
+                    score: 47.0,
+                    reason: "symbol-only source evidence".to_string(),
+                },
+            ],
+            roles: roles([
+                ("src/eval.rs", FileRole::Source),
+                ("src/git.rs", FileRole::Source),
+                ("src/main.rs", FileRole::Source),
+                ("src/planning.rs", FileRole::Source),
+                ("src/related_tests.rs", FileRole::Source),
+                ("docs/validation.md", FileRole::Docs),
+            ]),
+            ..RankingInput::default()
+        });
+
+        let selection = select_ranked_candidates(&candidates, 5, 0);
+        let paths = selection
+            .target_files
+            .iter()
+            .map(|target| target.path.as_str())
+            .collect::<Vec<_>>();
+
+        assert!(paths.contains(&"src/planning.rs"));
+        assert!(paths.contains(&"src/related_tests.rs"));
+        assert!(!paths.contains(&"docs/validation.md"));
     }
 
     #[test]

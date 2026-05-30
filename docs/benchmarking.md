@@ -424,6 +424,9 @@ Recommendation today:
   archive artifacts. Required RefactoringMiner and broader VeriSchema protected
   target miss-rates are now `0.0`; ctxpack still has residual source-symbol
   misses to investigate.
+- Phase 80 fixes symbol-floor duplicate accounting. Required and broader
+  product proofs now promote with protected retrieval-target miss-rate `0.0`
+  across measured corpora.
 - Keep `local_metadata_reranked` eval-only until named regressions and protected
   evidence behavior clear the gate.
 - Keep `local_fastembed` opt-in for experiments and conceptual queries; it is

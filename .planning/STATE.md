@@ -3,11 +3,11 @@ gsd_state_version: 1.0
 milestone: v2.5
 milestone_name: Production Retrieval Quality
 status: active
-last_updated: "2026-05-30T20:25:00Z"
-last_activity: 2026-05-30 -- Phase 79 added protected target floors for source/config/governance context and reduced measured protected target misses
+last_updated: "2026-05-30T21:05:00Z"
+last_activity: 2026-05-30 -- Phase 80 fixed symbol-floor duplicate accounting and cleared protected target misses in the required and broader proofs
 progress:
-  total_phases: 18
-  completed_phases: 18
+  total_phases: 19
+  completed_phases: 19
   total_plans: 7
   completed_plans: 7
   percent: 100
@@ -17,10 +17,10 @@ progress:
 
 ## Current Position
 
-Phase: 79 - Protected Target Floors
-Plan: 79-protected-target-floors
+Phase: 80 - Unique Symbol Floor Accounting
+Plan: 80-unique-symbol-floor
 Status: Complete
-Last activity: 2026-05-30 -- Phase 79 adds bounded floors for source lexical, source symbol, exact config, and governance docs, and defers archive artifacts during fill. Required and broader proofs still promote. RefactoringMiner required protected target misses and VeriSchema broader protected target misses are now zero; ctxpack still has one protected source-symbol miss in the required slice and one in the broader slice.
+Last activity: 2026-05-30 -- Phase 80 makes source-symbol and general symbol floors count unique newly selected files instead of duplicate already-selected candidates. Required and broader proofs still promote, and all protected retrieval-target miss-rates are now zero in the measured corpora.
 
 ## Project Reference
 
@@ -56,6 +56,7 @@ Planned phases:
 - Phase 77: Validation Command Coverage (complete follow-up)
 - Phase 78: Ceiling-Aware Broader Gate (complete follow-up)
 - Phase 79: Protected Target Floors (complete follow-up)
+- Phase 80: Unique Symbol Floor Accounting (complete follow-up)
 
 ## Last Completed Milestone
 
@@ -73,7 +74,7 @@ Planned phases:
 
 ## Next Step
 
-Continue production-readiness work from remaining measured gaps: residual ctxpack protected source-symbol misses, parser/precision dependency misses, and steady-state latency/quality hardening.
+Continue production-readiness work from remaining measured gaps: parser/precision dependency misses, context-vs-all-file corpus divergence, and steady-state latency/quality hardening.
 
 ## Operator Next Steps
 
@@ -91,6 +92,8 @@ Continue production-readiness work from remaining measured gaps: residual ctxpac
 - Latest ceiling-aware broader proof: `.ctxpack/e2e/phase78-ceiling-aware-broader-proof.json`; broader fixed-corpus promotion passes, but ctxpack and VeriSchema still report non-zero protected retrieval-target misses.
 - Latest protected-target floor proof: `.ctxpack/e2e/phase79-protected-target-floors-proof.json`; required proof promotes, RefactoringMiner protected target miss-rate is `0.0`, and ctxpack required protected target miss-rate is `0.0417`.
 - Latest broader protected-target floor proof: `.ctxpack/e2e/phase79-broader-protected-target-floors-proof.json`; broader proof promotes, VeriSchema protected target miss-rate is `0.0`, and ctxpack broader protected target miss-rate remains `0.100`.
+- Latest unique-symbol floor proof: `.ctxpack/e2e/phase80-unique-symbol-floor-proof.json`; required proof promotes and required protected target miss-rates are `0.0` across measured corpora.
+- Latest broader unique-symbol floor proof: `.ctxpack/e2e/phase80-broader-unique-symbol-floor-proof.json`; broader proof promotes and protected target miss-rates are `0.0` across measured corpora.
 - Latest real-client proof: `.planning/e2e/2026-05-30-phase70-real-client-mcp-proof.md`.
 - RefactoringMiner still trails lexical on all-file recall because tests are no longer forced into the target-file context budget; this is explicitly recorded in corpus verdict notes.
-- Next work should target ctxpack residual protected source-symbol misses (`planning.rs`, `related_tests.rs`), low-information/multi-area task detection, parser precision, and warm-cache latency characterization.
+- Next work should target context-vs-all-file corpus divergence, low-information/multi-area task detection, parser precision, and warm-cache latency characterization.
