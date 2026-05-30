@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v2.5
 milestone_name: Production Retrieval Quality
 status: active
-last_updated: "2026-05-31T12:45:00Z"
-last_activity: 2026-05-31 -- Phase 97 improved broad governance and proof task classification
+last_updated: "2026-05-31T13:45:00Z"
+last_activity: 2026-05-31 -- Phase 98 split broad context-area classification from target-file source floors
 progress:
   total_phases: 33
   completed_phases: 33
@@ -17,10 +17,10 @@ progress:
 
 ## Current Position
 
-Phase: 97 - Broad Governance Classification
-Plan: 97-broad-governance-classification
+Phase: 98 - Progressive Broad Classification
+Plan: 98-progressive-broad-classification
 Status: Complete
-Last activity: 2026-05-31 -- Phase 97 expanded governance and broad multi-area task classification for evaluation, historical-target, product-proof, metric, and promotion language. The committed proof promotes, improves ctxpack File Recall@10 to `0.47460318`, Source Recall@10 to `0.7166667`, and broad context-area recall to `1.0`, while preserving VeriSchema metrics.
+Last activity: 2026-05-31 -- Phase 98 expanded broad context-area classification for archive/artifact/retrieval and docs/proof wording, then split target-file source-floor spending behind a stricter implementation/eval gate. The committed proof promotes, keeps ctxpack File Recall@10 at `0.47460318`, Source Recall@10 at `0.7166667`, and broad context-area recall at `1.0`, while preserving VeriSchema metrics.
 
 ## Project Reference
 
@@ -74,6 +74,7 @@ Planned phases:
 - Phase 95: Progressive Area Pack Guidance (complete follow-up)
 - Phase 96: Context Area MCP Resources (complete follow-up)
 - Phase 97: Broad Governance Classification (complete follow-up)
+- Phase 98: Progressive Broad Classification (complete follow-up)
 
 ## Last Completed Milestone
 
@@ -91,7 +92,7 @@ Planned phases:
 
 ## Next Step
 
-Continue production-readiness work from remaining measured gaps: ranked-below-budget source/docs pressure and progressive pack/resource depth for broad repositories. Broad evals now distinguish files covered only by surfaced context areas from files with no candidate signal, clean RefactoringMiner cold proof promotes under the source-free index caches, broad context-area guidance covers more wide-task implementation areas, packs tell agents which zero-selected areas to inspect next, MCP exposes source-free area resources for progressive reads, and governance/proof tasks now classify broad historical/eval language more reliably.
+Continue production-readiness work from remaining measured gaps: ranked-below-budget source/docs pressure and progressive pack/resource depth for broad repositories. Broad evals now distinguish files covered only by surfaced context areas from files with no candidate signal, clean RefactoringMiner cold proof promotes under the source-free index caches, broad context-area guidance covers more wide-task implementation areas, packs tell agents which zero-selected areas to inspect next, MCP exposes source-free area resources for progressive reads, governance/proof tasks classify broad historical/eval language reliably, and archive/docs broad tasks now receive context-area guidance without perturbing target-file source floors.
 
 ## Operator Next Steps
 
@@ -130,6 +131,7 @@ Continue production-readiness work from remaining measured gaps: ranked-below-bu
 - Latest progressive area pack proof: `.planning/e2e/2026-05-31-phase95-progressive-area-pack-guidance.md` and `.ctxpack/e2e/phase95-progressive-area-pack-proof.json`; force-refresh broad proof promotes, packs now identify zero-selected areas for next native reads, and VeriSchema broad context-area recall remains `0.71851856`.
 - Latest context area MCP resource proof: `.planning/e2e/2026-05-31-phase96-context-area-resources.md` and `.ctxpack/e2e/phase96-context-area-resources-proof.json`; force-refresh broad proof promotes, `contextAreas` now carry source-free `resourceUri` values, and MCP serves `ctxpack://repo/context-areas` plus `ctxpack://repo/context-area/{encoded-area}` without adding tools.
 - Latest broad governance classification proof: `.planning/e2e/2026-05-31-phase97-broad-governance-classification.md` and `.ctxpack/e2e/phase97-broad-governance-classification-proof.json`; force-refresh broad proof promotes, ctxpack File Recall@10 improves to `0.47460318`, Source Recall@10 improves to `0.7166667`, and broad context-area recall improves to `1.0`.
+- Latest progressive broad classification proof: `.planning/e2e/2026-05-31-phase98-progressive-broad-classification.md` and `.ctxpack/e2e/phase98-broader-broad-task-classification-proof.json`; force-refresh broad proof promotes, archive/docs retrieval tasks now get broad context-area guidance, and ctxpack File Recall@10 `0.47460318` / Source Recall@10 `0.7166667` stay stable against Phase 97.
 - Latest real-client proof: `.planning/e2e/2026-05-30-phase70-real-client-mcp-proof.md`.
 - RefactoringMiner and ReAgent still trail lexical on all-file recall in the broader proof, but those deficits are now machine-checkable as explained by the context/validation split instead of only prose notes.
 - Phase 84 improves VeriSchema Source Recall@10 from `0.249` to `0.304` on the broader fixed corpus while keeping RefactoringMiner, ctxpack, and ReAgent stable.
@@ -146,4 +148,5 @@ Continue production-readiness work from remaining measured gaps: ranked-below-bu
 - Phase 95 makes broad context-area packs operational by highlighting zero-selected areas and representative paths for progressive native reads.
 - Phase 96 makes broad context-area guidance consumable through MCP resources while preserving target-file/test/validation metrics.
 - Phase 97 improves governance/proof task classification so historical evaluation and product-proof phrasing gets source-free planning docs and broad source-area signals.
+- Phase 98 separates source-free broad context-area classification from target-file source-floor spending, covering archive/docs tasks without reintroducing top-10 source/doc churn.
 - Next work should target ranked-below-budget source/docs pressure and deeper source-free area resources for broad repositories, not runtime threshold tuning or unproven top-10 churn.

@@ -150,6 +150,11 @@ For broad workflow/eval/lint tasks, `prepare-task` and generated packs include
 area-level inspection hints while preserving the top target-file and validation
 channels used by release proof metrics.
 
+Archive/docs retrieval tasks can also be classified as broad for source-free
+context-area guidance. Those tasks do not automatically spend target-file budget
+on broad source floors unless they also match the stricter implementation/eval
+floor gate.
+
 After all required checks pass, the gate writes a source-free proof bundle summary. By default it lives in the gate's temporary workspace; pass `CTXPACK_PROOF_DIR=/absolute/path/to/proof` to persist it:
 
 ```bash

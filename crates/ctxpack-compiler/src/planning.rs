@@ -417,7 +417,9 @@ pub(crate) fn prepare_context_plan_with_paths_history_mode_and_semantic(
         Vec::new()
     };
 
-    if multi_area_task {
+    let broad_target_selection = uses_broad_target_file_floors(task);
+
+    if broad_target_selection {
         extend_broad_source_area_candidates(&mut search_results, &roles);
     }
 
@@ -454,7 +456,7 @@ pub(crate) fn prepare_context_plan_with_paths_history_mode_and_semantic(
         &ranked_candidates,
         PREPARE_TASK_TARGET_LIMIT,
         PREPARE_TASK_TEST_LIMIT,
-        multi_area_task,
+        broad_target_selection,
     );
     plan.context_areas = context_areas_for_plan(&selection, multi_area_task);
     plan.target_files = selection.target_files;
@@ -1650,6 +1652,53 @@ pub(crate) fn is_multi_area_task(task: &str) -> bool {
         return false;
     }
     let broad_term_count = [
+        "archive",
+        "archives",
+        "artifact",
+        "artifacts",
+        "ci",
+        "channel",
+        "doc",
+        "docs",
+        "eval",
+        "evaluate",
+        "evaluation",
+        "harden",
+        "historical",
+        "lint",
+        "measure",
+        "measured",
+        "metric",
+        "metrics",
+        "orchestration",
+        "product",
+        "promote",
+        "promotion",
+        "proof",
+        "retrieval",
+        "run",
+        "runs",
+        "smoke",
+        "stabilize",
+        "target",
+        "targets",
+        "workflow",
+    ]
+    .into_iter()
+    .filter(|term| terms.contains(*term))
+    .count();
+    broad_term_count >= 2
+        || terms.contains("workflow")
+            && (terms.contains("lint") || terms.contains("smoke") || terms.contains("eval"))
+        || terms.contains("orchestration") && (terms.contains("run") || terms.contains("eval"))
+}
+
+fn uses_broad_target_file_floors(task: &str) -> bool {
+    let terms = terms(task);
+    if terms.is_empty() {
+        return false;
+    }
+    let broad_term_count = [
         "ci",
         "channel",
         "eval",
@@ -2039,7 +2088,27 @@ mod tests {
         assert!(is_multi_area_task(
             "evaluate retrievable historical targets"
         ));
+        assert!(is_multi_area_task("dampen archive artifacts retrieval"));
+        assert!(is_multi_area_task(
+            "MCP docs record real client mcp proof refresh"
+        ));
         assert!(!is_multi_area_task("fix auth session cookie"));
+    }
+
+    #[test]
+    fn docs_and_archive_multi_area_tasks_do_not_spend_target_file_source_floors() {
+        assert!(uses_broad_target_file_floors(
+            "promote channel aware product proof"
+        ));
+        assert!(uses_broad_target_file_floors(
+            "measure recall via validation channel"
+        ));
+        assert!(!uses_broad_target_file_floors(
+            "dampen archive artifacts retrieval"
+        ));
+        assert!(!uses_broad_target_file_floors(
+            "MCP docs record real client mcp proof refresh"
+        ));
     }
 
     #[test]
