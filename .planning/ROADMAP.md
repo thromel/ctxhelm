@@ -4,7 +4,7 @@
 
 This roadmap tracks v2.5 Production Retrieval Quality and its immediate production-readiness follow-ups. v2.4 made semantic, precision, provider, and reranker paths source-safe and policy-gated, then the fresh RefactoringMiner proof fixed a semantic fusion regression. The current fixed two-repo product proof promotes default local retrieval under a channel-aware gate: non-test context recall beats lexical on both corpora, while validation-test recall is measured separately through `recommended_tests`.
 
-v2.5 therefore focuses on measured retrieval quality, not more surface area. The milestone must prove whether production local embeddings, reranking, graph/test/history fixes, and learned fusion can beat lexical baseline on real repositories while staying local-first and source-safe. Phase 66 fixed the false zero-test-recall signal by measuring `recommended_tests` as its own validation channel. Phase 67 fixed the denominator for historical retrieval metrics by separating all safe changed files from parent-snapshot `retrievalTargetFiles`. Phase 69 promoted default local retrieval under the channel-aware proof, Phase 70 refreshed real-client MCP evidence for Codex CLI and Claude Code, Phase 71 reduced archive-artifact retrieval noise in ctxpack's own history, Phase 72 broadened repeated-lift validation while improving validation-test recall seeding, Phase 73 pinned a broader optional fixed-corpus probe, and Phase 76 split partial-snapshot history into validation-only mode for historical eval.
+v2.5 therefore focuses on measured retrieval quality, not more surface area. The milestone must prove whether production local embeddings, reranking, graph/test/history fixes, and learned fusion can beat lexical baseline on real repositories while staying local-first and source-safe. Phase 66 fixed the false zero-test-recall signal by measuring `recommended_tests` as its own validation channel. Phase 67 fixed the denominator for historical retrieval metrics by separating all safe changed files from parent-snapshot `retrievalTargetFiles`. Phase 69 promoted default local retrieval under the channel-aware proof, Phase 70 refreshed real-client MCP evidence for Codex CLI and Claude Code, Phase 71 reduced archive-artifact retrieval noise in ctxpack's own history, Phase 72 broadened repeated-lift validation while improving validation-test recall seeding, Phase 73 pinned a broader optional fixed-corpus probe, Phase 76 split partial-snapshot history into validation-only mode for historical eval, and Phase 77 added broad validation-command coverage for multi-area smoke/eval tasks.
 
 ## v2.5 Production Retrieval Quality
 
@@ -13,7 +13,7 @@ v2.5 therefore focuses on measured retrieval quality, not more surface area. The
 **Phase Numbering:**
 
 - Integer phases (61, 62, 63, 64, 65): Planned v2.5 work
-- Phases 66-76: Production-readiness follow-ups from the original blocked proof and the channel-aware promotion path
+- Phases 66-77: Production-readiness follow-ups from the original blocked proof and the channel-aware promotion path
 - Decimal phases (61.1, 62.1): Urgent insertions if needed
 
 - [x] **Phase 61: Multi-Repo Quality Baselines** - Maintainers can run source-free paired baselines across RefactoringMiner and a second real repository with stable comparison artifacts.
@@ -31,6 +31,7 @@ v2.5 therefore focuses on measured retrieval quality, not more surface area. The
 - [x] **Phase 74: Protected Evidence Diagnostics** - Maintainers can separate protected retrieval-target misses from non-target exact/symbol pressure.
 - [x] **Phase 75: Parent-Bounded History And Test Reserve** - Maintainers can preserve source-free parent-bounded history and reserve co-changed validation tests.
 - [x] **Phase 76: Parent-Bounded Validation History** - Maintainers can use parent-bounded history for historical eval validation tests without perturbing non-test target ranking from partial snapshots.
+- [x] **Phase 77: Validation Command Coverage** - Maintainers can represent broad multi-area validation tasks with suite-level fallback commands and effective validation recall.
 
 ## Phase Details
 
@@ -346,6 +347,29 @@ non-test target ranking signal.
 - [x] `.ctxpack/e2e/phase76-parent-bounded-validation-history-proof.json`
 - [x] `.ctxpack/e2e/phase76-broader-parent-bounded-validation-history-proof.json`
 
+### Phase 77: Validation Command Coverage
+
+**Goal**: Broad multi-area smoke/eval tasks can recommend suite-level fallback
+commands and prove effective validation coverage without hiding raw top-10 test
+recall.
+
+**Depends on**: Phase 76
+
+**Requirements**: PROOF-01, PROOF-02, GAP-03
+
+**Success Criteria**:
+
+1. Broad validation tasks add fallback commands after targeted test commands.
+2. Historical eval reports raw Test Recall@10 and command-backed effective validation recall separately.
+3. Product proof uses effective validation recall for validation floors while preserving raw test recall diagnostics.
+4. Required proof still promotes and broader proof records remaining corpus blockers.
+
+**Evidence**:
+
+- [x] `.planning/e2e/2026-05-30-phase77-validation-command-coverage.md`
+- [x] `.ctxpack/e2e/phase77-validation-command-coverage-proof.json`
+- [x] `.ctxpack/e2e/phase77-broader-validation-command-coverage-proof.json`
+
 ## Requirement Coverage
 
 | Requirement | Phase |
@@ -395,13 +419,16 @@ non-test target ranking signal.
 | PROOF-01 | Phase 76 |
 | PROOF-02 | Phase 76 |
 | GAP-03 | Phase 76 |
+| PROOF-01 | Phase 77 |
+| PROOF-02 | Phase 77 |
+| GAP-03 | Phase 77 |
 
-**Coverage:** 20/20 v2.5 requirements mapped, with Phases 66-76 as measured follow-ups for proof/eval correctness gaps, real-client evidence, archive-noise reduction, broader validation, fixed-corpus reproducibility, protected-evidence diagnostics, parent-bounded history/test reservation, and validation-only historical eval history. No orphaned v2.5 requirements.
+**Coverage:** 20/20 v2.5 requirements mapped, with Phases 66-77 as measured follow-ups for proof/eval correctness gaps, real-client evidence, archive-noise reduction, broader validation, fixed-corpus reproducibility, protected-evidence diagnostics, parent-bounded history/test reservation, validation-only historical eval history, and validation-command coverage. No orphaned v2.5 requirements.
 
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 61 -> 62 -> 63 -> 64 -> 65 -> 66 -> 67 -> 69 -> 70 -> 71 -> 72 -> 73 -> 74 -> 75 -> 76
+Phases execute in numeric order: 61 -> 62 -> 63 -> 64 -> 65 -> 66 -> 67 -> 69 -> 70 -> 71 -> 72 -> 73 -> 74 -> 75 -> 76 -> 77
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
@@ -420,6 +447,7 @@ Phases execute in numeric order: 61 -> 62 -> 63 -> 64 -> 65 -> 66 -> 67 -> 69 ->
 | 74. Protected Evidence Diagnostics | Evidence artifact | Complete | 2026-05-30 |
 | 75. Parent-Bounded History And Test Reserve | Evidence artifact | Complete | 2026-05-30 |
 | 76. Parent-Bounded Validation History | Evidence artifact | Complete | 2026-05-30 |
+| 77. Validation Command Coverage | Evidence artifact | Complete | 2026-05-30 |
 
 ---
 *Roadmap created: 2026-05-22*

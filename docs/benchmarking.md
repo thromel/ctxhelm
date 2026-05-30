@@ -373,21 +373,21 @@ retrieval variant:
 The current v2.5 fixed two-repo proof promotes default local retrieval under
 the channel-aware release gate. Context recall is evaluated on non-test target
 context, and validation-test recall is evaluated through the dedicated
-`recommended_tests` channel:
+`recommended_tests` channel plus broad validation-command coverage:
 
-| Corpus | Variant | Status | ctxpack Recall@10 | Lexical Recall@10 | Delta | Test Recall@10 |
-| --- | --- | --- | ---: | ---: | ---: | ---: |
-| RefactoringMiner | `ctxpack_default` | `beat` | 0.778 | 0.741 | +0.037 | 1.000 |
-| ctxpack | `ctxpack_default` | `beat` | 0.444 | 0.361 | +0.083 | 1.000 |
+| Corpus | Variant | Status | ctxpack Recall@10 | Lexical Recall@10 | Delta | Test Recall@10 | Effective validation recall |
+| --- | --- | --- | ---: | ---: | ---: | ---: | ---: |
+| RefactoringMiner | `ctxpack_default` | `beat` | 0.778 | 0.741 | +0.037 | 1.000 | 1.000 |
+| ctxpack | `ctxpack_default` | `beat` | 0.423 | 0.352 | +0.070 | 0.000 | 0.000 |
 
 Phase 74 adds protected-evidence diagnostics to this proof. The original
 overall protected miss-rate remains visible, but the report now also separates
 retrieval-target protected misses from non-target protected pressure. On the
-current required proof after Phase 76, RefactoringMiner has protected target
-miss-rate@10 0.059 and ctxpack has 0.040. The broader fixed-corpus fixture
-still blocks promotion: RefactoringMiner and ReAgent have zero protected target
-misses on that pinned probe, but ctxpack and VeriSchema still have target
-misses and VeriSchema validation-test Recall@10 remains below the 0.80 floor.
+current required proof after Phase 77, RefactoringMiner has protected target
+miss-rate@10 0.059 and ctxpack has 0.083. The broader fixed-corpus fixture
+still blocks promotion: VeriSchema now beats through effective validation
+recall, but RefactoringMiner matches lexical on the pinned newest-5-commit
+probe, and ctxpack/VeriSchema still have protected retrieval-target misses.
 
 Recommendation today:
 
@@ -410,6 +410,9 @@ Recommendation today:
   historical eval, enriches co-changed tests with runnable commands, and improves
   VeriSchema's broader validation-test Recall@10 from `0.661` to `0.709`
   without perturbing required non-test context promotion.
+- Phase 77 adds broad validation fallback commands and effective validation
+  recall. VeriSchema's broader raw Test Recall@10 remains `0.709`, but broad
+  `pytest` commands raise effective validation recall to `1.000`.
 - Keep `local_metadata_reranked` eval-only until named regressions and protected
   evidence behavior clear the gate.
 - Keep `local_fastembed` opt-in for experiments and conceptual queries; it is

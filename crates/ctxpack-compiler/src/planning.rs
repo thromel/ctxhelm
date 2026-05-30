@@ -4,8 +4,8 @@ use crate::ranking::{
     RankingInput,
 };
 use ctxpack_core::{
-    ContextPlan, Diagnostic, DiagnosticSeverity, FileRole, FusionControlSummary, MemoryCard,
-    MemoryFreshness, MemoryReviewStatus, PackBudget, PackOption, PrivacyStatus,
+    Command, ContextPlan, Diagnostic, DiagnosticSeverity, FileRole, FusionControlSummary,
+    MemoryCard, MemoryFreshness, MemoryReviewStatus, PackBudget, PackOption, PrivacyStatus,
     ProviderDecisionStatus, QueryConstructionTrace, QueryFacet, QueryFacetKind, RetrievalCandidate,
     RetrievalCandidateKind, RetrievalEvidence, RetrievalSignalKind, RetrievalSignalScore,
     RetrieverQuerySet, RiskFlag, SelectedMemory, TargetFile, TaskType,
@@ -437,6 +437,7 @@ pub(crate) fn prepare_context_plan_with_paths_history_mode_and_semantic(
     plan.related_tests = selection.related_tests;
     plan.recommended_commands = selection.recommended_commands;
     plan.retrieval_candidates = selection.retrieval_candidates;
+    maybe_add_broad_validation_command(task, &mut plan);
     attach_selected_memory(repo_root, task, &mut plan);
     plan.query_trace = Some(query_trace);
     plan.provider_policy = Some(provider_policy);
@@ -533,6 +534,127 @@ fn push_source_test_seed(
     {
         push_unique(seed_paths, path.to_string());
     }
+}
+
+fn maybe_add_broad_validation_command(task: &str, plan: &mut ContextPlan) {
+    if !is_broad_validation_task(task, &plan.related_tests) {
+        return;
+    }
+    let Some(command) = broad_validation_command(&plan.recommended_commands) else {
+        return;
+    };
+    if plan
+        .recommended_commands
+        .iter()
+        .any(|existing| existing.command == command)
+    {
+        return;
+    }
+
+    plan.recommended_commands.push(Command {
+        command: command.clone(),
+        reason: "broad validation fallback for multi-area smoke/workflow task".to_string(),
+    });
+    push_plan_diagnostic(
+        plan,
+        Diagnostic {
+            code: "broad_validation_scope".to_string(),
+            severity: DiagnosticSeverity::Warning,
+            message: format!(
+                "Task appears to span multiple validation areas; run `{command}` after targeted tests."
+            ),
+            paths: plan
+                .related_tests
+                .iter()
+                .map(|test| test.path.clone())
+                .collect(),
+            count: plan.related_tests.len(),
+        },
+    );
+}
+
+fn is_broad_validation_task(task: &str, related_tests: &[ctxpack_core::RelatedTest]) -> bool {
+    let test_area_count = related_tests
+        .iter()
+        .filter_map(|test| test.path.strip_prefix("tests/"))
+        .filter_map(|path| path.split('/').next())
+        .filter(|area| !area.is_empty())
+        .collect::<BTreeSet<_>>()
+        .len();
+    let terms = terms(task);
+    let broad_term_count = [
+        "ci",
+        "eval",
+        "evaluation",
+        "harden",
+        "orchestration",
+        "run",
+        "runs",
+        "smoke",
+        "stabilize",
+        "workflow",
+    ]
+    .into_iter()
+    .filter(|term| terms.contains(*term))
+    .count();
+
+    related_tests.len() >= PREPARE_TASK_TEST_LIMIT && test_area_count >= 3
+        || broad_term_count >= 2 && test_area_count >= 3
+}
+
+fn broad_validation_command(commands: &[Command]) -> Option<String> {
+    let command_strings = commands
+        .iter()
+        .map(|command| command.command.trim())
+        .filter(|command| !command.is_empty())
+        .collect::<Vec<_>>();
+
+    if command_strings
+        .iter()
+        .any(|command| command.starts_with("pytest "))
+    {
+        return Some("pytest".to_string());
+    }
+    if command_strings
+        .iter()
+        .any(|command| command.starts_with("cargo test"))
+    {
+        return Some("cargo test".to_string());
+    }
+    if command_strings
+        .iter()
+        .any(|command| command.starts_with("./gradlew test"))
+    {
+        return Some("./gradlew test".to_string());
+    }
+    if command_strings
+        .iter()
+        .any(|command| command.starts_with("mvn -Dtest="))
+    {
+        return Some("mvn test".to_string());
+    }
+    for package_manager in ["pnpm", "npm", "yarn"] {
+        if command_strings
+            .iter()
+            .any(|command| command.starts_with(&format!("{package_manager} vitest run ")))
+        {
+            return Some(format!("{package_manager} vitest run"));
+        }
+        if command_strings
+            .iter()
+            .any(|command| command.starts_with(&format!("{package_manager} jest ")))
+        {
+            return Some(format!("{package_manager} jest"));
+        }
+        if command_strings.iter().any(|command| {
+            command.starts_with(&format!("{package_manager} test "))
+                || command.starts_with(&format!("{package_manager} test -- "))
+        }) {
+            return Some(format!("{package_manager} test"));
+        }
+    }
+
+    None
 }
 
 fn extend_plan_diagnostics(plan: &mut ContextPlan, diagnostics: Vec<Diagnostic>) {
@@ -1567,5 +1689,48 @@ mod tests {
             .iter()
             .any(|decision| decision.provider == "local_hash"
                 && decision.status == ProviderDecisionStatus::Allowed));
+    }
+
+    #[test]
+    fn broad_validation_tasks_add_suite_fallback_command() {
+        let mut plan = base_plan(TaskType::BugFix);
+        plan.related_tests = [
+            "tests/evaluation/test_pvldb_eval_runner.py",
+            "tests/agents/test_base_agent_openai_compatible.py",
+            "tests/core/test_retry_routing.py",
+            "tests/gates/test_quality_gate_system_singleton.py",
+        ]
+        .into_iter()
+        .map(|path| ctxpack_core::RelatedTest {
+            path: path.to_string(),
+            reason: "fixture".to_string(),
+            command: Some(format!("pytest {path}")),
+            confidence: 0.8,
+            attribution: Vec::new(),
+        })
+        .collect();
+        plan.recommended_commands = plan
+            .related_tests
+            .iter()
+            .filter_map(|test| test.command.clone())
+            .map(|command| Command {
+                command,
+                reason: "targeted validation".to_string(),
+            })
+            .collect();
+
+        maybe_add_broad_validation_command("fix(eval): harden qwen3.5 smoke workflow", &mut plan);
+
+        assert!(plan.recommended_commands.iter().any(|command| {
+            command.command == "pytest" && command.reason.contains("broad validation fallback")
+        }));
+        assert!(plan
+            .diagnostics
+            .iter()
+            .any(|diagnostic| diagnostic.code == "broad_validation_scope"));
+        assert!(plan
+            .risk_flags
+            .iter()
+            .any(|flag| flag.code == "broad_validation_scope"));
     }
 }

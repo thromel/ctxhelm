@@ -1255,6 +1255,8 @@ mod tests {
         assert_eq!(report.source_recall_at_10, 1.0);
         assert_eq!(report.test_recall_at_5, 1.0);
         assert_eq!(report.test_recall_at_10, 1.0);
+        assert_eq!(report.validation_command_recall, 0.0);
+        assert_eq!(report.effective_validation_recall_at_10, 1.0);
         assert!(report.top_missing_files.is_empty());
         assert!(report.commits[0]
             .lexical_baseline_files
@@ -1710,6 +1712,8 @@ mod tests {
             source_recall_at_10: 1.0,
             test_recall_at_5: 0.0,
             test_recall_at_10: 0.0,
+            validation_command_recall: 0.0,
+            effective_validation_recall_at_10: 0.0,
             test_recommendation_rate: 0.0,
             average_recommended_context_files: 3.0,
             protected_evidence: ProtectedEvidenceSummary::default(),
@@ -1752,6 +1756,8 @@ mod tests {
                 test_files_changed: 0,
                 test_hits_at_5: 0,
                 test_hits_at_10: 0,
+                validation_command_hits: 0,
+                effective_validation_hits_at_10: 0,
                 low_information_task: false,
                 confidence: 0.8,
                 query_trace: None,
@@ -1789,6 +1795,8 @@ mod tests {
             "sourceRecallAt10",
             "testRecallAt5",
             "testRecallAt10",
+            "validationCommandRecall",
+            "effectiveValidationRecallAt10",
             "testRecommendationRate",
             "averageRecommendedContextFiles",
             "protectedEvidence",
@@ -2093,6 +2101,8 @@ mod tests {
             source_recall_at_10: 0.0,
             test_recall_at_5: 0.0,
             test_recall_at_10: 0.0,
+            validation_command_recall: 0.0,
+            effective_validation_recall_at_10: 0.0,
             test_recommendation_rate: 0.0,
             average_recommended_context_files: 1.0,
             protected_evidence: ProtectedEvidenceSummary::default(),

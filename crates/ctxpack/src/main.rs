@@ -4351,7 +4351,7 @@ fn render_historical_eval_report(report: &HistoricalEvalReport) -> String {
     let mut output = String::from("# ctxpack Historical Retrieval Eval\n\n");
     output.push_str("This source-free report replays recent commit subjects through `prepare_task` and compares recommended context paths with the safe files changed by each commit.\n\n");
     output.push_str(&format!(
-        "- Eval range ID: `{}`\n- Repo ID: `{}`\n- Evaluated commits: `{}`\n- Budget: `{:?}`\n- Effective limit: `{}`\n- Ranking budget K: `{}`\n- Effective mode: `{:?}`\n- Effective target agent: `{}`\n- Semantic enabled: `{}`\n- Semantic provider: `{}`\n- Local metadata reranker: `{}`\n- Base: `{}`\n- Head: `{}`\n- File Recall@5: `{:.2}`\n- File Recall@10: `{:.2}`\n- Lexical Baseline Recall@5: `{:.2}`\n- Lexical Baseline Recall@10: `{:.2}`\n- ctxpack Lift@5: `{:+.2}`\n- ctxpack Lift@10: `{:+.2}`\n- Recall@K: `{:.2}`\n- Precision@K: `{:.2}`\n- MRR@K: `{:.2}`\n- Lexical Recall@K: `{:.2}`\n- No-context Recall@K: `{:.2}`\n- ctxpack Lift@K: `{:+.2}`\n- ctxpack Lift vs No-context@K: `{:+.2}`\n- Source Recall@5: `{:.2}`\n- Source Recall@10: `{:.2}`\n- Test Recall@5: `{:.2}`\n- Test Recall@10: `{:.2}`\n- Test recommendation rate: `{:.2}`\n- Average recommended context files: `{:.2}`\n- Protected evidence candidates: `{}`\n- Protected evidence missed@10: `{}`\n- Protected evidence miss rate@10: `{:.2}`\n- Protected retrieval-target evidence candidates: `{}`\n- Protected retrieval-target evidence missed@10: `{}`\n- Protected retrieval-target evidence miss rate@10: `{:.2}`\n- Runtime total ms: `{}`\n- Runtime commit-loop ms: `{}`\n- Runtime overhead ms: `{}`\n- Runtime average commit ms: `{:.2}`\n- Runtime git sample ms: `{}`\n- Runtime ranking ms: `{}`\n- Runtime pack/compiler ms: `{}`\n- Eval cache hits: `{}`\n- Eval cache misses: `{}`\n- Eval parallelism: `{}`\n- Low-information commits: `{}`\n- Privacy: local-only `{}`\n\n",
+        "- Eval range ID: `{}`\n- Repo ID: `{}`\n- Evaluated commits: `{}`\n- Budget: `{:?}`\n- Effective limit: `{}`\n- Ranking budget K: `{}`\n- Effective mode: `{:?}`\n- Effective target agent: `{}`\n- Semantic enabled: `{}`\n- Semantic provider: `{}`\n- Local metadata reranker: `{}`\n- Base: `{}`\n- Head: `{}`\n- File Recall@5: `{:.2}`\n- File Recall@10: `{:.2}`\n- Lexical Baseline Recall@5: `{:.2}`\n- Lexical Baseline Recall@10: `{:.2}`\n- ctxpack Lift@5: `{:+.2}`\n- ctxpack Lift@10: `{:+.2}`\n- Recall@K: `{:.2}`\n- Precision@K: `{:.2}`\n- MRR@K: `{:.2}`\n- Lexical Recall@K: `{:.2}`\n- No-context Recall@K: `{:.2}`\n- ctxpack Lift@K: `{:+.2}`\n- ctxpack Lift vs No-context@K: `{:+.2}`\n- Source Recall@5: `{:.2}`\n- Source Recall@10: `{:.2}`\n- Test Recall@5: `{:.2}`\n- Test Recall@10: `{:.2}`\n- Validation command recall: `{:.2}`\n- Effective validation recall@10: `{:.2}`\n- Test recommendation rate: `{:.2}`\n- Average recommended context files: `{:.2}`\n- Protected evidence candidates: `{}`\n- Protected evidence missed@10: `{}`\n- Protected evidence miss rate@10: `{:.2}`\n- Protected retrieval-target evidence candidates: `{}`\n- Protected retrieval-target evidence missed@10: `{}`\n- Protected retrieval-target evidence miss rate@10: `{:.2}`\n- Runtime total ms: `{}`\n- Runtime commit-loop ms: `{}`\n- Runtime overhead ms: `{}`\n- Runtime average commit ms: `{:.2}`\n- Runtime git sample ms: `{}`\n- Runtime ranking ms: `{}`\n- Runtime pack/compiler ms: `{}`\n- Eval cache hits: `{}`\n- Eval cache misses: `{}`\n- Eval parallelism: `{}`\n- Low-information commits: `{}`\n- Privacy: local-only `{}`\n\n",
         report.eval_range_id,
         report.repo_id,
         report.evaluated_commits,
@@ -4386,6 +4386,8 @@ fn render_historical_eval_report(report: &HistoricalEvalReport) -> String {
         report.source_recall_at_10,
         report.test_recall_at_5,
         report.test_recall_at_10,
+        report.validation_command_recall,
+        report.effective_validation_recall_at_10,
         report.test_recommendation_rate,
         report.average_recommended_context_files,
         report.protected_evidence.candidate_count,
@@ -4657,7 +4659,7 @@ fn render_benchmark_suite_report(report: &BenchmarkSuiteReport) -> String {
             continue;
         };
         output.push_str(&format!(
-            "- File Recall@5: `{:.2}`\n- File Recall@10: `{:.2}`\n- Lexical Baseline Recall@5: `{:.2}`\n- Lexical Baseline Recall@10: `{:.2}`\n- No-context Recall@K: `{:.2}`\n- ctxpack Lift@5: `{:+.2}`\n- ctxpack Lift@10: `{:+.2}`\n- ctxpack Lift vs No-context@K: `{:+.2}`\n- Source Recall@10: `{:.2}`\n- Test Recall@10: `{:.2}`\n- Test recommendation rate: `{:.2}`\n- Average recommended context files: `{:.2}`\n- Protected evidence missed@10: `{}` / `{}` (`{:.2}`)\n\n",
+            "- File Recall@5: `{:.2}`\n- File Recall@10: `{:.2}`\n- Lexical Baseline Recall@5: `{:.2}`\n- Lexical Baseline Recall@10: `{:.2}`\n- No-context Recall@K: `{:.2}`\n- ctxpack Lift@5: `{:+.2}`\n- ctxpack Lift@10: `{:+.2}`\n- ctxpack Lift vs No-context@K: `{:+.2}`\n- Source Recall@10: `{:.2}`\n- Test Recall@10: `{:.2}`\n- Validation command recall: `{:.2}`\n- Effective validation recall@10: `{:.2}`\n- Test recommendation rate: `{:.2}`\n- Average recommended context files: `{:.2}`\n- Protected evidence missed@10: `{}` / `{}` (`{:.2}`)\n\n",
             eval.file_recall_at_5,
             eval.file_recall_at_10,
             eval.lexical_baseline_recall_at_5,
@@ -4668,6 +4670,8 @@ fn render_benchmark_suite_report(report: &BenchmarkSuiteReport) -> String {
             eval.ranking_comparison.recall_lift_vs_no_context_at_k,
             eval.source_recall_at_10,
             eval.test_recall_at_10,
+            eval.validation_command_recall,
+            eval.effective_validation_recall_at_10,
             eval.test_recommendation_rate,
             eval.average_recommended_context_files,
             eval.protected_evidence.missed_at_10_count,
@@ -5244,6 +5248,8 @@ mod tests {
             source_recall_at_10: 1.0,
             test_recall_at_5: 0.0,
             test_recall_at_10: 0.0,
+            validation_command_recall: 0.0,
+            effective_validation_recall_at_10: 0.0,
             test_recommendation_rate: 1.0,
             average_recommended_context_files: 2.0,
             protected_evidence: ctxpack_compiler::ProtectedEvidenceSummary::default(),
@@ -5289,6 +5295,8 @@ mod tests {
                 test_files_changed: 0,
                 test_hits_at_5: 0,
                 test_hits_at_10: 0,
+                validation_command_hits: 0,
+                effective_validation_hits_at_10: 0,
                 low_information_task: true,
                 confidence: 0.85,
                 query_trace: None,
@@ -5316,6 +5324,8 @@ mod tests {
         assert!(markdown.contains("ctxpack Lift vs No-context@K: `+1.00`"));
         assert!(markdown.contains("Source Recall@10: `1.00`"));
         assert!(markdown.contains("Test Recall@10: `0.00`"));
+        assert!(markdown.contains("Validation command recall: `0.00`"));
+        assert!(markdown.contains("Effective validation recall@10: `0.00`"));
         assert!(markdown.contains("Protected evidence miss rate@10: `0.00`"));
         assert!(markdown.contains("Runtime total ms: `250`"));
         assert!(markdown.contains("Runtime commit-loop ms: `250`"));

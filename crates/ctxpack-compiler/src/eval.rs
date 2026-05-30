@@ -431,6 +431,10 @@ pub struct ProductProofCorpusVerdict {
     pub lexical_context_recall_at_10: f32,
     pub context_delta_at_10: f32,
     pub test_recall_at_10: f32,
+    #[serde(default)]
+    pub validation_command_recall: f32,
+    #[serde(default)]
+    pub effective_validation_recall_at_10: f32,
     pub protected_evidence_miss_rate_at_10: f32,
     #[serde(default)]
     pub protected_evidence_target_miss_rate_at_10: f32,
@@ -515,6 +519,10 @@ pub struct HistoricalEvalReport {
     pub source_recall_at_10: f32,
     pub test_recall_at_5: f32,
     pub test_recall_at_10: f32,
+    #[serde(default)]
+    pub validation_command_recall: f32,
+    #[serde(default)]
+    pub effective_validation_recall_at_10: f32,
     pub test_recommendation_rate: f32,
     pub average_recommended_context_files: f32,
     #[serde(default)]
@@ -796,6 +804,10 @@ pub struct HistoricalCommitEval {
     pub test_files_changed: usize,
     pub test_hits_at_5: usize,
     pub test_hits_at_10: usize,
+    #[serde(default)]
+    pub validation_command_hits: usize,
+    #[serde(default)]
+    pub effective_validation_hits_at_10: usize,
     pub low_information_task: bool,
     pub confidence: f32,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -1096,6 +1108,8 @@ fn product_proof_corpus_verdict(repo: &BenchmarkRepoReport) -> ProductProofCorpu
             lexical_context_recall_at_10: 0.0,
             context_delta_at_10: 0.0,
             test_recall_at_10: 0.0,
+            validation_command_recall: 0.0,
+            effective_validation_recall_at_10: 0.0,
             protected_evidence_miss_rate_at_10: 1.0,
             protected_evidence_target_miss_rate_at_10: 1.0,
             runtime_millis: 0,
@@ -1114,7 +1128,7 @@ fn product_proof_corpus_verdict(repo: &BenchmarkRepoReport) -> ProductProofCorpu
         .sum::<usize>();
     let status = if report.evaluated_commits == 0 {
         ProductProofCorpusStatus::InsufficientEvidence
-    } else if validation_target_count > 0 && report.test_recall_at_10 < 0.80 {
+    } else if validation_target_count > 0 && report.effective_validation_recall_at_10 < 0.80 {
         ProductProofCorpusStatus::Trail
     } else if context_comparison.delta > 0.03 {
         ProductProofCorpusStatus::Beat
@@ -1126,6 +1140,14 @@ fn product_proof_corpus_verdict(repo: &BenchmarkRepoReport) -> ProductProofCorpu
     let mut notes = Vec::new();
     if validation_target_count > 0 && report.test_recall_at_10 == 0.0 {
         notes.push("test recall at 10 is zero".to_string());
+    }
+    if validation_target_count > 0
+        && report.effective_validation_recall_at_10 > report.test_recall_at_10
+    {
+        notes.push(format!(
+            "broad validation commands raise effective validation recall from {:.3} to {:.3}",
+            report.test_recall_at_10, report.effective_validation_recall_at_10
+        ));
     }
     if lexical_delta_at_10 < -0.03 && context_comparison.delta > 0.03 {
         notes.push(
@@ -1151,6 +1173,8 @@ fn product_proof_corpus_verdict(repo: &BenchmarkRepoReport) -> ProductProofCorpu
         lexical_context_recall_at_10: context_comparison.lexical,
         context_delta_at_10: context_comparison.delta,
         test_recall_at_10: report.test_recall_at_10,
+        validation_command_recall: report.validation_command_recall,
+        effective_validation_recall_at_10: report.effective_validation_recall_at_10,
         protected_evidence_miss_rate_at_10: report.protected_evidence.miss_rate_at_10,
         protected_evidence_target_miss_rate_at_10: report
             .protected_evidence
@@ -2714,6 +2738,8 @@ pub fn evaluate_historical_commits(
         source_recall_at_10: average_role_recall(&commits, FileRole::Source, 10),
         test_recall_at_5: average_role_recall(&commits, FileRole::Test, 5),
         test_recall_at_10: average_role_recall(&commits, FileRole::Test, 10),
+        validation_command_recall: average_validation_command_recall(&commits),
+        effective_validation_recall_at_10: average_effective_validation_recall(&commits),
         test_recommendation_rate: test_recommendation_rate(&commits),
         average_recommended_context_files: average_recommended_context_files(&commits),
         protected_evidence,
@@ -2916,6 +2942,13 @@ fn evaluate_historical_commit_sample(
         changed_file_hits(&source_changed_files, &recommended_context_files, 10).len();
     let test_hits_at_5 = changed_file_hits(&test_changed_files, &recommended_tests, 5).len();
     let test_hits_at_10 = changed_file_hits(&test_changed_files, &recommended_tests, 10).len();
+    let validation_command_hits =
+        validation_command_hits(&test_changed_files, &recommended_commands).len();
+    let effective_validation_hits_at_10 = effective_validation_hits_at_10(
+        &test_changed_files,
+        &recommended_tests,
+        &recommended_commands,
+    );
     let ranking_millis = elapsed_millis(ranking_started);
 
     Ok(HistoricalCommitEvalResult {
@@ -2946,6 +2979,8 @@ fn evaluate_historical_commit_sample(
             test_files_changed: test_changed_files.len(),
             test_hits_at_5,
             test_hits_at_10,
+            validation_command_hits,
+            effective_validation_hits_at_10,
             low_information_task: is_low_information_task(&task),
             confidence: plan.confidence,
             query_trace: plan.query_trace.clone(),
@@ -3594,6 +3629,82 @@ fn missing_changed_files(
         .collect()
 }
 
+fn validation_command_hits(test_changed_files: &[String], commands: &[String]) -> Vec<String> {
+    test_changed_files
+        .iter()
+        .filter(|path| {
+            commands
+                .iter()
+                .any(|command| validation_command_covers_path(command, path))
+        })
+        .cloned()
+        .collect()
+}
+
+fn effective_validation_hits_at_10(
+    test_changed_files: &[String],
+    recommended_tests: &[String],
+    commands: &[String],
+) -> usize {
+    let mut hits = changed_file_hits(test_changed_files, recommended_tests, 10)
+        .into_iter()
+        .collect::<BTreeSet<_>>();
+    hits.extend(validation_command_hits(test_changed_files, commands));
+    hits.len()
+}
+
+fn validation_command_covers_path(command: &str, path: &str) -> bool {
+    let command = command.trim();
+    if command.is_empty() {
+        return false;
+    }
+    let lower_path = path.to_ascii_lowercase();
+    if matches!(command, "pytest" | "python -m pytest") {
+        return lower_path.ends_with(".py");
+    }
+    if let Some(args) = command.strip_prefix("pytest ") {
+        return pytest_args_cover_path(args, path);
+    }
+    if matches!(command, "cargo test") {
+        return lower_path.ends_with(".rs");
+    }
+    if matches!(command, "./gradlew test" | "gradle test" | "mvn test") {
+        return lower_path.ends_with(".java") || lower_path.ends_with(".kt");
+    }
+    if matches!(
+        command,
+        "pnpm vitest run"
+            | "npm vitest run"
+            | "yarn vitest run"
+            | "pnpm jest"
+            | "npm jest"
+            | "yarn jest"
+            | "pnpm test"
+            | "npm test"
+            | "yarn test"
+    ) {
+        return matches!(
+            lower_path.rsplit('.').next(),
+            Some("ts" | "tsx" | "js" | "jsx")
+        );
+    }
+
+    false
+}
+
+fn pytest_args_cover_path(args: &str, path: &str) -> bool {
+    args.split_whitespace()
+        .filter(|arg| !arg.starts_with('-'))
+        .any(|arg| {
+            let target = arg.trim_end_matches('/');
+            !target.is_empty()
+                && (path == target
+                    || path
+                        .strip_prefix(target)
+                        .is_some_and(|rest| rest.starts_with('/')))
+        })
+}
+
 fn filter_changed_labels_by_role(
     labels: &[HistoricalChangedPathLabel],
     safe_changed_files: &[String],
@@ -4095,6 +4206,35 @@ fn average_role_recall(commits: &[HistoricalCommitEval], role: FileRole, limit: 
             continue;
         }
         total += hits as f32 / changed as f32;
+        count += 1;
+    }
+
+    if count == 0 {
+        0.0
+    } else {
+        total / count as f32
+    }
+}
+
+fn average_validation_command_recall(commits: &[HistoricalCommitEval]) -> f32 {
+    average_test_hit_rate(commits, |commit| commit.validation_command_hits)
+}
+
+fn average_effective_validation_recall(commits: &[HistoricalCommitEval]) -> f32 {
+    average_test_hit_rate(commits, |commit| commit.effective_validation_hits_at_10)
+}
+
+fn average_test_hit_rate(
+    commits: &[HistoricalCommitEval],
+    hits: impl Fn(&HistoricalCommitEval) -> usize,
+) -> f32 {
+    let mut total = 0.0;
+    let mut count = 0usize;
+    for commit in commits {
+        if commit.test_files_changed == 0 {
+            continue;
+        }
+        total += hits(commit) as f32 / commit.test_files_changed as f32;
         count += 1;
     }
 
@@ -4907,6 +5047,8 @@ mod tests {
             test_files_changed: 0,
             test_hits_at_5: 0,
             test_hits_at_10: 0,
+            validation_command_hits: 0,
+            effective_validation_hits_at_10: 0,
             low_information_task: false,
             confidence: 0.5,
             query_trace: None,
@@ -5031,6 +5173,7 @@ mod tests {
         let mut eval = empty_historical_eval_report("channels");
         set_recall_metrics(&mut eval, 0.50, 0.50);
         eval.test_recall_at_10 = 1.0;
+        eval.effective_validation_recall_at_10 = 1.0;
         let commit = &mut eval.commits[0];
         commit.changed_path_labels = vec![
             HistoricalChangedPathLabel {
@@ -5059,6 +5202,7 @@ mod tests {
         commit.recommended_tests = vec!["tests/auth/session.test.ts".to_string()];
         commit.test_files_changed = 1;
         commit.test_hits_at_10 = 1;
+        commit.effective_validation_hits_at_10 = 1;
 
         let report =
             build_product_proof_report(benchmark_report_with_repos(vec![("channel-repo", eval)]));
@@ -5068,6 +5212,80 @@ mod tests {
         assert_eq!(verdict.context_recall_at_10, 1.0);
         assert_eq!(verdict.lexical_context_recall_at_10, 0.0);
         assert_eq!(verdict.test_recall_at_10, 1.0);
+    }
+
+    #[test]
+    fn product_proof_release_gate_accepts_broad_validation_command_coverage() {
+        let mut eval = empty_historical_eval_report("validation-command");
+        set_recall_metrics(&mut eval, 0.50, 0.40);
+        eval.test_recall_at_10 = 0.5;
+        eval.validation_command_recall = 1.0;
+        eval.effective_validation_recall_at_10 = 1.0;
+        let commit = &mut eval.commits[0];
+        commit.changed_path_labels = vec![
+            HistoricalChangedPathLabel {
+                path: "src/eval/runner.py".to_string(),
+                change_kind: ctxpack_index::ChangeKind::Modified,
+                role: FileRole::Source,
+                label_scope: LabelScope::Safe,
+                excluded_reason: None,
+                old_path: None,
+            },
+            HistoricalChangedPathLabel {
+                path: "tests/agents/test_requirement_analyzer.py".to_string(),
+                change_kind: ctxpack_index::ChangeKind::Modified,
+                role: FileRole::Test,
+                label_scope: LabelScope::Safe,
+                excluded_reason: None,
+                old_path: None,
+            },
+            HistoricalChangedPathLabel {
+                path: "tests/core/test_retry_routing.py".to_string(),
+                change_kind: ctxpack_index::ChangeKind::Modified,
+                role: FileRole::Test,
+                label_scope: LabelScope::Safe,
+                excluded_reason: None,
+                old_path: None,
+            },
+        ];
+        commit.retrieval_target_files = vec![
+            "src/eval/runner.py".to_string(),
+            "tests/agents/test_requirement_analyzer.py".to_string(),
+            "tests/core/test_retry_routing.py".to_string(),
+        ];
+        commit.recommended_context_files = vec!["src/eval/runner.py".to_string()];
+        commit.lexical_baseline_files = Vec::new();
+        commit.recommended_tests = vec!["tests/agents/test_requirement_analyzer.py".to_string()];
+        commit.recommended_commands = vec!["pytest".to_string()];
+        commit.test_files_changed = 2;
+        commit.test_hits_at_10 = 1;
+        commit.validation_command_hits = 2;
+        commit.effective_validation_hits_at_10 = 2;
+
+        let report =
+            build_product_proof_report(benchmark_report_with_repos(vec![("broad-repo", eval)]));
+        let verdict = &report.release_gate.corpus_verdicts[0];
+
+        assert_eq!(verdict.status, ProductProofCorpusStatus::Beat);
+        assert_eq!(verdict.test_recall_at_10, 0.5);
+        assert_eq!(verdict.validation_command_recall, 1.0);
+        assert_eq!(verdict.effective_validation_recall_at_10, 1.0);
+        assert!(verdict
+            .notes
+            .iter()
+            .any(|note| note.contains("broad validation commands raise")));
+    }
+
+    #[test]
+    fn validation_command_coverage_recognizes_broad_pytest() {
+        let tests = vec![
+            "tests/agents/test_requirement_analyzer.py".to_string(),
+            "tests/core/test_retry_routing.py".to_string(),
+        ];
+        let commands = vec!["pytest".to_string()];
+
+        assert_eq!(validation_command_hits(&tests, &commands).len(), 2);
+        assert_eq!(effective_validation_hits_at_10(&tests, &[], &commands), 2);
     }
 
     fn gate_test_variant(name: &str, recall: f32, precision: f32) -> SemanticPrecisionVariant {
@@ -5255,6 +5473,8 @@ mod tests {
             source_recall_at_10: 0.0,
             test_recall_at_5: 0.0,
             test_recall_at_10: 0.0,
+            validation_command_recall: 0.0,
+            effective_validation_recall_at_10: 0.0,
             test_recommendation_rate: 0.0,
             average_recommended_context_files: 0.0,
             protected_evidence: ProtectedEvidenceSummary::default(),
@@ -5286,6 +5506,8 @@ mod tests {
                 test_files_changed: 0,
                 test_hits_at_5: 0,
                 test_hits_at_10: 0,
+                validation_command_hits: 0,
+                effective_validation_hits_at_10: 0,
                 low_information_task: false,
                 confidence: 0.0,
                 query_trace: None,
