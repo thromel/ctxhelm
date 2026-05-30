@@ -2781,10 +2781,8 @@ fn evaluate_historical_commit_sample(
         changed_file_hits(&source_changed_files, &recommended_context_files, 5).len();
     let source_hits_at_10 =
         changed_file_hits(&source_changed_files, &recommended_context_files, 10).len();
-    let test_hits_at_5 =
-        changed_file_hits(&test_changed_files, &recommended_context_files, 5).len();
-    let test_hits_at_10 =
-        changed_file_hits(&test_changed_files, &recommended_context_files, 10).len();
+    let test_hits_at_5 = changed_file_hits(&test_changed_files, &recommended_tests, 5).len();
+    let test_hits_at_10 = changed_file_hits(&test_changed_files, &recommended_tests, 10).len();
     let ranking_millis = elapsed_millis(ranking_started);
 
     Ok(HistoricalCommitEvalResult {

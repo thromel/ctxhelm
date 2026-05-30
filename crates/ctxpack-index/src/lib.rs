@@ -1279,6 +1279,72 @@ mod tests {
     }
 
     #[test]
+    fn related_tests_prefers_exact_tests_for_higher_ranked_source_seeds() {
+        let _guard = env_lock();
+        let temp = tempfile::tempdir().unwrap();
+        let repo = temp.path().join("repo");
+        let home = temp.path().join("ctxpack-home");
+        fs::create_dir_all(repo.join(".git")).unwrap();
+        fs::create_dir_all(repo.join("src/main/java/org/refactoringminer/mcp")).unwrap();
+        fs::create_dir_all(repo.join("src/test/java/org/refactoringminer/mcp")).unwrap();
+        fs::write(repo.join("build.gradle"), "plugins { id 'java' }\n").unwrap();
+        for source in [
+            "RefactoringMinerMcpService",
+            "RefactoringMinerMcpTools",
+            "McpIntentValidator",
+        ] {
+            fs::write(
+                repo.join(format!(
+                    "src/main/java/org/refactoringminer/mcp/{source}.java"
+                )),
+                format!("package org.refactoringminer.mcp; class {source} {{}}\n"),
+            )
+            .unwrap();
+        }
+        for test in [
+            "McpIntentValidatorTest",
+            "RefactoringMinerMcpServiceRepositoryTest",
+            "RefactoringMinerMcpToolsTest",
+        ] {
+            fs::write(
+                repo.join(format!(
+                    "src/test/java/org/refactoringminer/mcp/{test}.java"
+                )),
+                format!("package org.refactoringminer.mcp; class {test} {{}}\n"),
+            )
+            .unwrap();
+        }
+        std::env::set_var("CTXPACK_HOME", &home);
+
+        let results = related_tests(
+            &repo,
+            &[
+                "src/main/java/org/refactoringminer/mcp/RefactoringMinerMcpService.java"
+                    .to_string(),
+                "src/main/java/org/refactoringminer/mcp/RefactoringMinerMcpTools.java".to_string(),
+                "src/main/java/org/refactoringminer/mcp/McpIntentValidator.java".to_string(),
+            ],
+        )
+        .unwrap();
+        let paths = results
+            .iter()
+            .take(3)
+            .map(|result| result.path.as_str())
+            .collect::<Vec<_>>();
+
+        assert_eq!(
+            paths,
+            vec![
+                "src/test/java/org/refactoringminer/mcp/RefactoringMinerMcpServiceRepositoryTest.java",
+                "src/test/java/org/refactoringminer/mcp/RefactoringMinerMcpToolsTest.java",
+                "src/test/java/org/refactoringminer/mcp/McpIntentValidatorTest.java",
+            ]
+        );
+
+        std::env::remove_var("CTXPACK_HOME");
+    }
+
+    #[test]
     fn related_tests_uses_content_mentions_and_excludes_non_inventory_files() {
         let _guard = env_lock();
         let temp = tempfile::tempdir().unwrap();

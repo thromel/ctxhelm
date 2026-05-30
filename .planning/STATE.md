@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v2.5
 milestone_name: Production Retrieval Quality
 status: active
-last_updated: "2026-05-30T07:05:56Z"
-last_activity: 2026-05-30 -- Phase 65 added a source-free product-proof release gate that blocks the current mixed v2.5 default
+last_updated: "2026-05-30T08:20:00Z"
+last_activity: 2026-05-30 -- Phase 66 fixed the false zero-test-recall signal by evaluating the dedicated related-tests channel; default promotion remains blocked
 progress:
-  total_phases: 5
-  completed_phases: 5
-  total_plans: 5
-  completed_plans: 5
+  total_phases: 6
+  completed_phases: 6
+  total_plans: 6
+  completed_plans: 6
   percent: 100
 ---
 
@@ -17,10 +17,10 @@ progress:
 
 ## Current Position
 
-Phase: 65 - v2.5 Product Proof And Release Gate
-Plan: 65-v25-product-proof-release-gate-01-PLAN.md
+Phase: 66 - Test Recall Evaluation Channel
+Plan: 66-test-recall-eval-channel-01-PLAN.md
 Status: Complete
-Last activity: 2026-05-30 -- Phase 65 product proof blocks default promotion: RefactoringMiner trails lexical and ctxpack matches lexical; full validation passed
+Last activity: 2026-05-30 -- Phase 66 product proof reports Test Recall@10 = 1.0 on both corpora through `recommended_tests`; release gate still blocks default promotion because Recall@10 does not beat lexical
 
 ## Project Reference
 
@@ -43,6 +43,7 @@ Planned phases:
 - Phase 63: Reranker And Fusion Promotion (complete)
 - Phase 64: Gap-Family Retrieval Improvements (complete)
 - Phase 65: v2.5 Product Proof And Release Gate (complete)
+- Phase 66: Test Recall Evaluation Channel (complete follow-up)
 
 ## Last Completed Milestone
 
@@ -60,9 +61,10 @@ Planned phases:
 
 ## Next Step
 
-Plan the next milestone from remaining production gaps: test mapping, corpus-level lexical lift, protected symbol budget pressure, and real-client outcome proof.
+Continue production-readiness work from remaining measured gaps: RefactoringMiner lexical trailing status, ctxpack source/file recall, docs/scripts storage gaps, parser/precision dependency misses, protected evidence budget pressure, and real-client outcome proof.
 
 ## Operator Next Steps
 
 - Do not claim v2.5 beats lexical; the product proof intentionally blocks default promotion for the current two-repo suite.
-- Next milestone should target test recall, RefactoringMiner lexical trailing status, ctxpack lexical parity, and protected symbol budget pressure.
+- Test Recall@10 is now measured through the validation channel and reports 1.0 on both proof corpora.
+- Next work should target RefactoringMiner lexical trailing status, ctxpack source/file recall, docs/scripts storage coverage, parser precision, and protected symbol budget pressure.

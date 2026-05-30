@@ -2,9 +2,9 @@
 
 ## Overview
 
-This roadmap starts v2.5 Production Retrieval Quality. v2.4 made semantic, precision, provider, and reranker paths source-safe and policy-gated, then the fresh RefactoringMiner proof fixed a semantic fusion regression. The current product gap is quality lift: default and `local_hash` now match each other at Recall@10 `0.6355`, but lexical baseline remains ahead at `0.6665`.
+This roadmap tracks v2.5 Production Retrieval Quality and its immediate production-readiness follow-ups. v2.4 made semantic, precision, provider, and reranker paths source-safe and policy-gated, then the fresh RefactoringMiner proof fixed a semantic fusion regression. The current product gap is quality lift: the default is useful as an agent-native context broker, but the two-repo product proof still blocks default promotion because every corpus does not beat lexical baseline.
 
-v2.5 therefore focuses on measured retrieval quality, not more surface area. The milestone must prove whether production local embeddings, reranking, graph/test/history fixes, and learned fusion can beat lexical baseline on real repositories while staying local-first and source-safe.
+v2.5 therefore focuses on measured retrieval quality, not more surface area. The milestone must prove whether production local embeddings, reranking, graph/test/history fixes, and learned fusion can beat lexical baseline on real repositories while staying local-first and source-safe. Phase 66 fixed the false zero-test-recall signal by measuring `recommended_tests` as its own validation channel; default promotion remains blocked.
 
 ## v2.5 Production Retrieval Quality
 
@@ -13,13 +13,15 @@ v2.5 therefore focuses on measured retrieval quality, not more surface area. The
 **Phase Numbering:**
 
 - Integer phases (61, 62, 63, 64, 65): Planned v2.5 work
+- Phase 66: Production-readiness follow-up from the blocked proof
 - Decimal phases (61.1, 62.1): Urgent insertions if needed
 
 - [x] **Phase 61: Multi-Repo Quality Baselines** - Maintainers can run source-free paired baselines across RefactoringMiner and a second real repository with stable comparison artifacts.
 - [x] **Phase 62: Production Local Embedding Quality** - Maintainers can evaluate production local embeddings against lexical/default baselines with bounded local cache and provider metadata.
 - [x] **Phase 63: Reranker And Fusion Promotion** - Maintainers can compare reranker/fusion variants under promotion gates that protect anchors and exact evidence.
-- [ ] **Phase 64: Gap-Family Retrieval Improvements** - Maintainers can convert repeated gap families into targeted retrieval fixes with before/after proof.
-- [ ] **Phase 65: v2.5 Product Proof And Release Gate** - Maintainers can ship or hold v2.5 variants using multi-repo proof, docs, and release gates.
+- [x] **Phase 64: Gap-Family Retrieval Improvements** - Maintainers can convert repeated gap families into targeted retrieval fixes with before/after proof.
+- [x] **Phase 65: v2.5 Product Proof And Release Gate** - Maintainers can ship or hold v2.5 variants using multi-repo proof, docs, and release gates.
+- [x] **Phase 66: Test Recall Evaluation Channel** - Maintainers can measure validation-test recall through the dedicated `recommended_tests` output without degrading target-file recall.
 
 ## Phase Details
 
@@ -128,6 +130,27 @@ Plans:
 
 - [x] 65-v25-product-proof-release-gate-01-PLAN.md - Finalize measured proof, docs, and release gates.
 
+### Phase 66: Test Recall Evaluation Channel
+
+**Goal**: Maintainers can measure validation-test recall through the dedicated related-tests channel instead of treating tests as absent when the target-file ranking is full.
+
+**Depends on**: Phase 65
+
+**Requirements**: GAP-03, PROOF-01
+
+**Success Criteria**:
+
+1. Test Recall@10 is measured from `recommended_tests`.
+2. Target-file ranking behavior is not degraded by forced test-slot reservation.
+3. Related-test ordering preserves raw score differences hidden by capped public confidence.
+4. The product proof still blocks default promotion until every corpus beats lexical.
+
+**Plans**: 1 plan
+
+Plans:
+
+- [x] 66-test-recall-eval-channel-01-PLAN.md - Correct the validation-test evaluation channel and prove the result.
+
 ## Requirement Coverage
 
 | Requirement | Phase |
@@ -152,13 +175,15 @@ Plans:
 | PROOF-02 | Phase 65 |
 | PROOF-03 | Phase 65 |
 | PROOF-04 | Phase 65 |
+| GAP-03 | Phase 66 |
+| PROOF-01 | Phase 66 |
 
-**Coverage:** 20/20 v2.5 requirements mapped. No orphaned requirements.
+**Coverage:** 20/20 v2.5 requirements mapped, with Phase 66 as a measured follow-up for the test-recall proof gap. No orphaned requirements.
 
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 61 -> 62 -> 63 -> 64 -> 65
+Phases execute in numeric order: 61 -> 62 -> 63 -> 64 -> 65 -> 66
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
@@ -167,6 +192,7 @@ Phases execute in numeric order: 61 -> 62 -> 63 -> 64 -> 65
 | 63. Reranker And Fusion Promotion | 1/1 | Complete | 2026-05-30 |
 | 64. Gap-Family Retrieval Improvements | 1/1 | Complete | 2026-05-30 |
 | 65. v2.5 Product Proof And Release Gate | 1/1 | Complete | 2026-05-30 |
+| 66. Test Recall Evaluation Channel | 1/1 | Complete | 2026-05-30 |
 
 ---
 *Roadmap created: 2026-05-22*

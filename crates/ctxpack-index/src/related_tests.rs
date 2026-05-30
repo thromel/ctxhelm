@@ -43,7 +43,8 @@ pub fn related_tests_report(
     let cache_status = inventory_report.cache_status.clone();
     let source_keys = source_paths
         .iter()
-        .map(|path| source_key(path))
+        .enumerate()
+        .map(|(priority, path)| source_key(path, priority))
         .collect::<Vec<_>>();
     if source_keys.is_empty() {
         return Ok(RelatedTestsReport {
@@ -81,20 +82,28 @@ pub fn related_tests_report(
             continue;
         };
 
-        results.push(RelatedTestResult {
-            path: file.path.clone(),
-            command: test_command_for(&repo_root, &file.path),
-            confidence: (score / 20.0).min(0.95),
-            reason,
-        });
+        results.push((
+            score,
+            RelatedTestResult {
+                path: file.path.clone(),
+                command: test_command_for(&repo_root, &file.path),
+                confidence: (score / 20.0).min(0.95),
+                reason,
+            },
+        ));
     }
 
     results.sort_by(|left, right| {
         right
-            .confidence
-            .total_cmp(&left.confidence)
-            .then_with(|| left.path.cmp(&right.path))
+            .0
+            .total_cmp(&left.0)
+            .then_with(|| right.1.confidence.total_cmp(&left.1.confidence))
+            .then_with(|| left.1.path.cmp(&right.1.path))
     });
+    let results = results
+        .into_iter()
+        .map(|(_, result)| result)
+        .collect::<Vec<_>>();
 
     Ok(RelatedTestsReport {
         results,
@@ -138,9 +147,10 @@ struct SourceKey {
     stem: String,
     directory: String,
     identifiers: Vec<String>,
+    priority: usize,
 }
 
-fn source_key(path: &str) -> SourceKey {
+fn source_key(path: &str, priority: usize) -> SourceKey {
     let normalized = path.trim_start_matches("./").replace('\\', "/");
     let directory = normalized
         .rsplit_once('/')
@@ -159,6 +169,7 @@ fn source_key(path: &str) -> SourceKey {
         stem,
         directory,
         identifiers,
+        priority,
     }
 }
 
@@ -194,8 +205,9 @@ fn score_test_file(
 
     for source in source_keys {
         if !source.stem.is_empty() && test_name.contains(&source.stem) {
-            score += 9.0;
-            structural_score += 9.0;
+            let name_score = 16.0 + source_priority_bonus(source.priority);
+            score += name_score;
+            structural_score += name_score;
             reasons.push(format!(
                 "test file name matches source stem `{}`",
                 source.stem
@@ -241,6 +253,10 @@ fn score_test_file(
     reasons.sort();
     reasons.dedup();
     Some((score, reasons.join("; ")))
+}
+
+fn source_priority_bonus(priority: usize) -> f32 {
+    5usize.saturating_sub(priority.min(5)) as f32
 }
 
 fn partial_diagnostic(code: &str, message: &str, paths: Vec<String>) -> Diagnostic {
