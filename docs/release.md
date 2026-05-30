@@ -245,7 +245,14 @@ For repeatable local investigation, use the pinned optional fixture at
 `.planning/e2e/2026-05-30-phase73-broader-fixed-corpus-config.json`; it is
 expected to report `releaseGate.decision = promote` under the ceiling-aware
 gate while still reporting protected target miss diagnostics for ctxpack and
-VeriSchema.
+VeriSchema. Phase 79 adds bounded protected target floors and archive deferral:
+the latest required proof is
+`.ctxpack/e2e/phase79-protected-target-floors-proof.json`, and the latest
+broader proof is
+`.ctxpack/e2e/phase79-broader-protected-target-floors-proof.json`. Both
+promote. Required RefactoringMiner and broader VeriSchema protected
+retrieval-target miss-rates are `0.0`; ctxpack still reports one residual
+protected source-symbol miss in each proof.
 
 Latest optional real-client proof: Codex CLI `0.130.0` and Claude Code
 `2.1.158` both passed the smoke wrappers on 2026-05-30 with server-side

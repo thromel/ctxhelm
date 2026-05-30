@@ -3,11 +3,11 @@ gsd_state_version: 1.0
 milestone: v2.5
 milestone_name: Production Retrieval Quality
 status: active
-last_updated: "2026-05-30T19:40:00Z"
-last_activity: 2026-05-30 -- Phase 78 made the broader product-proof gate ceiling-aware and promoted the fixed four-repo proof
+last_updated: "2026-05-30T20:25:00Z"
+last_activity: 2026-05-30 -- Phase 79 added protected target floors for source/config/governance context and reduced measured protected target misses
 progress:
-  total_phases: 16
-  completed_phases: 16
+  total_phases: 18
+  completed_phases: 18
   total_plans: 7
   completed_plans: 7
   percent: 100
@@ -17,10 +17,10 @@ progress:
 
 ## Current Position
 
-Phase: 78 - Ceiling-Aware Broader Gate
-Plan: 78-ceiling-aware-broader-gate
+Phase: 79 - Protected Target Floors
+Plan: 79-protected-target-floors
 Status: Complete
-Last activity: 2026-05-30 -- Phase 78 accepts safe perfect lexical-ceiling matches in the product-proof gate while keeping ordinary matches and hard runtime failures as blockers. The broader fixed-corpus proof now promotes; RefactoringMiner is a safe ceiling match, while ctxpack, ReAgent, and VeriSchema beat lexical on the non-test context channel.
+Last activity: 2026-05-30 -- Phase 79 adds bounded floors for source lexical, source symbol, exact config, and governance docs, and defers archive artifacts during fill. Required and broader proofs still promote. RefactoringMiner required protected target misses and VeriSchema broader protected target misses are now zero; ctxpack still has one protected source-symbol miss in the required slice and one in the broader slice.
 
 ## Project Reference
 
@@ -55,6 +55,7 @@ Planned phases:
 - Phase 76: Parent-Bounded Validation History (complete follow-up)
 - Phase 77: Validation Command Coverage (complete follow-up)
 - Phase 78: Ceiling-Aware Broader Gate (complete follow-up)
+- Phase 79: Protected Target Floors (complete follow-up)
 
 ## Last Completed Milestone
 
@@ -72,7 +73,7 @@ Planned phases:
 
 ## Next Step
 
-Continue production-readiness work from remaining measured gaps: protected retrieval-target misses in ctxpack/VeriSchema, parser/precision dependency misses, and steady-state latency/quality hardening.
+Continue production-readiness work from remaining measured gaps: residual ctxpack protected source-symbol misses, parser/precision dependency misses, and steady-state latency/quality hardening.
 
 ## Operator Next Steps
 
@@ -88,6 +89,8 @@ Continue production-readiness work from remaining measured gaps: protected retri
 - Latest validation-command coverage proof: `.ctxpack/e2e/phase77-validation-command-coverage-proof.json`; required proof promotes with RefactoringMiner effective validation recall `1.0`.
 - Latest broader validation-command coverage proof: `.ctxpack/e2e/phase77-broader-validation-command-coverage-proof.json`; VeriSchema effective validation recall is `1.0`, resolving the previous validation-test floor failure through broad command coverage.
 - Latest ceiling-aware broader proof: `.ctxpack/e2e/phase78-ceiling-aware-broader-proof.json`; broader fixed-corpus promotion passes, but ctxpack and VeriSchema still report non-zero protected retrieval-target misses.
+- Latest protected-target floor proof: `.ctxpack/e2e/phase79-protected-target-floors-proof.json`; required proof promotes, RefactoringMiner protected target miss-rate is `0.0`, and ctxpack required protected target miss-rate is `0.0417`.
+- Latest broader protected-target floor proof: `.ctxpack/e2e/phase79-broader-protected-target-floors-proof.json`; broader proof promotes, VeriSchema protected target miss-rate is `0.0`, and ctxpack broader protected target miss-rate remains `0.100`.
 - Latest real-client proof: `.planning/e2e/2026-05-30-phase70-real-client-mcp-proof.md`.
 - RefactoringMiner still trails lexical on all-file recall because tests are no longer forced into the target-file context budget; this is explicitly recorded in corpus verdict notes.
-- Next work should target remaining protected retrieval-target misses in ctxpack/VeriSchema, low-information/multi-area task detection, parser precision, and warm-cache latency characterization.
+- Next work should target ctxpack residual protected source-symbol misses (`planning.rs`, `related_tests.rs`), low-information/multi-area task detection, parser precision, and warm-cache latency characterization.
