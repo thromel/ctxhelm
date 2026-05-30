@@ -1237,6 +1237,12 @@ fn product_proof_corpus_verdict(repo: &BenchmarkRepoReport) -> ProductProofCorpu
         ProductProofCorpusStatus::Match
     };
     let mut notes = Vec::new();
+    if report.evaluated_commits == 0 {
+        notes.push(repo.error.clone().unwrap_or_else(|| {
+            "repository produced no evaluable commits; git history may be unavailable or timed out"
+                .to_string()
+        }));
+    }
     if validation_target_count > 0 && report.test_recall_at_10 == 0.0 {
         notes.push("test recall at 10 is zero".to_string());
     }
@@ -2426,6 +2432,14 @@ fn run_benchmark_repo(
                 .flat_map(|commit| commit.changed_path_labels.iter())
                 .filter(|label| label.label_scope != LabelScope::Safe)
                 .count();
+            let report_error = if report.evaluated_commits == 0 {
+                Some(
+                    "repository produced no evaluable commits; git history may be unavailable or timed out"
+                        .to_string(),
+                )
+            } else {
+                None
+            };
             BenchmarkRepoReport {
                 name: repo_config.name.clone(),
                 repo_id: Some(report.repo_id.clone()),
@@ -2436,7 +2450,7 @@ fn run_benchmark_repo(
                 excluded_changed_file_count,
                 skipped_path_count,
                 report: Some(report),
-                error: None,
+                error: report_error,
                 privacy_status: PrivacyStatus::local_only(),
             }
         }
@@ -2778,7 +2792,8 @@ pub fn evaluate_historical_commits(
         .map(|file| (file.path.clone(), file.role.clone()))
         .collect::<BTreeMap<_, _>>();
     let git_sample_started = Instant::now();
-    let samples = historical_commit_samples_with_safe_paths(
+    let mut history_sampling_failed = false;
+    let samples = match historical_commit_samples_with_safe_paths(
         repo_root,
         &HistoricalCommitOptions {
             limit: options.limit,
@@ -2786,7 +2801,13 @@ pub fn evaluate_historical_commits(
             head: options.head.clone(),
         },
         &safe_paths,
-    )?;
+    ) {
+        Ok(samples) => samples,
+        Err(_) => {
+            history_sampling_failed = true;
+            Vec::new()
+        }
+    };
     let git_sample_millis = elapsed_millis(git_sample_started);
     let parallelism = options.parallelism.max(1).min(samples.len().max(1));
     let commit_results = evaluate_historical_commit_samples(
@@ -2894,7 +2915,7 @@ pub fn evaluate_historical_commits(
         commits,
         privacy_status: PrivacyStatus::local_only(),
     };
-    if options.cache_enabled {
+    if options.cache_enabled && !history_sampling_failed {
         write_historical_eval_cache(&report.repo_id, &report.eval_range_id, &report)?;
     }
     Ok(report)
@@ -5594,6 +5615,76 @@ mod tests {
             .iter()
             .any(|verdict| verdict.repository == "trail-repo"
                 && verdict.status == ProductProofCorpusStatus::Trail));
+    }
+
+    #[test]
+    fn benchmark_suite_embeds_report_when_history_sampling_is_unavailable() {
+        let temp = tempfile::tempdir().unwrap();
+        let repo = temp.path().join("repo-without-git-history");
+        fs::create_dir_all(repo.join("src")).unwrap();
+        fs::write(repo.join("src/lib.rs"), "pub fn example() {}\n").unwrap();
+        let config = BenchmarkSuiteConfig {
+            manifest_version: default_benchmark_manifest_version(),
+            name: "history-unavailable".to_string(),
+            corpus_id: Some("history-unavailable-corpus".to_string()),
+            privacy_label: Some("source_free_local".to_string()),
+            description: None,
+            defaults: BenchmarkDefaults {
+                limit: 3,
+                ranking_budget: 10,
+                parallelism: 1,
+                ..BenchmarkDefaults::default()
+            },
+            repositories: vec![BenchmarkRepoConfig {
+                name: "historyless".to_string(),
+                path: repo,
+                revision_range_id: Some("missing-history".to_string()),
+                privacy_label: None,
+                base: None,
+                head: None,
+                limit: None,
+                ranking_budget: None,
+                mode: None,
+                target_agent: None,
+                semantic_enabled: None,
+                semantic_provider: None,
+                semantic_model: None,
+                semantic_dimensions: None,
+                local_metadata_reranker: None,
+                cache_enabled: Some(false),
+                force_refresh: Some(true),
+                parallelism: Some(1),
+                role_filters: Vec::new(),
+                baseline: None,
+            }],
+        };
+
+        let report = run_benchmark_suite_config(&config, temp.path()).unwrap();
+        let repo_report = &report.repositories[0];
+
+        assert_eq!(repo_report.name, "historyless");
+        assert_eq!(repo_report.evaluated_commits, 0);
+        assert!(repo_report.report.is_some());
+        assert!(repo_report
+            .error
+            .as_deref()
+            .unwrap()
+            .contains("no evaluable commits"));
+        assert_eq!(report.evaluated_repository_count, 0);
+        let proof = build_product_proof_report(report);
+        let verdict = &proof.release_gate.corpus_verdicts[0];
+        assert_eq!(
+            verdict.status,
+            ProductProofCorpusStatus::InsufficientEvidence
+        );
+        assert!(verdict
+            .notes
+            .iter()
+            .any(|note| note.contains("git history")));
+        assert_eq!(
+            proof.release_gate.decision,
+            SemanticPrecisionGateDecision::Block
+        );
     }
 
     #[test]

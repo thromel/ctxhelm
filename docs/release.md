@@ -230,7 +230,7 @@ The gate passes the same selected or extracted `CTXPACK_BIN` into the first-pack
 - `CTXPACK_SKIP_REAL_CLIENT=1` keeps Codex and Claude checks deterministic-only after the protocol proof.
 - `CTXPACK_REQUIRE_REAL_CLIENT=1` makes missing Codex or Claude tool-call evidence fail the gate.
 - `CTXPACK_REAL_CLIENT_EVIDENCE_DIR=/absolute/path/to/evidence` writes stable JSON evidence files with client version, ctxpack version, repo path, `prepare_task`, and `get_pack` proof when real-client checks run.
-- `CTXPACK_BENCHMARK_CONFIG=/absolute/path/to/suite.json` runs `ctxpack eval proof --config ... --format json` and fails on report-generation, local-only privacy regressions, missing embedded repository reports, missing v2.3 product proof summary, missing paired baseline verdict contract, feature-export privacy regressions, learned-policy status regressions, missing proof-boundary language, missing resource-backed current-reachable gap summaries, pinned broad fixed-corpus regressions, or a non-promote `releaseGate.decision`. Neutral, mixed, unsafe, or too-expensive default retrieval proof blocks publication.
+- `CTXPACK_BENCHMARK_CONFIG=/absolute/path/to/suite.json` runs `ctxpack eval proof --config ... --format json` and fails on report-generation, local-only privacy regressions, missing embedded repository reports, history-unavailable insufficient-evidence reports, missing v2.3 product proof summary, missing paired baseline verdict contract, feature-export privacy regressions, learned-policy status regressions, missing proof-boundary language, missing resource-backed current-reachable gap summaries, pinned broad fixed-corpus regressions, or a non-promote `releaseGate.decision`. Neutral, mixed, unsafe, or too-expensive default retrieval proof blocks publication.
 
 Current v2.5 proof status: the fixed two-repo production-retrieval proof
 promotes default local retrieval under the channel-aware release gate. The gate
@@ -505,6 +505,16 @@ artifact is
 available three-repo proof promotes, while the full four-repo proof is not
 claimed because the local RefactoringMiner checkout timed out during
 `git rev-list`.
+
+Phase 105 keeps history-unavailable benchmark runs machine-checkable. If git
+history sampling fails or times out, historical eval emits an embedded
+zero-commit report, benchmark output records a source-free history-unavailable
+error, and product proof blocks the corpus as `insufficient_evidence` rather
+than emitting `report: null`. Degraded zero-commit reports are not cached, so a
+transient large-repo timeout cannot poison later hydrated proof runs. The
+evidence artifact is
+`.planning/e2e/2026-05-31-phase105-history-unavailable-report.md`; the CLI proof
+fixture is `.ctxpack/e2e/phase105-history-unavailable-proof.json`.
 
 Latest optional real-client proof: Codex CLI `0.130.0` and Claude Code
 `2.1.158` both passed the smoke wrappers on 2026-05-30 with server-side
