@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v2.5
 milestone_name: Production Retrieval Quality
 status: active
-last_updated: "2026-05-31T08:30:00Z"
-last_activity: 2026-05-31 -- Phase 93 added source-free symbol/dependency index caches and promoted clean cold large-repo proof
+last_updated: "2026-05-31T09:30:00Z"
+last_activity: 2026-05-31 -- Phase 94 increased broad context-area guidance after rejecting a top-10 selector regression
 progress:
   total_phases: 31
   completed_phases: 31
@@ -17,10 +17,10 @@ progress:
 
 ## Current Position
 
-Phase: 93 - Source-Free Index Cache
-Plan: 93-source-free-index-cache
+Phase: 94 - Broad Context-Area Cap
+Plan: 94-broad-context-area-cap
 Status: Complete
-Last activity: 2026-05-31 -- Phase 93 added source-free symbol extraction and dependency edge report caches keyed by inventory file identity. The clean detached RefactoringMiner force-refresh proof now promotes with runtime `4517ms`, context Recall@10 `1.0`, Test Recall@10 `1.0`, Effective Validation Recall@10 `1.0`, and protected target miss-rate `0.0`, removing the Phase 92 cold large-repo blocker without threshold changes.
+Last activity: 2026-05-31 -- Phase 94 raised the broad `contextAreas` cap from `12` to `16` after a top-10 area-diverse selector experiment regressed VeriSchema. The committed proof promotes, preserves file/source/test/validation metrics, and improves VeriSchema broad context-area recall from `0.64708996` to `0.71851856`.
 
 ## Project Reference
 
@@ -70,6 +70,7 @@ Planned phases:
 - Phase 91: Broad Context-Area Eval (complete follow-up)
 - Phase 92: Area-Aware Gap Taxonomy And Large-Repo Warm Proof (complete follow-up)
 - Phase 93: Source-Free Index Cache (complete follow-up)
+- Phase 94: Broad Context-Area Cap (complete follow-up)
 
 ## Last Completed Milestone
 
@@ -87,7 +88,7 @@ Planned phases:
 
 ## Next Step
 
-Continue production-readiness work from remaining measured gaps: source candidate generation for true `no_candidate_signal` families and top-10 selection pressure in broad repositories. Broad evals now distinguish files covered only by surfaced context areas from files with no candidate signal, and clean RefactoringMiner cold proof now promotes under the source-free index caches.
+Continue production-readiness work from remaining measured gaps: source candidate generation for true `no_candidate_signal` families and top-10 selection pressure in broad repositories. Broad evals now distinguish files covered only by surfaced context areas from files with no candidate signal, clean RefactoringMiner cold proof promotes under the source-free index caches, and broad context-area guidance now covers more wide-task implementation areas without moving the target-file budget.
 
 ## Operator Next Steps
 
@@ -122,6 +123,7 @@ Continue production-readiness work from remaining measured gaps: source candidat
 - Latest broad context-area eval proof: `.planning/e2e/2026-05-31-phase91-broad-context-area-eval.md` and `.ctxpack/e2e/phase91-broad-context-area-release-proof.json`; release-mode broader proof promotes, existing quality metrics stay stable, and VeriSchema broad context-area recall is now measured at `0.64708996`.
 - Latest area-aware gap taxonomy proof: `.planning/e2e/2026-05-31-phase92-area-aware-gap-taxonomy.md`, `.ctxpack/e2e/phase92-area-aware-gap-taxonomy-clean-force-proof.json`, and `.ctxpack/e2e/phase92-area-aware-gap-taxonomy-warm-proof.json`; warm-cache broader proof promotes, VeriSchema broad context-area recall remains `0.64708996`, and unresolved broad-area misses are classified as `area_context_only` / `contextPlanning`.
 - Latest source-free index cache proof: `.planning/e2e/2026-05-31-phase93-source-free-index-cache.md` and `.ctxpack/e2e/phase93-index-cache-cold-proof.json`; force-refresh broad proof promotes, RefactoringMiner runtime is `4517ms`, and VeriSchema broad context-area recall remains `0.64708996`.
+- Latest broad context-area cap proof: `.planning/e2e/2026-05-31-phase94-broad-context-area-cap.md` and `.ctxpack/e2e/phase94-context-area-cap-proof.json`; force-refresh broad proof promotes, VeriSchema broad context-area recall improves to `0.71851856`, and target-file/test/validation metrics stay stable.
 - Latest real-client proof: `.planning/e2e/2026-05-30-phase70-real-client-mcp-proof.md`.
 - RefactoringMiner and ReAgent still trail lexical on all-file recall in the broader proof, but those deficits are now machine-checkable as explained by the context/validation split instead of only prose notes.
 - Phase 84 improves VeriSchema Source Recall@10 from `0.249` to `0.304` on the broader fixed corpus while keeping RefactoringMiner, ctxpack, and ReAgent stable.
@@ -134,4 +136,5 @@ Continue production-readiness work from remaining measured gaps: source candidat
 - Phase 91 adds the broad context-area eval channel. It does not alter top-10 target-file ranking, but it proves broad plans expose implementation area coverage when a commit is too wide for the initial file budget.
 - Phase 92 fixes area-aware gap taxonomy and prevents stale historical eval caches from hiding new eval fields. It also reduces large-repo sampling/freshness overhead, but clean RefactoringMiner still exceeds the hard cold runtime ceiling without cached historical reports.
 - Phase 93 adds source-free symbol/dependency index caches. Clean RefactoringMiner force-refresh proof now promotes under the hard runtime ceiling without release-threshold tuning.
-- Next work should target true source candidate gaps and top-10 selection pressure in broad repositories, not runtime threshold tuning.
+- Phase 94 expands source-free broad context-area guidance after rejecting a top-10 area-diversity selector that regressed VeriSchema file/source recall.
+- Next work should target true source candidate gaps and better progressive packs for broad repositories, not runtime threshold tuning or unproven top-10 churn.

@@ -625,7 +625,7 @@ fn context_area_priority(area: &str, accumulator: &AreaAccumulator) -> u8 {
     3
 }
 
-const MAX_CONTEXT_AREAS: usize = 12;
+const MAX_CONTEXT_AREAS: usize = 16;
 
 #[derive(Default)]
 struct AreaAccumulator {
