@@ -167,11 +167,20 @@ fn score_file(
         FileRole::Config | FileRole::Schema | FileRole::Docs => 0.4,
         FileRole::Generated | FileRole::Sensitive | FileRole::Unknown => 0.0,
     };
+    if is_archive_context_artifact(&path) {
+        score *= 0.35;
+        reasons.push("archive context artifact dampened".to_string());
+    }
 
     reasons.sort();
     reasons.dedup();
 
     Some((score, reasons.join("; ")))
+}
+
+fn is_archive_context_artifact(path: &str) -> bool {
+    path.starts_with(".planning/milestones/")
+        || (path.starts_with(".planning/e2e/") && path.ends_with(".json"))
 }
 
 pub(crate) fn count_occurrences(haystack: &str, needle: &str) -> usize {

@@ -4,7 +4,7 @@
 
 This roadmap tracks v2.5 Production Retrieval Quality and its immediate production-readiness follow-ups. v2.4 made semantic, precision, provider, and reranker paths source-safe and policy-gated, then the fresh RefactoringMiner proof fixed a semantic fusion regression. The current fixed two-repo product proof promotes default local retrieval under a channel-aware gate: non-test context recall beats lexical on both corpora, while validation-test recall is measured separately through `recommended_tests`.
 
-v2.5 therefore focuses on measured retrieval quality, not more surface area. The milestone must prove whether production local embeddings, reranking, graph/test/history fixes, and learned fusion can beat lexical baseline on real repositories while staying local-first and source-safe. Phase 66 fixed the false zero-test-recall signal by measuring `recommended_tests` as its own validation channel. Phase 67 fixed the denominator for historical retrieval metrics by separating all safe changed files from parent-snapshot `retrievalTargetFiles`. Phase 69 promoted default local retrieval under the channel-aware proof, and Phase 70 refreshed real-client MCP evidence for Codex CLI and Claude Code.
+v2.5 therefore focuses on measured retrieval quality, not more surface area. The milestone must prove whether production local embeddings, reranking, graph/test/history fixes, and learned fusion can beat lexical baseline on real repositories while staying local-first and source-safe. Phase 66 fixed the false zero-test-recall signal by measuring `recommended_tests` as its own validation channel. Phase 67 fixed the denominator for historical retrieval metrics by separating all safe changed files from parent-snapshot `retrievalTargetFiles`. Phase 69 promoted default local retrieval under the channel-aware proof, Phase 70 refreshed real-client MCP evidence for Codex CLI and Claude Code, and Phase 71 reduced archive-artifact retrieval noise in ctxpack's own history.
 
 ## v2.5 Production Retrieval Quality
 
@@ -13,7 +13,7 @@ v2.5 therefore focuses on measured retrieval quality, not more surface area. The
 **Phase Numbering:**
 
 - Integer phases (61, 62, 63, 64, 65): Planned v2.5 work
-- Phases 66-70: Production-readiness follow-ups from the original blocked proof and the channel-aware promotion path
+- Phases 66-71: Production-readiness follow-ups from the original blocked proof and the channel-aware promotion path
 - Decimal phases (61.1, 62.1): Urgent insertions if needed
 
 - [x] **Phase 61: Multi-Repo Quality Baselines** - Maintainers can run source-free paired baselines across RefactoringMiner and a second real repository with stable comparison artifacts.
@@ -25,6 +25,7 @@ v2.5 therefore focuses on measured retrieval quality, not more surface area. The
 - [x] **Phase 67: Retrievable Target Eval Denominator** - Maintainers can distinguish all safe changed files from files that existed in the parent snapshot and could be retrieved as context.
 - [x] **Phase 69: Channel-Aware Product Proof Gate** - Maintainers can promote default local retrieval when context recall beats lexical while validation-test recall is proven separately.
 - [x] **Phase 70: Real-Client MCP Proof Refresh** - Maintainers can verify Codex CLI and Claude Code still invoke `prepare_task` and `get_pack` through actual MCP client paths after promotion.
+- [x] **Phase 71: Archive Artifact Dampening** - Maintainers can reduce ctxpack planning-archive retrieval noise without excluding archived evidence from search.
 
 ## Phase Details
 
@@ -214,6 +215,26 @@ Plans:
 
 - [x] `.planning/e2e/2026-05-30-phase70-real-client-mcp-proof.md`
 
+### Phase 71: Archive Artifact Dampening
+
+**Goal**: Maintainers can reduce ctxpack planning-archive retrieval noise without excluding archived evidence from search.
+
+**Depends on**: Phase 69
+
+**Requirements**: GAP-01, GAP-02, RANK-02
+
+**Success Criteria**:
+
+1. `.planning/milestones/**` and `.planning/e2e/**/*.json` stay searchable but no longer dominate generic lexical retrieval.
+2. Symbol budget reserve activates only when archive lexical artifacts are present.
+3. The fixed two-repo proof still promotes default local retrieval.
+4. ctxpack protected evidence miss-rate improves on the current-history proof without changing RefactoringMiner.
+
+**Evidence**:
+
+- [x] `.planning/e2e/2026-05-30-phase71-archive-artifact-dampening.md`
+- [x] `.ctxpack/e2e/phase71-archive-artifact-dampening-proof.json`
+
 ## Requirement Coverage
 
 | Requirement | Phase |
@@ -246,13 +267,16 @@ Plans:
 | PROOF-02 | Phase 69 |
 | GAP-03 | Phase 69 |
 | AGENT-01 | Phase 70 |
+| GAP-01 | Phase 71 |
+| GAP-02 | Phase 71 |
+| RANK-02 | Phase 71 |
 
-**Coverage:** 20/20 v2.5 requirements mapped, with Phases 66-70 as measured follow-ups for proof/eval correctness gaps and real-client evidence. No orphaned v2.5 requirements.
+**Coverage:** 20/20 v2.5 requirements mapped, with Phases 66-71 as measured follow-ups for proof/eval correctness gaps, real-client evidence, and archive-noise reduction. No orphaned v2.5 requirements.
 
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 61 -> 62 -> 63 -> 64 -> 65 -> 66 -> 67 -> 69 -> 70
+Phases execute in numeric order: 61 -> 62 -> 63 -> 64 -> 65 -> 66 -> 67 -> 69 -> 70 -> 71
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
@@ -265,6 +289,7 @@ Phases execute in numeric order: 61 -> 62 -> 63 -> 64 -> 65 -> 66 -> 67 -> 69 ->
 | 67. Retrievable Target Eval Denominator | 1/1 | Complete | 2026-05-30 |
 | 69. Channel-Aware Product Proof Gate | Evidence artifact | Complete | 2026-05-30 |
 | 70. Real-Client MCP Proof Refresh | Evidence artifact | Complete | 2026-05-30 |
+| 71. Archive Artifact Dampening | Evidence artifact | Complete | 2026-05-30 |
 
 ---
 *Roadmap created: 2026-05-22*

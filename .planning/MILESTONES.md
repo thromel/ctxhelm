@@ -6,7 +6,7 @@
 
 **Goal:** Prove and improve retrieval quality across real repositories so production local embeddings, reranking, graph/test/history fixes, and learned fusion can beat lexical baseline while staying local-first and source-safe.
 
-**Status:** Active: 2026-05-22. Phases 61-67 complete; Phase 69 promoted default local retrieval under the channel-aware product-proof gate; Phase 70 refreshed Codex CLI and Claude Code real-client MCP proof.
+**Status:** Active: 2026-05-22. Phases 61-67 complete; Phase 69 promoted default local retrieval under the channel-aware product-proof gate; Phase 70 refreshed Codex CLI and Claude Code real-client MCP proof; Phase 71 reduced ctxpack archive-artifact retrieval noise.
 
 **Phases planned:** Phases 61-65 plus Phase 66-70 production-readiness follow-ups, 7 planned phase files plus 2 proof follow-up artifacts
 
@@ -21,6 +21,7 @@
 - Correct retrieval metrics to use parent-snapshot `retrievalTargetFiles` while preserving `safeChangedFiles`.
 - Channel-aware product proof that compares context recall separately from validation-test recall.
 - Real-client MCP proof refresh for Codex CLI and Claude Code.
+- Archive artifact dampening for historical planning proof files.
 
 **Active artifacts:**
 
@@ -37,11 +38,12 @@
 - Phase 67 E2E: `.planning/e2e/2026-05-30-phase67-retrievable-target-eval-denominator.md`
 - Phase 69 E2E: `.planning/e2e/2026-05-30-phase69-channel-aware-product-proof.md`
 - Phase 70 E2E: `.planning/e2e/2026-05-30-phase70-real-client-mcp-proof.md`
+- Phase 71 E2E: `.planning/e2e/2026-05-30-phase71-archive-artifact-dampening.md`
 
 **Current follow-up gaps:**
 
 - RefactoringMiner all-file Recall@10 still trails lexical because tests are evaluated through `recommended_tests` instead of forced into target-file context.
-- ctxpack still has docs/scripts storage gaps.
+- ctxpack archive artifact noise is reduced, but broader docs/scripts storage policy still needs validation on more repos.
 - Protected evidence miss-rate remains non-zero.
 - Parser/precision dependency misses remain a repeated source gap family.
 

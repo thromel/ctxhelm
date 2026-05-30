@@ -104,6 +104,9 @@ Deferred into later milestones from the remaining product vision.
 | PROOF-03 | Phase 65 | Complete |
 | PROOF-04 | Phase 65 | Complete |
 | AGENT-01 | Phase 70 | Complete |
+| GAP-01 | Phase 71 | Complete |
+| GAP-02 | Phase 71 | Complete |
+| RANK-02 | Phase 71 | Complete |
 
 **Coverage:**
 
@@ -112,6 +115,8 @@ Deferred into later milestones from the remaining product vision.
 - Unmapped: 0
 - Future integration requirement AGENT-01 has current Phase 70 evidence; remaining
   v2.6 integration requirements stay open.
+- Phase 71 adds follow-up evidence for existing gap/ranking requirements by
+  reducing archive-artifact noise without excluding archived evidence.
 
 ---
 *Requirements defined: 2026-05-22*

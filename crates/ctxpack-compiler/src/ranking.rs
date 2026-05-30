@@ -404,10 +404,22 @@ fn select_target_files(candidates: &[RankedCandidate], file_budget: usize) -> Ve
             .then_with(|| left.candidate.path.cmp(&right.candidate.path))
     });
 
+    let symbol_floor_reserve = if has_active_context
+        || !has_symbol_target_candidates(candidates)
+        || !has_archive_lexical_target_candidates(candidates)
+    {
+        0
+    } else {
+        symbol_floor_reserve_limit(file_budget)
+    };
     let lexical_floor_limit = if has_active_context {
         7.min(file_budget)
+    } else if symbol_floor_reserve == 0 {
+        file_budget
     } else {
         file_budget
+            .saturating_sub(symbol_floor_reserve + selected.len())
+            .max(1)
     };
     for (_, candidate) in lexical_floor.into_iter().take(lexical_floor_limit) {
         push_target(candidate, &mut selected, &mut selected_paths, file_budget);
@@ -428,11 +440,7 @@ fn select_target_files(candidates: &[RankedCandidate], file_budget: usize) -> Ve
                 .then_with(|| right.rank_score.total_cmp(&left.rank_score))
                 .then_with(|| left.candidate.path.cmp(&right.candidate.path))
         });
-        let symbol_floor_limit = if has_active_context {
-            3.min(file_budget)
-        } else {
-            file_budget.div_ceil(2).clamp(1, 4)
-        };
+        let symbol_floor_limit = symbol_floor_limit(file_budget, has_active_context);
         for (_, candidate) in symbol_floor.into_iter().take(symbol_floor_limit) {
             push_target(candidate, &mut selected, &mut selected_paths, file_budget);
         }
@@ -501,6 +509,42 @@ fn source_lexical_floor(candidates: &[RankedCandidate]) -> Vec<(f32, &RankedCand
 
 fn source_lexical_floor_limit(file_budget: usize) -> usize {
     file_budget.div_ceil(2).clamp(1, 4)
+}
+
+fn has_symbol_target_candidates(candidates: &[RankedCandidate]) -> bool {
+    candidates.iter().any(|candidate| {
+        candidate.target_file.is_some()
+            && signal_score(&candidate.candidate, RetrievalSignalKind::Symbol).is_some()
+    })
+}
+
+fn has_archive_lexical_target_candidates(candidates: &[RankedCandidate]) -> bool {
+    candidates.iter().any(|candidate| {
+        candidate.target_file.is_some()
+            && lexical_signal_score(&candidate.candidate).is_some()
+            && candidate
+                .candidate
+                .path
+                .as_deref()
+                .is_some_and(is_archive_context_artifact_path)
+    })
+}
+
+fn is_archive_context_artifact_path(path: &str) -> bool {
+    path.starts_with(".planning/milestones/")
+        || (path.starts_with(".planning/e2e/") && path.ends_with(".json"))
+}
+
+fn symbol_floor_limit(file_budget: usize, has_active_context: bool) -> usize {
+    if has_active_context {
+        3.min(file_budget)
+    } else {
+        file_budget.div_ceil(2).clamp(1, 4)
+    }
+}
+
+fn symbol_floor_reserve_limit(file_budget: usize) -> usize {
+    file_budget.div_ceil(5).clamp(1, 2)
 }
 
 fn governance_doc_floor(candidates: &[RankedCandidate]) -> Vec<(f32, &RankedCandidate)> {
@@ -1359,6 +1403,70 @@ mod tests {
 
         assert!(paths.contains(&"documentation/mcp.md"));
         assert!(paths.contains(&"src/target.ts"));
+    }
+
+    #[test]
+    fn selection_reserves_symbol_floor_when_archive_docs_fill_budget() {
+        let candidates = rank_candidates(RankingInput {
+            lexical_results: vec![
+                SearchResult {
+                    path: ".planning/milestones/v1/old-0.md".to_string(),
+                    role: FileRole::Docs,
+                    language: Some("markdown".to_string()),
+                    score: 90.0,
+                    reason: "archive doc match".to_string(),
+                },
+                SearchResult {
+                    path: ".planning/e2e/run/proof.json".to_string(),
+                    role: FileRole::Docs,
+                    language: Some("json".to_string()),
+                    score: 89.0,
+                    reason: "archive json match".to_string(),
+                },
+                SearchResult {
+                    path: "docs/current.md".to_string(),
+                    role: FileRole::Docs,
+                    language: Some("markdown".to_string()),
+                    score: 88.0,
+                    reason: "current doc match".to_string(),
+                },
+                lexical("src/exact.ts", 30.0),
+            ],
+            symbol_results: vec![SymbolSearchResult {
+                symbol: CodeSymbol {
+                    name: "ProtectedSymbol".to_string(),
+                    kind: SymbolKind::Function,
+                    path: "src/protected.ts".to_string(),
+                    language: Some("typescript".to_string()),
+                    start_line: 7,
+                    end_line: 9,
+                    signature: "function ProtectedSymbol()".to_string(),
+                    exported: true,
+                },
+                score: 50.0,
+                reason: "symbol name match".to_string(),
+            }],
+            roles: roles([
+                (".planning/milestones/v1/old-0.md", FileRole::Docs),
+                (".planning/e2e/run/proof.json", FileRole::Docs),
+                ("docs/current.md", FileRole::Docs),
+                ("src/exact.ts", FileRole::Source),
+                ("src/protected.ts", FileRole::Source),
+            ]),
+            ..RankingInput::default()
+        });
+
+        let selection = select_ranked_candidates(&candidates, 4, 0);
+        let paths = selection
+            .target_files
+            .iter()
+            .map(|target| target.path.as_str())
+            .collect::<Vec<_>>();
+
+        assert!(paths.contains(&"src/exact.ts"));
+        assert!(paths.contains(&".planning/milestones/v1/old-0.md"));
+        assert!(paths.contains(&"src/protected.ts"));
+        assert_eq!(paths.len(), 4);
     }
 
     #[test]

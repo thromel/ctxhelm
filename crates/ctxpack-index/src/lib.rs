@@ -366,6 +366,51 @@ mod tests {
     }
 
     #[test]
+    fn lexical_search_dampens_planning_archive_artifacts_without_excluding_them() {
+        let _guard = env_lock();
+        let temp = tempfile::tempdir().unwrap();
+        let repo = temp.path().join("repo");
+        let home = temp.path().join("ctxpack-home");
+        fs::create_dir_all(repo.join(".git")).unwrap();
+        fs::create_dir_all(repo.join("src")).unwrap();
+        fs::create_dir_all(repo.join(".planning/milestones/v1")).unwrap();
+        fs::create_dir_all(repo.join(".planning/e2e/run")).unwrap();
+        fs::write(
+            repo.join("src/current.ts"),
+            "export function proofGate() { return true; }\n",
+        )
+        .unwrap();
+        fs::write(
+            repo.join(".planning/milestones/v1/old-proof.md"),
+            "proofGate proofGate proofGate proofGate proofGate proofGate\n",
+        )
+        .unwrap();
+        fs::write(
+            repo.join(".planning/e2e/run/proof.json"),
+            "{\"proofGate\":\"proofGate proofGate proofGate proofGate\"}\n",
+        )
+        .unwrap();
+        std::env::set_var("CTXPACK_HOME", &home);
+
+        write_inventory(&repo, &InventoryOptions::default()).unwrap();
+        let results = lexical_search(&repo, "proofGate", &SearchOptions { limit: 10 }).unwrap();
+        let paths = results
+            .iter()
+            .map(|result| result.path.as_str())
+            .collect::<Vec<_>>();
+
+        assert_eq!(paths[0], "src/current.ts");
+        assert!(paths.contains(&".planning/milestones/v1/old-proof.md"));
+        assert!(paths.contains(&".planning/e2e/run/proof.json"));
+        assert!(results
+            .iter()
+            .filter(|result| result.path.starts_with(".planning/"))
+            .all(|result| result.reason.contains("archive context artifact dampened")));
+
+        std::env::remove_var("CTXPACK_HOME");
+    }
+
+    #[test]
     fn lexical_search_builds_missing_inventory_and_skips_excluded_files() {
         let _guard = env_lock();
         let temp = tempfile::tempdir().unwrap();

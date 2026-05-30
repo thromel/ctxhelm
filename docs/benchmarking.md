@@ -378,7 +378,7 @@ context, and validation-test recall is evaluated through the dedicated
 | Corpus | Variant | Status | ctxpack Recall@10 | Lexical Recall@10 | Delta | Test Recall@10 |
 | --- | --- | --- | ---: | ---: | ---: | ---: |
 | RefactoringMiner | `ctxpack_default` | `beat` | 0.778 | 0.741 | +0.037 | 1.000 |
-| ctxpack | `ctxpack_default` | `beat` | 0.333 | 0.286 | +0.048 | 1.000 |
+| ctxpack | `ctxpack_default` | `beat` | 0.519 | 0.481 | +0.039 | 1.000 |
 
 Recommendation today:
 
@@ -388,6 +388,9 @@ Recommendation today:
   channel-aware two-repo proof. Do not generalize that to every repository or
   every evidence channel; all-file recall, protected evidence pressure, and
   parser/precision gaps still need follow-up.
+- Phase 71 dampens historical planning archive artifacts so they stay searchable
+  without crowding active source/current planning evidence. On the current
+  ctxpack history, protected miss-rate@10 improved from 0.250 to 0.163.
 - Keep `local_metadata_reranked` eval-only until named regressions and protected
   evidence behavior clear the gate.
 - Keep `local_fastembed` opt-in for experiments and conceptual queries; it is
