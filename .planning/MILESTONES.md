@@ -6,7 +6,7 @@
 
 **Goal:** Prove and improve retrieval quality across real repositories so production local embeddings, reranking, graph/test/history fixes, and learned fusion can beat lexical baseline while staying local-first and source-safe.
 
-**Status:** Active: 2026-05-22. Phases 61-67 complete; Phase 69 promoted default local retrieval under the channel-aware product-proof gate; Phase 70 refreshed Codex CLI and Claude Code real-client MCP proof; Phase 71 reduced ctxpack archive-artifact retrieval noise; Phase 72 broadened repeated-lift validation and improved validation-test recall seeding; Phase 73 committed a pinned broader fixed-corpus probe; Phase 74 separated protected retrieval-target misses from non-target protected pressure; Phase 75 restored parent-bounded eval history and reserved co-changed validation tests; Phase 76 split historical parent history into validation-only eval mode and enriched co-changed test commands; Phase 77 added broad validation fallback commands and effective validation-command coverage metrics; Phase 78 made the broader proof gate ceiling-aware and promoted the fixed four-repo corpus; Phase 79 added protected target floors; Phase 80 fixed symbol-floor duplicate accounting and cleared protected target misses; Phase 81 fixed warm-cache runtime reporting; Phase 82 made warm-cache runtime enforceable in the product-proof gate.
+**Status:** Active: 2026-05-22. Phases 61-67 complete; Phase 69 promoted default local retrieval under the channel-aware product-proof gate; Phase 70 refreshed Codex CLI and Claude Code real-client MCP proof; Phase 71 reduced ctxpack archive-artifact retrieval noise; Phase 72 broadened repeated-lift validation and improved validation-test recall seeding; Phase 73 committed a pinned broader fixed-corpus probe; Phase 74 separated protected retrieval-target misses from non-target protected pressure; Phase 75 restored parent-bounded eval history and reserved co-changed validation tests; Phase 76 split historical parent history into validation-only mode and enriched co-changed test commands; Phase 77 added broad validation fallback commands and effective validation-command coverage metrics; Phase 78 made the broader proof gate ceiling-aware and promoted the fixed four-repo corpus; Phase 79 added protected target floors; Phase 80 fixed symbol-floor duplicate accounting and cleared protected target misses; Phase 81 fixed warm-cache runtime reporting; Phase 82 made warm-cache runtime enforceable; Phase 83 made context-vs-all-file divergence machine-checkable.
 
 **Phases planned:** Phases 61-65 plus Phase 66-77 production-readiness follow-ups, 7 planned phase files plus 9 proof follow-up artifacts
 
@@ -28,6 +28,7 @@
 - Parent-bounded source-free eval history sidecars and co-changed validation-test reservation.
 - Parent-bounded validation-only history mode for historical eval snapshots, plus runnable commands for co-changed tests selected from history.
 - Broad validation fallback commands and effective validation-command coverage for multi-area smoke/eval tasks.
+- Machine-checkable context-vs-all-file divergence accounting that blocks unexplained all-file lexical deficits.
 
 **Active artifacts:**
 
@@ -75,13 +76,15 @@
 - Phase 82 E2E: `.planning/e2e/2026-05-30-phase82-warm-cache-gate.md`
 - Phase 82 cold proof: `.ctxpack/e2e/phase82-warm-cache-gate-cold-proof.json`
 - Phase 82 warm proof: `.ctxpack/e2e/phase82-warm-cache-gate-warm-proof.json`
+- Phase 83 E2E: `.planning/e2e/2026-05-30-phase83-context-divergence-accounting.md`
+- Phase 83 proof: `.ctxpack/e2e/phase83-context-divergence-proof.json`
 
 **Current follow-up gaps:**
 
 - Broader four-repo proof now promotes under the ceiling-aware gate: VeriSchema beats through effective validation recall (`1.0`) even though raw Test Recall@10 remains `0.7090`, and RefactoringMiner is accepted as a safe lexical-ceiling match.
 - Protected retrieval-target miss-rate is now `0.0` across the required and broader measured corpora after Phase 80. Overall protected evidence misses remain diagnostic because non-target protected candidates can still fall below the standard budget.
 - Parser/precision dependency misses remain a repeated source gap family.
-- The broad corpora now have a pinned optional fixture that promotes, and Phase 82 enforces warm-cache runtime thresholds. It should remain an optional production-readiness probe until parser/precision and context-vs-all-file divergence are addressed further.
+- The broad corpora now have a pinned optional fixture that promotes, Phase 82 enforces warm-cache runtime thresholds, and Phase 83 makes context-vs-all-file divergence auditable through source-free JSON fields. It should remain an optional production-readiness probe until parser/precision and low-information task handling are addressed further.
 
 ## Shipped
 

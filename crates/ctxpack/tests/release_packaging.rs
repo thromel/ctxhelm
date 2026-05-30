@@ -365,7 +365,14 @@ fn product_proof_json(decision: &str, default_promotion_allowed: bool, status: &
   "releaseGate": {{
     "decision": "{decision}",
     "defaultPromotionAllowed": {default_promotion_allowed},
-    "corpusVerdicts": [{{"repository": "fixture", "status": "{status}"}}]
+    "corpusVerdicts": [{{
+      "repository": "fixture",
+      "status": "{status}",
+      "lexicalDeltaAt10": 0.1,
+      "contextVsAllFileDeltaAt10": 0.0,
+      "lexicalContextVsAllFileDeltaAt10": 0.0,
+      "allFileDivergenceExplained": true
+    }}]
   }}
 }}"#
     )

@@ -273,6 +273,16 @@ slow-commit diagnostics, or exceed `1000ms` warm lookup runtime. The latest
 proof artifacts are `.ctxpack/e2e/phase82-warm-cache-gate-cold-proof.json` and
 `.ctxpack/e2e/phase82-warm-cache-gate-warm-proof.json`; both promote.
 
+Phase 83 makes context-vs-all-file divergence enforceable instead of prose-only.
+Corpus verdicts now include `contextVsAllFileDeltaAt10`,
+`lexicalContextVsAllFileDeltaAt10`, and `allFileDivergenceExplained`. The
+release checker fails if those fields are missing or if raw all-file recall
+trails lexical without an explanation from non-regressed context recall plus
+covered validation targets. The latest broader proof artifact is
+`.ctxpack/e2e/phase83-context-divergence-proof.json`; it promotes with
+RefactoringMiner and ReAgent all-file lexical deficits marked as explained by
+the context/validation split.
+
 Latest optional real-client proof: Codex CLI `0.130.0` and Claude Code
 `2.1.158` both passed the smoke wrappers on 2026-05-30 with server-side
 `prepare_task` and `get_pack` evidence against an explicit repo path. See

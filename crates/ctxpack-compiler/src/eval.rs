@@ -430,6 +430,12 @@ pub struct ProductProofCorpusVerdict {
     pub context_recall_at_10: f32,
     pub lexical_context_recall_at_10: f32,
     pub context_delta_at_10: f32,
+    #[serde(default)]
+    pub context_vs_all_file_delta_at_10: f32,
+    #[serde(default)]
+    pub lexical_context_vs_all_file_delta_at_10: f32,
+    #[serde(default)]
+    pub all_file_divergence_explained: bool,
     pub test_recall_at_10: f32,
     #[serde(default)]
     pub validation_command_recall: f32,
@@ -1140,6 +1146,9 @@ fn product_proof_runtime_blocks_promotion(
 }
 
 fn product_proof_verdict_blocks_promotion(verdict: &ProductProofCorpusVerdict) -> bool {
+    if !verdict.all_file_divergence_explained {
+        return true;
+    }
     match verdict.status {
         ProductProofCorpusStatus::Beat => false,
         ProductProofCorpusStatus::Match => !product_proof_is_perfect_ceiling_match(verdict),
@@ -1166,6 +1175,9 @@ fn product_proof_corpus_verdict(repo: &BenchmarkRepoReport) -> ProductProofCorpu
             context_recall_at_10: 0.0,
             lexical_context_recall_at_10: 0.0,
             context_delta_at_10: 0.0,
+            context_vs_all_file_delta_at_10: 0.0,
+            lexical_context_vs_all_file_delta_at_10: 0.0,
+            all_file_divergence_explained: false,
             test_recall_at_10: 0.0,
             validation_command_recall: 0.0,
             effective_validation_recall_at_10: 0.0,
@@ -1180,11 +1192,19 @@ fn product_proof_corpus_verdict(repo: &BenchmarkRepoReport) -> ProductProofCorpu
     };
     let lexical_delta_at_10 = report.file_recall_at_10 - report.lexical_baseline_recall_at_10;
     let context_comparison = context_recall_comparison_at_10(report);
+    let context_vs_all_file_delta_at_10 = context_comparison.ctxpack - report.file_recall_at_10;
+    let lexical_context_vs_all_file_delta_at_10 =
+        context_comparison.lexical - report.lexical_baseline_recall_at_10;
     let validation_target_count = report
         .commits
         .iter()
         .map(|commit| commit.test_files_changed)
         .sum::<usize>();
+    let all_file_recall_trails_lexical = lexical_delta_at_10 < -0.03;
+    let all_file_divergence_explained = !all_file_recall_trails_lexical
+        || (validation_target_count > 0
+            && context_comparison.delta >= -0.03
+            && report.effective_validation_recall_at_10 >= 0.80);
     let status = if report.evaluated_commits == 0 {
         ProductProofCorpusStatus::InsufficientEvidence
     } else if validation_target_count > 0 && report.effective_validation_recall_at_10 < 0.80 {
@@ -1208,11 +1228,18 @@ fn product_proof_corpus_verdict(repo: &BenchmarkRepoReport) -> ProductProofCorpu
             report.test_recall_at_10, report.effective_validation_recall_at_10
         ));
     }
-    if lexical_delta_at_10 < -0.03 && context_comparison.delta > 0.03 {
-        notes.push(
-            "all-file recall trails because validation tests are evaluated in the separate test channel"
-                .to_string(),
-        );
+    if all_file_recall_trails_lexical {
+        if all_file_divergence_explained {
+            notes.push(
+                "all-file recall trails lexical only after mixing validation targets into the file channel; context and validation channels are non-regressed"
+                    .to_string(),
+            );
+        } else {
+            notes.push(
+                "all-file recall trails lexical and is not explained by the separate context and validation channels"
+                    .to_string(),
+            );
+        }
     }
     if report.protected_evidence.miss_rate_at_10 > 0.0 {
         notes.push(format!(
@@ -1260,6 +1287,9 @@ fn product_proof_corpus_verdict(repo: &BenchmarkRepoReport) -> ProductProofCorpu
         context_recall_at_10: context_comparison.ctxpack,
         lexical_context_recall_at_10: context_comparison.lexical,
         context_delta_at_10: context_comparison.delta,
+        context_vs_all_file_delta_at_10,
+        lexical_context_vs_all_file_delta_at_10,
+        all_file_divergence_explained,
         test_recall_at_10: report.test_recall_at_10,
         validation_command_recall: report.validation_command_recall,
         effective_validation_recall_at_10: report.effective_validation_recall_at_10,
@@ -5500,6 +5530,93 @@ mod tests {
         assert_eq!(verdict.context_recall_at_10, 1.0);
         assert_eq!(verdict.lexical_context_recall_at_10, 0.0);
         assert_eq!(verdict.test_recall_at_10, 1.0);
+        assert!(verdict.all_file_divergence_explained);
+    }
+
+    #[test]
+    fn product_proof_release_gate_explains_validation_separated_all_file_divergence() {
+        let mut eval = empty_historical_eval_report("explained-divergence");
+        set_recall_metrics(&mut eval, 0.60, 0.80);
+        eval.test_recall_at_10 = 1.0;
+        eval.effective_validation_recall_at_10 = 1.0;
+        let commit = &mut eval.commits[0];
+        commit.changed_path_labels = vec![
+            historical_changed_path_label("src/auth/session.ts", FileRole::Source),
+            historical_changed_path_label("src/auth/middleware.ts", FileRole::Source),
+            historical_changed_path_label("src/routes/login.ts", FileRole::Source),
+            historical_changed_path_label("tests/auth/session.test.ts", FileRole::Test),
+            historical_changed_path_label("tests/auth/redirect.test.ts", FileRole::Test),
+        ];
+        commit.retrieval_target_files = commit
+            .changed_path_labels
+            .iter()
+            .map(|label| label.path.clone())
+            .collect();
+        commit.recommended_context_files = vec![
+            "src/auth/session.ts".to_string(),
+            "src/auth/middleware.ts".to_string(),
+            "src/routes/login.ts".to_string(),
+        ];
+        commit.lexical_baseline_files = vec![
+            "src/auth/session.ts".to_string(),
+            "src/auth/middleware.ts".to_string(),
+            "tests/auth/session.test.ts".to_string(),
+            "tests/auth/redirect.test.ts".to_string(),
+        ];
+        commit.recommended_tests = vec![
+            "tests/auth/session.test.ts".to_string(),
+            "tests/auth/redirect.test.ts".to_string(),
+        ];
+        commit.test_files_changed = 2;
+        commit.test_hits_at_10 = 2;
+        commit.effective_validation_hits_at_10 = 2;
+
+        let report =
+            build_product_proof_report(benchmark_report_with_repos(vec![("explained", eval)]));
+        let verdict = &report.release_gate.corpus_verdicts[0];
+
+        assert_eq!(verdict.status, ProductProofCorpusStatus::Beat);
+        assert!((verdict.lexical_delta_at_10 + 0.20).abs() < 0.001);
+        assert!((verdict.context_delta_at_10 - (1.0 / 3.0)).abs() < 0.001);
+        assert!(verdict.context_vs_all_file_delta_at_10 > 0.39);
+        assert!(verdict.lexical_context_vs_all_file_delta_at_10 < -0.13);
+        assert!(verdict.all_file_divergence_explained);
+        assert_eq!(
+            report.release_gate.decision,
+            SemanticPrecisionGateDecision::Promote
+        );
+    }
+
+    #[test]
+    fn product_proof_release_gate_blocks_unexplained_all_file_divergence() {
+        let mut eval = empty_historical_eval_report("unexplained-divergence");
+        set_recall_metrics(&mut eval, 0.50, 0.80);
+        let commit = &mut eval.commits[0];
+        commit.changed_path_labels = vec![
+            historical_changed_path_label("src/auth/session.ts", FileRole::Source),
+            historical_changed_path_label("src/auth/middleware.ts", FileRole::Source),
+        ];
+        commit.retrieval_target_files = commit
+            .changed_path_labels
+            .iter()
+            .map(|label| label.path.clone())
+            .collect();
+        commit.recommended_context_files = vec![
+            "src/auth/session.ts".to_string(),
+            "src/auth/middleware.ts".to_string(),
+        ];
+        commit.lexical_baseline_files = vec!["src/auth/session.ts".to_string()];
+
+        let report =
+            build_product_proof_report(benchmark_report_with_repos(vec![("unexplained", eval)]));
+        let verdict = &report.release_gate.corpus_verdicts[0];
+
+        assert_eq!(verdict.status, ProductProofCorpusStatus::Beat);
+        assert!(!verdict.all_file_divergence_explained);
+        assert_eq!(
+            report.release_gate.decision,
+            SemanticPrecisionGateDecision::Block
+        );
     }
 
     #[test]
@@ -5602,6 +5719,17 @@ mod tests {
             protected_evidence_target_miss_rate_at_10: Some(0.0),
             provider_status: "evaluated".to_string(),
             note: "test variant".to_string(),
+        }
+    }
+
+    fn historical_changed_path_label(path: &str, role: FileRole) -> HistoricalChangedPathLabel {
+        HistoricalChangedPathLabel {
+            path: path.to_string(),
+            change_kind: ctxpack_index::ChangeKind::Modified,
+            role,
+            label_scope: LabelScope::Safe,
+            excluded_reason: None,
+            old_path: None,
         }
     }
 

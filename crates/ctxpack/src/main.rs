@@ -4879,13 +4879,16 @@ fn render_product_proof_report(report: &ProductProofReport) -> String {
     } else {
         for verdict in &report.release_gate.corpus_verdicts {
             output.push_str(&format!(
-                "- `{}` variant `{}`: status `{:?}`, recall@10 `{:.3}`, lexical recall@10 `{:.3}`, delta `{:+.3}`, test recall@10 `{:.3}`, protected miss-rate@10 `{:.3}` target `{:.3}`, runtime `{}` ms",
+                "- `{}` variant `{}`: status `{:?}`, recall@10 `{:.3}`, lexical recall@10 `{:.3}`, delta `{:+.3}`, context delta `{:+.3}`, context-vs-all-file `{:+.3}`, all-file divergence explained `{}`, test recall@10 `{:.3}`, protected miss-rate@10 `{:.3}` target `{:.3}`, runtime `{}` ms",
                 verdict.repository,
                 verdict.variant,
                 verdict.status,
                 verdict.file_recall_at_10,
                 verdict.lexical_baseline_recall_at_10,
                 verdict.lexical_delta_at_10,
+                verdict.context_delta_at_10,
+                verdict.context_vs_all_file_delta_at_10,
+                verdict.all_file_divergence_explained,
                 verdict.test_recall_at_10,
                 verdict.protected_evidence_miss_rate_at_10,
                 verdict.protected_evidence_target_miss_rate_at_10,

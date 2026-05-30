@@ -20,6 +20,14 @@ The product-proof release gate evaluates two channels:
 
 This matches the product contract: ctxpack returns source/docs/config as task context and tests as validation context. All-file recall remains in reports for transparency, but default promotion is decided by context lift plus validation-test recall so tests are not double-counted as both target files and validation commands.
 
+Product-proof corpus verdicts also expose machine-checkable divergence fields:
+
+- `contextVsAllFileDeltaAt10`: ctxpack context-channel Recall@10 minus all-file Recall@10.
+- `lexicalContextVsAllFileDeltaAt10`: lexical context-channel Recall@10 minus lexical all-file Recall@10.
+- `allFileDivergenceExplained`: `true` only when any all-file lexical deficit is explained by non-regressed context recall plus covered validation targets.
+
+The release gate and `scripts/check-product-proof.py` block unexplained all-file lexical deficits. This keeps the proof honest when lexical wins raw all-file recall by ranking validation tests as files, while still rejecting unexplained source-context losses.
+
 v2.3 treats benchmark suites as fixed corpus manifests. Older suite files still work, but v2.3+ manifests should include a manifest version, corpus ID, privacy label, revision range ID, and optional locked baseline metadata so quality claims are reproducible.
 
 Phase 58 adds source-free query construction traces to prepare-task and historical eval commit rows. These traces record extracted paths, stack frames, symbols, error terms, domain terms, commit clues, retriever query sets, and fusion controls. They intentionally store task hashes and bounded facets instead of raw prompts or source snippets.
@@ -433,6 +441,10 @@ Recommendation today:
 - Phase 82 makes warm-cache runtime enforceable. Product proofs block cached
   reports that mix cache misses, retain stale cold timings, retain slow-commit
   diagnostics, or exceed `1000ms` warm lookup runtime.
+- Phase 83 makes context-vs-all-file divergence source-free and enforceable.
+  Product-proof verdicts now include context-vs-all-file deltas and
+  `allFileDivergenceExplained`; the checker fails if an all-file lexical
+  deficit is not explained by the separate context and validation channels.
 - Keep `local_metadata_reranked` eval-only until named regressions and protected
   evidence behavior clear the gate.
 - Keep `local_fastembed` opt-in for experiments and conceptual queries; it is

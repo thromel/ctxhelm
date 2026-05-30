@@ -16,6 +16,7 @@ def is_perfect_ceiling_match(verdict: dict) -> bool:
         and float(verdict.get("contextRecallAt10", 0.0)) >= 0.999
         and float(verdict.get("lexicalContextRecallAt10", 0.0)) >= 0.999
         and float(verdict.get("protectedEvidenceTargetMissRateAt10", 1.0)) == 0.0
+        and verdict.get("allFileDivergenceExplained") is True
     )
 
 
@@ -63,6 +64,26 @@ def main() -> None:
     if not isinstance(verdicts, list) or not verdicts:
         fail("product proof releaseGate.corpusVerdicts were missing")
     for verdict in verdicts:
+        for field in (
+            "contextVsAllFileDeltaAt10",
+            "lexicalContextVsAllFileDeltaAt10",
+            "allFileDivergenceExplained",
+        ):
+            if field not in verdict:
+                fail(
+                    "product proof corpus verdict was missing divergence field "
+                    + field
+                    + ": "
+                    + str(verdict.get("repository"))
+                )
+        if (
+            float(verdict.get("lexicalDeltaAt10", 0.0)) < -0.03
+            and verdict.get("allFileDivergenceExplained") is not True
+        ):
+            fail(
+                "product proof corpus had unexplained all-file lexical divergence: "
+                + str(verdict.get("repository"))
+            )
         if verdict.get("status") != "beat" and not is_perfect_ceiling_match(verdict):
             fail(
                 "product proof corpus did not beat lexical or reach a perfect lexical ceiling: "
