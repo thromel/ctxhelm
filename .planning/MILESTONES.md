@@ -6,9 +6,9 @@
 
 **Goal:** Prove and improve retrieval quality across real repositories so production local embeddings, reranking, graph/test/history fixes, and learned fusion can beat lexical baseline while staying local-first and source-safe.
 
-**Status:** Active: 2026-05-22. Phases 61-67 complete; Phase 69 promoted default local retrieval under the channel-aware product-proof gate; Phase 70 refreshed Codex CLI and Claude Code real-client MCP proof; Phase 71 reduced ctxpack archive-artifact retrieval noise; Phase 72 broadened repeated-lift validation and improved validation-test recall seeding.
+**Status:** Active: 2026-05-22. Phases 61-67 complete; Phase 69 promoted default local retrieval under the channel-aware product-proof gate; Phase 70 refreshed Codex CLI and Claude Code real-client MCP proof; Phase 71 reduced ctxpack archive-artifact retrieval noise; Phase 72 broadened repeated-lift validation and improved validation-test recall seeding; Phase 73 committed a pinned broader fixed-corpus probe.
 
-**Phases planned:** Phases 61-65 plus Phase 66-70 production-readiness follow-ups, 7 planned phase files plus 2 proof follow-up artifacts
+**Phases planned:** Phases 61-65 plus Phase 66-73 production-readiness follow-ups, 7 planned phase files plus 5 proof follow-up artifacts
 
 **Planned capabilities:**
 
@@ -23,6 +23,7 @@
 - Real-client MCP proof refresh for Codex CLI and Claude Code.
 - Archive artifact dampening for historical planning proof files.
 - Broader repeated-lift validation across additional local repositories, plus related-test budget and co-change/dependency test-seed fixes.
+- Pinned broader fixed-corpus probe config for repeatable optional production-readiness validation.
 
 **Active artifacts:**
 
@@ -41,13 +42,15 @@
 - Phase 70 E2E: `.planning/e2e/2026-05-30-phase70-real-client-mcp-proof.md`
 - Phase 71 E2E: `.planning/e2e/2026-05-30-phase71-archive-artifact-dampening.md`
 - Phase 72 E2E: `.planning/e2e/2026-05-30-phase72-broader-repeated-lift-validation.md`
+- Phase 73 E2E: `.planning/e2e/2026-05-30-phase73-broader-fixed-corpus-fixture.md`
+- Phase 73 config: `.planning/e2e/2026-05-30-phase73-broader-fixed-corpus-config.json`
 
 **Current follow-up gaps:**
 
 - Broader four-repo proof still blocks promotion: VeriSchema validation-test Recall@10 improved from `0.2434` to `0.6614` but remains below the 0.80 floor, and RefactoringMiner matches rather than beats on the newest-5-commit probe.
 - Protected evidence miss-rate remains non-zero.
 - Parser/precision dependency misses remain a repeated source gap family.
-- The broad corpora need stable committed revision ranges before they should become release-gate fixtures.
+- The broad corpora now have a pinned optional fixture, but they still block and should not become the required release gate until the measured gaps improve.
 
 ## Shipped
 

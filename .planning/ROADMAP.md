@@ -4,7 +4,7 @@
 
 This roadmap tracks v2.5 Production Retrieval Quality and its immediate production-readiness follow-ups. v2.4 made semantic, precision, provider, and reranker paths source-safe and policy-gated, then the fresh RefactoringMiner proof fixed a semantic fusion regression. The current fixed two-repo product proof promotes default local retrieval under a channel-aware gate: non-test context recall beats lexical on both corpora, while validation-test recall is measured separately through `recommended_tests`.
 
-v2.5 therefore focuses on measured retrieval quality, not more surface area. The milestone must prove whether production local embeddings, reranking, graph/test/history fixes, and learned fusion can beat lexical baseline on real repositories while staying local-first and source-safe. Phase 66 fixed the false zero-test-recall signal by measuring `recommended_tests` as its own validation channel. Phase 67 fixed the denominator for historical retrieval metrics by separating all safe changed files from parent-snapshot `retrievalTargetFiles`. Phase 69 promoted default local retrieval under the channel-aware proof, Phase 70 refreshed real-client MCP evidence for Codex CLI and Claude Code, Phase 71 reduced archive-artifact retrieval noise in ctxpack's own history, and Phase 72 broadened repeated-lift validation while improving validation-test recall seeding.
+v2.5 therefore focuses on measured retrieval quality, not more surface area. The milestone must prove whether production local embeddings, reranking, graph/test/history fixes, and learned fusion can beat lexical baseline on real repositories while staying local-first and source-safe. Phase 66 fixed the false zero-test-recall signal by measuring `recommended_tests` as its own validation channel. Phase 67 fixed the denominator for historical retrieval metrics by separating all safe changed files from parent-snapshot `retrievalTargetFiles`. Phase 69 promoted default local retrieval under the channel-aware proof, Phase 70 refreshed real-client MCP evidence for Codex CLI and Claude Code, Phase 71 reduced archive-artifact retrieval noise in ctxpack's own history, Phase 72 broadened repeated-lift validation while improving validation-test recall seeding, and Phase 73 pinned a broader optional fixed-corpus probe.
 
 ## v2.5 Production Retrieval Quality
 
@@ -13,7 +13,7 @@ v2.5 therefore focuses on measured retrieval quality, not more surface area. The
 **Phase Numbering:**
 
 - Integer phases (61, 62, 63, 64, 65): Planned v2.5 work
-- Phases 66-72: Production-readiness follow-ups from the original blocked proof and the channel-aware promotion path
+- Phases 66-73: Production-readiness follow-ups from the original blocked proof and the channel-aware promotion path
 - Decimal phases (61.1, 62.1): Urgent insertions if needed
 
 - [x] **Phase 61: Multi-Repo Quality Baselines** - Maintainers can run source-free paired baselines across RefactoringMiner and a second real repository with stable comparison artifacts.
@@ -27,6 +27,7 @@ v2.5 therefore focuses on measured retrieval quality, not more surface area. The
 - [x] **Phase 70: Real-Client MCP Proof Refresh** - Maintainers can verify Codex CLI and Claude Code still invoke `prepare_task` and `get_pack` through actual MCP client paths after promotion.
 - [x] **Phase 71: Archive Artifact Dampening** - Maintainers can reduce ctxpack planning-archive retrieval noise without excluding archived evidence from search.
 - [x] **Phase 72: Broader Repeated-Lift Validation** - Maintainers can probe more local repositories, improve validation-test recall seeding, and keep broader promotion gaps explicit.
+- [x] **Phase 73: Broader Fixed-Corpus Fixture** - Maintainers can rerun the broader probe from a pinned committed config instead of a temporary manifest.
 
 ## Phase Details
 
@@ -255,6 +256,26 @@ Plans:
 
 - [x] `.planning/e2e/2026-05-30-phase72-broader-repeated-lift-validation.md`
 
+### Phase 73: Broader Fixed-Corpus Fixture
+
+**Goal**: Maintainers can rerun the broader probe from a pinned committed config instead of a temporary manifest.
+
+**Depends on**: Phase 72
+
+**Requirements**: PROOF-01, PROOF-02
+
+**Success Criteria**:
+
+1. The broader probe config is committed under `.planning/e2e`.
+2. External repository paths are relative to the config file.
+3. Repository heads are pinned so ctxpack development commits do not silently change the probe.
+4. Docs state that the broader fixture is optional and currently blocks broader promotion.
+
+**Evidence**:
+
+- [x] `.planning/e2e/2026-05-30-phase73-broader-fixed-corpus-config.json`
+- [x] `.planning/e2e/2026-05-30-phase73-broader-fixed-corpus-fixture.md`
+
 ## Requirement Coverage
 
 | Requirement | Phase |
@@ -293,13 +314,15 @@ Plans:
 | PROOF-01 | Phase 72 |
 | PROOF-02 | Phase 72 |
 | GAP-03 | Phase 72 |
+| PROOF-01 | Phase 73 |
+| PROOF-02 | Phase 73 |
 
-**Coverage:** 20/20 v2.5 requirements mapped, with Phases 66-72 as measured follow-ups for proof/eval correctness gaps, real-client evidence, archive-noise reduction, and broader validation. No orphaned v2.5 requirements.
+**Coverage:** 20/20 v2.5 requirements mapped, with Phases 66-73 as measured follow-ups for proof/eval correctness gaps, real-client evidence, archive-noise reduction, broader validation, and fixed-corpus reproducibility. No orphaned v2.5 requirements.
 
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 61 -> 62 -> 63 -> 64 -> 65 -> 66 -> 67 -> 69 -> 70 -> 71 -> 72
+Phases execute in numeric order: 61 -> 62 -> 63 -> 64 -> 65 -> 66 -> 67 -> 69 -> 70 -> 71 -> 72 -> 73
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
@@ -314,6 +337,7 @@ Phases execute in numeric order: 61 -> 62 -> 63 -> 64 -> 65 -> 66 -> 67 -> 69 ->
 | 70. Real-Client MCP Proof Refresh | Evidence artifact | Complete | 2026-05-30 |
 | 71. Archive Artifact Dampening | Evidence artifact | Complete | 2026-05-30 |
 | 72. Broader Repeated-Lift Validation | Evidence artifact | Complete | 2026-05-30 |
+| 73. Broader Fixed-Corpus Fixture | Evidence artifact | Complete | 2026-05-30 |
 
 ---
 *Roadmap created: 2026-05-22*

@@ -232,6 +232,10 @@ four-repo probe in `.ctxpack/e2e/phase72-broader-repeated-lift-proof.json`
 improves VeriSchema Test Recall@10 from `0.2434` to `0.6614`, but still blocks
 broader promotion because VeriSchema remains below the 0.80 validation-test
 floor and the newest-5-commit RefactoringMiner probe matches rather than beats.
+For repeatable local investigation, use the pinned optional fixture at
+`.planning/e2e/2026-05-30-phase73-broader-fixed-corpus-config.json`; it is
+expected to report `releaseGate.decision = block` until the broader measured
+gaps are fixed.
 
 Latest optional real-client proof: Codex CLI `0.130.0` and Claude Code
 `2.1.158` both passed the smoke wrappers on 2026-05-30 with server-side

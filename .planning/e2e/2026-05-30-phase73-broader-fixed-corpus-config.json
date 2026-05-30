@@ -1,0 +1,49 @@
+{
+  "manifestVersion": "ctxpack-benchmark-corpus-v2.5",
+  "name": "phase73-broader-fixed-corpus-probe",
+  "corpusId": "phase73-broader-fixed-corpus-2026-05-30",
+  "privacyLabel": "source_free_local",
+  "description": "Optional broader production-readiness probe across RefactoringMiner, ctxpack, ReAgent, and VeriSchema. This is not the required release gate because it currently blocks broader promotion.",
+  "defaults": {
+    "limit": 5,
+    "rankingBudget": 10,
+    "mode": "bug_fix",
+    "targetAgent": "generic",
+    "semanticEnabled": false,
+    "cacheEnabled": false,
+    "forceRefresh": true,
+    "parallelism": 4,
+    "roleFilters": []
+  },
+  "repositories": [
+    {
+      "name": "RefactoringMiner",
+      "path": "../../../RefactoringMiner",
+      "revisionRangeId": "phase73-refminer-949bdd-only",
+      "base": "c16c031d048618c8389f474f80c2feee21a06ad1",
+      "head": "949bddcd3509a805f5e3bcc55fcdb71a691b0dac",
+      "privacyLabel": "source_free_local"
+    },
+    {
+      "name": "ctxpack",
+      "path": "../..",
+      "revisionRangeId": "phase72-pre-test-seed-head-history-limit-5",
+      "head": "7f439fa1b1f2784aed6425b695d7c35944ea7955",
+      "privacyLabel": "source_free_local"
+    },
+    {
+      "name": "ReAgent",
+      "path": "../../../ReAgent",
+      "revisionRangeId": "head-history-limit-5",
+      "head": "44277ff7d89a8e2e2a1cbdf8d350c409e379786d",
+      "privacyLabel": "source_free_local"
+    },
+    {
+      "name": "VeriSchema",
+      "path": "../../../VeriSchema",
+      "revisionRangeId": "head-history-limit-5",
+      "head": "b5cfb2a551d026514f505c45863db31277bcd1ad",
+      "privacyLabel": "source_free_local"
+    }
+  ]
+}
