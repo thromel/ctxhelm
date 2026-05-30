@@ -2,6 +2,7 @@ use crate::packs::pack_repo_id;
 use crate::planning::{
     is_low_information_task, normalized_target_agent,
     prepare_context_plan_with_paths_history_and_semantic,
+    prepare_context_plan_with_paths_history_mode_and_semantic, HistoryMode,
 };
 use crate::policy::{provider_policy_report, reranker_decision};
 use ctxpack_core::{
@@ -28,7 +29,7 @@ use std::thread;
 use std::time::{Instant, SystemTime, UNIX_EPOCH};
 use uuid::Uuid;
 
-const HISTORICAL_EVAL_CACHE_SCHEMA_VERSION: &str = "historical-eval-cache-v2.3.1";
+const HISTORICAL_EVAL_CACHE_SCHEMA_VERSION: &str = "historical-eval-cache-v2.3.2";
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
@@ -2814,6 +2815,15 @@ fn evaluate_historical_commit_sample(
     } else {
         sample.title.clone()
     };
+    let history_mode = if sample
+        .parent_sha
+        .as_deref()
+        .is_some_and(|sha| !sha.trim().is_empty())
+    {
+        HistoryMode::ValidationOnly
+    } else {
+        HistoryMode::Disabled
+    };
     let eval_repo = HistoricalEvalWorktree::for_parent(
         repo_root,
         sample.parent_sha.as_deref(),
@@ -2821,12 +2831,12 @@ fn evaluate_historical_commit_sample(
     )?;
     let eval_root = eval_repo.path();
     let plan_started = Instant::now();
-    let plan = prepare_context_plan_with_paths_history_and_semantic(
+    let plan = prepare_context_plan_with_paths_history_mode_and_semantic(
         eval_root,
         &task,
         options.task_type.clone(),
         &[],
-        false,
+        history_mode,
         options.semantic_enabled,
         options.semantic_provider.clone(),
     )?;

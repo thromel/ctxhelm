@@ -224,22 +224,24 @@ Current v2.5 proof status: the fixed two-repo production-retrieval proof
 promotes default local retrieval under the channel-aware release gate. The gate
 compares non-test context recall against lexical retrieval and validates tests
 through the dedicated `recommended_tests` channel. The current source-free proof
-is `.ctxpack/e2e/phase75-parent-history-test-reserve-proof.json`, where
+is `.ctxpack/e2e/phase76-parent-bounded-validation-history-proof.json`, where
 `releaseGate.decision` is `promote`. RefactoringMiner context Recall@10 is
-`0.7778` vs lexical `0.7407`; ctxpack context Recall@10 is `0.4783` vs lexical
+`0.7778` vs lexical `0.7407`; ctxpack context Recall@10 is `0.4444` vs lexical
 `0.3913`; Test Recall@10 is `1.0` on both corpora. Phase 74 also separates
 overall protected-evidence miss-rate from protected retrieval-target miss-rate:
 RefactoringMiner target miss-rate@10 is `0.0588`, and ctxpack target
-miss-rate@10 is `0.0741`. Phase 75 restores parent-bounded source-free
-co-change history in archive-based eval snapshots and reserves co-changed
-validation tests before generic test matches. The latest optional four-repo
-probe in `.ctxpack/e2e/phase75-broader-parent-history-test-reserve-proof.json` still
-blocks broader promotion because VeriSchema remains below the 0.80
-validation-test floor and the newest-5-commit RefactoringMiner probe matches
-rather than beats. For repeatable local investigation, use the pinned optional
-fixture at `.planning/e2e/2026-05-30-phase73-broader-fixed-corpus-config.json`;
-it is expected to report `releaseGate.decision = block` until the broader
-measured gaps are fixed.
+miss-rate@10 is `0.0400`. Phase 76 keeps parent-bounded sidecar history as a
+validation-test signal in historical eval snapshots, enriches co-changed tests
+with runnable commands, and avoids using partial snapshot history as a general
+non-test target ranking signal. The latest optional four-repo probe in
+`.ctxpack/e2e/phase76-broader-parent-bounded-validation-history-proof.json`
+still blocks broader promotion because VeriSchema remains below the 0.80
+validation-test floor, although its Test Recall@10 improved to `0.7090`, and
+the newest-5-commit RefactoringMiner probe matches rather than beats. For
+repeatable local investigation, use the pinned optional fixture at
+`.planning/e2e/2026-05-30-phase73-broader-fixed-corpus-config.json`; it is
+expected to report `releaseGate.decision = block` until the broader measured
+gaps are fixed.
 
 Latest optional real-client proof: Codex CLI `0.130.0` and Claude Code
 `2.1.158` both passed the smoke wrappers on 2026-05-30 with server-side

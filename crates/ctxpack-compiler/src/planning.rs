@@ -13,9 +13,10 @@ use ctxpack_core::{
 use ctxpack_index::{
     co_change_hints_report, current_diff_summary_report, lexical_search_report, list_memory_cards,
     load_or_refresh_inventory, normalized_provider, related_dependency_edges_report,
-    related_tests_report, semantic_search_report, symbol_search_report, task_hash, CoChangeOptions,
-    CurrentDiffOptions, DependencyOptions, InventoryError, InventoryOptions, SearchOptions,
-    SearchResult, SemanticOptions, SemanticProviderConfig, StoreConfig, SymbolOptions,
+    related_tests_report, semantic_search_report, symbol_search_report, task_hash, test_map_report,
+    CoChangeOptions, CurrentDiffOptions, DependencyOptions, InventoryError, InventoryOptions,
+    RelatedTestResult, SearchOptions, SearchResult, SemanticOptions, SemanticProviderConfig,
+    StoreConfig, SymbolOptions,
 };
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::{Component, Path};
@@ -23,6 +24,13 @@ use uuid::Uuid;
 
 pub(crate) const PREPARE_TASK_TARGET_LIMIT: usize = 10;
 pub(crate) const PREPARE_TASK_TEST_LIMIT: usize = 10;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum HistoryMode {
+    Disabled,
+    Full,
+    ValidationOnly,
+}
 
 pub fn empty_plan_for_task(task_type: TaskType) -> ContextPlan {
     base_plan(task_type)
@@ -105,6 +113,31 @@ pub(crate) fn prepare_context_plan_with_paths_history_and_semantic(
     task_type: TaskType,
     anchor_paths: &[String],
     include_history: bool,
+    semantic_enabled: bool,
+    semantic_provider: SemanticProviderConfig,
+) -> Result<ContextPlan, InventoryError> {
+    let history_mode = if include_history {
+        HistoryMode::Full
+    } else {
+        HistoryMode::Disabled
+    };
+    prepare_context_plan_with_paths_history_mode_and_semantic(
+        repo_root,
+        task,
+        task_type,
+        anchor_paths,
+        history_mode,
+        semantic_enabled,
+        semantic_provider,
+    )
+}
+
+pub(crate) fn prepare_context_plan_with_paths_history_mode_and_semantic(
+    repo_root: impl AsRef<Path>,
+    task: &str,
+    task_type: TaskType,
+    anchor_paths: &[String],
+    history_mode: HistoryMode,
     semantic_enabled: bool,
     semantic_provider: SemanticProviderConfig,
 ) -> Result<ContextPlan, InventoryError> {
@@ -285,7 +318,7 @@ pub(crate) fn prepare_context_plan_with_paths_history_and_semantic(
 
     let mut has_history = false;
     let mut co_change_hints = Vec::new();
-    if include_history {
+    if !matches!(history_mode, HistoryMode::Disabled) {
         let co_change_report = co_change_hints_report(
             repo_root,
             &source_seed_paths,
@@ -355,7 +388,16 @@ pub(crate) fn prepare_context_plan_with_paths_history_and_semantic(
     );
     let test_report = related_tests_report(repo_root, &test_seed_paths)?;
     extend_plan_diagnostics(&mut plan, test_report.diagnostics);
-    let test_results = test_report.results;
+    let mut test_results = test_report.results;
+    let cochanged_test_diagnostics =
+        extend_cochanged_test_results(repo_root, &mut test_results, &co_change_hints, &roles)?;
+    extend_plan_diagnostics(&mut plan, cochanged_test_diagnostics);
+
+    let ranking_co_change_hints = if matches!(history_mode, HistoryMode::Full) {
+        co_change_hints.clone()
+    } else {
+        Vec::new()
+    };
 
     let ranked_candidates = rank_candidates(RankingInput {
         anchors,
@@ -364,7 +406,7 @@ pub(crate) fn prepare_context_plan_with_paths_history_and_semantic(
         semantic_results,
         symbol_results,
         related_tests: test_results,
-        co_change_hints,
+        co_change_hints: ranking_co_change_hints,
         dependency_edges,
         roles,
         expansion_seeds: expansion_seed_paths,
@@ -434,6 +476,50 @@ fn related_test_seed_paths(
         push_source_test_seed(&mut seed_paths, roles, &edge.target_path);
     }
     seed_paths
+}
+
+fn extend_cochanged_test_results(
+    repo_root: &Path,
+    test_results: &mut Vec<RelatedTestResult>,
+    co_change_hints: &[ctxpack_index::CoChangeHint],
+    roles: &BTreeMap<String, FileRole>,
+) -> Result<Vec<Diagnostic>, InventoryError> {
+    let cochanged_tests = co_change_hints
+        .iter()
+        .filter(|hint| {
+            roles
+                .get(&hint.path)
+                .is_some_and(|role| matches!(role, FileRole::Test))
+        })
+        .collect::<Vec<_>>();
+    if cochanged_tests.is_empty() {
+        return Ok(Vec::new());
+    }
+
+    let test_map = test_map_report(repo_root)?;
+    let commands_by_path = test_map
+        .results
+        .into_iter()
+        .map(|test| (test.path, test.command))
+        .collect::<BTreeMap<_, _>>();
+
+    for hint in cochanged_tests {
+        if let Some(existing) = test_results.iter_mut().find(|test| test.path == hint.path) {
+            if existing.command.is_none() {
+                existing.command = commands_by_path.get(&hint.path).cloned().flatten();
+            }
+            continue;
+        }
+
+        test_results.push(RelatedTestResult {
+            path: hint.path.clone(),
+            command: commands_by_path.get(&hint.path).cloned().flatten(),
+            confidence: hint.confidence.clamp(0.55, 0.95),
+            reason: format!("test co-changed with target files: {}", hint.reason),
+        });
+    }
+
+    Ok(test_map.diagnostics)
 }
 
 fn push_source_test_seed(

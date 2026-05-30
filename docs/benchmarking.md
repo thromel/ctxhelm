@@ -378,13 +378,13 @@ context, and validation-test recall is evaluated through the dedicated
 | Corpus | Variant | Status | ctxpack Recall@10 | Lexical Recall@10 | Delta | Test Recall@10 |
 | --- | --- | --- | ---: | ---: | ---: | ---: |
 | RefactoringMiner | `ctxpack_default` | `beat` | 0.778 | 0.741 | +0.037 | 1.000 |
-| ctxpack | `ctxpack_default` | `beat` | 0.478 | 0.391 | +0.087 | 1.000 |
+| ctxpack | `ctxpack_default` | `beat` | 0.444 | 0.361 | +0.083 | 1.000 |
 
 Phase 74 adds protected-evidence diagnostics to this proof. The original
 overall protected miss-rate remains visible, but the report now also separates
 retrieval-target protected misses from non-target protected pressure. On the
-current required proof after Phase 75, RefactoringMiner has protected target
-miss-rate@10 0.059 and ctxpack has 0.074. The broader fixed-corpus fixture
+current required proof after Phase 76, RefactoringMiner has protected target
+miss-rate@10 0.059 and ctxpack has 0.040. The broader fixed-corpus fixture
 still blocks promotion: RefactoringMiner and ReAgent have zero protected target
 misses on that pinned probe, but ctxpack and VeriSchema still have target
 misses and VeriSchema validation-test Recall@10 remains below the 0.80 floor.
@@ -405,8 +405,11 @@ Recommendation today:
   of total non-target exact/symbol candidates.
 - Phase 75 restores parent-bounded co-change history in archive-based eval
   snapshots and reserves co-changed validation tests. This improves the required
-  ctxpack protected target miss-rate, but does not yet improve VeriSchema's
-  broader validation-test recall.
+  ctxpack protected target miss-rate.
+- Phase 76 narrows partial snapshot history to validation-test discovery in
+  historical eval, enriches co-changed tests with runnable commands, and improves
+  VeriSchema's broader validation-test Recall@10 from `0.661` to `0.709`
+  without perturbing required non-test context promotion.
 - Keep `local_metadata_reranked` eval-only until named regressions and protected
   evidence behavior clear the gate.
 - Keep `local_fastembed` opt-in for experiments and conceptual queries; it is

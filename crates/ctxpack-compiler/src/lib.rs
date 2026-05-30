@@ -1907,6 +1907,84 @@ mod tests {
     }
 
     #[test]
+    fn historical_eval_uses_parent_bounded_sidecar_for_cochanged_tests() {
+        let _guard = env_lock();
+        let temp = tempfile::tempdir().unwrap();
+        let repo = temp.path().join("repo");
+        let home = temp.path().join("ctxpack-home");
+        fs::create_dir_all(repo.join("src")).unwrap();
+        fs::create_dir_all(repo.join("tests/qwen35")).unwrap();
+        run_git(&repo, &["init"]);
+        run_git(&repo, &["config", "user.email", "ctxpack@example.com"]);
+        run_git(&repo, &["config", "user.name", "ctxpack"]);
+        fs::write(
+            repo.join("src/dispatcher.ts"),
+            "export function dispatchRetry() { return 'initial'; }\n",
+        )
+        .unwrap();
+        fs::write(
+            repo.join("tests/qwen35/test_workflow_smoke.py"),
+            "def test_workflow_smoke():\n    assert True\n",
+        )
+        .unwrap();
+        run_git(&repo, &["add", "."]);
+        run_git(&repo, &["commit", "-m", "add dispatcher workflow"]);
+        fs::write(
+            repo.join("src/dispatcher.ts"),
+            "export function dispatchRetry() { return 'fixed'; }\n",
+        )
+        .unwrap();
+        fs::write(
+            repo.join("tests/qwen35/test_workflow_smoke.py"),
+            "def test_workflow_smoke():\n    assert 'fixed'\n",
+        )
+        .unwrap();
+        run_git(&repo, &["add", "."]);
+        run_git(&repo, &["commit", "-m", "fix dispatcher retry"]);
+        std::env::set_var("CTXPACK_HOME", &home);
+
+        let report = evaluate_historical_commits(
+            &repo,
+            &HistoricalEvalOptions {
+                limit: 1,
+                ranking_budget: 10,
+                task_type: TaskType::BugFix,
+                target_agent: "codex".to_string(),
+                base: None,
+                head: None,
+                semantic_enabled: false,
+                semantic_provider: SemanticProviderConfig::default(),
+                local_metadata_reranker: false,
+                cache_enabled: false,
+                force_refresh: false,
+                parallelism: 1,
+            },
+        )
+        .unwrap();
+
+        let commit = &report.commits[0];
+        assert!(commit
+            .retrieval_target_files
+            .contains(&"src/dispatcher.ts".to_string()));
+        assert!(commit
+            .retrieval_target_files
+            .contains(&"tests/qwen35/test_workflow_smoke.py".to_string()));
+        assert_eq!(commit.test_files_changed, 1);
+        assert_eq!(commit.test_hits_at_10, 1);
+        assert!(commit
+            .recommended_tests
+            .contains(&"tests/qwen35/test_workflow_smoke.py".to_string()));
+        assert!(commit
+            .recommended_commands
+            .contains(&"pytest tests/qwen35/test_workflow_smoke.py".to_string()));
+        assert!(serde_json::to_string(&report)
+            .unwrap()
+            .contains("\"sourceTextLogged\":false"));
+
+        std::env::remove_var("CTXPACK_HOME");
+    }
+
+    #[test]
     fn ablation_historical_eval_groups_source_free_retrieval_gaps() {
         let report = HistoricalEvalReport {
             eval_range_id: "range-1".to_string(),
