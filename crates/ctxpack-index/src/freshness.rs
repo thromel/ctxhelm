@@ -1,7 +1,8 @@
 use crate::inventory::{
-    build_inventory, canonicalize, inventory_path, load_inventory, options_fingerprint,
-    persist_inventory, repo_id_for_path, InventoryError, InventoryManifestEntry, InventoryOptions,
-    RepoInventory, INVENTORY_SCHEMA_VERSION,
+    build_inventory, build_inventory_freshness_metadata, canonicalize, inventory_path,
+    load_inventory, options_fingerprint, persist_inventory, repo_id_for_path, InventoryError,
+    InventoryManifestEntry, InventoryMetadata, InventoryOptions, RepoInventory,
+    INVENTORY_SCHEMA_VERSION,
 };
 use crate::policy::POLICY_VERSION;
 use ctxpack_core::{CacheStatus, CacheStatusKind, Diagnostic, DiagnosticSeverity};
@@ -57,9 +58,13 @@ pub fn check_inventory_freshness(
     options: &InventoryOptions,
 ) -> Result<InventoryFreshness, InventoryError> {
     let repo_root = canonicalize(repo_root.as_ref())?;
-    let current = build_inventory(&repo_root, options)?;
+    let current_metadata =
+        build_inventory_freshness_metadata(&repo_root, options, &cached.metadata.manifest)?;
     Ok(compare_inventory_metadata(
-        &repo_root, cached, &current, options,
+        &repo_root,
+        cached,
+        &current_metadata,
+        options,
     ))
 }
 
@@ -180,13 +185,12 @@ fn rebuild_inventory_report(
 fn compare_inventory_metadata(
     repo_root: &Path,
     cached: &RepoInventory,
-    current: &RepoInventory,
+    current_metadata: &InventoryMetadata,
     options: &InventoryOptions,
 ) -> InventoryFreshness {
     let mut reasons = Vec::new();
     let mut diagnostics = Vec::new();
     let metadata = &cached.metadata;
-    let current_metadata = &current.metadata;
 
     if metadata.schema_version == 0 {
         push_reason(

@@ -483,6 +483,10 @@ Recommendation today:
   Recall@10 from `0.17936651` to `0.18449473` and Source Recall@10 from
   `0.30409357` to `0.31067252` without raw test, effective validation, or
   protected retrieval-target regression.
+- Phase 89 replaces full source re-hashing on inventory cache-hit freshness
+  checks with metadata manifest comparison. The pinned broader release proof
+  promotes with Phase 88 quality metrics preserved: RefactoringMiner `8279ms`,
+  ctxpack `8317ms`, ReAgent `4264ms`, and VeriSchema `6590ms`.
 - Keep `local_metadata_reranked` eval-only until named regressions and protected
   evidence behavior clear the gate.
 - Keep `local_fastembed` opt-in for experiments and conceptual queries; it is

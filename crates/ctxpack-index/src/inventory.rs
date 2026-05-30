@@ -2,6 +2,7 @@ use crate::policy::{classify_path, language_for_path, POLICY_VERSION};
 use ctxpack_core::FileRole;
 use ignore::WalkBuilder;
 use serde::{Deserialize, Serialize};
+use std::collections::BTreeMap;
 use std::fs;
 use std::io;
 use std::path::{Component, Path, PathBuf};
@@ -233,6 +234,92 @@ pub fn build_inventory(
         ignored_count,
         generated_count,
         sensitive_count,
+    })
+}
+
+pub(crate) fn build_inventory_freshness_metadata(
+    repo_root: impl AsRef<Path>,
+    options: &InventoryOptions,
+    cached_manifest: &[InventoryManifestEntry],
+) -> Result<InventoryMetadata, InventoryError> {
+    let repo_root = canonicalize(repo_root.as_ref())?;
+    let cached_by_path = cached_manifest
+        .iter()
+        .map(|entry| (entry.path.as_str(), entry))
+        .collect::<BTreeMap<_, _>>();
+    let mut manifest = Vec::new();
+
+    let mut walker = WalkBuilder::new(&repo_root);
+    walker
+        .hidden(false)
+        .git_ignore(true)
+        .git_global(false)
+        .git_exclude(true)
+        .parents(true)
+        .ignore(false)
+        .add_custom_ignore_filename(".ctxpackignore")
+        .add_custom_ignore_filename(".cursorignore");
+
+    for result in walker.build() {
+        let Ok(entry) = result else {
+            continue;
+        };
+        if !entry.file_type().is_some_and(|kind| kind.is_file()) {
+            continue;
+        }
+
+        let path = entry.path();
+        let relative = normalize_relative_path(&repo_root, path);
+        if relative == ".git" || relative.starts_with(".git/") {
+            continue;
+        }
+
+        let role = classify_path(&relative);
+        let generated = role == FileRole::Generated;
+        let sensitive = role == FileRole::Sensitive;
+
+        if (generated && !options.include_generated) || (sensitive && !options.include_sensitive) {
+            continue;
+        }
+
+        let Ok(metadata) = fs::metadata(path) else {
+            continue;
+        };
+        let size_bytes = metadata.len();
+        let modified_unix_nanos = modified_unix_nanos(&metadata);
+        let hash = cached_by_path
+            .get(relative.as_str())
+            .filter(|cached| {
+                cached.size_bytes == size_bytes
+                    && cached.modified_unix_nanos == modified_unix_nanos
+                    && cached.role == role
+                    && cached.generated == generated
+                    && !cached.ignored
+            })
+            .map(|cached| cached.hash.clone())
+            .unwrap_or_default();
+
+        manifest.push(InventoryManifestEntry {
+            path: relative,
+            hash,
+            size_bytes,
+            modified_unix_nanos,
+            role,
+            generated,
+            ignored: false,
+        });
+    }
+
+    manifest.sort_by(|left, right| left.path.cmp(&right.path));
+
+    Ok(InventoryMetadata {
+        schema_version: INVENTORY_SCHEMA_VERSION,
+        policy_version: POLICY_VERSION.to_string(),
+        options_fingerprint: options_fingerprint(options),
+        repo_root: repo_root.clone(),
+        built_at_unix_seconds: current_unix_seconds(),
+        ignore_fingerprints: ignore_fingerprints(&repo_root),
+        manifest,
     })
 }
 

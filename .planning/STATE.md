@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v2.5
 milestone_name: Production Retrieval Quality
 status: active
-last_updated: "2026-05-31T04:05:00Z"
-last_activity: 2026-05-31 -- Phase 88 added broad source-area candidates
+last_updated: "2026-05-31T04:45:00Z"
+last_activity: 2026-05-31 -- Phase 89 added fast inventory freshness
 progress:
   total_phases: 27
   completed_phases: 27
@@ -17,10 +17,10 @@ progress:
 
 ## Current Position
 
-Phase: 88 - Broad Source-Area Candidates
-Plan: 88-broad-source-area-candidates
+Phase: 89 - Fast Inventory Freshness
+Plan: 89-fast-inventory-freshness
 Status: Complete
-Last activity: 2026-05-31 -- Phase 88 adds bounded source-area inventory candidates for broad multi-area tasks after graph/test seed selection. VeriSchema File Recall@10 improves from `0.17936651` to `0.18449473` and Source Recall@10 improves from `0.30409357` to `0.31067252` without regressing raw test recall, effective validation recall, or protected retrieval-target miss-rate.
+Last activity: 2026-05-31 -- Phase 89 makes inventory cache-hit freshness metadata-only instead of full source re-hashing. The pinned broader release proof now promotes: RefactoringMiner `8279ms`, ctxpack `8317ms`, ReAgent `4264ms`, and VeriSchema `6590ms`, with Phase 88 quality metrics preserved.
 
 ## Project Reference
 
@@ -65,6 +65,7 @@ Planned phases:
 - Phase 86: Python Package Re-Export Graph Coverage (complete follow-up)
 - Phase 87: Validation Gap Accounting (complete follow-up)
 - Phase 88: Broad Source-Area Candidates (complete follow-up)
+- Phase 89: Fast Inventory Freshness (complete follow-up)
 
 ## Last Completed Milestone
 
@@ -82,7 +83,7 @@ Planned phases:
 
 ## Next Step
 
-Continue production-readiness work from remaining measured gaps: source candidate generation for parser/precision `no_candidate_signal` families that still lack candidates, plus optional broad-proof runtime hardening.
+Continue production-readiness work from remaining measured gaps: source candidate generation for parser/precision `no_candidate_signal` families that still lack candidates, plus release-mode proof hardening as new runtime regressions appear.
 
 ## Operator Next Steps
 
@@ -112,6 +113,7 @@ Continue production-readiness work from remaining measured gaps: source candidat
 - Latest Python package re-export graph proof: `.planning/e2e/2026-05-31-phase86-python-package-reexports.md`; focused dependency tests pass and broad proof metrics stay flat/non-regressing, proving the remaining VeriSchema gap is selection/budget pressure rather than only missing Python package edges.
 - Latest validation gap accounting proof: `.planning/e2e/2026-05-31-phase87-validation-gap-accounting.md` and `.ctxpack/e2e/phase87-validation-gap-accounting-proof.json`; RefactoringMiner validation-command recall improves from `0.0` to `1.0`, validation-covered tests no longer appear as unresolved test-mapping gap summaries, and the rejected broad source-area diversity experiment is documented.
 - Latest broad source-area candidate proof: `.planning/e2e/2026-05-31-phase88-broad-source-area-candidates.md` and `.ctxpack/e2e/phase88-broad-source-area-candidates-proof.json`; VeriSchema File Recall@10 improves from `0.17936651` to `0.18449473` and Source Recall@10 improves from `0.30409357` to `0.31067252` without validation or protected-target regression.
+- Latest fast inventory freshness proof: `.planning/e2e/2026-05-31-phase89-fast-inventory-freshness.md`, `.ctxpack/e2e/phase89-fast-inventory-freshness-proof.json`, and `.ctxpack/e2e/phase89-fast-inventory-freshness-release-proof.json`; release-mode broader proof promotes while preserving Phase 88 quality metrics.
 - Latest real-client proof: `.planning/e2e/2026-05-30-phase70-real-client-mcp-proof.md`.
 - RefactoringMiner and ReAgent still trail lexical on all-file recall in the broader proof, but those deficits are now machine-checkable as explained by the context/validation split instead of only prose notes.
 - Phase 84 improves VeriSchema Source Recall@10 from `0.249` to `0.304` on the broader fixed corpus while keeping RefactoringMiner, ctxpack, and ReAgent stable.
@@ -119,4 +121,5 @@ Continue production-readiness work from remaining measured gaps: source candidat
 - Phase 86 adds Python package re-export graph candidates, but VeriSchema Recall@10 remains flat because those candidates do not enter the constrained top-10.
 - Phase 87 fixes validation accounting rather than target ranking: Java class-selector commands now count as validation coverage, and validation-covered tests no longer inflate test-mapping gap summaries.
 - Phase 88 improves broad VeriSchema source/file recall by adding bounded source-area candidates after graph/test seed selection. An earlier variant was rejected because it perturbed raw test recall.
-- Next work should target remaining source candidate gaps and optional broad-proof runtime hardening.
+- Phase 89 reduces repeated inventory freshness overhead. Debug broad proof now blocks only on the RefactoringMiner single-commit cold-start diagnostic, while release-mode broad proof promotes and passes `scripts/check-product-proof.py`.
+- Next work should target remaining source candidate gaps and keep release-mode proof as the production runtime authority.
