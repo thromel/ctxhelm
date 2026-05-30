@@ -6,9 +6,9 @@
 
 **Goal:** Prove and improve retrieval quality across real repositories so production local embeddings, reranking, graph/test/history fixes, and learned fusion can beat lexical baseline while staying local-first and source-safe.
 
-**Status:** Active: 2026-05-22. Phases 61-67 complete; Phase 69 promoted default local retrieval under the channel-aware product-proof gate; Phase 70 refreshed Codex CLI and Claude Code real-client MCP proof; Phase 71 reduced ctxpack archive-artifact retrieval noise; Phase 72 broadened repeated-lift validation and improved validation-test recall seeding; Phase 73 committed a pinned broader fixed-corpus probe; Phase 74 separated protected retrieval-target misses from non-target protected pressure; Phase 75 restored parent-bounded eval history and reserved co-changed validation tests; Phase 76 split historical parent history into validation-only mode and enriched co-changed test commands; Phase 77 added broad validation fallback commands and effective validation-command coverage metrics; Phase 78 made the broader proof gate ceiling-aware and promoted the fixed four-repo corpus; Phase 79 added protected target floors; Phase 80 fixed symbol-floor duplicate accounting and cleared protected target misses; Phase 81 fixed warm-cache runtime reporting; Phase 82 made warm-cache runtime enforceable; Phase 83 made context-vs-all-file divergence machine-checkable; Phase 84 added broad-scope accounting and scoped dependency source floors; Phase 85 added source-free context-area hints for broad prepare-task plans and packs.
+**Status:** Active: 2026-05-22. Phases 61-67 complete; Phase 69 promoted default local retrieval under the channel-aware product-proof gate; Phase 70 refreshed Codex CLI and Claude Code real-client MCP proof; Phase 71 reduced ctxpack archive-artifact retrieval noise; Phase 72 broadened repeated-lift validation and improved validation-test recall seeding; Phase 73 committed a pinned broader fixed-corpus probe; Phase 74 separated protected retrieval-target misses from non-target protected pressure; Phase 75 restored parent-bounded eval history and reserved co-changed validation tests; Phase 76 split historical parent history into validation-only mode and enriched co-changed test commands; Phase 77 added broad validation fallback commands and effective validation-command coverage metrics; Phase 78 made the broader proof gate ceiling-aware and promoted the fixed four-repo corpus; Phase 79 added protected target floors; Phase 80 fixed symbol-floor duplicate accounting and cleared protected target misses; Phase 81 fixed warm-cache runtime reporting; Phase 82 made warm-cache runtime enforceable; Phase 83 made context-vs-all-file divergence machine-checkable; Phase 84 added broad-scope accounting and scoped dependency source floors; Phase 85 added source-free context-area hints for broad prepare-task plans and packs; Phase 86 added bounded Python package re-export graph coverage.
 
-**Phases planned:** Phases 61-65 plus Phase 66-85 production-readiness follow-ups, 7 planned phase files plus measured proof follow-up artifacts
+**Phases planned:** Phases 61-65 plus Phase 66-86 production-readiness follow-ups, 7 planned phase files plus measured proof follow-up artifacts
 
 **Planned capabilities:**
 
@@ -31,6 +31,7 @@
 - Machine-checkable context-vs-all-file divergence accounting that blocks unexplained all-file lexical deficits.
 - Broad-scope task accounting plus bounded dependency source floors for multi-area workflow/eval/lint tasks.
 - Source-free context-area hints for broad prepare-task plans and packs without displacing target-file or validation budgets.
+- Bounded Python package re-export graph coverage without general depth-2 graph expansion.
 
 **Active artifacts:**
 
@@ -84,6 +85,7 @@
 - Phase 84 proof: `.ctxpack/e2e/phase84-broad-scope-dependency-proof.json`
 - Phase 85 E2E: `.planning/e2e/2026-05-31-phase85-broad-context-areas.md`
 - Phase 85 proof: `.ctxpack/e2e/phase85-context-areas-warm-proof.json`
+- Phase 86 E2E: `.planning/e2e/2026-05-31-phase86-python-package-reexports.md`
 
 **Current follow-up gaps:**
 
@@ -91,7 +93,8 @@
 - Protected retrieval-target miss-rate is now `0.0` across the required and broader measured corpora after Phase 80. Overall protected evidence misses remain diagnostic because non-target protected candidates can still fall below the standard budget.
 - Parser/precision dependency misses remain a repeated source gap family, but Phase 84 reduces the measured VeriSchema source miss pressure by reserving dependency neighbors only for broad-scope tasks.
 - Phase 85 improves broad-task agent guidance without claiming a recall lift: broad fixed-corpus quality metrics stayed flat, cold proofs still hit the existing RefactoringMiner runtime gate, and the warm-cache proof promotes.
-- The broad corpora now have a pinned optional fixture that promotes, Phase 82 enforces warm-cache runtime thresholds, Phase 83 makes context-vs-all-file divergence auditable, Phase 84 records broad-scope tasks, and Phase 85 exposes broad context-area hints. It should remain an optional production-readiness probe until remaining parser/precision `no_candidate_signal` and test-mapping gaps are addressed further.
+- Phase 86 adds Python package re-export graph candidates, but broad fixed-corpus Recall@10 remains flat; the remaining VeriSchema gap is selection/budget pressure as much as parser coverage.
+- The broad corpora now have a pinned optional fixture that promotes, Phase 82 enforces warm-cache runtime thresholds, Phase 83 makes context-vs-all-file divergence auditable, Phase 84 records broad-scope tasks, Phase 85 exposes broad context-area hints, and Phase 86 improves Python package graph coverage. It should remain an optional production-readiness probe until remaining parser/precision `no_candidate_signal`, selection/diversity, and test-mapping gaps are addressed further.
 
 ## Shipped
 

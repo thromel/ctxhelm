@@ -3,11 +3,11 @@ gsd_state_version: 1.0
 milestone: v2.5
 milestone_name: Production Retrieval Quality
 status: active
-last_updated: "2026-05-31T01:00:00Z"
-last_activity: 2026-05-31 -- Phase 85 added broad context areas for multi-area prepare-task plans and packs
+last_updated: "2026-05-31T02:00:00Z"
+last_activity: 2026-05-31 -- Phase 86 added bounded Python package re-export graph coverage
 progress:
-  total_phases: 24
-  completed_phases: 24
+  total_phases: 25
+  completed_phases: 25
   total_plans: 7
   completed_plans: 7
   percent: 100
@@ -17,10 +17,10 @@ progress:
 
 ## Current Position
 
-Phase: 85 - Broad Context Areas
-Plan: 85-broad-context-areas
+Phase: 86 - Python Package Re-Export Graph Coverage
+Plan: 86-python-package-reexports
 Status: Complete
-Last activity: 2026-05-31 -- Phase 85 adds source-free `contextAreas` to broad multi-area prepare-task plans and packs. The field gives agents adjacent area hints without displacing target files, tests, validation commands, or protected top-10 evidence. Focused behavior tests pass; the broad cold proof keeps quality metrics unchanged but blocks on the existing RefactoringMiner runtime gate, while the committed warm-cache proof promotes.
+Last activity: 2026-05-31 -- Phase 86 resolves Python `from module import member` submodule paths, recognizes `package/__init__.py`, and adds bounded `python_reexport` dependency edges. Focused graph tests pass and live VeriSchema dependency queries now expose NLP re-export modules, but the broader proof remains Recall@10-flat and still blocks only on the known cold runtime threshold.
 
 ## Project Reference
 
@@ -62,6 +62,7 @@ Planned phases:
 - Phase 83: Context Divergence Accounting (complete follow-up)
 - Phase 84: Broad Scope Dependency Floors (complete follow-up)
 - Phase 85: Broad Context Areas (complete follow-up)
+- Phase 86: Python Package Re-Export Graph Coverage (complete follow-up)
 
 ## Last Completed Milestone
 
@@ -79,7 +80,7 @@ Planned phases:
 
 ## Next Step
 
-Continue production-readiness work from remaining measured gaps: task-aware area diversity only with proof, remaining parser/precision `no_candidate_signal` families, and test-mapping misses.
+Continue production-readiness work from remaining measured gaps: task-aware area diversity only with proof, remaining parser/precision `no_candidate_signal` families that still lack candidates, and test-mapping misses.
 
 ## Operator Next Steps
 
@@ -106,8 +107,10 @@ Continue production-readiness work from remaining measured gaps: task-aware area
 - Latest context-divergence accounting proof: `.planning/e2e/2026-05-30-phase83-context-divergence-accounting.md` and `.ctxpack/e2e/phase83-context-divergence-proof.json`; product-proof verdicts now expose context-vs-all-file deltas and require all-file lexical deficits to be explained by non-regressed context plus validation channels.
 - Latest broad-scope dependency proof: `.planning/e2e/2026-05-31-phase84-broad-scope-dependency-floors.md` and `.ctxpack/e2e/phase84-broad-scope-dependency-proof.json`; broad multi-area tasks are now counted separately and get a bounded dependency source floor.
 - Latest broad context-area proof: `.planning/e2e/2026-05-31-phase85-broad-context-areas.md` and `.ctxpack/e2e/phase85-context-areas-warm-proof.json`; broad multi-area prepare-task plans and packs now include source-free `contextAreas` that do not perturb target-file recall.
+- Latest Python package re-export graph proof: `.planning/e2e/2026-05-31-phase86-python-package-reexports.md`; focused dependency tests pass and broad proof metrics stay flat/non-regressing, proving the remaining VeriSchema gap is selection/budget pressure rather than only missing Python package edges.
 - Latest real-client proof: `.planning/e2e/2026-05-30-phase70-real-client-mcp-proof.md`.
 - RefactoringMiner and ReAgent still trail lexical on all-file recall in the broader proof, but those deficits are now machine-checkable as explained by the context/validation split instead of only prose notes.
 - Phase 84 improves VeriSchema Source Recall@10 from `0.249` to `0.304` on the broader fixed corpus while keeping RefactoringMiner, ctxpack, and ReAgent stable.
 - Phase 85 intentionally keeps broad fixed-corpus quality metrics flat while improving agent guidance through non-displacing context-area hints; cold proofs block on the existing RefactoringMiner runtime threshold, while the warm-cache proof promotes.
+- Phase 86 adds Python package re-export graph candidates, but VeriSchema Recall@10 remains flat because those candidates do not enter the constrained top-10.
 - Next work should target task-aware area diversity only with protected-evidence proof, plus remaining parser/precision `no_candidate_signal` families and test-mapping misses.

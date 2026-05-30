@@ -794,6 +794,150 @@ mod tests {
     }
 
     #[test]
+    fn dependency_edges_resolve_python_from_imported_submodules() {
+        let _guard = env_lock();
+        let temp = tempfile::tempdir().unwrap();
+        let repo = temp.path().join("repo");
+        let home = temp.path().join("ctxpack-home");
+        fs::create_dir_all(repo.join(".git")).unwrap();
+        fs::create_dir_all(repo.join("schema_agent/nlp")).unwrap();
+        fs::create_dir_all(repo.join("schema_agent/text2r/normalizers")).unwrap();
+        fs::write(
+            repo.join("schema_agent/agents.py"),
+            "from schema_agent.nlp import entity_extractor as ee\nfrom schema_agent.text2r import sql_materializer, triplet_extractor_symbolic\n",
+        )
+        .unwrap();
+        fs::write(
+            repo.join("schema_agent/reexport_agent.py"),
+            "from schema_agent.nlp import EntityExtractor\n",
+        )
+        .unwrap();
+        fs::write(
+            repo.join("schema_agent/nlp/__init__.py"),
+            "from schema_agent.nlp.entity_extractor import EntityExtractor\n",
+        )
+        .unwrap();
+        fs::write(
+            repo.join("schema_agent/nlp/entity_extractor.py"),
+            "class EntityExtractor: pass\n",
+        )
+        .unwrap();
+        fs::write(
+            repo.join("schema_agent/text2r/sql_materializer.py"),
+            "class SqlMaterializer: pass\n",
+        )
+        .unwrap();
+        fs::write(
+            repo.join("schema_agent/text2r/triplet_extractor_symbolic.py"),
+            "class TripletExtractor: pass\n",
+        )
+        .unwrap();
+        fs::write(
+            repo.join("schema_agent/text2r/normalizers/__init__.py"),
+            "from . import currency_normalizer\n",
+        )
+        .unwrap();
+        fs::write(
+            repo.join("schema_agent/text2r/normalizers/currency_normalizer.py"),
+            "class CurrencyNormalizer: pass\n",
+        )
+        .unwrap();
+        std::env::set_var("CTXPACK_HOME", &home);
+
+        let edges = dependency_edges(&repo, &DependencyOptions { limit: 20 }).unwrap();
+        let pairs = edges
+            .iter()
+            .map(|edge| (edge.source_path.as_str(), edge.target_path.as_str()))
+            .collect::<Vec<_>>();
+
+        assert!(pairs.contains(&(
+            "schema_agent/agents.py",
+            "schema_agent/nlp/entity_extractor.py"
+        )));
+        assert!(pairs.contains(&(
+            "schema_agent/reexport_agent.py",
+            "schema_agent/nlp/__init__.py"
+        )));
+        assert!(pairs.contains(&(
+            "schema_agent/agents.py",
+            "schema_agent/text2r/sql_materializer.py"
+        )));
+        assert!(pairs.contains(&(
+            "schema_agent/agents.py",
+            "schema_agent/text2r/triplet_extractor_symbolic.py"
+        )));
+        assert!(pairs.contains(&(
+            "schema_agent/text2r/normalizers/__init__.py",
+            "schema_agent/text2r/normalizers/currency_normalizer.py"
+        )));
+
+        std::env::remove_var("CTXPACK_HOME");
+    }
+
+    #[test]
+    fn related_dependency_edges_expand_python_package_reexports() {
+        let _guard = env_lock();
+        let temp = tempfile::tempdir().unwrap();
+        let repo = temp.path().join("repo");
+        let home = temp.path().join("ctxpack-home");
+        fs::create_dir_all(repo.join(".git")).unwrap();
+        fs::create_dir_all(repo.join("schema_agent/nlp")).unwrap();
+        fs::write(
+            repo.join("schema_agent/agent.py"),
+            "from schema_agent.nlp import EntityExtractor\n",
+        )
+        .unwrap();
+        fs::write(
+            repo.join("schema_agent/nlp/__init__.py"),
+            "from schema_agent.nlp.entity_extractor import EntityExtractor\n",
+        )
+        .unwrap();
+        fs::write(
+            repo.join("schema_agent/nlp/entity_extractor.py"),
+            "class EntityExtractor: pass\n",
+        )
+        .unwrap();
+        std::env::set_var("CTXPACK_HOME", &home);
+
+        let edges = related_dependency_edges(
+            &repo,
+            &["schema_agent/agent.py".to_string()],
+            &DependencyOptions { limit: 10 },
+        )
+        .unwrap();
+        let pairs = edges
+            .iter()
+            .map(|edge| {
+                (
+                    edge.source_path.as_str(),
+                    edge.target_path.as_str(),
+                    edge.kind.as_str(),
+                )
+            })
+            .collect::<Vec<_>>();
+
+        assert!(pairs.contains(&(
+            "schema_agent/agent.py",
+            "schema_agent/nlp/__init__.py",
+            "imports"
+        )));
+        assert!(pairs.contains(&(
+            "schema_agent/agent.py",
+            "schema_agent/nlp/entity_extractor.py",
+            "python_reexport"
+        )));
+        assert_eq!(
+            edges
+                .iter()
+                .find(|edge| edge.kind == "python_reexport")
+                .map(|edge| edge.target_path.as_str()),
+            Some("schema_agent/nlp/entity_extractor.py")
+        );
+
+        std::env::remove_var("CTXPACK_HOME");
+    }
+
+    #[test]
     fn dependency_edges_resolve_java_and_kotlin_package_imports() {
         let _guard = env_lock();
         let temp = tempfile::tempdir().unwrap();

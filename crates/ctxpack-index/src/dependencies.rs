@@ -258,11 +258,13 @@ pub fn related_dependency_edges_report(
 
     let full_report =
         dependency_edges_report(&repo_root, &DependencyOptions { limit: usize::MAX })?;
-    let mut edges = full_report
-        .edges
-        .into_iter()
+    let all_edges = full_report.edges;
+    let mut edges = all_edges
+        .iter()
+        .cloned()
         .filter(|edge| anchors.contains(&edge.source_path) || anchors.contains(&edge.target_path))
         .collect::<Vec<_>>();
+    extend_python_reexport_edges(&mut edges, &all_edges, &anchors);
     edges.sort_by(|left, right| {
         edge_anchor_rank(left, &anchors)
             .cmp(&edge_anchor_rank(right, &anchors))
@@ -279,6 +281,62 @@ pub fn related_dependency_edges_report(
         diagnostics: full_report.diagnostics,
         cache_status: full_report.cache_status,
     })
+}
+
+fn extend_python_reexport_edges(
+    related_edges: &mut Vec<DependencyEdge>,
+    all_edges: &[DependencyEdge],
+    anchors: &BTreeSet<String>,
+) {
+    let direct_package_imports = related_edges
+        .iter()
+        .filter(|edge| {
+            anchors.contains(&edge.source_path) && is_python_package_init(&edge.target_path)
+        })
+        .cloned()
+        .collect::<Vec<_>>();
+    let mut seen = related_edges
+        .iter()
+        .map(|edge| {
+            (
+                edge.source_path.clone(),
+                edge.target_path.clone(),
+                edge.kind.clone(),
+            )
+        })
+        .collect::<BTreeSet<_>>();
+
+    for direct in direct_package_imports {
+        for reexport in all_edges
+            .iter()
+            .filter(|edge| edge.source_path == direct.target_path)
+        {
+            if reexport.target_path == direct.source_path {
+                continue;
+            }
+            let kind = "python_reexport".to_string();
+            if seen.insert((
+                direct.source_path.clone(),
+                reexport.target_path.clone(),
+                kind.clone(),
+            )) {
+                related_edges.push(DependencyEdge {
+                    source_path: direct.source_path.clone(),
+                    target_path: reexport.target_path.clone(),
+                    kind,
+                    confidence: (direct.confidence * reexport.confidence * 0.85).clamp(0.0, 1.0),
+                    reason: format!(
+                        "python package re-export via `{}` and `{}`",
+                        direct.target_path, reexport.reason
+                    ),
+                });
+            }
+        }
+    }
+}
+
+fn is_python_package_init(path: &str) -> bool {
+    path.ends_with("/__init__.py") || path == "__init__.py"
 }
 
 pub fn precision_edges_path(repo_root: impl AsRef<Path>) -> Result<PathBuf, InventoryError> {
@@ -657,12 +715,22 @@ fn python_imports(content: &str) -> Vec<ImportRef> {
         }
         if let Some(rest) = trimmed.strip_prefix("from ") {
             if let Some((module, _)) = rest.split_once(" import ") {
-                if !module.trim().is_empty() {
+                let module = module.trim();
+                if !module.is_empty() {
                     imports.push(ImportRef {
-                        raw: python_module_to_path(module.trim()),
+                        raw: python_module_to_path(module),
                         language: "python",
                         confidence: 0.9,
                     });
+                    for imported in python_imported_names(rest) {
+                        imports.push(ImportRef {
+                            raw: python_module_to_path(&python_join_module_member(
+                                module, &imported,
+                            )),
+                            language: "python",
+                            confidence: 0.8,
+                        });
+                    }
                 }
             }
         } else if let Some(rest) = trimmed.strip_prefix("import ") {
@@ -679,6 +747,40 @@ fn python_imports(content: &str) -> Vec<ImportRef> {
         }
     }
     imports
+}
+
+fn python_imported_names(from_import_rest: &str) -> Vec<String> {
+    let Some((_, imported)) = from_import_rest.split_once(" import ") else {
+        return Vec::new();
+    };
+    imported
+        .split(',')
+        .filter_map(|name| {
+            let name = name
+                .split('#')
+                .next()
+                .unwrap_or("")
+                .split_whitespace()
+                .next()
+                .unwrap_or("")
+                .trim();
+            if name.is_empty() || name == "*" {
+                None
+            } else {
+                Some(name.to_string())
+            }
+        })
+        .collect()
+}
+
+fn python_join_module_member(module: &str, member: &str) -> String {
+    if module == "." {
+        format!(".{member}")
+    } else if module.ends_with('.') {
+        format!("{module}{member}")
+    } else {
+        format!("{module}.{member}")
+    }
 }
 
 fn rust_imports(content: &str) -> Vec<ImportRef> {
@@ -851,6 +953,7 @@ fn first_existing(base: &str, safe_paths: &BTreeSet<String>) -> Option<String> {
         candidates.push(format!("{base}/index.{extension}"));
         candidates.push(format!("{base}/mod.{extension}"));
     }
+    candidates.push(format!("{base}/__init__.py"));
     for candidate in candidates {
         if safe_paths.contains(&candidate) {
             return Some(candidate);
@@ -885,6 +988,9 @@ fn join_normalized(parent: &Path, raw: &str) -> Option<String> {
 }
 
 fn edge_anchor_rank(edge: &DependencyEdge, anchors: &BTreeSet<String>) -> u8 {
+    if edge.kind == "python_reexport" && anchors.contains(&edge.source_path) {
+        return 0;
+    }
     match (
         anchors.contains(&edge.source_path),
         anchors.contains(&edge.target_path),

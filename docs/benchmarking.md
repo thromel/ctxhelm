@@ -466,6 +466,11 @@ Recommendation today:
   The field improves agent inspection guidance without changing top-10 ranking:
   broad fixed-corpus quality metrics stayed flat and the warm-cache proof still
   promotes.
+- Phase 86 adds bounded Python package re-export graph coverage. Python
+  `from package import Symbol` can now resolve `package/__init__.py` and
+  re-exported modules as dependency candidates. The broader proof stays
+  Recall@10-flat, which keeps the remaining VeriSchema gap focused on
+  selection/budget pressure rather than only missing graph candidates.
 - Keep `local_metadata_reranked` eval-only until named regressions and protected
   evidence behavior clear the gate.
 - Keep `local_fastembed` opt-in for experiments and conceptual queries; it is
