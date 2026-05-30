@@ -56,6 +56,8 @@ evidence = {
     "clientVersion": client_version,
     "ctxpackVersion": ctxpack_version,
     "repo": repo,
+    "deterministicProtocol": True,
+    "deterministicContextAreaResourceRead": True,
     "prepareTask": True,
     "getPack": True,
     "required": required == "1",

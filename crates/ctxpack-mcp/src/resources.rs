@@ -86,6 +86,22 @@ pub(crate) fn read_resource(params: Value) -> Result<Value, RpcError> {
     }))
 }
 
+fn repo_hint() -> &'static Mutex<Option<PathBuf>> {
+    static REPO_HINT: OnceLock<Mutex<Option<PathBuf>>> = OnceLock::new();
+    REPO_HINT.get_or_init(|| Mutex::new(None))
+}
+
+pub(crate) fn remember_repo_hint(repo: &Path) {
+    let mut hint = repo_hint().lock().unwrap();
+    *hint = Some(repo.to_path_buf());
+}
+
+#[cfg(test)]
+pub(crate) fn clear_repo_hint() {
+    let mut hint = repo_hint().lock().unwrap();
+    *hint = None;
+}
+
 struct ResourceContent {
     mime_type: &'static str,
     text: String,
@@ -622,11 +638,30 @@ fn render_line_slice(content: &str, lines: (usize, usize)) -> String {
 }
 
 pub(crate) fn discover_repo(repo: Option<PathBuf>) -> Result<RepoRoot, RpcError> {
+    let explicit = repo.is_some();
     let start = match repo {
         Some(path) => path,
         None => std::env::current_dir()
             .map_err(|error| RpcError::invalid_params(format!("failed to read cwd: {error}")))?,
     };
-    RepoRoot::discover_from(&start)
-        .map_err(|error| RpcError::invalid_params(format!("failed to discover repo: {error}")))
+    match RepoRoot::discover_from(&start) {
+        Ok(root) => Ok(root),
+        Err(error) if !explicit => {
+            let hint = repo_hint().lock().unwrap().clone();
+            if let Some(path) = hint {
+                RepoRoot::discover_from(&path).map_err(|hint_error| {
+                    RpcError::invalid_params(format!(
+                        "failed to discover repo from cwd ({error}) or last explicit repo hint ({hint_error})"
+                    ))
+                })
+            } else {
+                Err(RpcError::invalid_params(format!(
+                    "failed to discover repo: {error}"
+                )))
+            }
+        }
+        Err(error) => Err(RpcError::invalid_params(format!(
+            "failed to discover repo: {error}"
+        ))),
+    }
 }

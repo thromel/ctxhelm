@@ -470,6 +470,17 @@ bounded `nextReadPaths`, and the Phase 100 four-repo proof passes the stricter
 checker. The evidence artifact is
 `.planning/e2e/2026-05-31-phase101-release-gated-gap-summary-contract.md`.
 
+Phase 102 fixes explicit-repo MCP resource consumption. Repo-scoped resources
+such as `ctxpack://repo/context-areas` and
+`ctxpack://repo/context-area/{encoded-area}` now fall back to the last explicit
+repo used by `prepare_task`, `get_pack`, `search`, `related`, or
+`related_tests` when the MCP server cwd is not inside a repository. The
+deterministic MCP protocol smoke now reads both context-area resource shapes and
+verifies `nextReadBatches`; Cursor/OpenCode setup evidence and optional
+Codex/Claude evidence record deterministic context-area resource-read coverage.
+The evidence artifact is
+`.planning/e2e/2026-05-31-phase102-explicit-repo-mcp-resource-consumption.md`.
+
 Latest optional real-client proof: Codex CLI `0.130.0` and Claude Code
 `2.1.158` both passed the smoke wrappers on 2026-05-30 with server-side
 `prepare_task` and `get_pack` evidence against an explicit repo path. See

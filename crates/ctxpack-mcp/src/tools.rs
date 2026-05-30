@@ -1,5 +1,5 @@
 use crate::protocol::RpcError;
-use crate::resources::{cache_pack_resources, discover_repo};
+use crate::resources::{cache_pack_resources, discover_repo, remember_repo_hint};
 use ctxpack_compiler::{
     compile_context_pack_with_plan_and_paths_for_agent_and_semantic_provider, eval_trace_for_pack,
     eval_trace_for_plan, prepare_context_plan_with_paths_and_semantic_provider,
@@ -184,7 +184,11 @@ fn call_prepare_task(arguments: Value) -> Result<Value, RpcError> {
         return Err(RpcError::invalid_params("task must not be empty"));
     }
 
+    let explicit_repo = args.repo.is_some();
     let repo = discover_repo(args.repo)?;
+    if explicit_repo {
+        remember_repo_hint(&repo.path);
+    }
     let paths = context_anchor_paths(&repo.path, args.paths, args.include_current_diff)?;
     let semantic_provider = semantic_provider_config(
         args.semantic_provider.as_deref(),
@@ -239,7 +243,11 @@ fn call_search(arguments: Value) -> Result<Value, RpcError> {
         return Err(RpcError::invalid_params("query must not be empty"));
     }
 
+    let explicit_repo = args.repo.is_some();
     let repo = discover_repo(args.repo)?;
+    if explicit_repo {
+        remember_repo_hint(&repo.path);
+    }
     let limit = bounded_limit(args.limit, 10);
     let include_files = args.kinds.is_empty() || args.kinds.contains(&SearchKind::File);
     let include_symbols = args.kinds.is_empty() || args.kinds.contains(&SearchKind::Symbol);
@@ -318,7 +326,11 @@ fn call_related(arguments: Value) -> Result<Value, RpcError> {
     let args: RelatedArgs = serde_json::from_value(arguments)
         .map_err(|error| RpcError::invalid_params(format!("invalid related arguments: {error}")))?;
 
+    let explicit_repo = args.repo.is_some();
     let repo = discover_repo(args.repo)?;
+    if explicit_repo {
+        remember_repo_hint(&repo.path);
+    }
     let limit = bounded_limit(args.limit, 10);
     let (paths, symbol_matches, mut diagnostics) = related_anchor_paths(
         &repo.path,
@@ -510,7 +522,11 @@ fn call_get_pack(arguments: Value) -> Result<Value, RpcError> {
         return Err(RpcError::invalid_params("task must not be empty"));
     }
 
+    let explicit_repo = args.repo.is_some();
     let repo = discover_repo(args.repo)?;
+    if explicit_repo {
+        remember_repo_hint(&repo.path);
+    }
     let paths = context_anchor_paths(&repo.path, args.paths, args.include_current_diff)?;
     let budget = args.budget.unwrap_or(PackBudget::Brief);
     let target_agent = args.target_agent.as_deref().unwrap_or("generic");
@@ -565,7 +581,11 @@ fn call_related_tests(arguments: Value) -> Result<Value, RpcError> {
         return Err(RpcError::invalid_params("paths must not be empty"));
     }
 
+    let explicit_repo = args.repo.is_some();
     let repo = discover_repo(args.repo)?;
+    if explicit_repo {
+        remember_repo_hint(&repo.path);
+    }
     let report = related_tests_report(&repo.path, &args.paths)
         .map_err(|error| RpcError::invalid_params(format!("failed to find tests: {error}")))?;
 

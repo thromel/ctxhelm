@@ -15,7 +15,7 @@ ctxpack is an agent-native, read-only context broker. It generates repo-local gu
 
 **Generated artifact checks** are read-only setup validation. `ctxpack setup-check --repo "$REPO" --cursor --claude --opencode` confirms expected repo-local files exist and contain recognizable ctxpack guidance. It does not run real agent clients.
 
-**deterministic protocol proof** means direct JSON-RPC/MCP smoke through `ctxpack serve-mcp`. The smoke sends machine-checkable tool calls with an explicit `repo`, verifies `prepare_task` returns target files and pack options, verifies `get_pack` returns a structured pack, and can read a pack resource during the same MCP server session.
+**deterministic protocol proof** means direct JSON-RPC/MCP smoke through `ctxpack serve-mcp`. The smoke sends machine-checkable tool calls with an explicit `repo`, verifies `prepare_task` returns target files and pack options, verifies `get_pack` returns a structured pack, reads context-area resources from a non-repo server cwd, and can read a pack resource during the same MCP server session.
 
 **real-client proof** means an actual agent client starts ctxpack as an MCP server and produces request-log evidence for tool calls. For v1.1, this optional proof path is maintained for Codex CLI and Claude Code because the smoke scripts can inspect server-side requests for explicit-repo `prepare_task` and `get_pack` calls tied to exact client versions.
 
@@ -24,7 +24,7 @@ Code `2.1.158` both passed the optional smoke wrappers with server-side
 `prepare_task` and `get_pack` evidence against an explicit repo path. See
 `.planning/e2e/2026-05-30-phase70-real-client-mcp-proof.md`.
 
-Cursor and OpenCode setup can be checked through generated artifacts plus deterministic protocol proof. v1.1 does not claim machine-checkable Cursor tool-call proof, and it does not claim machine-checkable OpenCode tool-call proof.
+Cursor and OpenCode setup can be checked through generated artifacts plus deterministic protocol proof, including source-free context-area resource reads. v1.1 does not claim machine-checkable Cursor tool-call proof, and it does not claim machine-checkable OpenCode tool-call proof.
 
 The setup-proof wrappers are:
 

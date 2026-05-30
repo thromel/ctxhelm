@@ -45,6 +45,7 @@ evidence = {
     "repo": repo,
     "setupCheck": True,
     "deterministicProtocol": True,
+    "deterministicContextAreaResourceRead": True,
     "realClientToolCalls": False,
     "proofBoundary": "OpenCode setup and MCP protocol proof only; no machine-checkable OpenCode tool-call transcript is claimed.",
 }

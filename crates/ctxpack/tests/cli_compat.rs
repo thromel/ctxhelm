@@ -2339,6 +2339,8 @@ fn real_client_smoke_scripts_have_contract_guards() {
             "CTXPACK_REAL_CLIENT_EVIDENCE_DIR",
             "clientVersion",
             "ctxpackVersion",
+            "deterministicProtocol",
+            "deterministicContextAreaResourceRead",
             "prepareTask",
             "getPack",
             "required",
@@ -2402,6 +2404,7 @@ fn real_client_smoke_scripts_have_contract_guards() {
             "clientVersion",
             "ctxpackVersion",
             "deterministicProtocol",
+            "deterministicContextAreaResourceRead",
             "realClientToolCalls",
             "proofBoundary",
             "not_installed",
@@ -2456,6 +2459,9 @@ fn mcp_protocol_smoke_script_supports_selected_binary() {
     assert!(content.contains("prepare_task"));
     assert!(content.contains("get_pack"));
     assert!(content.contains("\"repo\""));
+    assert!(content.contains("ctxpack://repo/context-areas"));
+    assert!(content.contains("ctxpack://repo/context-area/"));
+    assert!(content.contains("nextReadBatches"));
 }
 
 #[test]

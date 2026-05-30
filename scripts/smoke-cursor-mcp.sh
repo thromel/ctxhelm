@@ -45,6 +45,7 @@ evidence = {
     "repo": repo,
     "setupCheck": True,
     "deterministicProtocol": True,
+    "deterministicContextAreaResourceRead": True,
     "realClientToolCalls": False,
     "proofBoundary": "Cursor setup and MCP protocol proof only; no machine-checkable Cursor tool-call transcript is claimed.",
 }

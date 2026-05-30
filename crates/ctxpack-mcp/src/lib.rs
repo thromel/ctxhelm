@@ -27,7 +27,9 @@ pub const IMPLEMENTED_MCP_TOOL_NAMES: &[&str] = &[
 #[cfg(test)]
 use protocol::handle_line;
 #[cfg(test)]
-use resources::{clear_pack_resource_cache, pack_resource_cache_len, pack_resource_cache_limit};
+use resources::{
+    clear_pack_resource_cache, clear_repo_hint, pack_resource_cache_len, pack_resource_cache_limit,
+};
 
 #[cfg(test)]
 mod tests {
@@ -1001,6 +1003,40 @@ mod tests {
             .contains("src/auth/cookies.ts"));
 
         std::env::set_current_dir(cwd).unwrap();
+        std::env::remove_var("CTXPACK_HOME");
+    }
+
+    #[test]
+    fn repo_resources_use_last_explicit_tool_repo_when_server_cwd_is_not_repo() {
+        let _guard = env_lock();
+        clear_repo_hint();
+        let repo = fixture_repo();
+        std::env::set_var("CTXPACK_HOME", &repo.home);
+        let cwd = std::env::current_dir().unwrap();
+        let outside = repo._temp.path().join("outside");
+        fs::create_dir_all(&outside).unwrap();
+        std::env::set_current_dir(&outside).unwrap();
+
+        let request = format!(
+            r#"{{"jsonrpc":"2.0","id":601,"method":"tools/call","params":{{"name":"prepare_task","arguments":{{"task":"verify context area resource read","repo":"{}","mode":"explain","paths":["src/auth/session.ts"],"recordTrace":false}}}}}}"#,
+            repo.repo.display()
+        );
+        let plan = handle_line(&request).unwrap();
+        assert_eq!(plan["result"]["isError"], false);
+
+        let context_area = handle_line(
+            r#"{"jsonrpc":"2.0","id":602,"method":"resources/read","params":{"uri":"ctxpack://repo/context-area/src%2Fauth"}}"#,
+        )
+        .unwrap();
+        let text = context_area["result"]["contents"][0]["text"]
+            .as_str()
+            .unwrap();
+        assert!(text.contains("src/auth/session.ts"));
+        assert!(text.contains("\"nextReadBatches\""));
+        assert!(text.contains("\"sourceTextLogged\": false"));
+
+        std::env::set_current_dir(cwd).unwrap();
+        clear_repo_hint();
         std::env::remove_var("CTXPACK_HOME");
     }
 

@@ -113,6 +113,8 @@ Design constraints:
   source text
 - expose path counts, role buckets, path families, and next-read batches in
   context-area resources so broad tasks can progress without extra tools
+- resolve repo-scoped resources from the last explicit tool repo when the MCP
+  server cwd is outside the workspace
 - keep pack resources session-scoped
 - never mutate source files or global agent config
 

@@ -53,6 +53,7 @@ import os
 import subprocess
 import sys
 from pathlib import Path
+from urllib.parse import quote
 
 root, repo, task, anchor_path, query, server_cwd, diff_repo, smoke_diff_path, ctxpack_bin = sys.argv[1:]
 repo_path = Path(repo).resolve()
@@ -131,6 +132,31 @@ def require_repo_relative_path(path, label):
     if not (repo_path / path).exists():
         raise SystemExit(f"{label}: path is not in explicit repo: {path}")
 
+def context_area_for_path(path):
+    components = [component for component in path.split("/") if component]
+    if not components:
+        return "."
+    if components[0].startswith("."):
+        if len(components) >= 2:
+            return f"{components[0]}/{components[1]}"
+        return components[0]
+    if len(components) == 1:
+        return "."
+    if len(components) == 2 and "." in components[1]:
+        return components[0]
+    return "/".join(components[:2])
+
+def resource_json(uri, label):
+    resource = request("resources/read", {"uri": uri})
+    contents = require_list(resource.get("contents"), f"{label}.contents")
+    text = contents[0].get("text", "")
+    if not text:
+        raise SystemExit(f"{label}: empty resource text")
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError as error:
+        raise SystemExit(f"{label}: invalid JSON resource text: {error}")
+
 try:
     initialize = request("initialize", {})
     if initialize.get("serverInfo", {}).get("name") != "ctxpack":
@@ -150,6 +176,29 @@ try:
     pack_uri = pack_options[0].get("resourceUri")
     if not pack_uri:
         raise SystemExit("prepare_task.packOptions[0]: missing resourceUri")
+
+    context_areas = resource_json("ctxpack://repo/context-areas", "resources/read.contextAreas")
+    if context_areas.get("sourceTextLogged") is not False:
+        raise SystemExit("resources/read.contextAreas: sourceTextLogged was not false")
+    if not isinstance(context_areas.get("areas"), list):
+        raise SystemExit("resources/read.contextAreas: missing areas array")
+    context_area = context_area_for_path(anchor_path)
+    context_area_uri = "ctxpack://repo/context-area/" + quote(context_area, safe="")
+    context_area_resource = resource_json(
+        context_area_uri, "resources/read.contextArea"
+    )
+    if context_area_resource.get("resourceUri") != context_area_uri:
+        raise SystemExit("resources/read.contextArea: resourceUri mismatch")
+    if context_area_resource.get("sourceTextLogged") is not False:
+        raise SystemExit("resources/read.contextArea: sourceTextLogged was not false")
+    if context_area_resource.get("pathCount", 0) <= 0:
+        raise SystemExit("resources/read.contextArea: expected paths for anchor area")
+    next_read_batches = require_list(
+        context_area_resource.get("nextReadBatches"),
+        "resources/read.contextArea.nextReadBatches",
+    )
+    if not any(batch.get("paths") for batch in next_read_batches if isinstance(batch, dict)):
+        raise SystemExit("resources/read.contextArea: nextReadBatches had no paths")
 
     pack = structured(
         tool(

@@ -493,6 +493,10 @@ Recommendation today:
   next-read batches, and current reachable retrieval-gap summaries must retain
   `ctxpack://repo/context-area/...` URIs plus bounded `nextReadPaths` for the
   product-proof checker to pass.
+- Phase 102 closes the wrong-cwd consumption gap for those resources. After an
+  explicit-repo MCP tool call, repo-scoped resources fall back to that repo, and
+  the deterministic MCP protocol smoke reads context-area resources plus
+  `nextReadBatches` from a server cwd outside the workspace.
 - Keep `local_metadata_reranked` eval-only until named regressions and protected
   evidence behavior clear the gate.
 - Keep `local_fastembed` opt-in for experiments and conceptual queries; it is
