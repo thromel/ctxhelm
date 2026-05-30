@@ -453,6 +453,16 @@ proof is `.ctxpack/e2e/phase99-context-area-read-batches-proof.json` and
 reports `releaseGate.decision = promote`. File/source/test/validation and broad
 context-area metrics are unchanged from Phase 98 across the four-repo proof.
 
+Phase 100 makes retrieval-gap summaries resource-backed. Historical eval gap
+groups now include source-free `contextArea`, `contextAreaResourceUri`, and
+`nextReadPaths`, turning remaining `area_context_only` and ranked-below-budget
+misses into progressive read instructions. The evidence artifact is
+`.planning/e2e/2026-05-31-phase100-resource-backed-gap-summaries.md`; the
+committed proof is
+`.ctxpack/e2e/phase100-resource-backed-gap-summaries-proof.json` and reports
+`releaseGate.decision = promote`. File/source/test/validation and broad
+context-area metrics are unchanged from Phase 99 across the four-repo proof.
+
 Latest optional real-client proof: Codex CLI `0.130.0` and Claude Code
 `2.1.158` both passed the smoke wrappers on 2026-05-30 with server-side
 `prepare_task` and `get_pack` evidence against an explicit repo path. See

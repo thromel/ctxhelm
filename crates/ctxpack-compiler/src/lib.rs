@@ -2187,10 +2187,13 @@ mod tests {
                 signal_gap: "lexical_only_miss".to_string(),
                 package: "src".to_string(),
                 path_family: "src/auth/*.ts".to_string(),
+                context_area: "src/auth".to_string(),
+                context_area_resource_uri: "ctxpack://repo/context-area/src%2Fauth".to_string(),
                 target_status: RetrievalGapTargetStatus::CurrentReachable,
                 recommendation_area: RetrievalGapRecommendationArea::LexicalRanking,
                 missed_count: 2,
                 example_paths: vec!["src/auth/session.ts".to_string()],
+                next_read_paths: vec!["src/auth/session.ts".to_string()],
             }],
             runtime: HistoricalEvalRuntimeSummary {
                 total_millis: 0,
@@ -2248,6 +2251,15 @@ mod tests {
         assert_eq!(
             value["retrievalGapSummaries"][0]["pathFamily"],
             "src/auth/*.ts"
+        );
+        assert_eq!(value["retrievalGapSummaries"][0]["contextArea"], "src/auth");
+        assert_eq!(
+            value["retrievalGapSummaries"][0]["contextAreaResourceUri"],
+            "ctxpack://repo/context-area/src%2Fauth"
+        );
+        assert_eq!(
+            value["retrievalGapSummaries"][0]["nextReadPaths"][0],
+            "src/auth/session.ts"
         );
         assert!(!serde_json::to_string(&report).unwrap().contains("fix auth"));
     }

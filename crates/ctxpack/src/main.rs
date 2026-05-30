@@ -4574,6 +4574,18 @@ fn push_retrieval_gap_summaries(
                 output.push_str(&format!("`{path}`"));
             }
         }
+        if !gap.context_area_resource_uri.is_empty() {
+            output.push_str(&format!(" resource `{}`", gap.context_area_resource_uri));
+        }
+        if !gap.next_read_paths.is_empty() {
+            output.push_str(" next reads ");
+            for (index, path) in gap.next_read_paths.iter().enumerate() {
+                if index > 0 {
+                    output.push_str(", ");
+                }
+                output.push_str(&format!("`{path}`"));
+            }
+        }
         output.push('\n');
     }
 }
@@ -5095,10 +5107,13 @@ mod tests {
                 signal_gap: "no_candidate_signal".to_string(),
                 package: "tests".to_string(),
                 path_family: "tests/auth/*.ts".to_string(),
+                context_area: "tests/auth".to_string(),
+                context_area_resource_uri: "ctxpack://repo/context-area/tests%2Fauth".to_string(),
                 target_status: ctxpack_compiler::RetrievalGapTargetStatus::CurrentReachable,
                 recommendation_area: ctxpack_compiler::RetrievalGapRecommendationArea::TestMapping,
                 missed_count: 2,
                 example_paths: vec!["tests/auth/session.test.ts".to_string()],
+                next_read_paths: vec!["tests/auth/session.test.ts".to_string()],
             }],
         );
 
@@ -5107,6 +5122,8 @@ mod tests {
         assert!(checklist.contains("area `TestMapping`"));
         assert!(checklist.contains("family `tests/auth/*.ts`"));
         assert!(checklist.contains("`tests/auth/session.test.ts`"));
+        assert!(checklist.contains("ctxpack://repo/context-area/tests%2Fauth"));
+        assert!(checklist.contains("next reads `tests/auth/session.test.ts`"));
         assert!(!checklist.contains("commit subject"));
         assert!(!checklist.contains("source code"));
     }

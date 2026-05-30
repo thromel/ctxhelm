@@ -80,6 +80,8 @@ Primary responsibilities:
 - compile budgeted `ContextPack`
 - compile source-free agent preview reports
 - run historical evals and benchmark suites
+- emit source-free, resource-backed retrieval-gap summaries with context-area
+  URIs and bounded next-read paths
 - generate source-free domain and experience cards
 
 Design constraints:

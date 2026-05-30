@@ -6,11 +6,12 @@ use crate::planning::{
 };
 use crate::policy::{provider_policy_report, reranker_decision};
 use ctxpack_core::{
-    context_area_for_path, CandidateFeatureExport, CandidateFeatureLabel, CandidateFeatureRow,
-    CandidateFeatureSource, ContextArea, ContextPack, ContextPlan, Diagnostic, DiagnosticSeverity,
-    EvalTrace, FileRole, PackBudget, PolicyQualityReport, PrecisionStatusReport, PrivacyStatus,
-    ProviderDecisionStatus, ProviderPolicyReport, QueryConstructionTrace, RetrievalCandidate,
-    RetrievalCandidateKind, RetrievalHealthGapFamily, RetrievalHealthMetric, RetrievalHealthReport,
+    context_area_for_path, context_area_resource_uri, CandidateFeatureExport,
+    CandidateFeatureLabel, CandidateFeatureRow, CandidateFeatureSource, ContextArea, ContextPack,
+    ContextPlan, Diagnostic, DiagnosticSeverity, EvalTrace, FileRole, PackBudget,
+    PolicyQualityReport, PrecisionStatusReport, PrivacyStatus, ProviderDecisionStatus,
+    ProviderPolicyReport, QueryConstructionTrace, RetrievalCandidate, RetrievalCandidateKind,
+    RetrievalHealthGapFamily, RetrievalHealthMetric, RetrievalHealthReport,
     RetrievalHealthSignalContribution, RetrievalHealthTokenRoi, RetrievalSignalKind, TaskType,
 };
 use ctxpack_index::{
@@ -272,10 +273,16 @@ pub struct RetrievalGapSummary {
     pub signal_gap: String,
     pub package: String,
     pub path_family: String,
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub context_area: String,
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub context_area_resource_uri: String,
     pub target_status: RetrievalGapTargetStatus,
     pub recommendation_area: RetrievalGapRecommendationArea,
     pub missed_count: usize,
     pub example_paths: Vec<String>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub next_read_paths: Vec<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -5034,16 +5041,24 @@ fn retrieval_gap_summaries(
                 if summary.example_paths.len() < 3 && !summary.example_paths.contains(path) {
                     summary.example_paths.push(path.clone());
                 }
+                if summary.next_read_paths.len() < 8 && !summary.next_read_paths.contains(path) {
+                    summary.next_read_paths.push(path.clone());
+                }
             } else {
+                let context_area = context_area_for_path(path);
+                let context_area_resource_uri = context_area_resource_uri(&context_area);
                 summaries.push(RetrievalGapSummary {
                     role,
                     signal_gap,
                     package,
                     path_family,
+                    context_area,
+                    context_area_resource_uri,
                     target_status,
                     recommendation_area,
                     missed_count: 1,
                     example_paths: vec![path.clone()],
+                    next_read_paths: vec![path.clone()],
                 });
             }
         }
@@ -6140,6 +6155,12 @@ mod tests {
         assert_eq!(summaries.len(), 1);
         assert_eq!(summaries[0].role, FileRole::Source);
         assert_eq!(summaries[0].example_paths, vec!["src/auth/session.ts"]);
+        assert_eq!(summaries[0].context_area, "src/auth");
+        assert_eq!(
+            summaries[0].context_area_resource_uri,
+            "ctxpack://repo/context-area/src%2Fauth"
+        );
+        assert_eq!(summaries[0].next_read_paths, vec!["src/auth/session.ts"]);
     }
 
     fn gate_test_variant(name: &str, recall: f32, precision: f32) -> SemanticPrecisionVariant {
