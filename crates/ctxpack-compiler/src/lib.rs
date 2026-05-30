@@ -916,9 +916,15 @@ mod tests {
         let repo = temp.path().join("repo");
         let home = temp.path().join("ctxpack-home");
         fs::create_dir_all(repo.join("src")).unwrap();
+        fs::create_dir_all(repo.join("docs")).unwrap();
         fs::write(
             repo.join("src/workflow.ts"),
             "export const workflow = true;\n",
+        )
+        .unwrap();
+        fs::write(
+            repo.join("docs/release.md"),
+            "workflow release documentation\n",
         )
         .unwrap();
         std::env::set_var("CTXPACK_HOME", &home);
@@ -1040,8 +1046,10 @@ mod tests {
                         .to_string(),
                 resource_uri: "ctxpack://repo/context-area/src".to_string(),
                 representative_paths: vec!["src/lib.rs".to_string()],
+                next_read_paths: vec!["src/compiler.rs".to_string()],
                 candidate_count: 3,
                 selected_count: 1,
+                unselected_count: 2,
             },
             ctxpack_core::ContextArea {
                 area: "tests".to_string(),
@@ -1050,8 +1058,10 @@ mod tests {
                         .to_string(),
                 resource_uri: "ctxpack://repo/context-area/tests".to_string(),
                 representative_paths: vec!["tests/lib_test.rs".to_string()],
+                next_read_paths: vec!["tests/lib_test.rs".to_string()],
                 candidate_count: 2,
                 selected_count: 0,
+                unselected_count: 2,
             },
         ];
 
@@ -1071,7 +1081,9 @@ mod tests {
         assert!(markdown.contains("Zero-selected areas to inspect next"));
         assert!(markdown.contains("`src`"));
         assert!(markdown.contains("`src/lib.rs`"));
+        assert!(markdown.contains("`src/compiler.rs`"));
         assert!(markdown.contains("`tests/lib_test.rs`"));
+        assert!(markdown.contains("Next reads"));
         assert!(markdown.contains("ctxpack://repo/context-area/tests"));
 
         std::env::remove_var("CTXPACK_HOME");
@@ -1869,8 +1881,10 @@ mod tests {
                     reason: "source area".to_string(),
                     resource_uri: "ctxpack://repo/context-area/src".to_string(),
                     representative_paths: vec!["src/lib.rs".to_string()],
+                    next_read_paths: vec![],
                     candidate_count: 1,
                     selected_count: 1,
+                    unselected_count: 0,
                 }],
                 confidence: 0.8,
                 query_trace: None,

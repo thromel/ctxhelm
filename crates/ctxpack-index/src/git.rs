@@ -11,6 +11,8 @@ use std::process::{Command, Stdio};
 use std::thread;
 use std::time::{Duration, Instant};
 
+const REV_LIST_TIMEOUT: Duration = Duration::from_secs(10);
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct CoChangeOptions {
@@ -696,7 +698,7 @@ fn git_commit_file_sets_for_ref(
     let shas = git_stdout_with_timeout(
         repo_root,
         &["rev-list", "--max-count", &max_count, revision],
-        Duration::from_secs(2),
+        REV_LIST_TIMEOUT,
     )?;
     let mut commits = Vec::new();
 
@@ -757,7 +759,7 @@ pub(crate) fn git_commit_subject_file_sets_with_timeouts(
     let rev = commit_range(base, head);
     let mut rev_list_args = vec!["rev-list", &max_count];
     rev_list_args.push(rev.as_deref().unwrap_or("HEAD"));
-    let shas = git_stdout_with_timeout(repo_root, &rev_list_args, Duration::from_secs(2))?;
+    let shas = git_stdout_with_timeout(repo_root, &rev_list_args, REV_LIST_TIMEOUT)?;
     let mut commits = Vec::new();
 
     for sha in shas.lines().map(str::trim).filter(|sha| !sha.is_empty()) {

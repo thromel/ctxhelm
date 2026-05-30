@@ -53,8 +53,12 @@ pub struct ContextArea {
     pub resource_uri: String,
     #[serde(default)]
     pub representative_paths: Vec<String>,
+    #[serde(default)]
+    pub next_read_paths: Vec<String>,
     pub candidate_count: usize,
     pub selected_count: usize,
+    #[serde(default)]
+    pub unselected_count: usize,
 }
 
 pub fn context_area_for_path(path: &str) -> String {
@@ -1599,8 +1603,10 @@ mod tests {
                 reason: "broad task candidate area".to_string(),
                 resource_uri: "ctxpack://repo/context-area/src".to_string(),
                 representative_paths: vec!["src/lib.rs".to_string()],
+                next_read_paths: vec![],
                 candidate_count: 1,
                 selected_count: 1,
+                unselected_count: 0,
             }],
             recommended_commands: vec![],
             pack_options: vec![PackOption {
@@ -1644,8 +1650,10 @@ mod tests {
                 "reason": "broad task candidate area",
                 "resourceUri": "ctxpack://repo/context-area/src",
                 "representativePaths": ["src/lib.rs"],
+                "nextReadPaths": [],
                 "candidateCount": 1,
-                "selectedCount": 1
+                "selectedCount": 1,
+                "unselectedCount": 0
             }],
             "recommendedCommands": [],
             "packOptions": [{
@@ -1799,8 +1807,10 @@ mod tests {
                 reason: "broad task candidate area".to_string(),
                 resource_uri: "ctxpack://repo/context-area/src".to_string(),
                 representative_paths: vec!["src/lib.rs".to_string()],
+                next_read_paths: vec![],
                 candidate_count: 1,
                 selected_count: 1,
+                unselected_count: 0,
             }],
             recommended_commands: vec![],
             pack_options: vec![],

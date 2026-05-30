@@ -27,6 +27,8 @@ def current_reachable_gap_summaries(report: dict):
     for repository in repositories:
         repo_name = repository.get("name") or repository.get("repoId") or "<unknown>"
         repo_report = repository.get("report", {})
+        if not isinstance(repo_report, dict):
+            fail("embedded benchmark repository report was missing: " + str(repo_name))
         gaps = repo_report.get("retrievalGapSummaries", [])
         if not isinstance(gaps, list):
             fail("retrievalGapSummaries was not a list for " + str(repo_name))

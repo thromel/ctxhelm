@@ -318,6 +318,7 @@ fn product_proof_checker_accepts_promote_and_rejects_block() {
     let promote_path = temp.path().join("promote.json");
     let block_path = temp.path().join("block.json");
     let missing_resource_path = temp.path().join("missing-resource-gap.json");
+    let missing_report_path = temp.path().join("missing-repo-report.json");
     let broad_floor_path = temp.path().join("broad-fixed-corpus-floor.json");
     let broad_regression_path = temp.path().join("broad-fixed-corpus-regression.json");
     fs::write(&promote_path, product_proof_json("promote", true, "beat")).unwrap();
@@ -325,6 +326,11 @@ fn product_proof_checker_accepts_promote_and_rejects_block() {
     fs::write(
         &missing_resource_path,
         product_proof_json_without_gap_resource_uri(),
+    )
+    .unwrap();
+    fs::write(
+        &missing_report_path,
+        product_proof_json_without_repository_report(),
     )
     .unwrap();
     fs::write(
@@ -381,6 +387,22 @@ fn product_proof_checker_accepts_promote_and_rejects_block() {
     assert!(
         stderr.contains("lacked context-area resource URI")
             || stderr.contains("lacked next-read paths"),
+        "unexpected checker error: {stderr}"
+    );
+
+    let missing_report = Command::new("python3")
+        .arg(&script)
+        .arg(&missing_report_path)
+        .current_dir(&repo_root)
+        .output()
+        .unwrap();
+    assert!(
+        !missing_report.status.success(),
+        "benchmark repository without an embedded report should fail release checker"
+    );
+    let stderr = String::from_utf8_lossy(&missing_report.stderr);
+    assert!(
+        stderr.contains("embedded benchmark repository report was missing"),
         "unexpected checker error: {stderr}"
     );
 
@@ -468,6 +490,27 @@ fn product_proof_json_without_gap_resource_uri() -> String {
         r#"          "contextAreaResourceUri": "ctxpack://repo/context-area/src",
 "#,
         "",
+    )
+}
+
+fn product_proof_json_without_repository_report() -> String {
+    product_proof_json("promote", true, "beat").replace(
+        r#""report": {
+        "retrievalGapSummaries": [{
+          "role": "source",
+          "signalGap": "ranked_below_budget_dependency",
+          "package": "src",
+          "pathFamily": "src/*.rs",
+          "contextArea": "src",
+          "contextAreaResourceUri": "ctxpack://repo/context-area/src",
+          "targetStatus": "currentReachable",
+          "recommendationArea": "parserPrecision",
+          "missedCount": 1,
+          "examplePaths": ["src/lib.rs"],
+          "nextReadPaths": ["src/lib.rs"]
+        }]
+      }"#,
+        r#""report": null"#,
     )
 }
 

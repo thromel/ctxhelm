@@ -147,8 +147,10 @@ The release gate runs these required checks:
 
 For broad workflow/eval/lint tasks, `prepare-task` and generated packs include
 `contextAreas`. This field is source-free and additive: it gives agents
-area-level inspection hints while preserving the top target-file and validation
-channels used by release proof metrics.
+area-level inspection hints, representative paths, concrete `nextReadPaths`,
+and `unselectedCount` while preserving the top target-file and validation
+channels used by release proof metrics. Docs candidates are included in this
+progressive guidance channel.
 
 Archive/docs retrieval tasks can also be classified as broad for source-free
 context-area guidance. Those tasks do not automatically spend target-file budget
@@ -228,7 +230,7 @@ The gate passes the same selected or extracted `CTXPACK_BIN` into the first-pack
 - `CTXPACK_SKIP_REAL_CLIENT=1` keeps Codex and Claude checks deterministic-only after the protocol proof.
 - `CTXPACK_REQUIRE_REAL_CLIENT=1` makes missing Codex or Claude tool-call evidence fail the gate.
 - `CTXPACK_REAL_CLIENT_EVIDENCE_DIR=/absolute/path/to/evidence` writes stable JSON evidence files with client version, ctxpack version, repo path, `prepare_task`, and `get_pack` proof when real-client checks run.
-- `CTXPACK_BENCHMARK_CONFIG=/absolute/path/to/suite.json` runs `ctxpack eval proof --config ... --format json` and fails on report-generation, local-only privacy regressions, missing v2.3 product proof summary, missing paired baseline verdict contract, feature-export privacy regressions, learned-policy status regressions, missing proof-boundary language, or a non-promote `releaseGate.decision`. Neutral, mixed, unsafe, or too-expensive default retrieval proof blocks publication.
+- `CTXPACK_BENCHMARK_CONFIG=/absolute/path/to/suite.json` runs `ctxpack eval proof --config ... --format json` and fails on report-generation, local-only privacy regressions, missing embedded repository reports, missing v2.3 product proof summary, missing paired baseline verdict contract, feature-export privacy regressions, learned-policy status regressions, missing proof-boundary language, missing resource-backed current-reachable gap summaries, pinned broad fixed-corpus regressions, or a non-promote `releaseGate.decision`. Neutral, mixed, unsafe, or too-expensive default retrieval proof blocks publication.
 
 Current v2.5 proof status: the fixed two-repo production-retrieval proof
 promotes default local retrieval under the channel-aware release gate. The gate
@@ -490,6 +492,19 @@ dependency-priority ranking experiment that still promoted overall but regressed
 VeriSchema File Recall@10 from `0.18449473` to `0.17936651`. The evidence
 artifact is
 `.planning/e2e/2026-05-31-phase103-broad-fixed-corpus-floors.md`.
+
+Phase 104 adds concrete source-free next-read guidance to broad context areas.
+`ContextArea` now includes `nextReadPaths` and `unselectedCount`, docs
+candidates participate in broad context-area guidance, and generated packs
+render explicit `Next reads` so agents can inspect ranked-below-budget
+source/docs pressure with native reads before requesting deeper packs.
+`scripts/check-product-proof.py` also fails cleanly when a benchmark repository
+has no embedded report instead of crashing during gap validation. The evidence
+artifact is
+`.planning/e2e/2026-05-31-phase104-context-area-next-read-paths.md`; the
+available three-repo proof promotes, while the full four-repo proof is not
+claimed because the local RefactoringMiner checkout timed out during
+`git rev-list`.
 
 Latest optional real-client proof: Codex CLI `0.130.0` and Claude Code
 `2.1.158` both passed the smoke wrappers on 2026-05-30 with server-side

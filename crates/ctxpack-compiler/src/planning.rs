@@ -532,7 +532,13 @@ fn context_areas_for_plan(
         };
         if !matches!(
             candidate.role,
-            Some(FileRole::Source | FileRole::Test | FileRole::Config | FileRole::Schema)
+            Some(
+                FileRole::Source
+                    | FileRole::Test
+                    | FileRole::Config
+                    | FileRole::Schema
+                    | FileRole::Docs
+            )
         ) {
             continue;
         }
@@ -547,6 +553,8 @@ fn context_areas_for_plan(
             if selected_paths.contains(path) {
                 entry.selected_count += 1;
                 entry.record_selected_role(&candidate.role);
+            } else if entry.next_read_paths.len() < 4 {
+                entry.next_read_paths.push(path.to_string());
             }
         }
     }
@@ -562,8 +570,12 @@ fn context_areas_for_plan(
                 ),
                 resource_uri: context_area_resource_uri(&area),
                 representative_paths: accumulator.representative_paths.clone(),
+                next_read_paths: accumulator.next_read_paths.clone(),
                 candidate_count: accumulator.candidate_count,
                 selected_count: accumulator.selected_count,
+                unselected_count: accumulator
+                    .candidate_count
+                    .saturating_sub(accumulator.selected_count),
             };
             RankedContextArea {
                 context_area,
@@ -623,8 +635,11 @@ fn context_area_priority(area: &str, accumulator: &AreaAccumulator) -> u8 {
     if accumulator.source_count + accumulator.config_count + accumulator.schema_count > 0 {
         return 0;
     }
-    if accumulator.test_count > 0 {
+    if accumulator.docs_count > 0 {
         return 1;
+    }
+    if accumulator.test_count > 0 {
+        return 2;
     }
     3
 }
@@ -635,15 +650,18 @@ const MAX_CONTEXT_AREAS: usize = 16;
 struct AreaAccumulator {
     unique_paths: BTreeSet<String>,
     representative_paths: Vec<String>,
+    next_read_paths: Vec<String>,
     candidate_count: usize,
     selected_count: usize,
     source_count: usize,
     test_count: usize,
     config_count: usize,
     schema_count: usize,
+    docs_count: usize,
     selected_source_count: usize,
     selected_config_count: usize,
     selected_schema_count: usize,
+    selected_docs_count: usize,
 }
 
 impl AreaAccumulator {
@@ -653,6 +671,7 @@ impl AreaAccumulator {
             Some(FileRole::Test) => self.test_count += 1,
             Some(FileRole::Config) => self.config_count += 1,
             Some(FileRole::Schema) => self.schema_count += 1,
+            Some(FileRole::Docs) => self.docs_count += 1,
             _ => {}
         }
     }
@@ -662,6 +681,7 @@ impl AreaAccumulator {
             Some(FileRole::Source) => self.selected_source_count += 1,
             Some(FileRole::Config) => self.selected_config_count += 1,
             Some(FileRole::Schema) => self.selected_schema_count += 1,
+            Some(FileRole::Docs) => self.selected_docs_count += 1,
             _ => {}
         }
     }
@@ -2109,6 +2129,65 @@ mod tests {
         assert!(!uses_broad_target_file_floors(
             "MCP docs record real client mcp proof refresh"
         ));
+    }
+
+    #[test]
+    fn context_areas_include_docs_and_next_read_paths() {
+        let selection = crate::ranking::RankedSelection {
+            retrieval_candidates: vec![
+                RetrievalCandidate {
+                    kind: RetrievalCandidateKind::File,
+                    path: Some("src/workflow.ts".to_string()),
+                    role: Some(FileRole::Source),
+                    reason_code: "lexical_match".to_string(),
+                    confidence: 0.9,
+                    signal_scores: vec![],
+                    evidence: vec![],
+                },
+                RetrievalCandidate {
+                    kind: RetrievalCandidateKind::Doc,
+                    path: Some("docs/release.md".to_string()),
+                    role: Some(FileRole::Docs),
+                    reason_code: "lexical_match".to_string(),
+                    confidence: 0.8,
+                    signal_scores: vec![],
+                    evidence: vec![],
+                },
+                RetrievalCandidate {
+                    kind: RetrievalCandidateKind::Doc,
+                    path: Some("docs/benchmarking.md".to_string()),
+                    role: Some(FileRole::Docs),
+                    reason_code: "lexical_match".to_string(),
+                    confidence: 0.7,
+                    signal_scores: vec![],
+                    evidence: vec![],
+                },
+            ],
+            target_files: vec![TargetFile {
+                path: "src/workflow.ts".to_string(),
+                reason: "selected source".to_string(),
+                line_range: None,
+                confidence: 0.9,
+                attribution: vec![],
+            }],
+            related_tests: vec![],
+            recommended_commands: vec![],
+        };
+
+        let areas = context_areas_for_plan(&selection, true);
+        let docs_area = areas.iter().find(|area| area.area == "docs").unwrap();
+
+        assert_eq!(docs_area.candidate_count, 2);
+        assert_eq!(docs_area.selected_count, 0);
+        assert_eq!(docs_area.unselected_count, 2);
+        assert_eq!(
+            docs_area.next_read_paths,
+            vec![
+                "docs/release.md".to_string(),
+                "docs/benchmarking.md".to_string()
+            ]
+        );
+        assert_eq!(docs_area.resource_uri, "ctxpack://repo/context-area/docs");
     }
 
     #[test]

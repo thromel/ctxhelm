@@ -3,11 +3,11 @@ gsd_state_version: 1.0
 milestone: v2.5
 milestone_name: Production Retrieval Quality
 status: active
-last_updated: "2026-05-31T18:10:00Z"
-last_activity: 2026-05-31 -- Phase 103 added broad fixed-corpus floors to the product-proof checker
+last_updated: "2026-05-31T19:20:00Z"
+last_activity: 2026-05-31 -- Phase 104 added source-free next-read paths to broad context-area guidance
 progress:
-  total_phases: 35
-  completed_phases: 35
+  total_phases: 36
+  completed_phases: 36
   total_plans: 7
   completed_plans: 7
   percent: 100
@@ -17,10 +17,10 @@ progress:
 
 ## Current Position
 
-Phase: 103 - Broad Fixed-Corpus Floors
-Plan: 103-broad-fixed-corpus-floors
+Phase: 104 - Context Area Next-Read Paths
+Plan: 104-context-area-next-read-paths
 Status: Complete
-Last activity: 2026-05-31 -- Phase 103 rejected a dependency-priority ranking experiment because it regressed VeriSchema File Recall@10 from `0.18449473` to `0.17936651` and Source Recall@10 from `0.31067252` to `0.30409357` on the pinned broad four-repo proof. `scripts/check-product-proof.py` now enforces broad fixed-corpus metric floors for `phase92-area-aware-gap-taxonomy-2026-05-31`, so this class of broad proof regression fails even if the aggregate release gate still promotes.
+Last activity: 2026-05-31 -- Phase 104 made broad context areas more operational by adding source-free `nextReadPaths` and `unselectedCount`, including docs areas, and rendering explicit `Next reads` in packs. The product-proof checker now fails cleanly when a benchmark repository has no embedded report. The three-repo proof excluding the locally blocked RefactoringMiner checkout promotes; the four-repo proof was not claimed because the local RefactoringMiner checkout timed out during `git rev-list`.
 
 ## Project Reference
 
@@ -80,6 +80,7 @@ Planned phases:
 - Phase 101: Release-Gated Gap Summary Contract (complete follow-up)
 - Phase 102: Explicit-Repo MCP Resource Consumption (complete follow-up)
 - Phase 103: Broad Fixed-Corpus Floors (complete follow-up)
+- Phase 104: Context Area Next-Read Paths (complete follow-up)
 
 ## Last Completed Milestone
 
@@ -97,7 +98,7 @@ Planned phases:
 
 ## Next Step
 
-Continue production-readiness work from remaining measured gaps: ranked-below-budget source/docs pressure, stronger real-client proof artifacts, or deeper source-free area resources for broad repositories. Broad evals now distinguish files covered only by surfaced context areas from files with no candidate signal, clean RefactoringMiner cold proof promotes under the source-free index caches, broad context-area guidance covers more wide-task implementation areas, packs tell agents which zero-selected areas to inspect next, MCP exposes source-free area resources with role buckets/path families/read batches, gap summaries point to area resources and bounded next-read paths, the product-proof checker gates those gap summaries, repo-scoped resources work after explicit-repo MCP tools even from a wrong server cwd, broad fixed-corpus metric floors block silent selection regressions, governance/proof tasks classify broad historical/eval language reliably, and archive/docs broad tasks now receive context-area guidance without perturbing target-file source floors.
+Continue production-readiness work from remaining measured gaps: stronger real-client proof artifacts, full four-repo proof from a hydrated RefactoringMiner checkout, or deeper source-free area resources for broad repositories. Broad evals now distinguish files covered only by surfaced context areas from files with no candidate signal, clean RefactoringMiner cold proof promotes under the source-free index caches when the checkout is usable, broad context-area guidance covers more wide-task implementation areas, packs tell agents concrete source/docs paths to inspect next, MCP exposes source-free area resources with role buckets/path families/read batches, gap summaries point to area resources and bounded next-read paths, the product-proof checker gates those gap summaries and fails cleanly on missing embedded repo reports, repo-scoped resources work after explicit-repo MCP tools even from a wrong server cwd, broad fixed-corpus metric floors block silent selection regressions, governance/proof tasks classify broad historical/eval language reliably, and archive/docs broad tasks now receive context-area guidance without perturbing target-file source floors.
 
 ## Operator Next Steps
 
@@ -142,6 +143,7 @@ Continue production-readiness work from remaining measured gaps: ranked-below-bu
 - Latest release-gated gap summary contract proof: `.planning/e2e/2026-05-31-phase101-release-gated-gap-summary-contract.md`; the product-proof checker now fails current reachable retrieval-gap summaries that are not resource-backed, and the Phase 100 four-repo proof passes the stricter release-gate check.
 - Latest explicit-repo MCP resource proof: `.planning/e2e/2026-05-31-phase102-explicit-repo-mcp-resource-consumption.md`; deterministic MCP protocol smoke now reads context-area resources after an explicit-repo `prepare_task` from a non-repo server cwd, and Cursor setup smoke records deterministic context-area resource-read evidence.
 - Latest broad fixed-corpus floor proof: `.planning/e2e/2026-05-31-phase103-broad-fixed-corpus-floors.md`; the product-proof checker now enforces pinned four-repo metric floors and rejects the broad dependency-priority ranking experiment that regressed VeriSchema File Recall@10 to `0.17936651`.
+- Latest context-area next-read proof: `.planning/e2e/2026-05-31-phase104-context-area-next-read-paths.md` and `.ctxpack/e2e/phase104-context-area-next-read-paths-no-refminer-proof.json`; broad context areas now include docs, `nextReadPaths`, and `unselectedCount`, packs render explicit `Next reads`, the three-repo proof promotes, and the four-repo proof is blocked only by the local RefactoringMiner `git rev-list` timeout/no embedded report.
 - Latest real-client proof: `.planning/e2e/2026-05-30-phase70-real-client-mcp-proof.md`.
 - RefactoringMiner and ReAgent still trail lexical on all-file recall in the broader proof, but those deficits are now machine-checkable as explained by the context/validation split instead of only prose notes.
 - Phase 84 improves VeriSchema Source Recall@10 from `0.249` to `0.304` on the broader fixed corpus while keeping RefactoringMiner, ctxpack, and ReAgent stable.
@@ -164,4 +166,5 @@ Continue production-readiness work from remaining measured gaps: ranked-below-bu
 - Phase 101 makes that resource-backed gap shape part of the release proof checker, so future broad proof reports cannot silently drop the progressive read contract.
 - Phase 102 makes the resource URIs actually consumable from explicit-repo agent sessions where the MCP server is launched outside the workspace.
 - Phase 103 makes broad fixed-corpus regressions release-checkable before more ranking experiments; the rejected dependency-priority reorder proves focused tests are not enough when selection pressure shifts across a wide corpus.
-- Next work should target ranked-below-budget source/docs pressure or stronger real-client proof artifacts, not runtime threshold tuning or unproven top-10 churn.
+- Phase 104 makes ranked-below-budget source/docs pressure actionable without top-10 churn by surfacing concrete next-read paths and unselected counts in the existing source-free context-area channel.
+- Next work should target stronger real-client proof artifacts, a hydrated full four-repo proof path, or richer source-free area resources, not runtime threshold tuning or unproven top-10 churn.

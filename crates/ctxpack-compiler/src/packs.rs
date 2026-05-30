@@ -1000,10 +1000,18 @@ fn render_context_areas(plan: &ContextPlan) -> String {
                 .iter()
                 .take(6)
                 .map(|area| {
-                    let representatives = if area.representative_paths.is_empty() {
-                        "no representative paths".to_string()
+                    let next_reads = if area.next_read_paths.is_empty() {
+                        if area.representative_paths.is_empty() {
+                            "no next-read paths".to_string()
+                        } else {
+                            area.representative_paths
+                                .iter()
+                                .map(|path| format!("`{path}`"))
+                                .collect::<Vec<_>>()
+                                .join(", ")
+                        }
                     } else {
-                        area.representative_paths
+                        area.next_read_paths
                             .iter()
                             .map(|path| format!("`{path}`"))
                             .collect::<Vec<_>>()
@@ -1014,7 +1022,10 @@ fn render_context_areas(plan: &ContextPlan) -> String {
                     } else {
                         format!("resource `{}`", area.resource_uri)
                     };
-                    format!("- `{}`: {} ({})", area.area, representatives, resource)
+                    format!(
+                        "- `{}`: next reads {} ({})",
+                        area.area, next_reads, resource
+                    )
                 })
                 .collect::<Vec<_>>()
                 .join("\n"),
@@ -1041,9 +1052,18 @@ fn render_context_areas(plan: &ContextPlan) -> String {
                 } else {
                     format!("`{}`", area.resource_uri)
                 };
+                let next_reads = if area.next_read_paths.is_empty() {
+                    "none".to_string()
+                } else {
+                    area.next_read_paths
+                        .iter()
+                        .map(|path| format!("`{path}`"))
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                };
                 format!(
-                    "- `{}`: {} Representative paths: {}. Resource: {}",
-                    area.area, area.reason, representatives, resource
+                    "- `{}`: {} Representative paths: {}. Next reads: {}. Resource: {}",
+                    area.area, area.reason, representatives, next_reads, resource
                 )
             })
             .collect::<Vec<_>>()

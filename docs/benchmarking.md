@@ -41,9 +41,11 @@ source-free diagnostics; they do not remove targets from recall denominators.
 Prepare-task plans now expose `contextAreas` for broad multi-area prompts. This
 is an additive, source-free channel that groups candidate paths by repository
 area, reports how many candidate and selected paths each area contributed, and
-lists a few representative paths. It lets agents inspect likely adjacent areas
-without forcing those areas into the protected top-10 file budget, so retrieval
-quality metrics remain comparable to earlier proofs.
+lists representative paths, concrete unselected `nextReadPaths`, and
+`unselectedCount`. Docs areas are included in this channel. It lets agents
+inspect likely adjacent source/docs areas with native file reads without
+forcing those areas into the protected top-10 file budget, so retrieval quality
+metrics remain comparable to earlier proofs.
 
 ## Suite File
 
@@ -503,6 +505,12 @@ Recommendation today:
   promote overall but regress known-good four-repo metrics. The rejected
   dependency-priority ranking experiment would have dropped VeriSchema File
   Recall@10 from `0.18449473` to `0.17936651`, and now fails the checker.
+- Phase 104 adds source-free `nextReadPaths` and `unselectedCount` to broad
+  `contextAreas`, includes docs candidates in context-area guidance, and renders
+  explicit `Next reads` in generated packs. The product-proof checker now fails
+  cleanly when a benchmark repository has no embedded report. The available
+  three-repo proof promotes; the full four-repo proof was not claimed because
+  the local RefactoringMiner checkout timed out during `git rev-list`.
 - Keep `local_metadata_reranked` eval-only until named regressions and protected
   evidence behavior clear the gate.
 - Keep `local_fastembed` opt-in for experiments and conceptual queries; it is
@@ -522,10 +530,10 @@ is missing fixed corpus identity or paired baseline verdict fields, if
 feature-export privacy regresses, if learned-policy status allows silent
 defaults, if proof-boundary language is missing, if current reachable
 retrieval-gap summaries are not resource-backed with context-area URIs and
-next-read paths, if the pinned broad fixed corpus regresses below its recorded
-per-repository floors, or if `releaseGate.decision != "promote"`. A configured proof
-where any required corpus only matches or trails lexical retrieval blocks
-default promotion.
+next-read paths, if a benchmark repository report is missing, if the pinned
+broad fixed corpus regresses below its recorded per-repository floors, or if
+`releaseGate.decision != "promote"`. A configured proof where any required
+corpus only matches or trails lexical retrieval blocks default promotion.
 
 The deterministic release smoke is:
 
