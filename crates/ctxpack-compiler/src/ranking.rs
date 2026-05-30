@@ -219,9 +219,9 @@ pub(crate) fn rank_candidates(input: RankingInput) -> Vec<RankedCandidate> {
         candidates.add_path_signal(PathSignal {
             kind: candidate_kind_for_role(&role),
             path,
-            role,
+            role: role.clone(),
             signal: RetrievalSignalKind::CoChange,
-            score: hint.confidence,
+            score: co_change_score_for_role(hint.confidence, &role),
             weight: signal_weight(&RetrievalSignalKind::CoChange),
             reason_code: "co_change_neighbor",
             edge_label: None,
@@ -242,6 +242,14 @@ pub(crate) fn rank_candidates(input: RankingInput) -> Vec<RankedCandidate> {
     }
 
     candidates.finish()
+}
+
+fn co_change_score_for_role(confidence: f32, role: &FileRole) -> f32 {
+    if matches!(role, FileRole::Test) {
+        (confidence + 0.35).min(0.95)
+    } else {
+        confidence
+    }
 }
 
 pub(crate) fn rerank_with_local_metadata(
@@ -322,11 +330,7 @@ pub(crate) fn select_ranked_candidates(
         .map(|candidate| candidate.candidate.clone())
         .collect::<Vec<_>>();
     let target_files = select_target_files(candidates, file_budget);
-    let related_tests = candidates
-        .iter()
-        .filter_map(|candidate| candidate.related_test.clone())
-        .take(test_budget)
-        .collect::<Vec<_>>();
+    let related_tests = select_related_tests(candidates, test_budget);
     let mut command_set = BTreeSet::new();
     let recommended_commands = related_tests
         .iter()
@@ -343,6 +347,45 @@ pub(crate) fn select_ranked_candidates(
         target_files,
         related_tests,
         recommended_commands,
+    }
+}
+
+fn select_related_tests(candidates: &[RankedCandidate], test_budget: usize) -> Vec<RelatedTest> {
+    if test_budget == 0 {
+        return Vec::new();
+    }
+
+    let mut selected = Vec::new();
+    let mut selected_paths = BTreeSet::new();
+    for candidate in candidates.iter().filter(|candidate| {
+        candidate.related_test.is_some()
+            && signal_score(&candidate.candidate, RetrievalSignalKind::CoChange).is_some()
+    }) {
+        push_related_test(candidate, &mut selected, &mut selected_paths, test_budget);
+    }
+    for candidate in candidates
+        .iter()
+        .filter(|candidate| candidate.related_test.is_some())
+    {
+        push_related_test(candidate, &mut selected, &mut selected_paths, test_budget);
+    }
+    selected
+}
+
+fn push_related_test(
+    candidate: &RankedCandidate,
+    selected: &mut Vec<RelatedTest>,
+    selected_paths: &mut BTreeSet<String>,
+    test_budget: usize,
+) {
+    if selected.len() >= test_budget {
+        return;
+    }
+    let Some(test) = &candidate.related_test else {
+        return;
+    };
+    if selected_paths.insert(test.path.clone()) {
+        selected.push(test.clone());
     }
 }
 
@@ -1767,6 +1810,50 @@ mod tests {
             .collect::<Vec<_>>();
 
         assert!(paths.contains(&"src/historical.ts"));
+    }
+
+    #[test]
+    fn selection_promotes_cochanged_validation_tests() {
+        let candidates = rank_candidates(RankingInput {
+            related_tests: vec![
+                RelatedTestResult {
+                    path: "tests/generic_a.test.ts".to_string(),
+                    command: None,
+                    confidence: 0.95,
+                    reason: "content mentions broad terms".to_string(),
+                },
+                RelatedTestResult {
+                    path: "tests/generic_b.test.ts".to_string(),
+                    command: None,
+                    confidence: 0.95,
+                    reason: "content mentions broad terms".to_string(),
+                },
+            ],
+            co_change_hints: vec![CoChangeHint {
+                path: "tests/targeted.test.ts".to_string(),
+                commit_count: 2,
+                confidence: 0.6,
+                sample_commits: vec!["abc1234".to_string(), "def5678".to_string()],
+                reason: "changed together".to_string(),
+            }],
+            roles: roles([
+                ("tests/generic_a.test.ts", FileRole::Test),
+                ("tests/generic_b.test.ts", FileRole::Test),
+                ("tests/targeted.test.ts", FileRole::Test),
+            ]),
+            ..RankingInput::default()
+        });
+
+        let selection = select_ranked_candidates(&candidates, 0, 1);
+
+        assert_eq!(selection.related_tests[0].path, "tests/targeted.test.ts");
+        assert!(selection.related_tests[0]
+            .attribution
+            .iter()
+            .any(|evidence| {
+                evidence.signal == RetrievalSignalKind::CoChange
+                    && evidence.reason_code == "co_change_neighbor"
+            }));
     }
 
     #[test]

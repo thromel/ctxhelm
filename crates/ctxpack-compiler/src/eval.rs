@@ -14,9 +14,10 @@ use ctxpack_core::{
 };
 use ctxpack_index::{
     historical_commit_samples, lexical_search, load_or_build_inventory, repo_id_for_path,
-    semantic_document_report, task_hash, HistoricalChangedPath, HistoricalCommitOptions,
-    HistoricalCommitSample, InventoryError, InventoryOptions, LabelScope, SearchOptions,
-    SemanticDocumentOptions, SemanticProviderConfig, LEARNED_POLICY_PROFILE_SCHEMA_VERSION,
+    semantic_document_report, task_hash, write_eval_history_sidecar, HistoricalChangedPath,
+    HistoricalCommitOptions, HistoricalCommitSample, InventoryError, InventoryOptions, LabelScope,
+    SearchOptions, SemanticDocumentOptions, SemanticProviderConfig,
+    LEARNED_POLICY_PROFILE_SCHEMA_VERSION,
 };
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet};
@@ -2977,6 +2978,7 @@ impl<'a> HistoricalEvalWorktree<'a> {
         let revision_paths =
             git_existing_paths_at_revision(source_repo, parent_sha, snapshot_paths)?;
         git_extract_revision_paths(source_repo, parent_sha, &revision_paths, &path)?;
+        let _ = write_eval_history_sidecar(source_repo, parent_sha, &path);
 
         Ok(Self {
             path,

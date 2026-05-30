@@ -224,14 +224,16 @@ Current v2.5 proof status: the fixed two-repo production-retrieval proof
 promotes default local retrieval under the channel-aware release gate. The gate
 compares non-test context recall against lexical retrieval and validates tests
 through the dedicated `recommended_tests` channel. The current source-free proof
-is `.ctxpack/e2e/phase74-protected-evidence-diagnostics-proof.json`, where
+is `.ctxpack/e2e/phase75-parent-history-test-reserve-proof.json`, where
 `releaseGate.decision` is `promote`. RefactoringMiner context Recall@10 is
-`0.7778` vs lexical `0.7407`; ctxpack context Recall@10 is `0.5000` vs lexical
-`0.4286`; Test Recall@10 is `1.0` on both corpora. Phase 74 also separates
+`0.7778` vs lexical `0.7407`; ctxpack context Recall@10 is `0.4783` vs lexical
+`0.3913`; Test Recall@10 is `1.0` on both corpora. Phase 74 also separates
 overall protected-evidence miss-rate from protected retrieval-target miss-rate:
 RefactoringMiner target miss-rate@10 is `0.0588`, and ctxpack target
-miss-rate@10 is `0.1333`. The latest optional four-repo probe in
-`.ctxpack/e2e/phase74-broader-protected-evidence-diagnostics-proof.json` still
+miss-rate@10 is `0.0741`. Phase 75 restores parent-bounded source-free
+co-change history in archive-based eval snapshots and reserves co-changed
+validation tests before generic test matches. The latest optional four-repo
+probe in `.ctxpack/e2e/phase75-broader-parent-history-test-reserve-proof.json` still
 blocks broader promotion because VeriSchema remains below the 0.80
 validation-test floor and the newest-5-commit RefactoringMiner probe matches
 rather than beats. For repeatable local investigation, use the pinned optional

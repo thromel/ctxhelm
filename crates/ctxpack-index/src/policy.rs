@@ -198,6 +198,7 @@ fn is_generated_path(lower: &str, name: &str) -> bool {
     lower.contains("/node_modules/")
         || lower.contains("/.gradle/")
         || lower.contains("/.ctxpack/cache/")
+        || lower.ends_with("/.ctxpack/eval-history.json")
         || lower.contains("/.fastembed_cache/")
         || lower.contains("/src/main 2/")
         || lower.contains("/src/test 2/")
@@ -214,6 +215,7 @@ fn is_generated_path(lower: &str, name: &str) -> bool {
         || lower.starts_with("node_modules/")
         || lower.starts_with(".gradle/")
         || lower.starts_with(".ctxpack/cache/")
+        || lower == ".ctxpack/eval-history.json"
         || lower.starts_with(".fastembed_cache/")
         || lower.starts_with("src/main 2/")
         || lower.starts_with("src/test 2/")
@@ -342,6 +344,7 @@ mod tests {
         for path in [
             "node_modules/react/index.js",
             ".ctxpack/cache/fastembed/models--jinaai--jina-embeddings-v2-base-code/blobs/model.onnx",
+            ".ctxpack/eval-history.json",
             ".fastembed_cache/models--jinaai--jina-embeddings-v2-base-code/blobs/model.onnx",
             "src/main 2/java/org/example/Copied.java",
             "src/test 2/java/org/example/CopiedTest.java",

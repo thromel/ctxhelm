@@ -5,6 +5,7 @@ use crate::inventory::{
 use ctxpack_core::{CacheStatus, Diagnostic, DiagnosticSeverity, FileRole};
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet};
+use std::fs;
 use std::path::Path;
 use std::process::{Command, Stdio};
 use std::thread;
@@ -39,6 +40,17 @@ pub struct CoChangeReport {
     #[serde(default)]
     pub diagnostics: Vec<Diagnostic>,
     pub cache_status: CacheStatus,
+}
+
+const EVAL_HISTORY_SIDECAR_SCHEMA_VERSION: u32 = 1;
+const EVAL_HISTORY_SIDECAR_PATH: &str = ".ctxpack/eval-history.json";
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+struct EvalHistorySidecar {
+    schema_version: u32,
+    revision: String,
+    commits: Vec<GitCommitFiles>,
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
@@ -180,7 +192,7 @@ pub fn co_change_hints(
         return Ok(Vec::new());
     }
 
-    let commits = git_commit_file_sets(&repo_root)?;
+    let commits = git_commit_file_sets_or_sidecar(&repo_root)?;
     Ok(rank_co_change_hints(
         commits,
         &safe_paths,
@@ -211,7 +223,7 @@ pub fn co_change_hints_report(
         });
     }
 
-    let commits = match git_commit_file_sets(&repo_root) {
+    let commits = match git_commit_file_sets_or_sidecar(&repo_root) {
         Ok(commits) => commits,
         Err(error) => {
             let mut diagnostics = diagnostics;
@@ -230,6 +242,30 @@ pub fn co_change_hints_report(
         diagnostics,
         cache_status,
     })
+}
+
+pub fn write_eval_history_sidecar(
+    source_repo: impl AsRef<Path>,
+    revision: &str,
+    snapshot_repo: impl AsRef<Path>,
+) -> Result<(), InventoryError> {
+    let source_repo = canonicalize(source_repo.as_ref())?;
+    let snapshot_repo = canonicalize(snapshot_repo.as_ref())?;
+    let commits = git_commit_file_sets_for_ref(&source_repo, revision, 50)?;
+    let sidecar = EvalHistorySidecar {
+        schema_version: EVAL_HISTORY_SIDECAR_SCHEMA_VERSION,
+        revision: revision.to_string(),
+        commits,
+    };
+    let path = snapshot_repo.join(EVAL_HISTORY_SIDECAR_PATH);
+    if let Some(parent) = path.parent() {
+        fs::create_dir_all(parent).map_err(|source| InventoryError::CreateDir {
+            path: parent.to_path_buf(),
+            source,
+        })?;
+    }
+    let json = serde_json::to_string_pretty(&sidecar).map_err(InventoryError::Serialize)?;
+    fs::write(&path, json).map_err(|source| InventoryError::Write { path, source })
 }
 
 fn safe_history_paths(files: &[FileInventoryEntry]) -> BTreeSet<String> {
@@ -511,6 +547,8 @@ fn safe_changed_paths(
     (safe, excluded)
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
 pub(crate) struct GitCommitFiles {
     pub(crate) sha: String,
     pub(crate) files: Vec<String>,
@@ -584,9 +622,51 @@ fn label_historical_changed_paths(
 }
 
 fn git_commit_file_sets(repo_root: &Path) -> Result<Vec<GitCommitFiles>, InventoryError> {
+    git_commit_file_sets_for_ref(repo_root, "HEAD", 50)
+}
+
+fn git_commit_file_sets_or_sidecar(
+    repo_root: &Path,
+) -> Result<Vec<GitCommitFiles>, InventoryError> {
+    match git_commit_file_sets(repo_root) {
+        Ok(commits) => Ok(commits),
+        Err(git_error) => match read_eval_history_sidecar(repo_root) {
+            Ok(commits) => Ok(commits),
+            Err(_) => Err(git_error),
+        },
+    }
+}
+
+fn read_eval_history_sidecar(repo_root: &Path) -> Result<Vec<GitCommitFiles>, InventoryError> {
+    let path = repo_root.join(EVAL_HISTORY_SIDECAR_PATH);
+    let json = fs::read_to_string(&path).map_err(|source| InventoryError::Read {
+        path: path.clone(),
+        source,
+    })?;
+    let sidecar = serde_json::from_str::<EvalHistorySidecar>(&json).map_err(|source| {
+        InventoryError::Deserialize {
+            path: path.clone(),
+            source,
+        }
+    })?;
+    if sidecar.schema_version != EVAL_HISTORY_SIDECAR_SCHEMA_VERSION {
+        return Err(InventoryError::InvalidInput(format!(
+            "unsupported eval history sidecar schema version {}",
+            sidecar.schema_version
+        )));
+    }
+    Ok(sidecar.commits)
+}
+
+fn git_commit_file_sets_for_ref(
+    repo_root: &Path,
+    revision: &str,
+    max_count: usize,
+) -> Result<Vec<GitCommitFiles>, InventoryError> {
+    let max_count = max_count.max(1).to_string();
     let shas = git_stdout_with_timeout(
         repo_root,
-        &["rev-list", "--max-count=50", "HEAD"],
+        &["rev-list", "--max-count", &max_count, revision],
         Duration::from_secs(2),
     )?;
     let mut commits = Vec::new();

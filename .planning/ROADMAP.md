@@ -298,6 +298,28 @@ retrievable target misses or non-target exact/symbol pressure.
 - [x] `.ctxpack/e2e/phase74-protected-evidence-diagnostics-proof.json`
 - [x] `.ctxpack/e2e/phase74-broader-protected-evidence-diagnostics-proof.json`
 
+### Phase 75: Parent-Bounded History And Test Reserve
+
+**Goal**: Historical eval snapshots preserve bounded prior co-change history,
+and validation-test selection protects tests that co-change with target files.
+
+**Depends on**: Phase 74
+
+**Requirements**: PROOF-01, PROOF-02, GAP-03
+
+**Success Criteria**:
+
+1. Parent snapshots can use source-free commit/path history without a full Git checkout.
+2. The eval-history sidecar is excluded from inventory and context selection.
+3. Co-changed validation tests get a reserved selection pass before generic matches.
+4. Required proof still promotes and broader proof records whether VeriSchema improves.
+
+**Evidence**:
+
+- [x] `.planning/e2e/2026-05-30-phase75-parent-history-test-reserve.md`
+- [x] `.ctxpack/e2e/phase75-parent-history-test-reserve-proof.json`
+- [x] `.ctxpack/e2e/phase75-broader-parent-history-test-reserve-proof.json`
+
 ## Requirement Coverage
 
 | Requirement | Phase |
@@ -341,8 +363,11 @@ retrievable target misses or non-target exact/symbol pressure.
 | PROOF-01 | Phase 74 |
 | PROOF-02 | Phase 74 |
 | RANK-02 | Phase 74 |
+| PROOF-01 | Phase 75 |
+| PROOF-02 | Phase 75 |
+| GAP-03 | Phase 75 |
 
-**Coverage:** 20/20 v2.5 requirements mapped, with Phases 66-74 as measured follow-ups for proof/eval correctness gaps, real-client evidence, archive-noise reduction, broader validation, fixed-corpus reproducibility, and protected-evidence diagnostics. No orphaned v2.5 requirements.
+**Coverage:** 20/20 v2.5 requirements mapped, with Phases 66-75 as measured follow-ups for proof/eval correctness gaps, real-client evidence, archive-noise reduction, broader validation, fixed-corpus reproducibility, protected-evidence diagnostics, and parent-bounded history/test reservation. No orphaned v2.5 requirements.
 
 ## Progress
 

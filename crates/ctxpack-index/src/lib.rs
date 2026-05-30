@@ -40,10 +40,10 @@ pub use freshness::{
 };
 pub use git::{
     co_change_hints, co_change_hints_report, current_diff_summary, current_diff_summary_report,
-    historical_commit_samples, historical_commit_samples_report, ChangeKind, CoChangeHint,
-    CoChangeOptions, CoChangeReport, CurrentDiffExcluded, CurrentDiffOptions,
-    CurrentDiffPrivacyStatus, CurrentDiffReport, CurrentDiffSummary, HistoricalChangedPath,
-    HistoricalCommitOptions, HistoricalCommitReport, HistoricalCommitSample,
+    historical_commit_samples, historical_commit_samples_report, write_eval_history_sidecar,
+    ChangeKind, CoChangeHint, CoChangeOptions, CoChangeReport, CurrentDiffExcluded,
+    CurrentDiffOptions, CurrentDiffPrivacyStatus, CurrentDiffReport, CurrentDiffSummary,
+    HistoricalChangedPath, HistoricalCommitOptions, HistoricalCommitReport, HistoricalCommitSample,
     HistoricalPathExclusionReason, LabelScope,
 };
 pub use inventory::{
@@ -1988,6 +1988,84 @@ mod tests {
             .unwrap();
         assert_eq!(test_hint.commit_count, 2);
         assert_eq!(test_hint.sample_commits.len(), 2);
+
+        std::env::remove_var("CTXPACK_HOME");
+    }
+
+    #[test]
+    fn co_change_hints_use_eval_history_sidecar_when_snapshot_has_no_git() {
+        let _guard = env_lock();
+        let temp = tempfile::tempdir().unwrap();
+        let source_repo = temp.path().join("source-repo");
+        let snapshot_repo = temp.path().join("snapshot-repo");
+        let home = temp.path().join("ctxpack-home");
+        fs::create_dir_all(source_repo.join("src/auth")).unwrap();
+        fs::create_dir_all(source_repo.join("tests/auth")).unwrap();
+        run_git(&source_repo, &["init"]);
+        run_git(
+            &source_repo,
+            &["config", "user.email", "ctxpack@example.com"],
+        );
+        run_git(&source_repo, &["config", "user.name", "ctxpack"]);
+        fs::write(
+            source_repo.join("src/auth/session.ts"),
+            "export const session = 1;\n",
+        )
+        .unwrap();
+        fs::write(
+            source_repo.join("tests/auth/session.test.ts"),
+            "test('session', () => {});\n",
+        )
+        .unwrap();
+        run_git(&source_repo, &["add", "."]);
+        run_git(&source_repo, &["commit", "-m", "initial auth session"]);
+        fs::write(
+            source_repo.join("src/auth/session.ts"),
+            "export const session = 2;\n",
+        )
+        .unwrap();
+        fs::write(
+            source_repo.join("tests/auth/session.test.ts"),
+            "test('session changed', () => {});\n",
+        )
+        .unwrap();
+        run_git(&source_repo, &["add", "."]);
+        run_git(&source_repo, &["commit", "-m", "change auth session"]);
+        let head =
+            git_stdout_with_timeout(&source_repo, &["rev-parse", "HEAD"], Duration::from_secs(1))
+                .unwrap();
+        let head = head.trim();
+
+        fs::create_dir_all(snapshot_repo.join("src/auth")).unwrap();
+        fs::create_dir_all(snapshot_repo.join("tests/auth")).unwrap();
+        fs::write(
+            snapshot_repo.join("src/auth/session.ts"),
+            "export const session = 2;\n",
+        )
+        .unwrap();
+        fs::write(
+            snapshot_repo.join("tests/auth/session.test.ts"),
+            "test('session changed', () => {});\n",
+        )
+        .unwrap();
+        write_eval_history_sidecar(&source_repo, head, &snapshot_repo).unwrap();
+        std::env::set_var("CTXPACK_HOME", &home);
+
+        let report = co_change_hints_report(
+            &snapshot_repo,
+            &["src/auth/session.ts".to_string()],
+            &CoChangeOptions { limit: 10 },
+        )
+        .unwrap();
+
+        assert!(report
+            .hints
+            .iter()
+            .any(|hint| hint.path == "tests/auth/session.test.ts" && hint.commit_count == 2));
+        assert!(!report
+            .diagnostics
+            .iter()
+            .any(|diagnostic| diagnostic.code == "history_partial"));
 
         std::env::remove_var("CTXPACK_HOME");
     }
