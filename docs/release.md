@@ -322,6 +322,13 @@ from context-file top 10. The evidence artifact is
 `.planning/e2e/2026-05-31-phase87-validation-gap-accounting.md`; the committed
 proof is `.ctxpack/e2e/phase87-validation-gap-accounting-proof.json`.
 
+Phase 88 adds broad source-area candidates after graph/test seed selection.
+Broad multi-area tasks can now surface bounded same-root source-area inventory
+candidates without expanding dependency or related-test seeds. The evidence
+artifact is `.planning/e2e/2026-05-31-phase88-broad-source-area-candidates.md`;
+the committed proof is
+`.ctxpack/e2e/phase88-broad-source-area-candidates-proof.json`.
+
 Latest optional real-client proof: Codex CLI `0.130.0` and Claude Code
 `2.1.158` both passed the smoke wrappers on 2026-05-30 with server-side
 `prepare_task` and `get_pack` evidence against an explicit repo path. See

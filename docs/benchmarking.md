@@ -478,6 +478,11 @@ Recommendation today:
   gap summaries. RefactoringMiner validation-command recall improves from
   `0.0` to `1.0` with no recall or protected-target regression in the broader
   proof.
+- Phase 88 adds bounded source-area inventory candidates for broad multi-area
+  tasks after graph/test seed selection. This improves VeriSchema File
+  Recall@10 from `0.17936651` to `0.18449473` and Source Recall@10 from
+  `0.30409357` to `0.31067252` without raw test, effective validation, or
+  protected retrieval-target regression.
 - Keep `local_metadata_reranked` eval-only until named regressions and protected
   evidence behavior clear the gate.
 - Keep `local_fastembed` opt-in for experiments and conceptual queries; it is

@@ -3,11 +3,11 @@ gsd_state_version: 1.0
 milestone: v2.5
 milestone_name: Production Retrieval Quality
 status: active
-last_updated: "2026-05-31T03:10:00Z"
-last_activity: 2026-05-31 -- Phase 87 fixed validation-covered test gap accounting
+last_updated: "2026-05-31T04:05:00Z"
+last_activity: 2026-05-31 -- Phase 88 added broad source-area candidates
 progress:
-  total_phases: 26
-  completed_phases: 26
+  total_phases: 27
+  completed_phases: 27
   total_plans: 7
   completed_plans: 7
   percent: 100
@@ -17,10 +17,10 @@ progress:
 
 ## Current Position
 
-Phase: 87 - Validation Gap Accounting
-Plan: 87-validation-gap-accounting
+Phase: 88 - Broad Source-Area Candidates
+Plan: 88-broad-source-area-candidates
 Status: Complete
-Last activity: 2026-05-31 -- Phase 87 recognizes specific Java validation selectors, suppresses validation-covered tests from retrieval gap summaries, and records the rejected broad source-area diversity experiment. Broader proof quality is non-regressing, RefactoringMiner validation-command recall improves from `0.0` to `1.0`, and the proof still blocks only on the known cold runtime threshold.
+Last activity: 2026-05-31 -- Phase 88 adds bounded source-area inventory candidates for broad multi-area tasks after graph/test seed selection. VeriSchema File Recall@10 improves from `0.17936651` to `0.18449473` and Source Recall@10 improves from `0.30409357` to `0.31067252` without regressing raw test recall, effective validation recall, or protected retrieval-target miss-rate.
 
 ## Project Reference
 
@@ -64,6 +64,7 @@ Planned phases:
 - Phase 85: Broad Context Areas (complete follow-up)
 - Phase 86: Python Package Re-Export Graph Coverage (complete follow-up)
 - Phase 87: Validation Gap Accounting (complete follow-up)
+- Phase 88: Broad Source-Area Candidates (complete follow-up)
 
 ## Last Completed Milestone
 
@@ -81,7 +82,7 @@ Planned phases:
 
 ## Next Step
 
-Continue production-readiness work from remaining measured gaps: source candidate generation for parser/precision `no_candidate_signal` families that still lack candidates, plus selection/budget pressure only where protected-evidence proof shows non-regression.
+Continue production-readiness work from remaining measured gaps: source candidate generation for parser/precision `no_candidate_signal` families that still lack candidates, plus optional broad-proof runtime hardening.
 
 ## Operator Next Steps
 
@@ -110,10 +111,12 @@ Continue production-readiness work from remaining measured gaps: source candidat
 - Latest broad context-area proof: `.planning/e2e/2026-05-31-phase85-broad-context-areas.md` and `.ctxpack/e2e/phase85-context-areas-warm-proof.json`; broad multi-area prepare-task plans and packs now include source-free `contextAreas` that do not perturb target-file recall.
 - Latest Python package re-export graph proof: `.planning/e2e/2026-05-31-phase86-python-package-reexports.md`; focused dependency tests pass and broad proof metrics stay flat/non-regressing, proving the remaining VeriSchema gap is selection/budget pressure rather than only missing Python package edges.
 - Latest validation gap accounting proof: `.planning/e2e/2026-05-31-phase87-validation-gap-accounting.md` and `.ctxpack/e2e/phase87-validation-gap-accounting-proof.json`; RefactoringMiner validation-command recall improves from `0.0` to `1.0`, validation-covered tests no longer appear as unresolved test-mapping gap summaries, and the rejected broad source-area diversity experiment is documented.
+- Latest broad source-area candidate proof: `.planning/e2e/2026-05-31-phase88-broad-source-area-candidates.md` and `.ctxpack/e2e/phase88-broad-source-area-candidates-proof.json`; VeriSchema File Recall@10 improves from `0.17936651` to `0.18449473` and Source Recall@10 improves from `0.30409357` to `0.31067252` without validation or protected-target regression.
 - Latest real-client proof: `.planning/e2e/2026-05-30-phase70-real-client-mcp-proof.md`.
 - RefactoringMiner and ReAgent still trail lexical on all-file recall in the broader proof, but those deficits are now machine-checkable as explained by the context/validation split instead of only prose notes.
 - Phase 84 improves VeriSchema Source Recall@10 from `0.249` to `0.304` on the broader fixed corpus while keeping RefactoringMiner, ctxpack, and ReAgent stable.
 - Phase 85 intentionally keeps broad fixed-corpus quality metrics flat while improving agent guidance through non-displacing context-area hints; cold proofs block on the existing RefactoringMiner runtime threshold, while the warm-cache proof promotes.
 - Phase 86 adds Python package re-export graph candidates, but VeriSchema Recall@10 remains flat because those candidates do not enter the constrained top-10.
 - Phase 87 fixes validation accounting rather than target ranking: Java class-selector commands now count as validation coverage, and validation-covered tests no longer inflate test-mapping gap summaries.
-- Next work should target source candidate generation for remaining parser/precision `no_candidate_signal` families; avoid broad area selectors unless protected target miss-rate stays non-regressing.
+- Phase 88 improves broad VeriSchema source/file recall by adding bounded source-area candidates after graph/test seed selection. An earlier variant was rejected because it perturbed raw test recall.
+- Next work should target remaining source candidate gaps and optional broad-proof runtime hardening.

@@ -416,6 +416,10 @@ pub(crate) fn prepare_context_plan_with_paths_history_mode_and_semantic(
         Vec::new()
     };
 
+    if multi_area_task {
+        extend_broad_source_area_candidates(&mut search_results, &roles);
+    }
+
     let ranked_candidates = rank_candidates(RankingInput {
         anchors,
         lexical_results: search_results,
@@ -596,6 +600,138 @@ fn context_area_for_path(path: &str) -> String {
     }
     components.truncate(2);
     components.join("/")
+}
+
+fn extend_broad_source_area_candidates(
+    search_results: &mut Vec<SearchResult>,
+    roles: &BTreeMap<String, FileRole>,
+) {
+    let existing_paths = search_results
+        .iter()
+        .map(|result| result.path.as_str())
+        .collect::<BTreeSet<_>>();
+    let roots = source_roots_for_broad_candidates(search_results, roles);
+    if roots.is_empty() {
+        return;
+    }
+
+    let mut by_area = BTreeMap::<String, Vec<String>>::new();
+    for (path, role) in roles {
+        if role != &FileRole::Source || existing_paths.contains(path.as_str()) {
+            continue;
+        }
+        if path.starts_with("examples/") || path.starts_with("tests/") || path.starts_with('.') {
+            continue;
+        }
+        let Some(root) = first_path_component(path) else {
+            continue;
+        };
+        if !roots.contains(root) {
+            continue;
+        }
+        by_area
+            .entry(context_area_for_path(path))
+            .or_default()
+            .push(path.clone());
+    }
+
+    let mut added = 0usize;
+    for paths in by_area.values_mut() {
+        paths.sort_by(|left, right| {
+            path_depth(left)
+                .cmp(&path_depth(right))
+                .then_with(|| left.cmp(right))
+        });
+        for path in paths
+            .iter()
+            .take(BROAD_SOURCE_AREA_REPRESENTATIVES_PER_AREA)
+        {
+            if added >= BROAD_SOURCE_AREA_CANDIDATE_LIMIT {
+                return;
+            }
+            search_results.push(SearchResult {
+                path: path.clone(),
+                role: FileRole::Source,
+                language: language_for_path(path),
+                score: BROAD_SOURCE_AREA_CANDIDATE_SCORE,
+                reason: "broad source area candidate for multi-area task".to_string(),
+            });
+            added += 1;
+        }
+    }
+}
+
+const BROAD_SOURCE_AREA_CANDIDATE_LIMIT: usize = 48;
+const BROAD_SOURCE_AREA_REPRESENTATIVES_PER_AREA: usize = 4;
+const BROAD_SOURCE_AREA_CANDIDATE_SCORE: f32 = 8.0;
+
+fn source_roots_for_broad_candidates<'a>(
+    search_results: &'a [SearchResult],
+    roles: &'a BTreeMap<String, FileRole>,
+) -> BTreeSet<&'a str> {
+    let mut roots = search_results
+        .iter()
+        .filter(|result| result.role == FileRole::Source)
+        .filter_map(|result| first_path_component(&result.path))
+        .filter(|root| !is_auxiliary_source_root(root))
+        .collect::<BTreeSet<_>>();
+    if roots.is_empty() {
+        let mut counts = BTreeMap::<&str, usize>::new();
+        for (path, role) in roles {
+            if role == &FileRole::Source {
+                if let Some(root) = first_path_component(path) {
+                    if !is_auxiliary_source_root(root) {
+                        *counts.entry(root).or_insert(0) += 1;
+                    }
+                }
+            }
+        }
+        if let Some((root, _)) = counts
+            .into_iter()
+            .max_by(|left, right| left.1.cmp(&right.1).then_with(|| right.0.cmp(left.0)))
+        {
+            roots.insert(root);
+        }
+    }
+    roots
+}
+
+fn first_path_component(path: &str) -> Option<&str> {
+    path.split('/').find(|component| !component.is_empty())
+}
+
+fn is_auxiliary_source_root(root: &str) -> bool {
+    matches!(
+        root,
+        "examples" | "tests" | "test" | "docs" | "doc" | "scripts"
+    )
+}
+
+fn path_depth(path: &str) -> usize {
+    path.split('/')
+        .filter(|component| !component.is_empty())
+        .count()
+}
+
+fn language_for_path(path: &str) -> Option<String> {
+    let language = if path.ends_with(".py") {
+        "python"
+    } else if path.ends_with(".ts") || path.ends_with(".tsx") {
+        "typescript"
+    } else if path.ends_with(".js") || path.ends_with(".jsx") {
+        "javascript"
+    } else if path.ends_with(".rs") {
+        "rust"
+    } else if path.ends_with(".go") {
+        "go"
+    } else if path.ends_with(".java") {
+        "java"
+    } else if path.ends_with(".kt") || path.ends_with(".kts") {
+        "kotlin"
+    } else {
+        return None;
+    };
+    Some(language.to_string())
 }
 
 fn extend_cochanged_test_results(
@@ -1803,6 +1939,72 @@ mod tests {
         extend_project_governance_docs(&mut search_results, &roles, "fix auth session cookie");
 
         assert!(search_results.is_empty());
+    }
+
+    #[test]
+    fn broad_source_area_candidates_cover_sibling_source_areas_without_existing_hits() {
+        let mut search_results = vec![SearchResult {
+            path: "schema_agent/core/workflow.py".to_string(),
+            role: FileRole::Source,
+            language: Some("python".to_string()),
+            score: 20.0,
+            reason: "lexical match".to_string(),
+        }];
+        let roles = [
+            (
+                "schema_agent/core/workflow.py".to_string(),
+                FileRole::Source,
+            ),
+            (
+                "schema_agent/nlp/dependency_parser.py".to_string(),
+                FileRole::Source,
+            ),
+            (
+                "schema_agent/nlp/entity_extractor.py".to_string(),
+                FileRole::Source,
+            ),
+            (
+                "schema_agent/text2r/db_executor.py".to_string(),
+                FileRole::Source,
+            ),
+            (
+                "schema_agent/text2r/normalizers/currency_normalizer.py".to_string(),
+                FileRole::Source,
+            ),
+            (
+                "examples/full_workflow_example.py".to_string(),
+                FileRole::Source,
+            ),
+            ("tests/test_workflow.py".to_string(), FileRole::Test),
+        ]
+        .into_iter()
+        .collect::<BTreeMap<_, _>>();
+
+        extend_broad_source_area_candidates(&mut search_results, &roles);
+        let paths = search_results
+            .iter()
+            .map(|result| result.path.as_str())
+            .collect::<Vec<_>>();
+
+        assert!(paths.contains(&"schema_agent/nlp/dependency_parser.py"));
+        assert!(paths.contains(&"schema_agent/nlp/entity_extractor.py"));
+        assert!(paths.contains(&"schema_agent/text2r/db_executor.py"));
+        assert!(!paths.contains(&"examples/full_workflow_example.py"));
+        assert_eq!(
+            search_results
+                .iter()
+                .find(|result| result.path == "schema_agent/nlp/dependency_parser.py")
+                .unwrap()
+                .reason,
+            "broad source area candidate for multi-area task"
+        );
+    }
+
+    #[test]
+    fn broad_source_area_candidates_enter_source_lexical_floor_at_controlled_score() {
+        let weighted_score = (BROAD_SOURCE_AREA_CANDIDATE_SCORE / 20.0).clamp(0.15, 0.95) * 0.80;
+
+        assert!(weighted_score >= 0.30);
     }
 
     #[test]
