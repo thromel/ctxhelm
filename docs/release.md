@@ -394,6 +394,15 @@ from `0.64708996` to `0.71851856`, while File Recall@10 remains
 `0.7089947`, Effective Validation Recall@10 remains `1.0`, and protected
 target miss-rate remains `0.2857143`.
 
+Phase 95 makes broad context-area packs progressive. The `Context areas`
+section now explains that agents should use source-free area hints for native
+reads and lists `Zero-selected areas to inspect next` with representative
+paths. The evidence artifact is
+`.planning/e2e/2026-05-31-phase95-progressive-area-pack-guidance.md`; the
+committed proof is `.ctxpack/e2e/phase95-progressive-area-pack-proof.json` and
+reports `releaseGate.decision = promote`. VeriSchema broad context-area recall
+remains `0.71851856`, and file/source/test/validation metrics remain stable.
+
 Latest optional real-client proof: Codex CLI `0.130.0` and Claude Code
 `2.1.158` both passed the smoke wrappers on 2026-05-30 with server-side
 `prepare_task` and `get_pack` evidence against an explicit repo path. See

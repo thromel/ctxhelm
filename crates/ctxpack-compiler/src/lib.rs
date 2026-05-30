@@ -1032,14 +1032,26 @@ mod tests {
         std::env::set_var("CTXPACK_HOME", &home);
 
         let mut plan = empty_plan_for_task(TaskType::BugFix);
-        plan.context_areas = vec![ctxpack_core::ContextArea {
-            area: "src".to_string(),
-            reason: "Broad task candidate area with 3 candidate path(s) and 1 selected path(s)."
-                .to_string(),
-            representative_paths: vec!["src/lib.rs".to_string()],
-            candidate_count: 3,
-            selected_count: 1,
-        }];
+        plan.context_areas = vec![
+            ctxpack_core::ContextArea {
+                area: "src".to_string(),
+                reason:
+                    "Broad task candidate area with 3 candidate path(s) and 1 selected path(s)."
+                        .to_string(),
+                representative_paths: vec!["src/lib.rs".to_string()],
+                candidate_count: 3,
+                selected_count: 1,
+            },
+            ctxpack_core::ContextArea {
+                area: "tests".to_string(),
+                reason:
+                    "Broad task candidate area with 2 candidate path(s) and 0 selected path(s)."
+                        .to_string(),
+                representative_paths: vec!["tests/lib_test.rs".to_string()],
+                candidate_count: 2,
+                selected_count: 0,
+            },
+        ];
 
         let pack = compile_context_pack_from_plan(
             &repo,
@@ -1054,8 +1066,10 @@ mod tests {
             .iter()
             .any(|section| section.kind == "context_areas"));
         assert!(markdown.contains("Context areas"));
+        assert!(markdown.contains("Zero-selected areas to inspect next"));
         assert!(markdown.contains("`src`"));
         assert!(markdown.contains("`src/lib.rs`"));
+        assert!(markdown.contains("`tests/lib_test.rs`"));
 
         std::env::remove_var("CTXPACK_HOME");
     }

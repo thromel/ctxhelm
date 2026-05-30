@@ -985,25 +985,61 @@ fn render_risk_flags(plan: &ContextPlan) -> String {
 }
 
 fn render_context_areas(plan: &ContextPlan) -> String {
-    plan.context_areas
+    let mut output = String::from(
+        "Use these source-free area hints for progressive native reads when the target-file list is too narrow for the task. Inspect representative paths from zero-selected areas first, then ask for a deeper pack only if those reads do not explain the change.\n\n",
+    );
+    let zero_selected = plan
+        .context_areas
         .iter()
-        .map(|area| {
-            let representatives = if area.representative_paths.is_empty() {
-                "none".to_string()
-            } else {
-                area.representative_paths
-                    .iter()
-                    .map(|path| format!("`{path}`"))
-                    .collect::<Vec<_>>()
-                    .join(", ")
-            };
-            format!(
-                "- `{}`: {} Representative paths: {}",
-                area.area, area.reason, representatives
-            )
-        })
-        .collect::<Vec<_>>()
-        .join("\n")
+        .filter(|area| area.selected_count == 0)
+        .collect::<Vec<_>>();
+    if !zero_selected.is_empty() {
+        output.push_str("Zero-selected areas to inspect next:\n");
+        output.push_str(
+            &zero_selected
+                .iter()
+                .take(6)
+                .map(|area| {
+                    let representatives = if area.representative_paths.is_empty() {
+                        "no representative paths".to_string()
+                    } else {
+                        area.representative_paths
+                            .iter()
+                            .map(|path| format!("`{path}`"))
+                            .collect::<Vec<_>>()
+                            .join(", ")
+                    };
+                    format!("- `{}`: {}", area.area, representatives)
+                })
+                .collect::<Vec<_>>()
+                .join("\n"),
+        );
+        output.push_str("\n\nAll surfaced areas:\n");
+    }
+
+    output.push_str(
+        &plan
+            .context_areas
+            .iter()
+            .map(|area| {
+                let representatives = if area.representative_paths.is_empty() {
+                    "none".to_string()
+                } else {
+                    area.representative_paths
+                        .iter()
+                        .map(|path| format!("`{path}`"))
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                };
+                format!(
+                    "- `{}`: {} Representative paths: {}",
+                    area.area, area.reason, representatives
+                )
+            })
+            .collect::<Vec<_>>()
+            .join("\n"),
+    );
+    output
 }
 
 fn render_selected_memory(plan: &ContextPlan, limit: usize) -> String {
