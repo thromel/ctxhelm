@@ -6,9 +6,9 @@
 
 **Goal:** Prove and improve retrieval quality across real repositories so production local embeddings, reranking, graph/test/history fixes, and learned fusion can beat lexical baseline while staying local-first and source-safe.
 
-**Status:** Active: 2026-05-22. Phases 61-67 complete; Phase 69 promoted default local retrieval under the channel-aware product-proof gate; Phase 70 refreshed Codex CLI and Claude Code real-client MCP proof; Phase 71 reduced ctxpack archive-artifact retrieval noise; Phase 72 broadened repeated-lift validation and improved validation-test recall seeding; Phase 73 committed a pinned broader fixed-corpus probe.
+**Status:** Active: 2026-05-22. Phases 61-67 complete; Phase 69 promoted default local retrieval under the channel-aware product-proof gate; Phase 70 refreshed Codex CLI and Claude Code real-client MCP proof; Phase 71 reduced ctxpack archive-artifact retrieval noise; Phase 72 broadened repeated-lift validation and improved validation-test recall seeding; Phase 73 committed a pinned broader fixed-corpus probe; Phase 74 separated protected retrieval-target misses from non-target protected pressure.
 
-**Phases planned:** Phases 61-65 plus Phase 66-73 production-readiness follow-ups, 7 planned phase files plus 5 proof follow-up artifacts
+**Phases planned:** Phases 61-65 plus Phase 66-74 production-readiness follow-ups, 7 planned phase files plus 6 proof follow-up artifacts
 
 **Planned capabilities:**
 
@@ -24,6 +24,7 @@
 - Archive artifact dampening for historical planning proof files.
 - Broader repeated-lift validation across additional local repositories, plus related-test budget and co-change/dependency test-seed fixes.
 - Pinned broader fixed-corpus probe config for repeatable optional production-readiness validation.
+- Protected-evidence diagnostics that separate retrieval-target misses from non-target exact/symbol pressure.
 
 **Active artifacts:**
 
@@ -44,11 +45,14 @@
 - Phase 72 E2E: `.planning/e2e/2026-05-30-phase72-broader-repeated-lift-validation.md`
 - Phase 73 E2E: `.planning/e2e/2026-05-30-phase73-broader-fixed-corpus-fixture.md`
 - Phase 73 config: `.planning/e2e/2026-05-30-phase73-broader-fixed-corpus-config.json`
+- Phase 74 E2E: `.planning/e2e/2026-05-30-phase74-protected-evidence-diagnostics.md`
+- Phase 74 proof: `.ctxpack/e2e/phase74-protected-evidence-diagnostics-proof.json`
+- Phase 74 broader proof: `.ctxpack/e2e/phase74-broader-protected-evidence-diagnostics-proof.json`
 
 **Current follow-up gaps:**
 
 - Broader four-repo proof still blocks promotion: VeriSchema validation-test Recall@10 improved from `0.2434` to `0.6614` but remains below the 0.80 floor, and RefactoringMiner matches rather than beats on the newest-5-commit probe.
-- Protected evidence miss-rate remains non-zero.
+- Protected retrieval-target miss-rate remains non-zero in the required proof and in the broader ctxpack/VeriSchema probes.
 - Parser/precision dependency misses remain a repeated source gap family.
 - The broad corpora now have a pinned optional fixture, but they still block and should not become the required release gate until the measured gaps improve.
 

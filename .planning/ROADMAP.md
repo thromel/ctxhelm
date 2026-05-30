@@ -276,6 +276,28 @@ Plans:
 - [x] `.planning/e2e/2026-05-30-phase73-broader-fixed-corpus-config.json`
 - [x] `.planning/e2e/2026-05-30-phase73-broader-fixed-corpus-fixture.md`
 
+### Phase 74: Protected Evidence Diagnostics
+
+**Goal**: Maintainers can tell whether protected-evidence misses are actual
+retrievable target misses or non-target exact/symbol pressure.
+
+**Depends on**: Phase 73
+
+**Requirements**: PROOF-01, PROOF-02, RANK-02
+
+**Success Criteria**:
+
+1. Protected evidence files include source-free retrieval-target status and file role.
+2. Protected evidence summaries report total, retrieval-target, and non-target miss counts.
+3. Product-proof corpus verdicts expose protected retrieval-target miss-rate.
+4. Required and broader proofs document the remaining target misses without changing retrieval ranking.
+
+**Evidence**:
+
+- [x] `.planning/e2e/2026-05-30-phase74-protected-evidence-diagnostics.md`
+- [x] `.ctxpack/e2e/phase74-protected-evidence-diagnostics-proof.json`
+- [x] `.ctxpack/e2e/phase74-broader-protected-evidence-diagnostics-proof.json`
+
 ## Requirement Coverage
 
 | Requirement | Phase |
@@ -316,8 +338,11 @@ Plans:
 | GAP-03 | Phase 72 |
 | PROOF-01 | Phase 73 |
 | PROOF-02 | Phase 73 |
+| PROOF-01 | Phase 74 |
+| PROOF-02 | Phase 74 |
+| RANK-02 | Phase 74 |
 
-**Coverage:** 20/20 v2.5 requirements mapped, with Phases 66-73 as measured follow-ups for proof/eval correctness gaps, real-client evidence, archive-noise reduction, broader validation, and fixed-corpus reproducibility. No orphaned v2.5 requirements.
+**Coverage:** 20/20 v2.5 requirements mapped, with Phases 66-74 as measured follow-ups for proof/eval correctness gaps, real-client evidence, archive-noise reduction, broader validation, fixed-corpus reproducibility, and protected-evidence diagnostics. No orphaned v2.5 requirements.
 
 ## Progress
 

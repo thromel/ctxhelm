@@ -378,7 +378,16 @@ context, and validation-test recall is evaluated through the dedicated
 | Corpus | Variant | Status | ctxpack Recall@10 | Lexical Recall@10 | Delta | Test Recall@10 |
 | --- | --- | --- | ---: | ---: | ---: | ---: |
 | RefactoringMiner | `ctxpack_default` | `beat` | 0.778 | 0.741 | +0.037 | 1.000 |
-| ctxpack | `ctxpack_default` | `beat` | 0.519 | 0.481 | +0.039 | 1.000 |
+| ctxpack | `ctxpack_default` | `beat` | 0.500 | 0.429 | +0.071 | 1.000 |
+
+Phase 74 adds protected-evidence diagnostics to this proof. The original
+overall protected miss-rate remains visible, but the report now also separates
+retrieval-target protected misses from non-target protected pressure. On the
+current required proof, RefactoringMiner has protected target miss-rate@10
+0.059 and ctxpack has 0.133. The broader fixed-corpus fixture still blocks
+promotion: RefactoringMiner and ReAgent have zero protected target misses on
+that pinned probe, but ctxpack and VeriSchema still have target misses and
+VeriSchema validation-test Recall@10 remains below the 0.80 floor.
 
 Recommendation today:
 
@@ -391,6 +400,9 @@ Recommendation today:
 - Phase 71 dampens historical planning archive artifacts so they stay searchable
   without crowding active source/current planning evidence. On the current
   ctxpack history, protected miss-rate@10 improved from 0.250 to 0.163.
+- Phase 74 makes protected-evidence pressure source-free and target-aware, so
+  follow-up ranking work can focus on protected retrieval-target misses instead
+  of total non-target exact/symbol candidates.
 - Keep `local_metadata_reranked` eval-only until named regressions and protected
   evidence behavior clear the gate.
 - Keep `local_fastembed` opt-in for experiments and conceptual queries; it is

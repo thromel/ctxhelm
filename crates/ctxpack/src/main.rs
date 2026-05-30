@@ -4208,7 +4208,7 @@ fn render_semantic_precision_gate_report(report: &SemanticPrecisionGateReport) -
     for variant in &report.variants {
         let metrics = variant.metrics.as_ref();
         output.push_str(&format!(
-            "- `{}` status `{:?}` semantic `{}` precision `{}` reranker `{}` recall@K `{:?}` precision@K `{:?}` testRecall@10 `{:?}` protectedEvidenceMissRate@10 `{:?}` runtimeMs `{:?}` tokenEfficiency `{:?}` provider `{}` — {}\n",
+            "- `{}` status `{:?}` semantic `{}` precision `{}` reranker `{}` recall@K `{:?}` precision@K `{:?}` testRecall@10 `{:?}` protectedEvidenceMissRate@10 `{:?}` protectedEvidenceTargetMissRate@10 `{:?}` runtimeMs `{:?}` tokenEfficiency `{:?}` provider `{}` — {}\n",
             variant.name,
             variant.status,
             variant.semantic_enabled,
@@ -4218,6 +4218,7 @@ fn render_semantic_precision_gate_report(report: &SemanticPrecisionGateReport) -
             metrics.map(|metric| metric.precision_at_k),
             variant.test_recall_at_10,
             variant.protected_evidence_miss_rate_at_10,
+            variant.protected_evidence_target_miss_rate_at_10,
             variant.runtime_millis,
             variant.token_efficiency,
             variant.provider_status,
@@ -4350,7 +4351,7 @@ fn render_historical_eval_report(report: &HistoricalEvalReport) -> String {
     let mut output = String::from("# ctxpack Historical Retrieval Eval\n\n");
     output.push_str("This source-free report replays recent commit subjects through `prepare_task` and compares recommended context paths with the safe files changed by each commit.\n\n");
     output.push_str(&format!(
-        "- Eval range ID: `{}`\n- Repo ID: `{}`\n- Evaluated commits: `{}`\n- Budget: `{:?}`\n- Effective limit: `{}`\n- Ranking budget K: `{}`\n- Effective mode: `{:?}`\n- Effective target agent: `{}`\n- Semantic enabled: `{}`\n- Semantic provider: `{}`\n- Local metadata reranker: `{}`\n- Base: `{}`\n- Head: `{}`\n- File Recall@5: `{:.2}`\n- File Recall@10: `{:.2}`\n- Lexical Baseline Recall@5: `{:.2}`\n- Lexical Baseline Recall@10: `{:.2}`\n- ctxpack Lift@5: `{:+.2}`\n- ctxpack Lift@10: `{:+.2}`\n- Recall@K: `{:.2}`\n- Precision@K: `{:.2}`\n- MRR@K: `{:.2}`\n- Lexical Recall@K: `{:.2}`\n- No-context Recall@K: `{:.2}`\n- ctxpack Lift@K: `{:+.2}`\n- ctxpack Lift vs No-context@K: `{:+.2}`\n- Source Recall@5: `{:.2}`\n- Source Recall@10: `{:.2}`\n- Test Recall@5: `{:.2}`\n- Test Recall@10: `{:.2}`\n- Test recommendation rate: `{:.2}`\n- Average recommended context files: `{:.2}`\n- Protected evidence candidates: `{}`\n- Protected evidence missed@10: `{}`\n- Protected evidence miss rate@10: `{:.2}`\n- Runtime total ms: `{}`\n- Runtime commit-loop ms: `{}`\n- Runtime overhead ms: `{}`\n- Runtime average commit ms: `{:.2}`\n- Runtime git sample ms: `{}`\n- Runtime ranking ms: `{}`\n- Runtime pack/compiler ms: `{}`\n- Eval cache hits: `{}`\n- Eval cache misses: `{}`\n- Eval parallelism: `{}`\n- Low-information commits: `{}`\n- Privacy: local-only `{}`\n\n",
+        "- Eval range ID: `{}`\n- Repo ID: `{}`\n- Evaluated commits: `{}`\n- Budget: `{:?}`\n- Effective limit: `{}`\n- Ranking budget K: `{}`\n- Effective mode: `{:?}`\n- Effective target agent: `{}`\n- Semantic enabled: `{}`\n- Semantic provider: `{}`\n- Local metadata reranker: `{}`\n- Base: `{}`\n- Head: `{}`\n- File Recall@5: `{:.2}`\n- File Recall@10: `{:.2}`\n- Lexical Baseline Recall@5: `{:.2}`\n- Lexical Baseline Recall@10: `{:.2}`\n- ctxpack Lift@5: `{:+.2}`\n- ctxpack Lift@10: `{:+.2}`\n- Recall@K: `{:.2}`\n- Precision@K: `{:.2}`\n- MRR@K: `{:.2}`\n- Lexical Recall@K: `{:.2}`\n- No-context Recall@K: `{:.2}`\n- ctxpack Lift@K: `{:+.2}`\n- ctxpack Lift vs No-context@K: `{:+.2}`\n- Source Recall@5: `{:.2}`\n- Source Recall@10: `{:.2}`\n- Test Recall@5: `{:.2}`\n- Test Recall@10: `{:.2}`\n- Test recommendation rate: `{:.2}`\n- Average recommended context files: `{:.2}`\n- Protected evidence candidates: `{}`\n- Protected evidence missed@10: `{}`\n- Protected evidence miss rate@10: `{:.2}`\n- Protected retrieval-target evidence candidates: `{}`\n- Protected retrieval-target evidence missed@10: `{}`\n- Protected retrieval-target evidence miss rate@10: `{:.2}`\n- Runtime total ms: `{}`\n- Runtime commit-loop ms: `{}`\n- Runtime overhead ms: `{}`\n- Runtime average commit ms: `{:.2}`\n- Runtime git sample ms: `{}`\n- Runtime ranking ms: `{}`\n- Runtime pack/compiler ms: `{}`\n- Eval cache hits: `{}`\n- Eval cache misses: `{}`\n- Eval parallelism: `{}`\n- Low-information commits: `{}`\n- Privacy: local-only `{}`\n\n",
         report.eval_range_id,
         report.repo_id,
         report.evaluated_commits,
@@ -4390,6 +4391,9 @@ fn render_historical_eval_report(report: &HistoricalEvalReport) -> String {
         report.protected_evidence.candidate_count,
         report.protected_evidence.missed_at_10_count,
         report.protected_evidence.miss_rate_at_10,
+        report.protected_evidence.retrieval_target_candidate_count,
+        report.protected_evidence.retrieval_target_missed_at_10_count,
+        report.protected_evidence.retrieval_target_miss_rate_at_10,
         report.runtime.total_millis,
         report.runtime.commit_millis,
         report.runtime.overhead_millis,
@@ -4871,7 +4875,7 @@ fn render_product_proof_report(report: &ProductProofReport) -> String {
     } else {
         for verdict in &report.release_gate.corpus_verdicts {
             output.push_str(&format!(
-                "- `{}` variant `{}`: status `{:?}`, recall@10 `{:.3}`, lexical recall@10 `{:.3}`, delta `{:+.3}`, test recall@10 `{:.3}`, protected miss-rate@10 `{:.3}`, runtime `{}` ms",
+                "- `{}` variant `{}`: status `{:?}`, recall@10 `{:.3}`, lexical recall@10 `{:.3}`, delta `{:+.3}`, test recall@10 `{:.3}`, protected miss-rate@10 `{:.3}` target `{:.3}`, runtime `{}` ms",
                 verdict.repository,
                 verdict.variant,
                 verdict.status,
@@ -4880,6 +4884,7 @@ fn render_product_proof_report(report: &ProductProofReport) -> String {
                 verdict.lexical_delta_at_10,
                 verdict.test_recall_at_10,
                 verdict.protected_evidence_miss_rate_at_10,
+                verdict.protected_evidence_target_miss_rate_at_10,
                 verdict.runtime_millis
             ));
             if !verdict.notes.is_empty() {

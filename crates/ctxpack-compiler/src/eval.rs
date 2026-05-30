@@ -234,6 +234,8 @@ pub struct SemanticPrecisionVariant {
     pub cache_misses: Option<usize>,
     pub token_efficiency: Option<f32>,
     pub protected_evidence_miss_rate_at_10: Option<f32>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub protected_evidence_target_miss_rate_at_10: Option<f32>,
     pub provider_status: String,
     pub note: String,
 }
@@ -428,6 +430,8 @@ pub struct ProductProofCorpusVerdict {
     pub context_delta_at_10: f32,
     pub test_recall_at_10: f32,
     pub protected_evidence_miss_rate_at_10: f32,
+    #[serde(default)]
+    pub protected_evidence_target_miss_rate_at_10: f32,
     pub runtime_millis: u64,
     pub notes: Vec<String>,
 }
@@ -524,6 +528,16 @@ pub struct ProtectedEvidenceSummary {
     pub candidate_count: usize,
     pub missed_at_10_count: usize,
     pub miss_rate_at_10: f32,
+    #[serde(default)]
+    pub retrieval_target_candidate_count: usize,
+    #[serde(default)]
+    pub retrieval_target_missed_at_10_count: usize,
+    #[serde(default)]
+    pub retrieval_target_miss_rate_at_10: f32,
+    #[serde(default)]
+    pub non_target_candidate_count: usize,
+    #[serde(default)]
+    pub non_target_missed_at_10_count: usize,
     pub by_signal: Vec<ProtectedEvidenceSignalSummary>,
 }
 
@@ -533,6 +547,10 @@ pub struct ProtectedEvidenceSignalSummary {
     pub signal: RetrievalSignalKind,
     pub candidate_count: usize,
     pub missed_at_10_count: usize,
+    #[serde(default)]
+    pub retrieval_target_candidate_count: usize,
+    #[serde(default)]
+    pub retrieval_target_missed_at_10_count: usize,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -791,6 +809,10 @@ pub struct HistoricalProtectedEvidenceFile {
     pub path: String,
     pub signals: Vec<RetrievalSignalKind>,
     pub selected_at_10: bool,
+    #[serde(default)]
+    pub retrieval_target: bool,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub role: Option<FileRole>,
 }
 
 pub fn load_benchmark_suite_config(
@@ -1073,6 +1095,7 @@ fn product_proof_corpus_verdict(repo: &BenchmarkRepoReport) -> ProductProofCorpu
             context_delta_at_10: 0.0,
             test_recall_at_10: 0.0,
             protected_evidence_miss_rate_at_10: 1.0,
+            protected_evidence_target_miss_rate_at_10: 1.0,
             runtime_millis: 0,
             notes: vec![repo
                 .error
@@ -1110,8 +1133,9 @@ fn product_proof_corpus_verdict(repo: &BenchmarkRepoReport) -> ProductProofCorpu
     }
     if report.protected_evidence.miss_rate_at_10 > 0.0 {
         notes.push(format!(
-            "protected evidence miss rate at 10 is {:.3}",
-            report.protected_evidence.miss_rate_at_10
+            "protected evidence miss rate at 10 is {:.3} overall, {:.3} for retrieval targets",
+            report.protected_evidence.miss_rate_at_10,
+            report.protected_evidence.retrieval_target_miss_rate_at_10
         ));
     }
     ProductProofCorpusVerdict {
@@ -1126,6 +1150,9 @@ fn product_proof_corpus_verdict(repo: &BenchmarkRepoReport) -> ProductProofCorpu
         context_delta_at_10: context_comparison.delta,
         test_recall_at_10: report.test_recall_at_10,
         protected_evidence_miss_rate_at_10: report.protected_evidence.miss_rate_at_10,
+        protected_evidence_target_miss_rate_at_10: report
+            .protected_evidence
+            .retrieval_target_miss_rate_at_10,
         runtime_millis: report.runtime.total_millis,
         notes,
     }
@@ -1794,6 +1821,9 @@ fn gate_variant(
         cache_misses: Some(eval.runtime.cache_misses),
         token_efficiency,
         protected_evidence_miss_rate_at_10: Some(eval.protected_evidence.miss_rate_at_10),
+        protected_evidence_target_miss_rate_at_10: Some(
+            eval.protected_evidence.retrieval_target_miss_rate_at_10,
+        ),
         provider_status: provider_status.to_string(),
         note: note.to_string(),
     }
@@ -2824,10 +2854,17 @@ fn evaluate_historical_commit_sample(
     };
     let lexical_baseline_files = lexical_baseline_context_files(eval_root, &task, ranking_budget)?;
     let retrieval_target_files = retrieval_target_files(eval_root, &sample.safe_changed_files);
+    let retrieval_target_paths = retrieval_target_files
+        .iter()
+        .cloned()
+        .collect::<BTreeSet<_>>();
+    let candidate_roles_by_path = candidate_roles_by_path(&plan);
     let protected_evidence = protected_evidence_files(
         &signals_by_path,
         &budgeted_protected_evidence_paths(&plan, 10),
         &recommended_context_files,
+        &retrieval_target_paths,
+        &candidate_roles_by_path,
         10,
     );
     let file_hits_at_5 = changed_file_hits(&retrieval_target_files, &recommended_context_files, 5);
@@ -3744,6 +3781,8 @@ fn protected_evidence_files(
     signals_by_path: &BTreeMap<String, Vec<RetrievalSignalKind>>,
     protected_budget_paths: &BTreeSet<String>,
     recommended_context_files: &[String],
+    retrieval_target_paths: &BTreeSet<String>,
+    candidate_roles_by_path: &BTreeMap<String, FileRole>,
     limit: usize,
 ) -> Vec<HistoricalProtectedEvidenceFile> {
     let selected = recommended_context_files
@@ -3764,9 +3803,22 @@ fn protected_evidence_files(
                 path: path.clone(),
                 signals: protected_signals,
                 selected_at_10: selected.contains(path),
+                retrieval_target: retrieval_target_paths.contains(path),
+                role: candidate_roles_by_path.get(path).cloned(),
             })
         })
         .collect()
+}
+
+fn candidate_roles_by_path(plan: &ContextPlan) -> BTreeMap<String, FileRole> {
+    let mut roles = BTreeMap::new();
+    for candidate in &plan.retrieval_candidates {
+        let (Some(path), Some(role)) = (&candidate.path, candidate.role.clone()) else {
+            continue;
+        };
+        roles.entry(path.clone()).or_insert(role);
+    }
+    roles
 }
 
 fn budgeted_protected_evidence_paths(plan: &ContextPlan, limit: usize) -> BTreeSet<String> {
@@ -3798,12 +3850,27 @@ fn budgeted_protected_evidence_paths(plan: &ContextPlan, limit: usize) -> BTreeS
 fn protected_evidence_summary(commits: &[HistoricalCommitEval]) -> ProtectedEvidenceSummary {
     let mut candidate_count = 0usize;
     let mut missed_at_10_count = 0usize;
+    let mut retrieval_target_candidate_count = 0usize;
+    let mut retrieval_target_missed_at_10_count = 0usize;
+    let mut non_target_candidate_count = 0usize;
+    let mut non_target_missed_at_10_count = 0usize;
 
     for commit in commits {
         for evidence in &commit.protected_evidence {
             candidate_count += 1;
             if !evidence.selected_at_10 {
                 missed_at_10_count += 1;
+            }
+            if evidence.retrieval_target {
+                retrieval_target_candidate_count += 1;
+                if !evidence.selected_at_10 {
+                    retrieval_target_missed_at_10_count += 1;
+                }
+            } else {
+                non_target_candidate_count += 1;
+                if !evidence.selected_at_10 {
+                    non_target_missed_at_10_count += 1;
+                }
             }
         }
     }
@@ -3816,17 +3883,34 @@ fn protected_evidence_summary(commits: &[HistoricalCommitEval]) -> ProtectedEvid
         } else {
             missed_at_10_count as f32 / candidate_count as f32
         },
+        retrieval_target_candidate_count,
+        retrieval_target_missed_at_10_count,
+        retrieval_target_miss_rate_at_10: if retrieval_target_candidate_count == 0 {
+            0.0
+        } else {
+            retrieval_target_missed_at_10_count as f32 / retrieval_target_candidate_count as f32
+        },
+        non_target_candidate_count,
+        non_target_missed_at_10_count,
         by_signal: protected_evidence_signal_order()
             .into_iter()
             .map(|signal| {
                 let mut candidate_count = 0usize;
                 let mut missed_at_10_count = 0usize;
+                let mut retrieval_target_candidate_count = 0usize;
+                let mut retrieval_target_missed_at_10_count = 0usize;
                 for commit in commits {
                     for evidence in &commit.protected_evidence {
                         if evidence.signals.contains(&signal) {
                             candidate_count += 1;
                             if !evidence.selected_at_10 {
                                 missed_at_10_count += 1;
+                            }
+                            if evidence.retrieval_target {
+                                retrieval_target_candidate_count += 1;
+                                if !evidence.selected_at_10 {
+                                    retrieval_target_missed_at_10_count += 1;
+                                }
                             }
                         }
                     }
@@ -3835,6 +3919,8 @@ fn protected_evidence_summary(commits: &[HistoricalCommitEval]) -> ProtectedEvid
                     signal,
                     candidate_count,
                     missed_at_10_count,
+                    retrieval_target_candidate_count,
+                    retrieval_target_missed_at_10_count,
                 }
             })
             .collect(),
@@ -4746,12 +4832,16 @@ mod tests {
             path: "src/exact.ts".to_string(),
             signals: vec![RetrievalSignalKind::Lexical],
             selected_at_10: true,
+            retrieval_target: true,
+            role: Some(FileRole::Source),
         }];
         let mut variant = empty_historical_eval_report("same");
         variant.commits[0].protected_evidence = vec![HistoricalProtectedEvidenceFile {
             path: "src/exact.ts".to_string(),
             signals: vec![RetrievalSignalKind::Lexical],
             selected_at_10: false,
+            retrieval_target: true,
+            role: Some(FileRole::Source),
         }];
 
         let regressions = protected_evidence_regressions(&default, &variant, "local_semantic");
@@ -4783,11 +4873,15 @@ mod tests {
                     path: "src/exact.ts".to_string(),
                     signals: vec![RetrievalSignalKind::Lexical],
                     selected_at_10: true,
+                    retrieval_target: true,
+                    role: Some(FileRole::Source),
                 },
                 HistoricalProtectedEvidenceFile {
                     path: "src/symbol.ts".to_string(),
                     signals: vec![RetrievalSignalKind::Symbol],
                     selected_at_10: false,
+                    retrieval_target: false,
+                    role: Some(FileRole::Source),
                 },
             ],
             file_hits_at_5: Vec::new(),
@@ -4813,6 +4907,11 @@ mod tests {
         assert_eq!(summary.candidate_count, 2);
         assert_eq!(summary.missed_at_10_count, 1);
         assert_eq!(summary.miss_rate_at_10, 0.5);
+        assert_eq!(summary.retrieval_target_candidate_count, 1);
+        assert_eq!(summary.retrieval_target_missed_at_10_count, 0);
+        assert_eq!(summary.retrieval_target_miss_rate_at_10, 0.0);
+        assert_eq!(summary.non_target_candidate_count, 1);
+        assert_eq!(summary.non_target_missed_at_10_count, 1);
         assert_eq!(
             summary
                 .by_signal
@@ -4822,10 +4921,19 @@ mod tests {
                 .missed_at_10_count,
             1
         );
+        assert_eq!(
+            summary
+                .by_signal
+                .iter()
+                .find(|row| row.signal == RetrievalSignalKind::Lexical)
+                .unwrap()
+                .retrieval_target_candidate_count,
+            1
+        );
     }
 
     #[test]
-    fn protected_evidence_files_only_counts_budgeted_exact_candidates() {
+    fn protected_evidence_files_labels_target_status_and_role() {
         let mut signals_by_path = BTreeMap::new();
         signals_by_path.insert(
             "src/protected.ts".to_string(),
@@ -4836,17 +4944,24 @@ mod tests {
             vec![RetrievalSignalKind::Lexical],
         );
         let protected_budget_paths = BTreeSet::from(["src/protected.ts".to_string()]);
+        let retrieval_target_paths = BTreeSet::from(["src/protected.ts".to_string()]);
+        let candidate_roles_by_path =
+            BTreeMap::from([("src/protected.ts".to_string(), FileRole::Source)]);
 
         let files = protected_evidence_files(
             &signals_by_path,
             &protected_budget_paths,
             &["src/protected.ts".to_string()],
+            &retrieval_target_paths,
+            &candidate_roles_by_path,
             10,
         );
 
         assert_eq!(files.len(), 1);
         assert_eq!(files[0].path, "src/protected.ts");
         assert!(files[0].selected_at_10);
+        assert!(files[0].retrieval_target);
+        assert_eq!(files[0].role, Some(FileRole::Source));
     }
 
     #[test]
@@ -4966,6 +5081,7 @@ mod tests {
             cache_misses: Some(0),
             token_efficiency: Some(1.0),
             protected_evidence_miss_rate_at_10: Some(0.0),
+            protected_evidence_target_miss_rate_at_10: Some(0.0),
             provider_status: "evaluated".to_string(),
             note: "test variant".to_string(),
         }
