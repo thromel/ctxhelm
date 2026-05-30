@@ -1,16 +1,16 @@
 use crate::packs::pack_repo_id;
 use crate::planning::{
-    context_area_for_path, is_low_information_task, is_multi_area_task, normalized_target_agent,
+    is_low_information_task, is_multi_area_task, normalized_target_agent,
     prepare_context_plan_with_paths_history_and_semantic,
     prepare_context_plan_with_paths_history_mode_and_semantic, HistoryMode,
 };
 use crate::policy::{provider_policy_report, reranker_decision};
 use ctxpack_core::{
-    CandidateFeatureExport, CandidateFeatureLabel, CandidateFeatureRow, CandidateFeatureSource,
-    ContextArea, ContextPack, ContextPlan, Diagnostic, DiagnosticSeverity, EvalTrace, FileRole,
-    PackBudget, PolicyQualityReport, PrecisionStatusReport, PrivacyStatus, ProviderDecisionStatus,
-    ProviderPolicyReport, QueryConstructionTrace, RetrievalCandidate, RetrievalCandidateKind,
-    RetrievalHealthGapFamily, RetrievalHealthMetric, RetrievalHealthReport,
+    context_area_for_path, CandidateFeatureExport, CandidateFeatureLabel, CandidateFeatureRow,
+    CandidateFeatureSource, ContextArea, ContextPack, ContextPlan, Diagnostic, DiagnosticSeverity,
+    EvalTrace, FileRole, PackBudget, PolicyQualityReport, PrecisionStatusReport, PrivacyStatus,
+    ProviderDecisionStatus, ProviderPolicyReport, QueryConstructionTrace, RetrievalCandidate,
+    RetrievalCandidateKind, RetrievalHealthGapFamily, RetrievalHealthMetric, RetrievalHealthReport,
     RetrievalHealthSignalContribution, RetrievalHealthTokenRoi, RetrievalSignalKind, TaskType,
 };
 use ctxpack_index::{

@@ -403,6 +403,18 @@ committed proof is `.ctxpack/e2e/phase95-progressive-area-pack-proof.json` and
 reports `releaseGate.decision = promote`. VeriSchema broad context-area recall
 remains `0.71851856`, and file/source/test/validation metrics remain stable.
 
+Phase 96 makes broad context-area guidance MCP-readable. Each surfaced
+`contextArea` now includes a source-free `resourceUri`, the static
+`ctxpack://repo/context-areas` resource lists safe area summaries, and dynamic
+`ctxpack://repo/context-area/{encoded-area}` resources return representative
+paths and role counts without source text. The evidence artifact is
+`.planning/e2e/2026-05-31-phase96-context-area-resources.md`; the committed
+proof is `.ctxpack/e2e/phase96-context-area-resources-proof.json` and reports
+`releaseGate.decision = promote`. VeriSchema broad context-area recall remains
+`0.71851856`, File Recall@10 remains `0.18449473`, Source Recall@10 remains
+`0.31067252`, Test Recall@10 remains `0.7089947`, Effective Validation
+Recall@10 remains `1.0`, and the six-tool MCP surface is unchanged.
+
 Latest optional real-client proof: Codex CLI `0.130.0` and Claude Code
 `2.1.158` both passed the smoke wrappers on 2026-05-30 with server-side
 `prepare_task` and `get_pack` evidence against an explicit repo path. See

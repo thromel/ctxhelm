@@ -1009,7 +1009,12 @@ fn render_context_areas(plan: &ContextPlan) -> String {
                             .collect::<Vec<_>>()
                             .join(", ")
                     };
-                    format!("- `{}`: {}", area.area, representatives)
+                    let resource = if area.resource_uri.is_empty() {
+                        "no area resource".to_string()
+                    } else {
+                        format!("resource `{}`", area.resource_uri)
+                    };
+                    format!("- `{}`: {} ({})", area.area, representatives, resource)
                 })
                 .collect::<Vec<_>>()
                 .join("\n"),
@@ -1031,9 +1036,14 @@ fn render_context_areas(plan: &ContextPlan) -> String {
                         .collect::<Vec<_>>()
                         .join(", ")
                 };
+                let resource = if area.resource_uri.is_empty() {
+                    "none".to_string()
+                } else {
+                    format!("`{}`", area.resource_uri)
+                };
                 format!(
-                    "- `{}`: {} Representative paths: {}",
-                    area.area, area.reason, representatives
+                    "- `{}`: {} Representative paths: {}. Resource: {}",
+                    area.area, area.reason, representatives, resource
                 )
             })
             .collect::<Vec<_>>()

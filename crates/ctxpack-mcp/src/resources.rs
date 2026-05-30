@@ -1,6 +1,9 @@
 use crate::protocol::RpcError;
 use ctxpack_compiler::{compile_context_pack_from_plan_for_agent, render_pack_markdown};
-use ctxpack_core::{ContextPack, RepoRoot};
+use ctxpack_core::{
+    context_area_for_path, context_area_resource_uri, decode_context_area_resource_uri,
+    ContextPack, FileRole, RepoRoot,
+};
 use ctxpack_index::{
     dependency_edges, list_memory_cards, load_or_refresh_inventory, read_safe_source,
     shared_artifact_manifest_path, symbol_search, test_map, workspace_inventory_status,
@@ -41,6 +44,10 @@ pub(crate) fn read_resource(params: Value) -> Result<Value, RpcError> {
             let repo = discover_repo(None)?;
             resource_json(&repo_memory(&repo.path)?)
         }
+        "ctxpack://repo/context-areas" => {
+            let repo = discover_repo(None)?;
+            resource_json(&repo_context_areas(&repo.path)?)
+        }
         "ctxpack://workspace/status" => {
             let repo = discover_repo(None)?;
             resource_json(&workspace_status_resource(&repo.path)?)
@@ -50,6 +57,10 @@ pub(crate) fn read_resource(params: Value) -> Result<Value, RpcError> {
             resource_json(&shared_artifacts_resource(&repo.path)?)
         }
         "ctxpack://pack/guide" => pack_guide_markdown(),
+        uri if uri.starts_with("ctxpack://repo/context-area/") => {
+            let repo = discover_repo(None)?;
+            resource_json(&repo_context_area(&repo.path, uri)?)
+        }
         uri if uri.starts_with("ctxpack://pack/") => read_pack_resource(uri)?,
         uri if uri.starts_with("ctxpack://file/") => {
             let repo = discover_repo(None)?;
@@ -263,6 +274,137 @@ fn repo_memory(repo: &Path) -> Result<Value, RpcError> {
             "remoteRerankingUsed": false
         }
     }))
+}
+
+fn repo_context_areas(repo: &Path) -> Result<Value, RpcError> {
+    let report = load_or_refresh_inventory(repo, &InventoryOptions::default())
+        .map_err(|error| RpcError::invalid_params(format!("failed to load inventory: {error}")))?;
+    let mut areas = BTreeMap::<String, AreaResourceAccumulator>::new();
+    for file in &report.inventory.files {
+        if !context_area_resource_role(&file.role) {
+            continue;
+        }
+        areas
+            .entry(context_area_for_path(&file.path))
+            .or_default()
+            .record(&file.path, &file.role);
+    }
+
+    let areas = areas
+        .into_iter()
+        .map(|(area, accumulator)| {
+            json!({
+                "area": area,
+                "resourceUri": context_area_resource_uri(&area),
+                "pathCount": accumulator.path_count,
+                "roleCounts": accumulator.role_counts,
+                "representativePaths": accumulator.representative_paths,
+                "sourceTextLogged": false
+            })
+        })
+        .collect::<Vec<_>>();
+
+    Ok(json!({
+        "repoId": report.inventory.repo_id,
+        "areaCount": areas.len(),
+        "areas": areas,
+        "diagnostics": report.diagnostics,
+        "cacheStatus": report.cache_status,
+        "sourceTextLogged": false,
+        "privacyStatus": {
+            "localOnly": true,
+            "remoteEmbeddingsUsed": false,
+            "remoteRerankingUsed": false
+        }
+    }))
+}
+
+fn repo_context_area(repo: &Path, uri: &str) -> Result<Value, RpcError> {
+    let Some(area) = decode_context_area_resource_uri(uri) else {
+        return Err(RpcError::invalid_params(format!(
+            "invalid context area resource URI: {uri}"
+        )));
+    };
+    let report = load_or_refresh_inventory(repo, &InventoryOptions::default())
+        .map_err(|error| RpcError::invalid_params(format!("failed to load inventory: {error}")))?;
+    let mut accumulator = AreaResourceAccumulator::default();
+    for file in &report.inventory.files {
+        if !context_area_resource_role(&file.role) {
+            continue;
+        }
+        if context_area_for_path(&file.path) == area {
+            accumulator.record(&file.path, &file.role);
+        }
+    }
+
+    let diagnostics = if accumulator.path_count == 0 {
+        json!([{
+            "code": "context_area_not_found",
+            "severity": "warning",
+            "message": "No safe inventory paths are currently grouped under this context area.",
+            "paths": [],
+            "count": 0
+        }])
+    } else {
+        json!([])
+    };
+
+    Ok(json!({
+        "repoId": report.inventory.repo_id,
+        "area": area,
+        "resourceUri": context_area_resource_uri(&area),
+        "pathCount": accumulator.path_count,
+        "roleCounts": accumulator.role_counts,
+        "representativePaths": accumulator.representative_paths,
+        "sourceTextLogged": false,
+        "diagnostics": diagnostics,
+        "privacyStatus": {
+            "localOnly": true,
+            "remoteEmbeddingsUsed": false,
+            "remoteRerankingUsed": false
+        }
+    }))
+}
+
+#[derive(Default)]
+struct AreaResourceAccumulator {
+    path_count: usize,
+    role_counts: BTreeMap<String, usize>,
+    representative_paths: Vec<String>,
+}
+
+impl AreaResourceAccumulator {
+    fn record(&mut self, path: &str, role: &FileRole) {
+        self.path_count += 1;
+        *self
+            .role_counts
+            .entry(context_area_role_key(role))
+            .or_default() += 1;
+        if self.representative_paths.len() < 20 {
+            self.representative_paths.push(path.to_string());
+        }
+    }
+}
+
+fn context_area_resource_role(role: &FileRole) -> bool {
+    matches!(
+        role,
+        FileRole::Source | FileRole::Test | FileRole::Config | FileRole::Schema | FileRole::Docs
+    )
+}
+
+fn context_area_role_key(role: &FileRole) -> String {
+    match role {
+        FileRole::Source => "source",
+        FileRole::Test => "test",
+        FileRole::Config => "config",
+        FileRole::Schema => "schema",
+        FileRole::Docs => "docs",
+        FileRole::Generated => "generated",
+        FileRole::Sensitive => "sensitive",
+        FileRole::Unknown => "unknown",
+    }
+    .to_string()
 }
 
 fn workspace_status_resource(repo: &Path) -> Result<Value, RpcError> {

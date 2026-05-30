@@ -211,14 +211,15 @@ mod tests {
         .unwrap();
         let resources = response["result"]["resources"].as_array().unwrap();
 
-        assert_eq!(resources.len(), 7);
+        assert_eq!(resources.len(), 8);
         assert_eq!(resources[0]["uri"], "ctxpack://repo/summary");
         assert_eq!(resources[1]["uri"], "ctxpack://repo/test-map");
         assert_eq!(resources[2]["uri"], "ctxpack://repo/dependency-graph");
         assert_eq!(resources[3]["uri"], "ctxpack://repo/memory");
-        assert_eq!(resources[4]["uri"], "ctxpack://workspace/status");
-        assert_eq!(resources[5]["uri"], "ctxpack://workspace/shared-artifacts");
-        assert_eq!(resources[6]["uri"], "ctxpack://pack/guide");
+        assert_eq!(resources[4]["uri"], "ctxpack://repo/context-areas");
+        assert_eq!(resources[5]["uri"], "ctxpack://workspace/status");
+        assert_eq!(resources[6]["uri"], "ctxpack://workspace/shared-artifacts");
+        assert_eq!(resources[7]["uri"], "ctxpack://pack/guide");
     }
 
     #[test]
@@ -262,6 +263,7 @@ mod tests {
                 "ctxpack://repo/test-map",
                 "ctxpack://repo/dependency-graph",
                 "ctxpack://repo/memory",
+                "ctxpack://repo/context-areas",
                 "ctxpack://workspace/status",
                 "ctxpack://workspace/shared-artifacts",
                 "ctxpack://pack/guide",
@@ -286,6 +288,14 @@ mod tests {
         .unwrap();
         let memory = handle_line(
             r#"{"jsonrpc":"2.0","id":36,"method":"resources/read","params":{"uri":"ctxpack://repo/memory"}}"#,
+        )
+        .unwrap();
+        let context_areas = handle_line(
+            r#"{"jsonrpc":"2.0","id":39,"method":"resources/read","params":{"uri":"ctxpack://repo/context-areas"}}"#,
+        )
+        .unwrap();
+        let context_area = handle_line(
+            r#"{"jsonrpc":"2.0","id":40,"method":"resources/read","params":{"uri":"ctxpack://repo/context-area/src%2Fauth"}}"#,
         )
         .unwrap();
         let workspace = handle_line(
@@ -323,6 +333,14 @@ mod tests {
             "ctxpack://repo/memory"
         );
         assert_eq!(
+            context_areas["result"]["contents"][0]["uri"],
+            "ctxpack://repo/context-areas"
+        );
+        assert_eq!(
+            context_area["result"]["contents"][0]["uri"],
+            "ctxpack://repo/context-area/src%2Fauth"
+        );
+        assert_eq!(
             workspace["result"]["contents"][0]["uri"],
             "ctxpack://workspace/status"
         );
@@ -334,6 +352,18 @@ mod tests {
             .as_str()
             .unwrap()
             .contains("\"sourceTextLogged\": false"));
+        assert!(context_areas["result"]["contents"][0]["text"]
+            .as_str()
+            .unwrap()
+            .contains("ctxpack://repo/context-area/src%2Fauth"));
+        assert!(context_area["result"]["contents"][0]["text"]
+            .as_str()
+            .unwrap()
+            .contains("\"sourceTextLogged\": false"));
+        assert!(context_area["result"]["contents"][0]["text"]
+            .as_str()
+            .unwrap()
+            .contains("src/auth/session.ts"));
         assert!(shared_artifacts["result"]["contents"][0]["text"]
             .as_str()
             .unwrap()

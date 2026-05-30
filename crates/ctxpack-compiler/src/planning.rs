@@ -4,11 +4,12 @@ use crate::ranking::{
     AnchorCandidate, RankingInput,
 };
 use ctxpack_core::{
-    Command, ContextArea, ContextPlan, Diagnostic, DiagnosticSeverity, FileRole,
-    FusionControlSummary, MemoryCard, MemoryFreshness, MemoryReviewStatus, PackBudget, PackOption,
-    PrivacyStatus, ProviderDecisionStatus, QueryConstructionTrace, QueryFacet, QueryFacetKind,
-    RetrievalCandidate, RetrievalCandidateKind, RetrievalEvidence, RetrievalSignalKind,
-    RetrievalSignalScore, RetrieverQuerySet, RiskFlag, SelectedMemory, TargetFile, TaskType,
+    context_area_for_path, context_area_resource_uri, Command, ContextArea, ContextPlan,
+    Diagnostic, DiagnosticSeverity, FileRole, FusionControlSummary, MemoryCard, MemoryFreshness,
+    MemoryReviewStatus, PackBudget, PackOption, PrivacyStatus, ProviderDecisionStatus,
+    QueryConstructionTrace, QueryFacet, QueryFacetKind, RetrievalCandidate, RetrievalCandidateKind,
+    RetrievalEvidence, RetrievalSignalKind, RetrievalSignalScore, RetrieverQuerySet, RiskFlag,
+    SelectedMemory, TargetFile, TaskType,
 };
 use ctxpack_index::{
     co_change_hints_report, current_diff_summary_report, lexical_search_report, list_memory_cards,
@@ -557,6 +558,7 @@ fn context_areas_for_plan(
                     "Broad task candidate area with {} candidate path(s) and {} selected path(s).",
                     accumulator.candidate_count, accumulator.selected_count
                 ),
+                resource_uri: context_area_resource_uri(&area),
                 representative_paths: accumulator.representative_paths.clone(),
                 candidate_count: accumulator.candidate_count,
                 selected_count: accumulator.selected_count,
@@ -669,30 +671,6 @@ impl AreaAccumulator {
     fn selected_source_like_count(&self) -> usize {
         self.selected_source_count + self.selected_config_count + self.selected_schema_count
     }
-}
-
-pub(crate) fn context_area_for_path(path: &str) -> String {
-    let mut components = path
-        .split('/')
-        .filter(|component| !component.is_empty())
-        .collect::<Vec<_>>();
-    if components.is_empty() {
-        return ".".to_string();
-    }
-    if components[0].starts_with('.') {
-        if components.len() >= 2 {
-            return format!("{}/{}", components[0], components[1]);
-        }
-        return components[0].to_string();
-    }
-    if components.len() == 1 {
-        return ".".to_string();
-    }
-    if components.len() == 2 && components[1].contains('.') {
-        return components[0].to_string();
-    }
-    components.truncate(2);
-    components.join("/")
 }
 
 fn extend_broad_source_area_candidates(

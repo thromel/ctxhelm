@@ -99,13 +99,16 @@ Primary responsibilities:
 - stdio JSON-RPC MCP server
 - small tool surface: `prepare_task`, `search`, `related`, `get_pack`,
   `related_tests`, `current_diff`
-- repo resources, file resources, test-map resources, and pack resources
+- repo resources, file resources, test-map resources, source-free context-area
+  resources, and pack resources
 - workflow prompts for agents
 
 Design constraints:
 
 - keep tool count small
 - use resource URIs for larger context
+- keep context-area resources source-free; agents must use native reads for
+  source text
 - keep pack resources session-scoped
 - never mutate source files or global agent config
 

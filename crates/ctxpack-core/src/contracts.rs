@@ -49,10 +49,88 @@ pub struct RelatedTest {
 pub struct ContextArea {
     pub area: String,
     pub reason: String,
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub resource_uri: String,
     #[serde(default)]
     pub representative_paths: Vec<String>,
     pub candidate_count: usize,
     pub selected_count: usize,
+}
+
+pub fn context_area_for_path(path: &str) -> String {
+    let mut components = path
+        .split('/')
+        .filter(|component| !component.is_empty())
+        .collect::<Vec<_>>();
+    if components.is_empty() {
+        return ".".to_string();
+    }
+    if components[0].starts_with('.') {
+        if components.len() >= 2 {
+            return format!("{}/{}", components[0], components[1]);
+        }
+        return components[0].to_string();
+    }
+    if components.len() == 1 {
+        return ".".to_string();
+    }
+    if components.len() == 2 && components[1].contains('.') {
+        return components[0].to_string();
+    }
+    components.truncate(2);
+    components.join("/")
+}
+
+pub fn context_area_resource_uri(area: &str) -> String {
+    format!(
+        "ctxpack://repo/context-area/{}",
+        percent_encode_uri_component(area)
+    )
+}
+
+pub fn decode_context_area_resource_uri(uri: &str) -> Option<String> {
+    let encoded = uri.strip_prefix("ctxpack://repo/context-area/")?;
+    percent_decode_uri_component(encoded)
+}
+
+fn percent_encode_uri_component(value: &str) -> String {
+    let mut encoded = String::new();
+    for byte in value.bytes() {
+        match byte {
+            b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'-' | b'_' | b'.' | b'~' => {
+                encoded.push(byte as char)
+            }
+            _ => encoded.push_str(&format!("%{byte:02X}")),
+        }
+    }
+    encoded
+}
+
+fn percent_decode_uri_component(value: &str) -> Option<String> {
+    let bytes = value.as_bytes();
+    let mut decoded = Vec::with_capacity(bytes.len());
+    let mut index = 0usize;
+    while index < bytes.len() {
+        if bytes[index] == b'%' {
+            let high = *bytes.get(index + 1)?;
+            let low = *bytes.get(index + 2)?;
+            decoded.push((hex_value(high)? << 4) | hex_value(low)?);
+            index += 3;
+        } else {
+            decoded.push(bytes[index]);
+            index += 1;
+        }
+    }
+    String::from_utf8(decoded).ok()
+}
+
+fn hex_value(byte: u8) -> Option<u8> {
+    match byte {
+        b'0'..=b'9' => Some(byte - b'0'),
+        b'a'..=b'f' => Some(byte - b'a' + 10),
+        b'A'..=b'F' => Some(byte - b'A' + 10),
+        _ => None,
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
@@ -1483,6 +1561,26 @@ mod tests {
     }
 
     #[test]
+    fn context_area_resource_uri_round_trips_source_free_area_names() {
+        assert_eq!(context_area_for_path("src/auth/session.ts"), "src/auth");
+        assert_eq!(
+            context_area_for_path(".github/workflows/ci.yml"),
+            ".github/workflows"
+        );
+
+        let uri = context_area_resource_uri("src/auth");
+        assert_eq!(uri, "ctxpack://repo/context-area/src%2Fauth");
+        assert_eq!(
+            decode_context_area_resource_uri(&uri).as_deref(),
+            Some("src/auth")
+        );
+        assert_eq!(
+            decode_context_area_resource_uri("ctxpack://repo/context-area/%ZZ"),
+            None
+        );
+    }
+
+    #[test]
     fn context_plan_public_json_shape_is_stable() {
         let plan = ContextPlan {
             task_id: Uuid::nil(),
@@ -1499,6 +1597,7 @@ mod tests {
             context_areas: vec![ContextArea {
                 area: "src".to_string(),
                 reason: "broad task candidate area".to_string(),
+                resource_uri: "ctxpack://repo/context-area/src".to_string(),
                 representative_paths: vec!["src/lib.rs".to_string()],
                 candidate_count: 1,
                 selected_count: 1,
@@ -1543,6 +1642,7 @@ mod tests {
             "contextAreas": [{
                 "area": "src",
                 "reason": "broad task candidate area",
+                "resourceUri": "ctxpack://repo/context-area/src",
                 "representativePaths": ["src/lib.rs"],
                 "candidateCount": 1,
                 "selectedCount": 1
@@ -1697,6 +1797,7 @@ mod tests {
             context_areas: vec![ContextArea {
                 area: "src".to_string(),
                 reason: "broad task candidate area".to_string(),
+                resource_uri: "ctxpack://repo/context-area/src".to_string(),
                 representative_paths: vec!["src/lib.rs".to_string()],
                 candidate_count: 1,
                 selected_count: 1,

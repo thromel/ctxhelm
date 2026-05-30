@@ -1038,6 +1038,7 @@ mod tests {
                 reason:
                     "Broad task candidate area with 3 candidate path(s) and 1 selected path(s)."
                         .to_string(),
+                resource_uri: "ctxpack://repo/context-area/src".to_string(),
                 representative_paths: vec!["src/lib.rs".to_string()],
                 candidate_count: 3,
                 selected_count: 1,
@@ -1047,6 +1048,7 @@ mod tests {
                 reason:
                     "Broad task candidate area with 2 candidate path(s) and 0 selected path(s)."
                         .to_string(),
+                resource_uri: "ctxpack://repo/context-area/tests".to_string(),
                 representative_paths: vec!["tests/lib_test.rs".to_string()],
                 candidate_count: 2,
                 selected_count: 0,
@@ -1070,6 +1072,7 @@ mod tests {
         assert!(markdown.contains("`src`"));
         assert!(markdown.contains("`src/lib.rs`"));
         assert!(markdown.contains("`tests/lib_test.rs`"));
+        assert!(markdown.contains("ctxpack://repo/context-area/tests"));
 
         std::env::remove_var("CTXPACK_HOME");
     }
@@ -1864,6 +1867,7 @@ mod tests {
                 context_areas: vec![ctxpack_core::ContextArea {
                     area: "src".to_string(),
                     reason: "source area".to_string(),
+                    resource_uri: "ctxpack://repo/context-area/src".to_string(),
                     representative_paths: vec!["src/lib.rs".to_string()],
                     candidate_count: 1,
                     selected_count: 1,

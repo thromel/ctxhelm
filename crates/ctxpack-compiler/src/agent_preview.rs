@@ -175,8 +175,14 @@ fn mcp_resources_for_plan(
         "ctxpack://repo/test-map".to_string(),
         "ctxpack://repo/dependency-graph".to_string(),
         "ctxpack://repo/memory".to_string(),
+        "ctxpack://repo/context-areas".to_string(),
         pack_resource_uri.to_string(),
     ];
+    for area in plan.context_areas.iter().take(4) {
+        if !area.resource_uri.is_empty() {
+            resources.push(area.resource_uri.clone());
+        }
+    }
     for target in plan.target_files.iter().take(3) {
         resources.push(format!("ctxpack://file/{}", target.path));
     }

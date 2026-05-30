@@ -50,6 +50,12 @@ pub(crate) fn resources_list_result() -> Value {
                 "mimeType": "application/json"
             },
             {
+                "uri": "ctxpack://repo/context-areas",
+                "name": "Repository Context Areas",
+                "description": "Source-free area inventory for progressive broad-task inspection.",
+                "mimeType": "application/json"
+            },
+            {
                 "uri": "ctxpack://workspace/status",
                 "name": "Workspace Status",
                 "description": "Source-free local workspace status from .ctxpack/workspace.json.",
