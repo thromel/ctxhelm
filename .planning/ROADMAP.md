@@ -696,12 +696,12 @@ general recursive graph expansion.
 | PROOF-01 | Phase 95 |
 | PROOF-02 | Phase 95 |
 
-**Coverage:** 20/20 v2.5 requirements mapped, with Phases 66-102 as measured follow-ups for proof/eval correctness gaps, real-client evidence, archive-noise reduction, broader validation, fixed-corpus reproducibility, protected-evidence diagnostics, parent-bounded history/test reservation, validation-only historical eval history, validation-command coverage, lexical-ceiling proof semantics, protected target floors, symbol-floor accounting, warm-cache runtime proof, warm-cache release gating, context-vs-all-file divergence accounting, broad-scope dependency source floors, broad context-area hints, Python package re-export graph coverage, validation gap accounting, broad source-area candidates, fast inventory freshness, packaged release-gate proof, broad context-area eval coverage, area-aware gap taxonomy with clean large-repo warm proof, source-free index caching for cold large-repo planner runtime, wider context-area guidance for broad tasks, progressive area guidance in generated packs, MCP context-area resources, broad governance task classification, progressive broad classification, source-free context-area read batches, resource-backed gap summaries, release-gated gap summary contracts, and explicit-repo MCP resource consumption. No orphaned v2.5 requirements.
+**Coverage:** 20/20 v2.5 requirements mapped, with Phases 66-103 as measured follow-ups for proof/eval correctness gaps, real-client evidence, archive-noise reduction, broader validation, fixed-corpus reproducibility, protected-evidence diagnostics, parent-bounded history/test reservation, validation-only historical eval history, validation-command coverage, lexical-ceiling proof semantics, protected target floors, symbol-floor accounting, warm-cache runtime proof, warm-cache release gating, context-vs-all-file divergence accounting, broad-scope dependency source floors, broad context-area hints, Python package re-export graph coverage, validation gap accounting, broad source-area candidates, fast inventory freshness, packaged release-gate proof, broad context-area eval coverage, area-aware gap taxonomy with clean large-repo warm proof, source-free index caching for cold large-repo planner runtime, wider context-area guidance for broad tasks, progressive area guidance in generated packs, MCP context-area resources, broad governance task classification, progressive broad classification, source-free context-area read batches, resource-backed gap summaries, release-gated gap summary contracts, explicit-repo MCP resource consumption, and broad fixed-corpus floor gates. No orphaned v2.5 requirements.
 
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 61 -> 62 -> 63 -> 64 -> 65 -> 66 -> 67 -> 69 -> 70 -> 71 -> 72 -> 73 -> 74 -> 75 -> 76 -> 77 -> 78 -> 79 -> 80 -> 81 -> 82 -> 83 -> 84 -> 85 -> 86 -> 87 -> 88 -> 89 -> 90 -> 91 -> 92 -> 93 -> 94 -> 95 -> 96 -> 97 -> 98 -> 99 -> 100 -> 101 -> 102
+Phases execute in numeric order: 61 -> 62 -> 63 -> 64 -> 65 -> 66 -> 67 -> 69 -> 70 -> 71 -> 72 -> 73 -> 74 -> 75 -> 76 -> 77 -> 78 -> 79 -> 80 -> 81 -> 82 -> 83 -> 84 -> 85 -> 86 -> 87 -> 88 -> 89 -> 90 -> 91 -> 92 -> 93 -> 94 -> 95 -> 96 -> 97 -> 98 -> 99 -> 100 -> 101 -> 102 -> 103
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
@@ -746,6 +746,7 @@ Phases execute in numeric order: 61 -> 62 -> 63 -> 64 -> 65 -> 66 -> 67 -> 69 ->
 | 100. Resource-Backed Gap Summaries | Evidence artifact | Complete | 2026-05-31 |
 | 101. Release-Gated Gap Summary Contract | Evidence artifact | Complete | 2026-05-31 |
 | 102. Explicit-Repo MCP Resource Consumption | Evidence artifact | Complete | 2026-05-31 |
+| 103. Broad Fixed-Corpus Floors | Evidence artifact | Complete | 2026-05-31 |
 
 ---
 *Roadmap created: 2026-05-22*

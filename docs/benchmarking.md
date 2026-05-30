@@ -497,6 +497,12 @@ Recommendation today:
   explicit-repo MCP tool call, repo-scoped resources fall back to that repo, and
   the deterministic MCP protocol smoke reads context-area resources plus
   `nextReadBatches` from a server cwd outside the workspace.
+- Phase 103 adds pinned broad fixed-corpus floors to
+  `scripts/check-product-proof.py` for
+  `phase92-area-aware-gap-taxonomy-2026-05-31`. This blocks reports that still
+  promote overall but regress known-good four-repo metrics. The rejected
+  dependency-priority ranking experiment would have dropped VeriSchema File
+  Recall@10 from `0.18449473` to `0.17936651`, and now fails the checker.
 - Keep `local_metadata_reranked` eval-only until named regressions and protected
   evidence behavior clear the gate.
 - Keep `local_fastembed` opt-in for experiments and conceptual queries; it is
@@ -516,7 +522,8 @@ is missing fixed corpus identity or paired baseline verdict fields, if
 feature-export privacy regresses, if learned-policy status allows silent
 defaults, if proof-boundary language is missing, if current reachable
 retrieval-gap summaries are not resource-backed with context-area URIs and
-next-read paths, or if `releaseGate.decision != "promote"`. A configured proof
+next-read paths, if the pinned broad fixed corpus regresses below its recorded
+per-repository floors, or if `releaseGate.decision != "promote"`. A configured proof
 where any required corpus only matches or trails lexical retrieval blocks
 default promotion.
 

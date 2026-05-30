@@ -481,6 +481,16 @@ Codex/Claude evidence record deterministic context-area resource-read coverage.
 The evidence artifact is
 `.planning/e2e/2026-05-31-phase102-explicit-repo-mcp-resource-consumption.md`.
 
+Phase 103 adds broad fixed-corpus floors to the product-proof checker. For the
+pinned `phase92-area-aware-gap-taxonomy-2026-05-31` four-repo corpus,
+`scripts/check-product-proof.py` now rejects reports that drop below recorded
+RefactoringMiner, ctxpack, ReAgent, or VeriSchema file/source/test,
+effective-validation, or broad-context-area floors. This caught a rejected
+dependency-priority ranking experiment that still promoted overall but regressed
+VeriSchema File Recall@10 from `0.18449473` to `0.17936651`. The evidence
+artifact is
+`.planning/e2e/2026-05-31-phase103-broad-fixed-corpus-floors.md`.
+
 Latest optional real-client proof: Codex CLI `0.130.0` and Claude Code
 `2.1.158` both passed the smoke wrappers on 2026-05-30 with server-side
 `prepare_task` and `get_pack` evidence against an explicit repo path. See

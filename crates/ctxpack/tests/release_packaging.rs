@@ -318,11 +318,23 @@ fn product_proof_checker_accepts_promote_and_rejects_block() {
     let promote_path = temp.path().join("promote.json");
     let block_path = temp.path().join("block.json");
     let missing_resource_path = temp.path().join("missing-resource-gap.json");
+    let broad_floor_path = temp.path().join("broad-fixed-corpus-floor.json");
+    let broad_regression_path = temp.path().join("broad-fixed-corpus-regression.json");
     fs::write(&promote_path, product_proof_json("promote", true, "beat")).unwrap();
     fs::write(&block_path, product_proof_json("block", false, "match")).unwrap();
     fs::write(
         &missing_resource_path,
         product_proof_json_without_gap_resource_uri(),
+    )
+    .unwrap();
+    fs::write(
+        &broad_floor_path,
+        product_proof_json_with_broad_fixed_corpus(0.18449473),
+    )
+    .unwrap();
+    fs::write(
+        &broad_regression_path,
+        product_proof_json_with_broad_fixed_corpus(0.17936651),
     )
     .unwrap();
 
@@ -369,6 +381,35 @@ fn product_proof_checker_accepts_promote_and_rejects_block() {
     assert!(
         stderr.contains("lacked context-area resource URI")
             || stderr.contains("lacked next-read paths"),
+        "unexpected checker error: {stderr}"
+    );
+
+    let broad_floor = Command::new("python3")
+        .arg(&script)
+        .arg(&broad_floor_path)
+        .current_dir(&repo_root)
+        .output()
+        .unwrap();
+    assert!(
+        broad_floor.status.success(),
+        "broad fixed-corpus floor proof should pass: {}",
+        String::from_utf8_lossy(&broad_floor.stderr)
+    );
+
+    let broad_regression = Command::new("python3")
+        .arg(&script)
+        .arg(&broad_regression_path)
+        .current_dir(&repo_root)
+        .output()
+        .unwrap();
+    assert!(
+        !broad_regression.status.success(),
+        "broad fixed-corpus metric regression should fail release checker"
+    );
+    let stderr = String::from_utf8_lossy(&broad_regression.stderr);
+    assert!(
+        stderr.contains("broad fixed corpus metric regressed below floor")
+            && stderr.contains("VeriSchema.fileRecallAt10"),
         "unexpected checker error: {stderr}"
     );
 }
@@ -427,6 +468,76 @@ fn product_proof_json_without_gap_resource_uri() -> String {
         r#"          "contextAreaResourceUri": "ctxpack://repo/context-area/src",
 "#,
         "",
+    )
+}
+
+fn product_proof_json_with_broad_fixed_corpus(verischema_file_recall_at_10: f64) -> String {
+    format!(
+        r#"{{
+  "privacyStatus": {{"localOnly": true}},
+  "benchmarkReport": {{
+    "corpusId": "phase92-area-aware-gap-taxonomy-2026-05-31",
+    "privacyStatus": {{"localOnly": true}},
+    "repositories": [
+      {{
+        "name": "RefactoringMiner",
+        "report": {{
+          "fileRecallAt10": 0.6,
+          "sourceRecallAt10": 1.0,
+          "testRecallAt10": 1.0,
+          "effectiveValidationRecallAt10": 1.0
+        }}
+      }},
+      {{
+        "name": "ctxpack",
+        "report": {{
+          "fileRecallAt10": 0.47460318,
+          "sourceRecallAt10": 0.7166667,
+          "broadContextAreaRecall": 1.0
+        }}
+      }},
+      {{
+        "name": "ReAgent",
+        "report": {{
+          "fileRecallAt10": 0.5,
+          "sourceRecallAt10": 1.0,
+          "testRecallAt10": 1.0,
+          "effectiveValidationRecallAt10": 1.0
+        }}
+      }},
+      {{
+        "name": "VeriSchema",
+        "report": {{
+          "fileRecallAt10": {verischema_file_recall_at_10},
+          "sourceRecallAt10": 0.31067252,
+          "testRecallAt10": 0.7089947,
+          "effectiveValidationRecallAt10": 1.0,
+          "broadContextAreaRecall": 0.71851856
+        }}
+      }}
+    ]
+  }},
+  "headlineMetrics": [{{"label": "averageCtxpackLiftAt10", "value": 0.1}}],
+  "v23EvalSummary": {{
+    "fixedCorpusId": "phase92-area-aware-gap-taxonomy-2026-05-31",
+    "pairedBaselineVerdicts": [],
+    "featureExportPrivacy": {{"localOnly": true, "sourceTextLogged": false}},
+    "learnedPolicyStatus": {{"defaultRequiresThresholds": true, "silentDefaultAllowed": false}},
+    "proofBoundary": "world-class claims require repeated lift"
+  }},
+  "releaseGate": {{
+    "decision": "promote",
+    "defaultPromotionAllowed": true,
+    "corpusVerdicts": [{{
+      "repository": "phase92-area-aware-gap-taxonomy-2026-05-31",
+      "status": "beat",
+      "lexicalDeltaAt10": 0.1,
+      "contextVsAllFileDeltaAt10": 0.0,
+      "lexicalContextVsAllFileDeltaAt10": 0.0,
+      "allFileDivergenceExplained": true
+    }}]
+  }}
+}}"#
     )
 }
 

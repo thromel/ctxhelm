@@ -443,6 +443,14 @@
 - Agent-specific prompts/hooks/rules that stay thin, dynamic, and repo-local.
 - Cloud/disconnected fallback cards for agents that cannot reach local MCP.
 
+### v2.5 Current Production-Readiness Follow-Up
+
+**Latest evidence:** `.planning/e2e/2026-05-31-phase103-broad-fixed-corpus-floors.md`
+
+**Delivered through Phase 103:** The pinned four-repo proof now has release-checker floors for known-good broad metrics. A dependency-priority ranking experiment was rejected because it regressed VeriSchema File Recall@10 to `0.17936651` and Source Recall@10 to `0.30409357`; `scripts/check-product-proof.py` now blocks that regression class even when the aggregate product-proof verdict still promotes.
+
+**Remaining focus:** ranked-below-budget source/docs pressure, stronger real-client tool-call evidence, and deeper source-free broad-area resources without top-10 churn or runtime-threshold tuning.
+
 ### v2.6 Desktop Inspector & Local UX
 
 **Goal:** Package the diagnostic inspector as a polished optional local UX for understanding and debugging ctxpack decisions.

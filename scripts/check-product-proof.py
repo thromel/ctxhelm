@@ -62,6 +62,71 @@ def validate_resource_backed_gap_summaries(report: dict) -> None:
             )
 
 
+BROAD_FIXED_CORPUS_ID = "phase92-area-aware-gap-taxonomy-2026-05-31"
+BROAD_FIXED_CORPUS_FLOORS = {
+    "RefactoringMiner": {
+        "fileRecallAt10": 0.6,
+        "sourceRecallAt10": 1.0,
+        "testRecallAt10": 1.0,
+        "effectiveValidationRecallAt10": 1.0,
+    },
+    "ctxpack": {
+        "fileRecallAt10": 0.47460318,
+        "sourceRecallAt10": 0.7166667,
+        "broadContextAreaRecall": 1.0,
+    },
+    "ReAgent": {
+        "fileRecallAt10": 0.5,
+        "sourceRecallAt10": 1.0,
+        "testRecallAt10": 1.0,
+        "effectiveValidationRecallAt10": 1.0,
+    },
+    "VeriSchema": {
+        "fileRecallAt10": 0.18449473,
+        "sourceRecallAt10": 0.31067252,
+        "testRecallAt10": 0.7089947,
+        "effectiveValidationRecallAt10": 1.0,
+        "broadContextAreaRecall": 0.71851856,
+    },
+}
+
+
+def validate_broad_fixed_corpus_floors(report: dict) -> None:
+    benchmark = report.get("benchmarkReport", {})
+    if benchmark.get("corpusId") != BROAD_FIXED_CORPUS_ID:
+        return
+    repositories = {
+        repository.get("name"): repository.get("report", {})
+        for repository in benchmark.get("repositories", [])
+        if isinstance(repository, dict)
+    }
+    for repo_name, floors in BROAD_FIXED_CORPUS_FLOORS.items():
+        repo_report = repositories.get(repo_name)
+        if not isinstance(repo_report, dict):
+            fail("broad fixed corpus proof was missing repository: " + repo_name)
+        for field, floor in floors.items():
+            try:
+                value = float(repo_report.get(field))
+            except (TypeError, ValueError):
+                fail(
+                    "broad fixed corpus proof was missing metric "
+                    + repo_name
+                    + "."
+                    + field
+                )
+            if value + 0.000001 < floor:
+                fail(
+                    "broad fixed corpus metric regressed below floor: "
+                    + repo_name
+                    + "."
+                    + field
+                    + " "
+                    + str(value)
+                    + " < "
+                    + str(floor)
+                )
+
+
 def main() -> None:
     if len(sys.argv) != 2:
         fail("usage: check-product-proof.py <product-proof.json>")
@@ -72,6 +137,7 @@ def main() -> None:
     if not report.get("benchmarkReport", {}).get("privacyStatus", {}).get("localOnly"):
         fail("embedded benchmark privacyStatus.localOnly was not true")
     validate_resource_backed_gap_summaries(report)
+    validate_broad_fixed_corpus_floors(report)
     if not report.get("headlineMetrics"):
         fail("product proof headlineMetrics were empty")
 
