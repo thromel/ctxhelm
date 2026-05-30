@@ -161,7 +161,7 @@ After all required checks pass, the gate writes a source-free proof bundle summa
 CTXPACK_PROOF_DIR=/absolute/path/to/proof bash scripts/release-gate.sh
 ```
 
-The proof summary records the checked `ctxpack` version, binary SHA-256, archive SHA-256, manifest name, audit report name, required check outcomes, optional benchmark/client proof status, and privacy status. It records file names and checksums instead of machine-local binary or repository paths.
+The proof summary records the checked `ctxpack` version, binary SHA-256, archive SHA-256, manifest name, audit report name, required check outcomes, optional benchmark/client proof status, resource-backed gap-summary contract status, and privacy status. It records file names and checksums instead of machine-local binary or repository paths.
 
 The optional real-client evidence wrappers are:
 
@@ -462,6 +462,13 @@ committed proof is
 `.ctxpack/e2e/phase100-resource-backed-gap-summaries-proof.json` and reports
 `releaseGate.decision = promote`. File/source/test/validation and broad
 context-area metrics are unchanged from Phase 99 across the four-repo proof.
+
+Phase 101 makes the resource-backed gap shape part of the product-proof release
+contract. `scripts/check-product-proof.py` now rejects current reachable
+retrieval-gap summaries that lack a `ctxpack://repo/context-area/...` URI or
+bounded `nextReadPaths`, and the Phase 100 four-repo proof passes the stricter
+checker. The evidence artifact is
+`.planning/e2e/2026-05-31-phase101-release-gated-gap-summary-contract.md`.
 
 Latest optional real-client proof: Codex CLI `0.130.0` and Claude Code
 `2.1.158` both passed the smoke wrappers on 2026-05-30 with server-side

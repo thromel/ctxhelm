@@ -3,11 +3,11 @@ gsd_state_version: 1.0
 milestone: v2.5
 milestone_name: Production Retrieval Quality
 status: active
-last_updated: "2026-05-31T15:15:00Z"
-last_activity: 2026-05-31 -- Phase 100 added resource-backed gap summaries
+last_updated: "2026-05-31T15:45:00Z"
+last_activity: 2026-05-31 -- Phase 101 gated resource-backed gap summaries in release proof checks
 progress:
-  total_phases: 33
-  completed_phases: 33
+  total_phases: 34
+  completed_phases: 34
   total_plans: 7
   completed_plans: 7
   percent: 100
@@ -17,10 +17,10 @@ progress:
 
 ## Current Position
 
-Phase: 100 - Resource-Backed Gap Summaries
-Plan: 100-resource-backed-gap-summaries
+Phase: 101 - Release-Gated Gap Summary Contract
+Plan: 101-release-gated-gap-summary-contract
 Status: Complete
-Last activity: 2026-05-31 -- Phase 100 added source-free `contextArea`, `contextAreaResourceUri`, and `nextReadPaths` fields to retrieval-gap summaries. The committed proof promotes and keeps Phase 99 File/Source/Test/Validation/Broad-area metrics unchanged across the four-repo proof.
+Last activity: 2026-05-31 -- Phase 101 made `scripts/check-product-proof.py` reject current reachable retrieval-gap summaries that lack source-free context-area resource URIs or bounded next-read paths. The Phase 100 proof passes the stricter checker, so resource-backed gap evidence is now part of the release proof contract rather than only report content.
 
 ## Project Reference
 
@@ -77,6 +77,7 @@ Planned phases:
 - Phase 98: Progressive Broad Classification (complete follow-up)
 - Phase 99: Context Area Read Batches (complete follow-up)
 - Phase 100: Resource-Backed Gap Summaries (complete follow-up)
+- Phase 101: Release-Gated Gap Summary Contract (complete follow-up)
 
 ## Last Completed Milestone
 
@@ -94,7 +95,7 @@ Planned phases:
 
 ## Next Step
 
-Continue production-readiness work from remaining measured gaps: ranked-below-budget source/docs pressure and deeper source-free area resources for broad repositories. Broad evals now distinguish files covered only by surfaced context areas from files with no candidate signal, clean RefactoringMiner cold proof promotes under the source-free index caches, broad context-area guidance covers more wide-task implementation areas, packs tell agents which zero-selected areas to inspect next, MCP exposes source-free area resources with role buckets/path families/read batches, gap summaries point to area resources and bounded next-read paths, governance/proof tasks classify broad historical/eval language reliably, and archive/docs broad tasks now receive context-area guidance without perturbing target-file source floors.
+Continue production-readiness work from remaining measured gaps: ranked-below-budget source/docs pressure, real-client consumption of resource-backed gaps, or deeper source-free area resources for broad repositories. Broad evals now distinguish files covered only by surfaced context areas from files with no candidate signal, clean RefactoringMiner cold proof promotes under the source-free index caches, broad context-area guidance covers more wide-task implementation areas, packs tell agents which zero-selected areas to inspect next, MCP exposes source-free area resources with role buckets/path families/read batches, gap summaries point to area resources and bounded next-read paths, the product-proof checker gates those gap summaries, governance/proof tasks classify broad historical/eval language reliably, and archive/docs broad tasks now receive context-area guidance without perturbing target-file source floors.
 
 ## Operator Next Steps
 
@@ -136,6 +137,7 @@ Continue production-readiness work from remaining measured gaps: ranked-below-bu
 - Latest progressive broad classification proof: `.planning/e2e/2026-05-31-phase98-progressive-broad-classification.md` and `.ctxpack/e2e/phase98-broader-broad-task-classification-proof.json`; force-refresh broad proof promotes, archive/docs retrieval tasks now get broad context-area guidance, and ctxpack File Recall@10 `0.47460318` / Source Recall@10 `0.7166667` stay stable against Phase 97.
 - Latest context-area read batch proof: `.planning/e2e/2026-05-31-phase99-context-area-read-batches.md` and `.ctxpack/e2e/phase99-context-area-read-batches-proof.json`; force-refresh broad proof promotes, context-area resources now expose source-free `roleBuckets`, `pathFamilies`, and `nextReadBatches`, and Phase 98 retrieval metrics stay unchanged.
 - Latest resource-backed gap summary proof: `.planning/e2e/2026-05-31-phase100-resource-backed-gap-summaries.md` and `.ctxpack/e2e/phase100-resource-backed-gap-summaries-proof.json`; force-refresh broad proof promotes, retrieval gap summaries now include source-free `contextAreaResourceUri` and `nextReadPaths`, and Phase 99 retrieval metrics stay unchanged.
+- Latest release-gated gap summary contract proof: `.planning/e2e/2026-05-31-phase101-release-gated-gap-summary-contract.md`; the product-proof checker now fails current reachable retrieval-gap summaries that are not resource-backed, and the Phase 100 four-repo proof passes the stricter release-gate check.
 - Latest real-client proof: `.planning/e2e/2026-05-30-phase70-real-client-mcp-proof.md`.
 - RefactoringMiner and ReAgent still trail lexical on all-file recall in the broader proof, but those deficits are now machine-checkable as explained by the context/validation split instead of only prose notes.
 - Phase 84 improves VeriSchema Source Recall@10 from `0.249` to `0.304` on the broader fixed corpus while keeping RefactoringMiner, ctxpack, and ReAgent stable.
@@ -155,4 +157,5 @@ Continue production-readiness work from remaining measured gaps: ranked-below-bu
 - Phase 98 separates source-free broad context-area classification from target-file source-floor spending, covering archive/docs tasks without reintroducing top-10 source/doc churn.
 - Phase 99 makes broad context-area resources more actionable for native reads by adding source-free role buckets, path families, and next-read batches without changing top-10 retrieval metrics.
 - Phase 100 makes remaining gap summaries resource-backed so broad misses point to the matching context-area MCP resource and bounded next-read paths.
-- Next work should target ranked-below-budget source/docs pressure, release-gate proof bundling, or real-client consumption of resource-backed gaps, not runtime threshold tuning or unproven top-10 churn.
+- Phase 101 makes that resource-backed gap shape part of the release proof checker, so future broad proof reports cannot silently drop the progressive read contract.
+- Next work should target ranked-below-budget source/docs pressure or real-client consumption of resource-backed gaps, not runtime threshold tuning or unproven top-10 churn.

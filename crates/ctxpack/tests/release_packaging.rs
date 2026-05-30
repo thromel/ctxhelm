@@ -254,6 +254,7 @@ fn release_gate_script_contract() {
         "release-proof-summary.json",
         "binaryIdentity",
         "optionalProofs",
+        "resourceBackedGapSummaryContract",
         "archive_sha256",
         "--version",
         "--help",
@@ -316,8 +317,14 @@ fn product_proof_checker_accepts_promote_and_rejects_block() {
     let temp = TempDir::new().unwrap();
     let promote_path = temp.path().join("promote.json");
     let block_path = temp.path().join("block.json");
+    let missing_resource_path = temp.path().join("missing-resource-gap.json");
     fs::write(&promote_path, product_proof_json("promote", true, "beat")).unwrap();
     fs::write(&block_path, product_proof_json("block", false, "match")).unwrap();
+    fs::write(
+        &missing_resource_path,
+        product_proof_json_without_gap_resource_uri(),
+    )
+    .unwrap();
 
     let promote = Command::new("python3")
         .arg(&script)
@@ -347,13 +354,50 @@ fn product_proof_checker_accepts_promote_and_rejects_block() {
             || stderr.contains("corpus did not beat lexical"),
         "unexpected checker error: {stderr}"
     );
+
+    let missing_resource = Command::new("python3")
+        .arg(&script)
+        .arg(&missing_resource_path)
+        .current_dir(&repo_root)
+        .output()
+        .unwrap();
+    assert!(
+        !missing_resource.status.success(),
+        "current reachable gaps without resource-backed next reads should fail release checker"
+    );
+    let stderr = String::from_utf8_lossy(&missing_resource.stderr);
+    assert!(
+        stderr.contains("lacked context-area resource URI")
+            || stderr.contains("lacked next-read paths"),
+        "unexpected checker error: {stderr}"
+    );
 }
 
 fn product_proof_json(decision: &str, default_promotion_allowed: bool, status: &str) -> String {
     format!(
         r#"{{
   "privacyStatus": {{"localOnly": true}},
-  "benchmarkReport": {{"privacyStatus": {{"localOnly": true}}}},
+  "benchmarkReport": {{
+    "privacyStatus": {{"localOnly": true}},
+    "repositories": [{{
+      "name": "fixture",
+      "report": {{
+        "retrievalGapSummaries": [{{
+          "role": "source",
+          "signalGap": "ranked_below_budget_dependency",
+          "package": "src",
+          "pathFamily": "src/*.rs",
+          "contextArea": "src",
+          "contextAreaResourceUri": "ctxpack://repo/context-area/src",
+          "targetStatus": "currentReachable",
+          "recommendationArea": "parserPrecision",
+          "missedCount": 1,
+          "examplePaths": ["src/lib.rs"],
+          "nextReadPaths": ["src/lib.rs"]
+        }}]
+      }}
+    }}]
+  }},
   "headlineMetrics": [{{"label": "averageCtxpackLiftAt10", "value": 0.1}}],
   "v23EvalSummary": {{
     "fixedCorpusId": "fixture",
@@ -375,6 +419,14 @@ fn product_proof_json(decision: &str, default_promotion_allowed: bool, status: &
     }}]
   }}
 }}"#
+    )
+}
+
+fn product_proof_json_without_gap_resource_uri() -> String {
+    product_proof_json("promote", true, "beat").replace(
+        r#"          "contextAreaResourceUri": "ctxpack://repo/context-area/src",
+"#,
+        "",
     )
 }
 

@@ -20,6 +20,48 @@ def is_perfect_ceiling_match(verdict: dict) -> bool:
     )
 
 
+def current_reachable_gap_summaries(report: dict):
+    repositories = report.get("benchmarkReport", {}).get("repositories", [])
+    if not isinstance(repositories, list):
+        fail("embedded benchmark repositories were not a list")
+    for repository in repositories:
+        repo_name = repository.get("name") or repository.get("repoId") or "<unknown>"
+        repo_report = repository.get("report", {})
+        gaps = repo_report.get("retrievalGapSummaries", [])
+        if not isinstance(gaps, list):
+            fail("retrievalGapSummaries was not a list for " + str(repo_name))
+        for index, gap in enumerate(gaps):
+            if gap.get("targetStatus") == "currentReachable":
+                yield repo_name, index, gap
+
+
+def validate_resource_backed_gap_summaries(report: dict) -> None:
+    for repo_name, index, gap in current_reachable_gap_summaries(report):
+        uri = gap.get("contextAreaResourceUri")
+        if not isinstance(uri, str) or not uri.startswith("ctxpack://repo/context-area/"):
+            fail(
+                "current reachable retrieval gap lacked context-area resource URI: "
+                + str(repo_name)
+                + " gap "
+                + str(index)
+            )
+        next_reads = gap.get("nextReadPaths")
+        if not isinstance(next_reads, list) or not next_reads:
+            fail(
+                "current reachable retrieval gap lacked next-read paths: "
+                + str(repo_name)
+                + " gap "
+                + str(index)
+            )
+        if any(not isinstance(path, str) or not path.strip() for path in next_reads):
+            fail(
+                "current reachable retrieval gap had invalid next-read path: "
+                + str(repo_name)
+                + " gap "
+                + str(index)
+            )
+
+
 def main() -> None:
     if len(sys.argv) != 2:
         fail("usage: check-product-proof.py <product-proof.json>")
@@ -29,6 +71,7 @@ def main() -> None:
         fail("product proof privacyStatus.localOnly was not true")
     if not report.get("benchmarkReport", {}).get("privacyStatus", {}).get("localOnly"):
         fail("embedded benchmark privacyStatus.localOnly was not true")
+    validate_resource_backed_gap_summaries(report)
     if not report.get("headlineMetrics"):
         fail("product proof headlineMetrics were empty")
 

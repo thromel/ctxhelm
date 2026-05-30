@@ -487,6 +487,12 @@ Recommendation today:
   checks with metadata manifest comparison. The pinned broader release proof
   promotes with Phase 88 quality metrics preserved: RefactoringMiner `8279ms`,
   ctxpack `8317ms`, ReAgent `4264ms`, and VeriSchema `6590ms`.
+- Phases 90-101 move broad-area evidence from diagnostics toward release
+  contract: the packaged release gate can run the four-repo proof, broad
+  context areas are measured, exposed as MCP resources, enriched with
+  next-read batches, and current reachable retrieval-gap summaries must retain
+  `ctxpack://repo/context-area/...` URIs plus bounded `nextReadPaths` for the
+  product-proof checker to pass.
 - Keep `local_metadata_reranked` eval-only until named regressions and protected
   evidence behavior clear the gate.
 - Keep `local_fastembed` opt-in for experiments and conceptual queries; it is
@@ -504,9 +510,11 @@ When enabled, the gate fails if the proof cannot be generated, if the
 proof/embedded benchmark privacy status is not local-only, if the v2.3 summary
 is missing fixed corpus identity or paired baseline verdict fields, if
 feature-export privacy regresses, if learned-policy status allows silent
-defaults, if proof-boundary language is missing, or if
-`releaseGate.decision != "promote"`. A configured proof where any required
-corpus only matches or trails lexical retrieval blocks default promotion.
+defaults, if proof-boundary language is missing, if current reachable
+retrieval-gap summaries are not resource-backed with context-area URIs and
+next-read paths, or if `releaseGate.decision != "promote"`. A configured proof
+where any required corpus only matches or trails lexical retrieval blocks
+default promotion.
 
 The deterministic release smoke is:
 

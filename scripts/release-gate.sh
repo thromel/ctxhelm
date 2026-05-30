@@ -331,6 +331,9 @@ payload = {
     "requiredChecks": [{"name": check, "status": "passed"} for check in required_checks],
     "optionalProofs": {
         "benchmarkProductProof": benchmark_status,
+        "resourceBackedGapSummaryContract": (
+            "checked" if benchmark_status == "passed" else "skipped"
+        ),
         "codexRealClientProof": codex_status,
         "claudeRealClientProof": claude_status,
         "realClientRequired": real_client_required == "1",
