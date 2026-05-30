@@ -60,6 +60,7 @@ pub enum RetrievalCandidateKind {
 #[serde(rename_all = "snake_case")]
 pub enum RetrievalSignalKind {
     Lexical,
+    LexicalExpansion,
     Symbol,
     Dependency,
     RelatedTest,

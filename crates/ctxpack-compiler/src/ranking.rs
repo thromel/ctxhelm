@@ -19,6 +19,7 @@ pub(crate) struct AnchorCandidate {
 pub(crate) struct RankingInput {
     pub anchors: Vec<AnchorCandidate>,
     pub lexical_results: Vec<SearchResult>,
+    pub protected_lexical_limit: Option<usize>,
     pub semantic_results: Vec<SemanticSearchResult>,
     pub symbol_results: Vec<SymbolSearchResult>,
     pub related_tests: Vec<RelatedTestResult>,
@@ -74,13 +75,21 @@ pub(crate) fn rank_candidates(input: RankingInput) -> Vec<RankedCandidate> {
         let role = result.role;
         let path = result.path;
         let score = normalize_signal_score(result.score);
+        let signal = if input
+            .protected_lexical_limit
+            .is_some_and(|limit| lexical_rank >= limit)
+        {
+            RetrievalSignalKind::LexicalExpansion
+        } else {
+            RetrievalSignalKind::Lexical
+        };
         candidates.add_path_signal(PathSignal {
             kind,
             path,
             role,
-            signal: RetrievalSignalKind::Lexical,
+            signal: signal.clone(),
             score,
-            weight: signal_weight(&RetrievalSignalKind::Lexical),
+            weight: signal_weight(&signal),
             reason_code: "lexical_match",
             edge_label: None,
             commit_ids: Vec::new(),
@@ -259,6 +268,7 @@ fn local_metadata_rerank_score(candidate: &RankedCandidate) -> f32 {
                 RetrievalSignalKind::Anchor
                     | RetrievalSignalKind::CurrentDiff
                     | RetrievalSignalKind::Lexical
+                    | RetrievalSignalKind::LexicalExpansion
                     | RetrievalSignalKind::Symbol
             )
         })
@@ -364,7 +374,7 @@ fn select_target_files(candidates: &[RankedCandidate], file_budget: usize) -> Ve
         .filter(|candidate| candidate.target_file.is_some())
         .filter_map(|candidate| {
             let lexical_score = signal_score(&candidate.candidate, RetrievalSignalKind::Lexical)?;
-            let minimum_lexical_score = if has_active_context { 0.90 } else { 0.30 };
+            let minimum_lexical_score = if has_active_context { 0.90 } else { 0.0 };
             if lexical_score < minimum_lexical_score {
                 return None;
             }
@@ -382,10 +392,64 @@ fn select_target_files(candidates: &[RankedCandidate], file_budget: usize) -> Ve
     let lexical_floor_limit = if has_active_context {
         7.min(file_budget)
     } else {
-        file_budget.saturating_sub(1).max(1)
+        file_budget
     };
     for (_, candidate) in lexical_floor.into_iter().take(lexical_floor_limit) {
         push_target(candidate, &mut selected, &mut selected_paths, file_budget);
+    }
+
+    if selected.len() < file_budget {
+        let mut symbol_floor = candidates
+            .iter()
+            .filter(|candidate| candidate.target_file.is_some())
+            .filter_map(|candidate| {
+                let symbol_score = signal_score(&candidate.candidate, RetrievalSignalKind::Symbol)?;
+                Some((symbol_score, candidate))
+            })
+            .collect::<Vec<_>>();
+        symbol_floor.sort_by(|(left_score, left), (right_score, right)| {
+            right_score
+                .total_cmp(left_score)
+                .then_with(|| right.rank_score.total_cmp(&left.rank_score))
+                .then_with(|| left.candidate.path.cmp(&right.candidate.path))
+        });
+        let symbol_floor_limit = if has_active_context {
+            3.min(file_budget)
+        } else {
+            file_budget.div_ceil(2).clamp(1, 4)
+        };
+        for (_, candidate) in symbol_floor.into_iter().take(symbol_floor_limit) {
+            push_target(candidate, &mut selected, &mut selected_paths, file_budget);
+        }
+    }
+
+    if !has_active_context && selected.len() < file_budget {
+        let mut source_lexical_floor = candidates
+            .iter()
+            .filter(|candidate| candidate.target_file.is_some())
+            .filter(|candidate| candidate.candidate.role == Some(FileRole::Source))
+            .filter_map(|candidate| {
+                let lexical_score = lexical_signal_score(&candidate.candidate)?;
+                if lexical_score < 0.30 {
+                    return None;
+                }
+                Some((lexical_score, candidate))
+            })
+            .collect::<Vec<_>>();
+        source_lexical_floor.sort_by(|(left_score, left), (right_score, right)| {
+            right_score
+                .total_cmp(left_score)
+                .then_with(|| left.lexical_rank.cmp(&right.lexical_rank))
+                .then_with(|| right.rank_score.total_cmp(&left.rank_score))
+                .then_with(|| left.candidate.path.cmp(&right.candidate.path))
+        });
+        let source_lexical_floor_limit = file_budget.div_ceil(2).clamp(1, 4);
+        for (_, candidate) in source_lexical_floor
+            .into_iter()
+            .take(source_lexical_floor_limit)
+        {
+            push_target(candidate, &mut selected, &mut selected_paths, file_budget);
+        }
     }
     let mut history_floor = candidates
         .iter()
@@ -440,6 +504,16 @@ fn signal_score(candidate: &RetrievalCandidate, signal: RetrievalSignalKind) -> 
         .iter()
         .find(|score| score.signal == signal)
         .map(|score| score.score * score.weight)
+}
+
+fn lexical_signal_score(candidate: &RetrievalCandidate) -> Option<f32> {
+    [
+        RetrievalSignalKind::Lexical,
+        RetrievalSignalKind::LexicalExpansion,
+    ]
+    .into_iter()
+    .filter_map(|signal| signal_score(candidate, signal))
+    .max_by(|left, right| left.total_cmp(right))
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -788,6 +862,7 @@ fn signal_weight(signal: &RetrievalSignalKind) -> f32 {
         RetrievalSignalKind::CurrentDiff => 2.00,
         RetrievalSignalKind::Symbol => 1.05,
         RetrievalSignalKind::Lexical => 1.00,
+        RetrievalSignalKind::LexicalExpansion => 0.80,
         RetrievalSignalKind::Semantic => 0.45,
         RetrievalSignalKind::Dependency => 0.45,
         RetrievalSignalKind::RelatedTest => 0.90,
@@ -817,14 +892,15 @@ fn signal_rank(signal: &RetrievalSignalKind) -> u8 {
         RetrievalSignalKind::CurrentDiff => 1,
         RetrievalSignalKind::Symbol => 2,
         RetrievalSignalKind::Lexical => 3,
-        RetrievalSignalKind::Semantic => 4,
-        RetrievalSignalKind::Dependency => 5,
-        RetrievalSignalKind::RelatedTest => 6,
-        RetrievalSignalKind::CoChange => 7,
-        RetrievalSignalKind::History => 8,
-        RetrievalSignalKind::Config => 9,
-        RetrievalSignalKind::Docs => 10,
-        RetrievalSignalKind::Memory => 11,
+        RetrievalSignalKind::LexicalExpansion => 4,
+        RetrievalSignalKind::Semantic => 5,
+        RetrievalSignalKind::Dependency => 6,
+        RetrievalSignalKind::RelatedTest => 7,
+        RetrievalSignalKind::CoChange => 8,
+        RetrievalSignalKind::History => 9,
+        RetrievalSignalKind::Config => 10,
+        RetrievalSignalKind::Docs => 11,
+        RetrievalSignalKind::Memory => 12,
     }
 }
 
@@ -1075,15 +1151,15 @@ mod tests {
             .collect::<Vec<_>>();
 
         assert_eq!(
-            &paths[..4],
-            [
+            paths,
+            vec![
                 "src/lexical-0.ts",
                 "src/lexical-1.ts",
                 "src/lexical-2.ts",
-                "src/lexical-3.ts"
+                "src/lexical-3.ts",
+                "src/lexical-4.ts",
             ]
         );
-        assert!(paths.iter().any(|path| path.starts_with("src/semantic-")));
     }
 
     #[test]
@@ -1191,6 +1267,108 @@ mod tests {
 
         assert!(paths.contains(&"documentation/mcp.md"));
         assert!(paths.contains(&"src/target.ts"));
+    }
+
+    #[test]
+    fn selection_reserves_budget_for_source_lexical_candidates_without_active_context() {
+        let candidates = rank_candidates(RankingInput {
+            lexical_results: vec![
+                SearchResult {
+                    path: "docs/runtime.md".to_string(),
+                    role: FileRole::Docs,
+                    language: Some("markdown".to_string()),
+                    score: 40.0,
+                    reason: "doc match".to_string(),
+                },
+                SearchResult {
+                    path: "Cargo.toml".to_string(),
+                    role: FileRole::Config,
+                    language: Some("toml".to_string()),
+                    score: 38.0,
+                    reason: "config match".to_string(),
+                },
+                SearchResult {
+                    path: "src/main/java/org/refactoringminer/astDiff/matchers/wrappers/MethodMatcher.java".to_string(),
+                    role: FileRole::Source,
+                    language: Some("java".to_string()),
+                    score: 18.0,
+                    reason: "source match".to_string(),
+                },
+                SearchResult {
+                    path: "src/main/java/org/refactoringminer/astDiff/matchers/wrappers/BodyMapperMatcher.java".to_string(),
+                    role: FileRole::Source,
+                    language: Some("java".to_string()),
+                    score: 16.0,
+                    reason: "source match".to_string(),
+                },
+            ],
+            protected_lexical_limit: Some(2),
+            roles: roles([
+                ("docs/runtime.md", FileRole::Docs),
+                ("Cargo.toml", FileRole::Config),
+                (
+                    "src/main/java/org/refactoringminer/astDiff/matchers/wrappers/MethodMatcher.java",
+                    FileRole::Source,
+                ),
+                (
+                    "src/main/java/org/refactoringminer/astDiff/matchers/wrappers/BodyMapperMatcher.java",
+                    FileRole::Source,
+                ),
+            ]),
+            ..RankingInput::default()
+        });
+
+        let selection = select_ranked_candidates(&candidates, 4, 0);
+        let paths = selection
+            .target_files
+            .iter()
+            .map(|target| target.path.as_str())
+            .collect::<Vec<_>>();
+
+        assert!(paths.contains(
+            &"src/main/java/org/refactoringminer/astDiff/matchers/wrappers/MethodMatcher.java"
+        ));
+        assert!(paths.contains(
+            &"src/main/java/org/refactoringminer/astDiff/matchers/wrappers/BodyMapperMatcher.java"
+        ));
+        let source_signal = candidates
+            .iter()
+            .find(|candidate| {
+                candidate.candidate.path.as_deref()
+                    == Some(
+                        "src/main/java/org/refactoringminer/astDiff/matchers/wrappers/MethodMatcher.java",
+                    )
+            })
+            .and_then(|candidate| candidate.candidate.signal_scores.first())
+            .map(|score| score.signal.clone());
+        assert_eq!(source_signal, Some(RetrievalSignalKind::LexicalExpansion));
+    }
+
+    #[test]
+    fn selection_does_not_let_source_reserve_displace_active_context_anchor() {
+        let candidates = rank_candidates(RankingInput {
+            anchors: vec![AnchorCandidate {
+                path: "docs/active.md".to_string(),
+                role: FileRole::Docs,
+                current_diff: false,
+            }],
+            lexical_results: vec![
+                lexical("src/high-0.ts", 24.0),
+                lexical("src/high-1.ts", 24.0),
+                lexical("src/high-2.ts", 24.0),
+            ],
+            roles: roles([
+                ("docs/active.md", FileRole::Docs),
+                ("src/high-0.ts", FileRole::Source),
+                ("src/high-1.ts", FileRole::Source),
+                ("src/high-2.ts", FileRole::Source),
+            ]),
+            ..RankingInput::default()
+        });
+
+        let selection = select_ranked_candidates(&candidates, 2, 0);
+
+        assert_eq!(selection.target_files[0].path, "docs/active.md");
     }
 
     #[test]

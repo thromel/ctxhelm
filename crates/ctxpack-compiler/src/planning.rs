@@ -182,7 +182,7 @@ pub(crate) fn prepare_context_plan_with_paths_history_and_semantic(
         repo_root,
         &lexical_query,
         &SearchOptions {
-            limit: search_limit(&plan.task_type),
+            limit: lexical_candidate_limit(&plan.task_type),
         },
     )?;
     extend_plan_diagnostics(&mut plan, search_report.diagnostics);
@@ -352,6 +352,7 @@ pub(crate) fn prepare_context_plan_with_paths_history_and_semantic(
     let ranked_candidates = rank_candidates(RankingInput {
         anchors,
         lexical_results: search_results,
+        protected_lexical_limit: Some(search_limit(&plan.task_type)),
         semantic_results,
         symbol_results,
         related_tests: test_results,
@@ -980,6 +981,14 @@ fn search_limit(task_type: &TaskType) -> usize {
     }
 }
 
+fn lexical_candidate_limit(task_type: &TaskType) -> usize {
+    match task_type {
+        TaskType::Explain => search_limit(task_type),
+        TaskType::Review | TaskType::Refactor => 18,
+        TaskType::BugFix | TaskType::Feature | TaskType::Test => 24,
+    }
+}
+
 fn co_change_limit(task_type: &TaskType) -> usize {
     match task_type {
         TaskType::BugFix | TaskType::Refactor | TaskType::Review => 30,
@@ -1250,6 +1259,19 @@ mod tests {
 
         let semantic_seeded = expansion_seed_paths(&[], &[], &[], &[semantic]);
         assert_eq!(semantic_seeded, vec!["src/semantic.ts".to_string()]);
+    }
+
+    #[test]
+    fn lexical_candidate_limit_is_wider_than_symbol_limit_for_coding_tasks() {
+        assert_eq!(search_limit(&TaskType::BugFix), 10);
+        assert_eq!(lexical_candidate_limit(&TaskType::BugFix), 24);
+        assert_eq!(lexical_candidate_limit(&TaskType::Feature), 24);
+        assert_eq!(lexical_candidate_limit(&TaskType::Test), 24);
+        assert_eq!(lexical_candidate_limit(&TaskType::Review), 18);
+        assert_eq!(
+            lexical_candidate_limit(&TaskType::Explain),
+            search_limit(&TaskType::Explain)
+        );
     }
 
     #[test]

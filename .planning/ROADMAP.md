@@ -105,7 +105,7 @@ Plans:
 
 Plans:
 
-- [ ] 64-gap-family-retrieval-improvements-01-PLAN.md - Fix one or more measured gap families and prove improvement.
+- [x] 64-gap-family-retrieval-improvements-01-PLAN.md - Fix one or more measured gap families and prove improvement.
 
 ### Phase 65: v2.5 Product Proof And Release Gate
 

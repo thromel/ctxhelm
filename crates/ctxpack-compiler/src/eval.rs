@@ -2555,8 +2555,12 @@ fn evaluate_historical_commit_sample(
         context_file_ranking(&recommended_files, &recommended_tests, ranking_budget)
     };
     let lexical_baseline_files = lexical_baseline_context_files(eval_root, &task, ranking_budget)?;
-    let protected_evidence =
-        protected_evidence_files(&signals_by_path, &recommended_context_files, 10);
+    let protected_evidence = protected_evidence_files(
+        &signals_by_path,
+        &budgeted_protected_evidence_paths(&plan, 10),
+        &recommended_context_files,
+        10,
+    );
     let file_hits_at_5 =
         changed_file_hits(&sample.safe_changed_files, &recommended_context_files, 5);
     let file_hits_at_10 =
@@ -3463,6 +3467,7 @@ fn signal_baseline_rankings(
 
 fn protected_evidence_files(
     signals_by_path: &BTreeMap<String, Vec<RetrievalSignalKind>>,
+    protected_budget_paths: &BTreeSet<String>,
     recommended_context_files: &[String],
     limit: usize,
 ) -> Vec<HistoricalProtectedEvidenceFile> {
@@ -3473,6 +3478,7 @@ fn protected_evidence_files(
         .collect::<BTreeSet<_>>();
     signals_by_path
         .iter()
+        .filter(|(path, _)| protected_budget_paths.contains(path.as_str()))
         .filter_map(|(path, signals)| {
             let protected_signals = signals
                 .iter()
@@ -3486,6 +3492,32 @@ fn protected_evidence_files(
             })
         })
         .collect()
+}
+
+fn budgeted_protected_evidence_paths(plan: &ContextPlan, limit: usize) -> BTreeSet<String> {
+    let mut paths = BTreeSet::new();
+    let limit = limit.max(1);
+    for candidate in &plan.retrieval_candidates {
+        let Some(path) = &candidate.path else {
+            continue;
+        };
+        if candidate.role == Some(FileRole::Test) {
+            continue;
+        }
+        let has_protected_signal = candidate
+            .signal_scores
+            .iter()
+            .map(|score| &score.signal)
+            .chain(candidate.evidence.iter().map(|evidence| &evidence.signal))
+            .any(is_protected_evidence_signal);
+        if has_protected_signal {
+            paths.insert(path.clone());
+            if paths.len() >= limit {
+                break;
+            }
+        }
+    }
+    paths
 }
 
 fn protected_evidence_summary(commits: &[HistoricalCommitEval]) -> ProtectedEvidenceSummary {
@@ -4243,6 +4275,7 @@ fn signal_family_code(signals: &[RetrievalSignalKind]) -> String {
 fn signal_code(signal: &RetrievalSignalKind) -> &'static str {
     match signal {
         RetrievalSignalKind::Lexical => "lexical",
+        RetrievalSignalKind::LexicalExpansion => "lexical_expansion",
         RetrievalSignalKind::Semantic => "semantic",
         RetrievalSignalKind::Symbol => "symbol",
         RetrievalSignalKind::Dependency => "dependency",
@@ -4510,6 +4543,31 @@ mod tests {
                 .missed_at_10_count,
             1
         );
+    }
+
+    #[test]
+    fn protected_evidence_files_only_counts_budgeted_exact_candidates() {
+        let mut signals_by_path = BTreeMap::new();
+        signals_by_path.insert(
+            "src/protected.ts".to_string(),
+            vec![RetrievalSignalKind::Lexical],
+        );
+        signals_by_path.insert(
+            "src/expanded.ts".to_string(),
+            vec![RetrievalSignalKind::Lexical],
+        );
+        let protected_budget_paths = BTreeSet::from(["src/protected.ts".to_string()]);
+
+        let files = protected_evidence_files(
+            &signals_by_path,
+            &protected_budget_paths,
+            &["src/protected.ts".to_string()],
+            10,
+        );
+
+        assert_eq!(files.len(), 1);
+        assert_eq!(files[0].path, "src/protected.ts");
+        assert!(files[0].selected_at_10);
     }
 
     fn gate_test_variant(name: &str, recall: f32, precision: f32) -> SemanticPrecisionVariant {

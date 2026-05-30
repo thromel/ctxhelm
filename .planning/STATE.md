@@ -3,24 +3,24 @@ gsd_state_version: 1.0
 milestone: v2.5
 milestone_name: Production Retrieval Quality
 status: active
-last_updated: "2026-05-22T00:00:00Z"
-last_activity: 2026-05-30 -- Phase 63 reranker and fusion promotion complete
+last_updated: "2026-05-30T06:51:42Z"
+last_activity: 2026-05-30 -- Phase 64 improved the RefactoringMiner wrapper gap family with source-free proof
 progress:
   total_phases: 5
-  completed_phases: 3
+  completed_phases: 4
   total_plans: 5
-  completed_plans: 3
-  percent: 60
+  completed_plans: 4
+  percent: 80
 ---
 
 # Project State
 
 ## Current Position
 
-Phase: 64 - Gap-Family Retrieval Improvements
-Plan: 64-gap-family-retrieval-improvements-01-PLAN.md
+Phase: 65 - v2.5 Product Proof And Release Gate
+Plan: not yet created
 Status: Planned
-Last activity: 2026-05-30 -- Phase 63 added eval-only local metadata reranker comparison, protected-evidence promotion gates, and blocked reranker promotion on named regressions
+Last activity: 2026-05-30 -- Phase 64 improved RefactoringMiner Recall@10 from 0.1375 to 0.7392 and reduced the selected wrapper-family gap from 7 misses to 1, with full validation passing
 
 ## Project Reference
 
@@ -41,7 +41,7 @@ Planned phases:
 - Phase 61: Multi-Repo Quality Baselines (complete)
 - Phase 62: Production Local Embedding Quality (complete)
 - Phase 63: Reranker And Fusion Promotion (complete)
-- Phase 64: Gap-Family Retrieval Improvements (planned)
+- Phase 64: Gap-Family Retrieval Improvements (complete)
 - Phase 65: v2.5 Product Proof And Release Gate (planned)
 
 ## Last Completed Milestone
@@ -60,9 +60,9 @@ Planned phases:
 
 ## Next Step
 
-Plan and execute Phase 64: Gap-Family Retrieval Improvements.
+Plan and execute Phase 65: v2.5 Product Proof And Release Gate.
 
 ## Operator Next Steps
 
-- Use Phase 63 evidence to keep the local metadata reranker gated until protected-evidence regressions are fixed.
-- Target the measured Phase 63 gap families before attempting another default promotion.
+- Use Phase 64 evidence to decide whether lexical expansion should ship as a default, stay task-gated, or remain eval-only.
+- Resolve or explicitly gate the remaining symbol-budget pressure and ctxpack Recall@10 regression before a v2.5 release claim.

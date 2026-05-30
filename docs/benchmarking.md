@@ -260,10 +260,13 @@ Recall@10, runtime/cache fields, token efficiency, provider policy, precision
 status, protected-evidence miss rate, named wins, named regressions, and named
 misses.
 
-Protected evidence is source-free metadata for paths that carry explicit anchor,
-current-diff, lexical, or symbol signals. Promotion gates treat a variant that
-demotes protected paths kept by the default ranking as a named regression. This
-prevents semantic, graph, or metadata reranking experiments from hiding exact
+Protected evidence is source-free metadata for budgeted paths that carry
+explicit anchor, current-diff, lexical, or symbol signals. The protected set is
+bounded by the eval context budget, so broader candidate generation can add
+`lexical_expansion` evidence without making the protected-evidence requirement
+impossible to satisfy. Promotion gates treat a variant that demotes protected
+paths kept by the default ranking as a named regression. This prevents semantic,
+graph, lexical-expansion, or metadata reranking experiments from hiding exact
 evidence behind aggregate Recall@K gains.
 
 Benchmark suites can evaluate the local metadata reranker without changing MCP
