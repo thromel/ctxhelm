@@ -6,7 +6,7 @@
 
 **Goal:** Prove and improve retrieval quality across real repositories so production local embeddings, reranking, graph/test/history fixes, and learned fusion can beat lexical baseline while staying local-first and source-safe.
 
-**Status:** Active: 2026-05-22. Phases 61-67 complete; Phase 69 promoted default local retrieval under the channel-aware product-proof gate; Phase 70 refreshed Codex CLI and Claude Code real-client MCP proof; Phase 71 reduced ctxpack archive-artifact retrieval noise; Phase 72 broadened repeated-lift validation and improved validation-test recall seeding; Phase 73 committed a pinned broader fixed-corpus probe; Phase 74 separated protected retrieval-target misses from non-target protected pressure; Phase 75 restored parent-bounded eval history and reserved co-changed validation tests; Phase 76 split historical parent history into validation-only eval mode and enriched co-changed test commands; Phase 77 added broad validation fallback commands and effective validation-command coverage metrics.
+**Status:** Active: 2026-05-22. Phases 61-67 complete; Phase 69 promoted default local retrieval under the channel-aware product-proof gate; Phase 70 refreshed Codex CLI and Claude Code real-client MCP proof; Phase 71 reduced ctxpack archive-artifact retrieval noise; Phase 72 broadened repeated-lift validation and improved validation-test recall seeding; Phase 73 committed a pinned broader fixed-corpus probe; Phase 74 separated protected retrieval-target misses from non-target protected pressure; Phase 75 restored parent-bounded eval history and reserved co-changed validation tests; Phase 76 split historical parent history into validation-only eval mode and enriched co-changed test commands; Phase 77 added broad validation fallback commands and effective validation-command coverage metrics; Phase 78 made the broader proof gate ceiling-aware and promoted the fixed four-repo corpus.
 
 **Phases planned:** Phases 61-65 plus Phase 66-77 production-readiness follow-ups, 7 planned phase files plus 9 proof follow-up artifacts
 
@@ -60,13 +60,15 @@
 - Phase 77 E2E: `.planning/e2e/2026-05-30-phase77-validation-command-coverage.md`
 - Phase 77 proof: `.ctxpack/e2e/phase77-validation-command-coverage-proof.json`
 - Phase 77 broader proof: `.ctxpack/e2e/phase77-broader-validation-command-coverage-proof.json`
+- Phase 78 E2E: `.planning/e2e/2026-05-30-phase78-ceiling-aware-broader-gate.md`
+- Phase 78 broader proof: `.ctxpack/e2e/phase78-ceiling-aware-broader-proof.json`
 
 **Current follow-up gaps:**
 
-- Broader four-repo proof still blocks promotion: VeriSchema now beats through effective validation recall (`1.0`) even though raw Test Recall@10 remains `0.7090`, and RefactoringMiner matches rather than beats on the newest-5-commit probe.
-- Protected retrieval-target miss-rate remains non-zero in the required proof and in the broader ctxpack/VeriSchema probes; the current Phase 77 required-corpus ctxpack target miss-rate is `0.083`.
+- Broader four-repo proof now promotes under the ceiling-aware gate: VeriSchema beats through effective validation recall (`1.0`) even though raw Test Recall@10 remains `0.7090`, and RefactoringMiner is accepted as a safe lexical-ceiling match.
+- Protected retrieval-target miss-rate remains non-zero in the required proof and in the broader ctxpack/VeriSchema probes; the current Phase 77 required-corpus ctxpack target miss-rate is `0.083`, and Phase 78 broader target miss-rates are `0.100` for ctxpack and `0.143` for VeriSchema.
 - Parser/precision dependency misses remain a repeated source gap family.
-- The broad corpora now have a pinned optional fixture, but they still block and should not become the required release gate until the measured gaps improve, especially VeriSchema validation-test recall.
+- The broad corpora now have a pinned optional fixture that promotes, but it should remain an optional production-readiness probe until protected target miss diagnostics and warm-cache latency characterization improve further.
 
 ## Shipped
 

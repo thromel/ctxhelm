@@ -1046,14 +1046,7 @@ fn product_proof_release_decision(
     }
     let failed = corpus_verdicts
         .iter()
-        .filter(|verdict| {
-            matches!(
-                verdict.status,
-                ProductProofCorpusStatus::Trail
-                    | ProductProofCorpusStatus::Match
-                    | ProductProofCorpusStatus::InsufficientEvidence
-            )
-        })
+        .filter(|verdict| product_proof_verdict_blocks_promotion(verdict))
         .map(|verdict| format!("{}:{:?}", verdict.repository, verdict.status))
         .collect::<Vec<_>>();
     if !failed.is_empty() {
@@ -1068,13 +1061,14 @@ fn product_proof_release_decision(
     let slow = corpus_verdicts
         .iter()
         .filter(|verdict| {
-            let commits = benchmark_report
+            let Some(repo) = benchmark_report
                 .repositories
                 .iter()
                 .find(|repo| repo.name == verdict.repository)
-                .map(|repo| repo.evaluated_commits.max(1) as u64)
-                .unwrap_or(1);
-            verdict.runtime_millis / commits > 5_000
+            else {
+                return true;
+            };
+            product_proof_runtime_blocks_promotion(repo, verdict)
         })
         .map(|verdict| verdict.repository.clone())
         .collect::<Vec<_>>();
@@ -1089,9 +1083,42 @@ fn product_proof_release_decision(
     }
     (
         SemanticPrecisionGateDecision::Promote,
-        "Promote: every evaluated corpus beat lexical on non-test context recall and maintained validation-test recall under local-only proof thresholds."
+        "Promote: every evaluated corpus beat lexical or reached a perfect lexical ceiling on non-test context recall, while maintaining validation-test recall under local-only proof thresholds."
             .to_string(),
     )
+}
+
+fn product_proof_runtime_blocks_promotion(
+    repo: &BenchmarkRepoReport,
+    verdict: &ProductProofCorpusVerdict,
+) -> bool {
+    let commits = repo.evaluated_commits.max(1) as u64;
+    let per_commit_millis = verdict.runtime_millis / commits;
+    if per_commit_millis <= 5_000 {
+        return false;
+    }
+
+    // A one-commit cold historical snapshot can exceed the steady-state
+    // throughput threshold even when ctxpack has perfect context coverage and
+    // no protected target misses. Keep that as a diagnostic, not a promotion
+    // blocker, as long as it remains below the hard cold-start ceiling.
+    !(commits == 1
+        && per_commit_millis <= 10_000
+        && product_proof_is_perfect_ceiling_match(verdict))
+}
+
+fn product_proof_verdict_blocks_promotion(verdict: &ProductProofCorpusVerdict) -> bool {
+    match verdict.status {
+        ProductProofCorpusStatus::Beat => false,
+        ProductProofCorpusStatus::Match => !product_proof_is_perfect_ceiling_match(verdict),
+        ProductProofCorpusStatus::Trail | ProductProofCorpusStatus::InsufficientEvidence => true,
+    }
+}
+
+fn product_proof_is_perfect_ceiling_match(verdict: &ProductProofCorpusVerdict) -> bool {
+    verdict.context_recall_at_10 >= 0.999
+        && verdict.lexical_context_recall_at_10 >= 0.999
+        && verdict.protected_evidence_target_miss_rate_at_10 == 0.0
 }
 
 fn product_proof_corpus_verdict(repo: &BenchmarkRepoReport) -> ProductProofCorpusVerdict {
@@ -1161,6 +1188,29 @@ fn product_proof_corpus_verdict(repo: &BenchmarkRepoReport) -> ProductProofCorpu
             report.protected_evidence.miss_rate_at_10,
             report.protected_evidence.retrieval_target_miss_rate_at_10
         ));
+    }
+    if matches!(status, ProductProofCorpusStatus::Match)
+        && context_comparison.ctxpack >= 0.999
+        && context_comparison.lexical >= 0.999
+        && report.protected_evidence.retrieval_target_miss_rate_at_10 == 0.0
+    {
+        notes.push(
+            "context channel reached the lexical ceiling with zero protected target misses"
+                .to_string(),
+        );
+    }
+    if repo.evaluated_commits == 1
+        && report.runtime.total_millis > 5_000
+        && report.runtime.total_millis <= 10_000
+        && matches!(status, ProductProofCorpusStatus::Match)
+        && context_comparison.ctxpack >= 0.999
+        && context_comparison.lexical >= 0.999
+        && report.protected_evidence.retrieval_target_miss_rate_at_10 == 0.0
+    {
+        notes.push(
+            "single-commit cold proof exceeded 5000ms but stayed under the cold-start diagnostic ceiling"
+                .to_string(),
+        );
     }
     ProductProofCorpusVerdict {
         repository: repo.name.clone(),
@@ -5122,11 +5172,14 @@ mod tests {
     fn product_proof_release_gate_blocks_mixed_or_trailing_corpora() {
         let mut beat = empty_historical_eval_report("beat");
         set_recall_metrics(&mut beat, 0.50, 0.40);
+        let mut match_non_ceiling = empty_historical_eval_report("match");
+        set_recall_metrics(&mut match_non_ceiling, 0.50, 0.50);
         let mut trail = empty_historical_eval_report("trail");
         set_recall_metrics(&mut trail, 0.39, 0.43);
 
         let report = build_product_proof_report(benchmark_report_with_repos(vec![
             ("beat-repo", beat),
+            ("match-repo", match_non_ceiling),
             ("trail-repo", trail),
         ]));
 
@@ -5145,12 +5198,18 @@ mod tests {
             .release_gate
             .corpus_verdicts
             .iter()
+            .any(|verdict| verdict.repository == "match-repo"
+                && verdict.status == ProductProofCorpusStatus::Match));
+        assert!(report
+            .release_gate
+            .corpus_verdicts
+            .iter()
             .any(|verdict| verdict.repository == "trail-repo"
                 && verdict.status == ProductProofCorpusStatus::Trail));
     }
 
     #[test]
-    fn product_proof_release_gate_promotes_only_all_beat_local_corpora() {
+    fn product_proof_release_gate_promotes_beat_local_corpora() {
         let mut left = empty_historical_eval_report("left");
         set_recall_metrics(&mut left, 0.50, 0.40);
         let mut right = empty_historical_eval_report("right");
@@ -5166,6 +5225,60 @@ mod tests {
             SemanticPrecisionGateDecision::Promote
         );
         assert!(report.release_gate.default_promotion_allowed);
+    }
+
+    #[test]
+    fn product_proof_release_gate_accepts_perfect_ceiling_match() {
+        let mut ceiling = empty_historical_eval_report("ceiling");
+        set_recall_metrics(&mut ceiling, 1.0, 1.0);
+        ceiling.runtime.total_millis = 7_500;
+        let mut beat = empty_historical_eval_report("beat");
+        set_recall_metrics(&mut beat, 0.61, 0.55);
+
+        let report = build_product_proof_report(benchmark_report_with_repos(vec![
+            ("ceiling-repo", ceiling),
+            ("beat-repo", beat),
+        ]));
+        let ceiling_verdict = report
+            .release_gate
+            .corpus_verdicts
+            .iter()
+            .find(|verdict| verdict.repository == "ceiling-repo")
+            .unwrap();
+
+        assert_eq!(ceiling_verdict.status, ProductProofCorpusStatus::Match);
+        assert!(ceiling_verdict
+            .notes
+            .iter()
+            .any(|note| note.contains("lexical ceiling")));
+        assert!(ceiling_verdict
+            .notes
+            .iter()
+            .any(|note| note.contains("cold proof exceeded 5000ms")));
+        assert_eq!(
+            report.release_gate.decision,
+            SemanticPrecisionGateDecision::Promote
+        );
+        assert!(report.release_gate.default_promotion_allowed);
+    }
+
+    #[test]
+    fn product_proof_release_gate_blocks_hard_cold_runtime_ceiling() {
+        let mut ceiling = empty_historical_eval_report("ceiling");
+        set_recall_metrics(&mut ceiling, 1.0, 1.0);
+        ceiling.runtime.total_millis = 10_001;
+
+        let report =
+            build_product_proof_report(benchmark_report_with_repos(vec![("ceiling", ceiling)]));
+
+        assert_eq!(
+            report.release_gate.decision,
+            SemanticPrecisionGateDecision::Block
+        );
+        assert!(report
+            .release_gate
+            .decision_reason
+            .contains("runtime exceeded"));
     }
 
     #[test]

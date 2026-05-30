@@ -235,14 +235,17 @@ RefactoringMiner target miss-rate@10 is `0.0588`, and ctxpack target
 miss-rate@10 is `0.0833`. Phase 77 adds broad validation fallback commands and
 effective validation-command coverage for multi-area smoke/eval tasks. The
 latest optional four-repo probe in
-`.ctxpack/e2e/phase77-broader-validation-command-coverage-proof.json` still
-blocks broader promotion because the newest-5-commit RefactoringMiner probe
-matches lexical rather than beats it, but VeriSchema now beats through
-Effective Validation Recall@10 `1.0` while raw Test Recall@10 remains `0.7090`.
+`.ctxpack/e2e/phase78-ceiling-aware-broader-proof.json` now promotes broader
+proof because RefactoringMiner is treated as a safe lexical-ceiling match:
+ctxpack and lexical both have context Recall@10 `1.0`, validation is covered,
+and protected retrieval-target miss-rate is `0.0`. VeriSchema also beats
+through Effective Validation Recall@10 `1.0` while raw Test Recall@10 remains
+`0.7090`.
 For repeatable local investigation, use the pinned optional fixture at
 `.planning/e2e/2026-05-30-phase73-broader-fixed-corpus-config.json`; it is
-expected to report `releaseGate.decision = block` until the remaining broader
-measured gaps are fixed.
+expected to report `releaseGate.decision = promote` under the ceiling-aware
+gate while still reporting protected target miss diagnostics for ctxpack and
+VeriSchema.
 
 Latest optional real-client proof: Codex CLI `0.130.0` and Claude Code
 `2.1.158` both passed the smoke wrappers on 2026-05-30 with server-side

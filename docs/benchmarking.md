@@ -385,9 +385,11 @@ overall protected miss-rate remains visible, but the report now also separates
 retrieval-target protected misses from non-target protected pressure. On the
 current required proof after Phase 77, RefactoringMiner has protected target
 miss-rate@10 0.059 and ctxpack has 0.083. The broader fixed-corpus fixture
-still blocks promotion: VeriSchema now beats through effective validation
-recall, but RefactoringMiner matches lexical on the pinned newest-5-commit
-probe, and ctxpack/VeriSchema still have protected retrieval-target misses.
+now promotes after Phase 78: VeriSchema beats through effective validation
+recall, and RefactoringMiner is accepted as a safe lexical-ceiling match because
+both ctxpack and lexical have perfect context recall with zero protected
+retrieval-target misses. ctxpack/VeriSchema still report protected
+retrieval-target misses as diagnostics.
 
 Recommendation today:
 
@@ -413,6 +415,9 @@ Recommendation today:
 - Phase 77 adds broad validation fallback commands and effective validation
   recall. VeriSchema's broader raw Test Recall@10 remains `0.709`, but broad
   `pytest` commands raise effective validation recall to `1.000`.
+- Phase 78 makes the product-proof gate ceiling-aware. The broader four-repo
+  proof now promotes while preserving protected target miss diagnostics for
+  ctxpack and VeriSchema.
 - Keep `local_metadata_reranked` eval-only until named regressions and protected
   evidence behavior clear the gate.
 - Keep `local_fastembed` opt-in for experiments and conceptual queries; it is

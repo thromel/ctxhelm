@@ -10,6 +10,15 @@ def fail(message: str) -> None:
     raise SystemExit(message)
 
 
+def is_perfect_ceiling_match(verdict: dict) -> bool:
+    return (
+        verdict.get("status") == "match"
+        and float(verdict.get("contextRecallAt10", 0.0)) >= 0.999
+        and float(verdict.get("lexicalContextRecallAt10", 0.0)) >= 0.999
+        and float(verdict.get("protectedEvidenceTargetMissRateAt10", 1.0)) == 0.0
+    )
+
+
 def main() -> None:
     if len(sys.argv) != 2:
         fail("usage: check-product-proof.py <product-proof.json>")
@@ -54,9 +63,9 @@ def main() -> None:
     if not isinstance(verdicts, list) or not verdicts:
         fail("product proof releaseGate.corpusVerdicts were missing")
     for verdict in verdicts:
-        if verdict.get("status") != "beat":
+        if verdict.get("status") != "beat" and not is_perfect_ceiling_match(verdict):
             fail(
-                "product proof corpus did not beat lexical: "
+                "product proof corpus did not beat lexical or reach a perfect lexical ceiling: "
                 + str(verdict.get("repository"))
                 + " status "
                 + str(verdict.get("status"))
