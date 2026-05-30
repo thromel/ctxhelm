@@ -3,11 +3,11 @@ gsd_state_version: 1.0
 milestone: v2.5
 milestone_name: Production Retrieval Quality
 status: active
-last_updated: "2026-05-31T04:45:00Z"
-last_activity: 2026-05-31 -- Phase 89 added fast inventory freshness
+last_updated: "2026-05-31T05:35:00Z"
+last_activity: 2026-05-31 -- Phase 90 proved packaged release gate
 progress:
-  total_phases: 27
-  completed_phases: 27
+  total_phases: 29
+  completed_phases: 29
   total_plans: 7
   completed_plans: 7
   percent: 100
@@ -17,10 +17,10 @@ progress:
 
 ## Current Position
 
-Phase: 89 - Fast Inventory Freshness
-Plan: 89-fast-inventory-freshness
+Phase: 90 - Packaged Release Gate
+Plan: 90-packaged-release-gate
 Status: Complete
-Last activity: 2026-05-31 -- Phase 89 makes inventory cache-hit freshness metadata-only instead of full source re-hashing. The pinned broader release proof now promotes: RefactoringMiner `8279ms`, ctxpack `8317ms`, ReAgent `4264ms`, and VeriSchema `6590ms`, with Phase 88 quality metrics preserved.
+Last activity: 2026-05-31 -- Phase 90 ran `scripts/release-gate.sh` from a temporary clean worktree at `0c36316` with the broader fixed-corpus benchmark enabled. The gate packaged and audited the archive, verified clean extraction, used the extracted `ctxpack 1.1.0` binary, passed all required smokes, passed the packaged broad product proof, and skipped only optional real-client tool-call evidence via `CTXPACK_SKIP_REAL_CLIENT=1`.
 
 ## Project Reference
 
@@ -66,6 +66,7 @@ Planned phases:
 - Phase 87: Validation Gap Accounting (complete follow-up)
 - Phase 88: Broad Source-Area Candidates (complete follow-up)
 - Phase 89: Fast Inventory Freshness (complete follow-up)
+- Phase 90: Packaged Release Gate (complete follow-up)
 
 ## Last Completed Milestone
 
@@ -83,7 +84,7 @@ Planned phases:
 
 ## Next Step
 
-Continue production-readiness work from remaining measured gaps: source candidate generation for parser/precision `no_candidate_signal` families that still lack candidates, plus release-mode proof hardening as new runtime regressions appear.
+Continue production-readiness work from remaining measured gaps: source candidate generation for parser/precision `no_candidate_signal` families that still lack candidates. The packaged release path now passes from a clean worktree with the broader benchmark proof enabled.
 
 ## Operator Next Steps
 
@@ -114,6 +115,7 @@ Continue production-readiness work from remaining measured gaps: source candidat
 - Latest validation gap accounting proof: `.planning/e2e/2026-05-31-phase87-validation-gap-accounting.md` and `.ctxpack/e2e/phase87-validation-gap-accounting-proof.json`; RefactoringMiner validation-command recall improves from `0.0` to `1.0`, validation-covered tests no longer appear as unresolved test-mapping gap summaries, and the rejected broad source-area diversity experiment is documented.
 - Latest broad source-area candidate proof: `.planning/e2e/2026-05-31-phase88-broad-source-area-candidates.md` and `.ctxpack/e2e/phase88-broad-source-area-candidates-proof.json`; VeriSchema File Recall@10 improves from `0.17936651` to `0.18449473` and Source Recall@10 improves from `0.30409357` to `0.31067252` without validation or protected-target regression.
 - Latest fast inventory freshness proof: `.planning/e2e/2026-05-31-phase89-fast-inventory-freshness.md`, `.ctxpack/e2e/phase89-fast-inventory-freshness-proof.json`, and `.ctxpack/e2e/phase89-fast-inventory-freshness-release-proof.json`; release-mode broader proof promotes while preserving Phase 88 quality metrics.
+- Latest packaged release-gate proof: `.planning/e2e/2026-05-31-phase90-packaged-release-gate.md`; clean worktree release gate passed with broad benchmark proof enabled and optional Codex/Claude real-client tool-call evidence skipped.
 - Latest real-client proof: `.planning/e2e/2026-05-30-phase70-real-client-mcp-proof.md`.
 - RefactoringMiner and ReAgent still trail lexical on all-file recall in the broader proof, but those deficits are now machine-checkable as explained by the context/validation split instead of only prose notes.
 - Phase 84 improves VeriSchema Source Recall@10 from `0.249` to `0.304` on the broader fixed corpus while keeping RefactoringMiner, ctxpack, and ReAgent stable.
@@ -122,4 +124,5 @@ Continue production-readiness work from remaining measured gaps: source candidat
 - Phase 87 fixes validation accounting rather than target ranking: Java class-selector commands now count as validation coverage, and validation-covered tests no longer inflate test-mapping gap summaries.
 - Phase 88 improves broad VeriSchema source/file recall by adding bounded source-area candidates after graph/test seed selection. An earlier variant was rejected because it perturbed raw test recall.
 - Phase 89 reduces repeated inventory freshness overhead. Debug broad proof now blocks only on the RefactoringMiner single-commit cold-start diagnostic, while release-mode broad proof promotes and passes `scripts/check-product-proof.py`.
-- Next work should target remaining source candidate gaps and keep release-mode proof as the production runtime authority.
+- Phase 90 proves the packaged release path: the archive audit, clean extraction, extracted binary smokes, MCP protocol checks, Cursor/OpenCode setup checks, and packaged broad benchmark proof all passed from a clean worktree.
+- Next work should target remaining source candidate gaps as quality improvements, not current packaged-release blockers.

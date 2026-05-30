@@ -336,6 +336,14 @@ the committed release proof is
 `.ctxpack/e2e/phase89-fast-inventory-freshness-release-proof.json` and reports
 `releaseGate.decision = promote`.
 
+Phase 90 proves the packaged release path from a clean worktree with the broad
+benchmark enabled. The evidence artifact is
+`.planning/e2e/2026-05-31-phase90-packaged-release-gate.md`. The gate packaged
+and audited the archive, verified clean extraction, used the extracted
+`ctxpack 1.1.0` binary, passed required smokes and MCP protocol checks, and
+passed the broad product proof. Optional Codex and Claude real-client tool-call
+evidence was intentionally skipped with `CTXPACK_SKIP_REAL_CLIENT=1`.
+
 Latest optional real-client proof: Codex CLI `0.130.0` and Claude Code
 `2.1.158` both passed the smoke wrappers on 2026-05-30 with server-side
 `prepare_task` and `get_pack` evidence against an explicit repo path. See
