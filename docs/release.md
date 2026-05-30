@@ -344,6 +344,14 @@ and audited the archive, verified clean extraction, used the extracted
 passed the broad product proof. Optional Codex and Claude real-client tool-call
 evidence was intentionally skipped with `CTXPACK_SKIP_REAL_CLIENT=1`.
 
+Phase 91 adds broad context-area eval evidence for tasks too wide for a
+top-10 file list. The evidence artifact is
+`.planning/e2e/2026-05-31-phase91-broad-context-area-eval.md`; the committed
+release proof is `.ctxpack/e2e/phase91-broad-context-area-release-proof.json`
+and reports `releaseGate.decision = promote`. VeriSchema broad-scope commits
+now report `broadContextAreaRecall = 0.64708996` while existing file/source,
+validation, protected-target, and runtime gates stay stable.
+
 Latest optional real-client proof: Codex CLI `0.130.0` and Claude Code
 `2.1.158` both passed the smoke wrappers on 2026-05-30 with server-side
 `prepare_task` and `get_pack` evidence against an explicit repo path. See

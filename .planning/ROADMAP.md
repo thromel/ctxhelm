@@ -4,7 +4,7 @@
 
 This roadmap tracks v2.5 Production Retrieval Quality and its immediate production-readiness follow-ups. v2.4 made semantic, precision, provider, and reranker paths source-safe and policy-gated, then the fresh RefactoringMiner proof fixed a semantic fusion regression. The current fixed two-repo product proof promotes default local retrieval under a channel-aware gate: non-test context recall beats lexical on both corpora, while validation-test recall is measured separately through `recommended_tests`.
 
-v2.5 therefore focuses on measured retrieval quality, not more surface area. The milestone must prove whether production local embeddings, reranking, graph/test/history fixes, and learned fusion can beat lexical baseline on real repositories while staying local-first and source-safe. Phase 66 fixed the false zero-test-recall signal by measuring `recommended_tests` as its own validation channel. Phase 67 fixed the denominator for historical retrieval metrics by separating all safe changed files from parent-snapshot `retrievalTargetFiles`. Phase 69 promoted default local retrieval under the channel-aware proof, Phase 70 refreshed real-client MCP evidence for Codex CLI and Claude Code, Phase 71 reduced archive-artifact retrieval noise in ctxpack's own history, Phase 72 broadened repeated-lift validation while improving validation-test recall seeding, Phase 73 pinned a broader optional fixed-corpus probe, Phase 76 split partial-snapshot history into validation-only mode for historical eval, Phase 77 added broad validation-command coverage for multi-area smoke/eval tasks, Phase 78 made the broader proof gate lexical-ceiling aware, Phase 79 added protected target floors, Phase 80 fixed symbol-floor duplicate accounting, Phase 81 made warm-cache runtime proof trustworthy, Phase 82 made warm-cache runtime enforceable, Phase 83 made context-vs-all-file divergence machine-checkable, Phase 84 added broad-scope task accounting plus scoped dependency source floors, Phase 85 added source-free context-area hints for broad prepare-task plans and packs, Phase 86 added bounded Python package re-export graph coverage, Phase 87 fixed validation-covered test gap accounting, Phase 88 added bounded broad source-area candidates, Phase 89 reduced repeated inventory freshness overhead so the pinned broader release proof promotes, and Phase 90 proved the packaged release gate from a clean worktree with the broad benchmark enabled.
+v2.5 therefore focuses on measured retrieval quality, not more surface area. The milestone must prove whether production local embeddings, reranking, graph/test/history fixes, and learned fusion can beat lexical baseline on real repositories while staying local-first and source-safe. Phase 66 fixed the false zero-test-recall signal by measuring `recommended_tests` as its own validation channel. Phase 67 fixed the denominator for historical retrieval metrics by separating all safe changed files from parent-snapshot `retrievalTargetFiles`. Phase 69 promoted default local retrieval under the channel-aware proof, Phase 70 refreshed real-client MCP evidence for Codex CLI and Claude Code, Phase 71 reduced archive-artifact retrieval noise in ctxpack's own history, Phase 72 broadened repeated-lift validation while improving validation-test recall seeding, Phase 73 pinned a broader optional fixed-corpus probe, Phase 76 split partial-snapshot history into validation-only mode for historical eval, Phase 77 added broad validation-command coverage for multi-area smoke/eval tasks, Phase 78 made the broader proof gate lexical-ceiling aware, Phase 79 added protected target floors, Phase 80 fixed symbol-floor duplicate accounting, Phase 81 made warm-cache runtime proof trustworthy, Phase 82 made warm-cache runtime enforceable, Phase 83 made context-vs-all-file divergence machine-checkable, Phase 84 added broad-scope task accounting plus scoped dependency source floors, Phase 85 added source-free context-area hints for broad prepare-task plans and packs, Phase 86 added bounded Python package re-export graph coverage, Phase 87 fixed validation-covered test gap accounting, Phase 88 added bounded broad source-area candidates, Phase 89 reduced repeated inventory freshness overhead so the pinned broader release proof promotes, Phase 90 proved the packaged release gate from a clean worktree with the broad benchmark enabled, and Phase 91 made broad context-area coverage measurable in historical eval.
 
 ## v2.5 Production Retrieval Quality
 
@@ -45,6 +45,7 @@ v2.5 therefore focuses on measured retrieval quality, not more surface area. The
 - [x] **Phase 88: Broad Source-Area Candidates** - Broad multi-area tasks get bounded source-area inventory candidates after graph/test seed selection, improving VeriSchema source recall without validation regression.
 - [x] **Phase 89: Fast Inventory Freshness** - Inventory cache-hit freshness avoids full source re-hashing, reducing broad-proof runtime while preserving quality and privacy gates.
 - [x] **Phase 90: Packaged Release Gate** - The clean packaged release gate passes with broad benchmark proof enabled.
+- [x] **Phase 91: Broad Context-Area Eval** - Historical eval records changed context areas, surfaced area hits, and broad context-area recall for wide tasks that exceed the target-file budget.
 
 ## Phase Details
 
@@ -669,12 +670,12 @@ general recursive graph expansion.
 | GAP-02 | Phase 86 |
 | GAP-04 | Phase 86 |
 
-**Coverage:** 20/20 v2.5 requirements mapped, with Phases 66-90 as measured follow-ups for proof/eval correctness gaps, real-client evidence, archive-noise reduction, broader validation, fixed-corpus reproducibility, protected-evidence diagnostics, parent-bounded history/test reservation, validation-only historical eval history, validation-command coverage, lexical-ceiling proof semantics, protected target floors, symbol-floor accounting, warm-cache runtime proof, warm-cache release gating, context-vs-all-file divergence accounting, broad-scope dependency source floors, broad context-area hints, Python package re-export graph coverage, validation gap accounting, broad source-area candidates, fast inventory freshness, and packaged release-gate proof. No orphaned v2.5 requirements.
+**Coverage:** 20/20 v2.5 requirements mapped, with Phases 66-91 as measured follow-ups for proof/eval correctness gaps, real-client evidence, archive-noise reduction, broader validation, fixed-corpus reproducibility, protected-evidence diagnostics, parent-bounded history/test reservation, validation-only historical eval history, validation-command coverage, lexical-ceiling proof semantics, protected target floors, symbol-floor accounting, warm-cache runtime proof, warm-cache release gating, context-vs-all-file divergence accounting, broad-scope dependency source floors, broad context-area hints, Python package re-export graph coverage, validation gap accounting, broad source-area candidates, fast inventory freshness, packaged release-gate proof, and broad context-area eval coverage. No orphaned v2.5 requirements.
 
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 61 -> 62 -> 63 -> 64 -> 65 -> 66 -> 67 -> 69 -> 70 -> 71 -> 72 -> 73 -> 74 -> 75 -> 76 -> 77 -> 78 -> 79 -> 80 -> 81 -> 82 -> 83 -> 84 -> 85 -> 86
+Phases execute in numeric order: 61 -> 62 -> 63 -> 64 -> 65 -> 66 -> 67 -> 69 -> 70 -> 71 -> 72 -> 73 -> 74 -> 75 -> 76 -> 77 -> 78 -> 79 -> 80 -> 81 -> 82 -> 83 -> 84 -> 85 -> 86 -> 87 -> 88 -> 89 -> 90 -> 91
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
@@ -703,6 +704,11 @@ Phases execute in numeric order: 61 -> 62 -> 63 -> 64 -> 65 -> 66 -> 67 -> 69 ->
 | 84. Broad Scope Dependency Floors | Evidence artifact | Complete | 2026-05-31 |
 | 85. Broad Context Areas | Evidence artifact | Complete | 2026-05-31 |
 | 86. Python Package Re-Export Graph Coverage | Evidence artifact | Complete | 2026-05-31 |
+| 87. Validation Gap Accounting | Evidence artifact | Complete | 2026-05-31 |
+| 88. Broad Source-Area Candidates | Evidence artifact | Complete | 2026-05-31 |
+| 89. Fast Inventory Freshness | Evidence artifact | Complete | 2026-05-31 |
+| 90. Packaged Release Gate | Evidence artifact | Complete | 2026-05-31 |
+| 91. Broad Context-Area Eval | Evidence artifact | Complete | 2026-05-31 |
 
 ---
 *Roadmap created: 2026-05-22*

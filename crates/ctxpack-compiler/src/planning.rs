@@ -535,6 +535,7 @@ fn context_areas_for_plan(
         }
         let area = context_area_for_path(path);
         let entry = areas.entry(area).or_default();
+        entry.record_role(&candidate.role);
         if entry.unique_paths.insert(path.to_string()) {
             entry.candidate_count += 1;
             if entry.representative_paths.len() < 3 {
@@ -542,33 +543,89 @@ fn context_areas_for_plan(
             }
             if selected_paths.contains(path) {
                 entry.selected_count += 1;
+                entry.record_selected_role(&candidate.role);
             }
         }
     }
 
     let mut areas = areas
         .into_iter()
-        .map(|(area, accumulator)| ContextArea {
-            area: area.clone(),
-            reason: format!(
-                "Broad task candidate area with {} candidate path(s) and {} selected path(s).",
-                accumulator.candidate_count, accumulator.selected_count
-            ),
-            representative_paths: accumulator.representative_paths,
-            candidate_count: accumulator.candidate_count,
-            selected_count: accumulator.selected_count,
+        .map(|(area, accumulator)| {
+            let context_area = ContextArea {
+                area: area.clone(),
+                reason: format!(
+                    "Broad task candidate area with {} candidate path(s) and {} selected path(s).",
+                    accumulator.candidate_count, accumulator.selected_count
+                ),
+                representative_paths: accumulator.representative_paths.clone(),
+                candidate_count: accumulator.candidate_count,
+                selected_count: accumulator.selected_count,
+            };
+            RankedContextArea {
+                context_area,
+                accumulator,
+            }
         })
         .collect::<Vec<_>>();
     areas.sort_by(|left, right| {
-        right
-            .selected_count
-            .cmp(&left.selected_count)
-            .then_with(|| right.candidate_count.cmp(&left.candidate_count))
-            .then_with(|| left.area.cmp(&right.area))
+        context_area_priority(&left.context_area.area, &left.accumulator)
+            .cmp(&context_area_priority(
+                &right.context_area.area,
+                &right.accumulator,
+            ))
+            .then_with(|| {
+                right
+                    .accumulator
+                    .selected_source_like_count()
+                    .cmp(&left.accumulator.selected_source_like_count())
+            })
+            .then_with(|| {
+                right
+                    .accumulator
+                    .source_like_count()
+                    .cmp(&left.accumulator.source_like_count())
+            })
+            .then_with(|| {
+                right
+                    .context_area
+                    .selected_count
+                    .cmp(&left.context_area.selected_count)
+            })
+            .then_with(|| {
+                right
+                    .context_area
+                    .candidate_count
+                    .cmp(&left.context_area.candidate_count)
+            })
+            .then_with(|| left.context_area.area.cmp(&right.context_area.area))
     });
-    areas.truncate(8);
+    let mut areas = areas
+        .into_iter()
+        .map(|area| area.context_area)
+        .collect::<Vec<_>>();
+    areas.truncate(MAX_CONTEXT_AREAS);
     areas
 }
+
+struct RankedContextArea {
+    context_area: ContextArea,
+    accumulator: AreaAccumulator,
+}
+
+fn context_area_priority(area: &str, accumulator: &AreaAccumulator) -> u8 {
+    if area == "examples" || area.starts_with("examples/") {
+        return 2;
+    }
+    if accumulator.source_count + accumulator.config_count + accumulator.schema_count > 0 {
+        return 0;
+    }
+    if accumulator.test_count > 0 {
+        return 1;
+    }
+    3
+}
+
+const MAX_CONTEXT_AREAS: usize = 12;
 
 #[derive(Default)]
 struct AreaAccumulator {
@@ -576,9 +633,45 @@ struct AreaAccumulator {
     representative_paths: Vec<String>,
     candidate_count: usize,
     selected_count: usize,
+    source_count: usize,
+    test_count: usize,
+    config_count: usize,
+    schema_count: usize,
+    selected_source_count: usize,
+    selected_config_count: usize,
+    selected_schema_count: usize,
 }
 
-fn context_area_for_path(path: &str) -> String {
+impl AreaAccumulator {
+    fn record_role(&mut self, role: &Option<FileRole>) {
+        match role {
+            Some(FileRole::Source) => self.source_count += 1,
+            Some(FileRole::Test) => self.test_count += 1,
+            Some(FileRole::Config) => self.config_count += 1,
+            Some(FileRole::Schema) => self.schema_count += 1,
+            _ => {}
+        }
+    }
+
+    fn record_selected_role(&mut self, role: &Option<FileRole>) {
+        match role {
+            Some(FileRole::Source) => self.selected_source_count += 1,
+            Some(FileRole::Config) => self.selected_config_count += 1,
+            Some(FileRole::Schema) => self.selected_schema_count += 1,
+            _ => {}
+        }
+    }
+
+    fn source_like_count(&self) -> usize {
+        self.source_count + self.config_count + self.schema_count
+    }
+
+    fn selected_source_like_count(&self) -> usize {
+        self.selected_source_count + self.selected_config_count + self.selected_schema_count
+    }
+}
+
+pub(crate) fn context_area_for_path(path: &str) -> String {
     let mut components = path
         .split('/')
         .filter(|component| !component.is_empty())

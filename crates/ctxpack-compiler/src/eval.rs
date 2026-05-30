@@ -1,14 +1,14 @@
 use crate::packs::pack_repo_id;
 use crate::planning::{
-    is_low_information_task, is_multi_area_task, normalized_target_agent,
+    context_area_for_path, is_low_information_task, is_multi_area_task, normalized_target_agent,
     prepare_context_plan_with_paths_history_and_semantic,
     prepare_context_plan_with_paths_history_mode_and_semantic, HistoryMode,
 };
 use crate::policy::{provider_policy_report, reranker_decision};
 use ctxpack_core::{
     CandidateFeatureExport, CandidateFeatureLabel, CandidateFeatureRow, CandidateFeatureSource,
-    ContextPack, ContextPlan, Diagnostic, DiagnosticSeverity, EvalTrace, FileRole, PackBudget,
-    PolicyQualityReport, PrecisionStatusReport, PrivacyStatus, ProviderDecisionStatus,
+    ContextArea, ContextPack, ContextPlan, Diagnostic, DiagnosticSeverity, EvalTrace, FileRole,
+    PackBudget, PolicyQualityReport, PrecisionStatusReport, PrivacyStatus, ProviderDecisionStatus,
     ProviderPolicyReport, QueryConstructionTrace, RetrievalCandidate, RetrievalCandidateKind,
     RetrievalHealthGapFamily, RetrievalHealthMetric, RetrievalHealthReport,
     RetrievalHealthSignalContribution, RetrievalHealthTokenRoi, RetrievalSignalKind, TaskType,
@@ -517,6 +517,8 @@ pub struct HistoricalEvalReport {
     pub low_information_commit_count: usize,
     #[serde(default)]
     pub broad_scope_commit_count: usize,
+    #[serde(default)]
+    pub broad_context_area_recall: f32,
     pub file_recall_at_5: f32,
     pub file_recall_at_10: f32,
     pub lexical_baseline_recall_at_5: f32,
@@ -819,6 +821,12 @@ pub struct HistoricalCommitEval {
     pub low_information_task: bool,
     #[serde(default)]
     pub broad_scope_task: bool,
+    #[serde(default)]
+    pub changed_context_areas: Vec<String>,
+    #[serde(default)]
+    pub context_area_hits: Vec<String>,
+    #[serde(default)]
+    pub context_areas: Vec<ContextArea>,
     pub confidence: f32,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub query_trace: Option<QueryConstructionTrace>,
@@ -2856,6 +2864,7 @@ pub fn evaluate_historical_commits(
             .iter()
             .filter(|commit| commit.broad_scope_task)
             .count(),
+        broad_context_area_recall: average_broad_context_area_recall(&commits),
         file_recall_at_5,
         file_recall_at_10,
         lexical_baseline_recall_at_5,
@@ -3080,6 +3089,13 @@ fn evaluate_historical_commit_sample(
     let broad_scope_task = is_multi_area_task(&task)
         || retrieval_target_files.len() >= 12
         || source_changed_files.len() >= 8;
+    let changed_context_areas =
+        changed_context_areas(&changed_path_labels, &retrieval_target_files);
+    let context_area_hits = context_area_hits(
+        &changed_context_areas,
+        &plan.context_areas,
+        &recommended_context_files,
+    );
     let ranking_millis = elapsed_millis(ranking_started);
 
     Ok(HistoricalCommitEvalResult {
@@ -3114,6 +3130,9 @@ fn evaluate_historical_commit_sample(
             effective_validation_hits_at_10,
             low_information_task: is_low_information_task(&task),
             broad_scope_task,
+            changed_context_areas,
+            context_area_hits,
+            context_areas: plan.context_areas.clone(),
             confidence: plan.confidence,
             query_trace: plan.query_trace.clone(),
             elapsed_millis: elapsed_millis(commit_started),
@@ -3761,6 +3780,47 @@ fn missing_changed_files(
         .collect()
 }
 
+fn changed_context_areas(
+    labels: &[HistoricalChangedPathLabel],
+    retrieval_target_files: &[String],
+) -> Vec<String> {
+    let retrieval_targets = retrieval_target_files.iter().collect::<BTreeSet<_>>();
+    labels
+        .iter()
+        .filter(|label| {
+            label.label_scope == LabelScope::Safe
+                && retrieval_targets.contains(&label.path)
+                && matches!(
+                    label.role,
+                    FileRole::Source | FileRole::Test | FileRole::Config | FileRole::Schema
+                )
+        })
+        .map(|label| context_area_for_path(&label.path))
+        .collect::<BTreeSet<_>>()
+        .into_iter()
+        .collect()
+}
+
+fn context_area_hits(
+    changed_context_areas: &[String],
+    context_areas: &[ContextArea],
+    recommended_context_files: &[String],
+) -> Vec<String> {
+    let changed = changed_context_areas.iter().collect::<BTreeSet<_>>();
+    let mut surfaced = context_areas
+        .iter()
+        .map(|area| area.area.clone())
+        .collect::<BTreeSet<_>>();
+    for path in recommended_context_files {
+        surfaced.insert(context_area_for_path(path));
+    }
+    changed
+        .into_iter()
+        .filter(|area| surfaced.contains(*area))
+        .cloned()
+        .collect()
+}
+
 fn validation_command_hits(test_changed_files: &[String], commands: &[String]) -> Vec<String> {
     test_changed_files
         .iter()
@@ -4402,6 +4462,24 @@ fn average_validation_command_recall(commits: &[HistoricalCommitEval]) -> f32 {
 
 fn average_effective_validation_recall(commits: &[HistoricalCommitEval]) -> f32 {
     average_test_hit_rate(commits, |commit| commit.effective_validation_hits_at_10)
+}
+
+fn average_broad_context_area_recall(commits: &[HistoricalCommitEval]) -> f32 {
+    let mut total = 0.0;
+    let mut count = 0usize;
+    for commit in commits {
+        if !commit.broad_scope_task || commit.changed_context_areas.is_empty() {
+            continue;
+        }
+        total += commit.context_area_hits.len() as f32 / commit.changed_context_areas.len() as f32;
+        count += 1;
+    }
+
+    if count == 0 {
+        0.0
+    } else {
+        total / count as f32
+    }
 }
 
 fn average_test_hit_rate(
@@ -5262,6 +5340,9 @@ mod tests {
             effective_validation_hits_at_10: 0,
             low_information_task: false,
             broad_scope_task: false,
+            changed_context_areas: Vec::new(),
+            context_area_hits: Vec::new(),
+            context_areas: Vec::new(),
             confidence: 0.5,
             query_trace: None,
             elapsed_millis: 0,
@@ -5784,6 +5865,54 @@ mod tests {
     }
 
     #[test]
+    fn broad_context_area_recall_counts_surfaced_areas() {
+        let commits = vec![HistoricalCommitEval {
+            sha: "abc123".to_string(),
+            task_hash: "task".to_string(),
+            task_type: TaskType::BugFix,
+            target_agent: "generic".to_string(),
+            changed_path_labels: Vec::new(),
+            safe_changed_files: Vec::new(),
+            retrieval_target_files: Vec::new(),
+            excluded_changed_file_count: 0,
+            recommended_files: Vec::new(),
+            recommended_tests: Vec::new(),
+            recommended_context_files: Vec::new(),
+            recommended_commands: Vec::new(),
+            lexical_baseline_files: Vec::new(),
+            signal_baseline_files: Vec::new(),
+            protected_evidence: Vec::new(),
+            file_hits_at_5: Vec::new(),
+            file_hits_at_10: Vec::new(),
+            lexical_baseline_hits_at_5: Vec::new(),
+            lexical_baseline_hits_at_10: Vec::new(),
+            missing_files_at_10: Vec::new(),
+            source_files_changed: 4,
+            source_hits_at_5: 1,
+            source_hits_at_10: 1,
+            test_files_changed: 0,
+            test_hits_at_5: 0,
+            test_hits_at_10: 0,
+            validation_command_hits: 0,
+            effective_validation_hits_at_10: 0,
+            low_information_task: false,
+            broad_scope_task: true,
+            changed_context_areas: vec![
+                "schema_agent/agents".to_string(),
+                "schema_agent/core".to_string(),
+            ],
+            context_area_hits: vec!["schema_agent/core".to_string()],
+            context_areas: Vec::new(),
+            confidence: 0.5,
+            query_trace: None,
+            elapsed_millis: 0,
+            source_text_logged: false,
+        }];
+
+        assert_eq!(average_broad_context_area_recall(&commits), 0.5);
+    }
+
+    #[test]
     fn retrieval_gap_summaries_skip_validation_covered_tests() {
         let commit = HistoricalCommitEval {
             sha: "abc123".to_string(),
@@ -5828,6 +5957,9 @@ mod tests {
             effective_validation_hits_at_10: 1,
             low_information_task: false,
             broad_scope_task: false,
+            changed_context_areas: Vec::new(),
+            context_area_hits: Vec::new(),
+            context_areas: Vec::new(),
             confidence: 0.5,
             query_trace: None,
             elapsed_millis: 0,
@@ -6048,6 +6180,7 @@ mod tests {
             },
             low_information_commit_count: 0,
             broad_scope_commit_count: 0,
+            broad_context_area_recall: 0.0,
             file_recall_at_5: 0.0,
             file_recall_at_10: 0.0,
             lexical_baseline_recall_at_5: 0.0,
@@ -6095,6 +6228,9 @@ mod tests {
                 effective_validation_hits_at_10: 0,
                 low_information_task: false,
                 broad_scope_task: false,
+                changed_context_areas: Vec::new(),
+                context_area_hits: Vec::new(),
+                context_areas: Vec::new(),
                 confidence: 0.0,
                 query_trace: None,
                 elapsed_millis: 0,
