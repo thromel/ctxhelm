@@ -680,6 +680,10 @@ fn release_docs_script_contract() {
         "does not publish",
         "does not create tags",
         "Cursor and OpenCode real-client proof is not claimed",
+        "--proof-summary",
+        "archive checksum",
+        "binary checksum",
+        "local archive channel is ready",
         "manifest.json",
         "audit.json",
         "source-free proof bundle",
@@ -688,6 +692,10 @@ fn release_docs_script_contract() {
         "signing and notarization gaps",
         "ready/deferred/blocked",
         "rollback",
+        "local archive: ready",
+        "Homebrew formula: deferred",
+        "crates.io package: deferred",
+        "signed installer: deferred",
     ] {
         assert!(
             script_text.contains(required),

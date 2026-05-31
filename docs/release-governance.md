@@ -30,8 +30,16 @@ Create source-free readiness metadata:
 bash scripts/release-candidate-status.sh create \
   --output dist/release-candidate-status.json \
   --status ready \
-  --proof-level deterministic
+  --proof-level deterministic \
+  --proof-summary dist/release-proof-summary.json
 ```
+
+For `ready` candidates, `--proof-summary` should point at the source-free
+summary written by `scripts/release-gate.sh`. The status metadata records the
+archive checksum, binary checksum, archive-binary proof source, required clean
+cold fixture proof status, and the local archive distribution decision. A
+`ready` candidate fails validation unless the attached summary passed, used the
+archive binary, and required the clean fixture proof.
 
 Allowed candidate statuses:
 
@@ -41,6 +49,10 @@ Allowed candidate statuses:
   package-manager metadata, or communication work is incomplete.
 - `blocked`: release must not be announced because a required gate failed or a
   privacy/source-free boundary regressed.
+
+For v1.1.0, `ready` means the local archive channel is ready. Homebrew,
+crates.io, signed installers, and self-update remain explicitly deferred in the
+candidate status metadata.
 
 Validate metadata:
 

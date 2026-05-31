@@ -44,6 +44,21 @@ Current v1.1.0 archives are checksum-audited but not signed installers. Future
 distribution work should add signing and notarization gaps to the release
 checklist before claiming signed macOS installers or package-manager formulas.
 
+## Candidate Decision
+
+The v1.1.0 production candidate is archive-first:
+
+- local archive: ready after the release gate passes with the archive binary
+  and required clean fixture proof
+- Homebrew formula: deferred
+- crates.io package: deferred
+- signed installer: deferred
+- self-update: not implemented
+
+The source-free release candidate status records these decisions alongside the
+archive checksum and binary checksum. It does not publish artifacts or mutate
+package-manager state.
+
 ## Verification
 
 Run:

@@ -28,11 +28,16 @@ Use this checklist before marking a candidate `ready`.
 Allowed statuses are `ready`, `deferred`, and `blocked`.
 
 - Use `ready` only when all required gates pass and known limitations are
-  acceptable.
+  acceptable. Attach the source-free release proof summary with
+  `--proof-summary`; ready status must prove the archive binary, required clean
+  fixture proof, archive checksum, and binary checksum.
 - Use `deferred` when optional proof or distribution communication is still
   intentionally pending.
 - Use `blocked` when a required gate, source-free check, or privacy boundary
   fails.
+
+For v1.1.0, the local archive channel can be `ready`; Homebrew, crates.io,
+signed installers, and self-update stay deferred.
 
 ## Rollback
 

@@ -12,9 +12,40 @@ trap cleanup EXIT
 bash -n "$repo_root/scripts/release-candidate-status.sh"
 bash -n "$repo_root/scripts/release-candidate-rollback.sh"
 
+if bash "$repo_root/scripts/release-candidate-status.sh" create --output "$work_dir/ready-without-proof.json" --status ready >/dev/null 2>&1; then
+  echo "ready release candidate status unexpectedly succeeded without --proof-summary" >&2
+  exit 1
+fi
+
 for status in ready deferred blocked; do
   out="$work_dir/${status}.json"
-  bash "$repo_root/scripts/release-candidate-status.sh" create --output "$out" --status "$status" >/dev/null
+  if [[ "$status" == "ready" ]]; then
+    proof_summary="$work_dir/release-proof-summary.json"
+    cat >"$proof_summary" <<'JSON'
+{
+  "binaryIdentity": {
+    "sha256": "binary-sha256",
+    "source": "archive"
+  },
+  "optionalProofs": {
+    "cleanColdFixtureProductProof": "passed",
+    "cleanColdFixtureRequired": true,
+    "resourceBackedGapSummaryContract": "checked"
+  },
+  "releaseArchive": {
+    "name": "ctxpack-v1.1.0-aarch64-apple-darwin.tar.gz",
+    "sha256": "archive-sha256"
+  },
+  "requiredChecks": [
+    {"name": "cargo test --workspace", "status": "passed"}
+  ],
+  "status": "passed"
+}
+JSON
+    bash "$repo_root/scripts/release-candidate-status.sh" create --output "$out" --status "$status" --proof-summary "$proof_summary" >/dev/null
+  else
+    bash "$repo_root/scripts/release-candidate-status.sh" create --output "$out" --status "$status" >/dev/null
+  fi
   bash "$repo_root/scripts/release-candidate-status.sh" validate --input "$out" >/dev/null
 done
 
@@ -58,4 +89,3 @@ do
 done
 
 echo "release governance smoke passed"
-
