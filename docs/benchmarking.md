@@ -41,8 +41,9 @@ source-free diagnostics; they do not remove targets from recall denominators.
 Prepare-task plans now expose `contextAreas` for broad multi-area prompts. This
 is an additive, source-free channel that groups candidate paths by repository
 area, reports how many candidate and selected paths each area contributed, and
-lists representative paths, concrete unselected `nextReadPaths`, and
-`unselectedCount`. Docs areas are included in this channel. It lets agents
+lists representative paths, concrete unselected `nextReadPaths`, source-free
+`roleCounts`, source-free `selectedRoleCounts`, and `unselectedCount`. Docs areas
+are included in this channel. It lets agents
 inspect likely adjacent source/docs areas with native file reads without
 forcing those areas into the protected top-10 file budget, so retrieval quality
 metrics remain comparable to earlier proofs.
@@ -511,6 +512,10 @@ Recommendation today:
   cleanly when a benchmark repository has no embedded report. The available
   three-repo proof promotes; the full four-repo proof was not claimed because
   the local RefactoringMiner checkout timed out during `git rev-list`.
+- Phase 117 adds source-free `roleCounts` and `selectedRoleCounts` to broad
+  plan-level `contextAreas`, and renders those role signals into generated packs
+  so agents can distinguish source-heavy, validation-heavy, and docs-only areas
+  before native reads.
 - Phase 105 makes history-unavailable benchmark repositories machine-checkable.
   If git history sampling fails or times out, historical eval emits an embedded
   zero-commit report, benchmark output records a source-free history-unavailable

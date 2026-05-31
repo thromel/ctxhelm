@@ -1061,15 +1061,34 @@ fn render_context_areas(plan: &ContextPlan) -> String {
                         .collect::<Vec<_>>()
                         .join(", ")
                 };
+                let role_counts = render_role_counts(&area.role_counts);
+                let selected_role_counts = render_role_counts(&area.selected_role_counts);
                 format!(
-                    "- `{}`: {} Representative paths: {}. Next reads: {}. Resource: {}",
-                    area.area, area.reason, representatives, next_reads, resource
+                    "- `{}`: {} Role counts: {}. Selected roles: {}. Representative paths: {}. Next reads: {}. Resource: {}",
+                    area.area,
+                    area.reason,
+                    role_counts,
+                    selected_role_counts,
+                    representatives,
+                    next_reads,
+                    resource
                 )
             })
             .collect::<Vec<_>>()
             .join("\n"),
     );
     output
+}
+
+fn render_role_counts(counts: &std::collections::BTreeMap<String, usize>) -> String {
+    if counts.is_empty() {
+        return "none".to_string();
+    }
+    counts
+        .iter()
+        .map(|(role, count)| format!("{role}={count}"))
+        .collect::<Vec<_>>()
+        .join(", ")
 }
 
 fn render_selected_memory(plan: &ContextPlan, limit: usize) -> String {

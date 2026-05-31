@@ -1,0 +1,137 @@
+{
+  "schemaVersion": 1,
+  "taskType": "explain",
+  "contextAreaCount": 13,
+  "contextAreas": [
+    {
+      "area": "crates/ctxpack-compiler",
+      "roleCounts": {
+        "source": 4
+      },
+      "selectedRoleCounts": {
+        "source": 4
+      },
+      "candidateCount": 4,
+      "selectedCount": 4,
+      "unselectedCount": 0,
+      "nextReadPaths": []
+    },
+    {
+      "area": "crates/ctxpack",
+      "roleCounts": {
+        "source": 1,
+        "test": 1
+      },
+      "selectedRoleCounts": {
+        "source": 1,
+        "test": 1
+      },
+      "candidateCount": 2,
+      "selectedCount": 2,
+      "unselectedCount": 0,
+      "nextReadPaths": []
+    },
+    {
+      "area": "crates/ctxpack-core",
+      "roleCounts": {
+        "source": 4
+      },
+      "selectedRoleCounts": {},
+      "candidateCount": 4,
+      "selectedCount": 0,
+      "unselectedCount": 4,
+      "nextReadPaths": [
+        "crates/ctxpack-core/src/contracts.rs",
+        "crates/ctxpack-core/src/init.rs",
+        "crates/ctxpack-core/src/lib.rs",
+        "crates/ctxpack-core/src/privacy.rs"
+      ]
+    },
+    {
+      "area": "crates/ctxpack-index",
+      "roleCounts": {
+        "source": 4
+      },
+      "selectedRoleCounts": {},
+      "candidateCount": 4,
+      "selectedCount": 0,
+      "unselectedCount": 4,
+      "nextReadPaths": [
+        "crates/ctxpack-index/src/artifacts.rs",
+        "crates/ctxpack-index/src/dependencies.rs",
+        "crates/ctxpack-index/src/feedback.rs",
+        "crates/ctxpack-index/src/freshness.rs"
+      ]
+    },
+    {
+      "area": "crates/ctxpack-mcp",
+      "roleCounts": {
+        "source": 4
+      },
+      "selectedRoleCounts": {},
+      "candidateCount": 4,
+      "selectedCount": 0,
+      "unselectedCount": 4,
+      "nextReadPaths": [
+        "crates/ctxpack-mcp/src/lib.rs",
+        "crates/ctxpack-mcp/src/prompts.rs",
+        "crates/ctxpack-mcp/src/protocol.rs",
+        "crates/ctxpack-mcp/src/resources.rs"
+      ]
+    },
+    {
+      "area": "docs",
+      "roleCounts": {
+        "docs": 3
+      },
+      "selectedRoleCounts": {
+        "docs": 2
+      },
+      "candidateCount": 3,
+      "selectedCount": 2,
+      "unselectedCount": 1,
+      "nextReadPaths": [
+        "docs/semantic.md"
+      ]
+    },
+    {
+      "area": ".planning/e2e",
+      "roleCounts": {
+        "docs": 3
+      },
+      "selectedRoleCounts": {
+        "docs": 1
+      },
+      "candidateCount": 3,
+      "selectedCount": 1,
+      "unselectedCount": 2,
+      "nextReadPaths": [
+        ".planning/e2e/2026-05-31-phase85-broad-context-areas.md",
+        ".planning/e2e/2026-05-31-phase91-broad-context-area-eval.md"
+      ]
+    },
+    {
+      "area": ".planning/MILESTONES.md",
+      "roleCounts": {
+        "docs": 1
+      },
+      "selectedRoleCounts": {
+        "docs": 1
+      },
+      "candidateCount": 1,
+      "selectedCount": 1,
+      "unselectedCount": 0,
+      "nextReadPaths": []
+    }
+  ],
+  "packRendering": {
+    "roleCountsRendered": true,
+    "selectedRolesRendered": true
+  },
+  "privacyStatus": {
+    "localOnly": true,
+    "sourceTextLogged": false,
+    "remoteEmbeddingsUsed": false,
+    "remoteRerankingUsed": false
+  }
+}

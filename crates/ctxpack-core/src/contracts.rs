@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use std::collections::BTreeMap;
 use uuid::Uuid;
 
 use crate::privacy::PrivacyStatus;
@@ -55,6 +56,10 @@ pub struct ContextArea {
     pub representative_paths: Vec<String>,
     #[serde(default)]
     pub next_read_paths: Vec<String>,
+    #[serde(default)]
+    pub role_counts: BTreeMap<String, usize>,
+    #[serde(default)]
+    pub selected_role_counts: BTreeMap<String, usize>,
     pub candidate_count: usize,
     pub selected_count: usize,
     #[serde(default)]
@@ -1604,6 +1609,8 @@ mod tests {
                 resource_uri: "ctxpack://repo/context-area/src".to_string(),
                 representative_paths: vec!["src/lib.rs".to_string()],
                 next_read_paths: vec![],
+                role_counts: BTreeMap::from([("source".to_string(), 1)]),
+                selected_role_counts: BTreeMap::from([("source".to_string(), 1)]),
                 candidate_count: 1,
                 selected_count: 1,
                 unselected_count: 0,
@@ -1651,6 +1658,12 @@ mod tests {
                 "resourceUri": "ctxpack://repo/context-area/src",
                 "representativePaths": ["src/lib.rs"],
                 "nextReadPaths": [],
+                "roleCounts": {
+                    "source": 1
+                },
+                "selectedRoleCounts": {
+                    "source": 1
+                },
                 "candidateCount": 1,
                 "selectedCount": 1,
                 "unselectedCount": 0
@@ -1808,6 +1821,8 @@ mod tests {
                 resource_uri: "ctxpack://repo/context-area/src".to_string(),
                 representative_paths: vec!["src/lib.rs".to_string()],
                 next_read_paths: vec![],
+                role_counts: BTreeMap::from([("source".to_string(), 1)]),
+                selected_role_counts: BTreeMap::from([("source".to_string(), 1)]),
                 candidate_count: 1,
                 selected_count: 1,
                 unselected_count: 0,

@@ -567,6 +567,13 @@ available three-repo proof promotes, while the full four-repo proof is not
 claimed because the local RefactoringMiner checkout timed out during
 `git rev-list`.
 
+Phase 117 adds source-free role signals to broad context-area guidance.
+Plan-level `ContextArea` entries now include `roleCounts` and
+`selectedRoleCounts`, and generated packs render those counts next to
+representative paths and `Next reads`. This helps agents distinguish
+source-heavy, validation-heavy, and docs-only areas before loading files
+natively, without changing the top-10 target-file selection budget.
+
 Phase 105 keeps history-unavailable benchmark runs machine-checkable. If git
 history sampling fails or times out, historical eval emits an embedded
 zero-commit report, benchmark output records a source-free history-unavailable

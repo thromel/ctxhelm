@@ -574,6 +574,8 @@ fn context_areas_for_plan(
                 resource_uri: context_area_resource_uri(&area),
                 representative_paths: accumulator.representative_paths.clone(),
                 next_read_paths: accumulator.next_read_paths.clone(),
+                role_counts: accumulator.role_counts(),
+                selected_role_counts: accumulator.selected_role_counts(),
                 candidate_count: accumulator.candidate_count,
                 selected_count: accumulator.selected_count,
                 unselected_count: accumulator
@@ -662,6 +664,7 @@ struct AreaAccumulator {
     schema_count: usize,
     docs_count: usize,
     selected_source_count: usize,
+    selected_test_count: usize,
     selected_config_count: usize,
     selected_schema_count: usize,
     selected_docs_count: usize,
@@ -682,6 +685,7 @@ impl AreaAccumulator {
     fn record_selected_role(&mut self, role: &Option<FileRole>) {
         match role {
             Some(FileRole::Source) => self.selected_source_count += 1,
+            Some(FileRole::Test) => self.selected_test_count += 1,
             Some(FileRole::Config) => self.selected_config_count += 1,
             Some(FileRole::Schema) => self.selected_schema_count += 1,
             Some(FileRole::Docs) => self.selected_docs_count += 1,
@@ -696,6 +700,34 @@ impl AreaAccumulator {
     fn selected_source_like_count(&self) -> usize {
         self.selected_source_count + self.selected_config_count + self.selected_schema_count
     }
+
+    fn role_counts(&self) -> BTreeMap<String, usize> {
+        role_count_map([
+            ("source", self.source_count),
+            ("test", self.test_count),
+            ("config", self.config_count),
+            ("schema", self.schema_count),
+            ("docs", self.docs_count),
+        ])
+    }
+
+    fn selected_role_counts(&self) -> BTreeMap<String, usize> {
+        role_count_map([
+            ("source", self.selected_source_count),
+            ("test", self.selected_test_count),
+            ("config", self.selected_config_count),
+            ("schema", self.selected_schema_count),
+            ("docs", self.selected_docs_count),
+        ])
+    }
+}
+
+fn role_count_map<const N: usize>(counts: [(&str, usize); N]) -> BTreeMap<String, usize> {
+    counts
+        .into_iter()
+        .filter(|(_, count)| *count > 0)
+        .map(|(role, count)| (role.to_string(), count))
+        .collect()
 }
 
 fn extend_broad_source_area_candidates(
@@ -2208,6 +2240,15 @@ mod tests {
         assert_eq!(docs_area.candidate_count, 2);
         assert_eq!(docs_area.selected_count, 0);
         assert_eq!(docs_area.unselected_count, 2);
+        assert_eq!(
+            docs_area.role_counts.get("docs").copied(),
+            Some(2),
+            "context areas should expose source-free role mix"
+        );
+        assert!(
+            docs_area.selected_role_counts.is_empty(),
+            "zero-selected areas should make selected role pressure explicit"
+        );
         assert_eq!(
             docs_area.next_read_paths,
             vec![

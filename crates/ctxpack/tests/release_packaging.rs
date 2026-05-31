@@ -699,6 +699,8 @@ fn release_docs_script_contract() {
         "Homebrew formula: deferred",
         "crates.io package: deferred",
         "signed installer: deferred",
+        "roleCounts",
+        "selectedRoleCounts",
     ] {
         assert!(
             script_text.contains(required),
@@ -711,7 +713,10 @@ fn release_docs_script_contract() {
 fn public_real_client_smoke_script_contract() {
     let repo_root = workspace_root();
     let script = repo_root.join("scripts/smoke-public-real-clients.sh");
-    assert!(script.exists(), "public real-client smoke script is missing");
+    assert!(
+        script.exists(),
+        "public real-client smoke script is missing"
+    );
 
     let syntax = Command::new("bash")
         .arg("-n")

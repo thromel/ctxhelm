@@ -111,6 +111,9 @@ Design constraints:
 - use resource URIs for larger context
 - keep context-area resources source-free; agents must use native reads for
   source text
+- expose `roleCounts` and `selectedRoleCounts` in plan-level context areas so
+  agents can tell whether a broad area is source-heavy, validation-heavy, or
+  docs-only before progressive reads
 - expose path counts, role buckets, path families, and next-read batches in
   context-area resources so broad tasks can progress without extra tools
 - resolve repo-scoped resources from the last explicit tool repo when the MCP

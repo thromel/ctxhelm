@@ -77,6 +77,7 @@ use planning::{
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::collections::BTreeMap;
     use std::fs;
     use std::path::Path;
     use std::process::Command as ProcessCommand;
@@ -1047,6 +1048,8 @@ mod tests {
                 resource_uri: "ctxpack://repo/context-area/src".to_string(),
                 representative_paths: vec!["src/lib.rs".to_string()],
                 next_read_paths: vec!["src/compiler.rs".to_string()],
+                role_counts: BTreeMap::from([("source".to_string(), 3)]),
+                selected_role_counts: BTreeMap::from([("source".to_string(), 1)]),
                 candidate_count: 3,
                 selected_count: 1,
                 unselected_count: 2,
@@ -1059,6 +1062,8 @@ mod tests {
                 resource_uri: "ctxpack://repo/context-area/tests".to_string(),
                 representative_paths: vec!["tests/lib_test.rs".to_string()],
                 next_read_paths: vec!["tests/lib_test.rs".to_string()],
+                role_counts: BTreeMap::from([("test".to_string(), 2)]),
+                selected_role_counts: BTreeMap::new(),
                 candidate_count: 2,
                 selected_count: 0,
                 unselected_count: 2,
@@ -1084,6 +1089,10 @@ mod tests {
         assert!(markdown.contains("`src/compiler.rs`"));
         assert!(markdown.contains("`tests/lib_test.rs`"));
         assert!(markdown.contains("Next reads"));
+        assert!(markdown.contains("Role counts: source=3"));
+        assert!(markdown.contains("Selected roles: source=1"));
+        assert!(markdown.contains("Role counts: test=2"));
+        assert!(markdown.contains("Selected roles: none"));
         assert!(markdown.contains("ctxpack://repo/context-area/tests"));
 
         std::env::remove_var("CTXPACK_HOME");
@@ -1882,6 +1891,8 @@ mod tests {
                     resource_uri: "ctxpack://repo/context-area/src".to_string(),
                     representative_paths: vec!["src/lib.rs".to_string()],
                     next_read_paths: vec![],
+                    role_counts: BTreeMap::from([("source".to_string(), 1)]),
+                    selected_role_counts: BTreeMap::from([("source".to_string(), 1)]),
                     candidate_count: 1,
                     selected_count: 1,
                     unselected_count: 0,
