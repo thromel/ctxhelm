@@ -59,6 +59,11 @@ The source-free release candidate status records these decisions alongside the
 archive checksum and binary checksum. It does not publish artifacts or mutate
 package-manager state.
 
+The public GitHub archive release can be verified after publication with
+`scripts/verify-github-release.sh`. The verifier compares GitHub release
+metadata and uploaded asset SHA-256 digests against local release artifacts; it
+does not create tags, upload assets, or mutate release state.
+
 ## Verification
 
 Run:

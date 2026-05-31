@@ -11,6 +11,7 @@ trap cleanup EXIT
 
 bash -n "$repo_root/scripts/release-candidate-status.sh"
 bash -n "$repo_root/scripts/release-candidate-rollback.sh"
+bash -n "$repo_root/scripts/verify-github-release.sh"
 
 if bash "$repo_root/scripts/release-candidate-status.sh" create --output "$work_dir/ready-without-proof.json" --status ready >/dev/null 2>&1; then
   echo "ready release candidate status unexpectedly succeeded without --proof-summary" >&2
@@ -48,6 +49,49 @@ JSON
   fi
   bash "$repo_root/scripts/release-candidate-status.sh" validate --input "$out" >/dev/null
 done
+
+assets_dir="$work_dir/assets"
+mkdir -p "$assets_dir"
+printf 'archive\n' >"$assets_dir/ctxpack-v1.1.0-test.tar.gz"
+printf 'manifest\n' >"$assets_dir/ctxpack-v1.1.0-test.manifest.json"
+release_json="$work_dir/github-release.json"
+python3 - "$release_json" "$assets_dir" <<'PY'
+import hashlib
+import json
+import pathlib
+import sys
+
+out, assets_dir = sys.argv[1:]
+assets = pathlib.Path(assets_dir)
+archive_digest = hashlib.sha256((assets / "ctxpack-v1.1.0-test.tar.gz").read_bytes()).hexdigest()
+manifest_digest = hashlib.sha256((assets / "ctxpack-v1.1.0-test.manifest.json").read_bytes()).hexdigest()
+payload = {
+    "assets": [
+        {
+            "digest": f"sha256:{archive_digest}",
+            "name": "ctxpack-v1.1.0-test.tar.gz",
+            "state": "uploaded",
+        },
+        {
+            "digest": f"sha256:{manifest_digest}",
+            "name": "ctxpack-v1.1.0-test.manifest.json",
+            "state": "uploaded",
+        },
+    ],
+    "isDraft": False,
+    "isPrerelease": False,
+    "publishedAt": "2026-06-01T00:00:00Z",
+    "tagName": "v1.1.0",
+    "targetCommitish": "abc123",
+    "url": "https://github.com/thromel/ctxpack/releases/tag/v1.1.0",
+}
+pathlib.Path(out).write_text(json.dumps(payload, sort_keys=True) + "\n")
+PY
+bash "$repo_root/scripts/verify-github-release.sh" \
+  --tag v1.1.0 \
+  --target abc123 \
+  --assets-dir "$assets_dir" \
+  --release-json "$release_json" >/dev/null
 
 candidate_dir="$work_dir/candidate"
 mkdir -p "$candidate_dir"

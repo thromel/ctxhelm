@@ -2,6 +2,12 @@
 
 This document describes the local binary release path for ctxpack v1.1.0. The primary user path is a prebuilt archive plus SHA-256 checksums; source builds are fallback paths.
 
+Current public archive release:
+
+```text
+https://github.com/thromel/ctxpack/releases/tag/v1.1.0
+```
+
 ## User Install
 
 Download the archive for your platform from the release artifacts. Archive names follow this shape:

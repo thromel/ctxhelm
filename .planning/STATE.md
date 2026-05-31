@@ -3,11 +3,11 @@ gsd_state_version: 1.0
 milestone: v2.5
 milestone_name: Production Retrieval Quality
 status: active
-last_updated: "2026-05-31T21:35:00Z"
-last_activity: 2026-06-01 -- Phase 113 recorded source-free release-candidate status with archive-ready distribution decisions
+last_updated: "2026-05-31T21:50:00Z"
+last_activity: 2026-06-01 -- Phase 114 published and verified the v1.1.0 public archive release
 progress:
-  total_phases: 45
-  completed_phases: 45
+  total_phases: 46
+  completed_phases: 46
   total_plans: 7
   completed_plans: 7
   percent: 100
@@ -17,10 +17,10 @@ progress:
 
 ## Current Position
 
-Phase: 113 - Release Candidate Status
-Plan: 113-release-candidate-status
+Phase: 114 - Public Archive Release
+Plan: 114-public-archive-release
 Status: Complete
-Last activity: 2026-06-01 -- Phase 113 made `ready` candidate status depend on a passed release proof summary, archive binary proof, required clean fixture proof, and explicit archive-first distribution decisions.
+Last activity: 2026-06-01 -- Phase 114 reran the full release gate on `68383cbfc2fff00c4f53fbd2b7bf90527ac4bd7e`, published the `v1.1.0` GitHub archive release, and verified uploaded asset SHA-256 digests.
 
 ## Project Reference
 
@@ -90,6 +90,7 @@ Planned phases:
 - Phase 111: Clean Fixture Release Gate (complete follow-up)
 - Phase 112: Clean Release Gate With Required Fixture Proof (complete follow-up)
 - Phase 113: Release Candidate Status (complete follow-up)
+- Phase 114: Public Archive Release (complete follow-up)
 
 ## Last Completed Milestone
 
@@ -107,7 +108,7 @@ Planned phases:
 
 ## Next Step
 
-Continue production-readiness work from remaining measured gaps: refresh real-client proof evidence when client versions change, decide whether to tag/publish the archive-first candidate, and continue broad source-free area/ranking improvements. Broad evals now distinguish files covered only by surfaced context areas from files with no candidate signal, clean cold full-fixture proof promotes across RefactoringMiner, ctxpack, ReAgent, and VeriSchema, the full packaged release gate passes from a clean checkout with the clean fixture proof required, release-candidate metadata marks the local archive channel ready while deferring Homebrew/crates.io/signed installers/self-update, broad context-area guidance covers more wide-task implementation areas, packs tell agents concrete source/docs paths to inspect next, MCP exposes source-free area resources with role buckets/path families/read batches, gap summaries point to area resources and bounded next-read paths, the product-proof checker gates those gap summaries and fails cleanly on missing embedded repo reports, history-unavailable repos now produce embedded insufficient-evidence reports instead of `null` reports, repo-scoped resources work after explicit-repo MCP tools even from a wrong server cwd, broad fixed-corpus metric floors block silent selection regressions, governance/proof tasks classify broad historical/eval language reliably, archive/docs broad tasks now receive context-area guidance without perturbing target-file source floors, real-client smoke artifacts now carry source-free request metadata instead of boolean-only claims, and the full four-repo proof now hydrates all configured repositories instead of hanging or returning missing reports.
+Continue production-readiness work from remaining measured gaps: refresh real-client proof evidence when client versions change, prepare post-release installation verification, and continue broad source-free area/ranking improvements. Broad evals now distinguish files covered only by surfaced context areas from files with no candidate signal, clean cold full-fixture proof promotes across RefactoringMiner, ctxpack, ReAgent, and VeriSchema, the full packaged release gate passes from a clean checkout with the clean fixture proof required, release-candidate metadata marks the local archive channel ready while deferring Homebrew/crates.io/signed installers/self-update, the public `v1.1.0` GitHub archive release is published and source-free asset digests are verified, broad context-area guidance covers more wide-task implementation areas, packs tell agents concrete source/docs paths to inspect next, MCP exposes source-free area resources with role buckets/path families/read batches, gap summaries point to area resources and bounded next-read paths, the product-proof checker gates those gap summaries and fails cleanly on missing embedded repo reports, history-unavailable repos now produce embedded insufficient-evidence reports instead of `null` reports, repo-scoped resources work after explicit-repo MCP tools even from a wrong server cwd, broad fixed-corpus metric floors block silent selection regressions, governance/proof tasks classify broad historical/eval language reliably, archive/docs broad tasks now receive context-area guidance without perturbing target-file source floors, real-client smoke artifacts now carry source-free request metadata instead of boolean-only claims, and the full four-repo proof now hydrates all configured repositories instead of hanging or returning missing reports.
 
 ## Operator Next Steps
 
@@ -188,4 +189,5 @@ Continue production-readiness work from remaining measured gaps: refresh real-cl
 - Phase 111 wires that clean fixture proof into `scripts/release-gate.sh` with `CTXPACK_CLEAN_FIXTURE_CONFIG`, `CTXPACK_REQUIRE_CLEAN_FIXTURE_PROOF`, `CTXPACK_SKIP_CLEAN_FIXTURE_PROOF`, proof-summary fields, release docs, and release packaging contract coverage. Latest proof notes: `.planning/e2e/2026-06-01-phase111-clean-fixture-release-gate.md`.
 - Phase 112 proves the complete packaged release gate from clean checkout `/Users/romel/Documents/GitHub/ctxpack-release-gate-clean-20260601` at `20c367dc7eafc1231559c9110901961c55645089` with `CTXPACK_REQUIRE_CLEAN_FIXTURE_PROOF=1`. Latest proof notes: `.planning/e2e/2026-06-01-phase112-clean-release-gate-required.md`; durable summary: `.ctxpack/e2e/phase112-clean-release-gate-summary.json`.
 - Phase 113 creates source-free release-candidate status metadata tied to the Phase 112 proof summary. Latest proof notes: `.planning/e2e/2026-06-01-phase113-release-candidate-status.md`; durable status artifact: `.ctxpack/e2e/phase113-release-candidate-status.json`.
-- Next work should either prepare a tag/publish decision for the archive-first candidate or continue richer source-free area resources and ranking experiments from the promoted baseline.
+- Phase 114 publishes and verifies the public `v1.1.0` archive release at `https://github.com/thromel/ctxpack/releases/tag/v1.1.0`. Latest proof notes: `.planning/e2e/2026-06-01-phase114-public-archive-release.md`; durable source-free release metadata: `.ctxpack/e2e/phase114-release-proof-summary.json`, `.ctxpack/e2e/phase114-release-candidate-status.json`, and `.ctxpack/e2e/phase114-github-release.json`.
+- Next work should verify user install from the public archive, refresh optional real-client proof evidence when client versions change, or continue richer source-free area resources and ranking experiments from the promoted baseline.

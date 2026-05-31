@@ -61,6 +61,22 @@ bash scripts/release-candidate-status.sh validate \
   --input dist/release-candidate-status.json
 ```
 
+## Public Release Verification
+
+After publishing archive-first GitHub release assets, verify the release metadata
+against the local artifacts without uploading or mutating anything:
+
+```bash
+bash scripts/verify-github-release.sh \
+  --tag v1.1.0 \
+  --target 68383cbfc2fff00c4f53fbd2b7bf90527ac4bd7e \
+  --assets-dir dist
+```
+
+The verifier checks that the GitHub release is not a draft, is not a prerelease,
+targets the expected commit, and exposes uploaded assets whose SHA-256 digests
+match the local archive, manifest, audit report, and checksum files.
+
 ## Rollback
 
 Rollback removes local candidate artifacts only after the candidate directory

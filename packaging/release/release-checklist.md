@@ -14,6 +14,7 @@ Use this checklist before marking a candidate `ready`.
 - [ ] deterministic protocol proof through `scripts/smoke-mcp-protocol.sh`
 - [ ] clean cold fixture proof with `scripts/prepare-proof-fixtures.sh` and
       `CTXPACK_REQUIRE_CLEAN_FIXTURE_PROOF=1 bash scripts/release-gate.sh`
+- [ ] after publication, `bash scripts/verify-github-release.sh --tag ... --target ... --assets-dir ...`
 
 ## Optional Proof
 
