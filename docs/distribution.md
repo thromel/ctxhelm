@@ -64,6 +64,11 @@ The public GitHub archive release can be verified after publication with
 metadata and uploaded asset SHA-256 digests against local release artifacts; it
 does not create tags, upload assets, or mutate release state.
 
+The public install path can be verified with
+`scripts/verify-public-archive-install.sh`. That check downloads the GitHub
+release assets, verifies checksums, installs only into a temporary bin
+directory, and runs `ctxpack doctor` plus the first-pack smoke.
+
 ## Verification
 
 Run:

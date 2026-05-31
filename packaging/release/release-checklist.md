@@ -15,6 +15,7 @@ Use this checklist before marking a candidate `ready`.
 - [ ] clean cold fixture proof with `scripts/prepare-proof-fixtures.sh` and
       `CTXPACK_REQUIRE_CLEAN_FIXTURE_PROOF=1 bash scripts/release-gate.sh`
 - [ ] after publication, `bash scripts/verify-github-release.sh --tag ... --target ... --assets-dir ...`
+- [ ] after publication, `bash scripts/verify-public-archive-install.sh --repo ... --tag ... --target-label ...`
 
 ## Optional Proof
 

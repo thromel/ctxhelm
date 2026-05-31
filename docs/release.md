@@ -103,6 +103,23 @@ bash scripts/verify-release-archive.sh \
   --checksums dist/sha256sums.txt
 ```
 
+Maintainers can verify the public archive install path end to end without
+installing globally:
+
+```bash
+bash scripts/verify-public-archive-install.sh \
+  --repo thromel/ctxpack \
+  --tag v1.1.0 \
+  --target-label aarch64-apple-darwin \
+  --expected-version "ctxpack 1.1.0"
+```
+
+The public install verifier downloads the release archive, manifest, audit
+report, and checksum files from GitHub, verifies checksums, extracts the archive,
+installs `ctxpack` into a temporary bin directory, and runs `ctxpack --version`,
+`ctxpack --help`, `ctxpack doctor`, and the first-pack smoke against that
+temporary binary.
+
 During multi-plan local work, maintainers can set `CTXPACK_ALLOW_DIRTY=1` for verification, but release artifacts should be produced from a clean checkout.
 
 ## Release Gate

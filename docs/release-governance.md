@@ -77,6 +77,21 @@ The verifier checks that the GitHub release is not a draft, is not a prerelease,
 targets the expected commit, and exposes uploaded assets whose SHA-256 digests
 match the local archive, manifest, audit report, and checksum files.
 
+Then verify the public user install path:
+
+```bash
+bash scripts/verify-public-archive-install.sh \
+  --repo thromel/ctxpack \
+  --tag v1.1.0 \
+  --target-label aarch64-apple-darwin \
+  --expected-version "ctxpack 1.1.0" \
+  --output .ctxpack/e2e/phase115-public-archive-install.json
+```
+
+This downloads the public release assets, verifies checksums, installs the
+binary into a temporary bin directory, runs `--version`, `--help`, `doctor`, and
+the first-pack smoke, then writes source-free proof metadata.
+
 ## Rollback
 
 Rollback removes local candidate artifacts only after the candidate directory

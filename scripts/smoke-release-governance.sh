@@ -12,6 +12,7 @@ trap cleanup EXIT
 bash -n "$repo_root/scripts/release-candidate-status.sh"
 bash -n "$repo_root/scripts/release-candidate-rollback.sh"
 bash -n "$repo_root/scripts/verify-github-release.sh"
+bash -n "$repo_root/scripts/verify-public-archive-install.sh"
 
 if bash "$repo_root/scripts/release-candidate-status.sh" create --output "$work_dir/ready-without-proof.json" --status ready >/dev/null 2>&1; then
   echo "ready release candidate status unexpectedly succeeded without --proof-summary" >&2

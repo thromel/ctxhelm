@@ -663,6 +663,7 @@ fn release_docs_script_contract() {
         "scripts/smoke-distribution-metadata.sh",
         "scripts/smoke-release-governance.sh",
         "scripts/verify-github-release.sh",
+        "scripts/verify-public-archive-install.sh",
         "scripts/smoke-semantic.sh",
         "scripts/smoke-precision.sh",
         "scripts/smoke-v23-eval.sh",
