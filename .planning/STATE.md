@@ -4,10 +4,10 @@ milestone: v2.5
 milestone_name: Production Retrieval Quality
 status: active
 last_updated: "2026-05-31T01:03:00Z"
-last_activity: 2026-05-31 -- Phase 107 hydrated the full four-repo proof path
+last_activity: 2026-05-31 -- Phase 109 made cold proof environment blockers machine-readable
 progress:
-  total_phases: 39
-  completed_phases: 39
+  total_phases: 41
+  completed_phases: 41
   total_plans: 7
   completed_plans: 7
   percent: 100
@@ -17,10 +17,10 @@ progress:
 
 ## Current Position
 
-Phase: 107 - Hydrated Four-Repo Proof Path
-Plan: 107-hydrated-four-repo-proof
+Phase: 109 - Environment Health Verdicts
+Plan: 109-environment-health-verdict
 Status: Complete
-Last activity: 2026-05-31 -- Phase 107 fixed the full four-repo proof path by bounding parent snapshot hydration, falling back when `git diff-tree -M` rename detection times out, and committing cold/warm evidence with all four repositories hydrated. The cold proof still blocks honestly on ctxpack runtime, while the warm proof promotes.
+Last activity: 2026-05-31 -- Phase 109 added source-free environment-health verdicts so cold proof blocks distinguish degraded Git history/object-store evidence from ctxpack retrieval-quality failure.
 
 ## Project Reference
 
@@ -84,6 +84,8 @@ Planned phases:
 - Phase 105: History-Unavailable Embedded Reports (complete follow-up)
 - Phase 106: Real-Client Request Evidence Hardening (complete follow-up)
 - Phase 107: Hydrated Four-Repo Proof Path (complete follow-up)
+- Phase 108: Cold Git Bounds (complete follow-up)
+- Phase 109: Environment Health Verdicts (complete follow-up)
 
 ## Last Completed Milestone
 
@@ -177,4 +179,5 @@ Continue production-readiness work from remaining measured gaps: cold four-repo 
 - Phase 107 fixes the hydrated full four-repo proof path by bounding parent snapshot git calls, falling back from slow rename detection, and preserving full corpus verdicts in cold and warm proof artifacts.
 - Phase 108 bounds cold Git failures: parent caches live outside source repos, archive extraction is removed, subject sampling uses no-rename diffs, stalled object-content batches fail closed instead of recursively hanging, and source-free parent snapshot manifests prevent incomplete caches from being reused as valid warm-cache evidence.
 - Latest cold proof: `.ctxpack/e2e/phase108-cold-git-bounded-proof.json` blocks because RefactoringMiner, ctxpack, and ReAgent still have insufficient evidence under local cold object-store conditions; VeriSchema remains `beat` at `7463ms`.
-- Next work should add an explicit object-store health verdict for cold proof runs before richer source-free area resources or ranking experiments.
+- Phase 109 adds source-free `environmentHealth` metadata to benchmark repositories and product-proof corpus verdicts. The latest refreshed cold proof, `.ctxpack/e2e/phase109-environment-health-proof.json`, blocks because environment health is degraded before retrieval quality can be proven: RefactoringMiner is `git_history_unavailable`, ctxpack and ReAgent are `git_history_timeout`, and VeriSchema is `healthy` / `beat`.
+- Next work should repair or bypass the degraded local cold Git/object-store environment with a clean cold fixture path before richer source-free area resources or ranking experiments.

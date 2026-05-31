@@ -465,6 +465,8 @@ pub struct ProductProofCorpusVerdict {
     pub repository: String,
     pub variant: String,
     pub status: ProductProofCorpusStatus,
+    #[serde(default)]
+    pub environment_health: BenchmarkRepoEnvironmentHealth,
     pub file_recall_at_10: f32,
     pub lexical_baseline_recall_at_10: f32,
     pub lexical_delta_at_10: f32,
@@ -748,6 +750,8 @@ pub struct BenchmarkRepoReport {
     pub name: String,
     pub repo_id: Option<String>,
     pub effective_config: BenchmarkRepoEffectiveConfig,
+    #[serde(default)]
+    pub environment_health: BenchmarkRepoEnvironmentHealth,
     pub baseline: Option<BenchmarkRepoBaseline>,
     pub baseline_status: Option<BenchmarkRepoBaselineStatus>,
     pub evaluated_commits: usize,
@@ -756,6 +760,49 @@ pub struct BenchmarkRepoReport {
     pub report: Option<HistoricalEvalReport>,
     pub error: Option<String>,
     pub privacy_status: PrivacyStatus,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct BenchmarkRepoEnvironmentHealth {
+    pub status: BenchmarkRepoEnvironmentStatus,
+    pub git_history_usable: bool,
+    pub object_content_usable: Option<bool>,
+    pub reason: String,
+}
+
+impl Default for BenchmarkRepoEnvironmentHealth {
+    fn default() -> Self {
+        Self {
+            status: BenchmarkRepoEnvironmentStatus::Unknown,
+            git_history_usable: false,
+            object_content_usable: None,
+            reason: "Environment health was not recorded for this benchmark report.".to_string(),
+        }
+    }
+}
+
+impl BenchmarkRepoEnvironmentHealth {
+    fn healthy() -> Self {
+        Self {
+            status: BenchmarkRepoEnvironmentStatus::Healthy,
+            git_history_usable: true,
+            object_content_usable: Some(true),
+            reason: "Git history and object-content reads produced evaluable benchmark evidence."
+                .to_string(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum BenchmarkRepoEnvironmentStatus {
+    Healthy,
+    GitHistoryTimeout,
+    GitHistoryUnavailable,
+    GitObjectStoreUnavailable,
+    Degraded,
+    Unknown,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -1109,6 +1156,30 @@ fn product_proof_release_decision(
         .map(|verdict| format!("{}:{:?}", verdict.repository, verdict.status))
         .collect::<Vec<_>>();
     if !failed.is_empty() {
+        let environment_failures = corpus_verdicts
+            .iter()
+            .filter(|verdict| {
+                matches!(
+                    verdict.status,
+                    ProductProofCorpusStatus::InsufficientEvidence
+                ) && verdict.environment_health.status != BenchmarkRepoEnvironmentStatus::Healthy
+            })
+            .map(|verdict| {
+                format!(
+                    "{}:{:?}",
+                    verdict.repository, verdict.environment_health.status
+                )
+            })
+            .collect::<Vec<_>>();
+        if !environment_failures.is_empty() {
+            return (
+                SemanticPrecisionGateDecision::Block,
+                format!(
+                    "Blocked because benchmark environment health is degraded before retrieval quality can be proven; affected corpora: {}.",
+                    environment_failures.join(", ")
+                ),
+            );
+        }
         return (
             SemanticPrecisionGateDecision::Block,
             format!(
@@ -1222,6 +1293,7 @@ fn product_proof_corpus_verdict(repo: &BenchmarkRepoReport) -> ProductProofCorpu
             repository: repo.name.clone(),
             variant,
             status: ProductProofCorpusStatus::InsufficientEvidence,
+            environment_health: repo.environment_health.clone(),
             file_recall_at_10: 0.0,
             lexical_baseline_recall_at_10: 0.0,
             lexical_delta_at_10: 0.0,
@@ -1272,7 +1344,7 @@ fn product_proof_corpus_verdict(repo: &BenchmarkRepoReport) -> ProductProofCorpu
     let mut notes = Vec::new();
     if report.evaluated_commits == 0 {
         notes.push(repo.error.clone().unwrap_or_else(|| {
-            "repository produced no evaluable commits; git history may be unavailable or timed out"
+            "repository produced no evaluable commits; git history is unavailable or degraded"
                 .to_string()
         }));
     }
@@ -1340,6 +1412,7 @@ fn product_proof_corpus_verdict(repo: &BenchmarkRepoReport) -> ProductProofCorpu
         repository: repo.name.clone(),
         variant,
         status,
+        environment_health: repo.environment_health.clone(),
         file_recall_at_10: report.file_recall_at_10,
         lexical_baseline_recall_at_10: report.lexical_baseline_recall_at_10,
         lexical_delta_at_10,
@@ -2467,16 +2540,21 @@ fn run_benchmark_repo(
                 .count();
             let report_error = if report.evaluated_commits == 0 {
                 Some(
-                    "repository produced no evaluable commits; git history may be unavailable or timed out"
+                    "repository produced no evaluable commits; git history is unavailable or degraded"
                         .to_string(),
                 )
             } else {
                 None
             };
+            let environment_health = benchmark_repo_environment_health(
+                report.evaluated_commits,
+                report_error.as_deref(),
+            );
             BenchmarkRepoReport {
                 name: repo_config.name.clone(),
                 repo_id: Some(report.repo_id.clone()),
                 effective_config,
+                environment_health,
                 baseline: repo_config.baseline.clone(),
                 baseline_status,
                 evaluated_commits: report.evaluated_commits,
@@ -2487,22 +2565,88 @@ fn run_benchmark_repo(
                 privacy_status: PrivacyStatus::local_only(),
             }
         }
-        Err(error) => BenchmarkRepoReport {
-            name: repo_config.name.clone(),
-            repo_id: None,
-            effective_config,
-            baseline: repo_config.baseline.clone(),
-            baseline_status: repo_config
-                .baseline
-                .as_ref()
-                .map(|baseline| baseline_status_for_error(baseline, &error.to_string())),
-            evaluated_commits: 0,
-            excluded_changed_file_count: 0,
-            skipped_path_count: 0,
-            report: None,
-            error: Some(error.to_string()),
-            privacy_status: PrivacyStatus::local_only(),
-        },
+        Err(error) => {
+            let error = error.to_string();
+            BenchmarkRepoReport {
+                name: repo_config.name.clone(),
+                repo_id: None,
+                effective_config,
+                environment_health: benchmark_repo_environment_health(0, Some(&error)),
+                baseline: repo_config.baseline.clone(),
+                baseline_status: repo_config
+                    .baseline
+                    .as_ref()
+                    .map(|baseline| baseline_status_for_error(baseline, &error)),
+                evaluated_commits: 0,
+                excluded_changed_file_count: 0,
+                skipped_path_count: 0,
+                report: None,
+                error: Some(error),
+                privacy_status: PrivacyStatus::local_only(),
+            }
+        }
+    }
+}
+
+fn benchmark_repo_environment_health(
+    evaluated_commits: usize,
+    error: Option<&str>,
+) -> BenchmarkRepoEnvironmentHealth {
+    if evaluated_commits > 0 {
+        return BenchmarkRepoEnvironmentHealth::healthy();
+    }
+    let Some(error) = error else {
+        return BenchmarkRepoEnvironmentHealth {
+            status: BenchmarkRepoEnvironmentStatus::Degraded,
+            git_history_usable: false,
+            object_content_usable: None,
+            reason: "Benchmark produced no evaluable commits without a lower-level error."
+                .to_string(),
+        };
+    };
+    let lower = error.to_ascii_lowercase();
+    if lower.contains("cat-file")
+        || lower.contains("object")
+        || lower.contains("loose object")
+        || lower.contains("missing blob")
+    {
+        return BenchmarkRepoEnvironmentHealth {
+            status: BenchmarkRepoEnvironmentStatus::GitObjectStoreUnavailable,
+            git_history_usable: false,
+            object_content_usable: Some(false),
+            reason: "Git object-content reads failed or timed out before benchmark evidence could be produced."
+                .to_string(),
+        };
+    }
+    if lower.contains("timed out") {
+        return BenchmarkRepoEnvironmentHealth {
+            status: BenchmarkRepoEnvironmentStatus::GitHistoryTimeout,
+            git_history_usable: false,
+            object_content_usable: None,
+            reason: "Git history sampling timed out before benchmark evidence could be produced."
+                .to_string(),
+        };
+    }
+    if lower.contains("no git")
+        || lower.contains("not a git repository")
+        || lower.contains("does not have any commits")
+        || lower.contains("unavailable")
+        || lower.contains("ambiguous argument 'head'")
+        || lower.contains("unknown revision")
+    {
+        return BenchmarkRepoEnvironmentHealth {
+            status: BenchmarkRepoEnvironmentStatus::GitHistoryUnavailable,
+            git_history_usable: false,
+            object_content_usable: None,
+            reason: "Git history was unavailable for this benchmark repository.".to_string(),
+        };
+    }
+    BenchmarkRepoEnvironmentHealth {
+        status: BenchmarkRepoEnvironmentStatus::Degraded,
+        git_history_usable: false,
+        object_content_usable: None,
+        reason: "Benchmark environment did not produce enough source-free evidence for a retrieval-quality verdict."
+            .to_string(),
     }
 }
 
@@ -6112,12 +6256,21 @@ mod tests {
             .as_deref()
             .unwrap()
             .contains("no evaluable commits"));
+        assert_eq!(
+            repo_report.environment_health.status,
+            BenchmarkRepoEnvironmentStatus::GitHistoryUnavailable
+        );
+        assert!(!repo_report.environment_health.git_history_usable);
         assert_eq!(report.evaluated_repository_count, 0);
         let proof = build_product_proof_report(report);
         let verdict = &proof.release_gate.corpus_verdicts[0];
         assert_eq!(
             verdict.status,
             ProductProofCorpusStatus::InsufficientEvidence
+        );
+        assert_eq!(
+            verdict.environment_health.status,
+            BenchmarkRepoEnvironmentStatus::GitHistoryUnavailable
         );
         assert!(verdict
             .notes
@@ -6127,6 +6280,37 @@ mod tests {
             proof.release_gate.decision,
             SemanticPrecisionGateDecision::Block
         );
+        assert!(proof
+            .release_gate
+            .decision_reason
+            .contains("environment health is degraded"));
+    }
+
+    #[test]
+    fn benchmark_repo_environment_health_classifies_source_free_failures() {
+        let timeout = benchmark_repo_environment_health(
+            0,
+            Some("git command failed: rev-list timed out after 10s"),
+        );
+        assert_eq!(
+            timeout.status,
+            BenchmarkRepoEnvironmentStatus::GitHistoryTimeout
+        );
+        assert_eq!(timeout.object_content_usable, None);
+
+        let object = benchmark_repo_environment_health(
+            0,
+            Some("git cat-file --batch object read timed out"),
+        );
+        assert_eq!(
+            object.status,
+            BenchmarkRepoEnvironmentStatus::GitObjectStoreUnavailable
+        );
+        assert_eq!(object.object_content_usable, Some(false));
+
+        let healthy = benchmark_repo_environment_health(2, None);
+        assert_eq!(healthy.status, BenchmarkRepoEnvironmentStatus::Healthy);
+        assert!(healthy.git_history_usable);
     }
 
     #[test]
@@ -6749,6 +6933,7 @@ mod tests {
                 name: name.to_string(),
                 repo_id: Some(report.repo_id.clone()),
                 effective_config: benchmark_effective_config(),
+                environment_health: BenchmarkRepoEnvironmentHealth::healthy(),
                 baseline: None,
                 baseline_status: None,
                 evaluated_commits: report.evaluated_commits,
