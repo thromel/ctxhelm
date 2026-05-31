@@ -6,6 +6,7 @@
   "sourceFree": true,
   "workflow": {
     "path": ".github/workflows/ci.yml",
+    "rustInstallCommand": "rustup toolchain install stable --profile minimal --component rustfmt --component clippy",
     "triggers": [
       "push:main",
       "pull_request",

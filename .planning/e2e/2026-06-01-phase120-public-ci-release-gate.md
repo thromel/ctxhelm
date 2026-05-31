@@ -27,6 +27,8 @@ archive audit, MCP protocol smoke, and release-gate smokes.
   workflow and clippy gate.
 - Cleared existing clippy warnings across the workspace so the new CI gate is
   actionable instead of immediately red.
+- Fixed the first public CI run's workspace-job install failure by passing
+  separate `rustup --component` flags for `rustfmt` and `clippy`.
 
 ## Validation
 

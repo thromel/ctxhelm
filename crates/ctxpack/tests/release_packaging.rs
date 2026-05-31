@@ -329,6 +329,7 @@ fn ci_workflow_contract() {
         "actions/checkout@v4",
         "actions/cache@v4",
         "cargo fmt --all -- --check",
+        "rustup toolchain install stable --profile minimal --component rustfmt --component clippy",
         "cargo clippy --workspace --all-targets --locked -- -D warnings",
         "cargo test --workspace --locked --no-fail-fast",
         "cargo run -p ctxpack --locked -- --help",
