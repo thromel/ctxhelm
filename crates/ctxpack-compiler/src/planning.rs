@@ -30,7 +30,6 @@ pub(crate) const PREPARE_TASK_TEST_LIMIT: usize = 10;
 pub(crate) enum HistoryMode {
     Disabled,
     Full,
-    ValidationOnly,
 }
 
 pub fn empty_plan_for_task(task_type: TaskType) -> ContextPlan {
@@ -216,19 +215,23 @@ pub(crate) fn prepare_context_plan_with_paths_history_mode_and_semantic(
             combined_anchor_paths.push(path);
         }
     }
-    let symbol_query = query_text_or_task(&query_trace.retriever_queries.symbol_terms, task);
     let lexical_query = query_text_or_task(&query_trace.retriever_queries.lexical_terms, task);
     let semantic_query = query_text_or_task(&query_trace.retriever_queries.semantic_phrases, task);
 
-    let symbol_report = symbol_search_report(
-        repo_root,
-        &symbol_query,
-        &SymbolOptions {
-            limit: search_limit(&plan.task_type),
-        },
-    )?;
-    extend_plan_diagnostics(&mut plan, symbol_report.diagnostics);
-    let symbol_results = symbol_report.results;
+    let symbol_results = if query_trace.retriever_queries.symbol_terms.is_empty() {
+        Vec::new()
+    } else {
+        let symbol_query = query_trace.retriever_queries.symbol_terms.join(" ");
+        let symbol_report = symbol_search_report(
+            repo_root,
+            &symbol_query,
+            &SymbolOptions {
+                limit: search_limit(&plan.task_type),
+            },
+        )?;
+        extend_plan_diagnostics(&mut plan, symbol_report.diagnostics);
+        symbol_report.results
+    };
 
     let search_report = lexical_search_report(
         repo_root,
@@ -1245,16 +1248,25 @@ fn extract_symbol_facets(task: &str) -> Vec<String> {
             || character == '.')
     })
     .map(clean_query_token)
-    .filter(|token| {
-        token.len() >= 3
-            && (token.contains("::")
-                || token.contains('.')
-                || token
-                    .chars()
-                    .any(|character| character.is_ascii_uppercase()))
-    })
+    .filter(|token| is_precise_symbol_facet(token))
     .take(16)
     .collect()
+}
+
+fn is_precise_symbol_facet(token: &str) -> bool {
+    if token.len() < 3 {
+        return false;
+    }
+    if token.contains("::") || token.contains('.') || token.contains('_') {
+        return true;
+    }
+    let mut chars = token.chars();
+    let _ = chars.next();
+    let has_inner_uppercase = chars.any(|character| character.is_ascii_uppercase());
+    let has_lowercase = token
+        .chars()
+        .any(|character| character.is_ascii_lowercase());
+    has_inner_uppercase && has_lowercase
 }
 
 fn extract_error_facets(task: &str) -> Vec<String> {
@@ -1971,6 +1983,22 @@ mod tests {
             .iter()
             .any(|phrase| phrase == "AuthService"));
         assert!(trace.fusion_controls.anchor_dominance);
+    }
+
+    #[test]
+    fn query_trace_does_not_treat_commit_subject_acronyms_as_symbol_facets() {
+        let trace = construct_query_trace("Default MCP repository path to working directory", &[]);
+
+        assert!(trace.retriever_queries.symbol_terms.is_empty());
+        assert!(trace
+            .retriever_queries
+            .lexical_terms
+            .iter()
+            .any(|term| term == "mcp"));
+        assert!(trace
+            .facets
+            .iter()
+            .any(|facet| facet.kind == QueryFacetKind::DomainPhrase && facet.value == "mcp"));
     }
 
     #[test]

@@ -15,11 +15,11 @@ use ctxpack_core::{
     RetrievalHealthSignalContribution, RetrievalHealthTokenRoi, RetrievalSignalKind, TaskType,
 };
 use ctxpack_index::{
-    historical_commit_samples_with_safe_paths, lexical_search, load_or_build_inventory,
-    repo_id_for_path, semantic_document_report, task_hash, write_eval_history_sidecar,
-    HistoricalChangedPath, HistoricalCommitOptions, HistoricalCommitSample, InventoryError,
-    InventoryOptions, LabelScope, SearchOptions, SemanticDocumentOptions, SemanticProviderConfig,
-    LEARNED_POLICY_PROFILE_SCHEMA_VERSION,
+    historical_commit_samples_with_safe_paths, inventory_path, lexical_search,
+    load_or_build_inventory, repo_id_for_path, semantic_document_report, task_hash,
+    write_eval_history_sidecar, HistoricalChangedPath, HistoricalCommitOptions,
+    HistoricalCommitSample, InventoryError, InventoryOptions, LabelScope, SearchOptions,
+    SemanticDocumentOptions, SemanticProviderConfig, LEARNED_POLICY_PROFILE_SCHEMA_VERSION,
 };
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet};
@@ -33,6 +33,7 @@ use uuid::Uuid;
 
 const HISTORICAL_EVAL_CACHE_SCHEMA_VERSION: &str = "historical-eval-cache-v2.3.5";
 const PARENT_SNAPSHOT_BATCH_READ_TIMEOUT: Duration = Duration::from_millis(500);
+const PARENT_SNAPSHOT_SCHEMA_VERSION: &str = "historical-eval-parent-snapshot-v2";
 const PARENT_SNAPSHOT_MANIFEST: &str = ".ctxpack/parent-snapshot.json";
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -3191,7 +3192,11 @@ fn evaluate_historical_commit_sample(
         .as_deref()
         .is_some_and(|sha| !sha.trim().is_empty())
     {
-        HistoryMode::ValidationOnly
+        // Parent snapshots carry a source-free `.ctxpack/eval-history.json`
+        // sidecar built at the parent revision. Using that prior history in
+        // ranking exercises the product's co-change signal without leaking the
+        // target commit being evaluated.
+        HistoryMode::Full
     } else {
         HistoryMode::Disabled
     };
@@ -3411,7 +3416,7 @@ fn parent_snapshot_manifest_is_reusable(
     manifest: &ParentSnapshotManifest,
     parent_sha: &str,
 ) -> bool {
-    manifest.manifest_version == "historical-eval-parent-snapshot-v1"
+    manifest.manifest_version == PARENT_SNAPSHOT_SCHEMA_VERSION
         && manifest.parent_sha == parent_sha
         && manifest.complete
 }
@@ -3462,7 +3467,7 @@ fn build_historical_eval_parent_worktree_cache(
         write_parent_snapshot_manifest(
             &staging_path,
             &ParentSnapshotManifest {
-                manifest_version: "historical-eval-parent-snapshot-v1".to_string(),
+                manifest_version: PARENT_SNAPSHOT_SCHEMA_VERSION.to_string(),
                 parent_sha: parent_sha.to_string(),
                 requested_path_count: extraction.requested_path_count,
                 extracted_path_count: extraction.extracted_path_count,
@@ -3470,6 +3475,17 @@ fn build_historical_eval_parent_worktree_cache(
                 complete: extraction.complete(),
             },
         )?;
+        if !extraction.complete() {
+            return Err(InventoryError::Git {
+                repo_root: source_repo.to_path_buf(),
+                message: format!(
+                    "parent snapshot object extraction incomplete for {parent_sha}: requested {}, extracted {}, failed batches {}",
+                    extraction.requested_path_count,
+                    extraction.extracted_path_count,
+                    extraction.failed_batch_count
+                ),
+            });
+        }
         Ok::<(), InventoryError>(())
     })();
     if let Err(error) = build_result {
@@ -3477,11 +3493,12 @@ fn build_historical_eval_parent_worktree_cache(
         return Err(error);
     }
 
-    if path.join(".ctxpack/eval-history.json").is_file() {
+    if parent_snapshot_cache_is_reusable(&path, parent_sha)? {
         let _ = fs::remove_dir_all(&staging_path);
         return Ok(path);
     }
     if path.exists() {
+        evict_eval_snapshot_repo_cache(&path)?;
         fs::remove_dir_all(&path).map_err(|source| InventoryError::Write {
             path: path.clone(),
             source,
@@ -3489,7 +3506,7 @@ fn build_historical_eval_parent_worktree_cache(
     }
     match fs::rename(&staging_path, &path) {
         Ok(()) => Ok(path),
-        Err(source) if path.join(".ctxpack/eval-history.json").is_file() => {
+        Err(source) if parent_snapshot_cache_is_reusable(&path, parent_sha)? => {
             let _ = fs::remove_dir_all(&staging_path);
             let _ = source;
             Ok(path)
@@ -3499,6 +3516,25 @@ fn build_historical_eval_parent_worktree_cache(
             Err(InventoryError::Write { path, source })
         }
     }
+}
+
+fn evict_eval_snapshot_repo_cache(snapshot_path: &Path) -> Result<(), InventoryError> {
+    let repo_id = repo_id_for_path(snapshot_path);
+    let repo_cache_dir = inventory_path(&repo_id)
+        .parent()
+        .map(Path::to_path_buf)
+        .unwrap_or_else(|| {
+            historical_eval_parent_cache_root()
+                .join("repos")
+                .join(repo_id)
+        });
+    if !repo_cache_dir.exists() {
+        return Ok(());
+    }
+    fs::remove_dir_all(&repo_cache_dir).map_err(|source| InventoryError::Write {
+        path: repo_cache_dir,
+        source,
+    })
 }
 
 fn read_parent_snapshot_manifest(
@@ -3566,7 +3602,7 @@ fn historical_eval_parent_cache_root() -> PathBuf {
 
 fn snapshot_paths_fingerprint(snapshot_paths: &[String]) -> String {
     let mut fingerprint_source = format!(
-        "historical-eval-parent-snapshot-v1\n{}\n",
+        "{PARENT_SNAPSHOT_SCHEMA_VERSION}\n{}\n",
         snapshot_paths.len()
     );
     for path in snapshot_paths {
@@ -5838,7 +5874,7 @@ mod tests {
     #[test]
     fn incomplete_parent_snapshot_manifests_are_not_reusable() {
         let complete = ParentSnapshotManifest {
-            manifest_version: "historical-eval-parent-snapshot-v1".to_string(),
+            manifest_version: PARENT_SNAPSHOT_SCHEMA_VERSION.to_string(),
             parent_sha: "abc123".to_string(),
             requested_path_count: 2,
             extracted_path_count: 2,
@@ -5872,7 +5908,7 @@ mod tests {
         write_parent_snapshot_manifest(
             &cache,
             &ParentSnapshotManifest {
-                manifest_version: "historical-eval-parent-snapshot-v1".to_string(),
+                manifest_version: PARENT_SNAPSHOT_SCHEMA_VERSION.to_string(),
                 parent_sha: "abc123".to_string(),
                 requested_path_count: 1,
                 extracted_path_count: 1,
@@ -6307,6 +6343,19 @@ mod tests {
             BenchmarkRepoEnvironmentStatus::GitObjectStoreUnavailable
         );
         assert_eq!(object.object_content_usable, Some(false));
+
+        let incomplete_parent_snapshot = benchmark_repo_environment_health(
+            0,
+            Some("parent snapshot object extraction incomplete for abc123"),
+        );
+        assert_eq!(
+            incomplete_parent_snapshot.status,
+            BenchmarkRepoEnvironmentStatus::GitObjectStoreUnavailable
+        );
+        assert_eq!(
+            incomplete_parent_snapshot.object_content_usable,
+            Some(false)
+        );
 
         let healthy = benchmark_repo_environment_health(2, None);
         assert_eq!(healthy.status, BenchmarkRepoEnvironmentStatus::Healthy);

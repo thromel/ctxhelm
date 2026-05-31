@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
+export LC_ALL=C
+export LANG=C
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 README="${ROOT_DIR}/README.md"
@@ -43,15 +45,32 @@ require_file() {
 require_text() {
   local file="$1"
   local text="$2"
-  grep -F -- "$text" "$file" >/dev/null || fail "missing '${text}' in ${file#${ROOT_DIR}/}"
+  local rel="${file#${ROOT_DIR}/}"
+  if is_dataless_tracked_file "$file" "$rel"; then
+    git -C "$ROOT_DIR" grep -F --quiet -- "$text" HEAD -- "$rel" || fail "missing '${text}' in ${rel}"
+  else
+    grep -F -- "$text" "$file" >/dev/null || fail "missing '${text}' in ${rel}"
+  fi
 }
 
 reject_text() {
   local file="$1"
   local text="$2"
-  if grep -F -- "$text" "$file" >/dev/null; then
-    fail "unsupported required path '${text}' in ${file#${ROOT_DIR}/}"
+  local rel="${file#${ROOT_DIR}/}"
+  if is_dataless_tracked_file "$file" "$rel"; then
+    if git -C "$ROOT_DIR" grep -F --quiet -- "$text" HEAD -- "$rel"; then
+      fail "unsupported required path '${text}' in ${rel}"
+    fi
+  elif grep -F -- "$text" "$file" >/dev/null; then
+    fail "unsupported required path '${text}' in ${rel}"
   fi
+}
+
+is_dataless_tracked_file() {
+  local file="$1"
+  local rel="$2"
+  git -C "$ROOT_DIR" ls-files --error-unmatch "$rel" >/dev/null 2>&1 || return 1
+  /bin/ls -lO "$file" 2>/dev/null | grep -F "dataless" >/dev/null
 }
 
 require_file "${README}"

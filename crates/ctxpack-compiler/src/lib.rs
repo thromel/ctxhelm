@@ -965,7 +965,7 @@ mod tests {
         .unwrap();
         std::env::set_var("CTXPACK_HOME", &home);
 
-        let plan = prepare_context_plan(&repo, "broken", TaskType::BugFix).unwrap();
+        let plan = prepare_context_plan(&repo, "brokenPayload", TaskType::BugFix).unwrap();
         let diagnostics_json = serde_json::to_string(&plan.diagnostics).unwrap();
 
         assert!(plan
