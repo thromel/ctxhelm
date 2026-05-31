@@ -981,8 +981,8 @@ fn is_broad_validation_task(task: &str, related_tests: &[ctxpack_core::RelatedTe
     .filter(|term| terms.contains(*term))
     .count();
 
-    related_tests.len() >= PREPARE_TASK_TEST_LIMIT && test_area_count >= 3
-        || broad_term_count >= 2 && test_area_count >= 3
+    test_area_count >= 3
+        && (related_tests.len() >= PREPARE_TASK_TEST_LIMIT || broad_term_count >= 2)
 }
 
 fn broad_validation_command(commands: &[Command]) -> Option<String> {
@@ -1908,11 +1908,10 @@ fn current_diff_anchor_paths(repo_root: &Path, anchors: &[AnchoredTarget]) -> BT
 }
 
 type AnchoredTarget = (TargetFile, FileRole);
+type AnchoredTargetFiles =
+    Result<(Vec<AnchoredTarget>, Vec<String>, Vec<Diagnostic>), InventoryError>;
 
-fn anchored_target_files(
-    repo_root: &Path,
-    anchor_paths: &[String],
-) -> Result<(Vec<AnchoredTarget>, Vec<String>, Vec<Diagnostic>), InventoryError> {
+fn anchored_target_files(repo_root: &Path, anchor_paths: &[String]) -> AnchoredTargetFiles {
     if anchor_paths.is_empty() {
         return Ok((Vec::new(), Vec::new(), Vec::new()));
     }

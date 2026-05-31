@@ -316,6 +316,42 @@ fn release_gate_script_contract() {
 }
 
 #[test]
+fn ci_workflow_contract() {
+    let repo_root = workspace_root();
+    let workflow = repo_root.join(".github/workflows/ci.yml");
+    assert!(workflow.exists(), "CI workflow is missing");
+
+    let workflow_text = fs::read_to_string(&workflow).unwrap();
+    for required in [
+        "push:",
+        "pull_request:",
+        "workflow_dispatch:",
+        "actions/checkout@v4",
+        "actions/cache@v4",
+        "cargo fmt --all -- --check",
+        "cargo clippy --workspace --all-targets --locked -- -D warnings",
+        "cargo test --workspace --locked --no-fail-fast",
+        "cargo run -p ctxpack --locked -- --help",
+        "bash scripts/check-release-docs.sh",
+        "bash scripts/release-gate.sh",
+        "CTXPACK_SKIP_CLEAN_FIXTURE_PROOF",
+        "CTXPACK_SKIP_REAL_CLIENT",
+    ] {
+        assert!(
+            workflow_text.contains(required),
+            "CI workflow missing {required}"
+        );
+    }
+
+    assert!(
+        !workflow_text.contains("gh release")
+            && !workflow_text.contains("git tag")
+            && !workflow_text.contains("cargo publish"),
+        "CI workflow must not publish artifacts or mutate release state"
+    );
+}
+
+#[test]
 fn product_proof_checker_accepts_promote_and_rejects_block() {
     let repo_root = workspace_root();
     let script = repo_root.join("scripts/check-product-proof.py");

@@ -115,6 +115,7 @@ pub fn compile_context_pack_with_plan_and_paths_for_agent_and_semantic(
     )
 }
 
+#[allow(clippy::too_many_arguments)]
 pub fn compile_context_pack_with_plan_and_paths_for_agent_and_semantic_provider(
     repo_root: impl AsRef<Path>,
     task: &str,

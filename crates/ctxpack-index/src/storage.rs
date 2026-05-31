@@ -391,7 +391,7 @@ pub fn sync_inventory_to_store(
     let inventory = build_inventory(&repo_root, inventory_options).map_err(|error| {
         StorageError::Canonicalize {
             path: repo_root.clone(),
-            source: std::io::Error::new(std::io::ErrorKind::Other, error.to_string()),
+            source: std::io::Error::other(error.to_string()),
         }
     })?;
     let connection = open_connection(&storage.database_path)?;
@@ -1190,7 +1190,7 @@ fn canonicalize_storage(path: &Path) -> Result<PathBuf, StorageError> {
         }
         _ => StorageError::Canonicalize {
             path: path.to_path_buf(),
-            source: std::io::Error::new(std::io::ErrorKind::Other, error.to_string()),
+            source: std::io::Error::other(error.to_string()),
         },
     })
 }

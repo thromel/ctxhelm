@@ -528,7 +528,7 @@ mod tests {
         let report = workspace_inventory_status(&workspace, None).unwrap();
         assert_eq!(report.repo_count, 2);
         assert_eq!(report.available_repo_count, 2);
-        assert_eq!(report.source_text_logged, false);
+        assert!(!report.source_text_logged);
         assert!(report.file_count >= 2);
         let json = serde_json::to_string(&report).unwrap();
         assert!(!json.contains("CTXPACK_WORKSPACE_SOURCE_SENTINEL"));

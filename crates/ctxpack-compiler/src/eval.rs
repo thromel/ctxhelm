@@ -2068,6 +2068,7 @@ pub fn semantic_precision_gate_report(
     })
 }
 
+#[allow(clippy::too_many_arguments)]
 fn gate_variant(
     name: &str,
     status: SemanticPrecisionVariantStatus,
@@ -2356,6 +2357,7 @@ fn short_sha(sha: &str) -> String {
     sha.chars().take(12).collect()
 }
 
+#[allow(clippy::too_many_arguments)]
 fn paired_baseline_row(
     variant: &str,
     family: PairedBaselineFamily,
@@ -4135,6 +4137,7 @@ pub struct CandidateFeatureKindDelta {
     pub head_count: usize,
 }
 
+#[allow(clippy::too_many_arguments)]
 fn candidate_feature_export_from_plan(
     repo_root: &Path,
     task: &str,

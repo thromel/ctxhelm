@@ -418,11 +418,11 @@ mod tests {
         fs::write(repo.join(".env"), "CTXPACK_ARTIFACT_SECRET_SENTINEL\n").unwrap();
 
         let policy = write_team_policy_template(&repo).unwrap();
-        assert_eq!(policy.policy.allow_cloud_embeddings, false);
-        assert_eq!(policy.source_text_logged, false);
+        assert!(!policy.policy.allow_cloud_embeddings);
+        assert!(!policy.source_text_logged);
 
         let manifest = export_shared_artifact_manifest(&repo).unwrap();
-        assert_eq!(manifest.source_text_logged, false);
+        assert!(!manifest.source_text_logged);
         assert!(manifest
             .artifacts
             .iter()
@@ -434,7 +434,7 @@ mod tests {
         let report =
             inspect_shared_artifact_manifest(shared_artifact_manifest_path(&repo)).unwrap();
         assert!(report.compatible);
-        assert_eq!(report.source_text_logged, false);
+        assert!(!report.source_text_logged);
 
         let imported =
             import_shared_artifact_manifest(&repo, shared_artifact_manifest_path(&repo)).unwrap();

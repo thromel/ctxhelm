@@ -101,7 +101,7 @@ pub fn lexical_search_report(
             continue;
         };
         let content = source.text.unwrap_or_default();
-        let Some((score, reason)) = score_file(&file, &content, &query_terms) else {
+        let Some((score, reason)) = score_file(file, &content, &query_terms) else {
             continue;
         };
 

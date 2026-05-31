@@ -318,8 +318,8 @@ pub fn related_dependency_edges_report(
     let all_edges = full_report.edges;
     let mut edges = all_edges
         .iter()
-        .cloned()
         .filter(|edge| anchors.contains(&edge.source_path) || anchors.contains(&edge.target_path))
+        .cloned()
         .collect::<Vec<_>>();
     extend_python_reexport_edges(&mut edges, &all_edges, &anchors);
     edges.sort_by(|left, right| {

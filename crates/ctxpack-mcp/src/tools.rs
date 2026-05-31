@@ -27,7 +27,6 @@ struct CallToolParams {
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
-
 struct PrepareTaskArgs {
     task: String,
     #[serde(default)]
@@ -266,7 +265,6 @@ fn call_search(arguments: Value) -> Result<Value, RpcError> {
                     enabled: true,
                     limit,
                     provider: semantic_provider,
-                    ..ctxpack_index::SemanticOptions::default()
                 },
             )
             .map_err(|error| {

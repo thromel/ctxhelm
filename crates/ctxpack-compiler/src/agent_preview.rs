@@ -28,6 +28,7 @@ pub fn build_agent_preview_report(
     )
 }
 
+#[allow(clippy::too_many_arguments)]
 pub fn build_agent_preview_report_with_provider(
     repo_root: impl AsRef<Path>,
     task: &str,
@@ -361,7 +362,7 @@ mod tests {
         assert!(serialized.contains("AGENTS.md"));
         assert!(serialized.contains("native file tools"));
         assert!(!serialized.contains("AGENT_PREVIEW_SENTINEL"));
-        assert_eq!(report.source_text_logged, false);
+        assert!(!report.source_text_logged);
         assert!(report
             .previews
             .iter()

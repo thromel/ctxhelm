@@ -515,6 +515,7 @@ fn domain_memory_cards(
         .collect()
 }
 
+#[allow(clippy::too_many_arguments)]
 fn memory_card(
     repo_id: &str,
     name: &str,

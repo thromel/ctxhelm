@@ -84,7 +84,7 @@ pub fn read_safe_source(
         }
     };
 
-    if bytes.iter().any(|byte| *byte == 0) {
+    if bytes.contains(&0) {
         return Ok(skipped(
             normalized,
             SourceReadReason::Binary,

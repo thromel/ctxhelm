@@ -276,7 +276,8 @@ fn compare_inventory_metadata(
         .ignore_fingerprints
         .iter()
         .zip(current_metadata.ignore_fingerprints.iter())
-        .filter_map(|(cached, current)| (cached != current).then(|| current.path.clone()))
+        .filter(|(cached, current)| cached != current)
+        .map(|(_, current)| current.path.clone())
         .collect::<Vec<_>>();
     if !changed_ignores.is_empty() {
         push_reason(
@@ -326,12 +327,12 @@ fn compare_inventory_metadata(
 
     let changed = cached_manifest
         .iter()
-        .filter_map(|(path, cached)| {
+        .filter(|(path, cached)| {
             current_manifest
-                .get(path)
-                .is_some_and(|current| current != cached)
-                .then(|| path.clone())
+                .get(*path)
+                .is_some_and(|current| current != *cached)
         })
+        .map(|(path, _)| path.clone())
         .collect::<Vec<_>>();
     if !changed.is_empty() {
         push_reason(

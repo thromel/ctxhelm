@@ -818,6 +818,7 @@ struct EvalFeedbackArgs {
 }
 
 #[derive(Debug, Subcommand)]
+#[allow(clippy::large_enum_variant)]
 enum EvalFeedbackCommand {
     #[command(about = "Record a source-free agent-session feedback event.")]
     Record(EvalFeedbackRecordArgs),

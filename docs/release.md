@@ -148,6 +148,13 @@ Before publishing or announcing a release, run the local release gate:
 bash scripts/release-gate.sh
 ```
 
+The public repository also runs `.github/workflows/ci.yml` on pushes, pull
+requests, and manual dispatch. That workflow enforces formatting,
+`cargo clippy --workspace --all-targets --locked -- -D warnings`, locked
+workspace tests, CLI help, release-doc consistency, and the local release gate
+with external fixture and real-client checks explicitly skipped unless a
+maintainer runs the full local gate with those optional proofs enabled.
+
 This is the pre-publication blocker for v1.1.0. When `CTXPACK_BIN` is not set, the gate runs `scripts/release-package.sh`, audits the archive, extracts the generated artifact, and uses the extracted `ctxpack` binary for installed-binary proof.
 
 To prove a selected installed or previously extracted binary, pass an absolute path:

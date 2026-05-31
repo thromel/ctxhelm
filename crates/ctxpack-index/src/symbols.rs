@@ -125,7 +125,7 @@ pub fn extract_symbols_report(
             continue;
         };
         let content = source.text.unwrap_or_default();
-        symbols.extend(symbols_for_file(&file, &content));
+        symbols.extend(symbols_for_file(file, &content));
     }
 
     symbols.sort_by(|left, right| {

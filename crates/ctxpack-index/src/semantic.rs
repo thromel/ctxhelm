@@ -454,7 +454,7 @@ pub fn semantic_search_report(
 
     let mut results = Vec::new();
     for (document, file_vector) in candidate_documents.into_iter().zip(file_vectors.iter()) {
-        let score = cosine_similarity(&query_vector, &file_vector);
+        let score = cosine_similarity(query_vector, file_vector);
         if score < 0.08 {
             continue;
         }
@@ -552,7 +552,7 @@ pub fn sync_semantic_index_to_store(
 fn semantic_inventory_error(path: &Path, error: InventoryError) -> StorageError {
     StorageError::Canonicalize {
         path: path.to_path_buf(),
-        source: std::io::Error::new(std::io::ErrorKind::Other, error.to_string()),
+        source: std::io::Error::other(error.to_string()),
     }
 }
 

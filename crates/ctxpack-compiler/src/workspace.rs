@@ -35,6 +35,7 @@ pub fn prepare_workspace_context_plan(
     Ok(plan)
 }
 
+#[allow(clippy::too_many_arguments)]
 pub fn compile_workspace_context_pack(
     workspace_root: impl AsRef<Path>,
     manifest_path: Option<&Path>,
@@ -402,7 +403,7 @@ mod tests {
 
         assert_eq!(plan.selected_repo_count, 2);
         assert_eq!(plan.repo_plans[0].label, "web");
-        assert_eq!(plan.source_text_logged, false);
+        assert!(!plan.source_text_logged);
         let json = serde_json::to_string(&plan).unwrap();
         assert!(!json.contains("export function loginRedirect"));
         assert!(!json.contains("export function invoiceReconciliation"));
@@ -459,7 +460,7 @@ mod tests {
         assert_eq!(pack.selected_repo_count, 2);
         assert_eq!(pack.repo_packs[0].label, "web");
         assert_eq!(pack.repo_packs[0].context_pack.target_agent, "codex");
-        assert_eq!(pack.source_text_logged, false);
+        assert!(!pack.source_text_logged);
         let json = serde_json::to_value(&pack).unwrap();
         assert_eq!(json["repoPacks"][0]["contextPack"]["targetAgent"], "codex");
         assert!(json["tokenEstimate"].as_u64().unwrap() > 0);

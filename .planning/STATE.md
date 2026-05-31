@@ -4,10 +4,10 @@ milestone: v2.5
 milestone_name: Production Retrieval Quality
 status: active
 last_updated: "2026-05-31T22:05:00Z"
-last_activity: 2026-06-01 -- Phase 119 removed an observed ctxpack-index CTXPACK_HOME test race
+last_activity: 2026-06-01 -- Phase 120 added public CI release-gate enforcement
 progress:
-  total_phases: 51
-  completed_phases: 51
+  total_phases: 52
+  completed_phases: 52
   total_plans: 7
   completed_plans: 7
   percent: 100
@@ -17,10 +17,10 @@ progress:
 
 ## Current Position
 
-Phase: 119 - Index Test Environment Lock
-Plan: 119-index-env-lock-flake
+Phase: 120 - Public CI Release Gate
+Plan: 120-public-ci-release-gate
 Status: Complete
-Last activity: 2026-06-01 -- Phase 119 replaced per-module `CTXPACK_HOME` test mutexes in `ctxpack-index` with one crate-wide lock and stress-tested the index crate to remove an observed release-gate flake.
+Last activity: 2026-06-01 -- Phase 120 added `.github/workflows/ci.yml`, made clippy with `-D warnings` pass across the workspace, and validated the CI release-gate smoke path locally.
 
 ## Project Reference
 
@@ -96,6 +96,7 @@ Planned phases:
 - Phase 117: Context Area Role Signals (complete follow-up)
 - Phase 118: Context Area Resource Scope (complete follow-up)
 - Phase 119: Index Test Environment Lock (complete follow-up)
+- Phase 120: Public CI Release Gate (complete follow-up)
 
 ## Last Completed Milestone
 
@@ -113,7 +114,7 @@ Planned phases:
 
 ## Next Step
 
-Continue production-readiness work from remaining measured gaps: continue broad source-free area/ranking improvements and refresh real-client proof evidence when client versions change. Broad evals now distinguish files covered only by surfaced context areas from files with no candidate signal, clean cold full-fixture proof promotes across RefactoringMiner, ctxpack, ReAgent, and VeriSchema, the full packaged release gate passes from a clean checkout with the clean fixture proof required, release-candidate metadata marks the local archive channel ready while deferring Homebrew/crates.io/signed installers/self-update, the public `v1.1.0` GitHub archive release is published and source-free asset digests are verified, the public archive install path passes checksum/archive/temp-install/doctor/first-pack proof, optional public-archive real-client proof records Claude Code tool-call evidence and Codex CLI skip evidence, broad context-area guidance covers more wide-task implementation areas, packs tell agents concrete source/docs paths to inspect next, plan-level context areas expose source-free role signals, MCP context-area resources explicitly label their counts/read batches as safe-inventory scope, ctxpack-index release-validation tests now share one process-environment lock for `CTXPACK_HOME`, gap summaries point to area resources and bounded next-read paths, the product-proof checker gates those gap summaries and fails cleanly on missing embedded repo reports, history-unavailable repos now produce embedded insufficient-evidence reports instead of `null` reports, repo-scoped resources work after explicit-repo MCP tools even from a wrong server cwd, broad fixed-corpus metric floors block silent selection regressions, governance/proof tasks classify broad historical/eval language reliably, archive/docs broad tasks now receive context-area guidance without perturbing target-file source floors, real-client smoke artifacts now carry source-free request metadata instead of boolean-only claims, and the full four-repo proof now hydrates all configured repositories instead of hanging or returning missing reports.
+Continue production-readiness work from remaining measured gaps: continue broad source-free area/ranking improvements and refresh real-client proof evidence when client versions change. Broad evals now distinguish files covered only by surfaced context areas from files with no candidate signal, clean cold full-fixture proof promotes across RefactoringMiner, ctxpack, ReAgent, and VeriSchema, the full packaged release gate passes from a clean checkout with the clean fixture proof required, release-candidate metadata marks the local archive channel ready while deferring Homebrew/crates.io/signed installers/self-update, the public `v1.1.0` GitHub archive release is published and source-free asset digests are verified, the public archive install path passes checksum/archive/temp-install/doctor/first-pack proof, optional public-archive real-client proof records Claude Code tool-call evidence and Codex CLI skip evidence, broad context-area guidance covers more wide-task implementation areas, packs tell agents concrete source/docs paths to inspect next, plan-level context areas expose source-free role signals, MCP context-area resources explicitly label their counts/read batches as safe-inventory scope, ctxpack-index release-validation tests now share one process-environment lock for `CTXPACK_HOME`, public CI now enforces formatting, clippy, locked tests, CLI help, release-doc consistency, and release-gate smoke on pushes/PRs, gap summaries point to area resources and bounded next-read paths, the product-proof checker gates those gap summaries and fails cleanly on missing embedded repo reports, history-unavailable repos now produce embedded insufficient-evidence reports instead of `null` reports, repo-scoped resources work after explicit-repo MCP tools even from a wrong server cwd, broad fixed-corpus metric floors block silent selection regressions, governance/proof tasks classify broad historical/eval language reliably, archive/docs broad tasks now receive context-area guidance without perturbing target-file source floors, real-client smoke artifacts now carry source-free request metadata instead of boolean-only claims, and the full four-repo proof now hydrates all configured repositories instead of hanging or returning missing reports.
 
 ## Operator Next Steps
 

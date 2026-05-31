@@ -469,7 +469,7 @@ mod tests {
         );
         for prompt in list["result"]["prompts"].as_array().unwrap() {
             assert_eq!(prompt["arguments"][0]["name"], "task");
-            assert_eq!(prompt["arguments"][0]["description"].is_string(), true);
+            assert!(prompt["arguments"][0]["description"].is_string());
         }
 
         let get = handle_line(
