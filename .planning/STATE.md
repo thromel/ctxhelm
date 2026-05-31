@@ -175,4 +175,6 @@ Continue production-readiness work from remaining measured gaps: cold four-repo 
 - Phase 105 makes history-unavailable proof failures explicit and cache-safe instead of schema-shaped missing-report failures.
 - Phase 106 makes Codex and Claude Code real-client proof artifacts auditable by recording source-free request hashes, line counts, explicit repo tool-call counts, and sanitized observed tool-call summaries.
 - Phase 107 fixes the hydrated full four-repo proof path by bounding parent snapshot git calls, falling back from slow rename detection, and preserving full corpus verdicts in cold and warm proof artifacts.
-- Next work should target cold four-repo runtime reduction or richer source-free area resources, not runtime threshold tuning or unproven top-10 churn.
+- Phase 108 bounds cold Git failures: parent caches live outside source repos, archive extraction is removed, subject sampling uses no-rename diffs, stalled object-content batches fail closed instead of recursively hanging, and source-free parent snapshot manifests prevent incomplete caches from being reused as valid warm-cache evidence.
+- Latest cold proof: `.ctxpack/e2e/phase108-cold-git-bounded-proof.json` blocks because RefactoringMiner, ctxpack, and ReAgent still have insufficient evidence under local cold object-store conditions; VeriSchema remains `beat` at `7463ms`.
+- Next work should add an explicit object-store health verdict for cold proof runs before richer source-free area resources or ranking experiments.

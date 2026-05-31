@@ -62,6 +62,7 @@ v2.5 therefore focuses on measured retrieval quality, not more surface area. The
 - [x] **Phase 105: History-Unavailable Embedded Reports** - Benchmark repos with unavailable git history keep embedded reports and block as insufficient evidence instead of producing `report: null`.
 - [x] **Phase 106: Real-Client Request Evidence Hardening** - Codex CLI and Claude Code smoke evidence records source-free request hashes, line counts, explicit repo tool-call counts, and sanitized observed tool-call summaries.
 - [x] **Phase 107: Hydrated Four-Repo Proof Path** - The broad proof hydrates RefactoringMiner, ctxpack, ReAgent, and VeriSchema with embedded reports instead of hanging or returning missing evidence.
+- [x] **Phase 108: Cold Git Bounds** - Cold parent snapshots use external caches, no-rename subject sampling, bounded object-batch reads, and completion manifests; the proof now fails fast on local unreadable Git objects without poisoning later caches.
 
 ## Phase Details
 
@@ -897,6 +898,7 @@ Phases execute in numeric order: 61 -> 62 -> 63 -> 64 -> 65 -> 66 -> 67 -> 69 ->
 | 105. History-Unavailable Embedded Reports | Evidence artifact | Complete | 2026-05-31 |
 | 106. Real-Client Request Evidence Hardening | Evidence artifact | Complete | 2026-05-31 |
 | 107. Hydrated Four-Repo Proof Path | Evidence artifact | Complete | 2026-05-31 |
+| 108. Cold Git Bounds | Evidence artifact | Complete | 2026-05-31 |
 
 ---
 *Roadmap created: 2026-05-22*

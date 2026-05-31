@@ -703,7 +703,11 @@ fn git_commit_file_sets_for_ref(
     let mut commits = Vec::new();
 
     for sha in shas.lines().map(str::trim).filter(|sha| !sha.is_empty()) {
-        let output = git_diff_tree_name_status_z(repo_root, sha, Duration::from_millis(250))?;
+        let Ok(output) =
+            git_diff_tree_name_status_z_without_renames(repo_root, sha, Duration::from_millis(250))
+        else {
+            continue;
+        };
         let files = parse_git_name_status_z(&output)
             .into_iter()
             .map(|file| file.path)
@@ -715,6 +719,24 @@ fn git_commit_file_sets_for_ref(
     }
 
     Ok(commits)
+}
+
+fn git_diff_tree_name_status_z_without_renames(
+    repo_root: &Path,
+    sha: &str,
+    diff_timeout: Duration,
+) -> Result<Vec<u8>, InventoryError> {
+    let args = [
+        "diff-tree",
+        "--root",
+        "--no-commit-id",
+        "--name-status",
+        "-z",
+        "-r",
+        "--diff-filter=ACDMRT",
+        sha,
+    ];
+    git_stdout_bytes_with_timeout(repo_root, &args, diff_timeout)
 }
 
 fn git_commit_subject_file_sets(
@@ -759,7 +781,11 @@ pub(crate) fn git_commit_subject_file_sets_with_timeouts(
         let parent_sha = git_parent_sha_with_timeout(repo_root, sha, metadata_timeout)
             .ok()
             .flatten();
-        let Ok(output) = git_diff_tree_name_status_z(repo_root, sha, diff_timeout) else {
+        let Ok(output) = git_diff_tree_name_status_z_without_renames(
+            repo_root,
+            sha,
+            diff_timeout.max(Duration::from_millis(250)),
+        ) else {
             continue;
         };
         let files = parse_git_name_status_z(&output);
@@ -772,51 +798,6 @@ pub(crate) fn git_commit_subject_file_sets_with_timeouts(
     }
 
     Ok(commits)
-}
-
-fn git_diff_tree_name_status_z(
-    repo_root: &Path,
-    sha: &str,
-    diff_timeout: Duration,
-) -> Result<Vec<u8>, InventoryError> {
-    let rename_args = [
-        "diff-tree",
-        "--root",
-        "--no-commit-id",
-        "--name-status",
-        "-z",
-        "-r",
-        "--diff-filter=ACDMRT",
-        "-M",
-        sha,
-    ];
-    match git_stdout_bytes_with_timeout(repo_root, &rename_args, diff_timeout) {
-        Ok(output) => Ok(output),
-        Err(rename_error) => {
-            let fallback_args = [
-                "diff-tree",
-                "--root",
-                "--no-commit-id",
-                "--name-status",
-                "-z",
-                "-r",
-                "--diff-filter=ACDMRT",
-                sha,
-            ];
-            git_stdout_bytes_with_timeout(
-                repo_root,
-                &fallback_args,
-                diff_timeout.max(Duration::from_secs(2)),
-            )
-            .map_err(|fallback_error| InventoryError::Git {
-                repo_root: repo_root.to_path_buf(),
-                message: format!(
-                    "git diff-tree rename detection failed: {}; fallback without rename detection failed: {}",
-                    rename_error, fallback_error
-                ),
-            })
-        }
-    }
 }
 
 fn git_parent_sha_with_timeout(
@@ -861,6 +842,7 @@ fn git_stdout(repo_root: &Path, args: &[&str]) -> Result<String, InventoryError>
     let output = Command::new("git")
         .arg("-C")
         .arg(repo_root)
+        .args(["-c", "core.fsmonitor=false"])
         .args(args)
         .output()
         .map_err(|source| InventoryError::Git {
@@ -892,6 +874,7 @@ pub(crate) fn git_stdout_with_timeout(
     let mut child = Command::new("git")
         .arg("-C")
         .arg(repo_root)
+        .args(["-c", "core.fsmonitor=false"])
         .args(args)
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
@@ -951,6 +934,7 @@ fn git_stdout_bytes_with_timeout(
     let mut child = Command::new("git")
         .arg("-C")
         .arg(repo_root)
+        .args(["-c", "core.fsmonitor=false"])
         .args(args)
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())

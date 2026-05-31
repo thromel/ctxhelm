@@ -1887,7 +1887,7 @@ mod tests {
     }
 
     #[test]
-    fn historical_commit_samples_include_rename_records() {
+    fn historical_commit_samples_include_bounded_rename_paths() {
         let _guard = env_lock();
         let temp = tempfile::tempdir().unwrap();
         let repo = temp.path().join("repo");
@@ -1927,15 +1927,18 @@ mod tests {
             samples[0].safe_changed_files,
             vec!["src/auth/session-store.ts"]
         );
-        assert_eq!(samples[0].changed_paths.len(), 1);
-        assert_eq!(samples[0].changed_paths[0].change_kind, ChangeKind::Renamed);
+        assert_eq!(samples[0].changed_paths.len(), 2);
         assert_eq!(
             samples[0].changed_paths[0].path,
             "src/auth/session-store.ts"
         );
+        assert_eq!(samples[0].changed_paths[0].change_kind, ChangeKind::Added);
+        assert_eq!(samples[0].changed_paths[0].label_scope, LabelScope::Safe);
+        assert_eq!(samples[0].changed_paths[1].path, "src/auth/session.ts");
+        assert_eq!(samples[0].changed_paths[1].change_kind, ChangeKind::Deleted);
         assert_eq!(
-            samples[0].changed_paths[0].old_path.as_deref(),
-            Some("src/auth/session.ts")
+            samples[0].changed_paths[1].label_scope,
+            LabelScope::HistoricalOnly
         );
 
         std::env::remove_var("CTXPACK_HOME");
@@ -2170,7 +2173,7 @@ mod tests {
     }
 
     #[test]
-    fn historical_commit_collection_falls_back_when_rename_diff_times_out() {
+    fn historical_commit_collection_uses_fast_no_rename_diff() {
         let _guard = env_lock();
         let temp = tempfile::tempdir().unwrap();
         let repo = temp.path().join("repo");

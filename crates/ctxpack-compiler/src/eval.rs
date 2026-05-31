@@ -24,6 +24,7 @@ use ctxpack_index::{
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
+use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::process::{Command as ProcessCommand, Stdio};
 use std::thread;
@@ -31,8 +32,38 @@ use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 use uuid::Uuid;
 
 const HISTORICAL_EVAL_CACHE_SCHEMA_VERSION: &str = "historical-eval-cache-v2.3.5";
-const PARENT_SNAPSHOT_PATH_CHECK_TIMEOUT: Duration = Duration::from_millis(250);
-const PARENT_SNAPSHOT_FILE_READ_TIMEOUT: Duration = Duration::from_millis(250);
+const PARENT_SNAPSHOT_BATCH_READ_TIMEOUT: Duration = Duration::from_millis(500);
+const PARENT_SNAPSHOT_MANIFEST: &str = ".ctxpack/parent-snapshot.json";
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct ParentSnapshotManifest {
+    manifest_version: String,
+    parent_sha: String,
+    requested_path_count: usize,
+    extracted_path_count: usize,
+    failed_batch_count: usize,
+    complete: bool,
+}
+
+#[derive(Debug, Clone, Copy, Default)]
+struct ParentSnapshotExtractionStatus {
+    requested_path_count: usize,
+    extracted_path_count: usize,
+    failed_batch_count: usize,
+}
+
+impl ParentSnapshotExtractionStatus {
+    fn merge(&mut self, other: Self) {
+        self.requested_path_count += other.requested_path_count;
+        self.extracted_path_count += other.extracted_path_count;
+        self.failed_batch_count += other.failed_batch_count;
+    }
+
+    fn complete(self) -> bool {
+        self.failed_batch_count == 0
+    }
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
@@ -3205,28 +3236,13 @@ impl<'a> HistoricalEvalWorktree<'a> {
             });
         }
 
-        let temp_dir = tempfile::Builder::new()
-            .prefix("ctxpack-historical-eval-")
-            .tempdir()
-            .map_err(|source| InventoryError::CreateDir {
-                path: std::env::temp_dir(),
-                source,
-            })?;
-        let path = temp_dir.path().join("repo");
-        fs::create_dir_all(&path).map_err(|source| InventoryError::CreateDir {
-            path: path.clone(),
-            source,
-        })?;
-        let revision_paths =
-            git_existing_paths_at_revision(source_repo, parent_sha, snapshot_paths)?;
-        git_extract_revision_paths(source_repo, parent_sha, &revision_paths, &path)?;
-        let _ = write_eval_history_sidecar(source_repo, parent_sha, &path);
-        persist_historical_eval_parent_worktree(source_repo, parent_sha, snapshot_paths, &path)?;
+        let path =
+            build_historical_eval_parent_worktree_cache(source_repo, parent_sha, snapshot_paths)?;
 
         Ok(Self {
             path,
             _source_repo: source_repo,
-            _temp_dir: Some(temp_dir),
+            _temp_dir: None,
         })
     }
 
@@ -3241,37 +3257,144 @@ fn cached_historical_eval_parent_worktree(
     snapshot_paths: &[String],
 ) -> Result<Option<PathBuf>, InventoryError> {
     let path = historical_eval_parent_cache_repo_path(source_repo, parent_sha, snapshot_paths);
-    if !path.join(".ctxpack/eval-history.json").is_file() {
-        return Ok(None);
+    if parent_snapshot_cache_is_reusable(&path, parent_sha)? {
+        return Ok(Some(path));
     }
-    Ok(Some(path))
+    Ok(None)
 }
 
-fn persist_historical_eval_parent_worktree(
+fn parent_snapshot_manifest_is_reusable(
+    manifest: &ParentSnapshotManifest,
+    parent_sha: &str,
+) -> bool {
+    manifest.manifest_version == "historical-eval-parent-snapshot-v1"
+        && manifest.parent_sha == parent_sha
+        && manifest.complete
+}
+
+fn parent_snapshot_cache_is_reusable(
+    path: &Path,
+    parent_sha: &str,
+) -> Result<bool, InventoryError> {
+    if !path.join(".ctxpack/eval-history.json").is_file() {
+        return Ok(false);
+    }
+    let Some(manifest) = read_parent_snapshot_manifest(path)? else {
+        return Ok(false);
+    };
+    Ok(parent_snapshot_manifest_is_reusable(&manifest, parent_sha))
+}
+
+fn build_historical_eval_parent_worktree_cache(
     source_repo: &Path,
     parent_sha: &str,
     snapshot_paths: &[String],
-    extracted_path: &Path,
-) -> Result<(), InventoryError> {
+) -> Result<PathBuf, InventoryError> {
     let path = historical_eval_parent_cache_repo_path(source_repo, parent_sha, snapshot_paths);
-    if path.join(".ctxpack/eval-history.json").is_file() {
-        return Ok(());
+    if parent_snapshot_cache_is_reusable(&path, parent_sha)? {
+        return Ok(path);
     }
-    let Some(parent) = path.parent() else {
-        return Ok(());
+    let Some(cache_parent) = path.parent() else {
+        return Ok(path);
     };
-    fs::create_dir_all(parent).map_err(|source| InventoryError::CreateDir {
-        path: parent.to_path_buf(),
+    fs::create_dir_all(cache_parent).map_err(|source| InventoryError::CreateDir {
+        path: cache_parent.to_path_buf(),
         source,
     })?;
+    let staging_path = cache_parent.join(format!(
+        ".tmp-{}-{}",
+        parent_sha.chars().take(12).collect::<String>(),
+        Uuid::new_v4()
+    ));
+    fs::create_dir_all(&staging_path).map_err(|source| InventoryError::CreateDir {
+        path: staging_path.clone(),
+        source,
+    })?;
+
+    let build_result = (|| {
+        let extraction =
+            git_extract_revision_paths(source_repo, parent_sha, snapshot_paths, &staging_path)?;
+        write_eval_history_sidecar(source_repo, parent_sha, &staging_path)?;
+        write_parent_snapshot_manifest(
+            &staging_path,
+            &ParentSnapshotManifest {
+                manifest_version: "historical-eval-parent-snapshot-v1".to_string(),
+                parent_sha: parent_sha.to_string(),
+                requested_path_count: extraction.requested_path_count,
+                extracted_path_count: extraction.extracted_path_count,
+                failed_batch_count: extraction.failed_batch_count,
+                complete: extraction.complete(),
+            },
+        )?;
+        Ok::<(), InventoryError>(())
+    })();
+    if let Err(error) = build_result {
+        let _ = fs::remove_dir_all(&staging_path);
+        return Err(error);
+    }
+
+    if path.join(".ctxpack/eval-history.json").is_file() {
+        let _ = fs::remove_dir_all(&staging_path);
+        return Ok(path);
+    }
     if path.exists() {
         fs::remove_dir_all(&path).map_err(|source| InventoryError::Write {
             path: path.clone(),
             source,
         })?;
     }
-    copy_dir_recursively(extracted_path, &path)?;
-    Ok(())
+    match fs::rename(&staging_path, &path) {
+        Ok(()) => Ok(path),
+        Err(source) if path.join(".ctxpack/eval-history.json").is_file() => {
+            let _ = fs::remove_dir_all(&staging_path);
+            let _ = source;
+            Ok(path)
+        }
+        Err(source) => {
+            let _ = fs::remove_dir_all(&staging_path);
+            Err(InventoryError::Write { path, source })
+        }
+    }
+}
+
+fn read_parent_snapshot_manifest(
+    snapshot_path: &Path,
+) -> Result<Option<ParentSnapshotManifest>, InventoryError> {
+    let manifest_path = snapshot_path.join(PARENT_SNAPSHOT_MANIFEST);
+    if !manifest_path.is_file() {
+        return Ok(None);
+    }
+    let contents = fs::read_to_string(&manifest_path).map_err(|source| InventoryError::Read {
+        path: manifest_path.clone(),
+        source,
+    })?;
+    let manifest = serde_json::from_str(&contents).map_err(|source| InventoryError::Read {
+        path: manifest_path,
+        source: std::io::Error::new(std::io::ErrorKind::InvalidData, source),
+    })?;
+    Ok(Some(manifest))
+}
+
+fn write_parent_snapshot_manifest(
+    snapshot_path: &Path,
+    manifest: &ParentSnapshotManifest,
+) -> Result<(), InventoryError> {
+    let manifest_path = snapshot_path.join(PARENT_SNAPSHOT_MANIFEST);
+    if let Some(parent) = manifest_path.parent() {
+        fs::create_dir_all(parent).map_err(|source| InventoryError::CreateDir {
+            path: parent.to_path_buf(),
+            source,
+        })?;
+    }
+    let contents =
+        serde_json::to_string_pretty(manifest).map_err(|source| InventoryError::Write {
+            path: manifest_path.clone(),
+            source: std::io::Error::new(std::io::ErrorKind::InvalidData, source),
+        })?;
+    fs::write(&manifest_path, contents).map_err(|source| InventoryError::Write {
+        path: manifest_path,
+        source,
+    })
 }
 
 fn historical_eval_parent_cache_repo_path(
@@ -3280,14 +3403,21 @@ fn historical_eval_parent_cache_repo_path(
     snapshot_paths: &[String],
 ) -> PathBuf {
     let parent_prefix = parent_sha.chars().take(12).collect::<String>();
-    source_repo
-        .join(".ctxpack")
+    historical_eval_parent_cache_root()
+        .join(repo_id_for_path(source_repo))
         .join("eval-worktrees")
         .join(format!(
             "{}-{}",
             parent_prefix,
             snapshot_paths_fingerprint(snapshot_paths)
         ))
+}
+
+fn historical_eval_parent_cache_root() -> PathBuf {
+    std::env::var_os("CTXPACK_HOME")
+        .map(PathBuf::from)
+        .or_else(|| std::env::var_os("HOME").map(|home| PathBuf::from(home).join(".ctxpack")))
+        .unwrap_or_else(|| std::env::temp_dir().join("ctxpack"))
 }
 
 fn snapshot_paths_fingerprint(snapshot_paths: &[String]) -> String {
@@ -3309,142 +3439,15 @@ fn parent_snapshot_candidate_paths(
     let safe_changes = safe_changed_files.iter().collect::<BTreeSet<_>>();
     snapshot_paths
         .iter()
-        .filter(|path| safe_changes.contains(path) || !is_parent_snapshot_archive_path(path))
+        .filter(|path| safe_changes.contains(path) || !is_generated_eval_artifact_path(path))
         .cloned()
         .collect()
 }
 
-fn is_parent_snapshot_archive_path(path: &str) -> bool {
+fn is_generated_eval_artifact_path(path: &str) -> bool {
     path.starts_with(".ctxpack/e2e/")
         || path.starts_with(".planning/e2e/")
         || path.starts_with(".planning/milestones/")
-}
-
-fn copy_dir_recursively(source: &Path, destination: &Path) -> Result<(), InventoryError> {
-    fs::create_dir_all(destination).map_err(|source_error| InventoryError::CreateDir {
-        path: destination.to_path_buf(),
-        source: source_error,
-    })?;
-    for entry in fs::read_dir(source).map_err(|source_error| InventoryError::Read {
-        path: source.to_path_buf(),
-        source: source_error,
-    })? {
-        let entry = entry.map_err(|source_error| InventoryError::Read {
-            path: source.to_path_buf(),
-            source: source_error,
-        })?;
-        let source_path = entry.path();
-        let destination_path = destination.join(entry.file_name());
-        let file_type = entry
-            .file_type()
-            .map_err(|source_error| InventoryError::Read {
-                path: source_path.clone(),
-                source: source_error,
-            })?;
-        if file_type.is_dir() {
-            copy_dir_recursively(&source_path, &destination_path)?;
-        } else if file_type.is_file() {
-            if let Some(parent) = destination_path.parent() {
-                fs::create_dir_all(parent).map_err(|source_error| InventoryError::CreateDir {
-                    path: parent.to_path_buf(),
-                    source: source_error,
-                })?;
-            }
-            fs::copy(&source_path, &destination_path).map_err(|source_error| {
-                InventoryError::Write {
-                    path: destination_path,
-                    source: source_error,
-                }
-            })?;
-        }
-    }
-    Ok(())
-}
-
-fn git_existing_paths_at_revision(
-    source_repo: &Path,
-    revision: &str,
-    candidate_paths: &[String],
-) -> Result<Vec<String>, InventoryError> {
-    if candidate_paths.is_empty() {
-        return Ok(Vec::new());
-    }
-
-    let mut existing_paths = BTreeSet::new();
-    for chunk in candidate_paths.chunks(50) {
-        existing_paths.extend(git_existing_path_chunk_at_revision(
-            source_repo,
-            revision,
-            chunk,
-        )?);
-    }
-    Ok(candidate_paths
-        .iter()
-        .filter(|path| existing_paths.contains(path.as_str()))
-        .cloned()
-        .collect())
-}
-
-fn git_existing_path_chunk_at_revision(
-    source_repo: &Path,
-    revision: &str,
-    paths: &[String],
-) -> Result<Vec<String>, InventoryError> {
-    if paths.is_empty() {
-        return Ok(Vec::new());
-    }
-    let mut command = ProcessCommand::new("git");
-    command
-        .arg("-C")
-        .arg(source_repo)
-        .args(["ls-tree", "-z", "--name-only", revision, "--"])
-        .args(paths);
-    let output = command_output_with_timeout(
-        source_repo,
-        command,
-        format!(
-            "git ls-tree --name-only {revision} -- <{} paths>",
-            paths.len()
-        ),
-        PARENT_SNAPSHOT_PATH_CHECK_TIMEOUT,
-    );
-    match output {
-        Ok(output) if output.status.success() => Ok(output
-            .stdout
-            .split(|byte| *byte == 0)
-            .filter(|path| !path.is_empty())
-            .map(|path| String::from_utf8_lossy(path).to_string())
-            .collect()),
-        Ok(output) => split_or_skip_existing_path_chunk(
-            source_repo,
-            revision,
-            paths,
-            String::from_utf8_lossy(&output.stderr).trim().to_string(),
-        ),
-        Err(error) => {
-            split_or_skip_existing_path_chunk(source_repo, revision, paths, error.to_string())
-        }
-    }
-}
-
-fn split_or_skip_existing_path_chunk(
-    source_repo: &Path,
-    revision: &str,
-    paths: &[String],
-    _reason: String,
-) -> Result<Vec<String>, InventoryError> {
-    if paths.len() <= 1 {
-        return Ok(Vec::new());
-    }
-    let midpoint = paths.len() / 2;
-    let mut existing =
-        git_existing_path_chunk_at_revision(source_repo, revision, &paths[..midpoint])?;
-    existing.extend(git_existing_path_chunk_at_revision(
-        source_repo,
-        revision,
-        &paths[midpoint..],
-    )?);
-    Ok(existing)
 }
 
 fn git_extract_revision_paths(
@@ -3452,48 +3455,125 @@ fn git_extract_revision_paths(
     revision: &str,
     paths: &[String],
     destination: &Path,
-) -> Result<(), InventoryError> {
-    for path in paths {
-        git_extract_revision_path(source_repo, revision, path, destination)?;
+) -> Result<ParentSnapshotExtractionStatus, InventoryError> {
+    let mut status = ParentSnapshotExtractionStatus::default();
+    for chunk in paths.chunks(100) {
+        status.merge(git_extract_revision_path_chunk(
+            source_repo,
+            revision,
+            chunk,
+            destination,
+        )?);
     }
-    Ok(())
+    Ok(status)
 }
 
-fn git_extract_revision_path(
+fn git_extract_revision_path_chunk(
     source_repo: &Path,
     revision: &str,
-    path: &str,
+    paths: &[String],
     destination: &Path,
-) -> Result<(), InventoryError> {
-    let mut show = ProcessCommand::new("git");
-    show.arg("-C")
-        .arg(source_repo)
-        .args(["show", &format!("{revision}:{path}")]);
-    let Ok(output) = command_output_with_timeout(
-        source_repo,
-        show,
-        format!("git show {revision}:<path>"),
-        PARENT_SNAPSHOT_FILE_READ_TIMEOUT,
-    ) else {
-        return Ok(());
-    };
-    if !output.status.success() {
-        return Ok(());
+) -> Result<ParentSnapshotExtractionStatus, InventoryError> {
+    if paths.is_empty() {
+        return Ok(ParentSnapshotExtractionStatus::default());
     }
-    let destination_path = destination.join(path);
-    if let Some(parent) = destination_path.parent() {
+    let failed_status = || ParentSnapshotExtractionStatus {
+        requested_path_count: paths.len(),
+        extracted_path_count: 0,
+        failed_batch_count: 1,
+    };
+
+    let mut input = Vec::new();
+    for path in paths {
+        input.extend_from_slice(format!("{revision}:{path}\n").as_bytes());
+    }
+    let mut cat_file = ProcessCommand::new("git");
+    cat_file
+        .arg("-C")
+        .arg(source_repo)
+        .args(["-c", "core.fsmonitor=false"])
+        .args(["cat-file", "--batch"]);
+    match command_output_with_timeout_and_stdin(
+        source_repo,
+        cat_file,
+        &input,
+        format!("git cat-file --batch {revision}:<{} paths>", paths.len()),
+        PARENT_SNAPSHOT_BATCH_READ_TIMEOUT,
+    ) {
+        Ok(output) if output.status.success() => {
+            write_cat_file_batch_blobs(destination, paths, &output.stdout).map(
+                |extracted_path_count| ParentSnapshotExtractionStatus {
+                    requested_path_count: paths.len(),
+                    extracted_path_count,
+                    failed_batch_count: 0,
+                },
+            )
+        }
+        Ok(_) | Err(_) => Ok(failed_status()),
+    }
+}
+
+fn write_cat_file_batch_blobs(
+    destination: &Path,
+    paths: &[String],
+    output: &[u8],
+) -> Result<usize, InventoryError> {
+    let mut cursor = 0usize;
+    let mut extracted = 0usize;
+    for path in paths {
+        let Some(header_end_offset) = output[cursor..].iter().position(|byte| *byte == b'\n')
+        else {
+            break;
+        };
+        let header_end = cursor + header_end_offset;
+        let header = String::from_utf8_lossy(&output[cursor..header_end]);
+        cursor = header_end + 1;
+        if header.ends_with(" missing") {
+            continue;
+        }
+        let mut parts = header.rsplitn(3, ' ');
+        let Some(size_text) = parts.next() else {
+            break;
+        };
+        let Some(kind) = parts.next() else {
+            break;
+        };
+        let Ok(size) = size_text.parse::<usize>() else {
+            break;
+        };
+        if kind != "blob" || cursor.saturating_add(size) > output.len() {
+            cursor = cursor.saturating_add(size).min(output.len());
+            if output.get(cursor) == Some(&b'\n') {
+                cursor += 1;
+            }
+            continue;
+        }
+        let destination_path = destination.join(path);
+        write_parent_snapshot_file(&destination_path, &output[cursor..cursor + size])?;
+        extracted += 1;
+        cursor += size;
+        if output.get(cursor) == Some(&b'\n') {
+            cursor += 1;
+        }
+    }
+    Ok(extracted)
+}
+
+fn write_parent_snapshot_file(path: &Path, contents: &[u8]) -> Result<(), InventoryError> {
+    if let Some(parent) = path.parent() {
         fs::create_dir_all(parent).map_err(|source| InventoryError::CreateDir {
             path: parent.to_path_buf(),
             source,
         })?;
     }
-    fs::write(&destination_path, output.stdout).map_err(|source| InventoryError::Write {
-        path: destination_path,
+    fs::write(path, contents).map_err(|source| InventoryError::Write {
+        path: path.to_path_buf(),
         source,
     })?;
     Ok(())
 }
 
+#[cfg(test)]
 fn command_output_with_timeout(
     repo_root: &Path,
     mut command: ProcessCommand,
@@ -3528,6 +3608,65 @@ fn command_output_with_timeout(
             });
         }
     };
+    let output = wait_for_command_output(
+        repo_root,
+        child,
+        display,
+        timeout,
+        &stdout_path,
+        &stderr_path,
+    );
+    let _ = fs::remove_dir_all(&spool_dir);
+    output
+}
+
+fn command_output_with_timeout_and_stdin(
+    repo_root: &Path,
+    mut command: ProcessCommand,
+    stdin: &[u8],
+    display: String,
+    timeout: Duration,
+) -> Result<std::process::Output, InventoryError> {
+    let spool_dir = std::env::temp_dir().join(format!("ctxpack-command-{}", Uuid::new_v4()));
+    fs::create_dir_all(&spool_dir).map_err(|source| InventoryError::CreateDir {
+        path: spool_dir.clone(),
+        source,
+    })?;
+    let stdout_path = spool_dir.join("stdout");
+    let stderr_path = spool_dir.join("stderr");
+    let stdout = fs::File::create(&stdout_path).map_err(|source| InventoryError::Write {
+        path: stdout_path.clone(),
+        source,
+    })?;
+    let stderr = fs::File::create(&stderr_path).map_err(|source| InventoryError::Write {
+        path: stderr_path.clone(),
+        source,
+    })?;
+    command
+        .stdin(Stdio::piped())
+        .stdout(Stdio::from(stdout))
+        .stderr(Stdio::from(stderr));
+    let mut child = match command.spawn() {
+        Ok(child) => child,
+        Err(source) => {
+            let _ = fs::remove_dir_all(&spool_dir);
+            return Err(InventoryError::Git {
+                repo_root: repo_root.to_path_buf(),
+                message: source.to_string(),
+            });
+        }
+    };
+    if let Some(mut child_stdin) = child.stdin.take() {
+        if let Err(source) = child_stdin.write_all(stdin) {
+            let _ = child.kill();
+            let _ = child.wait();
+            let _ = fs::remove_dir_all(&spool_dir);
+            return Err(InventoryError::Git {
+                repo_root: repo_root.to_path_buf(),
+                message: source.to_string(),
+            });
+        }
+    }
     let output = wait_for_command_output(
         repo_root,
         child,
@@ -5487,7 +5626,123 @@ mod tests {
     }
 
     #[test]
-    fn parent_snapshot_candidates_keep_changed_archives_but_drop_unrelated_archives() {
+    fn parent_snapshot_batch_reader_extracts_multiple_paths() {
+        let temp = tempfile::tempdir().unwrap();
+        let repo = temp.path().join("repo");
+        fs::create_dir_all(repo.join("src")).unwrap();
+        fs::create_dir_all(repo.join("tests")).unwrap();
+        fs::write(
+            repo.join("src/lib.py"),
+            "def probe_gate():\n    return 'passed'\n",
+        )
+        .unwrap();
+        fs::write(
+            repo.join("tests/test_lib.py"),
+            "def test_probe_gate():\n    assert True\n",
+        )
+        .unwrap();
+        for args in [
+            vec!["init"],
+            vec!["config", "user.email", "ctxpack@example.test"],
+            vec!["config", "user.name", "ctxpack"],
+            vec!["add", "."],
+            vec!["commit", "-m", "seed"],
+        ] {
+            let status = ProcessCommand::new("git")
+                .arg("-C")
+                .arg(&repo)
+                .args(args)
+                .status()
+                .unwrap();
+            assert!(status.success());
+        }
+        let revision = String::from_utf8(
+            ProcessCommand::new("git")
+                .arg("-C")
+                .arg(&repo)
+                .args(["rev-parse", "HEAD"])
+                .output()
+                .unwrap()
+                .stdout,
+        )
+        .unwrap();
+        let destination = temp.path().join("snapshot");
+        let paths = vec![
+            "src/lib.py".to_string(),
+            "tests/test_lib.py".to_string(),
+            "missing.py".to_string(),
+        ];
+
+        let status =
+            git_extract_revision_paths(&repo, revision.trim(), &paths, &destination).unwrap();
+
+        assert_eq!(
+            fs::read_to_string(destination.join("src/lib.py")).unwrap(),
+            "def probe_gate():\n    return 'passed'\n"
+        );
+        assert_eq!(
+            fs::read_to_string(destination.join("tests/test_lib.py")).unwrap(),
+            "def test_probe_gate():\n    assert True\n"
+        );
+        assert!(!destination.join("missing.py").exists());
+        assert_eq!(status.requested_path_count, 3);
+        assert_eq!(status.extracted_path_count, 2);
+        assert_eq!(status.failed_batch_count, 0);
+        assert!(status.complete());
+    }
+
+    #[test]
+    fn incomplete_parent_snapshot_manifests_are_not_reusable() {
+        let complete = ParentSnapshotManifest {
+            manifest_version: "historical-eval-parent-snapshot-v1".to_string(),
+            parent_sha: "abc123".to_string(),
+            requested_path_count: 2,
+            extracted_path_count: 2,
+            failed_batch_count: 0,
+            complete: true,
+        };
+        assert!(parent_snapshot_manifest_is_reusable(&complete, "abc123"));
+
+        let mut incomplete = complete.clone();
+        incomplete.failed_batch_count = 1;
+        incomplete.complete = false;
+        assert!(!parent_snapshot_manifest_is_reusable(&incomplete, "abc123"));
+
+        let mut wrong_parent = complete.clone();
+        wrong_parent.parent_sha = "def456".to_string();
+        assert!(!parent_snapshot_manifest_is_reusable(
+            &wrong_parent,
+            "abc123"
+        ));
+    }
+
+    #[test]
+    fn sidecar_only_parent_snapshot_cache_is_not_reusable() {
+        let temp = tempfile::tempdir().unwrap();
+        let cache = temp.path().join("cache");
+        fs::create_dir_all(cache.join(".ctxpack")).unwrap();
+        fs::write(cache.join(".ctxpack/eval-history.json"), "{}").unwrap();
+
+        assert!(!parent_snapshot_cache_is_reusable(&cache, "abc123").unwrap());
+
+        write_parent_snapshot_manifest(
+            &cache,
+            &ParentSnapshotManifest {
+                manifest_version: "historical-eval-parent-snapshot-v1".to_string(),
+                parent_sha: "abc123".to_string(),
+                requested_path_count: 1,
+                extracted_path_count: 1,
+                failed_batch_count: 0,
+                complete: true,
+            },
+        )
+        .unwrap();
+
+        assert!(parent_snapshot_cache_is_reusable(&cache, "abc123").unwrap());
+    }
+
+    #[test]
+    fn parent_snapshot_candidates_keep_changed_generated_artifacts_but_drop_unrelated_ones() {
         let paths = vec![
             ".planning/e2e/old-proof.md".to_string(),
             ".planning/ROADMAP.md".to_string(),
