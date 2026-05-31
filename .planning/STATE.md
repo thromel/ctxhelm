@@ -3,11 +3,11 @@ gsd_state_version: 1.0
 milestone: v2.5
 milestone_name: Production Retrieval Quality
 status: active
-last_updated: "2026-05-31T21:10:00Z"
-last_activity: 2026-05-31 -- Phase 106 hardened Codex and Claude real-client request evidence
+last_updated: "2026-05-31T01:03:00Z"
+last_activity: 2026-05-31 -- Phase 107 hydrated the full four-repo proof path
 progress:
-  total_phases: 38
-  completed_phases: 38
+  total_phases: 39
+  completed_phases: 39
   total_plans: 7
   completed_plans: 7
   percent: 100
@@ -17,10 +17,10 @@ progress:
 
 ## Current Position
 
-Phase: 106 - Real-Client Request Evidence Hardening
-Plan: 106-real-client-request-evidence
+Phase: 107 - Hydrated Four-Repo Proof Path
+Plan: 107-hydrated-four-repo-proof
 Status: Complete
-Last activity: 2026-05-31 -- Phase 106 changed the Codex CLI and Claude Code real-client smoke wrappers from boolean-only success artifacts into source-free request-evidence artifacts. Evidence now includes a request-log hash, request line count, explicit repo tool-call count, sanitized observed tool-call metadata, and sanitized request-summary sidecars without persisting raw MCP traffic, prompt text, task text, or source snippets.
+Last activity: 2026-05-31 -- Phase 107 fixed the full four-repo proof path by bounding parent snapshot hydration, falling back when `git diff-tree -M` rename detection times out, and committing cold/warm evidence with all four repositories hydrated. The cold proof still blocks honestly on ctxpack runtime, while the warm proof promotes.
 
 ## Project Reference
 
@@ -83,6 +83,7 @@ Planned phases:
 - Phase 104: Context Area Next-Read Paths (complete follow-up)
 - Phase 105: History-Unavailable Embedded Reports (complete follow-up)
 - Phase 106: Real-Client Request Evidence Hardening (complete follow-up)
+- Phase 107: Hydrated Four-Repo Proof Path (complete follow-up)
 
 ## Last Completed Milestone
 
@@ -100,7 +101,7 @@ Planned phases:
 
 ## Next Step
 
-Continue production-readiness work from remaining measured gaps: a hydrated full four-repo proof path, deeper source-free area resources for broad repositories, or real-client proof refreshes when client versions change. Broad evals now distinguish files covered only by surfaced context areas from files with no candidate signal, clean RefactoringMiner cold proof promotes under the source-free index caches when the checkout is usable, broad context-area guidance covers more wide-task implementation areas, packs tell agents concrete source/docs paths to inspect next, MCP exposes source-free area resources with role buckets/path families/read batches, gap summaries point to area resources and bounded next-read paths, the product-proof checker gates those gap summaries and fails cleanly on missing embedded repo reports, history-unavailable repos now produce embedded insufficient-evidence reports instead of `null` reports, repo-scoped resources work after explicit-repo MCP tools even from a wrong server cwd, broad fixed-corpus metric floors block silent selection regressions, governance/proof tasks classify broad historical/eval language reliably, archive/docs broad tasks now receive context-area guidance without perturbing target-file source floors, and real-client smoke artifacts now carry source-free request metadata instead of boolean-only claims.
+Continue production-readiness work from remaining measured gaps: cold four-repo runtime reduction, deeper source-free area resources for broad repositories, or real-client proof refreshes when client versions change. Broad evals now distinguish files covered only by surfaced context areas from files with no candidate signal, clean RefactoringMiner cold proof promotes under the source-free index caches when the checkout is usable, broad context-area guidance covers more wide-task implementation areas, packs tell agents concrete source/docs paths to inspect next, MCP exposes source-free area resources with role buckets/path families/read batches, gap summaries point to area resources and bounded next-read paths, the product-proof checker gates those gap summaries and fails cleanly on missing embedded repo reports, history-unavailable repos now produce embedded insufficient-evidence reports instead of `null` reports, repo-scoped resources work after explicit-repo MCP tools even from a wrong server cwd, broad fixed-corpus metric floors block silent selection regressions, governance/proof tasks classify broad historical/eval language reliably, archive/docs broad tasks now receive context-area guidance without perturbing target-file source floors, real-client smoke artifacts now carry source-free request metadata instead of boolean-only claims, and the full four-repo proof now hydrates all configured repositories instead of hanging or returning missing reports.
 
 ## Operator Next Steps
 
@@ -148,6 +149,7 @@ Continue production-readiness work from remaining measured gaps: a hydrated full
 - Latest context-area next-read proof: `.planning/e2e/2026-05-31-phase104-context-area-next-read-paths.md` and `.ctxpack/e2e/phase104-context-area-next-read-paths-no-refminer-proof.json`; broad context areas now include docs, `nextReadPaths`, and `unselectedCount`, packs render explicit `Next reads`, the three-repo proof promotes, and the four-repo proof is blocked only by the local RefactoringMiner `git rev-list` timeout/no embedded report.
 - Latest history-unavailable report proof: `.planning/e2e/2026-05-31-phase105-history-unavailable-report.md` and `.ctxpack/e2e/phase105-history-unavailable-proof.json`; a repo without git history now returns `report: {...}`, `evaluatedCommits: 0`, a source-free history-unavailable error, and an `insufficient_evidence` product-proof verdict instead of `report: null`.
 - Latest real-client proof: `.planning/e2e/2026-05-31-phase106-real-client-request-evidence.md`; Codex and Claude smoke artifacts now include source-free request-log hashes, line counts, explicit repo tool-call counts, sanitized observed tool calls, and request-summary sidecars while preserving the Phase 70 real-client proof boundary.
+- Latest hydrated four-repo proof: `.planning/e2e/2026-05-31-phase107-hydrated-four-repo-proof.md`, `.ctxpack/e2e/phase107-hydrated-four-repo-cold-proof.json`, and `.ctxpack/e2e/phase107-hydrated-four-repo-warm-proof.json`; the cold proof hydrates all four repositories and blocks only on ctxpack runtime, while the warm proof promotes with four hydrated corpus verdicts.
 - RefactoringMiner and ReAgent still trail lexical on all-file recall in the broader proof, but those deficits are now machine-checkable as explained by the context/validation split instead of only prose notes.
 - Phase 84 improves VeriSchema Source Recall@10 from `0.249` to `0.304` on the broader fixed corpus while keeping RefactoringMiner, ctxpack, and ReAgent stable.
 - Phase 85 intentionally keeps broad fixed-corpus quality metrics flat while improving agent guidance through non-displacing context-area hints; cold proofs block on the existing RefactoringMiner runtime threshold, while the warm-cache proof promotes.
@@ -172,4 +174,5 @@ Continue production-readiness work from remaining measured gaps: a hydrated full
 - Phase 104 makes ranked-below-budget source/docs pressure actionable without top-10 churn by surfacing concrete next-read paths and unselected counts in the existing source-free context-area channel.
 - Phase 105 makes history-unavailable proof failures explicit and cache-safe instead of schema-shaped missing-report failures.
 - Phase 106 makes Codex and Claude Code real-client proof artifacts auditable by recording source-free request hashes, line counts, explicit repo tool-call counts, and sanitized observed tool-call summaries.
-- Next work should target a hydrated full four-repo proof path or richer source-free area resources, not runtime threshold tuning or unproven top-10 churn.
+- Phase 107 fixes the hydrated full four-repo proof path by bounding parent snapshot git calls, falling back from slow rename detection, and preserving full corpus verdicts in cold and warm proof artifacts.
+- Next work should target cold four-repo runtime reduction or richer source-free area resources, not runtime threshold tuning or unproven top-10 churn.

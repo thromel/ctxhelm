@@ -2170,7 +2170,7 @@ mod tests {
     }
 
     #[test]
-    fn historical_commit_collection_skips_per_commit_diff_failures() {
+    fn historical_commit_collection_falls_back_when_rename_diff_times_out() {
         let _guard = env_lock();
         let temp = tempfile::tempdir().unwrap();
         let repo = temp.path().join("repo");
@@ -2195,7 +2195,12 @@ mod tests {
         )
         .unwrap();
 
-        assert!(commits.is_empty());
+        assert_eq!(commits.len(), 2);
+        assert_eq!(commits[0].title, "second change");
+        assert!(commits[0]
+            .files
+            .iter()
+            .any(|file| file.path == "src/second.ts"));
     }
 
     #[test]
