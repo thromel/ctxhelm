@@ -180,8 +180,20 @@ try:
     context_areas = resource_json("ctxpack://repo/context-areas", "resources/read.contextAreas")
     if context_areas.get("sourceTextLogged") is not False:
         raise SystemExit("resources/read.contextAreas: sourceTextLogged was not false")
+    context_areas_scope = context_areas.get("resourceScope", {})
+    if context_areas_scope.get("kind") != "safeInventoryArea":
+        raise SystemExit("resources/read.contextAreas: missing safeInventoryArea resourceScope")
+    if context_areas_scope.get("taskConditioned") is not False:
+        raise SystemExit("resources/read.contextAreas: resourceScope must be taskConditioned=false")
+    if context_areas_scope.get("countsSource") != "safeInventory":
+        raise SystemExit("resources/read.contextAreas: resourceScope countsSource must be safeInventory")
     if not isinstance(context_areas.get("areas"), list):
         raise SystemExit("resources/read.contextAreas: missing areas array")
+    if not context_areas["areas"]:
+        raise SystemExit("resources/read.contextAreas: empty areas array")
+    first_area_scope = context_areas["areas"][0].get("resourceScope", {})
+    if first_area_scope.get("kind") != "safeInventoryArea":
+        raise SystemExit("resources/read.contextAreas.areas[0]: missing safeInventoryArea resourceScope")
     context_area = context_area_for_path(anchor_path)
     context_area_uri = "ctxpack://repo/context-area/" + quote(context_area, safe="")
     context_area_resource = resource_json(
@@ -191,6 +203,13 @@ try:
         raise SystemExit("resources/read.contextArea: resourceUri mismatch")
     if context_area_resource.get("sourceTextLogged") is not False:
         raise SystemExit("resources/read.contextArea: sourceTextLogged was not false")
+    context_area_scope = context_area_resource.get("resourceScope", {})
+    if context_area_scope.get("kind") != "safeInventoryArea":
+        raise SystemExit("resources/read.contextArea: missing safeInventoryArea resourceScope")
+    if context_area_scope.get("taskConditioned") is not False:
+        raise SystemExit("resources/read.contextArea: resourceScope must be taskConditioned=false")
+    if context_area_scope.get("pathSource") != "safeInventory":
+        raise SystemExit("resources/read.contextArea: resourceScope pathSource must be safeInventory")
     if context_area_resource.get("pathCount", 0) <= 0:
         raise SystemExit("resources/read.contextArea: expected paths for anchor area")
     next_read_batches = require_list(

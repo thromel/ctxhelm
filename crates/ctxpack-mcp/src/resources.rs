@@ -312,6 +312,7 @@ fn repo_context_areas(repo: &Path) -> Result<Value, RpcError> {
             json!({
                 "area": area,
                 "resourceUri": context_area_resource_uri(&area),
+                "resourceScope": context_area_resource_scope_json(),
                 "pathCount": accumulator.path_count,
                 "roleCounts": accumulator.role_counts,
                 "pathFamilies": accumulator.path_families_json(8),
@@ -324,6 +325,7 @@ fn repo_context_areas(repo: &Path) -> Result<Value, RpcError> {
     Ok(json!({
         "repoId": report.inventory.repo_id,
         "areaCount": areas.len(),
+        "resourceScope": context_area_resource_scope_json(),
         "areas": areas,
         "diagnostics": report.diagnostics,
         "cacheStatus": report.cache_status,
@@ -370,6 +372,7 @@ fn repo_context_area(repo: &Path, uri: &str) -> Result<Value, RpcError> {
         "repoId": report.inventory.repo_id,
         "area": area,
         "resourceUri": context_area_resource_uri(&area),
+        "resourceScope": context_area_resource_scope_json(),
         "pathCount": accumulator.path_count,
         "roleCounts": accumulator.role_counts,
         "pathFamilies": accumulator.path_families_json(16),
@@ -384,6 +387,16 @@ fn repo_context_area(repo: &Path, uri: &str) -> Result<Value, RpcError> {
             "remoteRerankingUsed": false
         }
     }))
+}
+
+fn context_area_resource_scope_json() -> Value {
+    json!({
+        "kind": "safeInventoryArea",
+        "taskConditioned": false,
+        "countsSource": "safeInventory",
+        "pathSource": "safeInventory",
+        "sourceTextLogged": false
+    })
 }
 
 #[derive(Default)]

@@ -48,6 +48,12 @@ inspect likely adjacent source/docs areas with native file reads without
 forcing those areas into the protected top-10 file budget, so retrieval quality
 metrics remain comparable to earlier proofs.
 
+Dynamic MCP context-area resources expose a separate inventory-wide scope.
+`resourceScope.kind = safeInventoryArea`, `taskConditioned = false`,
+`countsSource = safeInventory`, and `pathSource = safeInventory` distinguish
+resource-level role counts and read batches from task-conditioned
+`contextAreas` in a prepared plan.
+
 ## Suite File
 
 Benchmark suites are JSON files. Paths may be absolute or relative to the suite file.
@@ -516,6 +522,9 @@ Recommendation today:
   plan-level `contextAreas`, and renders those role signals into generated packs
   so agents can distinguish source-heavy, validation-heavy, and docs-only areas
   before native reads.
+- Phase 118 adds source-free `resourceScope` metadata to context-area MCP
+  resources so agents can distinguish safe-inventory resource counts from
+  task-conditioned plan `roleCounts` and `selectedRoleCounts`.
 - Phase 105 makes history-unavailable benchmark repositories machine-checkable.
   If git history sampling fails or times out, historical eval emits an embedded
   zero-commit report, benchmark output records a source-free history-unavailable

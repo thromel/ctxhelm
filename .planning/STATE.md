@@ -4,10 +4,10 @@ milestone: v2.5
 milestone_name: Production Retrieval Quality
 status: active
 last_updated: "2026-05-31T22:05:00Z"
-last_activity: 2026-06-01 -- Phase 117 added source-free role signals to broad context areas
+last_activity: 2026-06-01 -- Phase 118 added safe-inventory resource-scope metadata to context-area MCP resources
 progress:
-  total_phases: 49
-  completed_phases: 49
+  total_phases: 50
+  completed_phases: 50
   total_plans: 7
   completed_plans: 7
   percent: 100
@@ -17,10 +17,10 @@ progress:
 
 ## Current Position
 
-Phase: 117 - Context Area Role Signals
-Plan: 117-context-area-role-signals
+Phase: 118 - Context Area Resource Scope
+Plan: 118-context-area-resource-scope
 Status: Complete
-Last activity: 2026-06-01 -- Phase 117 added source-free `roleCounts` and `selectedRoleCounts` to plan-level context areas and rendered those signals in generated packs.
+Last activity: 2026-06-01 -- Phase 118 added source-free `resourceScope` metadata to context-area MCP resources and proved those resources from a non-repo MCP server cwd after an explicit-repo tool call.
 
 ## Project Reference
 
@@ -94,6 +94,7 @@ Planned phases:
 - Phase 115: Public Archive Install Verification (complete follow-up)
 - Phase 116: Public Archive Real-Client Smoke (complete follow-up)
 - Phase 117: Context Area Role Signals (complete follow-up)
+- Phase 118: Context Area Resource Scope (complete follow-up)
 
 ## Last Completed Milestone
 
@@ -111,7 +112,7 @@ Planned phases:
 
 ## Next Step
 
-Continue production-readiness work from remaining measured gaps: continue broad source-free area/ranking improvements and refresh real-client proof evidence when client versions change. Broad evals now distinguish files covered only by surfaced context areas from files with no candidate signal, clean cold full-fixture proof promotes across RefactoringMiner, ctxpack, ReAgent, and VeriSchema, the full packaged release gate passes from a clean checkout with the clean fixture proof required, release-candidate metadata marks the local archive channel ready while deferring Homebrew/crates.io/signed installers/self-update, the public `v1.1.0` GitHub archive release is published and source-free asset digests are verified, the public archive install path passes checksum/archive/temp-install/doctor/first-pack proof, optional public-archive real-client proof records Claude Code tool-call evidence and Codex CLI skip evidence, broad context-area guidance covers more wide-task implementation areas, packs tell agents concrete source/docs paths to inspect next, plan-level context areas expose source-free role signals, MCP exposes source-free area resources with role buckets/path families/read batches, gap summaries point to area resources and bounded next-read paths, the product-proof checker gates those gap summaries and fails cleanly on missing embedded repo reports, history-unavailable repos now produce embedded insufficient-evidence reports instead of `null` reports, repo-scoped resources work after explicit-repo MCP tools even from a wrong server cwd, broad fixed-corpus metric floors block silent selection regressions, governance/proof tasks classify broad historical/eval language reliably, archive/docs broad tasks now receive context-area guidance without perturbing target-file source floors, real-client smoke artifacts now carry source-free request metadata instead of boolean-only claims, and the full four-repo proof now hydrates all configured repositories instead of hanging or returning missing reports.
+Continue production-readiness work from remaining measured gaps: continue broad source-free area/ranking improvements and refresh real-client proof evidence when client versions change. Broad evals now distinguish files covered only by surfaced context areas from files with no candidate signal, clean cold full-fixture proof promotes across RefactoringMiner, ctxpack, ReAgent, and VeriSchema, the full packaged release gate passes from a clean checkout with the clean fixture proof required, release-candidate metadata marks the local archive channel ready while deferring Homebrew/crates.io/signed installers/self-update, the public `v1.1.0` GitHub archive release is published and source-free asset digests are verified, the public archive install path passes checksum/archive/temp-install/doctor/first-pack proof, optional public-archive real-client proof records Claude Code tool-call evidence and Codex CLI skip evidence, broad context-area guidance covers more wide-task implementation areas, packs tell agents concrete source/docs paths to inspect next, plan-level context areas expose source-free role signals, MCP context-area resources explicitly label their counts/read batches as safe-inventory scope, gap summaries point to area resources and bounded next-read paths, the product-proof checker gates those gap summaries and fails cleanly on missing embedded repo reports, history-unavailable repos now produce embedded insufficient-evidence reports instead of `null` reports, repo-scoped resources work after explicit-repo MCP tools even from a wrong server cwd, broad fixed-corpus metric floors block silent selection regressions, governance/proof tasks classify broad historical/eval language reliably, archive/docs broad tasks now receive context-area guidance without perturbing target-file source floors, real-client smoke artifacts now carry source-free request metadata instead of boolean-only claims, and the full four-repo proof now hydrates all configured repositories instead of hanging or returning missing reports.
 
 ## Operator Next Steps
 
@@ -196,4 +197,5 @@ Continue production-readiness work from remaining measured gaps: continue broad 
 - Phase 115 verifies the public archive install path from GitHub release assets. Latest proof notes: `.planning/e2e/2026-06-01-phase115-public-archive-install.md`; durable source-free install proof: `.ctxpack/e2e/phase115-public-archive-install.json`.
 - Phase 116 refreshes optional real-client proof against the public archive binary. Latest proof notes: `.planning/e2e/2026-06-01-phase116-public-real-client-smoke.md`; durable source-free summary: `.ctxpack/e2e/phase116-public-real-client-smoke.json`; Claude Code `2.1.158` passed with explicit-repo `prepare_task` and `get_pack`, while Codex CLI `0.44.0` was recorded as an optional skip after failing to produce machine-checkable tool-call evidence.
 - Phase 117 adds source-free role signals to broad context areas. Latest proof notes: `.planning/e2e/2026-06-01-phase117-context-area-role-signals.md`; durable source-free summary: `.ctxpack/e2e/phase117-context-area-role-signals.json`; generated packs render `Role counts:` and `Selected roles:` for broad context areas.
+- Phase 118 adds explicit source-free scope metadata to context-area MCP resources. Latest proof notes: `.planning/e2e/2026-06-01-phase118-context-area-resource-scope.md`; durable source-free summary: `.ctxpack/e2e/phase118-context-area-resource-scope.json`; `ctxpack://repo/context-areas` and `ctxpack://repo/context-area/{encoded-area}` now report `resourceScope.kind = safeInventoryArea`, `taskConditioned = false`, `countsSource = safeInventory`, and `pathSource = safeInventory`.
 - Next work should continue richer source-free area resources and ranking experiments from the promoted baseline, or refresh optional real-client proof again when client versions change.

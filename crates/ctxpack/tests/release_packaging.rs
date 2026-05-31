@@ -701,6 +701,10 @@ fn release_docs_script_contract() {
         "signed installer: deferred",
         "roleCounts",
         "selectedRoleCounts",
+        "resourceScope.kind = safeInventoryArea",
+        "taskConditioned = false",
+        "countsSource = safeInventory",
+        "pathSource = safeInventory",
     ] {
         assert!(
             script_text.contains(required),

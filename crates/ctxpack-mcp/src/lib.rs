@@ -358,6 +358,23 @@ mod tests {
             .as_str()
             .unwrap()
             .contains("ctxpack://repo/context-area/src%2Fauth"));
+        let context_areas_text = context_areas["result"]["contents"][0]["text"]
+            .as_str()
+            .unwrap();
+        let context_areas_json: serde_json::Value =
+            serde_json::from_str(context_areas_text).unwrap();
+        assert_eq!(
+            context_areas_json["resourceScope"]["kind"],
+            "safeInventoryArea"
+        );
+        assert_eq!(
+            context_areas_json["resourceScope"]["taskConditioned"],
+            false
+        );
+        assert_eq!(
+            context_areas_json["areas"][0]["resourceScope"]["countsSource"],
+            "safeInventory"
+        );
         assert!(context_area["result"]["contents"][0]["text"]
             .as_str()
             .unwrap()
@@ -367,6 +384,15 @@ mod tests {
             .unwrap();
         assert!(context_area_text.contains("src/auth/session.ts"));
         let context_area_json: serde_json::Value = serde_json::from_str(context_area_text).unwrap();
+        assert_eq!(
+            context_area_json["resourceScope"]["kind"],
+            "safeInventoryArea"
+        );
+        assert_eq!(context_area_json["resourceScope"]["taskConditioned"], false);
+        assert_eq!(
+            context_area_json["resourceScope"]["countsSource"],
+            "safeInventory"
+        );
         assert_eq!(
             context_area_json["roleBuckets"]["source"]
                 .as_array()
@@ -1032,6 +1058,8 @@ mod tests {
             .as_str()
             .unwrap();
         assert!(text.contains("src/auth/session.ts"));
+        assert!(text.contains("\"resourceScope\""));
+        assert!(text.contains("\"taskConditioned\": false"));
         assert!(text.contains("\"nextReadBatches\""));
         assert!(text.contains("\"sourceTextLogged\": false"));
 

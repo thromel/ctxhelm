@@ -574,6 +574,14 @@ representative paths and `Next reads`. This helps agents distinguish
 source-heavy, validation-heavy, and docs-only areas before loading files
 natively, without changing the top-10 target-file selection budget.
 
+Phase 118 clarifies the dynamic MCP resource boundary for context areas.
+`ctxpack://repo/context-areas` and
+`ctxpack://repo/context-area/{encoded-area}` now include
+`resourceScope.kind = safeInventoryArea`, `taskConditioned = false`,
+`countsSource = safeInventory`, and `pathSource = safeInventory`. These fields
+make it machine-checkable that MCP context-area resources are inventory-wide
+progressive-read aids, not task-conditioned candidate or selected-file counts.
+
 Phase 105 keeps history-unavailable benchmark runs machine-checkable. If git
 history sampling fails or times out, historical eval emits an embedded
 zero-commit report, benchmark output records a source-free history-unavailable
