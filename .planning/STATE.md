@@ -3,11 +3,11 @@ gsd_state_version: 1.0
 milestone: v2.5
 milestone_name: Production Retrieval Quality
 status: active
-last_updated: "2026-05-31T13:30:00Z"
-last_activity: 2026-05-31 -- Phase 110 promoted the clean cold four-repo fixture proof
+last_updated: "2026-05-31T20:55:00Z"
+last_activity: 2026-06-01 -- Phase 111 wired the clean cold fixture proof into the packaged release gate
 progress:
-  total_phases: 42
-  completed_phases: 42
+  total_phases: 43
+  completed_phases: 43
   total_plans: 7
   completed_plans: 7
   percent: 100
@@ -17,10 +17,10 @@ progress:
 
 ## Current Position
 
-Phase: 110 - Clean Cold Fixture Proof
-Plan: 110-clean-cold-fixture-proof
+Phase: 111 - Clean Fixture Release Gate
+Plan: 111-clean-fixture-release-gate
 Status: Complete
-Last activity: 2026-05-31 -- Phase 110 added clean detached proof fixtures, fail-closed parent snapshot cache handling, source-free parent-history ranking, and symbol-facet gating so the clean cold four-repo proof promotes.
+Last activity: 2026-06-01 -- Phase 111 made the clean cold four-repo fixture proof a named release-gate proof with require/skip controls and source-free proof-summary status.
 
 ## Project Reference
 
@@ -87,6 +87,7 @@ Planned phases:
 - Phase 108: Cold Git Bounds (complete follow-up)
 - Phase 109: Environment Health Verdicts (complete follow-up)
 - Phase 110: Clean Cold Fixture Proof (complete follow-up)
+- Phase 111: Clean Fixture Release Gate (complete follow-up)
 
 ## Last Completed Milestone
 
@@ -104,7 +105,7 @@ Planned phases:
 
 ## Next Step
 
-Continue production-readiness work from remaining measured gaps: keep the clean cold four-repo proof in the packaged release gate, refresh real-client proof evidence when client versions change, and continue broad source-free area/ranking improvements. Broad evals now distinguish files covered only by surfaced context areas from files with no candidate signal, clean cold full-fixture proof promotes across RefactoringMiner, ctxpack, ReAgent, and VeriSchema, broad context-area guidance covers more wide-task implementation areas, packs tell agents concrete source/docs paths to inspect next, MCP exposes source-free area resources with role buckets/path families/read batches, gap summaries point to area resources and bounded next-read paths, the product-proof checker gates those gap summaries and fails cleanly on missing embedded repo reports, history-unavailable repos now produce embedded insufficient-evidence reports instead of `null` reports, repo-scoped resources work after explicit-repo MCP tools even from a wrong server cwd, broad fixed-corpus metric floors block silent selection regressions, governance/proof tasks classify broad historical/eval language reliably, archive/docs broad tasks now receive context-area guidance without perturbing target-file source floors, real-client smoke artifacts now carry source-free request metadata instead of boolean-only claims, and the full four-repo proof now hydrates all configured repositories instead of hanging or returning missing reports.
+Continue production-readiness work from remaining measured gaps: refresh real-client proof evidence when client versions change, exercise the full release gate with `CTXPACK_REQUIRE_CLEAN_FIXTURE_PROOF=1` before a public release candidate, and continue broad source-free area/ranking improvements. Broad evals now distinguish files covered only by surfaced context areas from files with no candidate signal, clean cold full-fixture proof promotes across RefactoringMiner, ctxpack, ReAgent, and VeriSchema, the release gate now records the clean fixture proof status, broad context-area guidance covers more wide-task implementation areas, packs tell agents concrete source/docs paths to inspect next, MCP exposes source-free area resources with role buckets/path families/read batches, gap summaries point to area resources and bounded next-read paths, the product-proof checker gates those gap summaries and fails cleanly on missing embedded repo reports, history-unavailable repos now produce embedded insufficient-evidence reports instead of `null` reports, repo-scoped resources work after explicit-repo MCP tools even from a wrong server cwd, broad fixed-corpus metric floors block silent selection regressions, governance/proof tasks classify broad historical/eval language reliably, archive/docs broad tasks now receive context-area guidance without perturbing target-file source floors, real-client smoke artifacts now carry source-free request metadata instead of boolean-only claims, and the full four-repo proof now hydrates all configured repositories instead of hanging or returning missing reports.
 
 ## Operator Next Steps
 
@@ -182,4 +183,5 @@ Continue production-readiness work from remaining measured gaps: keep the clean 
 - Latest cold proof: `.ctxpack/e2e/phase108-cold-git-bounded-proof.json` blocks because RefactoringMiner, ctxpack, and ReAgent still have insufficient evidence under local cold object-store conditions; VeriSchema remains `beat` at `7463ms`.
 - Phase 109 adds source-free `environmentHealth` metadata to benchmark repositories and product-proof corpus verdicts. The latest refreshed cold proof, `.ctxpack/e2e/phase109-environment-health-proof.json`, blocks because environment health is degraded before retrieval quality can be proven: RefactoringMiner is `git_history_unavailable`, ctxpack and ReAgent are `git_history_timeout`, and VeriSchema is `healthy` / `beat`.
 - Phase 110 adds a clean full-fixture proof path plus parent-snapshot cache invalidation and symbol-facet gating. Latest proof: `.planning/e2e/2026-05-31-phase110-clean-cold-fixture-proof.md` and `.ctxpack/e2e/phase110-clean-fixture-proof.json`; `releaseGate.decision = promote`, RefactoringMiner is a lexical-ceiling `match`, and ctxpack/ReAgent/VeriSchema are `beat`.
-- Next work should wire the clean cold fixture proof into the packaged release gate and continue richer source-free area resources or ranking experiments from the promoted baseline.
+- Phase 111 wires that clean fixture proof into `scripts/release-gate.sh` with `CTXPACK_CLEAN_FIXTURE_CONFIG`, `CTXPACK_REQUIRE_CLEAN_FIXTURE_PROOF`, `CTXPACK_SKIP_CLEAN_FIXTURE_PROOF`, proof-summary fields, release docs, and release packaging contract coverage. Latest proof notes: `.planning/e2e/2026-06-01-phase111-clean-fixture-release-gate.md`.
+- Next work should exercise the complete packaged release gate with `CTXPACK_REQUIRE_CLEAN_FIXTURE_PROOF=1` from a clean release-candidate checkout and continue richer source-free area resources or ranking experiments from the promoted baseline.

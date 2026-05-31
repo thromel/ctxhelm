@@ -144,6 +144,7 @@ The release gate runs these required checks:
 - `scripts/smoke-v23-eval.sh`
 - `scripts/smoke-mcp-protocol.sh` from a wrong cwd with an explicit `--repo`/MCP `repo` argument
 - optional `ctxpack eval proof` benchmark product proof when `CTXPACK_BENCHMARK_CONFIG` is set
+- clean cold fixture product proof when the Phase 110 detached fixtures are present
 
 For broad workflow/eval/lint tasks, `prepare-task` and generated packs include
 `contextAreas`. This field is source-free and additive: it gives agents
@@ -164,6 +165,24 @@ CTXPACK_PROOF_DIR=/absolute/path/to/proof bash scripts/release-gate.sh
 ```
 
 The proof summary records the checked `ctxpack` version, binary SHA-256, archive SHA-256, manifest name, audit report name, required check outcomes, optional benchmark/client proof status, resource-backed gap-summary contract status, and privacy status. It records file names and checksums instead of machine-local binary or repository paths.
+
+The clean cold fixture proof is the production retrieval-quality release check
+for the four-repo corpus. Prepare the detached fixtures once:
+
+```bash
+bash scripts/prepare-proof-fixtures.sh
+```
+
+Then run the release gate normally. The gate uses
+`.planning/e2e/2026-05-31-phase110-clean-cold-fixture-config.json` by default,
+writes `phase110-clean-fixture-product-proof.json` into `CTXPACK_PROOF_DIR`,
+and validates it with `scripts/check-product-proof.py`. If the fixtures are not
+available, the gate records `cleanColdFixtureProductProof:
+skipped_missing_fixtures`; set `CTXPACK_REQUIRE_CLEAN_FIXTURE_PROOF=1` to make
+missing fixtures fail the gate. Maintainers may override the config with
+`CTXPACK_CLEAN_FIXTURE_CONFIG=/absolute/path/to/config.json` or skip the check
+explicitly with `CTXPACK_SKIP_CLEAN_FIXTURE_PROOF=1` for non-release local
+diagnostics.
 
 The optional real-client evidence wrappers are:
 

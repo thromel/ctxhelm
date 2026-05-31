@@ -29,6 +29,7 @@ smoke_codex_mcp_script="$repo_root/scripts/smoke-codex-mcp.sh"
 smoke_claude_mcp_script="$repo_root/scripts/smoke-claude-mcp.sh"
 smoke_cursor_mcp_script="$repo_root/scripts/smoke-cursor-mcp.sh"
 smoke_opencode_mcp_script="$repo_root/scripts/smoke-opencode-mcp.sh"
+clean_fixture_config_default="$repo_root/.planning/e2e/2026-05-31-phase110-clean-cold-fixture-config.json"
 
 work_dir="$(mktemp -d)"
 cleanup() {
@@ -48,6 +49,29 @@ sha256_file() {
 
 log_step() {
   printf '\n==> %s\n' "$1"
+}
+
+clean_fixture_ready() {
+  local config_path="$1"
+  python3 - "$config_path" <<'PY'
+import json
+import pathlib
+import sys
+
+config_path = pathlib.Path(sys.argv[1])
+if not config_path.is_file():
+    raise SystemExit(f"missing clean fixture config: {config_path}")
+config = json.loads(config_path.read_text())
+config_dir = config_path.parent
+missing = []
+for repo in config.get("repositories", []):
+    raw_path = pathlib.Path(repo.get("path", ""))
+    path = raw_path if raw_path.is_absolute() else config_dir / raw_path
+    if not path.is_dir() or not (path / ".git").exists():
+        missing.append(f"{repo.get('name', '<unnamed>')}={path}")
+if missing:
+    raise SystemExit("missing clean proof fixtures; run scripts/prepare-proof-fixtures.sh: " + ", ".join(missing))
+PY
 }
 
 canonical_executable() {
@@ -137,6 +161,9 @@ if [[ -z "$real_client_skip" ]]; then
     real_client_skip="1"
   fi
 fi
+clean_fixture_config="${CTXPACK_CLEAN_FIXTURE_CONFIG:-"$clean_fixture_config_default"}"
+clean_fixture_required="${CTXPACK_REQUIRE_CLEAN_FIXTURE_PROOF:-0}"
+clean_fixture_skip="${CTXPACK_SKIP_CLEAN_FIXTURE_PROOF:-0}"
 
 log_step "selected binary identity"
 ctxpack_version="$("$ctxpack_bin" --version)"
@@ -198,6 +225,8 @@ CTXPACK_BIN="$ctxpack_bin" bash "$smoke_v23_eval_script"
 log_step "v2.4 semantic/precision gate smoke"
 CTXPACK_BIN="$ctxpack_bin" bash "$smoke_v24_gate_script"
 
+mkdir -p "$proof_dir"
+
 log_step "wrong-cwd MCP protocol smoke"
 CTXPACK_BIN="$ctxpack_bin" \
   CTXPACK_ROOT="$repo_root" \
@@ -221,13 +250,33 @@ CTXPACK_BIN="$ctxpack_bin" \
 
 log_step "optional benchmark product proof"
 if [[ -n "${CTXPACK_BENCHMARK_CONFIG:-}" ]]; then
-  proof_report="$work_dir/product-proof.json"
+  proof_report="$proof_dir/product-proof.json"
   "$ctxpack_bin" eval proof --config "$CTXPACK_BENCHMARK_CONFIG" --format json >"$proof_report"
   python3 "$repo_root/scripts/check-product-proof.py" "$proof_report"
   benchmark_status="passed"
 else
   echo "benchmark product proof skipped: set CTXPACK_BENCHMARK_CONFIG=/path/to/suite.json"
   benchmark_status="skipped"
+fi
+
+log_step "clean cold fixture product proof"
+clean_fixture_status="skipped"
+if [[ "$clean_fixture_skip" == "1" ]]; then
+  echo "clean cold fixture proof skipped: CTXPACK_SKIP_CLEAN_FIXTURE_PROOF=1"
+  clean_fixture_status="skipped_explicit"
+elif clean_fixture_error="$(clean_fixture_ready "$clean_fixture_config" 2>&1)"; then
+  clean_fixture_report="$proof_dir/phase110-clean-fixture-product-proof.json"
+  "$ctxpack_bin" eval proof --config "$clean_fixture_config" --format json >"$clean_fixture_report"
+  python3 "$repo_root/scripts/check-product-proof.py" "$clean_fixture_report"
+  clean_fixture_status="passed"
+else
+  if [[ "$clean_fixture_required" == "1" ]]; then
+    echo "$clean_fixture_error" >&2
+    exit 66
+  fi
+  echo "$clean_fixture_error"
+  echo "clean cold fixture proof skipped: set CTXPACK_REQUIRE_CLEAN_FIXTURE_PROOF=1 to require it"
+  clean_fixture_status="skipped_missing_fixtures"
 fi
 
 log_step "optional Codex real-client evidence"
@@ -263,8 +312,7 @@ if [[ "$real_client_skip" != "1" && ( "$real_client_required" == "1" || "${CTXPA
 fi
 
 log_step "release proof bundle"
-mkdir -p "$proof_dir"
-python3 - "$proof_summary_path" "$ctxpack_version" "$(basename "$ctxpack_bin")" "$binary_source" "$binary_sha256" "$(basename "$archive_path")" "$archive_sha256" "$(basename "$manifest_path")" "$(basename "$audit_report_path")" "$benchmark_status" "$codex_status" "$claude_status" "$real_client_required" <<'PY'
+python3 - "$proof_summary_path" "$ctxpack_version" "$(basename "$ctxpack_bin")" "$binary_source" "$binary_sha256" "$(basename "$archive_path")" "$archive_sha256" "$(basename "$manifest_path")" "$(basename "$audit_report_path")" "$benchmark_status" "$clean_fixture_status" "$clean_fixture_required" "$codex_status" "$claude_status" "$real_client_required" <<'PY'
 import json
 import sys
 
@@ -279,6 +327,8 @@ import sys
     manifest_name,
     audit_report_name,
     benchmark_status,
+    clean_fixture_status,
+    clean_fixture_required,
     codex_status,
     claude_status,
     real_client_required,
@@ -313,6 +363,8 @@ required_checks = [
     "scripts/smoke-cursor-mcp.sh",
     "scripts/smoke-opencode-mcp.sh",
 ]
+if clean_fixture_required == "1":
+    required_checks.append("clean cold fixture product proof")
 payload = {
     "schemaVersion": 1,
     "status": "passed",
@@ -331,8 +383,12 @@ payload = {
     "requiredChecks": [{"name": check, "status": "passed"} for check in required_checks],
     "optionalProofs": {
         "benchmarkProductProof": benchmark_status,
+        "cleanColdFixtureProductProof": clean_fixture_status,
+        "cleanColdFixtureRequired": clean_fixture_required == "1",
         "resourceBackedGapSummaryContract": (
-            "checked" if benchmark_status == "passed" else "skipped"
+            "checked"
+            if benchmark_status == "passed" or clean_fixture_status == "passed"
+            else "skipped"
         ),
         "codexRealClientProof": codex_status,
         "claudeRealClientProof": claude_status,

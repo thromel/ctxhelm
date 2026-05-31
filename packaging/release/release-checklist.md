@@ -12,6 +12,8 @@ Use this checklist before marking a candidate `ready`.
 - [ ] `bash scripts/smoke-distribution-metadata.sh`
 - [ ] `bash scripts/smoke-release-governance.sh`
 - [ ] deterministic protocol proof through `scripts/smoke-mcp-protocol.sh`
+- [ ] clean cold fixture proof with `scripts/prepare-proof-fixtures.sh` and
+      `CTXPACK_REQUIRE_CLEAN_FIXTURE_PROOF=1 bash scripts/release-gate.sh`
 
 ## Optional Proof
 
@@ -19,7 +21,7 @@ Use this checklist before marking a candidate `ready`.
 - [ ] optional real-client proof for Claude Code
 - [ ] Cursor real-client proof: not claimed for v1.1.0
 - [ ] OpenCode real-client proof: not claimed for v1.1.0
-- [ ] benchmark product proof with `CTXPACK_BENCHMARK_CONFIG`
+- [ ] additional benchmark product proof with `CTXPACK_BENCHMARK_CONFIG`
 
 ## Candidate Status
 
@@ -46,4 +48,3 @@ bash scripts/release-candidate-rollback.sh \
 
 Rollback must remove local candidate artifacts only. It must not touch source
 files, publish, tag, upload, install globally, or mutate agent configuration.
-
