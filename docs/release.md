@@ -582,6 +582,12 @@ Phase 118 clarifies the dynamic MCP resource boundary for context areas.
 make it machine-checkable that MCP context-area resources are inventory-wide
 progressive-read aids, not task-conditioned candidate or selected-file counts.
 
+Phase 119 removes an observed release-validation flake in `ctxpack-index`.
+Tests in `lib.rs`, `freshness.rs`, and `storage.rs` now share one crate-wide
+test lock before mutating process-global `CTXPACK_HOME`. This prevents one
+parallel test from removing another test's temporary ctxpack home while
+inventory, trace, freshness, or storage fallback artifacts are being written.
+
 Phase 105 keeps history-unavailable benchmark runs machine-checkable. If git
 history sampling fails or times out, historical eval emits an embedded
 zero-commit report, benchmark output records a source-free history-unavailable

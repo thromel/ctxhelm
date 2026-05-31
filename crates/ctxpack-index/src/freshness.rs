@@ -413,13 +413,9 @@ mod tests {
         INVENTORY_SCHEMA_VERSION,
     };
     use std::fs;
-    use std::sync::{Mutex, OnceLock};
 
     fn env_lock() -> std::sync::MutexGuard<'static, ()> {
-        static LOCK: OnceLock<Mutex<()>> = OnceLock::new();
-        LOCK.get_or_init(|| Mutex::new(()))
-            .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner())
+        crate::test_env_lock()
     }
 
     fn paths(inventory: &RepoInventory) -> Vec<&str> {

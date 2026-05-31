@@ -705,6 +705,8 @@ fn release_docs_script_contract() {
         "taskConditioned = false",
         "countsSource = safeInventory",
         "pathSource = safeInventory",
+        "CTXPACK_HOME",
+        "crate-wide",
     ] {
         assert!(
             script_text.contains(required),

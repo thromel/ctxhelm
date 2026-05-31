@@ -1741,14 +1741,10 @@ mod tests {
     };
     use ctxpack_core::{EvalTrace, PackBudget, TaskType};
     use std::fs;
-    use std::sync::{Mutex, OnceLock};
     use uuid::Uuid;
 
     fn env_lock() -> std::sync::MutexGuard<'static, ()> {
-        static LOCK: OnceLock<Mutex<()>> = OnceLock::new();
-        LOCK.get_or_init(|| Mutex::new(()))
-            .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner())
+        crate::test_env_lock()
     }
 
     fn fixture_repo() -> (tempfile::TempDir, PathBuf) {
