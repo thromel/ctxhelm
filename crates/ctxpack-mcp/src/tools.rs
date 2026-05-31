@@ -454,8 +454,8 @@ fn related_anchor_paths(
             .summary
             .staged
             .into_iter()
-            .chain(diff.summary.unstaged.into_iter())
-            .chain(diff.summary.untracked.into_iter())
+            .chain(diff.summary.unstaged)
+            .chain(diff.summary.untracked)
         {
             if seen.insert(path.clone()) {
                 paths.push(path);
@@ -499,8 +499,8 @@ fn context_anchor_paths(
         for path in diff
             .staged
             .into_iter()
-            .chain(diff.unstaged.into_iter())
-            .chain(diff.untracked.into_iter())
+            .chain(diff.unstaged)
+            .chain(diff.untracked)
         {
             if seen.insert(path.clone()) {
                 paths.push(path);

@@ -29,6 +29,8 @@ archive audit, MCP protocol smoke, and release-gate smokes.
   actionable instead of immediately red.
 - Fixed the first public CI run's workspace-job install failure by passing
   separate `rustup --component` flags for `rustfmt` and `clippy`.
+- Fixed the second public CI run's newer-stable clippy failures by removing
+  redundant `.into_iter()` calls in MCP current-diff anchor chaining.
 
 ## Validation
 
