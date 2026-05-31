@@ -4,7 +4,7 @@
 
 This roadmap tracks v2.5 Production Retrieval Quality and its immediate production-readiness follow-ups. v2.4 made semantic, precision, provider, and reranker paths source-safe and policy-gated, then the fresh RefactoringMiner proof fixed a semantic fusion regression. The current fixed two-repo product proof promotes default local retrieval under a channel-aware gate: non-test context recall beats lexical on both corpora, while validation-test recall is measured separately through `recommended_tests`.
 
-v2.5 therefore focuses on measured retrieval quality, not more surface area. The milestone must prove whether production local embeddings, reranking, graph/test/history fixes, and learned fusion can beat lexical baseline on real repositories while staying local-first and source-safe. Phase 66 fixed the false zero-test-recall signal by measuring `recommended_tests` as its own validation channel. Phase 67 fixed the denominator for historical retrieval metrics by separating all safe changed files from parent-snapshot `retrievalTargetFiles`. Phase 69 promoted default local retrieval under the channel-aware proof, Phase 70 refreshed real-client MCP evidence for Codex CLI and Claude Code, Phase 71 reduced archive-artifact retrieval noise in ctxpack's own history, Phase 72 broadened repeated-lift validation while improving validation-test recall seeding, Phase 73 pinned a broader optional fixed-corpus probe, Phase 76 split partial-snapshot history into validation-only mode for historical eval, Phase 77 added broad validation-command coverage for multi-area smoke/eval tasks, Phase 78 made the broader proof gate lexical-ceiling aware, Phase 79 added protected target floors, Phase 80 fixed symbol-floor duplicate accounting, Phase 81 made warm-cache runtime proof trustworthy, Phase 82 made warm-cache runtime enforceable, Phase 83 made context-vs-all-file divergence machine-checkable, Phase 84 added broad-scope task accounting plus scoped dependency source floors, Phase 85 added source-free context-area hints for broad prepare-task plans and packs, Phase 86 added bounded Python package re-export graph coverage, Phase 87 fixed validation-covered test gap accounting, Phase 88 added bounded broad source-area candidates, Phase 89 reduced repeated inventory freshness overhead so the pinned broader release proof promotes, Phase 90 proved the packaged release gate from a clean worktree with the broad benchmark enabled, Phase 91 made broad context-area coverage measurable in historical eval, Phase 92 made broad-area gap taxonomy area-aware, Phase 93 added source-free symbol/dependency index caches so clean cold large-repo proof promotes, Phase 94 improved wide-task progressive area coverage without target-file churn, Phase 95 made generated broad packs tell agents which zero-selected areas to read next, Phase 96 made those broad areas consumable as source-free MCP resources, Phase 97 improved broad governance/proof/eval task classification, Phase 98 split source-free broad context-area classification from target-file source floors for archive/docs tasks, Phase 99 added source-free read batches to context-area MCP resources, Phase 100 made retrieval-gap summaries resource-backed, Phase 101 made that resource-backed shape part of the product-proof checker, Phase 102 made repo-scoped MCP resources consumable after explicit-repo tool calls from a non-repo server cwd, Phase 103 added pinned broad fixed-corpus floors, Phase 104 added source-free next-read paths and unselected counts to broad context areas, and Phase 105 made history-unavailable benchmark repos produce embedded insufficient-evidence reports instead of missing reports.
+v2.5 therefore focuses on measured retrieval quality, not more surface area. The milestone must prove whether production local embeddings, reranking, graph/test/history fixes, and learned fusion can beat lexical baseline on real repositories while staying local-first and source-safe. Phase 66 fixed the false zero-test-recall signal by measuring `recommended_tests` as its own validation channel. Phase 67 fixed the denominator for historical retrieval metrics by separating all safe changed files from parent-snapshot `retrievalTargetFiles`. Phase 69 promoted default local retrieval under the channel-aware proof, Phase 70 refreshed real-client MCP evidence for Codex CLI and Claude Code, Phase 71 reduced archive-artifact retrieval noise in ctxpack's own history, Phase 72 broadened repeated-lift validation while improving validation-test recall seeding, Phase 73 pinned a broader optional fixed-corpus probe, Phase 76 split partial-snapshot history into validation-only mode for historical eval, Phase 77 added broad validation-command coverage for multi-area smoke/eval tasks, Phase 78 made the broader proof gate lexical-ceiling aware, Phase 79 added protected target floors, Phase 80 fixed symbol-floor duplicate accounting, Phase 81 made warm-cache runtime proof trustworthy, Phase 82 made warm-cache runtime enforceable, Phase 83 made context-vs-all-file divergence machine-checkable, Phase 84 added broad-scope task accounting plus scoped dependency source floors, Phase 85 added source-free context-area hints for broad prepare-task plans and packs, Phase 86 added bounded Python package re-export graph coverage, Phase 87 fixed validation-covered test gap accounting, Phase 88 added bounded broad source-area candidates, Phase 89 reduced repeated inventory freshness overhead so the pinned broader release proof promotes, Phase 90 proved the packaged release gate from a clean worktree with the broad benchmark enabled, Phase 91 made broad context-area coverage measurable in historical eval, Phase 92 made broad-area gap taxonomy area-aware, Phase 93 added source-free symbol/dependency index caches so clean cold large-repo proof promotes, Phase 94 improved wide-task progressive area coverage without target-file churn, Phase 95 made generated broad packs tell agents which zero-selected areas to read next, Phase 96 made those broad areas consumable as source-free MCP resources, Phase 97 improved broad governance/proof/eval task classification, Phase 98 split source-free broad context-area classification from target-file source floors for archive/docs tasks, Phase 99 added source-free read batches to context-area MCP resources, Phase 100 made retrieval-gap summaries resource-backed, Phase 101 made that resource-backed shape part of the product-proof checker, Phase 102 made repo-scoped MCP resources consumable after explicit-repo tool calls from a non-repo server cwd, Phase 103 added pinned broad fixed-corpus floors, Phase 104 added source-free next-read paths and unselected counts to broad context areas, Phase 105 made history-unavailable benchmark repos produce embedded insufficient-evidence reports instead of missing reports, and Phase 106 hardened Codex/Claude real-client evidence with source-free request metadata.
 
 ## v2.5 Production Retrieval Quality
 
@@ -13,7 +13,7 @@ v2.5 therefore focuses on measured retrieval quality, not more surface area. The
 **Phase Numbering:**
 
 - Integer phases (61, 62, 63, 64, 65): Planned v2.5 work
-- Phases 66-105: Production-readiness follow-ups from the original blocked proof and the channel-aware promotion path
+- Phases 66-106: Production-readiness follow-ups from the original blocked proof and the channel-aware promotion path
 - Decimal phases (61.1, 62.1): Urgent insertions if needed
 
 - [x] **Phase 61: Multi-Repo Quality Baselines** - Maintainers can run source-free paired baselines across RefactoringMiner and a second real repository with stable comparison artifacts.
@@ -60,6 +60,7 @@ v2.5 therefore focuses on measured retrieval quality, not more surface area. The
 - [x] **Phase 103: Broad Fixed-Corpus Floors** - The product-proof checker rejects broad pinned-corpus metric regressions even when the aggregate proof still promotes.
 - [x] **Phase 104: Context Area Next-Read Paths** - Broad context areas expose docs, unselected counts, and concrete source-free next-read paths for agents without changing top-10 ranking.
 - [x] **Phase 105: History-Unavailable Embedded Reports** - Benchmark repos with unavailable git history keep embedded reports and block as insufficient evidence instead of producing `report: null`.
+- [x] **Phase 106: Real-Client Request Evidence Hardening** - Codex CLI and Claude Code smoke evidence records source-free request hashes, line counts, explicit repo tool-call counts, and sanitized observed tool-call summaries.
 
 ## Phase Details
 
@@ -682,6 +683,35 @@ git history sampling is unavailable or times out.
 - [x] `.planning/e2e/2026-05-31-phase105-history-unavailable-report.md`
 - [x] `.ctxpack/e2e/phase105-history-unavailable-proof.json`
 
+### Phase 106: Real-Client Request Evidence Hardening
+
+**Goal**: Codex CLI and Claude Code real-client proof artifacts should show
+what was observed through the real client path without storing raw MCP traffic
+or source-bearing prompt data.
+
+**Depends on**: Phase 70, Phase 102, Phase 105
+
+**Requirements**: AGENT-01, PROOF-01
+
+**Success Criteria**:
+
+1. Codex and Claude real-client smoke evidence keeps the existing client,
+   ctxpack, repo, `prepare_task`, and `get_pack` fields for compatibility.
+2. Evidence adds a request evidence schema version, request-log SHA-256, request
+   line count, explicit repo tool-call count, and sanitized observed tool-call
+   metadata.
+3. Evidence-directory runs also write sanitized request-summary JSON sidecars
+   without raw request logs, task text, prompt text, or source snippets.
+4. Claude semantic smoke evidence records whether observed tool calls matched
+   semantic provider/model/dimension requirements when semantic smoke mode is
+   enabled.
+5. Focused script-contract tests and deterministic wrapper smokes cover the
+   hardened artifact shape.
+
+**Evidence**:
+
+- [x] `.planning/e2e/2026-05-31-phase106-real-client-request-evidence.md`
+
 ## Requirement Coverage
 
 | Requirement | Phase |
@@ -778,13 +808,15 @@ git history sampling is unavailable or times out.
 | PROOF-01 | Phase 104 |
 | PROOF-01 | Phase 105 |
 | PROOF-02 | Phase 105 |
+| AGENT-01 | Phase 106 |
+| PROOF-01 | Phase 106 |
 
-**Coverage:** 20/20 v2.5 requirements mapped, with Phases 66-105 as measured follow-ups for proof/eval correctness gaps, real-client evidence, archive-noise reduction, broader validation, fixed-corpus reproducibility, protected-evidence diagnostics, parent-bounded history/test reservation, validation-only historical eval history, validation-command coverage, lexical-ceiling proof semantics, protected target floors, symbol-floor accounting, warm-cache runtime proof, warm-cache release gating, context-vs-all-file divergence accounting, broad-scope dependency source floors, broad context-area hints, Python package re-export graph coverage, validation gap accounting, broad source-area candidates, fast inventory freshness, packaged release-gate proof, broad context-area eval coverage, area-aware gap taxonomy with clean large-repo warm proof, source-free index caching for cold large-repo planner runtime, wider context-area guidance for broad tasks, progressive area guidance in generated packs, MCP context-area resources, broad governance task classification, progressive broad classification, source-free context-area read batches, resource-backed gap summaries, release-gated gap summary contracts, explicit-repo MCP resource consumption, broad fixed-corpus floor gates, context-area next-read paths, and history-unavailable embedded reports. No orphaned v2.5 requirements.
+**Coverage:** 20/20 v2.5 requirements mapped, with Phases 66-106 as measured follow-ups for proof/eval correctness gaps, real-client evidence, archive-noise reduction, broader validation, fixed-corpus reproducibility, protected-evidence diagnostics, parent-bounded history/test reservation, validation-only historical eval history, validation-command coverage, lexical-ceiling proof semantics, protected target floors, symbol-floor accounting, warm-cache runtime proof, warm-cache release gating, context-vs-all-file divergence accounting, broad-scope dependency source floors, broad context-area hints, Python package re-export graph coverage, validation gap accounting, broad source-area candidates, fast inventory freshness, packaged release-gate proof, broad context-area eval coverage, area-aware gap taxonomy with clean large-repo warm proof, source-free index caching for cold large-repo planner runtime, wider context-area guidance for broad tasks, progressive area guidance in generated packs, MCP context-area resources, broad governance task classification, progressive broad classification, source-free context-area read batches, resource-backed gap summaries, release-gated gap summary contracts, explicit-repo MCP resource consumption, broad fixed-corpus floor gates, context-area next-read paths, history-unavailable embedded reports, and source-free real-client request evidence. No orphaned v2.5 requirements.
 
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 61 -> 62 -> 63 -> 64 -> 65 -> 66 -> 67 -> 69 -> 70 -> 71 -> 72 -> 73 -> 74 -> 75 -> 76 -> 77 -> 78 -> 79 -> 80 -> 81 -> 82 -> 83 -> 84 -> 85 -> 86 -> 87 -> 88 -> 89 -> 90 -> 91 -> 92 -> 93 -> 94 -> 95 -> 96 -> 97 -> 98 -> 99 -> 100 -> 101 -> 102 -> 103 -> 104 -> 105
+Phases execute in numeric order: 61 -> 62 -> 63 -> 64 -> 65 -> 66 -> 67 -> 69 -> 70 -> 71 -> 72 -> 73 -> 74 -> 75 -> 76 -> 77 -> 78 -> 79 -> 80 -> 81 -> 82 -> 83 -> 84 -> 85 -> 86 -> 87 -> 88 -> 89 -> 90 -> 91 -> 92 -> 93 -> 94 -> 95 -> 96 -> 97 -> 98 -> 99 -> 100 -> 101 -> 102 -> 103 -> 104 -> 105 -> 106
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
@@ -832,6 +864,7 @@ Phases execute in numeric order: 61 -> 62 -> 63 -> 64 -> 65 -> 66 -> 67 -> 69 ->
 | 103. Broad Fixed-Corpus Floors | Evidence artifact | Complete | 2026-05-31 |
 | 104. Context Area Next-Read Paths | Evidence artifact | Complete | 2026-05-31 |
 | 105. History-Unavailable Embedded Reports | Evidence artifact | Complete | 2026-05-31 |
+| 106. Real-Client Request Evidence Hardening | Evidence artifact | Complete | 2026-05-31 |
 
 ---
 *Roadmap created: 2026-05-22*

@@ -2312,6 +2312,10 @@ fn real_client_smoke_scripts_have_contract_guards() {
                 content.contains("--dangerously-bypass-approvals-and-sandbox"),
                 "{script} must prevent non-interactive MCP calls from being auto-cancelled"
             );
+            assert!(
+                content.contains("CODEX_HOME"),
+                "{script} must isolate older Codex CLI config when --ignore-user-config is unavailable"
+            );
             content
                 .find("codex exec")
                 .unwrap_or_else(|| panic!("{script} does not attempt codex exec"))
@@ -2344,6 +2348,15 @@ fn real_client_smoke_scripts_have_contract_guards() {
             "prepareTask",
             "getPack",
             "required",
+            "requestEvidenceSchemaVersion",
+            "ctxpack-real-client-evidence-v2",
+            "serverSideRequestLog",
+            "requestLogSha256",
+            "requestLogLineCount",
+            "explicitRepoToolCallCount",
+            "observedToolCalls",
+            "requestSummaryFile",
+            "hashlib.sha256",
             "--version",
             "serve-mcp",
             "request_log",

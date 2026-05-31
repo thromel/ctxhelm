@@ -45,12 +45,82 @@ fail_or_skip() {
 
 write_evidence() {
   local evidence_file="$1"
-  python3 - "$evidence_file" "$repo" "$client_version" "$ctxpack_version" "$require_real" "$semantic" "$semantic_provider" "$semantic_model" "$semantic_dimensions" <<'PY'
+  local request_log_path="$2"
+  python3 - "$evidence_file" "$repo" "$client_version" "$ctxpack_version" "$require_real" "$semantic" "$semantic_provider" "$semantic_model" "$semantic_dimensions" "$request_log_path" <<'PY'
+import hashlib
 import json
 import pathlib
 import sys
 
-path, repo, client_version, ctxpack_version, required, semantic, provider, model, dimensions = sys.argv[1:]
+path, repo, client_version, ctxpack_version, required, semantic, provider, model, dimensions, request_log_path = sys.argv[1:]
+
+def semantic_matches(arguments):
+    if semantic != "1":
+        return None
+    if arguments.get("semantic") is not True:
+        return False
+    if provider and arguments.get("semanticProvider") != provider:
+        return False
+    if model and arguments.get("semanticModel") != model:
+        return False
+    if dimensions:
+        try:
+            actual_dimensions = int(arguments.get("semanticDimensions"))
+        except (TypeError, ValueError):
+            return False
+        if actual_dimensions != int(dimensions):
+            return False
+    return True
+
+def request_log_summary(log_path, expected_repo):
+    raw = b""
+    if log_path:
+        candidate = pathlib.Path(log_path)
+        if candidate.exists():
+            raw = candidate.read_bytes()
+    lines = raw.decode("utf-8", errors="replace").splitlines()
+    observed = []
+    explicit_repo_tool_call_count = 0
+    for line in lines:
+        if not line.strip():
+            continue
+        try:
+            payload = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if payload.get("method") != "tools/call":
+            continue
+        params = payload.get("params") or {}
+        name = params.get("name")
+        if name not in {"prepare_task", "get_pack"}:
+            continue
+        arguments = params.get("arguments") or {}
+        repo_matched = arguments.get("repo") == expected_repo
+        if repo_matched:
+            explicit_repo_tool_call_count += 1
+        entry = {
+            "name": name,
+            "repoMatched": repo_matched,
+            "hasTask": bool(arguments.get("task")),
+        }
+        matched = semantic_matches(arguments)
+        if matched is not None:
+            entry["semanticMatched"] = matched
+        if name == "get_pack":
+            entry["budget"] = arguments.get("budget")
+            entry["format"] = arguments.get("format")
+            entry["recordTraceFalse"] = arguments.get("recordTrace") is False
+        observed.append(entry)
+    return {
+        "requestEvidenceSchemaVersion": "ctxpack-real-client-evidence-v2",
+        "serverSideRequestLog": True,
+        "requestLogSha256": hashlib.sha256(raw).hexdigest(),
+        "requestLogLineCount": len(lines),
+        "explicitRepoToolCallCount": explicit_repo_tool_call_count,
+        "observedToolCalls": observed,
+    }
+
+summary = request_log_summary(request_log_path, repo)
 evidence = {
     "client": "claude",
     "clientVersion": client_version,
@@ -70,10 +140,17 @@ if semantic == "1":
         evidence["semanticModel"] = model
     if dimensions:
         evidence["semanticDimensions"] = int(dimensions)
+evidence.update(summary)
 payload = json.dumps(evidence, sort_keys=True)
 if path:
     target = pathlib.Path(path)
     target.parent.mkdir(parents=True, exist_ok=True)
+    summary_target = target.with_name(target.name.replace("-evidence", "-request-summary"))
+    if summary_target == target:
+        summary_target = target.with_name(target.stem + "-request-summary" + target.suffix)
+    summary_target.write_text(json.dumps(summary, sort_keys=True) + "\n", encoding="utf-8")
+    evidence["requestSummaryFile"] = summary_target.name
+    payload = json.dumps(evidence, sort_keys=True)
     target.write_text(payload + "\n", encoding="utf-8")
 else:
     print("ctxpack Claude MCP smoke evidence: " + payload)
@@ -275,7 +352,7 @@ if [[ "$evidence_found" == "1" ]]; then
   if [[ -n "${CTXPACK_REAL_CLIENT_EVIDENCE_DIR:-}" ]]; then
     evidence_path="${CTXPACK_REAL_CLIENT_EVIDENCE_DIR}/claude-mcp-evidence.json"
   fi
-  write_evidence "$evidence_path"
+  write_evidence "$evidence_path" "$request_log"
   echo "ctxpack Claude MCP smoke passed: server-side instrumentation recorded prepare_task and get_pack with repo=$repo"
   exit 0
 fi

@@ -229,7 +229,7 @@ The gate passes the same selected or extracted `CTXPACK_BIN` into the first-pack
 
 - `CTXPACK_SKIP_REAL_CLIENT=1` keeps Codex and Claude checks deterministic-only after the protocol proof.
 - `CTXPACK_REQUIRE_REAL_CLIENT=1` makes missing Codex or Claude tool-call evidence fail the gate.
-- `CTXPACK_REAL_CLIENT_EVIDENCE_DIR=/absolute/path/to/evidence` writes stable JSON evidence files with client version, ctxpack version, repo path, `prepare_task`, and `get_pack` proof when real-client checks run.
+- `CTXPACK_REAL_CLIENT_EVIDENCE_DIR=/absolute/path/to/evidence` writes stable JSON evidence files with client version, ctxpack version, repo path, `prepare_task`, and `get_pack` proof when real-client checks run. These files also include a source-free request-log hash, request line count, explicit repo tool-call count, sanitized observed tool-call metadata, and a separate sanitized request-summary JSON. Raw request logs, prompts, task text, and source snippets are not persisted by the wrapper.
 - `CTXPACK_BENCHMARK_CONFIG=/absolute/path/to/suite.json` runs `ctxpack eval proof --config ... --format json` and fails on report-generation, local-only privacy regressions, missing embedded repository reports, history-unavailable insufficient-evidence reports, missing v2.3 product proof summary, missing paired baseline verdict contract, feature-export privacy regressions, learned-policy status regressions, missing proof-boundary language, missing resource-backed current-reachable gap summaries, pinned broad fixed-corpus regressions, or a non-promote `releaseGate.decision`. Neutral, mixed, unsafe, or too-expensive default retrieval proof blocks publication.
 
 Current v2.5 proof status: the fixed two-repo production-retrieval proof
@@ -519,8 +519,11 @@ fixture is `.ctxpack/e2e/phase105-history-unavailable-proof.json`.
 Latest optional real-client proof: Codex CLI `0.130.0` and Claude Code
 `2.1.158` both passed the smoke wrappers on 2026-05-30 with server-side
 `prepare_task` and `get_pack` evidence against an explicit repo path. See
-`.planning/e2e/2026-05-30-phase70-real-client-mcp-proof.md`. Cursor and
-OpenCode real-client proof is still not claimed for v1.1.0.
+`.planning/e2e/2026-05-30-phase70-real-client-mcp-proof.md`. Phase 106 hardens
+future Codex and Claude Code evidence files with source-free request-log hashes,
+line counts, explicit repo tool-call counts, sanitized observed tool-call
+metadata, and sanitized request-summary JSON sidecars. Cursor and OpenCode
+real-client proof is still not claimed for v1.1.0.
 
 RefactoringMiner and multi-repo proof are optional external gates. They are
 skipped by default because they require a separate local checkout and longer

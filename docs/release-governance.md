@@ -16,6 +16,12 @@ the release-gate real-client environment variables documented in
 v1.1.0; their public support remains config/rules plus deterministic MCP
 compatibility.
 
+When `CTXPACK_REAL_CLIENT_EVIDENCE_DIR` is set, the real-client wrappers write
+source-free evidence only: client/version metadata, a request-log SHA-256,
+request line count, explicit repo tool-call count, sanitized observed tool-call
+metadata, and a sanitized request-summary JSON sidecar. The wrappers do not
+persist raw MCP request logs, prompt text, task text, or source snippets.
+
 ## Candidate Status
 
 Create source-free readiness metadata:
@@ -70,4 +76,3 @@ bash scripts/smoke-release-governance.sh
 The smoke covers ready, deferred, and blocked candidate status metadata,
 deterministic protocol proof language, optional real-client proof language,
 Cursor/OpenCode non-claims, and rollback safety.
-

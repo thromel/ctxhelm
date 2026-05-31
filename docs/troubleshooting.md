@@ -174,3 +174,11 @@ than generated guidance files.
 ## Deterministic Proof Versus Client Proof
 
 The deterministic protocol proof talks directly to `ctxpack serve-mcp` and checks machine-readable `prepare_task` and `get_pack` responses. Optional real-client proof is separate and version-specific. v1.1 does not claim machine-checkable Cursor or OpenCode tool-call proof.
+
+When Codex or Claude real-client evidence is enabled with
+`CTXPACK_REAL_CLIENT_EVIDENCE_DIR`, inspect `*-mcp-evidence.json` first. The
+stable evidence includes `requestLogSha256`, `requestLogLineCount`,
+`explicitRepoToolCallCount`, `observedToolCalls`, and `requestSummaryFile`. The
+request summary sidecar is sanitized and source-free; it is intended to prove
+which ctxpack tools were observed without preserving raw MCP traffic, task text,
+or source snippets.
