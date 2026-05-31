@@ -8,6 +8,7 @@
     "path": ".github/workflows/ci.yml",
     "rustInstallCommand": "rustup toolchain install stable --profile minimal --component rustfmt --component clippy",
     "newerStableClippyFixes": true,
+    "newerStableCliClippyFixes": true,
     "triggers": [
       "push:main",
       "pull_request",
