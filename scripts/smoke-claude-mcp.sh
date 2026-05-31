@@ -35,12 +35,130 @@ resolve_ctxpack_bin() {
 
 fail_or_skip() {
   local reason="$1"
+  if [[ -n "${CTXPACK_REAL_CLIENT_EVIDENCE_DIR:-}" && -n "${repo:-}" && -n "${ctxpack_version:-}" ]]; then
+    write_skip_evidence \
+      "${CTXPACK_REAL_CLIENT_EVIDENCE_DIR}/claude-mcp-evidence.json" \
+      "$reason" \
+      "${request_log:-}"
+  fi
   if [[ "$require_real" == "1" ]]; then
     echo "ctxpack Claude MCP smoke failed: $reason" >&2
     exit 1
   fi
   echo "ctxpack Claude MCP smoke skipped: $reason"
   exit 0
+}
+
+write_skip_evidence() {
+  local evidence_file="$1"
+  local reason="$2"
+  local request_log_path="${3:-}"
+  python3 - "$evidence_file" "$repo" "${client_version:-unavailable}" "$ctxpack_version" "$require_real" "$semantic" "$semantic_provider" "$semantic_model" "$semantic_dimensions" "$reason" "$request_log_path" <<'PY'
+import hashlib
+import json
+import pathlib
+import sys
+
+path, repo, client_version, ctxpack_version, required, semantic, provider, model, dimensions, reason, request_log_path = sys.argv[1:]
+
+def semantic_matches(arguments):
+    if semantic != "1":
+        return None
+    if arguments.get("semantic") is not True:
+        return False
+    if provider and arguments.get("semanticProvider") != provider:
+        return False
+    if model and arguments.get("semanticModel") != model:
+        return False
+    if dimensions:
+        try:
+            actual_dimensions = int(arguments.get("semanticDimensions"))
+        except (TypeError, ValueError):
+            return False
+        if actual_dimensions != int(dimensions):
+            return False
+    return True
+
+def request_log_summary(log_path, expected_repo):
+    raw = b""
+    if log_path:
+        candidate = pathlib.Path(log_path)
+        if candidate.exists():
+            raw = candidate.read_bytes()
+    lines = raw.decode("utf-8", errors="replace").splitlines()
+    observed = []
+    explicit_repo_tool_call_count = 0
+    for line in lines:
+        if not line.strip():
+            continue
+        try:
+            payload = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if payload.get("method") != "tools/call":
+            continue
+        params = payload.get("params") or {}
+        name = params.get("name")
+        if name not in {"prepare_task", "get_pack"}:
+            continue
+        arguments = params.get("arguments") or {}
+        repo_matched = arguments.get("repo") == expected_repo
+        if repo_matched:
+            explicit_repo_tool_call_count += 1
+        entry = {
+            "name": name,
+            "repoMatched": repo_matched,
+            "hasTask": bool(arguments.get("task")),
+        }
+        matched = semantic_matches(arguments)
+        if matched is not None:
+            entry["semanticMatched"] = matched
+        if name == "get_pack":
+            entry["budget"] = arguments.get("budget")
+            entry["format"] = arguments.get("format")
+            entry["recordTraceFalse"] = arguments.get("recordTrace") is False
+        observed.append(entry)
+    return {
+        "requestEvidenceSchemaVersion": "ctxpack-real-client-evidence-v2",
+        "serverSideRequestLog": bool(raw),
+        "requestLogSha256": hashlib.sha256(raw).hexdigest(),
+        "requestLogLineCount": len(lines),
+        "explicitRepoToolCallCount": explicit_repo_tool_call_count,
+        "observedToolCalls": observed,
+    }
+
+summary = request_log_summary(request_log_path, repo)
+evidence = {
+    "client": "claude",
+    "clientVersion": client_version,
+    "ctxpackVersion": ctxpack_version,
+    "repo": repo,
+    "status": "skipped",
+    "skipReason": reason,
+    "deterministicProtocol": True,
+    "deterministicContextAreaResourceRead": True,
+    "prepareTask": False,
+    "getPack": False,
+    "required": required == "1",
+}
+if semantic == "1":
+    evidence["semantic"] = True
+    if provider:
+        evidence["semanticProvider"] = provider
+    if model:
+        evidence["semanticModel"] = model
+    if dimensions:
+        evidence["semanticDimensions"] = int(dimensions)
+evidence.update(summary)
+target = pathlib.Path(path)
+target.parent.mkdir(parents=True, exist_ok=True)
+summary_target = target.with_name(target.name.replace("-evidence", "-request-summary"))
+if summary_target == target:
+    summary_target = target.with_name(target.stem + "-request-summary" + target.suffix)
+summary_target.write_text(json.dumps(summary, sort_keys=True) + "\n", encoding="utf-8")
+evidence["requestSummaryFile"] = summary_target.name
+target.write_text(json.dumps(evidence, sort_keys=True) + "\n", encoding="utf-8")
+PY
 }
 
 write_evidence() {
@@ -126,6 +244,7 @@ evidence = {
     "clientVersion": client_version,
     "ctxpackVersion": ctxpack_version,
     "repo": repo,
+    "status": "passed",
     "deterministicProtocol": True,
     "deterministicContextAreaResourceRead": True,
     "prepareTask": True,
@@ -179,12 +298,20 @@ CTXPACK_BIN="$ctxpack_bin" \
   bash "$protocol_script"
 
 if [[ "${CTXPACK_SKIP_REAL_CLIENT:-0}" == "1" ]]; then
-  echo "ctxpack Claude MCP smoke skipped: CTXPACK_SKIP_REAL_CLIENT=1 after protocol gate passed"
+  reason="CTXPACK_SKIP_REAL_CLIENT=1 after protocol gate passed"
+  if [[ -n "${CTXPACK_REAL_CLIENT_EVIDENCE_DIR:-}" ]]; then
+    write_skip_evidence "${CTXPACK_REAL_CLIENT_EVIDENCE_DIR}/claude-mcp-evidence.json" "$reason" ""
+  fi
+  echo "ctxpack Claude MCP smoke skipped: $reason"
   exit 0
 fi
 
 if [[ "$require_real" != "1" && "$run_real" != "1" ]]; then
-  echo "ctxpack Claude MCP smoke skipped: set CTXPACK_RUN_REAL_CLIENT=1 or CTXPACK_REQUIRE_REAL_CLIENT=1 after protocol gate passed"
+  reason="set CTXPACK_RUN_REAL_CLIENT=1 or CTXPACK_REQUIRE_REAL_CLIENT=1 after protocol gate passed"
+  if [[ -n "${CTXPACK_REAL_CLIENT_EVIDENCE_DIR:-}" ]]; then
+    write_skip_evidence "${CTXPACK_REAL_CLIENT_EVIDENCE_DIR}/claude-mcp-evidence.json" "$reason" ""
+  fi
+  echo "ctxpack Claude MCP smoke skipped: $reason"
   exit 0
 fi
 

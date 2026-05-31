@@ -69,6 +69,12 @@ The public install path can be verified with
 release assets, verifies checksums, installs only into a temporary bin
 directory, and runs `ctxpack doctor` plus the first-pack smoke.
 
+Optional Codex CLI and Claude Code behavior against the public archive binary
+can be checked with `scripts/smoke-public-real-clients.sh`. That script reuses
+the public GitHub release assets, runs the existing real-client wrappers with the
+extracted binary, and records source-free pass or skip evidence without global
+installation or agent-config mutation.
+
 ## Verification
 
 Run:

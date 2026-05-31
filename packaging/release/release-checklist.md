@@ -21,6 +21,7 @@ Use this checklist before marking a candidate `ready`.
 
 - [ ] optional real-client proof for Codex CLI
 - [ ] optional real-client proof for Claude Code
+- [ ] optional public-archive real-client refresh with `bash scripts/smoke-public-real-clients.sh --repo ... --tag ... --target-label ...`
 - [ ] Cursor real-client proof: not claimed for v1.1.0
 - [ ] OpenCode real-client proof: not claimed for v1.1.0
 - [ ] additional benchmark product proof with `CTXPACK_BENCHMARK_CONFIG`

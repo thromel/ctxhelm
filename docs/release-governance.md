@@ -20,7 +20,10 @@ When `CTXPACK_REAL_CLIENT_EVIDENCE_DIR` is set, the real-client wrappers write
 source-free evidence only: client/version metadata, a request-log SHA-256,
 request line count, explicit repo tool-call count, sanitized observed tool-call
 metadata, and a sanitized request-summary JSON sidecar. The wrappers do not
-persist raw MCP request logs, prompt text, task text, or source snippets.
+persist raw MCP request logs, prompt text, task text, or source snippets. In
+optional mode, unavailable or failing real clients write `status: skipped` with
+a source-free reason so publication notes can distinguish unsupported client
+state from product proof.
 
 ## Candidate Status
 
@@ -91,6 +94,23 @@ bash scripts/verify-public-archive-install.sh \
 This downloads the public release assets, verifies checksums, installs the
 binary into a temporary bin directory, runs `--version`, `--help`, `doctor`, and
 the first-pack smoke, then writes source-free proof metadata.
+
+Then, when Codex CLI or Claude Code proof should be refreshed against the public
+archive binary, run:
+
+```bash
+bash scripts/smoke-public-real-clients.sh \
+  --repo thromel/ctxpack \
+  --tag v1.1.0 \
+  --target-label aarch64-apple-darwin \
+  --expected-version "ctxpack 1.1.0" \
+  --output .ctxpack/e2e/phase116-public-real-client-smoke.json
+```
+
+This records source-free pass evidence for clients that call `prepare_task` and
+`get_pack`, and source-free skip evidence for optional clients that are missing,
+unauthenticated, disconnected, or otherwise unable to produce machine-checkable
+tool-call evidence.
 
 ## Rollback
 

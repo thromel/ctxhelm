@@ -664,6 +664,7 @@ fn release_docs_script_contract() {
         "scripts/smoke-release-governance.sh",
         "scripts/verify-github-release.sh",
         "scripts/verify-public-archive-install.sh",
+        "scripts/smoke-public-real-clients.sh",
         "scripts/smoke-semantic.sh",
         "scripts/smoke-precision.sh",
         "scripts/smoke-v23-eval.sh",
@@ -702,6 +703,52 @@ fn release_docs_script_contract() {
         assert!(
             script_text.contains(required),
             "release docs script must check for {required}"
+        );
+    }
+}
+
+#[test]
+fn public_real_client_smoke_script_contract() {
+    let repo_root = workspace_root();
+    let script = repo_root.join("scripts/smoke-public-real-clients.sh");
+    assert!(script.exists(), "public real-client smoke script is missing");
+
+    let syntax = Command::new("bash")
+        .arg("-n")
+        .arg(&script)
+        .current_dir(&repo_root)
+        .output()
+        .unwrap();
+    assert!(
+        syntax.status.success(),
+        "bash -n failed: {}",
+        String::from_utf8_lossy(&syntax.stderr)
+    );
+
+    let script_text = fs::read_to_string(&script).unwrap();
+    for required in [
+        "https://github.com/${repo}/releases/download/${tag}",
+        "verify-release-archive.sh",
+        "smoke-codex-mcp.sh",
+        "smoke-claude-mcp.sh",
+        "CTXPACK_BIN",
+        "CTXPACK_RUN_REAL_CLIENT",
+        "CTXPACK_REQUIRE_REAL_CLIENT",
+        "CTXPACK_SKIP_REAL_CLIENT",
+        "CTXPACK_REAL_CLIENT_EVIDENCE_DIR",
+        "downloadedPublicAssets",
+        "checksumsVerified",
+        "archiveVerified",
+        "versionPassed",
+        "privacyStatus",
+        "sourceTextLogged",
+        "global agent config mutation",
+        "user project test execution",
+        "missing_evidence",
+    ] {
+        assert!(
+            script_text.contains(required),
+            "public real-client script missing {required}"
         );
     }
 }

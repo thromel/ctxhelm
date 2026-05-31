@@ -2347,6 +2347,8 @@ fn real_client_smoke_scripts_have_contract_guards() {
             "deterministicContextAreaResourceRead",
             "prepareTask",
             "getPack",
+            "status",
+            "skipReason",
             "required",
             "requestEvidenceSchemaVersion",
             "ctxpack-real-client-evidence-v2",
@@ -2388,6 +2390,10 @@ fn real_client_smoke_scripts_have_contract_guards() {
         assert!(
             content.contains("write_evidence"),
             "{script} must emit machine-checkable evidence on success"
+        );
+        assert!(
+            content.contains("write_skip_evidence"),
+            "{script} must emit machine-checkable evidence when optional real-client proof skips"
         );
         assert!(
             content.contains("CTXPACK_RUN_REAL_CLIENT")
