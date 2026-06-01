@@ -1,6 +1,6 @@
 # Distribution Metadata
 
-ctxpack v1.1.0 ships through local release archives. This document records the
+ctxpack v1.1.1 ships through local release archives. This document records the
 preparatory distribution metadata for future package-manager channels without
 making those channels blockers for the current release.
 
@@ -23,8 +23,8 @@ Verify an already-built archive from a clean temporary extraction directory:
 
 ```bash
 bash scripts/verify-release-archive.sh \
-  --archive dist/ctxpack-v1.1.0-aarch64-apple-darwin.tar.gz \
-  --manifest dist/ctxpack-v1.1.0-aarch64-apple-darwin.manifest.json \
+  --archive dist/ctxpack-v1.1.1-aarch64-apple-darwin.tar.gz \
+  --manifest dist/ctxpack-v1.1.1-aarch64-apple-darwin.manifest.json \
   --checksums dist/sha256sums.txt
 ```
 
@@ -40,13 +40,13 @@ archive checksums, manifest names, and privacy posture.
 
 ## Signing And Notarization
 
-Current v1.1.0 archives are checksum-audited but not signed installers. Future
+Current v1.1.1 archives are checksum-audited but not signed installers. Future
 distribution work should add signing and notarization gaps to the release
 checklist before claiming signed macOS installers or package-manager formulas.
 
 ## Candidate Decision
 
-The v1.1.0 production candidate is archive-first:
+The v1.1.1 production candidate is archive-first:
 
 - local archive: ready after the release gate passes with the archive binary
   and required clean fixture proof
@@ -81,10 +81,9 @@ Optional Codex CLI and Claude Code behavior against the public archive binary
 can be checked with `scripts/smoke-public-real-clients.sh`. That script reuses
 the public GitHub release assets, runs the existing real-client wrappers with the
 extracted binary, and records source-free pass or skip evidence without global
-installation or agent-config mutation. Public `ctxpack 1.1.0` archive checks use
-`CTXPACK_REQUIRE_RESOURCE_SCOPE=0` for protocol compatibility with that released
-binary; current build and release-candidate protocol checks keep the stricter
-resource-scope assertions enabled by default.
+installation or agent-config mutation. Current public archive checks keep the
+stricter resource-scope assertions enabled by default. Older archives can still
+be checked in compatibility mode by setting `CTXPACK_REQUIRE_RESOURCE_SCOPE=0`.
 
 ## Verification
 

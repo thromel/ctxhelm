@@ -13,7 +13,7 @@ depending on a particular interactive agent client.
 Optional real-client proof can be added for Codex CLI and Claude Code by setting
 the release-gate real-client environment variables documented in
 `docs/release.md`. Cursor and OpenCode real-client proof is not claimed for
-v1.1.0; their public support remains config/rules plus deterministic MCP
+v1.1.1; their public support remains config/rules plus deterministic MCP
 compatibility.
 
 When `CTXPACK_REAL_CLIENT_EVIDENCE_DIR` is set, the real-client wrappers write
@@ -53,7 +53,7 @@ Allowed candidate statuses:
 - `blocked`: release must not be announced because a required gate failed or a
   privacy/source-free boundary regressed.
 
-For v1.1.0, `ready` means the local archive channel is ready. Homebrew,
+For v1.1.1, `ready` means the local archive channel is ready. Homebrew,
 crates.io, signed installers, and self-update remain explicitly deferred in the
 candidate status metadata.
 
@@ -71,8 +71,8 @@ against the local artifacts without uploading or mutating anything:
 
 ```bash
 bash scripts/verify-github-release.sh \
-  --tag v1.1.0 \
-  --target 68383cbfc2fff00c4f53fbd2b7bf90527ac4bd7e \
+  --tag v1.1.1 \
+  --target "$(git rev-parse HEAD)" \
   --assets-dir dist
 ```
 
@@ -85,10 +85,10 @@ Then verify the public user install path:
 ```bash
 bash scripts/verify-public-archive-install.sh \
   --repo thromel/ctxpack \
-  --tag v1.1.0 \
+  --tag v1.1.1 \
   --target-label aarch64-apple-darwin \
-  --expected-version "ctxpack 1.1.0" \
-  --output .ctxpack/e2e/phase115-public-archive-install.json
+  --expected-version "ctxpack 1.1.1" \
+  --output .ctxpack/e2e/phase130-public-archive-install.json
 ```
 
 This downloads the public release assets, verifies checksums, installs the
@@ -101,10 +101,10 @@ archive binary, run:
 ```bash
 bash scripts/smoke-public-real-clients.sh \
   --repo thromel/ctxpack \
-  --tag v1.1.0 \
+  --tag v1.1.1 \
   --target-label aarch64-apple-darwin \
-  --expected-version "ctxpack 1.1.0" \
-  --output .ctxpack/e2e/phase116-public-real-client-smoke.json
+  --expected-version "ctxpack 1.1.1" \
+  --output .ctxpack/e2e/phase130-public-real-client-smoke.json
 ```
 
 This records source-free pass evidence for clients that call `prepare_task` and
@@ -118,8 +118,8 @@ the current branch tip:
 ```bash
 bash scripts/check-public-release-freshness.sh \
   --repo thromel/ctxpack \
-  --tag v1.1.0 \
-  --output .ctxpack/e2e/phase129-public-release-freshness.json
+  --tag v1.1.1 \
+  --output .ctxpack/e2e/phase130-public-release-freshness.json
 ```
 
 The freshness checker writes source-free metadata with `status`,
