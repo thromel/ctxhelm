@@ -3,11 +3,11 @@ gsd_state_version: 1.0
 milestone: v2.5
 milestone_name: Production Retrieval Quality
 status: active
-last_updated: "2026-06-01T12:15:00Z"
-last_activity: 2026-06-01 -- Phase 141 renamed the product to RepoWinnow after availability review found ContextMason too close to an adjacent Mason MCP/code-context product
+last_updated: "2026-06-01T12:25:00Z"
+last_activity: 2026-06-01 -- Phase 142 published and verified the RepoWinnow v1.1.7 archive and Homebrew tap
 progress:
-  total_phases: 73
-  completed_phases: 73
+  total_phases: 74
+  completed_phases: 74
   total_plans: 7
   completed_plans: 7
   percent: 100
@@ -17,10 +17,10 @@ progress:
 
 ## Current Position
 
-Phase: 141 - RepoWinnow Brand Identity
-Plan: 141-repowinnow-brand
+Phase: 142 - Public v1.1.7 Release Currentness
+Plan: 142-repowinnow-public-release
 Status: Complete
-Last activity: 2026-06-01 -- Phase 141 replaced the short-lived ContextMason product name with RepoWinnow, kept `ctxpack` as the CLI/package/MCP/Homebrew compatibility surface, bumped the release line to `v1.1.7`, and passed release-doc, CLI help, and full workspace test validation.
+Last activity: 2026-06-01 -- Phase 142 published the RepoWinnow `v1.1.7` GitHub release at commit `13d2b9536be23eda13fe56f2c01ac55ec7d79a36`, verified release freshness, public archive install, optional public real-client smoke, and refreshed the public Apple Silicon Homebrew tap to install `ctxpack 1.1.7`.
 
 ## Project Reference
 
@@ -118,6 +118,7 @@ Planned phases:
 - Phase 139: ContextMason Brand Identity (complete follow-up)
 - Phase 140: Public v1.1.6 Release Currentness (complete follow-up)
 - Phase 141: RepoWinnow Brand Identity (complete follow-up)
+- Phase 142: Public v1.1.7 Release Currentness (complete follow-up)
 
 ## Last Completed Milestone
 
@@ -135,7 +136,7 @@ Planned phases:
 
 ## Next Step
 
-Continue production-readiness work from remaining measured gaps: make Codex CLI real-client proof required only after the client can produce machine-checkable tool-call evidence, publish the RepoWinnow `v1.1.7` archive and Homebrew tap after the brand commit lands, add additional platform archives and crates.io only when we are ready to support them, run research-backed world-class retrieval and integration gap planning, and continue hardening broad source-free ranking only when proof shows a concrete gap. Broad evals now distinguish files covered only by surfaced context areas from files with no candidate signal, clean cold full-fixture proof promotes across RefactoringMiner, ctxpack, ReAgent, and VeriSchema, and product proof now explicitly reports `releaseGate.lexicalComparison`: current all-file claim `mixed` with zero trailing corpora, current agent-evidence claim `mixed` with zero trailing corpora, current context-channel claim `mixed`, all-file average delta `+0.14154172`, agent-evidence average delta `+0.19379663`, context average delta `+0.23717105`, and protected target miss-rate `0.0` on all four corpora. The full packaged release gate passes from a clean checkout with the clean fixture proof required, release-candidate metadata marks the local archive channel and Apple Silicon Homebrew tap ready while deferring crates.io/signed installers/self-update, Phase 132 adds a committed source-free Claude workflow report proving real Claude Code explicit-repo `prepare_task` and `get_pack` calls through MCP, Phase 133 makes the public README state the product wedge and current proof snapshot while release-gating those claims against stale client-version drift, Phase 140 published the `v1.1.6` public archive for the superseded brand, and Phase 141 changes the active product name to RepoWinnow while preserving `ctxpack` as CLI/package/MCP/install compatibility surface. Broad context-area guidance covers more wide-task implementation areas, packs tell agents concrete source/docs paths to inspect next, plan-level context areas expose source-free role signals, MCP context-area resources explicitly label their counts/read batches as safe-inventory scope and now expose source-free coverage profiles plus inspection strategies with progressive read order, path budget, and stop rules, ctxpack-index release-validation tests now share one process-environment lock for `CTXPACK_HOME`, public CI now enforces formatting, clippy, locked tests, CLI help, release-doc consistency, and release-gate smoke on pushes/PRs using Node 24 action majors without Node 20 warning text, gap summaries point to area resources and bounded next-read paths, the product-proof checker gates those gap summaries and fails cleanly on missing embedded repo reports, history-unavailable repos now produce embedded insufficient-evidence reports instead of `null` reports, repo-scoped resources work after explicit-repo MCP tools even from a wrong server cwd, broad fixed-corpus metric floors block silent selection regressions, governance/proof tasks classify broad historical/eval language reliably, archive/docs broad tasks now receive context-area guidance without perturbing target-file source floors, broad operational tasks reserve governance/config/workflow evidence before lower-priority expansion, real-client smoke artifacts now carry source-free request metadata instead of boolean-only claims, and the full four-repo proof now hydrates all configured repositories instead of hanging or returning missing reports.
+Continue production-readiness work from remaining measured gaps: make Codex CLI real-client proof required only after the client can produce machine-checkable tool-call evidence, add additional platform archives and crates.io only when we are ready to support them, run research-backed world-class retrieval and integration gap planning, and continue hardening broad source-free ranking only when proof shows a concrete gap. Broad evals now distinguish files covered only by surfaced context areas from files with no candidate signal, clean cold full-fixture proof promotes across RefactoringMiner, ctxpack, ReAgent, and VeriSchema, and product proof now explicitly reports `releaseGate.lexicalComparison`: current all-file claim `mixed` with zero trailing corpora, current agent-evidence claim `mixed` with zero trailing corpora, current context-channel claim `mixed`, all-file average delta `+0.14154172`, agent-evidence average delta `+0.19379663`, context average delta `+0.23717105`, and protected target miss-rate `0.0` on all four corpora. The full packaged release gate passes from a clean checkout with the clean fixture proof required, release-candidate metadata marks the local archive channel and Apple Silicon Homebrew tap ready while deferring crates.io/signed installers/self-update, Phase 132 adds a committed source-free Claude workflow report proving real Claude Code explicit-repo `prepare_task` and `get_pack` calls through MCP, Phase 133 makes the public README state the product wedge and current proof snapshot while release-gating those claims against stale client-version drift, Phase 140 published the `v1.1.6` public archive for the superseded brand, Phase 141 changes the active product name to RepoWinnow while preserving `ctxpack` as CLI/package/MCP/install compatibility surface, and Phase 142 published and verified the current public `v1.1.7` archive plus refreshed Homebrew tap. Broad context-area guidance covers more wide-task implementation areas, packs tell agents concrete source/docs paths to inspect next, plan-level context areas expose source-free role signals, MCP context-area resources explicitly label their counts/read batches as safe-inventory scope and now expose source-free coverage profiles plus inspection strategies with progressive read order, path budget, and stop rules, ctxpack-index release-validation tests now share one process-environment lock for `CTXPACK_HOME`, public CI now enforces formatting, clippy, locked tests, CLI help, release-doc consistency, and release-gate smoke on pushes/PRs using Node 24 action majors without Node 20 warning text, gap summaries point to area resources and bounded next-read paths, the product-proof checker gates those gap summaries and fails cleanly on missing embedded repo reports, history-unavailable repos now produce embedded insufficient-evidence reports instead of `null` reports, repo-scoped resources work after explicit-repo MCP tools even from a wrong server cwd, broad fixed-corpus metric floors block silent selection regressions, governance/proof tasks classify broad historical/eval language reliably, archive/docs broad tasks now receive context-area guidance without perturbing target-file source floors, broad operational tasks reserve governance/config/workflow evidence before lower-priority expansion, real-client smoke artifacts now carry source-free request metadata instead of boolean-only claims, and the full four-repo proof now hydrates all configured repositories instead of hanging or returning missing reports.
 
 ## Operator Next Steps
 
