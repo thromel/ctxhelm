@@ -64,3 +64,10 @@ After this change is pushed:
 
 Local release readiness is complete. Public currentness is intentionally pending
 until the pushed commit and tag workflow finish.
+
+## Tag Workflow Triage
+
+The first `v1.1.12` tag workflow attempt failed in the release-prep job because
+`gh release create` ran without repository context before checkout. The workflow
+was fixed by adding an explicit checkout step and `GH_REPO: ${{ github.repository }}`
+for release creation and asset upload.
