@@ -127,7 +127,7 @@ if proof_summary_path:
 payload = {
     "schemaVersion": 1,
     "package": "ctxpack",
-    "version": "1.1.2",
+    "version": "1.1.3",
     "status": status,
     "createdAt": dt.datetime.now(dt.timezone.utc).replace(microsecond=0).isoformat(),
     "proofLevel": proof_level,
@@ -152,10 +152,10 @@ payload = {
         "cratesIo": "deferred",
         "signedInstaller": "deferred",
         "selfUpdate": "not_implemented",
-        "reason": "v1.1.2 production candidate is archive-first; package-manager publication, signed installers, and self-update remain future work.",
+        "reason": "v1.1.3 production candidate is archive-first; package-manager publication, signed installers, and self-update remain future work.",
     },
     "knownLimitations": [
-        "Cursor and OpenCode real-client proof is not claimed for v1.1.2.",
+        "Cursor and OpenCode real-client proof is not claimed for v1.1.3.",
         "Package-manager publication, signed installers, self-update, and hosted sync are future work.",
     ],
     "privacyStatus": {
@@ -219,7 +219,7 @@ if distribution.get("primaryChannel") != "local_archive":
     raise SystemExit("primaryChannel must be local_archive")
 for deferred in ["homebrewFormula", "cratesIo", "signedInstaller"]:
     if distribution.get(deferred) != "deferred":
-        raise SystemExit(f"{deferred} must be deferred for v1.1.2")
+        raise SystemExit(f"{deferred} must be deferred for v1.1.3")
 if distribution.get("selfUpdate") != "not_implemented":
     raise SystemExit("selfUpdate must be not_implemented")
 privacy = payload.get("privacyStatus", {})

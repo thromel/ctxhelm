@@ -25,7 +25,7 @@ that is not enough:
 
 Current proof snapshot:
 
-- Public `v1.1.2` archive install is current and verified through checksum,
+- Public `v1.1.3` archive install is current and verified through checksum,
   archive, temporary install, version/help, doctor, and first-pack checks.
 - The four-repo product proof reports zero protected target misses across
   RefactoringMiner, ctxpack, ReAgent, and VeriSchema.
@@ -45,9 +45,9 @@ ctxpack exposes compact task context through:
 ctxpack writes repo-local guidance, optional adapter snippets, and local ctxpack
 state only.
 
-## Install v1.1.2
+## Install v1.1.3
 
-The v1.1.2 install path is a prebuilt GitHub Releases-style archive named like `ctxpack-v1.1.2-aarch64-apple-darwin.tar.gz` or `ctxpack-v1.1.2-x86_64-unknown-linux-gnu.tar.gz`.
+The v1.1.3 install path is a prebuilt GitHub Releases-style archive named like `ctxpack-v1.1.3-aarch64-apple-darwin.tar.gz` or `ctxpack-v1.1.3-x86_64-unknown-linux-gnu.tar.gz`.
 
 Download the archive and checksum file for your platform, then verify the SHA-256 checksums:
 
@@ -59,14 +59,14 @@ sha256sum -c sha256sums.txt
 Extract the archive and put the binary on your `PATH`:
 
 ```bash
-tar -xzf ctxpack-v1.1.2-aarch64-apple-darwin.tar.gz
-install -m 0755 ctxpack-v1.1.2-aarch64-apple-darwin/ctxpack ~/.local/bin/ctxpack
+tar -xzf ctxpack-v1.1.3-aarch64-apple-darwin.tar.gz
+install -m 0755 ctxpack-v1.1.3-aarch64-apple-darwin/ctxpack ~/.local/bin/ctxpack
 ctxpack --version
 ctxpack --help
-ctxpack doctor --binary "$(command -v ctxpack)" --release-manifest ctxpack-v1.1.2-aarch64-apple-darwin.manifest.json
+ctxpack doctor --binary "$(command -v ctxpack)" --release-manifest ctxpack-v1.1.3-aarch64-apple-darwin.manifest.json
 ```
 
-The expected version diagnostic is `ctxpack 1.1.2`. See [docs/release.md](docs/release.md) for release details, source-build fallbacks, and maintainer packaging checks.
+The expected version diagnostic is `ctxpack 1.1.3`. See [docs/release.md](docs/release.md) for release details, source-build fallbacks, and maintainer packaging checks.
 
 ## Install To First Pack
 
