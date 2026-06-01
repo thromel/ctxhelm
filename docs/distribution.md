@@ -64,6 +64,14 @@ The public GitHub archive release can be verified after publication with
 metadata and uploaded asset SHA-256 digests against local release artifacts; it
 does not create tags, upload assets, or mutate release state.
 
+The public release freshness status can be checked with
+`scripts/check-public-release-freshness.sh`. That check compares the public
+release target commit with the current commit and records `status`,
+`gitRelation`, and `commitsAhead` as source-free metadata. Use `--require-current`
+before claiming the public archive contains the current branch's latest
+production-hardening changes. This freshness check is read-only: it does not
+publish, create tags, upload assets, install binaries, or mutate release state.
+
 The public install path can be verified with
 `scripts/verify-public-archive-install.sh`. That check downloads the GitHub
 release assets, verifies checksums, installs only into a temporary bin

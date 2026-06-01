@@ -12,6 +12,7 @@ trap cleanup EXIT
 bash -n "$repo_root/scripts/release-candidate-status.sh"
 bash -n "$repo_root/scripts/release-candidate-rollback.sh"
 bash -n "$repo_root/scripts/verify-github-release.sh"
+bash -n "$repo_root/scripts/check-public-release-freshness.sh"
 bash -n "$repo_root/scripts/verify-public-archive-install.sh"
 bash -n "$repo_root/scripts/smoke-public-real-clients.sh"
 
@@ -94,6 +95,23 @@ bash "$repo_root/scripts/verify-github-release.sh" \
   --target abc123 \
   --assets-dir "$assets_dir" \
   --release-json "$release_json" >/dev/null
+
+bash "$repo_root/scripts/check-public-release-freshness.sh" \
+  --tag v1.1.0 \
+  --current-commit def456 \
+  --release-json "$release_json" \
+  --output "$work_dir/release-freshness.json" >/dev/null
+python3 - "$work_dir/release-freshness.json" <<'PY'
+import json
+import pathlib
+import sys
+
+payload = json.loads(pathlib.Path(sys.argv[1]).read_text())
+assert payload["status"] == "outdated"
+assert payload["releaseTargetCommit"] == "abc123"
+assert payload["currentCommit"] == "def456"
+assert payload["sourceFree"] is True
+PY
 
 candidate_dir="$work_dir/candidate"
 mkdir -p "$candidate_dir"

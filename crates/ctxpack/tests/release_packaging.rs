@@ -354,6 +354,101 @@ fn ci_workflow_contract() {
 }
 
 #[test]
+fn public_release_freshness_script_reports_outdated_without_mutation() {
+    let repo_root = workspace_root();
+    let script = repo_root.join("scripts/check-public-release-freshness.sh");
+    assert!(script.exists(), "release freshness script is missing");
+
+    let syntax = Command::new("bash")
+        .arg("-n")
+        .arg(&script)
+        .current_dir(&repo_root)
+        .output()
+        .unwrap();
+    assert!(
+        syntax.status.success(),
+        "bash -n failed: {}",
+        String::from_utf8_lossy(&syntax.stderr)
+    );
+
+    let script_text = fs::read_to_string(&script).unwrap();
+    for required in [
+        "gh release view",
+        "targetCommitish",
+        "currentCommit",
+        "releaseTargetCommit",
+        "commitsAhead",
+        "sourceFree",
+        "privacyStatus",
+        "--require-current",
+        "publishing",
+        "tag creation",
+        "asset upload",
+    ] {
+        assert!(
+            script_text.contains(required),
+            "release freshness script missing {required}"
+        );
+    }
+
+    let temp = TempDir::new().unwrap();
+    let release_json = temp.path().join("release.json");
+    let output_json = temp.path().join("freshness.json");
+    fs::write(
+        &release_json,
+        r#"{
+  "isDraft": false,
+  "isPrerelease": false,
+  "publishedAt": "2026-06-01T00:00:00Z",
+  "tagName": "v1.1.0",
+  "targetCommitish": "release-commit",
+  "url": "https://github.com/thromel/ctxpack/releases/tag/v1.1.0"
+}
+"#,
+    )
+    .unwrap();
+
+    let output = Command::new("bash")
+        .arg(&script)
+        .args(["--tag", "v1.1.0"])
+        .args(["--current-commit", "current-commit"])
+        .arg("--release-json")
+        .arg(&release_json)
+        .arg("--output")
+        .arg(&output_json)
+        .current_dir(&repo_root)
+        .output()
+        .unwrap();
+    assert!(
+        output.status.success(),
+        "freshness script failed: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let payload: serde_json::Value =
+        serde_json::from_slice(&fs::read(&output_json).unwrap()).unwrap();
+    assert_eq!(payload["status"], "outdated");
+    assert_eq!(payload["releaseTargetCommit"], "release-commit");
+    assert_eq!(payload["currentCommit"], "current-commit");
+    assert_eq!(payload["sourceFree"], true);
+    assert_eq!(payload["privacyStatus"]["sourceTextLogged"], false);
+
+    let required_current = Command::new("bash")
+        .arg(&script)
+        .args(["--tag", "v1.1.0"])
+        .args(["--current-commit", "current-commit"])
+        .arg("--release-json")
+        .arg(&release_json)
+        .arg("--require-current")
+        .current_dir(&repo_root)
+        .output()
+        .unwrap();
+    assert!(
+        !required_current.status.success(),
+        "--require-current should fail when the release is outdated"
+    );
+}
+
+#[test]
 fn product_proof_checker_accepts_promote_and_rejects_block() {
     let repo_root = workspace_root();
     let script = repo_root.join("scripts/check-product-proof.py");

@@ -112,6 +112,23 @@ This records source-free pass evidence for clients that call `prepare_task` and
 unauthenticated, disconnected, or otherwise unable to produce machine-checkable
 tool-call evidence.
 
+Finally, verify whether the already-published public release still represents
+the current branch tip:
+
+```bash
+bash scripts/check-public-release-freshness.sh \
+  --repo thromel/ctxpack \
+  --tag v1.1.0 \
+  --output .ctxpack/e2e/phase129-public-release-freshness.json
+```
+
+The freshness checker writes source-free metadata with `status`,
+`releaseTargetCommit`, `currentCommit`, `gitRelation`, and `commitsAhead`.
+Use `--require-current` when a publication or announcement requires the public
+archive to match the current commit exactly. The checker does not publish,
+create tags, upload assets, install globally, mutate agent configuration, or
+read source text.
+
 ## Rollback
 
 Rollback removes local candidate artifacts only after the candidate directory
@@ -138,4 +155,5 @@ bash scripts/smoke-release-governance.sh
 
 The smoke covers ready, deferred, and blocked candidate status metadata,
 deterministic protocol proof language, optional real-client proof language,
-Cursor/OpenCode non-claims, and rollback safety.
+Cursor/OpenCode non-claims, public release freshness metadata, and rollback
+safety.

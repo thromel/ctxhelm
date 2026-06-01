@@ -636,6 +636,16 @@ protected target misses on all four corpora with average File Recall@10
 `0.5986343`, average file delta `+0.14154172`, average agent-evidence delta
 `+0.19379663`, and average context delta `+0.23717105`.
 
+Phase 129 adds a public release freshness check for the already-published
+archive channel. `scripts/check-public-release-freshness.sh` compares the
+public `v1.1.0` release target with the current commit and writes source-free
+`status`, `releaseTargetCommit`, `currentCommit`, `gitRelation`, and
+`commitsAhead` metadata. The current proof records the public archive as
+`outdated` relative to `main` by 19 commits, so production notes must separate
+"public v1.1.0 archive is verified" from "public archive contains the latest
+post-release hardening." Use `--require-current` before announcing that a public
+archive is current.
+
 Phase 119 removes an observed release-validation flake in `ctxpack-index`.
 Tests in `lib.rs`, `freshness.rs`, and `storage.rs` now share one crate-wide
 test lock before mutating process-global `CTXPACK_HOME`. This prevents one
