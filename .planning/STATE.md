@@ -3,11 +3,11 @@ gsd_state_version: 1.0
 milestone: v2.5
 milestone_name: Production Retrieval Quality
 status: active
-last_updated: "2026-06-01T09:04:41Z"
-last_activity: 2026-06-01 -- Phase 135 added install-channel readiness checks for deferred Homebrew and crates.io paths
+last_updated: "2026-06-01T09:21:11Z"
+last_activity: 2026-06-01 -- Phase 136 published and verified the current public v1.1.4 archive release
 progress:
-  total_phases: 67
-  completed_phases: 67
+  total_phases: 68
+  completed_phases: 68
   total_plans: 7
   completed_plans: 7
   percent: 100
@@ -17,10 +17,10 @@ progress:
 
 ## Current Position
 
-Phase: 135 - Distribution Readiness
-Plan: 135-distribution-readiness
+Phase: 136 - Public v1.1.4 Release Currentness
+Plan: 136-public-v114-release
 Status: Complete
-Last activity: 2026-06-01 -- Phase 135 added a Homebrew formula renderer, gated formula renderability against the packaged archive digest, checked the crates package file boundary, and documented that Homebrew/crates publication remains deferred.
+Last activity: 2026-06-01 -- Phase 136 published `v1.1.4`, verified GitHub asset digests, verified public archive install, verified product freshness, verified distribution-readiness metadata against the public archive digest, and refreshed optional public real-client evidence.
 
 ## Project Reference
 
@@ -112,6 +112,7 @@ Planned phases:
 - Phase 133: Product README Positioning (complete follow-up)
 - Phase 134: Public v1.1.3 Release Currentness (complete follow-up)
 - Phase 135: Distribution Readiness (complete follow-up)
+- Phase 136: Public v1.1.4 Release Currentness (complete follow-up)
 
 ## Last Completed Milestone
 
@@ -129,7 +130,7 @@ Planned phases:
 
 ## Next Step
 
-Continue production-readiness work from remaining measured gaps: make Codex CLI real-client proof required only after the client can produce machine-checkable tool-call evidence, publish stronger distribution channels only when we are ready to support them, run research-backed world-class retrieval and integration gap planning, and continue hardening broad source-free ranking only when proof shows a concrete gap. Broad evals now distinguish files covered only by surfaced context areas from files with no candidate signal, clean cold full-fixture proof promotes across RefactoringMiner, ctxpack, ReAgent, and VeriSchema, and product proof now explicitly reports `releaseGate.lexicalComparison`: current all-file claim `mixed` with zero trailing corpora, current agent-evidence claim `mixed` with zero trailing corpora, current context-channel claim `mixed`, all-file average delta `+0.14154172`, agent-evidence average delta `+0.19379663`, context average delta `+0.23717105`, and protected target miss-rate `0.0` on all four corpora. The full packaged release gate passes from a clean checkout with the clean fixture proof required, release-candidate metadata marks the local archive channel ready while deferring Homebrew/crates.io/signed installers/self-update, Phase 132 adds a committed source-free Claude workflow report proving real Claude Code explicit-repo `prepare_task` and `get_pack` calls through MCP, Phase 133 makes the public README state the product wedge and current proof snapshot while release-gating those claims against stale client-version drift, Phase 134 publishes the current `v1.1.3` public archive targeting `f17bd4cb27f1989e696717ac706868808ff01151` with product freshness `current`, public archive install proof, and refreshed optional public real-client evidence, and Phase 135 makes deferred Homebrew/crates paths mechanically checkable without publishing them. Broad context-area guidance covers more wide-task implementation areas, packs tell agents concrete source/docs paths to inspect next, plan-level context areas expose source-free role signals, MCP context-area resources explicitly label their counts/read batches as safe-inventory scope and now expose source-free coverage profiles plus inspection strategies with progressive read order, path budget, and stop rules, ctxpack-index release-validation tests now share one process-environment lock for `CTXPACK_HOME`, public CI now enforces formatting, clippy, locked tests, CLI help, release-doc consistency, and release-gate smoke on pushes/PRs using Node 24 action majors without Node 20 warning text, gap summaries point to area resources and bounded next-read paths, the product-proof checker gates those gap summaries and fails cleanly on missing embedded repo reports, history-unavailable repos now produce embedded insufficient-evidence reports instead of `null` reports, repo-scoped resources work after explicit-repo MCP tools even from a wrong server cwd, broad fixed-corpus metric floors block silent selection regressions, governance/proof tasks classify broad historical/eval language reliably, archive/docs broad tasks now receive context-area guidance without perturbing target-file source floors, broad operational tasks reserve governance/config/workflow evidence before lower-priority expansion, real-client smoke artifacts now carry source-free request metadata instead of boolean-only claims, and the full four-repo proof now hydrates all configured repositories instead of hanging or returning missing reports.
+Continue production-readiness work from remaining measured gaps: make Codex CLI real-client proof required only after the client can produce machine-checkable tool-call evidence, publish stronger distribution channels only when we are ready to support them, run research-backed world-class retrieval and integration gap planning, and continue hardening broad source-free ranking only when proof shows a concrete gap. Broad evals now distinguish files covered only by surfaced context areas from files with no candidate signal, clean cold full-fixture proof promotes across RefactoringMiner, ctxpack, ReAgent, and VeriSchema, and product proof now explicitly reports `releaseGate.lexicalComparison`: current all-file claim `mixed` with zero trailing corpora, current agent-evidence claim `mixed` with zero trailing corpora, current context-channel claim `mixed`, all-file average delta `+0.14154172`, agent-evidence average delta `+0.19379663`, context average delta `+0.23717105`, and protected target miss-rate `0.0` on all four corpora. The full packaged release gate passes from a clean checkout with the clean fixture proof required, release-candidate metadata marks the local archive channel ready while deferring Homebrew/crates.io/signed installers/self-update, Phase 132 adds a committed source-free Claude workflow report proving real Claude Code explicit-repo `prepare_task` and `get_pack` calls through MCP, Phase 133 makes the public README state the product wedge and current proof snapshot while release-gating those claims against stale client-version drift, Phase 135 makes deferred Homebrew/crates paths mechanically checkable without publishing them, and Phase 136 publishes the current `v1.1.4` public archive targeting `186fbebc8a4e9131b09665809a426c021eb5f13b` with product freshness `current`, public archive install proof, distribution-readiness proof, and refreshed optional public real-client evidence. Broad context-area guidance covers more wide-task implementation areas, packs tell agents concrete source/docs paths to inspect next, plan-level context areas expose source-free role signals, MCP context-area resources explicitly label their counts/read batches as safe-inventory scope and now expose source-free coverage profiles plus inspection strategies with progressive read order, path budget, and stop rules, ctxpack-index release-validation tests now share one process-environment lock for `CTXPACK_HOME`, public CI now enforces formatting, clippy, locked tests, CLI help, release-doc consistency, and release-gate smoke on pushes/PRs using Node 24 action majors without Node 20 warning text, gap summaries point to area resources and bounded next-read paths, the product-proof checker gates those gap summaries and fails cleanly on missing embedded repo reports, history-unavailable repos now produce embedded insufficient-evidence reports instead of `null` reports, repo-scoped resources work after explicit-repo MCP tools even from a wrong server cwd, broad fixed-corpus metric floors block silent selection regressions, governance/proof tasks classify broad historical/eval language reliably, archive/docs broad tasks now receive context-area guidance without perturbing target-file source floors, broad operational tasks reserve governance/config/workflow evidence before lower-priority expansion, real-client smoke artifacts now carry source-free request metadata instead of boolean-only claims, and the full four-repo proof now hydrates all configured repositories instead of hanging or returning missing reports.
 
 ## Operator Next Steps
 
