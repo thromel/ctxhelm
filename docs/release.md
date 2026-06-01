@@ -149,7 +149,9 @@ bash scripts/release-gate.sh
 ```
 
 The public repository also runs `.github/workflows/ci.yml` on pushes, pull
-requests, and manual dispatch. That workflow enforces formatting,
+requests, and manual dispatch. That workflow uses the Node 24 major versions
+`actions/checkout@v5` and `actions/cache@v5`, opts into
+`FORCE_JAVASCRIPT_ACTIONS_TO_NODE24`, then enforces formatting,
 `cargo clippy --workspace --all-targets --locked -- -D warnings`, locked
 workspace tests, CLI help, release-doc consistency, and the local release gate
 with external fixture and real-client checks explicitly skipped unless a
