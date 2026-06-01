@@ -525,7 +525,7 @@ dependencies = [
 
 [[package]]
 name = "ctxhelm"
-version = "1.1.8"
+version = "1.1.9"
 dependencies = [
  "anyhow",
  "assert_cmd",
@@ -543,7 +543,7 @@ dependencies = [
 
 [[package]]
 name = "ctxhelm-compiler"
-version = "1.1.8"
+version = "1.1.9"
 dependencies = [
  "ctxhelm-core",
  "ctxhelm-index",
@@ -555,7 +555,7 @@ dependencies = [
 
 [[package]]
 name = "ctxhelm-core"
-version = "1.1.8"
+version = "1.1.9"
 dependencies = [
  "serde",
  "serde_json",
@@ -566,7 +566,7 @@ dependencies = [
 
 [[package]]
 name = "ctxhelm-index"
-version = "1.1.8"
+version = "1.1.9"
 dependencies = [
  "blake3",
  "ctxhelm-core",
@@ -589,7 +589,7 @@ dependencies = [
 
 [[package]]
 name = "ctxhelm-mcp"
-version = "1.1.8"
+version = "1.1.9"
 dependencies = [
  "ctxhelm-compiler",
  "ctxhelm-core",
