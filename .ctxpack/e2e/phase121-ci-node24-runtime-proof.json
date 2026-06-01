@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "phase": 121,
-  "status": "pending_public_ci",
+  "status": "passed",
   "proofName": "ci-node24-runtime-guard",
   "sourceFree": true,
   "workflow": {
@@ -18,12 +18,22 @@
     "cargo clippy --workspace --all-targets --locked -- -D warnings",
     "cargo test -p ctxpack --test release_packaging ci_workflow_contract -- --nocapture",
     "bash scripts/check-release-docs.sh",
-    "git diff --check"
+    "git diff --check",
+    "cargo test --workspace --locked --no-fail-fast",
+    "cargo run -p ctxpack --locked -- --help",
+    "gh run watch 26728393271 --repo thromel/ctxpack --exit-status",
+    "gh run view 26728393271 --repo thromel/ctxpack --log | rg -n \"Node.js 20|node20|deprecated|Node 20|forced to run on node24\""
   ],
   "publicCi": {
     "requiredAfterPush": true,
-    "expectedConclusion": "success",
-    "expectedNode20Warning": false
+    "runId": 26728393271,
+    "runUrl": "https://github.com/thromel/ctxpack/actions/runs/26728393271",
+    "headSha": "8c071cae3561104cce5becaabea1efb9a0767345",
+    "conclusion": "success",
+    "workspaceJobId": 78767569051,
+    "releaseGateJobId": 78767569056,
+    "expectedNode20Warning": false,
+    "node20WarningObserved": false
   },
   "privacyStatus": {
     "localOnly": true,

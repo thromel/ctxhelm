@@ -38,6 +38,16 @@ git diff --check
 Public CI must still be checked after push to verify that GitHub no longer emits
 the Node.js 20 runtime warning.
 
+Public CI after push:
+
+```text
+run: https://github.com/thromel/ctxpack/actions/runs/26728393271
+head: 8c071cae3561104cce5becaabea1efb9a0767345
+workspace job: passed in 1m23s
+release-gate smoke job: passed in 1m57s
+Node 20 warning grep: no Node.js 20 / node20 / deprecation warning text found
+```
+
 ## Boundary
 
 This phase does not change the release-gate command set, publish behavior,
