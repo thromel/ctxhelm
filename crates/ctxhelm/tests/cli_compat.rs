@@ -2028,6 +2028,67 @@ fn eval_baselines_reports_paired_variants_source_free() {
 }
 
 #[test]
+fn eval_lexical_compare_reports_source_free_bm25_vs_legacy() {
+    let fixture = fixture_repo();
+
+    let value = json_stdout(
+        Command::cargo_bin("ctxhelm")
+            .unwrap()
+            .env(CTXHELM_HOME_ENV, &fixture.home)
+            .args(["eval", "lexical", "compare", "--repo"])
+            .arg(&fixture.repo)
+            .args([
+                "--query",
+                "requireSession",
+                "--limit",
+                "5",
+                "--format",
+                "json",
+            ])
+            .assert(),
+    );
+
+    assert_eq!(value["schemaVersion"], "ctxhelm-lexical-comparison-v1");
+    assert_eq!(value["query"]["rawQueryStoredInReport"], false);
+    assert_eq!(value["privacyStatus"]["localOnly"], true);
+    assert_eq!(value["privacyStatus"]["sourceTextLogged"], false);
+    assert_eq!(value["privacyStatus"]["resultReasonsOmitted"], true);
+    assert!(value["query"].get("queryHash").is_some());
+    assert!(value["query"].get("query").is_none());
+    assert_eq!(value["bm25"]["backend"], "tantivy_bm25_fielded_v1");
+    assert_eq!(value["legacy"]["backend"], "legacy_heuristic_scanner_v1");
+    assert!(value["comparison"]["overlapAtLimit"].as_u64().is_some());
+    assert!(value["bm25"]["results"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .any(|result| result["path"] == "src/auth/session.ts"));
+    assert!(value["legacy"]["results"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .any(|result| result["path"] == "src/auth/session.ts"));
+    assert!(value["bm25"]["results"][0].get("reason").is_none());
+
+    Command::cargo_bin("ctxhelm")
+        .unwrap()
+        .env(
+            CTXHELM_HOME_ENV,
+            fixture.temp.path().join("ctxhelm-home-lexical-md"),
+        )
+        .args(["eval", "lexical", "compare", "--repo"])
+        .arg(&fixture.repo)
+        .args(["--query", "requireSession", "--limit", "5"])
+        .assert()
+        .success()
+        .stdout(contains("# ctxhelm Lexical Comparison"))
+        .stdout(contains("BM25 Results"))
+        .stdout(contains("Legacy Results"))
+        .stdout(contains("Raw query stored in report: `false`"))
+        .stdout(contains("Source text logged: `false`"));
+}
+
+#[test]
 fn eval_compare_reports_source_free_metric_and_gap_deltas() {
     let fixture = fixture_repo();
     let suite_path = fixture.temp.path().join("ctxhelm-benchmark.json");

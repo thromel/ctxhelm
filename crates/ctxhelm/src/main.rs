@@ -34,21 +34,21 @@ use ctxhelm_core::{
 use ctxhelm_index::{
     apply_policy_profile, co_change_hints, current_diff_summary, dependency_edges,
     disable_policy_profile, discover_precision_edges, extract_symbols, import_precision_edges,
-    lexical_search, list_eval_traces, list_feedback_events, list_memory_cards,
-    list_policy_profiles, outcome_comparison_report, policy_quality_report,
-    propose_learned_policy_profile, propose_policy_profile, related_dependency_edges,
-    related_tests, rollback_policy_profile, semantic_search, storage_status_for_repo,
-    summarize_feedback_events, symbol_search, sync_inventory_to_store,
+    legacy_lexical_search_report, lexical_search, lexical_search_report, list_eval_traces,
+    list_feedback_events, list_memory_cards, list_policy_profiles, outcome_comparison_report,
+    policy_quality_report, propose_learned_policy_profile, propose_policy_profile,
+    related_dependency_edges, related_tests, rollback_policy_profile, semantic_search,
+    storage_status_for_repo, summarize_feedback_events, symbol_search, sync_inventory_to_store,
     sync_semantic_index_to_store, try_append_eval_trace, try_append_feedback_event,
     update_memory_card_review_status, vacuum_store, write_inventory, CoChangeOptions,
     CurrentDiffOptions, DependencyOptions, InventoryOptions, InventoryReport, LearnedPolicyOptions,
     PrecisionDiscoverOptions, PrecisionDiscoverReport, PrecisionImportReport, SearchOptions,
-    SemanticOptions, SemanticProviderConfig, StorageBenchmarkRunRecord, StorageContextPackRecord,
-    StorageGapRecord, StorageIndexReport, StorageMetricRecord, StorageProofReportRecord,
-    StorageReport, StorageSemanticIndexReport, StorageStatusReport, StoreConfig, SymbolOptions,
-    FEEDBACK_EVENT_SCHEMA_VERSION, WORKSPACE_MANIFEST_SCHEMA_VERSION,
+    SearchReport, SemanticOptions, SemanticProviderConfig, StorageBenchmarkRunRecord,
+    StorageContextPackRecord, StorageGapRecord, StorageIndexReport, StorageMetricRecord,
+    StorageProofReportRecord, StorageReport, StorageSemanticIndexReport, StorageStatusReport,
+    StoreConfig, SymbolOptions, FEEDBACK_EVENT_SCHEMA_VERSION, WORKSPACE_MANIFEST_SCHEMA_VERSION,
 };
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
 use std::path::Path;
 use std::path::PathBuf;
@@ -795,6 +795,7 @@ enum EvalCommand {
     Policy(EvalPolicyArgs),
     Features(EvalFeatureArgs),
     Outcome(EvalOutcomeArgs),
+    Lexical(EvalLexicalArgs),
     History(EvalHistoryArgs),
     Health(EvalHealthArgs),
     Baselines(EvalBaselineArgs),
@@ -1077,6 +1078,30 @@ struct EvalOutcomeArgs {
 enum EvalOutcomeCommand {
     #[command(about = "Compare plan-only, brief, standard, and deep feedback outcomes.")]
     Compare(EvalFeedbackListArgs),
+}
+
+#[derive(Debug, Args)]
+struct EvalLexicalArgs {
+    #[command(subcommand)]
+    command: EvalLexicalCommand,
+}
+
+#[derive(Debug, Subcommand)]
+enum EvalLexicalCommand {
+    #[command(about = "Compare BM25 lexical search against the legacy heuristic scanner.")]
+    Compare(EvalLexicalCompareArgs),
+}
+
+#[derive(Debug, Args)]
+struct EvalLexicalCompareArgs {
+    #[arg(long)]
+    repo: Option<PathBuf>,
+    #[arg(long)]
+    query: String,
+    #[arg(long, default_value_t = 10)]
+    limit: usize,
+    #[arg(long, value_enum, default_value_t = PackFormat::Markdown)]
+    format: PackFormat,
 }
 
 #[derive(Debug, Clone, ValueEnum)]
@@ -2229,6 +2254,20 @@ fn main() -> Result<()> {
                     match args.format {
                         PackFormat::Markdown => {
                             println!("{}", render_outcome_comparison_report(&report))
+                        }
+                        PackFormat::Json => println!("{}", serde_json::to_string_pretty(&report)?),
+                    }
+                }
+            },
+            EvalCommand::Lexical(args) => match args.command {
+                EvalLexicalCommand::Compare(args) => {
+                    let start = args.repo.clone().unwrap_or(std::env::current_dir()?);
+                    let repo = RepoRoot::discover_from(&start)?;
+                    let report =
+                        build_lexical_comparison_report(&repo.path, &args.query, args.limit)?;
+                    match args.format {
+                        PackFormat::Markdown => {
+                            println!("{}", render_lexical_comparison_report(&report))
                         }
                         PackFormat::Json => println!("{}", serde_json::to_string_pretty(&report)?),
                     }
@@ -4288,6 +4327,187 @@ fn render_policy_experiment_report(report: &RetrievalPolicyExperimentReport) -> 
         print_diagnostics_to_string(&mut output, &report.diagnostics);
     }
     output
+}
+
+fn build_lexical_comparison_report(
+    repo_root: &Path,
+    query: &str,
+    limit: usize,
+) -> Result<serde_json::Value> {
+    let options = SearchOptions {
+        limit: limit.max(1),
+    };
+    let bm25 = lexical_search_report(repo_root, query, &options)?;
+    let legacy = legacy_lexical_search_report(repo_root, query, &options)?;
+    let bm25_paths = bm25
+        .results
+        .iter()
+        .map(|result| result.path.clone())
+        .collect::<BTreeSet<_>>();
+    let legacy_paths = legacy
+        .results
+        .iter()
+        .map(|result| result.path.clone())
+        .collect::<BTreeSet<_>>();
+    let overlap = bm25_paths.intersection(&legacy_paths).count();
+    let bm25_only = bm25_paths
+        .difference(&legacy_paths)
+        .cloned()
+        .collect::<Vec<_>>();
+    let legacy_only = legacy_paths
+        .difference(&bm25_paths)
+        .cloned()
+        .collect::<Vec<_>>();
+    let bm25_top_path = bm25.results.first().map(|result| result.path.clone());
+    let legacy_top_path = legacy.results.first().map(|result| result.path.clone());
+    let top_path_changed = bm25_top_path != legacy_top_path;
+    let canonical_repo = fs::canonicalize(repo_root)?;
+    let repo_label = canonical_repo
+        .file_name()
+        .and_then(|name| name.to_str())
+        .unwrap_or("repo")
+        .to_string();
+
+    Ok(serde_json::json!({
+        "schemaVersion": "ctxhelm-lexical-comparison-v1",
+        "repo": {
+            "label": repo_label,
+            "pathHash": hash_text(&canonical_repo.to_string_lossy())
+        },
+        "query": {
+            "queryHash": hash_text(query.trim()),
+            "rawQueryStoredInReport": false
+        },
+        "limit": options.limit,
+        "bm25": {
+            "backend": "tantivy_bm25_fielded_v1",
+            "results": summarize_search_results(&bm25),
+            "cacheStatus": bm25.cache_status,
+            "diagnostics": summarize_diagnostics(&bm25.diagnostics)
+        },
+        "legacy": {
+            "backend": "legacy_heuristic_scanner_v1",
+            "results": summarize_search_results(&legacy),
+            "cacheStatus": legacy.cache_status,
+            "diagnostics": summarize_diagnostics(&legacy.diagnostics)
+        },
+        "comparison": {
+            "overlapAtLimit": overlap,
+            "bm25Only": bm25_only,
+            "legacyOnly": legacy_only,
+            "bm25TopPath": bm25_top_path,
+            "legacyTopPath": legacy_top_path,
+            "topPathChanged": top_path_changed
+        },
+        "privacyStatus": {
+            "localOnly": true,
+            "sourceTextLogged": false,
+            "rawQueryStoredInReport": false,
+            "resultReasonsOmitted": true
+        }
+    }))
+}
+
+fn summarize_search_results(report: &SearchReport) -> Vec<serde_json::Value> {
+    report
+        .results
+        .iter()
+        .map(|result| {
+            serde_json::json!({
+                "path": result.path,
+                "role": result.role,
+                "language": result.language,
+                "score": result.score
+            })
+        })
+        .collect()
+}
+
+fn summarize_diagnostics(diagnostics: &[Diagnostic]) -> serde_json::Value {
+    let mut by_code: BTreeMap<String, usize> = BTreeMap::new();
+    let mut by_severity: BTreeMap<String, usize> = BTreeMap::new();
+    for diagnostic in diagnostics {
+        *by_code.entry(diagnostic.code.clone()).or_default() += 1;
+        *by_severity
+            .entry(format!("{:?}", diagnostic.severity))
+            .or_default() += 1;
+    }
+    serde_json::json!({
+        "count": diagnostics.len(),
+        "byCode": by_code,
+        "bySeverity": by_severity
+    })
+}
+
+fn hash_text(text: &str) -> String {
+    blake3::hash(text.as_bytes()).to_hex().to_string()
+}
+
+fn render_lexical_comparison_report(report: &serde_json::Value) -> String {
+    let mut output = String::from("# ctxhelm Lexical Comparison\n\n");
+    output.push_str("This source-free report compares the active Tantivy/BM25 lexical backend against the pre-BM25 heuristic scanner for one query.\n\n");
+    output.push_str(&format!(
+        "- Schema: `{}`\n- Repo: `{}`\n- Limit: `{}`\n- Raw query stored in report: `{}`\n- Source text logged: `{}`\n- Result reasons omitted: `{}`\n- Overlap@limit: `{}`\n- BM25 top path: `{}`\n- Legacy top path: `{}`\n- Top path changed: `{}`\n\n",
+        report["schemaVersion"].as_str().unwrap_or("unknown"),
+        report["repo"]["label"].as_str().unwrap_or("repo"),
+        report["limit"].as_u64().unwrap_or(0),
+        report["privacyStatus"]["rawQueryStoredInReport"].as_bool().unwrap_or(false),
+        report["privacyStatus"]["sourceTextLogged"].as_bool().unwrap_or(true),
+        report["privacyStatus"]["resultReasonsOmitted"].as_bool().unwrap_or(false),
+        report["comparison"]["overlapAtLimit"].as_u64().unwrap_or(0),
+        report["comparison"]["bm25TopPath"].as_str().unwrap_or("none"),
+        report["comparison"]["legacyTopPath"].as_str().unwrap_or("none"),
+        report["comparison"]["topPathChanged"].as_bool().unwrap_or(false),
+    ));
+    output.push_str("## BM25 Results\n\n");
+    render_lexical_result_rows(&mut output, &report["bm25"]["results"]);
+    output.push_str("\n## Legacy Results\n\n");
+    render_lexical_result_rows(&mut output, &report["legacy"]["results"]);
+    output.push_str("\n## Differences\n\n");
+    output.push_str(&format!(
+        "- BM25-only paths: `{}`\n- Legacy-only paths: `{}`\n",
+        string_array_len(&report["comparison"]["bm25Only"]),
+        string_array_len(&report["comparison"]["legacyOnly"]),
+    ));
+    if let Some(paths) = report["comparison"]["bm25Only"].as_array() {
+        for path in paths {
+            if let Some(path) = path.as_str() {
+                output.push_str(&format!("  - BM25-only `{path}`\n"));
+            }
+        }
+    }
+    if let Some(paths) = report["comparison"]["legacyOnly"].as_array() {
+        for path in paths {
+            if let Some(path) = path.as_str() {
+                output.push_str(&format!("  - Legacy-only `{path}`\n"));
+            }
+        }
+    }
+    output
+}
+
+fn render_lexical_result_rows(output: &mut String, results: &serde_json::Value) {
+    let Some(results) = results.as_array() else {
+        output.push_str("- No results.\n");
+        return;
+    };
+    if results.is_empty() {
+        output.push_str("- No results.\n");
+        return;
+    }
+    for result in results {
+        output.push_str(&format!(
+            "- `{}` role `{}` language `{}` score `{:.2}`\n",
+            result["path"].as_str().unwrap_or("unknown"),
+            result["role"].as_str().unwrap_or("unknown"),
+            result["language"].as_str().unwrap_or("none"),
+            result["score"].as_f64().unwrap_or(0.0),
+        ));
+    }
+}
+
+fn string_array_len(value: &serde_json::Value) -> usize {
+    value.as_array().map(Vec::len).unwrap_or_default()
 }
 
 fn render_paired_baseline_report(report: &PairedBaselineAnalysisReport) -> String {

@@ -113,6 +113,69 @@ pub fn lexical_search_report(
     Ok(report)
 }
 
+pub fn legacy_lexical_search_report(
+    repo_root: impl AsRef<Path>,
+    query: &str,
+    options: &SearchOptions,
+) -> Result<SearchReport, InventoryError> {
+    let repo_root = canonicalize(repo_root.as_ref())?;
+    let query_terms = query_terms(query);
+    let inventory_report = load_or_refresh_inventory(&repo_root, &InventoryOptions::default())?;
+    let mut diagnostics = inventory_report.diagnostics.clone();
+    let cache_status = inventory_report.cache_status.clone();
+    if query_terms.is_empty() {
+        return Ok(SearchReport {
+            results: Vec::new(),
+            diagnostics,
+            cache_status,
+        });
+    }
+
+    let mut results = Vec::new();
+    for file in &inventory_report.inventory.files {
+        if file.generated || file.role == FileRole::Sensitive || file.ignored {
+            continue;
+        }
+
+        let source = read_safe_source(
+            &repo_root,
+            &inventory_report.inventory,
+            &file.path,
+            SOURCE_READ_MAX_BYTES,
+        )?;
+        diagnostics.extend(source.diagnostics);
+        let SourceReadStatus::Read = source.status else {
+            continue;
+        };
+        let content = source.text.unwrap_or_default();
+        let Some((score, reason)) = score_file(file, &content, &query_terms) else {
+            continue;
+        };
+
+        results.push(SearchResult {
+            path: file.path.clone(),
+            role: file.role.clone(),
+            language: file.language.clone(),
+            score,
+            reason,
+        });
+    }
+
+    results.sort_by(|left, right| {
+        right
+            .score
+            .total_cmp(&left.score)
+            .then_with(|| left.path.cmp(&right.path))
+    });
+    results.truncate(options.limit.max(1));
+
+    Ok(SearchReport {
+        results,
+        diagnostics,
+        cache_status,
+    })
+}
+
 fn persist_lexical_search_cache(path: &Path, report: &SearchReport) -> Result<(), InventoryError> {
     if let Some(parent) = path.parent() {
         fs::create_dir_all(parent).map_err(|source| InventoryError::CreateDir {

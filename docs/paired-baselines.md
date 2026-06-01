@@ -80,10 +80,33 @@ it may still mean ctxhelm adds tests, validation commands, graph evidence, and
 progressive context structure. Lexical regression is serious and should block
 world-class claims until the missed-family taxonomy explains it.
 
+## Lexical Backend Comparison
+
+`ctxhelm eval baselines` treats the active lexical implementation as the
+lexical baseline. After the BM25 backend landed, use `ctxhelm eval lexical
+compare` when you need to compare that active backend against the previous
+heuristic scanner on a single source-free query:
+
+```bash
+ctxhelm eval lexical compare --repo /path/to/repo --query "requireSession" --limit 10
+ctxhelm eval lexical compare --repo /path/to/repo --query "requireSession" --limit 10 --format json
+```
+
+The comparison report includes:
+
+- query hash, not raw query text;
+- source-free result rows containing path, role, language, and score;
+- overlap@limit, top-path changes, BM25-only paths, and legacy-only paths;
+- backend diagnostics summarized by code/severity count;
+- local-only privacy status with source text and result reasons omitted.
+
+Use this command for R&D slices that need to measure whether fielded BM25 and
+symbol facets changed candidate ordering before promoting broader retrieval
+claims.
+
 ## Privacy Boundary
 
 The JSON output is intended for local eval storage, benchmark comparison, and
 future policy learning. It must stay source-free. Treat a report as invalid if
 it includes raw source text, commit subjects, user prompts, stack traces,
 terminal output, or secret-bearing values.
-

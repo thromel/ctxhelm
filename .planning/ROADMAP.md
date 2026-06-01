@@ -106,6 +106,7 @@ v2.5 therefore focuses on measured retrieval quality, not more surface area. The
 - [x] **Phase 149: Public v1.1.11 Currentness** - The current public archive and Homebrew tap target the latest product commit, include Codex diagnostic hardening, pass public freshness/install/tap checks, and carry refreshed public-archive Claude Code and Codex evidence.
 - [x] **Phase 152: Native-Agent Outcome Suite** - The paired Claude Code agent-run harness now accepts source-free task suites, aggregates native baseline versus ctxhelm-assisted lane metrics, and renders suite reports through `ctxhelm eval agent-run`.
 - [x] **Phase 153: BM25 Symbol Lexical Index** - Lexical search now uses a query-time Tantivy/BM25 fielded index with symbol facets and exact-match bonuses while keeping source-derived inverted index data in memory.
+- [x] **Phase 154: BM25 Legacy Comparison Report** - `ctxhelm eval lexical compare` now produces a source-free report comparing active BM25 lexical ranking against the legacy heuristic scanner, including overlap, top-path changes, backend-only paths, and privacy metadata.
 
 ## Phase Details
 

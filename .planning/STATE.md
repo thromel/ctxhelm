@@ -4,7 +4,7 @@ milestone: v2.5
 milestone_name: Production Retrieval Quality
 status: active
 last_updated: "2026-06-02T00:00:00Z"
-last_activity: 2026-06-02 -- Phase 153 replaced lexical search's hot path with a query-time Tantivy/BM25 fielded index plus symbol facets while keeping source-derived index data in memory
+last_activity: 2026-06-02 -- Phase 154 added a source-free lexical backend comparison report for measuring active BM25 ranking against the legacy heuristic scanner
 progress:
   total_phases: 85
   completed_phases: 85
@@ -17,10 +17,10 @@ progress:
 
 ## Current Position
 
-Phase: 153 - BM25 Symbol Lexical Index
-Plan: 153-bm25-symbol-lexical-index
+Phase: 154 - BM25 Legacy Comparison Report
+Plan: 154-bm25-legacy-comparison-report
 Status: Complete
-Last activity: 2026-06-02 -- Phase 153 added Tantivy-backed query-time BM25 lexical retrieval over path, filename, role, language, symbols, and safe content, filtered zero-weight task verbs before BM25 parsing, and preserved source-free outputs by not persisting source-derived inverted indexes.
+Last activity: 2026-06-02 -- Phase 154 added `ctxhelm eval lexical compare` so maintainers can compare active Tantivy/BM25 lexical ranking against the pre-BM25 heuristic scanner without storing raw query text, raw source, or result reasons in the report.
 
 ## Project Reference
 
@@ -130,6 +130,7 @@ Planned phases:
 - Phase 151: Public v1.1.12 Multi-Platform Currentness (complete follow-up)
 - Phase 152: Native-Agent Outcome Suite (complete follow-up)
 - Phase 153: BM25 Symbol Lexical Index (complete follow-up)
+- Phase 154: BM25 Legacy Comparison Report (complete follow-up)
 
 ## Last Completed Milestone
 

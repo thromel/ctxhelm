@@ -62,7 +62,8 @@ pub use related_tests::{
     RelatedTestsReport,
 };
 pub use search::{
-    lexical_search, lexical_search_report, SearchOptions, SearchReport, SearchResult,
+    legacy_lexical_search_report, lexical_search, lexical_search_report, SearchOptions,
+    SearchReport, SearchResult,
 };
 pub use semantic::{
     normalized_provider, semantic_document_report, semantic_search, semantic_search_report,
@@ -367,6 +368,39 @@ mod tests {
 
         let results = lexical_search(&repo, "session test", &SearchOptions { limit: 5 }).unwrap();
         assert_eq!(results[0].path, "tests/auth/session.test.ts");
+
+        std::env::remove_var("CTXHELM_HOME");
+    }
+
+    #[test]
+    fn legacy_lexical_search_report_keeps_pre_bm25_scanner_available() {
+        let _guard = env_lock();
+        let temp = tempfile::tempdir().unwrap();
+        let repo = temp.path().join("repo");
+        let home = temp.path().join("ctxhelm-home");
+        fs::create_dir_all(repo.join(".git")).unwrap();
+        fs::create_dir_all(repo.join("src/auth")).unwrap();
+        fs::write(
+            repo.join("src/auth/session.ts"),
+            "export function requireSession() { return getSession(); }\n",
+        )
+        .unwrap();
+        std::env::set_var("CTXHELM_HOME", &home);
+
+        write_inventory(&repo, &InventoryOptions::default()).unwrap();
+        let bm25 =
+            lexical_search_report(&repo, "requireSession", &SearchOptions { limit: 5 }).unwrap();
+        let legacy =
+            legacy_lexical_search_report(&repo, "requireSession", &SearchOptions { limit: 5 })
+                .unwrap();
+
+        assert_eq!(bm25.results[0].path, "src/auth/session.ts");
+        assert_eq!(legacy.results[0].path, "src/auth/session.ts");
+        assert!(bm25.results[0].reason.contains("bm25 fielded score"));
+        assert!(!legacy.results[0].reason.contains("bm25 fielded score"));
+        assert!(legacy.results[0]
+            .reason
+            .contains("content matched `requiresession`"));
 
         std::env::remove_var("CTXHELM_HOME");
     }
