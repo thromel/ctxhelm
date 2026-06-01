@@ -31,10 +31,14 @@ The release gate and `scripts/check-product-proof.py` block unexplained all-file
 Product-proof JSON also includes `releaseGate.lexicalComparison`, a suite-level
 summary of the same boundary. `allFileClaim` reports whether ctxpack beats,
 matches, or trails lexical when every safe changed file is counted together.
-`contextClaim` reports the comparison after validation targets are removed from
-the context channel. This prevents production notes from overclaiming
-repository-wide lexical wins when the measured claim is narrower: context
-selection plus separately covered validation.
+`agentEvidenceClaim` reports the same comparison across the actual evidence set
+ctxpack gives an agent: selected context files plus related tests and validation
+commands. This is the production adoption claim because coding agents consume
+both context and verification guidance. In the same summary, `contextClaim`
+reports the comparison after validation targets are removed from the context
+channel. The three claims prevent production notes from overclaiming
+repository-wide target-file wins when the measured claim is narrower: selected
+agent evidence plus separately reported target-file and context-channel scores.
 
 v2.3 treats benchmark suites as fixed corpus manifests. Older suite files still work, but v2.3+ manifests should include a manifest version, corpus ID, privacy label, revision range ID, and optional locked baseline metadata so quality claims are reproducible.
 

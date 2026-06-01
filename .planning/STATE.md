@@ -3,11 +3,11 @@ gsd_state_version: 1.0
 milestone: v2.5
 milestone_name: Production Retrieval Quality
 status: active
-last_updated: "2026-06-01T01:19:33Z"
-last_activity: 2026-06-01 -- Phase 125 added explicit lexical comparison proof boundaries
+last_updated: "2026-06-01T01:43:20Z"
+last_activity: 2026-06-01 -- Phase 126 added agent-evidence lexical comparison proof
 progress:
-  total_phases: 57
-  completed_phases: 57
+  total_phases: 58
+  completed_phases: 58
   total_plans: 7
   completed_plans: 7
   percent: 100
@@ -17,10 +17,10 @@ progress:
 
 ## Current Position
 
-Phase: 125 - Lexical Comparison Proof Boundary
-Plan: 125-lexical-comparison-proof-boundary
+Phase: 126 - Agent Evidence Lexical Comparison
+Plan: 126-agent-evidence-lexical-comparison
 Status: Complete
-Last activity: 2026-06-01 -- Phase 125 added source-free `releaseGate.lexicalComparison` metadata so product proof artifacts distinguish all-file lexical comparison from non-test context-channel comparison.
+Last activity: 2026-06-01 -- Phase 126 added source-free agent-evidence lexical comparison to product proof so release artifacts distinguish target-file-only recall from the actual evidence set ctxpack gives agents through context files, related tests, and validation commands.
 
 ## Project Reference
 
@@ -102,6 +102,7 @@ Planned phases:
 - Phase 123: Context Area Coverage Profile (complete follow-up)
 - Phase 124: Context Area Inspection Strategy (complete follow-up)
 - Phase 125: Lexical Comparison Proof Boundary (complete follow-up)
+- Phase 126: Agent Evidence Lexical Comparison (complete follow-up)
 
 ## Last Completed Milestone
 
@@ -119,7 +120,7 @@ Planned phases:
 
 ## Next Step
 
-Continue production-readiness work from remaining measured gaps: continue broad source-free area/ranking improvements and refresh real-client proof evidence when client versions change. Broad evals now distinguish files covered only by surfaced context areas from files with no candidate signal, clean cold full-fixture proof promotes across RefactoringMiner, ctxpack, ReAgent, and VeriSchema, and product proof now explicitly reports `releaseGate.lexicalComparison`: current all-file claim `trails_any_corpus`, current context-channel claim `mixed`, all-file average delta `-0.039326638`, and context average delta `+0.23022664`. The full packaged release gate passes from a clean checkout with the clean fixture proof required, release-candidate metadata marks the local archive channel ready while deferring Homebrew/crates.io/signed installers/self-update, the public `v1.1.0` GitHub archive release is published and source-free asset digests are verified, the public archive install path passes checksum/archive/temp-install/doctor/first-pack proof, optional public-archive real-client proof records Claude Code tool-call evidence and Codex CLI source-free skip evidence without missing-evidence regressions, broad context-area guidance covers more wide-task implementation areas, packs tell agents concrete source/docs paths to inspect next, plan-level context areas expose source-free role signals, MCP context-area resources explicitly label their counts/read batches as safe-inventory scope and now expose source-free coverage profiles plus inspection strategies with progressive read order, path budget, and stop rules, ctxpack-index release-validation tests now share one process-environment lock for `CTXPACK_HOME`, public CI now enforces formatting, clippy, locked tests, CLI help, release-doc consistency, and release-gate smoke on pushes/PRs using Node 24 action majors without Node 20 warning text, gap summaries point to area resources and bounded next-read paths, the product-proof checker gates those gap summaries and fails cleanly on missing embedded repo reports, history-unavailable repos now produce embedded insufficient-evidence reports instead of `null` reports, repo-scoped resources work after explicit-repo MCP tools even from a wrong server cwd, broad fixed-corpus metric floors block silent selection regressions, governance/proof tasks classify broad historical/eval language reliably, archive/docs broad tasks now receive context-area guidance without perturbing target-file source floors, real-client smoke artifacts now carry source-free request metadata instead of boolean-only claims, and the full four-repo proof now hydrates all configured repositories instead of hanging or returning missing reports.
+Continue production-readiness work from remaining measured gaps: continue broad source-free ranking improvements and refresh real-client proof evidence when client versions change. Broad evals now distinguish files covered only by surfaced context areas from files with no candidate signal, clean cold full-fixture proof promotes across RefactoringMiner, ctxpack, ReAgent, and VeriSchema, and product proof now explicitly reports `releaseGate.lexicalComparison`: current all-file claim `trails_any_corpus`, current agent-evidence claim `mixed` with zero trailing corpora, current context-channel claim `mixed`, all-file average delta `-0.039326638`, agent-evidence average delta `+0.18792826`, and context average delta `+0.23022664`. The full packaged release gate passes from a clean checkout with the clean fixture proof required, release-candidate metadata marks the local archive channel ready while deferring Homebrew/crates.io/signed installers/self-update, the public `v1.1.0` GitHub archive release is published and source-free asset digests are verified, the public archive install path passes checksum/archive/temp-install/doctor/first-pack proof, optional public-archive real-client proof records Claude Code tool-call evidence and Codex CLI source-free skip evidence without missing-evidence regressions, broad context-area guidance covers more wide-task implementation areas, packs tell agents concrete source/docs paths to inspect next, plan-level context areas expose source-free role signals, MCP context-area resources explicitly label their counts/read batches as safe-inventory scope and now expose source-free coverage profiles plus inspection strategies with progressive read order, path budget, and stop rules, ctxpack-index release-validation tests now share one process-environment lock for `CTXPACK_HOME`, public CI now enforces formatting, clippy, locked tests, CLI help, release-doc consistency, and release-gate smoke on pushes/PRs using Node 24 action majors without Node 20 warning text, gap summaries point to area resources and bounded next-read paths, the product-proof checker gates those gap summaries and fails cleanly on missing embedded repo reports, history-unavailable repos now produce embedded insufficient-evidence reports instead of `null` reports, repo-scoped resources work after explicit-repo MCP tools even from a wrong server cwd, broad fixed-corpus metric floors block silent selection regressions, governance/proof tasks classify broad historical/eval language reliably, archive/docs broad tasks now receive context-area guidance without perturbing target-file source floors, real-client smoke artifacts now carry source-free request metadata instead of boolean-only claims, and the full four-repo proof now hydrates all configured repositories instead of hanging or returning missing reports.
 
 ## Operator Next Steps
 
@@ -209,4 +210,5 @@ Continue production-readiness work from remaining measured gaps: continue broad 
 - Phase 123 adds source-free coverage profiles to context-area MCP resources. Latest proof notes: `.planning/e2e/2026-06-01-phase123-context-area-coverage-profile.md`; durable source-free summary: `.ctxpack/e2e/phase123-context-area-coverage-profile.json`; resources now expose `coverageProfile.profile`, `dominantRole`, `recommendedFirstBatch`, and source-free role-family counts.
 - Phase 124 adds source-free inspection strategies to context-area MCP resources. Latest proof notes: `.planning/e2e/2026-06-01-phase124-context-area-inspection-strategy.md`; durable source-free summary: `.ctxpack/e2e/phase124-context-area-inspection-strategy.json`; resources now expose `inspectionStrategy.initialBatch`, `preferredOrder`, `pathBudget`, and `stopRule` without changing ranking.
 - Phase 125 adds source-free lexical comparison summaries to product proof. Latest proof notes: `.planning/e2e/2026-06-01-phase125-lexical-comparison-proof.md`; durable source-free summary: `.ctxpack/e2e/phase125-lexical-comparison-proof.json`; `releaseGate.lexicalComparison` now makes all-file and context-channel lexical claims explicit.
-- Next work should use `releaseGate.lexicalComparison` as the ranking-improvement scoreboard, or refresh optional real-client proof again when client versions change.
+- Phase 126 adds source-free agent-evidence lexical comparison. Latest proof notes: `.planning/e2e/2026-06-01-phase126-agent-evidence-lexical-comparison.md`; durable source-free summary: `.ctxpack/e2e/phase126-agent-evidence-lexical-comparison.json`; `agentEvidenceClaim = mixed` with beat `3`, match `1`, trail `0`, and average agent-evidence delta `+0.18792826`.
+- Next work should use the remaining target-file-only `allFileClaim = trails_any_corpus` and protected target miss rates as the ranking-improvement scoreboard, or refresh optional real-client proof again when client versions change.

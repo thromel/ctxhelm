@@ -469,16 +469,22 @@ pub struct ProductProofLexicalComparison {
     pub all_file_beat_count: usize,
     pub all_file_match_count: usize,
     pub all_file_trail_count: usize,
+    pub agent_evidence_beat_count: usize,
+    pub agent_evidence_match_count: usize,
+    pub agent_evidence_trail_count: usize,
     pub context_beat_count: usize,
     pub context_match_count: usize,
     pub context_trail_count: usize,
     pub average_file_recall_at_10: f32,
     pub average_lexical_file_recall_at_10: f32,
     pub average_file_delta_at_10: f32,
+    pub average_agent_evidence_recall_at_10: f32,
+    pub average_agent_evidence_delta_at_10: f32,
     pub average_context_recall_at_10: f32,
     pub average_lexical_context_recall_at_10: f32,
     pub average_context_delta_at_10: f32,
     pub all_file_claim: ProductProofLexicalClaim,
+    pub agent_evidence_claim: ProductProofLexicalClaim,
     pub context_claim: ProductProofLexicalClaim,
 }
 
@@ -489,16 +495,22 @@ impl Default for ProductProofLexicalComparison {
             all_file_beat_count: 0,
             all_file_match_count: 0,
             all_file_trail_count: 0,
+            agent_evidence_beat_count: 0,
+            agent_evidence_match_count: 0,
+            agent_evidence_trail_count: 0,
             context_beat_count: 0,
             context_match_count: 0,
             context_trail_count: 0,
             average_file_recall_at_10: 0.0,
             average_lexical_file_recall_at_10: 0.0,
             average_file_delta_at_10: 0.0,
+            average_agent_evidence_recall_at_10: 0.0,
+            average_agent_evidence_delta_at_10: 0.0,
             average_context_recall_at_10: 0.0,
             average_lexical_context_recall_at_10: 0.0,
             average_context_delta_at_10: 0.0,
             all_file_claim: ProductProofLexicalClaim::NoEvidence,
+            agent_evidence_claim: ProductProofLexicalClaim::NoEvidence,
             context_claim: ProductProofLexicalClaim::NoEvidence,
         }
     }
@@ -525,6 +537,10 @@ pub struct ProductProofCorpusVerdict {
     pub file_recall_at_10: f32,
     pub lexical_baseline_recall_at_10: f32,
     pub lexical_delta_at_10: f32,
+    #[serde(default)]
+    pub agent_evidence_recall_at_10: f32,
+    #[serde(default)]
+    pub agent_evidence_delta_at_10: f32,
     pub context_recall_at_10: f32,
     pub lexical_context_recall_at_10: f32,
     pub context_delta_at_10: f32,
@@ -1211,6 +1227,16 @@ fn product_proof_lexical_comparison(
         .filter(|verdict| verdict.lexical_delta_at_10 < -0.03)
         .count();
     let all_file_match_count = corpus_count - all_file_beat_count - all_file_trail_count;
+    let agent_evidence_beat_count = evaluated
+        .iter()
+        .filter(|verdict| verdict.agent_evidence_delta_at_10 > 0.03)
+        .count();
+    let agent_evidence_trail_count = evaluated
+        .iter()
+        .filter(|verdict| verdict.agent_evidence_delta_at_10 < -0.03)
+        .count();
+    let agent_evidence_match_count =
+        corpus_count - agent_evidence_beat_count - agent_evidence_trail_count;
     let context_beat_count = evaluated
         .iter()
         .filter(|verdict| verdict.context_delta_at_10 > 0.03)
@@ -1230,6 +1256,11 @@ fn product_proof_lexical_comparison(
         .map(|verdict| verdict.lexical_baseline_recall_at_10)
         .sum::<f32>()
         / corpus_count_f32;
+    let average_agent_evidence_recall_at_10 = evaluated
+        .iter()
+        .map(|verdict| verdict.agent_evidence_recall_at_10)
+        .sum::<f32>()
+        / corpus_count_f32;
     let average_context_recall_at_10 = evaluated
         .iter()
         .map(|verdict| verdict.context_recall_at_10)
@@ -1246,14 +1277,20 @@ fn product_proof_lexical_comparison(
         all_file_beat_count,
         all_file_match_count,
         all_file_trail_count,
+        agent_evidence_beat_count,
+        agent_evidence_match_count,
+        agent_evidence_trail_count,
         context_beat_count,
         context_match_count,
         context_trail_count,
         average_file_delta_at_10: average_file_recall_at_10 - average_lexical_file_recall_at_10,
+        average_agent_evidence_delta_at_10: average_agent_evidence_recall_at_10
+            - average_lexical_file_recall_at_10,
         average_context_delta_at_10: average_context_recall_at_10
             - average_lexical_context_recall_at_10,
         average_file_recall_at_10,
         average_lexical_file_recall_at_10,
+        average_agent_evidence_recall_at_10,
         average_context_recall_at_10,
         average_lexical_context_recall_at_10,
         all_file_claim: lexical_claim(
@@ -1261,6 +1298,12 @@ fn product_proof_lexical_comparison(
             all_file_beat_count,
             all_file_match_count,
             all_file_trail_count,
+        ),
+        agent_evidence_claim: lexical_claim(
+            corpus_count,
+            agent_evidence_beat_count,
+            agent_evidence_match_count,
+            agent_evidence_trail_count,
         ),
         context_claim: lexical_claim(
             corpus_count,
@@ -1453,6 +1496,8 @@ fn product_proof_corpus_verdict(repo: &BenchmarkRepoReport) -> ProductProofCorpu
             file_recall_at_10: 0.0,
             lexical_baseline_recall_at_10: 0.0,
             lexical_delta_at_10: 0.0,
+            agent_evidence_recall_at_10: 0.0,
+            agent_evidence_delta_at_10: 0.0,
             context_recall_at_10: 0.0,
             lexical_context_recall_at_10: 0.0,
             context_delta_at_10: 0.0,
@@ -1472,6 +1517,9 @@ fn product_proof_corpus_verdict(repo: &BenchmarkRepoReport) -> ProductProofCorpu
         };
     };
     let lexical_delta_at_10 = report.file_recall_at_10 - report.lexical_baseline_recall_at_10;
+    let agent_evidence_recall_at_10 = agent_evidence_recall_at_10(report);
+    let agent_evidence_delta_at_10 =
+        agent_evidence_recall_at_10 - report.lexical_baseline_recall_at_10;
     let context_comparison = context_recall_comparison_at_10(report);
     let context_vs_all_file_delta_at_10 = context_comparison.ctxpack - report.file_recall_at_10;
     let lexical_context_vs_all_file_delta_at_10 =
@@ -1572,6 +1620,8 @@ fn product_proof_corpus_verdict(repo: &BenchmarkRepoReport) -> ProductProofCorpu
         file_recall_at_10: report.file_recall_at_10,
         lexical_baseline_recall_at_10: report.lexical_baseline_recall_at_10,
         lexical_delta_at_10,
+        agent_evidence_recall_at_10,
+        agent_evidence_delta_at_10,
         context_recall_at_10: context_comparison.ctxpack,
         lexical_context_recall_at_10: context_comparison.lexical,
         context_delta_at_10: context_comparison.delta,
@@ -1594,6 +1644,46 @@ struct ContextRecallComparison {
     ctxpack: f32,
     lexical: f32,
     delta: f32,
+}
+
+fn agent_evidence_recall_at_10(report: &HistoricalEvalReport) -> f32 {
+    if report.commits.is_empty() {
+        return 0.0;
+    }
+    report
+        .commits
+        .iter()
+        .map(|commit| {
+            if commit.retrieval_target_files.is_empty() {
+                return 0.0;
+            }
+            let context_files = commit
+                .recommended_context_files
+                .iter()
+                .take(10)
+                .map(String::as_str)
+                .collect::<BTreeSet<_>>();
+            let test_changed_files = filter_changed_labels_by_role(
+                &commit.changed_path_labels,
+                &commit.retrieval_target_files,
+                |role| matches!(role, FileRole::Test),
+            );
+            let validation_hits = effective_validation_hit_paths(
+                &test_changed_files,
+                &commit.recommended_tests,
+                &commit.recommended_commands,
+            );
+            let hits = commit
+                .retrieval_target_files
+                .iter()
+                .filter(|path| {
+                    context_files.contains(path.as_str()) || validation_hits.contains(*path)
+                })
+                .count();
+            hits as f32 / commit.retrieval_target_files.len() as f32
+        })
+        .sum::<f32>()
+        / report.commits.len() as f32
 }
 
 fn context_recall_comparison_at_10(report: &HistoricalEvalReport) -> ContextRecallComparison {
@@ -6816,6 +6906,8 @@ mod tests {
 
         assert_eq!(verdict.status, ProductProofCorpusStatus::Beat);
         assert!((verdict.lexical_delta_at_10 + 0.20).abs() < 0.001);
+        assert!((verdict.agent_evidence_recall_at_10 - 1.0).abs() < 0.001);
+        assert!((verdict.agent_evidence_delta_at_10 - 0.20).abs() < 0.001);
         assert!((verdict.context_delta_at_10 - (1.0 / 3.0)).abs() < 0.001);
         assert!(verdict.context_vs_all_file_delta_at_10 > 0.39);
         assert!(verdict.lexical_context_vs_all_file_delta_at_10 < -0.13);
@@ -6829,6 +6921,10 @@ mod tests {
             ProductProofLexicalClaim::TrailsAnyCorpus
         );
         assert_eq!(
+            report.release_gate.lexical_comparison.agent_evidence_claim,
+            ProductProofLexicalClaim::BeatsAllCorpora
+        );
+        assert_eq!(
             report.release_gate.lexical_comparison.context_claim,
             ProductProofLexicalClaim::BeatsAllCorpora
         );
@@ -6838,6 +6934,13 @@ mod tests {
                 .lexical_comparison
                 .average_file_delta_at_10
                 < 0.0
+        );
+        assert!(
+            report
+                .release_gate
+                .lexical_comparison
+                .average_agent_evidence_delta_at_10
+                > 0.0
         );
         assert!(
             report

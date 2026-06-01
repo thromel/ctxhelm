@@ -4891,11 +4891,16 @@ fn render_product_proof_report(report: &ProductProofReport) -> String {
     let comparison = &report.release_gate.lexical_comparison;
     output.push_str("### Lexical Comparison Summary\n\n");
     output.push_str(&format!(
-        "- All-file claim: `{}` (beat `{}`, match `{}`, trail `{}` of `{}` corpora)\n- Context-channel claim: `{}` (beat `{}`, match `{}`, trail `{}` of `{}` corpora)\n- Average all-file recall@10: ctxpack `{:.3}` vs lexical `{:.3}` delta `{:+.3}`\n- Average context recall@10: ctxpack `{:.3}` vs lexical `{:.3}` delta `{:+.3}`\n\n",
+        "- All-file claim: `{}` (beat `{}`, match `{}`, trail `{}` of `{}` corpora)\n- Agent-evidence claim: `{}` (beat `{}`, match `{}`, trail `{}` of `{}` corpora)\n- Context-channel claim: `{}` (beat `{}`, match `{}`, trail `{}` of `{}` corpora)\n- Average all-file recall@10: ctxpack `{:.3}` vs lexical `{:.3}` delta `{:+.3}`\n- Average agent-evidence recall@10: ctxpack `{:.3}` vs lexical `{:.3}` delta `{:+.3}`\n- Average context recall@10: ctxpack `{:.3}` vs lexical `{:.3}` delta `{:+.3}`\n\n",
         lexical_claim_label(&comparison.all_file_claim),
         comparison.all_file_beat_count,
         comparison.all_file_match_count,
         comparison.all_file_trail_count,
+        comparison.corpus_count,
+        lexical_claim_label(&comparison.agent_evidence_claim),
+        comparison.agent_evidence_beat_count,
+        comparison.agent_evidence_match_count,
+        comparison.agent_evidence_trail_count,
         comparison.corpus_count,
         lexical_claim_label(&comparison.context_claim),
         comparison.context_beat_count,
@@ -4905,6 +4910,9 @@ fn render_product_proof_report(report: &ProductProofReport) -> String {
         comparison.average_file_recall_at_10,
         comparison.average_lexical_file_recall_at_10,
         comparison.average_file_delta_at_10,
+        comparison.average_agent_evidence_recall_at_10,
+        comparison.average_lexical_file_recall_at_10,
+        comparison.average_agent_evidence_delta_at_10,
         comparison.average_context_recall_at_10,
         comparison.average_lexical_context_recall_at_10,
         comparison.average_context_delta_at_10,
@@ -4915,13 +4923,15 @@ fn render_product_proof_report(report: &ProductProofReport) -> String {
     } else {
         for verdict in &report.release_gate.corpus_verdicts {
             output.push_str(&format!(
-                "- `{}` variant `{}`: status `{:?}`, recall@10 `{:.3}`, lexical recall@10 `{:.3}`, delta `{:+.3}`, context delta `{:+.3}`, context-vs-all-file `{:+.3}`, all-file divergence explained `{}`, test recall@10 `{:.3}`, protected miss-rate@10 `{:.3}` target `{:.3}`, runtime `{}` ms",
+                "- `{}` variant `{}`: status `{:?}`, recall@10 `{:.3}`, lexical recall@10 `{:.3}`, delta `{:+.3}`, agent-evidence recall@10 `{:.3}`, agent-evidence delta `{:+.3}`, context delta `{:+.3}`, context-vs-all-file `{:+.3}`, all-file divergence explained `{}`, test recall@10 `{:.3}`, protected miss-rate@10 `{:.3}` target `{:.3}`, runtime `{}` ms",
                 verdict.repository,
                 verdict.variant,
                 verdict.status,
                 verdict.file_recall_at_10,
                 verdict.lexical_baseline_recall_at_10,
                 verdict.lexical_delta_at_10,
+                verdict.agent_evidence_recall_at_10,
+                verdict.agent_evidence_delta_at_10,
                 verdict.context_delta_at_10,
                 verdict.context_vs_all_file_delta_at_10,
                 verdict.all_file_divergence_explained,

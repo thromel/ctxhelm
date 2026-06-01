@@ -1978,7 +1978,11 @@ fn eval_proof_generates_source_free_product_report() {
     assert_eq!(value["releaseGate"]["defaultPromotionAllowed"], false);
     assert!(value["releaseGate"]["lexicalComparison"].is_object());
     assert!(value["releaseGate"]["lexicalComparison"]["allFileClaim"].is_string());
+    assert!(value["releaseGate"]["lexicalComparison"]["agentEvidenceClaim"].is_string());
     assert!(value["releaseGate"]["lexicalComparison"]["contextClaim"].is_string());
+    assert!(
+        value["releaseGate"]["lexicalComparison"]["averageAgentEvidenceRecallAt10"].is_number()
+    );
     assert!(value["releaseGate"]["corpusVerdicts"].is_array());
     assert!(value["limitations"].is_array());
     assert!(value["helpsWhen"].is_array());

@@ -615,6 +615,14 @@ non-test context-channel comparison, so release artifacts can say when ctxpack
 beats lexical on the production context claim without implying a universal
 all-file win.
 
+Phase 126 adds the source-free `agentEvidenceClaim` and
+`averageAgentEvidenceRecallAt10` fields to the same summary. Agent evidence
+counts the files and tests ctxpack actually gives the agent through selected
+context files, related tests, and validation commands. The clean four-repo proof
+still reports `allFileClaim = trails_any_corpus`, but it now reports
+`agentEvidenceClaim = mixed` with zero trailing corpora and average
+agent-evidence delta `+0.18792826` against lexical.
+
 Phase 119 removes an observed release-validation flake in `ctxpack-index`.
 Tests in `lib.rs`, `freshness.rs`, and `storage.rs` now share one crate-wide
 test lock before mutating process-global `CTXPACK_HOME`. This prevents one
