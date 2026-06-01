@@ -5,6 +5,7 @@ use crate::storage::{
     persist_semantic_vector_records, sync_inventory_to_store, StorageError,
     StorageSemanticIndexReport, StorageSemanticVectorRecord, StoreConfig,
 };
+use crate::symbols::CodeSymbol;
 use crate::{
     dependency_edges_report, extract_symbols_report, precision_edges_path, related_tests_report,
     DependencyEdge, DependencyOptions, PrecisionEdgesFile,
@@ -99,11 +100,25 @@ impl Default for SemanticOptions {
 #[serde(rename_all = "camelCase")]
 pub struct SemanticDocumentOptions {
     pub limit: usize,
+    #[serde(default)]
+    pub query: Option<String>,
+    #[serde(default = "default_true")]
+    pub include_symbols: bool,
+    #[serde(default = "default_true")]
+    pub include_dependencies: bool,
+    #[serde(default = "default_true")]
+    pub include_related_tests: bool,
 }
 
 impl Default for SemanticDocumentOptions {
     fn default() -> Self {
-        Self { limit: 500 }
+        Self {
+            limit: 500,
+            query: None,
+            include_symbols: true,
+            include_dependencies: true,
+            include_related_tests: true,
+        }
     }
 }
 
@@ -158,42 +173,67 @@ pub fn semantic_document_report(
     let cache_status = inventory_report.cache_status.clone();
     let inventory = inventory_report.inventory;
 
-    let symbol_report = extract_symbols_report(&repo_root)?;
-    diagnostics.extend(symbol_report.diagnostics);
     let mut symbols_by_path = BTreeMap::<String, Vec<_>>::new();
-    for symbol in symbol_report.symbols {
-        symbols_by_path
-            .entry(symbol.path.clone())
-            .or_default()
-            .push(symbol);
+    if options.include_symbols {
+        let symbol_report = extract_symbols_report(&repo_root)?;
+        diagnostics.extend(symbol_report.diagnostics);
+        for symbol in symbol_report.symbols {
+            symbols_by_path
+                .entry(symbol.path.clone())
+                .or_default()
+                .push(symbol);
+        }
     }
 
-    let dependency_report =
-        dependency_edges_report(&repo_root, &DependencyOptions { limit: usize::MAX })?;
-    let precision_status = precision_status_from_dependencies(
-        &repo_root,
-        &dependency_report.edges,
-        &dependency_report.diagnostics,
-    );
-    diagnostics.extend(dependency_report.diagnostics.clone());
     let mut edges_by_path = BTreeMap::<String, Vec<DependencyEdge>>::new();
-    for edge in dependency_report.edges {
-        edges_by_path
-            .entry(edge.source_path.clone())
-            .or_default()
-            .push(edge.clone());
-        edges_by_path
-            .entry(edge.target_path.clone())
-            .or_default()
-            .push(edge);
-    }
+    let precision_status = if options.include_dependencies {
+        let dependency_report =
+            dependency_edges_report(&repo_root, &DependencyOptions { limit: usize::MAX })?;
+        let precision_status = precision_status_from_dependencies(
+            &repo_root,
+            &dependency_report.edges,
+            &dependency_report.diagnostics,
+        );
+        diagnostics.extend(dependency_report.diagnostics.clone());
+        for edge in dependency_report.edges {
+            edges_by_path
+                .entry(edge.source_path.clone())
+                .or_default()
+                .push(edge.clone());
+            edges_by_path
+                .entry(edge.target_path.clone())
+                .or_default()
+                .push(edge);
+        }
+        precision_status
+    } else {
+        precision_status_from_dependencies(&repo_root, &[], &[])
+    };
 
-    let mut documents = Vec::new();
-    for file in inventory
+    let mut semantic_files = inventory
         .files
         .iter()
         .filter(|file| semantic_document_file(file))
-    {
+        .cloned()
+        .collect::<Vec<_>>();
+    semantic_files.sort_by(|left, right| left.path.cmp(&right.path));
+    if let Some(query) = options.query.as_deref() {
+        let terms = query_terms(query);
+        semantic_files.sort_by(|left, right| {
+            semantic_file_prefilter_score(right, &terms, &symbols_by_path, &edges_by_path)
+                .total_cmp(&semantic_file_prefilter_score(
+                    left,
+                    &terms,
+                    &symbols_by_path,
+                    &edges_by_path,
+                ))
+                .then_with(|| left.path.cmp(&right.path))
+        });
+    }
+    semantic_files.truncate(options.limit.max(1));
+
+    let mut documents = Vec::new();
+    for file in semantic_files.iter() {
         let mut facets = Vec::new();
         facets.push(SemanticDocumentFacet {
             kind: SemanticDocumentFacetKind::Metadata,
@@ -202,6 +242,14 @@ pub fn semantic_document_report(
             path: None,
             line_range: None,
             weight: 0.4,
+        });
+        facets.push(SemanticDocumentFacet {
+            kind: SemanticDocumentFacetKind::Metadata,
+            label: "path".to_string(),
+            value: file.path.clone(),
+            path: Some(file.path.clone()),
+            line_range: None,
+            weight: 0.9,
         });
         if let Some(language) = &file.language {
             facets.push(SemanticDocumentFacet {
@@ -255,7 +303,7 @@ pub fn semantic_document_report(
             });
         }
 
-        if matches!(file.role, FileRole::Source) {
+        if options.include_related_tests && matches!(file.role, FileRole::Source) {
             match related_tests_report(&repo_root, std::slice::from_ref(&file.path)) {
                 Ok(test_report) => {
                     diagnostics.extend(test_report.diagnostics);
@@ -307,8 +355,9 @@ pub fn semantic_document_report(
         });
     }
 
-    documents.sort_by(|left, right| left.path.cmp(&right.path));
-    documents.truncate(options.limit.max(1));
+    if options.query.is_none() {
+        documents.sort_by(|left, right| left.path.cmp(&right.path));
+    }
     let facet_count = documents.iter().map(|document| document.facets.len()).sum();
 
     Ok(SemanticDocumentReport {
@@ -338,15 +387,18 @@ pub fn semantic_search_report(
 ) -> Result<SemanticSearchReport, InventoryError> {
     let provider = normalized_provider(&options.provider);
     let repo_root = canonicalize(repo_root.as_ref())?;
-    let inventory_report = load_or_refresh_inventory(&repo_root, &InventoryOptions::default())?;
-    let mut diagnostics = inventory_report.diagnostics.clone();
-    let cache_status = inventory_report.cache_status.clone();
+    let mut diagnostics = Vec::new();
+    let skipped_cache_status = CacheStatus {
+        status: ctxhelm_core::CacheStatusKind::Skipped,
+        path: None,
+        diagnostics: Vec::new(),
+    };
     if !options.enabled {
         diagnostics.push(semantic_disabled_diagnostic());
         return Ok(SemanticSearchReport {
             results: Vec::new(),
             diagnostics,
-            cache_status,
+            cache_status: skipped_cache_status,
             privacy_status: PrivacyStatus::local_only(),
             provider,
         });
@@ -357,7 +409,7 @@ pub fn semantic_search_report(
         return Ok(SemanticSearchReport {
             results: Vec::new(),
             diagnostics,
-            cache_status,
+            cache_status: skipped_cache_status,
             privacy_status: PrivacyStatus::local_only(),
             provider,
         });
@@ -374,14 +426,23 @@ pub fn semantic_search_report(
         return Ok(SemanticSearchReport {
             results: Vec::new(),
             diagnostics,
-            cache_status,
+            cache_status: skipped_cache_status,
             privacy_status: PrivacyStatus::local_only(),
             provider,
         });
     }
 
-    let document_report =
-        semantic_document_report(&repo_root, &SemanticDocumentOptions { limit: usize::MAX })?;
+    let document_report = semantic_document_report(
+        &repo_root,
+        &SemanticDocumentOptions {
+            limit: semantic_search_document_limit(&provider, options.limit),
+            query: Some(query.to_string()),
+            include_symbols: false,
+            include_dependencies: false,
+            include_related_tests: false,
+        },
+    )?;
+    let cache_status = document_report.cache_status.clone();
     diagnostics.extend(document_report.diagnostics);
     let original_document_count = document_report.documents.len();
     let candidate_documents =
@@ -453,8 +514,10 @@ pub fn semantic_search_report(
     }
 
     let mut results = Vec::new();
+    let semantic_terms = query_terms(query);
     for (document, file_vector) in candidate_documents.into_iter().zip(file_vectors.iter()) {
-        let score = cosine_similarity(query_vector, file_vector);
+        let exact_boost = (semantic_prefilter_score(&document, &semantic_terms) * 0.05).min(0.5);
+        let score = cosine_similarity(query_vector, file_vector) + exact_boost;
         if score < 0.08 {
             continue;
         }
@@ -464,7 +527,7 @@ pub fn semantic_search_report(
             role: document.role.clone(),
             language: document.language.clone(),
             score,
-            reason: semantic_match_reason(&provider, &matched_facets),
+            reason: semantic_match_reason(&provider, &matched_facets, exact_boost),
             provider: provider.clone(),
             document_id: Some(document.id),
             matched_facets,
@@ -498,8 +561,16 @@ pub fn semantic_vector_records(
     if !options.enabled || !provider.available {
         return Ok(Vec::new());
     }
-    let document_report =
-        semantic_document_report(&repo_root, &SemanticDocumentOptions { limit: usize::MAX })?;
+    let document_report = semantic_document_report(
+        &repo_root,
+        &SemanticDocumentOptions {
+            limit: semantic_vector_document_limit(options.limit),
+            query: None,
+            include_symbols: false,
+            include_dependencies: false,
+            include_related_tests: false,
+        },
+    )?;
     let inputs = document_report
         .documents
         .iter()
@@ -567,6 +638,26 @@ fn semantic_document_file(file: &FileInventoryEntry) -> bool {
                 | FileRole::Schema
                 | FileRole::Docs
         )
+}
+
+fn semantic_search_document_limit(provider: &SemanticProviderConfig, result_limit: usize) -> usize {
+    let result_limit = result_limit.max(1);
+    let candidate_floor = if provider.provider == LOCAL_FASTEMBED_PROVIDER {
+        local_fastembed_document_prefilter_limit()
+    } else {
+        64
+    };
+    candidate_floor
+        .max(result_limit.saturating_mul(16))
+        .min(512)
+}
+
+fn semantic_vector_document_limit(result_limit: usize) -> usize {
+    if result_limit == usize::MAX {
+        usize::MAX
+    } else {
+        result_limit.max(1)
+    }
 }
 
 fn precision_status_from_dependencies(
@@ -756,6 +847,54 @@ fn semantic_prefilter_score(document: &SemanticDocument, terms: &[String]) -> f3
     score
 }
 
+fn semantic_file_prefilter_score(
+    file: &FileInventoryEntry,
+    terms: &[String],
+    symbols_by_path: &BTreeMap<String, Vec<CodeSymbol>>,
+    edges_by_path: &BTreeMap<String, Vec<DependencyEdge>>,
+) -> f32 {
+    if terms.is_empty() {
+        return 0.0;
+    }
+    let path = file.path.to_ascii_lowercase();
+    let language = file.language.as_deref().unwrap_or("").to_ascii_lowercase();
+    let role = format!("{:?}", file.role).to_ascii_lowercase();
+    let mut score = 0.0;
+    for term in terms {
+        if path.contains(term) {
+            score += 4.0;
+        }
+        if language.contains(term) {
+            score += 0.5;
+        }
+        if role.contains(term) {
+            score += 0.4;
+        }
+        for symbol in symbols_by_path
+            .get(&file.path)
+            .into_iter()
+            .flatten()
+            .take(24)
+        {
+            let text = format!("{} {}", symbol.name, symbol.signature).to_ascii_lowercase();
+            if text.contains(term) {
+                score += if symbol.exported { 2.0 } else { 1.4 };
+            }
+        }
+        for edge in edges_by_path.get(&file.path).into_iter().flatten().take(24) {
+            let text = format!(
+                "{} {} {} {}",
+                edge.kind, edge.reason, edge.source_path, edge.target_path
+            )
+            .to_ascii_lowercase();
+            if text.contains(term) {
+                score += edge.confidence.clamp(0.1, 1.0);
+            }
+        }
+    }
+    score
+}
+
 fn matched_semantic_facets(query: &str, document: &SemanticDocument) -> Vec<SemanticDocumentFacet> {
     let terms = query_terms(query).into_iter().collect::<BTreeSet<_>>();
     let mut matched = document
@@ -789,6 +928,7 @@ fn matched_semantic_facets(query: &str, document: &SemanticDocument) -> Vec<Sema
 fn semantic_match_reason(
     provider: &SemanticProviderConfig,
     facets: &[SemanticDocumentFacet],
+    exact_boost: f32,
 ) -> String {
     let facet_summary = if facets.is_empty() {
         "metadata facets".to_string()
@@ -802,9 +942,14 @@ fn semantic_match_reason(
             .collect::<Vec<_>>()
             .join(", ")
     };
+    let boost = if exact_boost > 0.0 {
+        format!("; exact metadata boost {exact_boost:.3}")
+    } else {
+        String::new()
+    };
     format!(
-        "local semantic similarity via {} {} over source-free facets: {}",
-        provider.provider, provider.model, facet_summary
+        "local semantic similarity via {} {} over source-free facets: {}{}",
+        provider.provider, provider.model, facet_summary, boost
     )
 }
 
@@ -1195,6 +1340,45 @@ mod tests {
     }
 
     #[test]
+    fn semantic_search_boosts_exact_source_free_path_metadata() {
+        let temp = tempfile::tempdir().unwrap();
+        let repo = temp.path();
+        fs::create_dir(repo.join(".git")).unwrap();
+        fs::create_dir_all(repo.join("src/refactor")).unwrap();
+        fs::write(
+            repo.join("src/refactor/type_script_visitor.rs"),
+            "pub fn unrelated() {}\n",
+        )
+        .unwrap();
+        fs::write(
+            repo.join("src/refactor/generic_modifier.rs"),
+            "pub fn type_script() {}\n",
+        )
+        .unwrap();
+
+        let report = semantic_search_report(
+            repo,
+            "type script visitor",
+            &SemanticOptions {
+                enabled: true,
+                limit: 5,
+                provider: SemanticProviderConfig::default(),
+            },
+        )
+        .unwrap();
+
+        assert_eq!(
+            report.results[0].path,
+            "src/refactor/type_script_visitor.rs"
+        );
+        assert!(report.results[0].reason.contains("exact metadata boost"));
+        assert!(report.results[0]
+            .matched_facets
+            .iter()
+            .any(|facet| facet.label == "path"));
+    }
+
+    #[test]
     fn local_fastembed_provider_resolves_model_dimensions_and_role() {
         let provider = normalized_provider(&SemanticProviderConfig {
             provider: LOCAL_FASTEMBED_PROVIDER.to_string(),
@@ -1245,8 +1429,14 @@ mod tests {
         )
         .unwrap();
 
-        let report =
-            semantic_document_report(repo, &SemanticDocumentOptions { limit: 20 }).unwrap();
+        let report = semantic_document_report(
+            repo,
+            &SemanticDocumentOptions {
+                limit: 20,
+                ..SemanticDocumentOptions::default()
+            },
+        )
+        .unwrap();
         let document = report
             .documents
             .iter()

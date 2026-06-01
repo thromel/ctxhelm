@@ -2,16 +2,15 @@ use crate::eval::{evaluate_historical_commits, HistoricalEvalOptions};
 use crate::graph::build_graph_neighborhood_report;
 use crate::packs::pack_repo_id;
 use ctxhelm_core::{
-    Diagnostic, DiagnosticSeverity, PrivacyStatus, ProviderCapability, ProviderDataClass,
-    ProviderDecision, ProviderDecisionStatus, ProviderPolicy, ProviderPolicyReport,
-    RetrievalPolicyExperimentReport, RetrievalPolicyExperimentRow, SemanticProviderStatusReport,
-    SemanticUsageSummary, TaskType,
+    Diagnostic, DiagnosticSeverity, PrecisionStatus, PrecisionStatusReport, PrivacyStatus,
+    ProviderCapability, ProviderDataClass, ProviderDecision, ProviderDecisionStatus,
+    ProviderPolicy, ProviderPolicyReport, RetrievalPolicyExperimentReport,
+    RetrievalPolicyExperimentRow, SemanticProviderStatusReport, SemanticUsageSummary, TaskType,
 };
 use ctxhelm_index::{
-    normalized_provider, semantic_document_report, semantic_vector_records,
-    storage_status_for_repo, task_hash, team_policy_report, InventoryError,
-    SemanticDocumentOptions, SemanticOptions, SemanticProviderConfig, StoreConfig,
-    DEFAULT_SEMANTIC_PROVIDER,
+    normalized_provider, semantic_document_report, semantic_search_report, storage_status_for_repo,
+    task_hash, team_policy_report, InventoryError, SemanticDocumentOptions, SemanticOptions,
+    SemanticProviderConfig, StoreConfig,
 };
 use std::fs;
 use std::path::Path;
@@ -269,7 +268,7 @@ pub fn semantic_provider_status_report(
 pub fn semantic_provider_status_report_with_provider(
     repo_root: impl AsRef<Path>,
     query: Option<&str>,
-    task_type: TaskType,
+    _task_type: TaskType,
     semantic_provider: SemanticProviderConfig,
 ) -> Result<SemanticProviderStatusReport, InventoryError> {
     let repo_root = repo_root.as_ref();
@@ -277,52 +276,98 @@ pub fn semantic_provider_status_report_with_provider(
     let mut provider_policy = provider_policy_report(repo_root)?;
     let selected_provider_decision = semantic_provider_decision(&provider_policy, &provider, true);
     provider_policy.decisions.push(selected_provider_decision);
-    let document_report =
-        semantic_document_report(repo_root, &SemanticDocumentOptions { limit: usize::MAX })?;
-    let local_vector_count = if provider.provider == DEFAULT_SEMANTIC_PROVIDER {
-        semantic_vector_records(
+    let query_semantic_report = if let Some(query) = query {
+        Some(semantic_search_report(
             repo_root,
+            query,
             &SemanticOptions {
                 enabled: true,
-                limit: usize::MAX,
+                limit: 10,
                 provider: provider.clone(),
             },
-        )?
-        .len()
+        )?)
     } else {
-        0
+        None
     };
+    let document_report = if query_semantic_report.is_none() {
+        Some(semantic_document_report(
+            repo_root,
+            &SemanticDocumentOptions {
+                limit: 500,
+                query: None,
+                include_symbols: false,
+                include_dependencies: false,
+                include_related_tests: false,
+            },
+        )?)
+    } else {
+        None
+    };
+    let local_vector_count = 0;
     let stored_vector_count = storage_status_for_repo(repo_root, &StoreConfig::default())
         .map(|status| status.semantic_vector_records)
         .unwrap_or_default();
     let mut usage = Vec::new();
-    if let Some(query) = query {
-        let plan = crate::planning::prepare_context_plan_with_paths_and_semantic_provider(
-            repo_root,
-            query,
-            task_type,
-            &[],
-            true,
-            provider.clone(),
-        )?;
-        let semantic_candidate_count = plan
-            .retrieval_candidates
-            .iter()
-            .filter(|candidate| {
-                candidate.signal_scores.iter().any(|score| {
-                    matches!(score.signal, ctxhelm_core::RetrievalSignalKind::Semantic)
-                }) || candidate.evidence.iter().any(|evidence| {
-                    matches!(evidence.signal, ctxhelm_core::RetrievalSignalKind::Semantic)
-                })
-            })
-            .count();
+    if let Some(semantic_report) = &query_semantic_report {
         usage.push(SemanticUsageSummary {
-            surface: "prepare_task".to_string(),
+            surface: "semantic_search".to_string(),
             semantic_enabled: true,
-            semantic_candidate_count,
-            remote_embeddings_used: plan.privacy_status.remote_embeddings_used,
+            semantic_candidate_count: semantic_report.results.len(),
+            remote_embeddings_used: semantic_report.privacy_status.remote_embeddings_used,
         });
     }
+    let semantic_document_count = document_report
+        .as_ref()
+        .map(|report| report.document_count)
+        .or_else(|| {
+            query_semantic_report
+                .as_ref()
+                .map(|report| report.results.len())
+        })
+        .unwrap_or_default();
+    let semantic_facet_count = document_report
+        .as_ref()
+        .map(|report| report.facet_count)
+        .or_else(|| {
+            query_semantic_report.as_ref().map(|report| {
+                report
+                    .results
+                    .iter()
+                    .map(|result| result.matched_facets.len())
+                    .sum()
+            })
+        })
+        .unwrap_or_default();
+    let precision_status = document_report
+        .map(|report| report.precision_status)
+        .or_else(|| {
+            query_semantic_report
+                .as_ref()
+                .map(|report| PrecisionStatusReport {
+                    status: report
+                        .results
+                        .iter()
+                        .find_map(|result| result.precision_status.clone())
+                        .unwrap_or(PrecisionStatus::Unavailable),
+                    provider: None,
+                    overlay_path: None,
+                    edge_count: 0,
+                    rejected_edge_count: 0,
+                    stale: false,
+                    degraded: false,
+                    diagnostics: Vec::new(),
+                })
+        })
+        .unwrap_or(PrecisionStatusReport {
+            status: PrecisionStatus::Unavailable,
+            provider: None,
+            overlay_path: None,
+            edge_count: 0,
+            rejected_edge_count: 0,
+            stale: false,
+            degraded: false,
+            diagnostics: Vec::new(),
+        });
 
     Ok(SemanticProviderStatusReport {
         repo_id: pack_repo_id(repo_root),
@@ -344,9 +389,9 @@ pub fn semantic_provider_status_report_with_provider(
         enabled_by_default: false,
         cloud_embeddings_allowed: false,
         cloud_reranking_allowed: false,
-        semantic_document_count: document_report.document_count,
-        semantic_facet_count: document_report.facet_count,
-        precision_status: document_report.precision_status,
+        semantic_document_count,
+        semantic_facet_count,
+        precision_status,
         local_vector_count,
         stored_vector_count,
         indexing_freshness: "safe_inventory_current_or_refreshed".to_string(),
@@ -579,5 +624,32 @@ mod tests {
         assert_eq!(report.provider_kind, "local_fastembed");
         assert_eq!(report.local_vector_count, 0);
         assert!(!report.privacy_status.remote_embeddings_used);
+    }
+
+    #[test]
+    fn semantic_status_query_uses_bounded_semantic_search_sample() {
+        let temp = tempfile::tempdir().unwrap();
+        let repo = temp.path();
+        fs::create_dir_all(repo.join("src")).unwrap();
+        fs::write(
+            repo.join("src/type_script_visitor.rs"),
+            "pub fn type_script_visitor() {}\n",
+        )
+        .unwrap();
+
+        let report = semantic_provider_status_report_with_provider(
+            repo,
+            Some("type script visitor"),
+            TaskType::Explain,
+            SemanticProviderConfig::default(),
+        )
+        .unwrap();
+
+        assert_eq!(report.local_vector_count, 0);
+        assert_eq!(report.semantic_document_count, 1);
+        assert_eq!(report.usage.len(), 1);
+        assert_eq!(report.usage[0].surface, "semantic_search");
+        assert_eq!(report.usage[0].semantic_candidate_count, 1);
+        assert!(!report.usage[0].remote_embeddings_used);
     }
 }

@@ -4,10 +4,10 @@ milestone: v2.5
 milestone_name: Production Retrieval Quality
 status: active
 last_updated: "2026-06-02T00:00:00Z"
-last_activity: 2026-06-02 -- Phase 159 closed the active lexical runtime gap on clean RefactoringMiner while preserving parity
+last_activity: 2026-06-02 -- Phase 160 bounded semantic status/search on clean RefactoringMiner and fixed exact-path semantic ranking
 progress:
-  total_phases: 86
-  completed_phases: 86
+  total_phases: 87
+  completed_phases: 87
   total_plans: 7
   completed_plans: 7
   percent: 100
@@ -17,10 +17,10 @@ progress:
 
 ## Current Position
 
-Phase: 159 - Lexical Runtime Accounting And Exact-Primary Policy
-Plan: 159-lexical-runtime-accounting
+Phase: 160 - Bounded Semantic Status And Search
+Plan: 160-bounded-semantic-status-search
 Status: Complete
-Last activity: 2026-06-02 -- Phase 159 splits shared inventory warmup out of lexical backend timing, adds a source-safe inventory fingerprint for cache keys, reuses in-process fielded indexes, and expands the exact-primary fast path for exact-dominant and single-identifier queries. On the clean upstream RefactoringMiner 20-commit proof, active backend `tantivy_bm25_fielded_v6` matches legacy on Recall@5, Recall@10, and MRR@10 (`0.1`, `0.175`, `0.13916667`) with zero trailing rows. Active backend time is now `1688ms` versus legacy `1680ms`, down from Phase 158's `9671ms` and Phase 157's `63691ms`.
+Last activity: 2026-06-02 -- Phase 160 makes direct semantic status/search bounded and useful on clean upstream RefactoringMiner. Query status now samples bounded semantic search instead of running a full `prepare_task` path or eager vector materialization (`semanticDocumentCount = 10`, `localVectorCount = 0`, about `6.9s` on the large fixture). Provider-only status avoids symbol/dependency/test enrichment and eager vectors (about `6.8s`). Direct semantic search for `Improvement in TypeScriptVisitor` now ranks `src/main/java/gr/uom/java/xmi/decomposition/TypeScriptVisitor.java` first through source-free path metadata and an exact metadata boost. The broader default `prepare-task` latency remains a separate planner bottleneck.
 
 ## Project Reference
 
@@ -133,6 +133,10 @@ Planned phases:
 - Phase 154: BM25 Legacy Comparison Report (complete follow-up)
 - Phase 155: BM25 Corpus Comparison Report (complete follow-up)
 - Phase 156: Lexical Backend Product Proof Integration (complete follow-up)
+- Phase 157: Benchmark Corpus Health Guard (complete follow-up)
+- Phase 158: BM25 Exact-Saturated Fast Path (complete follow-up)
+- Phase 159: Lexical Runtime Accounting And Exact-Primary Policy (complete follow-up)
+- Phase 160: Bounded Semantic Status And Search (complete follow-up)
 
 ## Last Completed Milestone
 

@@ -112,6 +112,7 @@ v2.5 therefore focuses on measured retrieval quality, not more surface area. The
 - [x] **Phase 157: Benchmark Corpus Health Guard** - Large-history proof fixtures can be prepared as clean detached worktrees with source-free readiness reports; the fresh RefactoringMiner proof exposes that current query-time BM25 trails the legacy scanner on the 20-commit sample.
 - [x] **Phase 158: BM25 Exact-Saturated Fast Path** - Active lexical ranking keeps exact evidence primary, skips fielded BM25 indexing when exact candidates fill the budget, and reaches RefactoringMiner parity with legacy while reducing cold backend time versus Phase 157.
 - [x] **Phase 159: Lexical Runtime Accounting And Exact-Primary Policy** - Lexical backend proof now separates shared inventory warmup, uses source-safe inventory fingerprints for cache keys, reuses in-process fielded indexes, and stops early for exact-dominant or single-identifier queries; clean RefactoringMiner active backend time reaches parity with legacy while preserving recall parity.
+- [x] **Phase 160: Bounded Semantic Status And Search** - Direct semantic status/search now use bounded source-free document samples, avoid eager symbol/dependency/test/vector work on status paths, and rank exact path/identifier matches through source-free path metadata plus an exact metadata boost; the clean RefactoringMiner `TypeScriptVisitor` semantic probe now returns the target file first.
 
 ## Phase Details
 

@@ -2338,9 +2338,17 @@ pub fn semantic_precision_gate_report(
 ) -> Result<SemanticPrecisionGateReport, InventoryError> {
     let repo_root = repo_root.as_ref();
     let provider_policy = provider_policy_report(repo_root)?;
-    let precision =
-        semantic_document_report(repo_root, &SemanticDocumentOptions { limit: usize::MAX })?
-            .precision_status;
+    let precision = semantic_document_report(
+        repo_root,
+        &SemanticDocumentOptions {
+            limit: 500,
+            query: None,
+            include_symbols: false,
+            include_dependencies: false,
+            include_related_tests: false,
+        },
+    )?
+    .precision_status;
     let default = evaluate_historical_commits(
         repo_root,
         &HistoricalEvalOptions {
