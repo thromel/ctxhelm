@@ -10,9 +10,9 @@ The MVP exposes compact task context through:
 
 ctxpack does not edit source code, run your project tests, install dependencies, or mutate global agent configuration. It writes repo-local guidance, optional adapter snippets, and local ctxpack state.
 
-## Install v1.1.1
+## Install v1.1.2
 
-The v1.1.1 install path is a prebuilt GitHub Releases-style archive named like `ctxpack-v1.1.1-aarch64-apple-darwin.tar.gz` or `ctxpack-v1.1.1-x86_64-unknown-linux-gnu.tar.gz`.
+The v1.1.2 install path is a prebuilt GitHub Releases-style archive named like `ctxpack-v1.1.2-aarch64-apple-darwin.tar.gz` or `ctxpack-v1.1.2-x86_64-unknown-linux-gnu.tar.gz`.
 
 Download the archive and checksum file for your platform, then verify the SHA-256 checksums:
 
@@ -24,14 +24,14 @@ sha256sum -c sha256sums.txt
 Extract the archive and put the binary on your `PATH`:
 
 ```bash
-tar -xzf ctxpack-v1.1.1-aarch64-apple-darwin.tar.gz
-install -m 0755 ctxpack-v1.1.1-aarch64-apple-darwin/ctxpack ~/.local/bin/ctxpack
+tar -xzf ctxpack-v1.1.2-aarch64-apple-darwin.tar.gz
+install -m 0755 ctxpack-v1.1.2-aarch64-apple-darwin/ctxpack ~/.local/bin/ctxpack
 ctxpack --version
 ctxpack --help
-ctxpack doctor --binary "$(command -v ctxpack)" --release-manifest ctxpack-v1.1.1-aarch64-apple-darwin.manifest.json
+ctxpack doctor --binary "$(command -v ctxpack)" --release-manifest ctxpack-v1.1.2-aarch64-apple-darwin.manifest.json
 ```
 
-The expected version diagnostic is `ctxpack 1.1.1`. See [docs/release.md](docs/release.md) for release details, source-build fallbacks, and maintainer packaging checks.
+The expected version diagnostic is `ctxpack 1.1.2`. See [docs/release.md](docs/release.md) for release details, source-build fallbacks, and maintainer packaging checks.
 
 ## Install To First Pack
 

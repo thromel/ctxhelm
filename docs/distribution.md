@@ -1,6 +1,6 @@
 # Distribution Metadata
 
-ctxpack v1.1.1 ships through local release archives. This document records the
+ctxpack v1.1.2 ships through local release archives. This document records the
 preparatory distribution metadata for future package-manager channels without
 making those channels blockers for the current release.
 
@@ -23,8 +23,8 @@ Verify an already-built archive from a clean temporary extraction directory:
 
 ```bash
 bash scripts/verify-release-archive.sh \
-  --archive dist/ctxpack-v1.1.1-aarch64-apple-darwin.tar.gz \
-  --manifest dist/ctxpack-v1.1.1-aarch64-apple-darwin.manifest.json \
+  --archive dist/ctxpack-v1.1.2-aarch64-apple-darwin.tar.gz \
+  --manifest dist/ctxpack-v1.1.2-aarch64-apple-darwin.manifest.json \
   --checksums dist/sha256sums.txt
 ```
 
@@ -40,13 +40,13 @@ archive checksums, manifest names, and privacy posture.
 
 ## Signing And Notarization
 
-Current v1.1.1 archives are checksum-audited but not signed installers. Future
+Current v1.1.2 archives are checksum-audited but not signed installers. Future
 distribution work should add signing and notarization gaps to the release
 checklist before claiming signed macOS installers or package-manager formulas.
 
 ## Candidate Decision
 
-The v1.1.1 production candidate is archive-first:
+The v1.1.2 production candidate is archive-first:
 
 - local archive: ready after the release gate passes with the archive binary
   and required clean fixture proof
@@ -67,10 +67,13 @@ does not create tags, upload assets, or mutate release state.
 The public release freshness status can be checked with
 `scripts/check-public-release-freshness.sh`. That check compares the public
 release target commit with the current commit and records `status`,
-`gitRelation`, and `commitsAhead` as source-free metadata. Use `--require-current`
-before claiming the public archive contains the current branch's latest
-production-hardening changes. This freshness check is read-only: it does not
-publish, create tags, upload assets, install binaries, or mutate release state.
+`gitRelation`, `commitsAhead`, `productStatus`, `productCommitsAhead`,
+`proofOnlyCommitsAhead`, and `ignoredFreshnessPaths` as source-free metadata.
+Use `--require-current` before claiming the public archive matches the exact
+current commit. Use `--require-product-current` before claiming the archive has
+no product-impacting commits ahead when only proof/planning metadata may have
+moved after the release. This freshness check is read-only: it does not publish,
+create tags, upload assets, install binaries, or mutate release state.
 
 The public install path can be verified with
 `scripts/verify-public-archive-install.sh`. That check downloads the GitHub

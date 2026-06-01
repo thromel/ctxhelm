@@ -106,11 +106,11 @@ fn release_artifact_audit_script_contract() {
 fn release_artifact_audit_rejects_local_state_archive() {
     let archive = archive_with_entries(&[
         (
-            "ctxpack-v1.1.1-test/ctxpack",
+            "ctxpack-v1.1.2-test/ctxpack",
             "#!/usr/bin/env bash\nexit 0\n",
         ),
         (
-            "ctxpack-v1.1.1-test/.ctxpack/repos/repo/traces.jsonl",
+            "ctxpack-v1.1.2-test/.ctxpack/repos/repo/traces.jsonl",
             "{\"sourceTextLogged\":false}\n",
         ),
     ]);
@@ -130,12 +130,12 @@ fn release_artifact_audit_rejects_local_state_archive() {
 fn release_artifact_audit_accepts_minimal_release_archive() {
     let archive = archive_with_entries(&[
         (
-            "ctxpack-v1.1.1-test/ctxpack",
+            "ctxpack-v1.1.2-test/ctxpack",
             "#!/usr/bin/env bash\nexit 0\n",
         ),
-        ("ctxpack-v1.1.1-test/README.md", "ctxpack release\n"),
-        ("ctxpack-v1.1.1-test/LICENSE", "MIT License\n"),
-        ("ctxpack-v1.1.1-test/VERSION", "ctxpack 1.1.1\n"),
+        ("ctxpack-v1.1.2-test/README.md", "ctxpack release\n"),
+        ("ctxpack-v1.1.2-test/LICENSE", "MIT License\n"),
+        ("ctxpack-v1.1.2-test/VERSION", "ctxpack 1.1.2\n"),
     ]);
 
     let output = Command::new(workspace_root().join("scripts/audit-release-artifact.sh"))
@@ -154,12 +154,12 @@ fn release_artifact_audit_accepts_minimal_release_archive() {
 fn release_artifact_audit_writes_source_free_report() {
     let archive = archive_with_entries(&[
         (
-            "ctxpack-v1.1.1-test/ctxpack",
+            "ctxpack-v1.1.2-test/ctxpack",
             "#!/usr/bin/env bash\nexit 0\n",
         ),
-        ("ctxpack-v1.1.1-test/README.md", "ctxpack release\n"),
-        ("ctxpack-v1.1.1-test/LICENSE", "MIT License\n"),
-        ("ctxpack-v1.1.1-test/VERSION", "ctxpack 1.1.1\n"),
+        ("ctxpack-v1.1.2-test/README.md", "ctxpack release\n"),
+        ("ctxpack-v1.1.2-test/LICENSE", "MIT License\n"),
+        ("ctxpack-v1.1.2-test/VERSION", "ctxpack 1.1.2\n"),
     ]);
     let report_dir = TempDir::new().unwrap();
     let report_path = report_dir.path().join("audit.json");
@@ -378,9 +378,14 @@ fn public_release_freshness_script_reports_outdated_without_mutation() {
         "currentCommit",
         "releaseTargetCommit",
         "commitsAhead",
+        "productStatus",
+        "productCommitsAhead",
+        "proofOnlyCommitsAhead",
+        "ignoredFreshnessPaths",
         "sourceFree",
         "privacyStatus",
         "--require-current",
+        "--require-product-current",
         "publishing",
         "tag creation",
         "asset upload",
@@ -400,9 +405,9 @@ fn public_release_freshness_script_reports_outdated_without_mutation() {
   "isDraft": false,
   "isPrerelease": false,
   "publishedAt": "2026-06-01T00:00:00Z",
-  "tagName": "v1.1.1",
+  "tagName": "v1.1.2",
   "targetCommitish": "release-commit",
-  "url": "https://github.com/thromel/ctxpack/releases/tag/v1.1.1"
+  "url": "https://github.com/thromel/ctxpack/releases/tag/v1.1.2"
 }
 "#,
     )
@@ -410,7 +415,7 @@ fn public_release_freshness_script_reports_outdated_without_mutation() {
 
     let output = Command::new("bash")
         .arg(&script)
-        .args(["--tag", "v1.1.1"])
+        .args(["--tag", "v1.1.2"])
         .args(["--current-commit", "current-commit"])
         .arg("--release-json")
         .arg(&release_json)
@@ -434,7 +439,7 @@ fn public_release_freshness_script_reports_outdated_without_mutation() {
 
     let required_current = Command::new("bash")
         .arg(&script)
-        .args(["--tag", "v1.1.1"])
+        .args(["--tag", "v1.1.2"])
         .args(["--current-commit", "current-commit"])
         .arg("--release-json")
         .arg(&release_json)
@@ -445,6 +450,160 @@ fn public_release_freshness_script_reports_outdated_without_mutation() {
     assert!(
         !required_current.status.success(),
         "--require-current should fail when the release is outdated"
+    );
+}
+
+#[test]
+fn public_release_freshness_distinguishes_proof_only_commits() {
+    let repo_root = workspace_root();
+    let script = repo_root.join("scripts/check-public-release-freshness.sh");
+    let temp = TempDir::new().unwrap();
+    let repo = temp.path();
+
+    let init = Command::new("git")
+        .arg("init")
+        .current_dir(repo)
+        .output()
+        .unwrap();
+    assert!(
+        init.status.success(),
+        "git init failed: {}",
+        String::from_utf8_lossy(&init.stderr)
+    );
+    for args in [
+        ["config", "user.email", "ctxpack@example.invalid"],
+        ["config", "user.name", "ctxpack test"],
+    ] {
+        let output = Command::new("git")
+            .args(args)
+            .current_dir(repo)
+            .output()
+            .unwrap();
+        assert!(
+            output.status.success(),
+            "git config failed: {}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+    }
+
+    fs::create_dir_all(repo.join("src")).unwrap();
+    fs::write(repo.join("src/main.rs"), "fn main() {}\n").unwrap();
+    let output = Command::new("git")
+        .args(["add", "src/main.rs"])
+        .current_dir(repo)
+        .output()
+        .unwrap();
+    assert!(output.status.success());
+    let output = Command::new("git")
+        .args(["commit", "-m", "product release"])
+        .current_dir(repo)
+        .output()
+        .unwrap();
+    assert!(
+        output.status.success(),
+        "release commit failed: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let release_commit = Command::new("git")
+        .args(["rev-parse", "HEAD"])
+        .current_dir(repo)
+        .output()
+        .unwrap();
+    assert!(release_commit.status.success());
+    let release_commit = String::from_utf8(release_commit.stdout)
+        .unwrap()
+        .trim()
+        .to_owned();
+
+    fs::create_dir_all(repo.join(".planning")).unwrap();
+    fs::create_dir_all(repo.join(".ctxpack/e2e")).unwrap();
+    fs::write(repo.join(".planning/STATE.md"), "proof state\n").unwrap();
+    fs::write(repo.join(".ctxpack/e2e/proof.json"), "{}\n").unwrap();
+    let output = Command::new("git")
+        .args(["add", ".planning/STATE.md", ".ctxpack/e2e/proof.json"])
+        .current_dir(repo)
+        .output()
+        .unwrap();
+    assert!(output.status.success());
+    let output = Command::new("git")
+        .args(["commit", "-m", "record proof"])
+        .current_dir(repo)
+        .output()
+        .unwrap();
+    assert!(
+        output.status.success(),
+        "proof commit failed: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let current_commit = Command::new("git")
+        .args(["rev-parse", "HEAD"])
+        .current_dir(repo)
+        .output()
+        .unwrap();
+    assert!(current_commit.status.success());
+    let current_commit = String::from_utf8(current_commit.stdout)
+        .unwrap()
+        .trim()
+        .to_owned();
+
+    let release_json = repo.join("release.json");
+    let output_json = repo.join("freshness.json");
+    fs::write(
+        &release_json,
+        format!(
+            r#"{{
+  "isDraft": false,
+  "isPrerelease": false,
+  "publishedAt": "2026-06-01T00:00:00Z",
+  "tagName": "v1.1.2",
+  "targetCommitish": "{release_commit}",
+  "url": "https://github.com/thromel/ctxpack/releases/tag/v1.1.2"
+}}
+"#
+        ),
+    )
+    .unwrap();
+
+    let output = Command::new("bash")
+        .arg(&script)
+        .args(["--tag", "v1.1.2"])
+        .args(["--current-commit", &current_commit])
+        .arg("--release-json")
+        .arg(&release_json)
+        .arg("--output")
+        .arg(&output_json)
+        .arg("--require-product-current")
+        .current_dir(repo)
+        .output()
+        .unwrap();
+    assert!(
+        output.status.success(),
+        "proof-only freshness should be product-current: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let payload: serde_json::Value =
+        serde_json::from_slice(&fs::read(&output_json).unwrap()).unwrap();
+    assert_eq!(payload["status"], "outdated");
+    assert_eq!(payload["productStatus"], "current");
+    assert_eq!(payload["commitsAhead"], 1);
+    assert_eq!(payload["productCommitsAhead"], 0);
+    assert_eq!(payload["proofOnlyCommitsAhead"], 1);
+    assert_eq!(payload["ignoredFreshnessPaths"][0], ".ctxpack/e2e/");
+    assert_eq!(payload["ignoredFreshnessPaths"][1], ".planning/");
+
+    let required_current = Command::new("bash")
+        .arg(&script)
+        .args(["--tag", "v1.1.2"])
+        .args(["--current-commit", &current_commit])
+        .arg("--release-json")
+        .arg(&release_json)
+        .arg("--require-current")
+        .current_dir(repo)
+        .output()
+        .unwrap();
+    assert!(
+        !required_current.status.success(),
+        "exact currentness should still fail for proof-only commits"
     );
 }
 
@@ -755,7 +914,7 @@ fn release_docs_script_contract() {
         "docs/release-governance.md",
         "ctxpack --version",
         "ctxpack --help",
-        "v1.1.1",
+        "v1.1.2",
         "sha256sums.txt",
         "ctxpack init --repo",
         "ctxpack setup-check --repo",
@@ -774,7 +933,7 @@ fn release_docs_script_contract() {
         "Cursor",
         "OpenCode",
         "cargo install --git",
-        "--tag v1.1.1",
+        "--tag v1.1.2",
         "--locked",
         "crates.io",
         "Homebrew",

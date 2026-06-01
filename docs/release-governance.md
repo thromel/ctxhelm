@@ -13,7 +13,7 @@ depending on a particular interactive agent client.
 Optional real-client proof can be added for Codex CLI and Claude Code by setting
 the release-gate real-client environment variables documented in
 `docs/release.md`. Cursor and OpenCode real-client proof is not claimed for
-v1.1.1; their public support remains config/rules plus deterministic MCP
+v1.1.2; their public support remains config/rules plus deterministic MCP
 compatibility.
 
 When `CTXPACK_REAL_CLIENT_EVIDENCE_DIR` is set, the real-client wrappers write
@@ -53,7 +53,7 @@ Allowed candidate statuses:
 - `blocked`: release must not be announced because a required gate failed or a
   privacy/source-free boundary regressed.
 
-For v1.1.1, `ready` means the local archive channel is ready. Homebrew,
+For v1.1.2, `ready` means the local archive channel is ready. Homebrew,
 crates.io, signed installers, and self-update remain explicitly deferred in the
 candidate status metadata.
 
@@ -71,7 +71,7 @@ against the local artifacts without uploading or mutating anything:
 
 ```bash
 bash scripts/verify-github-release.sh \
-  --tag v1.1.1 \
+  --tag v1.1.2 \
   --target "$(git rev-parse HEAD)" \
   --assets-dir dist
 ```
@@ -85,9 +85,9 @@ Then verify the public user install path:
 ```bash
 bash scripts/verify-public-archive-install.sh \
   --repo thromel/ctxpack \
-  --tag v1.1.1 \
+  --tag v1.1.2 \
   --target-label aarch64-apple-darwin \
-  --expected-version "ctxpack 1.1.1" \
+  --expected-version "ctxpack 1.1.2" \
   --output .ctxpack/e2e/phase130-public-archive-install.json
 ```
 
@@ -101,9 +101,9 @@ archive binary, run:
 ```bash
 bash scripts/smoke-public-real-clients.sh \
   --repo thromel/ctxpack \
-  --tag v1.1.1 \
+  --tag v1.1.2 \
   --target-label aarch64-apple-darwin \
-  --expected-version "ctxpack 1.1.1" \
+  --expected-version "ctxpack 1.1.2" \
   --output .ctxpack/e2e/phase130-public-real-client-smoke.json
 ```
 
@@ -118,16 +118,19 @@ the current branch tip:
 ```bash
 bash scripts/check-public-release-freshness.sh \
   --repo thromel/ctxpack \
-  --tag v1.1.1 \
+  --tag v1.1.2 \
   --output .ctxpack/e2e/phase130-public-release-freshness.json
 ```
 
 The freshness checker writes source-free metadata with `status`,
-`releaseTargetCommit`, `currentCommit`, `gitRelation`, and `commitsAhead`.
-Use `--require-current` when a publication or announcement requires the public
-archive to match the current commit exactly. The checker does not publish,
-create tags, upload assets, install globally, mutate agent configuration, or
-read source text.
+`releaseTargetCommit`, `currentCommit`, `gitRelation`, `commitsAhead`,
+`productStatus`, `productCommitsAhead`, `proofOnlyCommitsAhead`, and
+`ignoredFreshnessPaths`. Use `--require-current` when a publication or
+announcement requires the public archive to match the current commit exactly.
+Use `--require-product-current` when proof/planning-only commits may exist after
+the release but no product-impacting commits may be ahead. The checker does not
+publish, create tags, upload assets, install globally, mutate agent
+configuration, or read source text.
 
 ## Rollback
 
