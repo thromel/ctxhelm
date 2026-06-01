@@ -609,6 +609,12 @@ progressive-read order, a small path budget, and a stop rule so agents can
 inspect broad areas through native file reads without loading unnecessary
 context or changing target-file ranking.
 
+Phase 125 adds an explicit source-free `releaseGate.lexicalComparison` summary
+to product proof output. The summary separates all-file lexical comparison from
+non-test context-channel comparison, so release artifacts can say when ctxpack
+beats lexical on the production context claim without implying a universal
+all-file win.
+
 Phase 119 removes an observed release-validation flake in `ctxpack-index`.
 Tests in `lib.rs`, `freshness.rs`, and `storage.rs` now share one crate-wide
 test lock before mutating process-global `CTXPACK_HOME`. This prevents one

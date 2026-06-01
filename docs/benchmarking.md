@@ -28,6 +28,14 @@ Product-proof corpus verdicts also expose machine-checkable divergence fields:
 
 The release gate and `scripts/check-product-proof.py` block unexplained all-file lexical deficits. This keeps the proof honest when lexical wins raw all-file recall by ranking validation tests as files, while still rejecting unexplained source-context losses.
 
+Product-proof JSON also includes `releaseGate.lexicalComparison`, a suite-level
+summary of the same boundary. `allFileClaim` reports whether ctxpack beats,
+matches, or trails lexical when every safe changed file is counted together.
+`contextClaim` reports the comparison after validation targets are removed from
+the context channel. This prevents production notes from overclaiming
+repository-wide lexical wins when the measured claim is narrower: context
+selection plus separately covered validation.
+
 v2.3 treats benchmark suites as fixed corpus manifests. Older suite files still work, but v2.3+ manifests should include a manifest version, corpus ID, privacy label, revision range ID, and optional locked baseline metadata so quality claims are reproducible.
 
 Phase 58 adds source-free query construction traces to prepare-task and historical eval commit rows. These traces record extracted paths, stack frames, symbols, error terms, domain terms, commit clues, retriever query sets, and fusion controls. They intentionally store task hashes and bounded facets instead of raw prompts or source snippets.

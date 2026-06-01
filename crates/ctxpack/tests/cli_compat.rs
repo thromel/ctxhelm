@@ -1976,6 +1976,9 @@ fn eval_proof_generates_source_free_product_report() {
         .any(|metric| metric["label"] == "averageCtxpackLiftAt10"));
     assert_eq!(value["releaseGate"]["decision"], "block");
     assert_eq!(value["releaseGate"]["defaultPromotionAllowed"], false);
+    assert!(value["releaseGate"]["lexicalComparison"].is_object());
+    assert!(value["releaseGate"]["lexicalComparison"]["allFileClaim"].is_string());
+    assert!(value["releaseGate"]["lexicalComparison"]["contextClaim"].is_string());
     assert!(value["releaseGate"]["corpusVerdicts"].is_array());
     assert!(value["limitations"].is_array());
     assert!(value["helpsWhen"].is_array());

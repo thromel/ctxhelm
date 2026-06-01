@@ -17,8 +17,8 @@ use ctxpack_compiler::{
     BenchmarkComparisonReport, BenchmarkRegressionThreshold, BenchmarkSuiteReport,
     CandidateFeatureComparisonReport, ContextCardsOptions, ContextCardsReport,
     ExperienceCardsOptions, ExperienceCardsReport, FallbackCardsOptions, FallbackCardsReport,
-    HistoricalEvalOptions, HistoricalEvalReport, PairedBaselineAnalysisReport, ProductProofReport,
-    SemanticPrecisionGateReport,
+    HistoricalEvalOptions, HistoricalEvalReport, PairedBaselineAnalysisReport,
+    ProductProofLexicalClaim, ProductProofReport, SemanticPrecisionGateReport,
 };
 use ctxpack_core::{
     run_init, run_setup_check, AgentAdapter, AgentOutcomeComparisonReport, AgentPreviewReport,
@@ -4888,6 +4888,27 @@ fn render_product_proof_report(report: &ProductProofReport) -> String {
         report.release_gate.default_promotion_allowed,
         report.release_gate.decision_reason
     ));
+    let comparison = &report.release_gate.lexical_comparison;
+    output.push_str("### Lexical Comparison Summary\n\n");
+    output.push_str(&format!(
+        "- All-file claim: `{}` (beat `{}`, match `{}`, trail `{}` of `{}` corpora)\n- Context-channel claim: `{}` (beat `{}`, match `{}`, trail `{}` of `{}` corpora)\n- Average all-file recall@10: ctxpack `{:.3}` vs lexical `{:.3}` delta `{:+.3}`\n- Average context recall@10: ctxpack `{:.3}` vs lexical `{:.3}` delta `{:+.3}`\n\n",
+        lexical_claim_label(&comparison.all_file_claim),
+        comparison.all_file_beat_count,
+        comparison.all_file_match_count,
+        comparison.all_file_trail_count,
+        comparison.corpus_count,
+        lexical_claim_label(&comparison.context_claim),
+        comparison.context_beat_count,
+        comparison.context_match_count,
+        comparison.context_trail_count,
+        comparison.corpus_count,
+        comparison.average_file_recall_at_10,
+        comparison.average_lexical_file_recall_at_10,
+        comparison.average_file_delta_at_10,
+        comparison.average_context_recall_at_10,
+        comparison.average_lexical_context_recall_at_10,
+        comparison.average_context_delta_at_10,
+    ));
     output.push_str("### Corpus Verdicts\n\n");
     if report.release_gate.corpus_verdicts.is_empty() {
         output.push_str("- No corpus verdicts were produced.\n");
@@ -4946,6 +4967,16 @@ fn render_product_proof_report(report: &ProductProofReport) -> String {
         "Run `ctxpack eval proof --config <suite.json>` or inspect the embedded source-free benchmark report in JSON output.\n",
     );
     output
+}
+
+fn lexical_claim_label(claim: &ProductProofLexicalClaim) -> &'static str {
+    match claim {
+        ProductProofLexicalClaim::BeatsAllCorpora => "beats_all_corpora",
+        ProductProofLexicalClaim::Mixed => "mixed",
+        ProductProofLexicalClaim::MatchesAllCorpora => "matches_all_corpora",
+        ProductProofLexicalClaim::TrailsAnyCorpus => "trails_any_corpus",
+        ProductProofLexicalClaim::NoEvidence => "no_evidence",
+    }
 }
 
 fn role_filter_label(filters: &[ctxpack_core::FileRole]) -> String {

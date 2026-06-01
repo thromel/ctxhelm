@@ -30,12 +30,13 @@ pub use eval::{
     HistoricalEvalReport, HistoricalEvalRuntimeSummary, HistoricalMissingFileSummary,
     HistoricalProtectedEvidenceFile, HistoricalSignalRanking, HistoricalSlowCommitSummary,
     PairedBaselineAnalysisReport, PairedBaselineFamily, PairedBaselineRow, PairedBaselineVerdict,
-    ProductProofCorpusStatus, ProductProofCorpusVerdict, ProductProofMetric,
-    ProductProofReleaseGate, ProductProofReport, ProtectedEvidenceSignalSummary,
-    ProtectedEvidenceSummary, RankingMetrics, RetrievalGapRecommendationArea, RetrievalGapSummary,
-    RetrievalGapTargetStatus, RoleRecallMetric, SemanticPrecisionGateDecision,
-    SemanticPrecisionGateReport, SemanticPrecisionNamedCase, SemanticPrecisionVariant,
-    SemanticPrecisionVariantStatus, SignalAblationResult, SignalSaturationMetric, TokenRoiMetric,
+    ProductProofCorpusStatus, ProductProofCorpusVerdict, ProductProofLexicalClaim,
+    ProductProofLexicalComparison, ProductProofMetric, ProductProofReleaseGate, ProductProofReport,
+    ProtectedEvidenceSignalSummary, ProtectedEvidenceSummary, RankingMetrics,
+    RetrievalGapRecommendationArea, RetrievalGapSummary, RetrievalGapTargetStatus,
+    RoleRecallMetric, SemanticPrecisionGateDecision, SemanticPrecisionGateReport,
+    SemanticPrecisionNamedCase, SemanticPrecisionVariant, SemanticPrecisionVariantStatus,
+    SignalAblationResult, SignalSaturationMetric, TokenRoiMetric,
 };
 pub use graph::build_graph_neighborhood_report;
 pub use packs::{

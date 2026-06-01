@@ -457,7 +457,61 @@ pub struct ProductProofReleaseGate {
     pub decision: SemanticPrecisionGateDecision,
     pub decision_reason: String,
     pub default_promotion_allowed: bool,
+    #[serde(default)]
+    pub lexical_comparison: ProductProofLexicalComparison,
     pub corpus_verdicts: Vec<ProductProofCorpusVerdict>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct ProductProofLexicalComparison {
+    pub corpus_count: usize,
+    pub all_file_beat_count: usize,
+    pub all_file_match_count: usize,
+    pub all_file_trail_count: usize,
+    pub context_beat_count: usize,
+    pub context_match_count: usize,
+    pub context_trail_count: usize,
+    pub average_file_recall_at_10: f32,
+    pub average_lexical_file_recall_at_10: f32,
+    pub average_file_delta_at_10: f32,
+    pub average_context_recall_at_10: f32,
+    pub average_lexical_context_recall_at_10: f32,
+    pub average_context_delta_at_10: f32,
+    pub all_file_claim: ProductProofLexicalClaim,
+    pub context_claim: ProductProofLexicalClaim,
+}
+
+impl Default for ProductProofLexicalComparison {
+    fn default() -> Self {
+        Self {
+            corpus_count: 0,
+            all_file_beat_count: 0,
+            all_file_match_count: 0,
+            all_file_trail_count: 0,
+            context_beat_count: 0,
+            context_match_count: 0,
+            context_trail_count: 0,
+            average_file_recall_at_10: 0.0,
+            average_lexical_file_recall_at_10: 0.0,
+            average_file_delta_at_10: 0.0,
+            average_context_recall_at_10: 0.0,
+            average_lexical_context_recall_at_10: 0.0,
+            average_context_delta_at_10: 0.0,
+            all_file_claim: ProductProofLexicalClaim::NoEvidence,
+            context_claim: ProductProofLexicalClaim::NoEvidence,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum ProductProofLexicalClaim {
+    BeatsAllCorpora,
+    Mixed,
+    MatchesAllCorpora,
+    TrailsAnyCorpus,
+    NoEvidence,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -1131,7 +1185,108 @@ fn product_proof_release_gate(benchmark_report: &BenchmarkSuiteReport) -> Produc
         default_promotion_allowed: decision.0 == SemanticPrecisionGateDecision::Promote,
         decision: decision.0,
         decision_reason: decision.1,
+        lexical_comparison: product_proof_lexical_comparison(&corpus_verdicts),
         corpus_verdicts,
+    }
+}
+
+fn product_proof_lexical_comparison(
+    corpus_verdicts: &[ProductProofCorpusVerdict],
+) -> ProductProofLexicalComparison {
+    let evaluated = corpus_verdicts
+        .iter()
+        .filter(|verdict| verdict.status != ProductProofCorpusStatus::InsufficientEvidence)
+        .collect::<Vec<_>>();
+    if evaluated.is_empty() {
+        return ProductProofLexicalComparison::default();
+    }
+    let corpus_count = evaluated.len();
+    let corpus_count_f32 = corpus_count as f32;
+    let all_file_beat_count = evaluated
+        .iter()
+        .filter(|verdict| verdict.lexical_delta_at_10 > 0.03)
+        .count();
+    let all_file_trail_count = evaluated
+        .iter()
+        .filter(|verdict| verdict.lexical_delta_at_10 < -0.03)
+        .count();
+    let all_file_match_count = corpus_count - all_file_beat_count - all_file_trail_count;
+    let context_beat_count = evaluated
+        .iter()
+        .filter(|verdict| verdict.context_delta_at_10 > 0.03)
+        .count();
+    let context_trail_count = evaluated
+        .iter()
+        .filter(|verdict| verdict.context_delta_at_10 < -0.03)
+        .count();
+    let context_match_count = corpus_count - context_beat_count - context_trail_count;
+    let average_file_recall_at_10 = evaluated
+        .iter()
+        .map(|verdict| verdict.file_recall_at_10)
+        .sum::<f32>()
+        / corpus_count_f32;
+    let average_lexical_file_recall_at_10 = evaluated
+        .iter()
+        .map(|verdict| verdict.lexical_baseline_recall_at_10)
+        .sum::<f32>()
+        / corpus_count_f32;
+    let average_context_recall_at_10 = evaluated
+        .iter()
+        .map(|verdict| verdict.context_recall_at_10)
+        .sum::<f32>()
+        / corpus_count_f32;
+    let average_lexical_context_recall_at_10 = evaluated
+        .iter()
+        .map(|verdict| verdict.lexical_context_recall_at_10)
+        .sum::<f32>()
+        / corpus_count_f32;
+
+    ProductProofLexicalComparison {
+        corpus_count,
+        all_file_beat_count,
+        all_file_match_count,
+        all_file_trail_count,
+        context_beat_count,
+        context_match_count,
+        context_trail_count,
+        average_file_delta_at_10: average_file_recall_at_10 - average_lexical_file_recall_at_10,
+        average_context_delta_at_10: average_context_recall_at_10
+            - average_lexical_context_recall_at_10,
+        average_file_recall_at_10,
+        average_lexical_file_recall_at_10,
+        average_context_recall_at_10,
+        average_lexical_context_recall_at_10,
+        all_file_claim: lexical_claim(
+            corpus_count,
+            all_file_beat_count,
+            all_file_match_count,
+            all_file_trail_count,
+        ),
+        context_claim: lexical_claim(
+            corpus_count,
+            context_beat_count,
+            context_match_count,
+            context_trail_count,
+        ),
+    }
+}
+
+fn lexical_claim(
+    corpus_count: usize,
+    beat_count: usize,
+    match_count: usize,
+    trail_count: usize,
+) -> ProductProofLexicalClaim {
+    if corpus_count == 0 {
+        ProductProofLexicalClaim::NoEvidence
+    } else if trail_count > 0 {
+        ProductProofLexicalClaim::TrailsAnyCorpus
+    } else if beat_count == corpus_count {
+        ProductProofLexicalClaim::BeatsAllCorpora
+    } else if match_count == corpus_count {
+        ProductProofLexicalClaim::MatchesAllCorpora
+    } else {
+        ProductProofLexicalClaim::Mixed
     }
 }
 
@@ -6240,6 +6395,22 @@ mod tests {
             .iter()
             .any(|verdict| verdict.repository == "trail-repo"
                 && verdict.status == ProductProofCorpusStatus::Trail));
+        assert_eq!(
+            report.release_gate.lexical_comparison.all_file_claim,
+            ProductProofLexicalClaim::TrailsAnyCorpus
+        );
+        assert_eq!(
+            report.release_gate.lexical_comparison.all_file_beat_count,
+            1
+        );
+        assert_eq!(
+            report.release_gate.lexical_comparison.all_file_match_count,
+            1
+        );
+        assert_eq!(
+            report.release_gate.lexical_comparison.all_file_trail_count,
+            1
+        );
     }
 
     #[test]
@@ -6652,6 +6823,28 @@ mod tests {
         assert_eq!(
             report.release_gate.decision,
             SemanticPrecisionGateDecision::Promote
+        );
+        assert_eq!(
+            report.release_gate.lexical_comparison.all_file_claim,
+            ProductProofLexicalClaim::TrailsAnyCorpus
+        );
+        assert_eq!(
+            report.release_gate.lexical_comparison.context_claim,
+            ProductProofLexicalClaim::BeatsAllCorpora
+        );
+        assert!(
+            report
+                .release_gate
+                .lexical_comparison
+                .average_file_delta_at_10
+                < 0.0
+        );
+        assert!(
+            report
+                .release_gate
+                .lexical_comparison
+                .average_context_delta_at_10
+                > 0.0
         );
     }
 
