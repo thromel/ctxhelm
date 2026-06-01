@@ -5,11 +5,11 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 TMP_DIR="$(mktemp -d)"
 trap 'rm -rf "${TMP_DIR}"' EXIT
 
-run_ctxpack() {
-  if [[ -n "${CTXPACK_BIN:-}" ]]; then
-    "${CTXPACK_BIN}" "$@"
+run_ctxhelm() {
+  if [[ -n "${CTXHELM_BIN:-}" ]]; then
+    "${CTXHELM_BIN}" "$@"
   else
-    cargo run -q -p ctxpack -- "$@"
+    cargo run -q -p ctxhelm -- "$@"
   fi
 }
 
@@ -34,8 +34,8 @@ reject_text() {
 REPO="${TMP_DIR}/repo"
 mkdir -p "${REPO}/src/auth" "${REPO}/tests/auth"
 git -C "${REPO}" init >/dev/null
-git -C "${REPO}" config user.email ctxpack@example.com
-git -C "${REPO}" config user.name ctxpack
+git -C "${REPO}" config user.email ctxhelm@example.com
+git -C "${REPO}" config user.name ctxhelm
 cat >"${REPO}/src/auth/session.ts" <<'EOF'
 export function requireSession() {
   return true;
@@ -60,15 +60,15 @@ MD_OUT="${TMP_DIR}/health.md"
 
 (
   cd "${ROOT_DIR}"
-  run_ctxpack eval health --repo "${REPO}" --limit 2 --format json >"${JSON_OUT}"
-  run_ctxpack eval health --repo "${REPO}" --limit 2 --format markdown >"${MD_OUT}"
+  run_ctxhelm eval health --repo "${REPO}" --limit 2 --format json >"${JSON_OUT}"
+  run_ctxhelm eval health --repo "${REPO}" --limit 2 --format markdown >"${MD_OUT}"
 )
 
 require_text "${JSON_OUT}" '"sourceTextLogged": false'
 require_text "${JSON_OUT}" '"metrics"'
 require_text "${JSON_OUT}" '"signalContributions"'
 require_text "${JSON_OUT}" '"gapFamilies"'
-require_text "${MD_OUT}" "ctxpack Retrieval Health Report"
+require_text "${MD_OUT}" "ctxhelm Retrieval Health Report"
 require_text "${MD_OUT}" "Signal Contributions"
 require_text "${MD_OUT}" "Gap Families"
 reject_text "${JSON_OUT}" "RETRIEVAL_HEALTH_SOURCE_SENTINEL"

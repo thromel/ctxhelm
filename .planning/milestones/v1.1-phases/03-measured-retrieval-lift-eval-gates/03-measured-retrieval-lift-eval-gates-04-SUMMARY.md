@@ -2,7 +2,7 @@
 phase: 03-measured-retrieval-lift-eval-gates
 plan: 04
 subsystem: eval
-tags: [ctxpack, historical-eval, ranking-metrics, ablations, retrieval-gaps]
+tags: [ctxhelm, historical-eval, ranking-metrics, ablations, retrieval-gaps]
 requires:
   - phase: 03-measured-retrieval-lift-eval-gates
     provides: frozen historical eval ranges and role/status labels from Plan 03
@@ -21,9 +21,9 @@ key-files:
   created:
     - .planning/phases/03-measured-retrieval-lift-eval-gates/03-measured-retrieval-lift-eval-gates-04-SUMMARY.md
   modified:
-    - crates/ctxpack-compiler/src/eval.rs
-    - crates/ctxpack-compiler/src/lib.rs
-    - crates/ctxpack/src/main.rs
+    - crates/ctxhelm-compiler/src/eval.rs
+    - crates/ctxhelm-compiler/src/lib.rs
+    - crates/ctxhelm/src/main.rs
 key-decisions:
   - "Keep legacy Recall@5/10 fields while adding decision-grade rankingComparison metrics."
   - "Expose signal ablations and grouped retrieval failures as source-free typed JSON fields."
@@ -50,10 +50,10 @@ completed: 2026-05-13
 
 ## Accomplishments
 
-- Added `RankingMetrics`, `EvalComparison`, and role recall records so combined ctxpack ranking and lexical-only ranking are compared at the same configured K.
+- Added `RankingMetrics`, `EvalComparison`, and role recall records so combined ctxhelm ranking and lexical-only ranking are compared at the same configured K.
 - Added signal ablation results over the same `evalRangeId` and evaluated commit count, with parser/runtime dependency scope still gated by measured evidence.
 - Added `RetrievalGapSummary` records and Markdown rendering for source-free grouped failures by path role, signal gap reason code, and repeated path family.
-- Added `ctxpack eval history --budget <K>` with a default of 10 and wired that fixed budget through JSON and Markdown outputs.
+- Added `ctxhelm eval history --budget <K>` with a default of 10 and wired that fixed budget through JSON and Markdown outputs.
 - Added checklist grouped retrieval failure rendering using the same typed `RetrievalGapSummary` contract as historical eval.
 
 ## Task Commits
@@ -64,9 +64,9 @@ completed: 2026-05-13
 
 ## Files Created/Modified
 
-- `crates/ctxpack-compiler/src/eval.rs` - Adds ranking metrics, fixed-K comparison, signal ablations, and retrieval gap summaries.
-- `crates/ctxpack-compiler/src/lib.rs` - Re-exports the new eval contracts and adds focused TDD coverage.
-- `crates/ctxpack/src/main.rs` - Wires `eval history --budget`, renders ablations and grouped failures, and adds checklist gap rendering.
+- `crates/ctxhelm-compiler/src/eval.rs` - Adds ranking metrics, fixed-K comparison, signal ablations, and retrieval gap summaries.
+- `crates/ctxhelm-compiler/src/lib.rs` - Re-exports the new eval contracts and adds focused TDD coverage.
+- `crates/ctxhelm/src/main.rs` - Wires `eval history --budget`, renders ablations and grouped failures, and adds checklist gap rendering.
 - `.planning/phases/03-measured-retrieval-lift-eval-gates/03-measured-retrieval-lift-eval-gates-04-SUMMARY.md` - Execution summary and self-check record.
 
 ## Decisions Made
@@ -89,13 +89,13 @@ None.
 
 ## Verification
 
-- `cargo test -p ctxpack-compiler ranking_metrics -- --nocapture`
-- `cargo test -p ctxpack-compiler ablation -- --nocapture`
-- `cargo test -p ctxpack eval_checklist -- --nocapture`
-- `cargo test -p ctxpack historical_eval_report -- --nocapture`
-- `cargo tree --workspace --depth 1 > /tmp/ctxpack-phase3-cargo-tree.txt && ! rg "tantivy|rayon|rusqlite|notify|tree-sitter|mcp-sdk" /tmp/ctxpack-phase3-cargo-tree.txt`
+- `cargo test -p ctxhelm-compiler ranking_metrics -- --nocapture`
+- `cargo test -p ctxhelm-compiler ablation -- --nocapture`
+- `cargo test -p ctxhelm eval_checklist -- --nocapture`
+- `cargo test -p ctxhelm historical_eval_report -- --nocapture`
+- `cargo tree --workspace --depth 1 > /tmp/ctxhelm-phase3-cargo-tree.txt && ! rg "tantivy|rayon|rusqlite|notify|tree-sitter|mcp-sdk" /tmp/ctxhelm-phase3-cargo-tree.txt`
 - `cargo test --workspace`
-- `cargo run -p ctxpack -- --help`
+- `cargo run -p ctxhelm -- --help`
 
 ## Issues Encountered
 

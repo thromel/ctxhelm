@@ -16,5 +16,5 @@ Prove incremental storage sync works and does not persist source bodies.
 
 ## Verification
 
-- `cargo test -p ctxpack-index storage`
+- `cargo test -p ctxhelm-index storage`
 

@@ -5,7 +5,7 @@ Date: 2026-06-01
 ## Research Signals
 
 Recent repository-agent research and current agent integration docs point to the
-same product direction: ctxpack should become an evidence governor, not a
+same product direction: ctxhelm should become an evidence governor, not a
 larger search box.
 
 Key signals:
@@ -21,7 +21,7 @@ Key signals:
   runtime, and token cost, while poorly selected experience can hurt:
   https://papers.cool/arxiv/2602.08316
 - RepoBench frames repository-level coding as retrieval, completion, and
-  pipeline evaluation, validating ctxpack's separate retrieval and agent
+  pipeline evaluation, validating ctxhelm's separate retrieval and agent
   outcome gates: https://arxiv.org/abs/2306.03091
 - Repoformer argues retrieval should be selective, not automatic:
   https://proceedings.mlr.press/v235/wu24a.html
@@ -36,7 +36,7 @@ Key signals:
   hooks, and MCP tool output can be a token-budget risk:
   https://code.claude.com/docs/en/mcp
   https://code.claude.com/docs/en/hooks
-- MCP's core server features map directly to ctxpack's integration surface:
+- MCP's core server features map directly to ctxhelm's integration surface:
   tools, resources, and prompts over JSON-RPC:
   https://modelcontextprotocol.io/specification/2025-03-26/basic/index
 
@@ -61,12 +61,12 @@ task improvement.
 
 Next feature:
 
-- Add a `ctxpack eval agent-run` harness that runs paired agent tasks:
+- Add a `ctxhelm eval agent-run` harness that runs paired agent tasks:
   - baseline agent native behavior
-  - ctxpack plan only
-  - ctxpack brief pack
-  - ctxpack standard pack
-  - ctxpack plus memory cards
+  - ctxhelm plan only
+  - ctxhelm brief pack
+  - ctxhelm standard pack
+  - ctxhelm plus memory cards
 - Output source-free metrics:
   - task status
   - target files read
@@ -84,8 +84,8 @@ Success gate:
   increasing privacy risk.
 
 Status: Phase 143 added this proof path. The first real Claude Code run over
-the ctxpack workflow-eval task preserved target-file coverage at `1.00` and
-reduced irrelevant reads from `5` to `2` in the `ctxpack-brief` lane while
+the ctxhelm workflow-eval task preserved target-file coverage at `1.00` and
+reduced irrelevant reads from `5` to `2` in the `ctxhelm-brief` lane while
 keeping raw prompts, transcripts, MCP traffic, and source text out of the
 persisted report.
 
@@ -149,12 +149,12 @@ Success gate:
 ### 5. Claude Code Integration Should Move From Smoke To Workflow Eval
 
 The current Claude Code proof confirms tool calls. It does not yet evaluate
-whether Claude actually uses ctxpack better across a real task.
+whether Claude actually uses ctxhelm better across a real task.
 
 Next feature:
 
 - Add a Claude Code workflow eval mode:
-  - install public ctxpack binary into temp path
+  - install public ctxhelm binary into temp path
   - generate temp repo-local `.mcp.json` or wrapper config
   - run a task that requires target-file retrieval and a test command
   - record sanitized server-side request log
@@ -176,7 +176,7 @@ Next feature candidates:
 - Signed/notarized macOS artifact.
 - crates.io package only after dependency/readme/license metadata and install
   UX are ready.
-- `ctxpack doctor --public-release vX.Y.Z` to verify release and product
+- `ctxhelm doctor --public-release vX.Y.Z` to verify release and product
   freshness from a user install.
 
 Success gate:
@@ -192,14 +192,14 @@ plumbing.
 Deliverables:
 
 1. `scripts/e2e-claude-workflow.sh` or equivalent source-free harness.
-2. A real-repo task fixture over ctxpack or RefactoringMiner.
-3. Baseline-vs-ctxpack comparison where possible.
-4. Durable proof artifact under `.ctxpack/e2e/`.
+2. A real-repo task fixture over ctxhelm or RefactoringMiner.
+3. Baseline-vs-ctxhelm comparison where possible.
+4. Durable proof artifact under `.ctxhelm/e2e/`.
 5. Planning summary with observed bugs, relevance quality, token/tool counts,
    and next fixes.
 
 Reason:
 
 The product is now publicly installable and proof-gated. The next world-class
-question is whether a real coding agent does better with ctxpack on a realistic
+question is whether a real coding agent does better with ctxhelm on a realistic
 task, not whether another protocol smoke passes.

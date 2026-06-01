@@ -1,4 +1,4 @@
-# ctxpack Release Checklist
+# ctxhelm Release Checklist
 
 Use this checklist before marking a candidate `ready`.
 
@@ -13,7 +13,7 @@ Use this checklist before marking a candidate `ready`.
 - [ ] `bash scripts/smoke-release-governance.sh`
 - [ ] deterministic protocol proof through `scripts/smoke-mcp-protocol.sh`
 - [ ] clean cold fixture proof with `scripts/prepare-proof-fixtures.sh` and
-      `CTXPACK_REQUIRE_CLEAN_FIXTURE_PROOF=1 bash scripts/release-gate.sh`
+      `CTXHELM_REQUIRE_CLEAN_FIXTURE_PROOF=1 bash scripts/release-gate.sh`
 - [ ] after publication, `bash scripts/verify-github-release.sh --tag ... --target ... --assets-dir ...`
 - [ ] after publication, `bash scripts/verify-public-archive-install.sh --repo ... --tag ... --target-label ...`
 
@@ -24,7 +24,7 @@ Use this checklist before marking a candidate `ready`.
 - [ ] optional public-archive real-client refresh with `bash scripts/smoke-public-real-clients.sh --repo ... --tag ... --target-label ...`
 - [ ] Cursor real-client proof: not claimed for v1.1.7
 - [ ] OpenCode real-client proof: not claimed for v1.1.7
-- [ ] additional benchmark product proof with `CTXPACK_BENCHMARK_CONFIG`
+- [ ] additional benchmark product proof with `CTXHELM_BENCHMARK_CONFIG`
 
 ## Candidate Status
 

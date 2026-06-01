@@ -1,54 +1,54 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-CTXPACK_ROOT="${CTXPACK_ROOT:-$PWD}"
-CTXPACK_SMOKE_REPO="${CTXPACK_SMOKE_REPO:-$PWD}"
-CTXPACK_SMOKE_TASK="${CTXPACK_SMOKE_TASK:-fix requireSession auth bug}"
-CTXPACK_SMOKE_PATH="${CTXPACK_SMOKE_PATH:-crates/ctxpack-mcp/src/tools.rs}"
-CTXPACK_SMOKE_QUERY="${CTXPACK_SMOKE_QUERY:-prepare_task}"
-CTXPACK_REQUIRE_RESOURCE_SCOPE="${CTXPACK_REQUIRE_RESOURCE_SCOPE:-1}"
+CTXHELM_ROOT="${CTXHELM_ROOT:-$PWD}"
+CTXHELM_SMOKE_REPO="${CTXHELM_SMOKE_REPO:-$PWD}"
+CTXHELM_SMOKE_TASK="${CTXHELM_SMOKE_TASK:-fix requireSession auth bug}"
+CTXHELM_SMOKE_PATH="${CTXHELM_SMOKE_PATH:-crates/ctxhelm-mcp/src/tools.rs}"
+CTXHELM_SMOKE_QUERY="${CTXHELM_SMOKE_QUERY:-prepare_task}"
+CTXHELM_REQUIRE_RESOURCE_SCOPE="${CTXHELM_REQUIRE_RESOURCE_SCOPE:-1}"
 
-if [[ ! -d "$CTXPACK_ROOT" ]]; then
-  echo "CTXPACK_ROOT does not exist: $CTXPACK_ROOT" >&2
+if [[ ! -d "$CTXHELM_ROOT" ]]; then
+  echo "CTXHELM_ROOT does not exist: $CTXHELM_ROOT" >&2
   exit 1
 fi
 
-if [[ ! -d "$CTXPACK_SMOKE_REPO" ]]; then
-  echo "CTXPACK_SMOKE_REPO does not exist: $CTXPACK_SMOKE_REPO" >&2
+if [[ ! -d "$CTXHELM_SMOKE_REPO" ]]; then
+  echo "CTXHELM_SMOKE_REPO does not exist: $CTXHELM_SMOKE_REPO" >&2
   exit 1
 fi
 
-if [[ -n "${CTXPACK_BIN:-}" && ! -x "$CTXPACK_BIN" ]]; then
-  echo "CTXPACK_BIN is not executable: $CTXPACK_BIN" >&2
+if [[ -n "${CTXHELM_BIN:-}" && ! -x "$CTXHELM_BIN" ]]; then
+  echo "CTXHELM_BIN is not executable: $CTXHELM_BIN" >&2
   exit 1
 fi
 
 created_home=0
-if [[ -z "${CTXPACK_HOME:-}" ]]; then
-  CTXPACK_HOME="$(mktemp -d)"
+if [[ -z "${CTXHELM_HOME:-}" ]]; then
+  CTXHELM_HOME="$(mktemp -d)"
   created_home=1
 fi
 
 server_cwd="$(mktemp -d)"
 diff_repo="$(mktemp -d)"
-smoke_diff_path="src/ctxpack_smoke_current_diff_$$.rs"
+smoke_diff_path="src/ctxhelm_smoke_current_diff_$$.rs"
 smoke_diff_file="$diff_repo/$smoke_diff_path"
 
 cleanup() {
   rm -rf "$diff_repo"
   rm -rf "$server_cwd"
   if [[ "$created_home" == "1" ]]; then
-    rm -rf "$CTXPACK_HOME"
+    rm -rf "$CTXHELM_HOME"
   fi
 }
 trap cleanup EXIT
 
 git -C "$diff_repo" init -q
 mkdir -p "$(dirname "$smoke_diff_file")"
-printf 'pub fn ctxpack_smoke_current_diff() {}\n' >"$smoke_diff_file"
-export CTXPACK_HOME
+printf 'pub fn ctxhelm_smoke_current_diff() {}\n' >"$smoke_diff_file"
+export CTXHELM_HOME
 
-python3 - "$CTXPACK_ROOT" "$CTXPACK_SMOKE_REPO" "$CTXPACK_SMOKE_TASK" "$CTXPACK_SMOKE_PATH" "$CTXPACK_SMOKE_QUERY" "$server_cwd" "$diff_repo" "$smoke_diff_path" "$CTXPACK_REQUIRE_RESOURCE_SCOPE" "${CTXPACK_BIN:-}" <<'PY'
+python3 - "$CTXHELM_ROOT" "$CTXHELM_SMOKE_REPO" "$CTXHELM_SMOKE_TASK" "$CTXHELM_SMOKE_PATH" "$CTXHELM_SMOKE_QUERY" "$server_cwd" "$diff_repo" "$smoke_diff_path" "$CTXHELM_REQUIRE_RESOURCE_SCOPE" "${CTXHELM_BIN:-}" <<'PY'
 import json
 import os
 import subprocess
@@ -56,17 +56,17 @@ import sys
 from pathlib import Path
 from urllib.parse import quote
 
-root, repo, task, anchor_path, query, server_cwd, diff_repo, smoke_diff_path, require_resource_scope, ctxpack_bin = sys.argv[1:]
+root, repo, task, anchor_path, query, server_cwd, diff_repo, smoke_diff_path, require_resource_scope, ctxhelm_bin = sys.argv[1:]
 require_resource_scope = require_resource_scope == "1"
 repo_path = Path(repo).resolve()
 diff_repo_path = Path(diff_repo).resolve()
 anchor = repo_path / anchor_path
 if not anchor.exists():
-    raise SystemExit(f"anchor path does not exist in CTXPACK_SMOKE_REPO: {anchor_path}")
+    raise SystemExit(f"anchor path does not exist in CTXHELM_SMOKE_REPO: {anchor_path}")
 
 env = os.environ.copy()
-if ctxpack_bin:
-    command = [ctxpack_bin, "serve-mcp"]
+if ctxhelm_bin:
+    command = [ctxhelm_bin, "serve-mcp"]
 else:
     command = [
         "cargo",
@@ -75,7 +75,7 @@ else:
         "--manifest-path",
         str(Path(root) / "Cargo.toml"),
         "-p",
-        "ctxpack",
+        "ctxhelm",
         "--",
         "serve-mcp",
     ]
@@ -161,7 +161,7 @@ def resource_json(uri, label):
 
 try:
     initialize = request("initialize", {})
-    if initialize.get("serverInfo", {}).get("name") != "ctxpack":
+    if initialize.get("serverInfo", {}).get("name") != "ctxhelm":
         raise SystemExit("initialize: unexpected serverInfo.name")
 
     common = {
@@ -179,7 +179,7 @@ try:
     if not pack_uri:
         raise SystemExit("prepare_task.packOptions[0]: missing resourceUri")
 
-    context_areas = resource_json("ctxpack://repo/context-areas", "resources/read.contextAreas")
+    context_areas = resource_json("ctxhelm://repo/context-areas", "resources/read.contextAreas")
     if context_areas.get("sourceTextLogged") is not False:
         raise SystemExit("resources/read.contextAreas: sourceTextLogged was not false")
     context_areas_scope = context_areas.get("resourceScope", {})
@@ -202,7 +202,7 @@ try:
     if first_area_profile.get("sourceTextLogged") is not False:
         raise SystemExit("resources/read.contextAreas.areas[0]: missing source-free coverageProfile")
     context_area = context_area_for_path(anchor_path)
-    context_area_uri = "ctxpack://repo/context-area/" + quote(context_area, safe="")
+    context_area_uri = "ctxhelm://repo/context-area/" + quote(context_area, safe="")
     context_area_resource = resource_json(
         context_area_uri, "resources/read.contextArea"
     )
@@ -317,7 +317,7 @@ try:
     require_list(resource_pack.get("sections"), "resources/read.sections")
 
     print(
-        "ctxpack MCP protocol smoke ok: "
+        "ctxhelm MCP protocol smoke ok: "
         f"repo={repo_path} anchor={anchor_path} packUri={pack_uri}"
     )
 finally:

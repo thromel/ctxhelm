@@ -2,12 +2,12 @@
 
 ## Existing Integration Points
 
-- `crates/ctxpack-compiler/src/cards.rs` already generates source-free repo, testing, and dependency cards.
-- `crates/ctxpack-index/src/storage.rs` already owns source-free SQLite schema/migrations and can be extended for memory metadata.
-- `crates/ctxpack-index/src/traces.rs` already stores source-free local eval traces.
-- `crates/ctxpack-compiler/src/planning.rs` already fuses retrieval signals into `ContextPlan`.
-- `crates/ctxpack-compiler/src/packs.rs` already compiles budgeted packs from plans.
-- `crates/ctxpack-mcp/src/lib.rs` already exposes tools/resources/prompts and session-scoped pack resources.
+- `crates/ctxhelm-compiler/src/cards.rs` already generates source-free repo, testing, and dependency cards.
+- `crates/ctxhelm-index/src/storage.rs` already owns source-free SQLite schema/migrations and can be extended for memory metadata.
+- `crates/ctxhelm-index/src/traces.rs` already stores source-free local eval traces.
+- `crates/ctxhelm-compiler/src/planning.rs` already fuses retrieval signals into `ContextPlan`.
+- `crates/ctxhelm-compiler/src/packs.rs` already compiles budgeted packs from plans.
+- `crates/ctxhelm-mcp/src/lib.rs` already exposes tools/resources/prompts and session-scoped pack resources.
 
 ## Proposed v1.6 Components
 

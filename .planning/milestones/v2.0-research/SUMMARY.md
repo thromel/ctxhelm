@@ -6,7 +6,7 @@ Support multi-repo and team workflows while keeping source code local and agent-
 
 ## Stack Additions
 
-- Typed workspace and team-policy contracts in `ctxpack-core`.
+- Typed workspace and team-policy contracts in `ctxhelm-core`.
 - Local workspace metadata on top of existing per-repo storage.
 - Source-free shared artifacts for cards, benchmark summaries, policy profiles, and privacy templates.
 - Additive CLI/MCP changes instead of a large new product surface.

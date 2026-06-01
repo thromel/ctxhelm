@@ -12,7 +12,7 @@ The existing Rust workspace remains the right foundation. v2.0 should add worksp
 
 ### Workspace metadata
 
-- Add typed workspace contracts in `ctxpack-core`.
+- Add typed workspace contracts in `ctxhelm-core`.
 - Store source-free workspace state in the existing local storage pattern.
 - Treat each repository as a bounded local root with its own repo ID, privacy status, and freshness metadata.
 - Prefer TOML/JSON config files for team-shareable policy inputs.
@@ -49,4 +49,4 @@ The existing Rust workspace remains the right foundation. v2.0 should add worksp
 
 ## Implementation Guidance
 
-Start with local manifests and source-free aggregation. This keeps v2.0 compatible with the trust model established by v1.1 through v1.7 and avoids turning ctxpack into an enterprise service before the local product is proven.
+Start with local manifests and source-free aggregation. This keeps v2.0 compatible with the trust model established by v1.1 through v1.7 and avoids turning ctxhelm into an enterprise service before the local product is proven.

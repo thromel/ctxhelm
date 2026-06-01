@@ -28,11 +28,11 @@ Phase 10 added no-context baseline comparison, budget-aligned lift metrics, toke
 
 ```bash
 cargo check --workspace
-cargo test -p ctxpack-compiler ranking_metrics_historical_eval_reports_fixed_budget_without_source_text -- --nocapture
-cargo test -p ctxpack --test cli_compat search_related_tests_dependencies_and_eval_history_emit_json_shapes -- --nocapture
-cargo test -p ctxpack-compiler -- --nocapture
-cargo test -p ctxpack historical_eval_report_renders_source_free_metrics -- --nocapture
-cargo test -p ctxpack --test cli_compat eval_benchmark_runs_named_suite_source_free -- --nocapture
+cargo test -p ctxhelm-compiler ranking_metrics_historical_eval_reports_fixed_budget_without_source_text -- --nocapture
+cargo test -p ctxhelm --test cli_compat search_related_tests_dependencies_and_eval_history_emit_json_shapes -- --nocapture
+cargo test -p ctxhelm-compiler -- --nocapture
+cargo test -p ctxhelm historical_eval_report_renders_source_free_metrics -- --nocapture
+cargo test -p ctxhelm --test cli_compat eval_benchmark_runs_named_suite_source_free -- --nocapture
 ```
 
 ## Notes

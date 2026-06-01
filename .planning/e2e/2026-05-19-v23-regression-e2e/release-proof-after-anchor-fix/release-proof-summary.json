@@ -1,10 +1,10 @@
 {
   "binaryIdentity": {
-    "fileName": "ctxpack",
+    "fileName": "ctxhelm",
     "sha256": "2190ad78212810e0c8da6a628c458513103b1b33dc677f550daaf2d3f45ae5a2",
     "source": "selected"
   },
-  "ctxpackVersion": "ctxpack 1.1.0",
+  "ctxhelmVersion": "ctxhelm 1.1.0",
   "optionalProofs": {
     "benchmarkProductProof": "skipped",
     "claudeRealClientProof": "skipped",
@@ -20,9 +20,9 @@
     "sourceTextLogged": false
   },
   "releaseArchive": {
-    "auditReport": "ctxpack-v1.1.0-aarch64-apple-darwin.audit.json",
-    "manifest": "ctxpack-v1.1.0-aarch64-apple-darwin.manifest.json",
-    "name": "ctxpack-v1.1.0-aarch64-apple-darwin.tar.gz",
+    "auditReport": "ctxhelm-v1.1.0-aarch64-apple-darwin.audit.json",
+    "manifest": "ctxhelm-v1.1.0-aarch64-apple-darwin.manifest.json",
+    "name": "ctxhelm-v1.1.0-aarch64-apple-darwin.tar.gz",
     "sha256": "6e2cb7f6daf3e1f5cec69df0695cb20e433bb2b825a78299dc3ab08a049ab74e"
   },
   "requiredChecks": [
@@ -43,11 +43,11 @@
       "status": "passed"
     },
     {
-      "name": "ctxpack --version",
+      "name": "ctxhelm --version",
       "status": "passed"
     },
     {
-      "name": "ctxpack --help",
+      "name": "ctxhelm --help",
       "status": "passed"
     },
     {

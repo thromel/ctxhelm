@@ -8,7 +8,7 @@ Fix the v2.5 product proof's zero Test Recall@10 signal without degrading target
 
 ## Problem
 
-Phase 65 reported `testRecallAt10 = 0.0` for both RefactoringMiner and ctxpack. The follow-up inspection showed that `prepare_task` already returned relevant `related_tests`, but the historical eval measured test recall against `recommended_context_files`, where the 10-slot target-file ranking could be full before related tests appeared.
+Phase 65 reported `testRecallAt10 = 0.0` for both RefactoringMiner and ctxhelm. The follow-up inspection showed that `prepare_task` already returned relevant `related_tests`, but the historical eval measured test recall against `recommended_context_files`, where the 10-slot target-file ranking could be full before related tests appeared.
 
 That made validation quality look absent even when the product had produced a dedicated validation channel.
 

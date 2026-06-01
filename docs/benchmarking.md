@@ -1,10 +1,10 @@
 # Retrieval Benchmarking
 
-ctxpack v1.2 uses source-free benchmark suites to answer the product question:
+ctxhelm v1.2 uses source-free benchmark suites to answer the product question:
 
-> Does ctxpack help an agent choose better files and tests than native search alone?
+> Does ctxhelm help an agent choose better files and tests than native search alone?
 
-The benchmark runner reuses `ctxpack eval history` for each configured repository. It records file/test recall, lexical and no-context baseline comparison, signal ablations, token ROI, grouped retrieval gaps, skipped path counts, runtime diagnostics, and privacy status without storing source snippets, prompt text, or commit subjects.
+The benchmark runner reuses `ctxhelm eval history` for each configured repository. It records file/test recall, lexical and no-context baseline comparison, signal ablations, token ROI, grouped retrieval gaps, skipped path counts, runtime diagnostics, and privacy status without storing source snippets, prompt text, or commit subjects.
 
 Historical eval reports keep two changed-file views:
 
@@ -18,21 +18,21 @@ The product-proof release gate evaluates two channels:
 - **Context channel:** non-test `retrievalTargetFiles` are compared against the lexical baseline at K=10.
 - **Validation channel:** changed tests are measured through `recommendedTests` and targeted commands.
 
-This matches the product contract: ctxpack returns source/docs/config as task context and tests as validation context. All-file recall remains in reports for transparency, but default promotion is decided by context lift plus validation-test recall so tests are not double-counted as both target files and validation commands.
+This matches the product contract: ctxhelm returns source/docs/config as task context and tests as validation context. All-file recall remains in reports for transparency, but default promotion is decided by context lift plus validation-test recall so tests are not double-counted as both target files and validation commands.
 
 Product-proof corpus verdicts also expose machine-checkable divergence fields:
 
-- `contextVsAllFileDeltaAt10`: ctxpack context-channel Recall@10 minus all-file Recall@10.
+- `contextVsAllFileDeltaAt10`: ctxhelm context-channel Recall@10 minus all-file Recall@10.
 - `lexicalContextVsAllFileDeltaAt10`: lexical context-channel Recall@10 minus lexical all-file Recall@10.
 - `allFileDivergenceExplained`: `true` only when any all-file lexical deficit is explained by non-regressed context recall plus covered validation targets.
 
 The release gate and `scripts/check-product-proof.py` block unexplained all-file lexical deficits. This keeps the proof honest when lexical wins raw all-file recall by ranking validation tests as files, while still rejecting unexplained source-context losses.
 
 Product-proof JSON also includes `releaseGate.lexicalComparison`, a suite-level
-summary of the same boundary. `allFileClaim` reports whether ctxpack beats,
+summary of the same boundary. `allFileClaim` reports whether ctxhelm beats,
 matches, or trails lexical when every safe changed file is counted together.
 `agentEvidenceClaim` reports the same comparison across the actual evidence set
-ctxpack gives an agent: selected context files plus related tests and validation
+ctxhelm gives an agent: selected context files plus related tests and validation
 commands. This is the production adoption claim because coding agents consume
 both context and verification guidance. In the same summary, `contextClaim`
 reports the comparison after validation targets are removed from the context
@@ -83,9 +83,9 @@ Benchmark suites are JSON files. Paths may be absolute or relative to the suite 
 
 ```json
 {
-  "manifestVersion": "ctxpack-benchmark-corpus-v2.3",
+  "manifestVersion": "ctxhelm-benchmark-corpus-v2.3",
   "name": "retrieval-quality-smoke",
-  "corpusId": "ctxpack-local-retrieval-quality-smoke",
+  "corpusId": "ctxhelm-local-retrieval-quality-smoke",
   "privacyLabel": "source_free_local",
   "description": "Bounded source-free retrieval benchmark over local repos",
   "defaults": {
@@ -95,7 +95,7 @@ Benchmark suites are JSON files. Paths may be absolute or relative to the suite 
     "targetAgent": "codex",
     "semanticEnabled": false,
     "semanticProvider": "local_hash",
-    "semanticModel": "ctxpack-local-hash-v1",
+    "semanticModel": "ctxhelm-local-hash-v1",
     "semanticDimensions": 64,
     "cacheEnabled": true,
     "forceRefresh": false,
@@ -104,9 +104,9 @@ Benchmark suites are JSON files. Paths may be absolute or relative to the suite 
   },
   "repositories": [
     {
-      "name": "ctxpack",
+      "name": "ctxhelm",
       "path": ".",
-      "revisionRangeId": "ctxpack-main-last-20",
+      "revisionRangeId": "ctxhelm-main-last-20",
       "privacyLabel": "source_free_local",
       "base": "main~20",
       "head": "main"
@@ -131,7 +131,7 @@ Benchmark suites are JSON files. Paths may be absolute or relative to the suite 
 
 Fields:
 
-- `manifestVersion`: source-free manifest contract version. v2.3 suites use `ctxpack-benchmark-corpus-v2.3`.
+- `manifestVersion`: source-free manifest contract version. v2.3 suites use `ctxhelm-benchmark-corpus-v2.3`.
 - `name`: source-free suite label used in reports.
 - `corpusId`: stable source-free ID for fixed-corpus comparisons.
 - `privacyLabel`: expected privacy class for the suite, usually `source_free_local`.
@@ -159,18 +159,18 @@ Fields:
 ## Run
 
 ```bash
-ctxpack eval benchmark --config .ctxpack/benchmarks/retrieval-quality.json --format markdown
-ctxpack eval benchmark --config .ctxpack/benchmarks/retrieval-quality.json --format json
-ctxpack eval history --repo /path/to/repo --semantic --format json
-ctxpack eval history --repo /path/to/repo --semantic --semantic-provider local_fastembed --format json
-ctxpack eval history --repo /path/to/repo --cache --parallelism 4 --format markdown
-ctxpack eval history --repo /path/to/repo --cache --force --parallelism 4 --format json
-ctxpack eval baselines --repo /path/to/repo --limit 20 --budget 10 --format markdown
-ctxpack eval compare --base-report previous.json --head-report current.json --threshold fileRecallAt10=0.05
-ctxpack eval proof --config .ctxpack/benchmarks/retrieval-quality.json
+ctxhelm eval benchmark --config .ctxhelm/benchmarks/retrieval-quality.json --format markdown
+ctxhelm eval benchmark --config .ctxhelm/benchmarks/retrieval-quality.json --format json
+ctxhelm eval history --repo /path/to/repo --semantic --format json
+ctxhelm eval history --repo /path/to/repo --semantic --semantic-provider local_fastembed --format json
+ctxhelm eval history --repo /path/to/repo --cache --parallelism 4 --format markdown
+ctxhelm eval history --repo /path/to/repo --cache --force --parallelism 4 --format json
+ctxhelm eval baselines --repo /path/to/repo --limit 20 --budget 10 --format markdown
+ctxhelm eval compare --base-report previous.json --head-report current.json --threshold fileRecallAt10=0.05
+ctxhelm eval proof --config .ctxhelm/benchmarks/retrieval-quality.json
 ```
 
-The Markdown report is meant for local inspection. The JSON report is the stable contract for future release gates, portfolio tables, and regression comparison. `ctxpack eval baselines` runs a paired source-free comparison for default ctxpack, lexical, no-context, signal-only, and ablation variants on the same historical corpus. `ctxpack eval compare` consumes two benchmark JSON reports and emits source-free metric deltas, retrieval-gap family deltas, and threshold pass/fail checks. `ctxpack eval proof` runs the configured benchmark suite and emits the adoption-facing proof report with headline metrics, v2.3 fixed-corpus identity, paired baseline verdicts, runtime diagnostics, feature-export privacy, learned-policy status, limitations, when ctxpack helps, when it does not, and future work from measured gaps.
+The Markdown report is meant for local inspection. The JSON report is the stable contract for future release gates, portfolio tables, and regression comparison. `ctxhelm eval baselines` runs a paired source-free comparison for default ctxhelm, lexical, no-context, signal-only, and ablation variants on the same historical corpus. `ctxhelm eval compare` consumes two benchmark JSON reports and emits source-free metric deltas, retrieval-gap family deltas, and threshold pass/fail checks. `ctxhelm eval proof` runs the configured benchmark suite and emits the adoption-facing proof report with headline metrics, v2.3 fixed-corpus identity, paired baseline verdicts, runtime diagnostics, feature-export privacy, learned-policy status, limitations, when ctxhelm helps, when it does not, and future work from measured gaps.
 
 ## Privacy Boundary
 
@@ -209,12 +209,12 @@ For large-history proof, RefactoringMiner is the primary v1.2 target. Add a seco
 The v2.3 locked RefactoringMiner manifest lives at:
 
 ```bash
-ctxpack eval benchmark --config .ctxpack/benchmarks/refactoringminer-v23.json --format markdown
+ctxhelm eval benchmark --config .ctxhelm/benchmarks/refactoringminer-v23.json --format markdown
 ```
 
 It intentionally uses a source-free baseline from the May 19 E2E run:
 
-- ctxpack Recall@10: `0.5186`
+- ctxhelm Recall@10: `0.5186`
 - lexical baseline Recall@10: `0.5008`
 - total historical eval runtime baseline: `265650` ms
 
@@ -225,20 +225,20 @@ Use this as the first large-history regression target, not as a broad product cl
 v2.5 uses the same benchmark-suite command as the default multi-repo proof path:
 
 ```bash
-ctxpack eval benchmark --config .ctxpack/e2e/v25-multirepo-baseline-config.json --format json
+ctxhelm eval benchmark --config .ctxhelm/e2e/v25-multirepo-baseline-config.json --format json
 ```
 
-The Phase 61 baseline ran RefactoringMiner plus ctxpack itself:
+The Phase 61 baseline ran RefactoringMiner plus ctxhelm itself:
 
 | Repo | Commits | Default Recall@10 | Lexical Recall@10 | Lift@10 |
 | --- | ---: | ---: | ---: | ---: |
 | RefactoringMiner | 10 | 0.7767 | 0.7792 | -0.0025 |
-| ctxpack | 10 | 0.2270 | 0.2742 | -0.0472 |
+| ctxhelm | 10 | 0.2270 | 0.2742 | -0.0472 |
 
 Interpretation:
 
 - RefactoringMiner is near lexical parity in this bounded run.
-- ctxpack trails lexical and exposes repeated docs/scripts/planning and compiler-source gap families.
+- ctxhelm trails lexical and exposes repeated docs/scripts/planning and compiler-source gap families.
 - Production embeddings, rerankers, or learned policies should not be promoted unless they improve this multi-repo proof under the same source-free privacy boundary.
 
 The concise Phase 61 evidence lives at `.planning/e2e/2026-05-22-v25-multirepo-baseline.md`.
@@ -254,19 +254,19 @@ resolve semantic provider metadata in `effectiveConfig`, including
 Commands:
 
 ```bash
-cargo run -p ctxpack --features local-embeddings -- \
-  eval benchmark --config .ctxpack/e2e/phase62-default-config.json --format json
+cargo run -p ctxhelm --features local-embeddings -- \
+  eval benchmark --config .ctxhelm/e2e/phase62-default-config.json --format json
 
-cargo run -p ctxpack --features local-embeddings -- \
-  eval benchmark --config .ctxpack/e2e/phase62-local-hash-config.json --format json
+cargo run -p ctxhelm --features local-embeddings -- \
+  eval benchmark --config .ctxhelm/e2e/phase62-local-hash-config.json --format json
 
-cargo run -p ctxpack --features local-embeddings -- \
-  eval benchmark --config .ctxpack/e2e/phase62-local-fastembed-config.json --format json
+cargo run -p ctxhelm --features local-embeddings -- \
+  eval benchmark --config .ctxhelm/e2e/phase62-local-fastembed-config.json --format json
 ```
 
 Results:
 
-| Variant | Provider role | Quality backend | RefactoringMiner Recall@10 | ctxpack Recall@10 | Total repo runtime |
+| Variant | Provider role | Quality backend | RefactoringMiner Recall@10 | ctxhelm Recall@10 | Total repo runtime |
 | --- | --- | --- | ---: | ---: | ---: |
 | Default, semantic off | `deterministic_scaffold` | false | 0.7767 | 0.2299 | 26.3s |
 | `local_hash` | `deterministic_scaffold` | false | 0.7767 | 0.2299 | 57.8s |
@@ -276,23 +276,23 @@ Interpretation:
 
 - `local_fastembed` is source-free, local-only, and usable behind the `local-embeddings` feature.
 - The Jina code model is available but too slow for the current full historical eval path.
-- The model cache defaults to repo `.ctxpack/cache/fastembed` inside a git repo, otherwise `CTXPACK_HOME/cache/fastembed`.
+- The model cache defaults to repo `.ctxhelm/cache/fastembed` inside a git repo, otherwise `CTXHELM_HOME/cache/fastembed`.
 - The measured fastembed variant matched default recall but did not beat lexical/default retrieval.
 - Runtime cost blocks default promotion.
 - v2.5 should proceed to reranker/fusion and gap-family work before attempting semantic promotion again.
 
 ## Interpreting Metrics
 
-- `rankingComparison.combined`: ctxpack's hybrid context-file ranking at the configured K budget.
+- `rankingComparison.combined`: ctxhelm's hybrid context-file ranking at the configured K budget.
 - `rankingComparison.lexicalBaseline`: exact/BM25-style local search baseline under the same K budget.
-- `rankingComparison.noContextBaseline`: a zero-file baseline that represents an agent starting without ctxpack-provided repository context.
+- `rankingComparison.noContextBaseline`: a zero-file baseline that represents an agent starting without ctxhelm-provided repository context.
 - `signalAblations`: source-free lift checks after removing one retrieval signal family.
-- `ctxpack eval baselines`: paired comparison report with thresholded verdicts, lexical parity/regression status, token ROI, validation coverage, signal saturation, runtime, and retrieval-gap taxonomy.
+- `ctxhelm eval baselines`: paired comparison report with thresholded verdicts, lexical parity/regression status, token ROI, validation coverage, signal saturation, runtime, and retrieval-gap taxonomy.
 - `tokenRoi`: brief, standard, and deep budget estimates showing useful changed-file targets per 1k estimated context tokens.
 - `largerPackAddsLittleValue`: true when a larger budget adds no additional useful changed-file targets over the previous budget in the current fixed ranking.
 - `retrievalGapSummaries`: source-free failure families grouped by role, signal gap, package, path family, target status, and recommendation area.
-- `ctxpack eval compare`: compares two benchmark reports across recall, token ROI, skipped paths, and gap families; configured thresholds fail when a metric drops more than the allowed amount.
-- `ctxpack eval proof`: generates a concise product proof report from a local suite and embeds the underlying source-free benchmark report in JSON output.
+- `ctxhelm eval compare`: compares two benchmark reports across recall, token ROI, skipped paths, and gap families; configured thresholds fail when a metric drops more than the allowed amount.
+- `ctxhelm eval proof`: generates a concise product proof report from a local suite and embeds the underlying source-free benchmark report in JSON output.
 - `runtime`: reports total time, per-commit time, overhead, cache hits/misses, effective parallelism, git sample cost, ranking cost, pack/compiler cost, and the slowest source-free commit summaries.
 
 ## Query Trace Debugging
@@ -313,11 +313,11 @@ Phase 60 adds a fixed-corpus gate for semantic, precision, and reranker
 variants:
 
 ```bash
-ctxpack eval gate --repo /path/to/repo --limit 20 --budget 10 --format json
+ctxhelm eval gate --repo /path/to/repo --limit 20 --budget 10 --format json
 ```
 
 The gate emits deterministic variant rows for `lexical_baseline`,
-`ctxpack_default`, `local_metadata_reranked`, `local_semantic`,
+`ctxhelm_default`, `local_metadata_reranked`, `local_semantic`,
 `precision_enriched_semantic`, `semantic_precision_full_hybrid`, and
 `policy_allowed_reranked`. Policy-blocked variants are reported as `skipped`,
 not omitted.
@@ -367,9 +367,9 @@ Phase 63 compared default ranking with the eval-only local metadata reranker on
 the same two-repo corpus used by Phase 62.
 
 ```bash
-ctxpack eval benchmark --config .ctxpack/e2e/phase62-default-config.json --format json
-ctxpack eval benchmark --config .ctxpack/e2e/phase63-local-reranker-config.json --format json
-ctxpack eval gate --limit 5 --budget 10 --format json
+ctxhelm eval benchmark --config .ctxhelm/e2e/phase62-default-config.json --format json
+ctxhelm eval benchmark --config .ctxhelm/e2e/phase63-local-reranker-config.json --format json
+ctxhelm eval gate --limit 5 --budget 10 --format json
 ```
 
 Results:
@@ -377,10 +377,10 @@ Results:
 | Repo | Default Recall@10 | Reranked Recall@10 | Delta | Default MRR@K | Reranked MRR@K | Test Recall@10 delta | Protected miss-rate delta | Runtime delta |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
 | RefactoringMiner | 0.1375 | 0.6642 | +0.5267 | 0.1500 | 0.6125 | +1.0000 | +0.1509 | +13.4s |
-| ctxpack | 0.2049 | 0.1927 | -0.0122 | 0.6333 | 0.7167 | +0.5000 | +0.0000 | -0.6s |
+| ctxhelm | 0.2049 | 0.1927 | -0.0122 | 0.6333 | 0.7167 | +0.5000 | +0.0000 | -0.6s |
 
 Decision: hold/block default promotion. The reranker produced a large
-RefactoringMiner lift, but it regressed ctxpack Recall@10 and the gate named
+RefactoringMiner lift, but it regressed ctxhelm Recall@10 and the gate named
 protected-evidence demotions. The next work is Phase 64 gap-family retrieval
 improvements, not default reranker promotion.
 
@@ -399,12 +399,12 @@ The product proof is intentionally narrow. It does not claim universal agent imp
 - total historical-eval runtime across the proof run;
 - whether feature export remained local-only and source-free;
 - whether learned retrieval policy is available only behind thresholded status;
-- when ctxpack helps;
-- when ctxpack does not help;
+- when ctxhelm helps;
+- when ctxhelm does not help;
 - limitations in the benchmark design;
 - which future milestone should address repeated gap families.
 
-Useful context at lexical parity is not world-class lift. If ctxpack matches
+Useful context at lexical parity is not world-class lift. If ctxhelm matches
 lexical retrieval, the proof can still show product usefulness around related
 tests, token ROI, privacy-safe diagnostics, and process guidance, but it should
 not be described as state-of-the-art retrieval. World-class claims require
@@ -418,9 +418,9 @@ Phase 65 adds a machine-checkable `releaseGate` section to product proof JSON
 and Markdown. Each required corpus receives a verdict for the configured
 retrieval variant:
 
-- `beat`: ctxpack exceeds lexical Recall@10 by more than the proof threshold.
-- `match`: ctxpack is within the proof threshold of lexical.
-- `trail`: ctxpack falls behind lexical by more than the proof threshold.
+- `beat`: ctxhelm exceeds lexical Recall@10 by more than the proof threshold.
+- `match`: ctxhelm is within the proof threshold of lexical.
+- `trail`: ctxhelm falls behind lexical by more than the proof threshold.
 - `insufficient_evidence`: the repository failed or produced no eval report.
 
 The current v2.5 fixed two-repo proof promotes default local retrieval under
@@ -428,27 +428,27 @@ the channel-aware release gate. Context recall is evaluated on non-test target
 context, and validation-test recall is evaluated through the dedicated
 `recommended_tests` channel plus broad validation-command coverage:
 
-| Corpus | Variant | Status | ctxpack Recall@10 | Lexical Recall@10 | Delta | Test Recall@10 | Effective validation recall |
+| Corpus | Variant | Status | ctxhelm Recall@10 | Lexical Recall@10 | Delta | Test Recall@10 | Effective validation recall |
 | --- | --- | --- | ---: | ---: | ---: | ---: | ---: |
-| RefactoringMiner | `ctxpack_default` | `beat` | 0.778 | 0.741 | +0.037 | 1.000 | 1.000 |
-| ctxpack | `ctxpack_default` | `beat` | 0.423 | 0.352 | +0.070 | 0.000 | 0.000 |
+| RefactoringMiner | `ctxhelm_default` | `beat` | 0.778 | 0.741 | +0.037 | 1.000 | 1.000 |
+| ctxhelm | `ctxhelm_default` | `beat` | 0.423 | 0.352 | +0.070 | 0.000 | 0.000 |
 
 Phase 74 adds protected-evidence diagnostics to this proof. The original
 overall protected miss-rate remains visible, but the report now also separates
 retrieval-target protected misses from non-target protected pressure. On the
 current required proof after Phase 77, RefactoringMiner has protected target
-miss-rate@10 0.059 and ctxpack has 0.083. The broader fixed-corpus fixture
+miss-rate@10 0.059 and ctxhelm has 0.083. The broader fixed-corpus fixture
 now promotes after Phase 78: VeriSchema beats through effective validation
 recall, and RefactoringMiner is accepted as a safe lexical-ceiling match because
-both ctxpack and lexical have perfect context recall with zero protected
+both ctxhelm and lexical have perfect context recall with zero protected
 retrieval-target misses. Phase 79 adds protected target floors: the latest
 broader proof keeps the gate promoted, drops VeriSchema protected target
-miss-rate to `0.0`, and leaves ctxpack with one residual protected
+miss-rate to `0.0`, and leaves ctxhelm with one residual protected
 source-symbol miss.
 
 Recommendation today:
 
-- Use `ctxpack_default` through MCP/agent-native integrations for progressive
+- Use `ctxhelm_default` through MCP/agent-native integrations for progressive
   task plans, related tests, source-free diagnostics, and graph/history context.
 - It is valid to claim default local retrieval beats lexical on the fixed
   channel-aware two-repo proof. Do not generalize that to every repository or
@@ -456,13 +456,13 @@ Recommendation today:
   parser/precision gaps still need follow-up.
 - Phase 71 dampens historical planning archive artifacts so they stay searchable
   without crowding active source/current planning evidence. On the current
-  ctxpack history, protected miss-rate@10 improved from 0.250 to 0.163.
+  ctxhelm history, protected miss-rate@10 improved from 0.250 to 0.163.
 - Phase 74 makes protected-evidence pressure source-free and target-aware, so
   follow-up ranking work can focus on protected retrieval-target misses instead
   of total non-target exact/symbol candidates.
 - Phase 75 restores parent-bounded co-change history in archive-based eval
   snapshots and reserves co-changed validation tests. This improves the required
-  ctxpack protected target miss-rate.
+  ctxhelm protected target miss-rate.
 - Phase 76 narrows partial snapshot history to validation-test discovery in
   historical eval, enriches co-changed tests with runnable commands, and improves
   VeriSchema's broader validation-test Recall@10 from `0.661` to `0.709`
@@ -472,10 +472,10 @@ Recommendation today:
   `pytest` commands raise effective validation recall to `1.000`.
 - Phase 78 makes the product-proof gate ceiling-aware. The broader four-repo
   proof now promotes while preserving protected target miss diagnostics for
-  ctxpack and VeriSchema.
+  ctxhelm and VeriSchema.
 - Phase 79 reserves bounded source/config/governance floors and defers planning
   archive artifacts. Required RefactoringMiner and broader VeriSchema protected
-  target miss-rates are now `0.0`; ctxpack still has residual source-symbol
+  target miss-rates are now `0.0`; ctxhelm still has residual source-symbol
   misses to investigate.
 - Phase 80 fixes symbol-floor duplicate accounting. Required and broader
   product proofs now promote with protected retrieval-target miss-rate `0.0`
@@ -518,12 +518,12 @@ Recommendation today:
 - Phase 89 replaces full source re-hashing on inventory cache-hit freshness
   checks with metadata manifest comparison. The pinned broader release proof
   promotes with Phase 88 quality metrics preserved: RefactoringMiner `8279ms`,
-  ctxpack `8317ms`, ReAgent `4264ms`, and VeriSchema `6590ms`.
+  ctxhelm `8317ms`, ReAgent `4264ms`, and VeriSchema `6590ms`.
 - Phases 90-101 move broad-area evidence from diagnostics toward release
   contract: the packaged release gate can run the four-repo proof, broad
   context areas are measured, exposed as MCP resources, enriched with
   next-read batches, and current reachable retrieval-gap summaries must retain
-  `ctxpack://repo/context-area/...` URIs plus bounded `nextReadPaths` for the
+  `ctxhelm://repo/context-area/...` URIs plus bounded `nextReadPaths` for the
   product-proof checker to pass.
 - Phase 102 closes the wrong-cwd consumption gap for those resources. After an
   explicit-repo MCP tool call, repo-scoped resources fall back to that repo, and
@@ -567,7 +567,7 @@ Recommendation today:
 The release gate can run this proof optionally:
 
 ```bash
-CTXPACK_BENCHMARK_CONFIG=/absolute/path/to/retrieval-quality.json bash scripts/release-gate.sh
+CTXHELM_BENCHMARK_CONFIG=/absolute/path/to/retrieval-quality.json bash scripts/release-gate.sh
 ```
 
 When enabled, the gate fails if the proof cannot be generated, if the
@@ -594,8 +594,8 @@ diagnostics, and product proof. RefactoringMiner and multi-repo suites remain
 optional external gates:
 
 ```bash
-ctxpack eval benchmark --config .ctxpack/benchmarks/refactoringminer-v23.json --format markdown
-CTXPACK_BENCHMARK_CONFIG="$(pwd)/.ctxpack/benchmarks/refactoringminer-v23.json" bash scripts/release-gate.sh
+ctxhelm eval benchmark --config .ctxhelm/benchmarks/refactoringminer-v23.json --format markdown
+CTXHELM_BENCHMARK_CONFIG="$(pwd)/.ctxhelm/benchmarks/refactoringminer-v23.json" bash scripts/release-gate.sh
 ```
 
 If the external checkout is not available, skip with the reason "external corpus unavailable." The skip is acceptable for the default release gate; it is

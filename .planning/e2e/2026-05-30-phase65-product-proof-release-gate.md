@@ -24,14 +24,14 @@ promote, hold, or block the current retrieval default from measured evidence.
 ## Commands
 
 ```bash
-cargo test -p ctxpack-compiler product_proof_release_gate -- --nocapture
-cargo test -p ctxpack --test release_packaging -- --nocapture
-cargo run -p ctxpack -- \
-  eval proof --config .ctxpack/e2e/phase62-default-config.json --format json
-python3 scripts/check-product-proof.py .ctxpack/e2e/phase65-product-proof.json
+cargo test -p ctxhelm-compiler product_proof_release_gate -- --nocapture
+cargo test -p ctxhelm --test release_packaging -- --nocapture
+cargo run -p ctxhelm -- \
+  eval proof --config .ctxhelm/e2e/phase62-default-config.json --format json
+python3 scripts/check-product-proof.py .ctxhelm/e2e/phase65-product-proof.json
 bash scripts/check-release-docs.sh
 cargo test --workspace --no-fail-fast
-cargo run -p ctxpack -- --help
+cargo run -p ctxhelm -- --help
 git diff --check
 ```
 
@@ -40,23 +40,23 @@ because the decision is `block`.
 
 ## Product-Proof Result
 
-`ctxpack eval proof --config .ctxpack/e2e/phase62-default-config.json --format json`
+`ctxhelm eval proof --config .ctxhelm/e2e/phase62-default-config.json --format json`
 produced:
 
 ```json
 {
   "decision": "block",
   "defaultPromotionAllowed": false,
-  "reason": "Blocked because default promotion requires every corpus to beat lexical; failing corpora: RefactoringMiner:Trail, ctxpack:Match."
+  "reason": "Blocked because default promotion requires every corpus to beat lexical; failing corpora: RefactoringMiner:Trail, ctxhelm:Match."
 }
 ```
 
 Corpus verdicts:
 
-| Corpus | Variant | Status | ctxpack Recall@10 | Lexical Recall@10 | Delta | Test Recall@10 | Protected miss-rate@10 |
+| Corpus | Variant | Status | ctxhelm Recall@10 | Lexical Recall@10 | Delta | Test Recall@10 | Protected miss-rate@10 |
 | --- | --- | --- | ---: | ---: | ---: | ---: | ---: |
-| RefactoringMiner | `ctxpack_default` | `trail` | 0.7392 | 0.7792 | -0.0400 | 0.0000 | 0.0526 |
-| ctxpack | `ctxpack_default` | `match` | 0.1974 | 0.2021 | -0.0046 | 0.0000 | 0.2000 |
+| RefactoringMiner | `ctxhelm_default` | `trail` | 0.7392 | 0.7792 | -0.0400 | 0.0000 | 0.0526 |
+| ctxhelm | `ctxhelm_default` | `match` | 0.1974 | 0.2021 | -0.0046 | 0.0000 | 0.2000 |
 
 ## Decision
 
@@ -68,7 +68,7 @@ two-repo proof.
 ## Follow-Up
 
 - Improve test mapping; both corpora still show `testRecallAt10 = 0.0`.
-- Address RefactoringMiner lexical trailing status and ctxpack lexical parity.
+- Address RefactoringMiner lexical trailing status and ctxhelm lexical parity.
 - Resolve remaining protected symbol budget pressure.
 - Future release proof should promote only after every required corpus reaches
   `beat` status with acceptable runtime and privacy.

@@ -9,7 +9,7 @@
 - Added graph neighborhood builder using dependency edges, related tests, memory
   cards, feedback events, and task-derived anchors.
 - Added capped, non-recursive graph expansion with cap diagnostics.
-- Added `ctxpack graph neighborhood`.
+- Added `ctxhelm graph neighborhood`.
 - Added graph documentation.
 - Added `scripts/smoke-graph.sh` and wired it into release docs and release
   gate.
@@ -17,15 +17,15 @@
 ## Verification
 
 - `cargo fmt --all`
-- `cargo run -p ctxpack -- graph neighborhood --help`
+- `cargo run -p ctxhelm -- graph neighborhood --help`
 - `bash scripts/smoke-graph.sh`
 - `bash scripts/check-release-docs.sh`
 - `bash -n scripts/release-gate.sh`
 - `bash -n scripts/smoke-graph.sh`
-- `cargo test -p ctxpack release_gate_script_contract -- --nocapture`
+- `cargo test -p ctxhelm release_gate_script_contract -- --nocapture`
 - `cargo test --workspace`
 
-All commands passed using `CARGO_TARGET_DIR=/tmp/ctxpack-target-phase39` where
+All commands passed using `CARGO_TARGET_DIR=/tmp/ctxhelm-target-phase39` where
 applicable.
 
 ## Next

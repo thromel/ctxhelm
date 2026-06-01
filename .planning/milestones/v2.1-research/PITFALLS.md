@@ -3,14 +3,14 @@
 ## Question
 
 What mistakes are most likely when adding a UI inspector and deeper graph or
-embedding retrieval to ctxpack?
+embedding retrieval to ctxhelm?
 
 ## Pitfalls
 
 ### Turning The UI Into The Product Center
 
 The inspector must not become the daily coding workflow. If users need to live
-inside the UI to benefit from ctxpack, the product drifts away from the original
+inside the UI to benefit from ctxhelm, the product drifts away from the original
 agent-native thesis.
 
 Prevention:
@@ -34,7 +34,7 @@ Prevention:
 ### Overbuilding Generic GraphRAG
 
 Generic GraphRAG pipelines often build LLM-derived knowledge graphs over prose.
-ctxpack already has a code graph, symbol graph, tests, history, memory, and
+ctxhelm already has a code graph, symbol graph, tests, history, memory, and
 feedback. Rebuilding another graph layer would add cost without clear lift.
 
 Prevention:

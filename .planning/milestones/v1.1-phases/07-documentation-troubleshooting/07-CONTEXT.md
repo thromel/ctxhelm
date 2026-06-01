@@ -7,7 +7,7 @@
 <domain>
 ## Phase Boundary
 
-This phase makes the current v1.1 install, setup, smoke, and support story understandable from docs alone. It covers README flow, troubleshooting docs, agent setup matrix, deterministic-vs-real-client proof explanation, PATH/CTXPACK_HOME/wrong-cwd/MCP startup guidance, and docs consistency checks. It does not add new product behavior unless a small validation script is required to keep docs accurate.
+This phase makes the current v1.1 install, setup, smoke, and support story understandable from docs alone. It covers README flow, troubleshooting docs, agent setup matrix, deterministic-vs-real-client proof explanation, PATH/CTXHELM_HOME/wrong-cwd/MCP startup guidance, and docs consistency checks. It does not add new product behavior unless a small validation script is required to keep docs accurate.
 
 </domain>
 
@@ -21,8 +21,8 @@ This phase makes the current v1.1 install, setup, smoke, and support story under
 - Keep command snippets synchronized with actual CLI flags and scripts.
 
 ### Troubleshooting Scope
-- Cover PATH and GUI/client environment differences, including absolute `ctxpack` binary paths.
-- Cover `CTXPACK_HOME`, local state cleanup, uninstall, wrong cwd, explicit `repo`, MCP startup failures, stdout cleanliness, and session-scoped pack resources.
+- Cover PATH and GUI/client environment differences, including absolute `ctxhelm` binary paths.
+- Cover `CTXHELM_HOME`, local state cleanup, uninstall, wrong cwd, explicit `repo`, MCP startup failures, stdout cleanliness, and session-scoped pack resources.
 - Explain that setup-check validates repo-local artifacts and does not run or mutate real agent clients.
 - Keep troubleshooting local-only and privacy-aware.
 
@@ -49,7 +49,7 @@ This phase makes the current v1.1 install, setup, smoke, and support story under
 - `scripts/smoke-mcp-protocol.sh`, `scripts/smoke-codex-mcp.sh`, and `scripts/smoke-claude-mcp.sh` provide deterministic and optional proof paths.
 
 ### Established Patterns
-- Docs should state what ctxpack does locally and what it deliberately does not do.
+- Docs should state what ctxhelm does locally and what it deliberately does not do.
 - Do not present `cargo run` as the normal user path after Phase 5.
 - Keep real-client claims tied to exact smoke evidence and client version context.
 - Maintain source-free/privacy language where docs describe traces, cards, setup checks, and artifacts.
@@ -65,7 +65,7 @@ This phase makes the current v1.1 install, setup, smoke, and support story under
 ## Specific Ideas
 
 - Add `docs/agent-setup.md` for the agent setup matrix and per-client instructions.
-- Add `docs/troubleshooting.md` for PATH, CTXPACK_HOME, wrong-cwd, MCP startup, setup-check, and state cleanup.
+- Add `docs/troubleshooting.md` for PATH, CTXHELM_HOME, wrong-cwd, MCP startup, setup-check, and state cleanup.
 - Update README to link release, setup, troubleshooting, and first-pack smoke docs.
 - Extend docs checks to cover agent setup matrix, deterministic-vs-real-client proof language, and no unsupported Cursor/OpenCode real-client claims.
 

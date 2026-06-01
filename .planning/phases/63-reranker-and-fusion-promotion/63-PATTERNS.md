@@ -10,7 +10,7 @@ Anchors, current diff files, exact lexical matches, and high-confidence symbols 
 
 ## Use Existing Eval Surfaces
 
-Keep Phase 63 on `ctxpack eval benchmark` and related policy reports. A new evaluator would make Phase 61 and Phase 62 comparisons harder to trust.
+Keep Phase 63 on `ctxhelm eval benchmark` and related policy reports. A new evaluator would make Phase 61 and Phase 62 comparisons harder to trust.
 
 ## Source-Free Reports
 

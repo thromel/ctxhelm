@@ -10,12 +10,12 @@ Expose storage-backed incremental indexing through the existing CLI without maki
 
 ## Tasks
 
-- Add `ctxpack index --store`.
+- Add `ctxhelm index --store`.
 - Add optional `--store-path`.
 - Print source-free storage sync counts.
 - Preserve the existing inventory report.
 
 ## Verification
 
-- `CTXPACK_HOME=<tmp> cargo run -q -p ctxpack -- index --repo <repo> --store`
+- `CTXHELM_HOME=<tmp> cargo run -q -p ctxhelm -- index --repo <repo> --store`
 

@@ -22,22 +22,22 @@ validation-channel coverage. Several broad proof reports still listed
 Focused tests:
 
 ```bash
-cargo test -p ctxpack-compiler validation_command_coverage_recognizes_java_class_selectors -- --nocapture
-cargo test -p ctxpack-compiler retrieval_gap_summaries_skip_validation_covered_tests -- --nocapture
+cargo test -p ctxhelm-compiler validation_command_coverage_recognizes_java_class_selectors -- --nocapture
+cargo test -p ctxhelm-compiler retrieval_gap_summaries_skip_validation_covered_tests -- --nocapture
 ```
 
 Pinned broader proof:
 
 ```bash
-cargo run -p ctxpack -- eval proof \
+cargo run -p ctxhelm -- eval proof \
   --config .planning/e2e/2026-05-30-phase73-broader-fixed-corpus-config.json \
-  --format json > /tmp/ctxpack-phase87-validation-gap-accounting-proof.json
+  --format json > /tmp/ctxhelm-phase87-validation-gap-accounting-proof.json
 ```
 
 Committed artifact:
 
 ```text
-.ctxpack/e2e/phase87-validation-gap-accounting-proof.json
+.ctxhelm/e2e/phase87-validation-gap-accounting-proof.json
 ```
 
 ## Result
@@ -47,7 +47,7 @@ Quality metrics are non-regressing versus Phase 84:
 | Corpus | File Recall@10 | Source Recall@10 | Test Recall@10 | Validation Command Recall | Effective Validation Recall@10 | Protected Target Miss-Rate@10 |
 | --- | --- | --- | --- | --- | --- | --- |
 | RefactoringMiner | `0.6 -> 0.6` | `1.0 -> 1.0` | `1.0 -> 1.0` | `0.0 -> 1.0` | `1.0 -> 1.0` | `0.0 -> 0.0` |
-| ctxpack | `0.44603175 -> 0.44603175` | `0.6333333 -> 0.6333333` | `0.0 -> 0.0` | `0.0 -> 0.0` | `0.0 -> 0.0` | `0.0 -> 0.0` |
+| ctxhelm | `0.44603175 -> 0.44603175` | `0.6333333 -> 0.6333333` | `0.0 -> 0.0` | `0.0 -> 0.0` | `0.0 -> 0.0` | `0.0 -> 0.0` |
 | ReAgent | `0.5 -> 0.5` | `1.0 -> 1.0` | `1.0 -> 1.0` | `1.0 -> 1.0` | `1.0 -> 1.0` | `0.0 -> 0.0` |
 | VeriSchema | `0.17936651 -> 0.17936651` | `0.30409357 -> 0.30409357` | `0.7089947 -> 0.7089947` | `1.0 -> 1.0` | `1.0 -> 1.0` | `0.2857143 -> 0.2857143` |
 

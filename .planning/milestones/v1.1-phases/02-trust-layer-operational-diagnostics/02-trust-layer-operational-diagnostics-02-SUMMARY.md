@@ -12,7 +12,7 @@ provides:
   - Source-free inventory freshness diagnostics for stale cache reasons
   - Trusted load_or_refresh_inventory envelope with freshness and cache-write status
   - Non-fatal cache persistence failures for read-oriented trusted inventory loads
-affects: [ctxpack-index, trust-layer-operational-diagnostics, future-read-path-migration]
+affects: [ctxhelm-index, trust-layer-operational-diagnostics, future-read-path-migration]
 
 tech-stack:
   added: []
@@ -23,12 +23,12 @@ tech-stack:
 
 key-files:
   created:
-    - crates/ctxpack-index/src/freshness.rs
+    - crates/ctxhelm-index/src/freshness.rs
     - .planning/phases/02-trust-layer-operational-diagnostics/02-trust-layer-operational-diagnostics-02-SUMMARY.md
   modified:
-    - crates/ctxpack-index/src/inventory.rs
-    - crates/ctxpack-index/src/lib.rs
-    - crates/ctxpack-index/src/policy.rs
+    - crates/ctxhelm-index/src/inventory.rs
+    - crates/ctxhelm-index/src/lib.rs
+    - crates/ctxhelm-index/src/policy.rs
 
 key-decisions:
   - "Inventory metadata is additive on RepoInventory and missing metadata deserializes as a stale legacy cache."
@@ -61,7 +61,7 @@ completed: 2026-05-13
 
 - Added `InventoryMetadata` to `RepoInventory`, including schema version, policy version, options fingerprint, repository root, build timestamp, ignore-file fingerprints, and a safe-file manifest.
 - Added `freshness.rs` with `InventoryFreshness`, `InventoryStaleReason`, and source-free diagnostics for created, deleted, renamed, changed, ignored, option-drift, policy-drift, repo-root-drift, and legacy-cache cases.
-- Added `InventoryLoadReport` and `load_or_refresh_inventory`, re-exported from `ctxpack-index`, for future Phase 2 read-path migration.
+- Added `InventoryLoadReport` and `load_or_refresh_inventory`, re-exported from `ctxhelm-index`, for future Phase 2 read-path migration.
 - Kept `load_or_build_inventory` compatible and preserved `write_inventory` as an explicit fatal write operation while making trusted read-load cache persistence failures non-fatal.
 
 ## Task Commits
@@ -75,10 +75,10 @@ Each task was committed atomically:
 
 ## Files Created/Modified
 
-- `crates/ctxpack-index/src/freshness.rs` - New freshness comparison, trusted inventory load report, and deterministic stale-cache fixtures.
-- `crates/ctxpack-index/src/inventory.rs` - Adds additive metadata, safe-file manifest persistence, policy/options fingerprints, and reusable cache persistence helper.
-- `crates/ctxpack-index/src/lib.rs` - Re-exports freshness and trusted-load APIs from the stable crate-root facade.
-- `crates/ctxpack-index/src/policy.rs` - Adds `POLICY_VERSION` for freshness invalidation.
+- `crates/ctxhelm-index/src/freshness.rs` - New freshness comparison, trusted inventory load report, and deterministic stale-cache fixtures.
+- `crates/ctxhelm-index/src/inventory.rs` - Adds additive metadata, safe-file manifest persistence, policy/options fingerprints, and reusable cache persistence helper.
+- `crates/ctxhelm-index/src/lib.rs` - Re-exports freshness and trusted-load APIs from the stable crate-root facade.
+- `crates/ctxhelm-index/src/policy.rs` - Adds `POLICY_VERSION` for freshness invalidation.
 
 ## Decisions Made
 
@@ -104,9 +104,9 @@ None. Stub scan found no `TODO`, `FIXME`, placeholder text, or hardcoded empty U
 
 ## Verification
 
-- `cargo test -p ctxpack-index freshness -- --nocapture` passed: 7 tests.
-- `cargo test -p ctxpack-index load_or_refresh -- --nocapture` passed: 2 tests.
-- `cargo test -p ctxpack-index` passed: 37 tests plus doctests.
+- `cargo test -p ctxhelm-index freshness -- --nocapture` passed: 7 tests.
+- `cargo test -p ctxhelm-index load_or_refresh -- --nocapture` passed: 2 tests.
+- `cargo test -p ctxhelm-index` passed: 37 tests plus doctests.
 - `cargo test --workspace` passed: CLI, compiler, core, index, MCP, and doctests.
 
 ## User Setup Required
@@ -119,7 +119,7 @@ Plan 03 can migrate index read paths from `load_or_build_inventory` to `load_or_
 
 ## Self-Check: PASSED
 
-- Found files: `crates/ctxpack-index/src/freshness.rs` and this SUMMARY.
+- Found files: `crates/ctxhelm-index/src/freshness.rs` and this SUMMARY.
 - Found task commits via direct commit-object checks: `f9c0633`, `747acb6`, `ac8c7f8`, `fd2e091`.
 - Verified no known stubs in created or modified files.
 

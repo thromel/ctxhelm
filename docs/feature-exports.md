@@ -6,7 +6,7 @@ analysis, and future offline retrieval-policy experiments.
 They answer:
 
 ```text
-Which retrieval candidates did ctxpack consider, what signals selected them,
+Which retrieval candidates did ctxhelm consider, what signals selected them,
 and which safe labels are available for evaluation?
 ```
 
@@ -16,15 +16,15 @@ logs, stack traces, commit subjects, or secret-bearing values.
 ## Export
 
 ```bash
-ctxpack eval features export "fix login redirect" --repo /path/to/repo --format markdown
-ctxpack eval features export "fix login redirect" --repo /path/to/repo --format json
-ctxpack eval features export "fix login redirect" --repo /path/to/repo --semantic --limit 200
+ctxhelm eval features export "fix login redirect" --repo /path/to/repo --format markdown
+ctxhelm eval features export "fix login redirect" --repo /path/to/repo --format json
+ctxhelm eval features export "fix login redirect" --repo /path/to/repo --semantic --limit 200
 ```
 
-By default, the export is written under local ctxpack state:
+By default, the export is written under local ctxhelm state:
 
 ```text
-~/.ctxpack/repos/{repo_id}/feature-exports/{export_id}.json
+~/.ctxhelm/repos/{repo_id}/feature-exports/{export_id}.json
 ```
 
 Use `--no-store` to print the export without writing it.
@@ -32,10 +32,10 @@ Use `--no-store` to print the export without writing it.
 ## Manage
 
 ```bash
-ctxpack eval features list --repo /path/to/repo
-ctxpack eval features inspect <export_id> --repo /path/to/repo --format json
-ctxpack eval features compare --base-export <id> --head-export <id> --repo /path/to/repo
-ctxpack eval features delete <export_id> --repo /path/to/repo --yes
+ctxhelm eval features list --repo /path/to/repo
+ctxhelm eval features inspect <export_id> --repo /path/to/repo --format json
+ctxhelm eval features compare --base-export <id> --head-export <id> --repo /path/to/repo
+ctxhelm eval features delete <export_id> --repo /path/to/repo --yes
 ```
 
 Delete is a dry run unless `--yes` is passed.
@@ -52,7 +52,7 @@ Each row includes:
 - source-free labels such as `selected` or `unknown`;
 - `sourceTextLogged: false`.
 
-Plan-candidate exports are consumed by `ctxpack eval policy learn` as
+Plan-candidate exports are consumed by `ctxhelm eval policy learn` as
 source-free offline training evidence. Historical gold labels and feedback
 read/edit labels are represented through the same label field when available.
 The learner treats missing labels as insufficient evidence rather than silently

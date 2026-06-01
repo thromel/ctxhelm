@@ -6,7 +6,7 @@ path anchors.
 Run:
 
 ```bash
-ctxpack graph neighborhood "fix requireSession bug" \
+ctxhelm graph neighborhood "fix requireSession bug" \
   --repo /path/to/repo \
   --mode bug-fix \
   --path src/auth/session.ts \

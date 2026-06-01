@@ -12,12 +12,12 @@ text.
 
 - Added `resourceUri` to `ContextArea` as an additive source-free contract
   field.
-- Moved context-area path grouping and URI encoding into `ctxpack-core` so
+- Moved context-area path grouping and URI encoding into `ctxhelm-core` so
   compiler, eval, pack rendering, previews, and MCP use the same area names.
-- Added static MCP resource `ctxpack://repo/context-areas` for a source-free
+- Added static MCP resource `ctxhelm://repo/context-areas` for a source-free
   repository area inventory.
 - Added dynamic MCP resources of the form
-  `ctxpack://repo/context-area/{encoded-area}` for source-free representative
+  `ctxhelm://repo/context-area/{encoded-area}` for source-free representative
   paths and role counts inside one area.
 - Added context-area resources to agent previews and generated pack guidance.
 - Kept the MCP tool surface unchanged at six tools.
@@ -27,25 +27,25 @@ text.
 Focused tests:
 
 ```bash
-cargo test -p ctxpack-core context_area_resource_uri_round_trips_source_free_area_names -- --nocapture
-cargo test -p ctxpack-compiler compile_context_pack_renders_context_areas -- --nocapture
-cargo test -p ctxpack-mcp resources_public_uri_shapes_are_stable -- --nocapture
+cargo test -p ctxhelm-core context_area_resource_uri_round_trips_source_free_area_names -- --nocapture
+cargo test -p ctxhelm-compiler compile_context_pack_renders_context_areas -- --nocapture
+cargo test -p ctxhelm-mcp resources_public_uri_shapes_are_stable -- --nocapture
 ```
 
 Broad proof:
 
 ```bash
-cargo run --release -p ctxpack -- eval proof \
+cargo run --release -p ctxhelm -- eval proof \
   --config .planning/e2e/2026-05-31-phase92-area-aware-gap-proof-config.json \
-  --format json > .ctxpack/e2e/phase96-context-area-resources-proof.json
+  --format json > .ctxhelm/e2e/phase96-context-area-resources-proof.json
 
 python3 scripts/check-product-proof.py \
-  .ctxpack/e2e/phase96-context-area-resources-proof.json
+  .ctxhelm/e2e/phase96-context-area-resources-proof.json
 ```
 
 Committed proof:
 
-- `.ctxpack/e2e/phase96-context-area-resources-proof.json`
+- `.ctxhelm/e2e/phase96-context-area-resources-proof.json`
 
 Result:
 

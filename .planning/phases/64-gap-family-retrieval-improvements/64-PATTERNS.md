@@ -25,4 +25,4 @@ seeds exist.
 ## Measure Collateral Damage
 
 Every targeted fix should be rerun on the two-repo corpus. A RefactoringMiner
-gain that harms ctxpack or protected evidence should remain opt-in or be revised.
+gain that harms ctxhelm or protected evidence should remain opt-in or be revised.

@@ -1,12 +1,12 @@
 # Release Governance
 
-ctxpack release governance separates readiness metadata from publication. The
+ctxhelm release governance separates readiness metadata from publication. The
 scripts in this section are source-free and local-only; they do not publish,
 tag, upload, install, or mutate global agent configuration.
 
 ## Proof Levels
 
-The deterministic protocol proof is required. It exercises ctxpack through
+The deterministic protocol proof is required. It exercises ctxhelm through
 direct JSON-RPC/MCP calls and verifies the stable tool/resource behavior without
 depending on a particular interactive agent client.
 
@@ -16,7 +16,7 @@ the release-gate real-client environment variables documented in
 v1.1.7; their public support remains config/rules plus deterministic MCP
 compatibility.
 
-When `CTXPACK_REAL_CLIENT_EVIDENCE_DIR` is set, the real-client wrappers write
+When `CTXHELM_REAL_CLIENT_EVIDENCE_DIR` is set, the real-client wrappers write
 source-free evidence only: client/version metadata, a request-log SHA-256,
 request line count, explicit repo tool-call count, sanitized observed tool-call
 metadata, and a sanitized request-summary JSON sidecar. The wrappers do not
@@ -84,11 +84,11 @@ Then verify the public user install path:
 
 ```bash
 bash scripts/verify-public-archive-install.sh \
-  --repo thromel/ctxpack \
+  --repo thromel/ctxhelm \
   --tag v1.1.7 \
   --target-label aarch64-apple-darwin \
-  --expected-version "ctxpack 1.1.7" \
-  --output .ctxpack/e2e/phase130-public-archive-install.json
+  --expected-version "ctxhelm 1.1.7" \
+  --output .ctxhelm/e2e/phase130-public-archive-install.json
 ```
 
 This downloads the public release assets, verifies checksums, installs the
@@ -100,11 +100,11 @@ archive binary, run:
 
 ```bash
 bash scripts/smoke-public-real-clients.sh \
-  --repo thromel/ctxpack \
+  --repo thromel/ctxhelm \
   --tag v1.1.7 \
   --target-label aarch64-apple-darwin \
-  --expected-version "ctxpack 1.1.7" \
-  --output .ctxpack/e2e/phase130-public-real-client-smoke.json
+  --expected-version "ctxhelm 1.1.7" \
+  --output .ctxhelm/e2e/phase130-public-real-client-smoke.json
 ```
 
 This records source-free pass evidence for clients that call `prepare_task` and
@@ -117,9 +117,9 @@ the current branch tip:
 
 ```bash
 bash scripts/check-public-release-freshness.sh \
-  --repo thromel/ctxpack \
+  --repo thromel/ctxhelm \
   --tag v1.1.7 \
-  --output .ctxpack/e2e/phase130-public-release-freshness.json
+  --output .ctxhelm/e2e/phase130-public-release-freshness.json
 ```
 
 The freshness checker writes source-free metadata with `status`,
@@ -135,7 +135,7 @@ configuration, or read source text.
 ## Rollback
 
 Rollback removes local candidate artifacts only after the candidate directory
-contains `.ctxpack-release-candidate`:
+contains `.ctxhelm-release-candidate`:
 
 ```bash
 bash scripts/release-candidate-rollback.sh \

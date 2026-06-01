@@ -13,17 +13,17 @@ Add the first v1.7 feedback loop foundation: source-free agent-session feedback 
 
 ## Implementation
 
-- Add stable public `SessionFeedbackEvent`, `FeedbackOutcome`, and `FeedbackSummary` contracts in `ctxpack-core`.
-- Add local JSONL feedback ingestion under `CTXPACK_HOME/repos/<repo-id>/feedback.jsonl`.
+- Add stable public `SessionFeedbackEvent`, `FeedbackOutcome`, and `FeedbackSummary` contracts in `ctxhelm-core`.
+- Add local JSONL feedback ingestion under `CTXHELM_HOME/repos/<repo-id>/feedback.jsonl`.
 - Validate feedback labels so stored events remain source-free, single-line, repository-relative, and explicitly `sourceTextLogged=false`.
-- Add CLI surface under `ctxpack eval feedback record|list|summary`.
+- Add CLI surface under `ctxhelm eval feedback record|list|summary`.
 - Add focused core, index, and CLI tests.
 
 ## Validation
 
 - `cargo fmt --all --check`
-- `CARGO_TARGET_DIR=/tmp/ctxpack-target cargo test -p ctxpack-core feedback_event_public_json_shape_is_source_free -- --nocapture`
-- `CARGO_TARGET_DIR=/tmp/ctxpack-target cargo test -p ctxpack-index feedback_events_ -- --test-threads=1 --nocapture`
-- `CARGO_TARGET_DIR=/tmp/ctxpack-target cargo test -p ctxpack eval_feedback_records_lists_and_summarizes_source_free_events --test cli_compat -- --nocapture`
-- `CARGO_TARGET_DIR=/tmp/ctxpack-target cargo run -p ctxpack -- --help`
-- `CARGO_TARGET_DIR=/tmp/ctxpack-target cargo test --workspace`
+- `CARGO_TARGET_DIR=/tmp/ctxhelm-target cargo test -p ctxhelm-core feedback_event_public_json_shape_is_source_free -- --nocapture`
+- `CARGO_TARGET_DIR=/tmp/ctxhelm-target cargo test -p ctxhelm-index feedback_events_ -- --test-threads=1 --nocapture`
+- `CARGO_TARGET_DIR=/tmp/ctxhelm-target cargo test -p ctxhelm eval_feedback_records_lists_and_summarizes_source_free_events --test cli_compat -- --nocapture`
+- `CARGO_TARGET_DIR=/tmp/ctxhelm-target cargo run -p ctxhelm -- --help`
+- `CARGO_TARGET_DIR=/tmp/ctxhelm-target cargo test --workspace`

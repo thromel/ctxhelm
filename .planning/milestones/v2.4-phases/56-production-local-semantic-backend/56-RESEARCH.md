@@ -2,7 +2,7 @@
 
 **Phase:** 56 - Production Local Semantic Backend
 **Status:** Complete
-**Research question:** What does the executor need to know to replace the current semantic scaffold with a production local embedding backend while preserving ctxpack's source-safe, local-first contract?
+**Research question:** What does the executor need to know to replace the current semantic scaffold with a production local embedding backend while preserving ctxhelm's source-safe, local-first contract?
 
 ## Phase Boundary
 
@@ -20,7 +20,7 @@ Phase 56 does not build precision-enriched semantic documents, reranking, cloud 
 
 ### Existing Semantic Provider
 
-`crates/ctxpack-index/src/semantic.rs` currently owns:
+`crates/ctxhelm-index/src/semantic.rs` currently owns:
 
 - `SemanticProviderConfig`
 - `SemanticOptions`
@@ -35,7 +35,7 @@ Phase 56 does not build precision-enriched semantic documents, reranking, cloud 
 The current provider constants are:
 
 - `DEFAULT_SEMANTIC_PROVIDER = "local_hash"`
-- `DEFAULT_SEMANTIC_MODEL = "ctxpack-local-hash-v1"`
+- `DEFAULT_SEMANTIC_MODEL = "ctxhelm-local-hash-v1"`
 - `DEFAULT_SEMANTIC_DIMENSIONS = 64`
 - `DEFAULT_SEMANTIC_DISTANCE = "cosine"`
 
@@ -43,7 +43,7 @@ This is deterministic and source-safe, but the May 19 RefactoringMiner ablation 
 
 ### Existing Storage Surface
 
-`crates/ctxpack-index/src/storage.rs` already persists source-free semantic vector metadata through:
+`crates/ctxhelm-index/src/storage.rs` already persists source-free semantic vector metadata through:
 
 - `StorageSemanticVectorRecord`
 - `StorageSemanticIndexReport`
@@ -56,16 +56,16 @@ The storage table records provider, model, dimensions, distance metric, path, sa
 
 The compiler already consumes semantic candidates in:
 
-- `crates/ctxpack-compiler/src/planning.rs`
-- `crates/ctxpack-compiler/src/ranking.rs`
-- `crates/ctxpack-compiler/src/policy.rs`
-- `crates/ctxpack-compiler/src/eval.rs`
+- `crates/ctxhelm-compiler/src/planning.rs`
+- `crates/ctxhelm-compiler/src/ranking.rs`
+- `crates/ctxhelm-compiler/src/policy.rs`
+- `crates/ctxhelm-compiler/src/eval.rs`
 
-The CLI already exposes semantic controls in `crates/ctxpack/src/main.rs`:
+The CLI already exposes semantic controls in `crates/ctxhelm/src/main.rs`:
 
 - `--semantic` on search, prepare-task, get-pack, eval, and feature export paths
-- `ctxpack semantic status`
-- `ctxpack index --semantic`
+- `ctxhelm semantic status`
+- `ctxhelm index --semantic`
 
 This means Phase 56 should be additive: keep existing command shapes and extend provider/status fields rather than adding a new daily UX.
 
@@ -102,7 +102,7 @@ Why optional:
 
 ### Provider Contract Shape
 
-Phase 56 should introduce an internal provider abstraction in `ctxpack-index`:
+Phase 56 should introduce an internal provider abstraction in `ctxhelm-index`:
 
 - provider id
 - model id
@@ -113,7 +113,7 @@ Phase 56 should introduce an internal provider abstraction in `ctxpack-index`:
 - document embedding
 - query embedding
 
-The abstraction can start private to `ctxpack-index` and become public only when later phases need it.
+The abstraction can start private to `ctxhelm-index` and become public only when later phases need it.
 
 ## Product Proof Constraint
 
@@ -141,12 +141,12 @@ Quality lift is measured in Phase 60 after semantic documents and fusion control
 
 Likely files:
 
-- `crates/ctxpack-index/Cargo.toml`
-- `crates/ctxpack-index/src/semantic.rs`
-- `crates/ctxpack-index/src/storage.rs`
-- `crates/ctxpack-core/src/contracts.rs`
-- `crates/ctxpack-compiler/src/policy.rs`
-- `crates/ctxpack/src/main.rs`
+- `crates/ctxhelm-index/Cargo.toml`
+- `crates/ctxhelm-index/src/semantic.rs`
+- `crates/ctxhelm-index/src/storage.rs`
+- `crates/ctxhelm-core/src/contracts.rs`
+- `crates/ctxhelm-compiler/src/policy.rs`
+- `crates/ctxhelm/src/main.rs`
 - `docs/semantic.md`
 - `docs/policy-embedding.md`
 - `scripts/smoke-semantic.sh`
@@ -158,7 +158,7 @@ Phase 56 validation should prove three layers:
 
 1. **Contract tests**: provider metadata is explicit, `local_hash` is scaffold-labeled, and disabled-by-default semantics remain unchanged.
 2. **Storage tests**: vector/provider metadata remains source-free and records provider/model/dimensions/freshness.
-3. **CLI/report tests**: `ctxpack semantic status` and `ctxpack index --semantic` expose provider status and do not imply cloud usage or quality lift.
+3. **CLI/report tests**: `ctxhelm semantic status` and `ctxhelm index --semantic` expose provider status and do not imply cloud usage or quality lift.
 
 Feature-gated `local-embeddings` tests may be added, but the default workspace test suite must not require a model download.
 

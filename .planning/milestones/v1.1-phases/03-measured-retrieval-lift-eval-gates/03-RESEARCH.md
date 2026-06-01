@@ -68,16 +68,16 @@ Phase 3 should not add another heuristic directly to `TargetFile`. The current c
 
 Historical eval already has useful foundations: source-free reports, lexical baseline recall, parent worktree replay, role recall for source/test, and frozen base/head options. The missing decision-grade pieces are status-aware labels, reproducibility metadata beyond refs, fixed-budget ranking metrics, ablations, gap explanations, and rename/delete/historical-only classification. Use Git's name-status and rename detection instead of path-only diffs.
 
-**Primary recommendation:** Implement a `ctxpack-compiler::ranking` module plus additive core contract structs for `retrievalCandidates` / `attribution`, then extend `ctxpack-compiler::eval` to compare combined, lexical-only, and signal-ablated rankings at identical K on frozen ranges.
+**Primary recommendation:** Implement a `ctxhelm-compiler::ranking` module plus additive core contract structs for `retrievalCandidates` / `attribution`, then extend `ctxhelm-compiler::eval` to compare combined, lexical-only, and signal-ablated rankings at identical K on frozen ranges.
 
 ## Project Constraints (from CLAUDE.md)
 
-- Keep ctxpack local-first, read-only, and source-safe for inventory, plans, traces, historical eval reports, and generated cards.
+- Keep ctxhelm local-first, read-only, and source-safe for inventory, plans, traces, historical eval reports, and generated cards.
 - AGENTS.md, MCP, and thin native rules/adapters remain the primary product surface; CLI is for setup/debug/automation.
-- ctxpack must not edit source code, run user project tests, install dependencies, or auto-commit user work.
+- ctxhelm must not edit source code, run user project tests, install dependencies, or auto-commit user work.
 - Keep the Rust workspace architecture and typed contracts unless measured evidence justifies changing them.
 - New retrieval work should be checked against source-free historical evals; RefactoringMiner is the preferred large-history smoke when practical.
-- Run `cargo test --workspace` before claiming implementation complete; run `cargo run -p ctxpack -- --help` after CLI changes.
+- Run `cargo test --workspace` before claiming implementation complete; run `cargo run -p ctxhelm -- --help` after CLI changes.
 - Use typed serializable contracts, not formatted strings, for behavior surfaces.
 - Preserve camelCase JSON public contracts and add fields compatibly where possible.
 - Use `thiserror` for library/domain errors and `anyhow` only in the CLI boundary.
@@ -124,13 +124,13 @@ Historical eval already has useful foundations: source-free reports, lexical bas
 
 ```text
 crates/
-  ctxpack-core/src/contracts.rs        # Add public attribution/eval contract structs
-  ctxpack-compiler/src/ranking.rs      # New candidate merge, scoring, budgeted selection
-  ctxpack-compiler/src/planning.rs     # Call ranking, then project to ContextPlan
-  ctxpack-compiler/src/eval.rs         # Frozen ranges, labels, metrics, ablations
-  ctxpack-index/src/git.rs             # Name-status historical labels and bounded git reads
-  ctxpack/src/main.rs                  # Render source-free eval/gap report fields
-  ctxpack-mcp/src/*                    # Serialize additive plan fields without new tools
+  ctxhelm-core/src/contracts.rs        # Add public attribution/eval contract structs
+  ctxhelm-compiler/src/ranking.rs      # New candidate merge, scoring, budgeted selection
+  ctxhelm-compiler/src/planning.rs     # Call ranking, then project to ContextPlan
+  ctxhelm-compiler/src/eval.rs         # Frozen ranges, labels, metrics, ablations
+  ctxhelm-index/src/git.rs             # Name-status historical labels and bounded git reads
+  ctxhelm/src/main.rs                  # Render source-free eval/gap report fields
+  ctxhelm-mcp/src/*                    # Serialize additive plan fields without new tools
 ```
 
 ### Pattern 1: Candidate Layer Before Projection
@@ -155,7 +155,7 @@ pub struct EvidenceAttribution {
 }
 ```
 
-Planner note: put public attribution structs in `ctxpack-core` only when exposed through `ContextPlan`; keep score-merging helpers private in `ctxpack-compiler::ranking`.
+Planner note: put public attribution structs in `ctxhelm-core` only when exposed through `ContextPlan`; keep score-merging helpers private in `ctxhelm-compiler::ranking`.
 
 ### Pattern 2: Fixed-Budget One-Hop Expansion
 
@@ -176,7 +176,7 @@ let plan = project_context_plan(base_plan, ranked);
 
 **What:** Extend `HistoricalEvalOptions` / `HistoricalEvalReport` with budget, effective filters, signal config, and ref identity. Extend commit labels from `Vec<String>` to records with path, old path, change kind, role, and availability.
 
-**When to use:** Every `ctxpack eval history` run.
+**When to use:** Every `ctxhelm eval history` run.
 
 **Example:**
 
@@ -212,7 +212,7 @@ pub struct HistoricalChangedPath {
 | Graph expansion | Recursive dependency crawler | One-hop expansion over existing dependency/test/history reports | Keeps runtime and context budget bounded. |
 | Runtime acceleration | Immediate rayon/SQLite/Tantivy migration | Existing in-memory deterministic ranking until eval proves bottleneck | Locked phase scope requires measured justification. |
 
-**Key insight:** The hard part is not finding more signals; ctxpack already has graph, history, tests, symbols, lexical search, and diff anchors. The hard part is making those signals compete fairly under one budget and proving the result without leaking source or prompt text.
+**Key insight:** The hard part is not finding more signals; ctxhelm already has graph, history, tests, symbols, lexical search, and diff anchors. The hard part is making those signals compete fairly under one budget and proving the result without leaking source or prompt text.
 
 ## Common Pitfalls
 
@@ -281,7 +281,7 @@ plan.related_tests = ranked
     .collect();
 ```
 
-Source: current planning already centralizes plan construction in `crates/ctxpack-compiler/src/planning.rs`; replace the sequential symbol-then-lexical projection with one candidate ranking step.
+Source: current planning already centralizes plan construction in `crates/ctxhelm-compiler/src/planning.rs`; replace the sequential symbol-then-lexical projection with one candidate ranking step.
 
 ### Git Name-Status Labels
 
@@ -368,10 +368,10 @@ Source: standard search-evaluation definitions use top-k Precision, Recall, MRR,
 - `CLAUDE.md` - project constraints, stack, conventions, architecture, validation rules.
 - `.planning/phases/03-measured-retrieval-lift-eval-gates/03-CONTEXT.md` - locked Phase 3 decisions and deferred scope.
 - `.planning/REQUIREMENTS.md` - Phase 3 requirement IDs and acceptance behavior.
-- `crates/ctxpack-core/src/contracts.rs` - current public contracts for plans, packs, traces, diagnostics.
-- `crates/ctxpack-compiler/src/planning.rs` - current sequential planning/risk-flag fusion behavior.
-- `crates/ctxpack-compiler/src/eval.rs` - current historical eval options, report fields, lexical baseline, and source-free trace behavior.
-- `crates/ctxpack-index/src/git.rs` - current co-change, diff, and historical commit sampling implementation.
+- `crates/ctxhelm-core/src/contracts.rs` - current public contracts for plans, packs, traces, diagnostics.
+- `crates/ctxhelm-compiler/src/planning.rs` - current sequential planning/risk-flag fusion behavior.
+- `crates/ctxhelm-compiler/src/eval.rs` - current historical eval options, report fields, lexical baseline, and source-free trace behavior.
+- `crates/ctxhelm-index/src/git.rs` - current co-change, diff, and historical commit sampling implementation.
 - Git official docs: https://git-scm.com/docs/git-diff-tree and https://git-scm.com/docs/diff-options - name-status, NUL-delimited paths, rename/diff metadata.
 - Serde official docs: https://serde.rs/attr-default.html - default values for missing fields.
 
@@ -379,7 +379,7 @@ Source: standard search-evaluation definitions use top-k Precision, Recall, MRR,
 - Lucidworks Search Evaluation Metrics: https://doc.lucidworks.com/docs/lucidworks-search/06-metrics-and-analytics/evaluation-metrics - concise current definitions for Precision@K, Recall@K, MRR@K, MAP@K, and nDCG@K.
 
 ### Tertiary (LOW confidence)
-- Prior ctxpack memory notes were used only as routing/context hints; live repo files were treated as authoritative.
+- Prior ctxhelm memory notes were used only as routing/context hints; live repo files were treated as authoritative.
 
 ## Metadata
 

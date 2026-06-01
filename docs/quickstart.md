@@ -1,37 +1,37 @@
 # First-Pack Quickstart
 
-This guide starts from an installed `ctxpack` binary and an existing git repository. It uses explicit `--repo` arguments throughout because agent clients and MCP servers often start from a different working directory than the repository you are editing.
+This guide starts from an installed `ctxhelm` binary and an existing git repository. It uses explicit `--repo` arguments throughout because agent clients and MCP servers often start from a different working directory than the repository you are editing.
 
 ## Prerequisites
 
-- `ctxpack` installed on `PATH`, or an absolute path to the binary for MCP client configuration.
+- `ctxhelm` installed on `PATH`, or an absolute path to the binary for MCP client configuration.
 - A local git repository you want to inspect.
 - A task that can benefit from file, test, dependency, and pack guidance.
 
-ctxpack is local-first and read-only. It does not edit source files, run your project tests, install dependencies, or mutate global agent configuration.
+ctxhelm is local-first and read-only. It does not edit source files, run your project tests, install dependencies, or mutate global agent configuration.
 
 ## Verify The Install
 
 ```bash
-ctxpack --version
-ctxpack --help
-ctxpack doctor --repo "$REPO"
+ctxhelm --version
+ctxhelm --help
+ctxhelm doctor --repo "$REPO"
 ```
 
-For v1.1.7, `ctxpack --version` should print `ctxpack 1.1.7`. If the command is not found, fix your shell or agent `PATH`, or use an absolute binary path in the MCP configuration.
+For v1.1.7, `ctxhelm --version` should print `ctxhelm 1.1.7`. If the command is not found, fix your shell or agent `PATH`, or use an absolute binary path in the MCP configuration.
 
 When installing from a release archive, keep the release manifest beside the
 archive and verify it against the active binary:
 
 ```bash
-ctxpack doctor \
+ctxhelm doctor \
   --repo "$REPO" \
-  --binary "$(command -v ctxpack)" \
-  --release-manifest /path/to/ctxpack-v1.1.7-aarch64-apple-darwin.manifest.json
+  --binary "$(command -v ctxhelm)" \
+  --release-manifest /path/to/ctxhelm-v1.1.7-aarch64-apple-darwin.manifest.json
 ```
 
 `doctor` is read-only. It checks the binary path, `--version`, `--help`, release
-manifest privacy/checksum metadata, and local .ctxpack storage compatibility.
+manifest privacy/checksum metadata, and local .ctxhelm storage compatibility.
 It does not mutate global agent configuration.
 
 ## Choose A Repo
@@ -45,41 +45,41 @@ Use an absolute path when possible. The same explicit `--repo` value should appe
 ## Initialize Repo-Local Guidance
 
 ```bash
-ctxpack init --repo "$REPO" --cursor --claude --opencode
+ctxhelm init --repo "$REPO" --cursor --claude --opencode
 ```
 
 This writes repo-local guidance and optional adapter snippets:
 
-- `AGENTS.md` managed ctxpack section
-- `.ctxpack/ctxpack.toml`
-- `.cursor/rules/ctxpack.mdc` when `--cursor` is used
-- `.claude/commands/ctxpack-bugfix.md` and `.ctxpack/adapters/claude-mcp.json` when `--claude` is used
-- `.ctxpack/adapters/opencode.jsonc.snippet` when `--opencode` is used
+- `AGENTS.md` managed ctxhelm section
+- `.ctxhelm/ctxhelm.toml`
+- `.cursor/rules/ctxhelm.mdc` when `--cursor` is used
+- `.claude/commands/ctxhelm-bugfix.md` and `.ctxhelm/adapters/claude-mcp.json` when `--claude` is used
+- `.ctxhelm/adapters/opencode.jsonc.snippet` when `--opencode` is used
 
-Codex setup remains copy/paste-oriented. ctxpack prints guidance but does not mutate global Codex configuration.
+Codex setup remains copy/paste-oriented. ctxhelm prints guidance but does not mutate global Codex configuration.
 
 For cloud or disconnected agent runs where local MCP is unavailable, generate
 source-free fallback cards:
 
 ```bash
-ctxpack cards fallback --repo "$REPO" --target-agent codex
+ctxhelm cards fallback --repo "$REPO" --target-agent codex
 ```
 
-Commit or attach the generated `.ctxpack/cards/*.md` files and the matching
-`.ctxpack/fallback/<agent>-context.md` guide only when your repo policy allows
+Commit or attach the generated `.ctxhelm/cards/*.md` files and the matching
+`.ctxhelm/fallback/<agent>-context.md` guide only when your repo policy allows
 source-free context artifacts.
 
 ## Validate Setup
 
 ```bash
-ctxpack setup-check --repo "$REPO" --cursor --claude --opencode
+ctxhelm setup-check --repo "$REPO" --cursor --claude --opencode
 ```
 
 `setup-check` validates repo-local generated artifacts. It does not run real agent clients, edit client configuration, or prove that Cursor, Claude Code, Codex CLI, or OpenCode called a tool.
 
 ## Deterministic MCP Proof Context
 
-The hard automated proof for v1.1 is deterministic JSON-RPC/MCP protocol smoke through `ctxpack serve-mcp`. That proof starts the ctxpack MCP server, sends machine-checkable `prepare_task` and `get_pack` calls with an explicit `repo`, and inspects structured responses.
+The hard automated proof for v1.1 is deterministic JSON-RPC/MCP protocol smoke through `ctxhelm serve-mcp`. That proof starts the ctxhelm MCP server, sends machine-checkable `prepare_task` and `get_pack` calls with an explicit `repo`, and inspects structured responses.
 
 Real-client proof is separate and optional. Codex CLI and Claude Code smokes can be tied to exact local client versions and request logs. Cursor and OpenCode setup is validated through generated artifact checks plus deterministic protocol proof; v1.1 docs do not claim machine-checkable tool-call proof for those two clients.
 
@@ -88,7 +88,7 @@ Real-client proof is separate and optional. Codex CLI and Claude Code smokes can
 Ask for a task-conditioned plan:
 
 ```bash
-ctxpack prepare-task "fix requireSession bug" \
+ctxhelm prepare-task "fix requireSession bug" \
   --repo "$REPO" \
   --mode bug-fix \
   --path src/auth/session.ts
@@ -103,7 +103,7 @@ The response includes target files, related tests, validation commands, risk fla
 Materialize a compact pack with `--budget brief`:
 
 ```bash
-ctxpack get-pack "fix requireSession bug" \
+ctxhelm get-pack "fix requireSession bug" \
   --repo "$REPO" \
   --mode bug-fix \
   --budget brief \
@@ -113,7 +113,7 @@ ctxpack get-pack "fix requireSession bug" \
 Use JSON output when another tool needs structured data:
 
 ```bash
-ctxpack get-pack "fix requireSession bug" \
+ctxhelm get-pack "fix requireSession bug" \
   --repo "$REPO" \
   --mode bug-fix \
   --budget brief \
@@ -138,7 +138,7 @@ In an agent workflow, a good default sequence is:
 Maintainers working from a source checkout can run the first-pack smoke script against an installed or locally built binary:
 
 ```bash
-CTXPACK_BIN=/absolute/path/to/ctxpack bash scripts/smoke-first-pack.sh
+CTXHELM_BIN=/absolute/path/to/ctxhelm bash scripts/smoke-first-pack.sh
 ```
 
 This is a source-checkout validation script, not the normal user setup path.

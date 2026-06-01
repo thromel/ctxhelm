@@ -1,14 +1,14 @@
-# RepoWinnow
+# ctxhelm
 
 ## What This Is
 
-RepoWinnow, powered by the `ctxpack` CLI, is a local-first, read-only context broker that helps existing coding agents choose better repository context. It does not replace Codex, Claude Code, Cursor, OpenCode, Aider, or similar tools; it exposes task-conditioned file, test, graph, history, and pack guidance through agent-native surfaces such as MCP, AGENTS.md, and thin adapter files.
+ctxhelm, powered by the `ctxhelm` CLI, is a local-first, read-only context broker that helps existing coding agents choose better repository context. It does not replace Codex, Claude Code, Cursor, OpenCode, Aider, or similar tools; it exposes task-conditioned file, test, graph, history, and pack guidance through agent-native surfaces such as MCP, AGENTS.md, and thin adapter files.
 
 The current codebase is a Rust workspace with a CLI, MCP server, safe repository inventory, lexical, symbol, semantic, and precision-edge retrieval, related-test inference, dependency hints, current-diff anchors, context packs, generated context cards, local eval traces, historical retrieval evaluation, benchmark suites, source-free retrieval gap reporting, product proof generation, release hardening, and diagnostic inspector surfaces.
 
 ## Current State: v2.4 Production Semantic & Precision Backends Planned
 
-The v2.3 milestone is complete locally and archived in the milestone index. ctxpack now has fixed source-free benchmark corpora, cached and deterministic parallel historical eval, candidate feature exports, paired baseline and ablation analysis, offline learned retrieval-policy proposals, and v2.3 product proof gates wired into release validation.
+The v2.3 milestone is complete locally and archived in the milestone index. ctxhelm now has fixed source-free benchmark corpora, cached and deterministic parallel historical eval, candidate feature exports, paired baseline and ablation analysis, offline learned retrieval-policy proposals, and v2.3 product proof gates wired into release validation.
 
 The May 19 semantic ablation showed no RefactoringMiner Recall@10 lift from the current `local_hash` semantic scaffold and worse runtime. v2.4 is planned to turn semantic and precision retrieval into production-quality, policy-gated infrastructure through real local embeddings, precision-enriched semantic documents, query construction, optional provider/reranker gates, and fixed-corpus promotion gates.
 
@@ -16,7 +16,7 @@ The May 19 semantic ablation showed no RefactoringMiner Recall@10 lift from the 
 
 v2.4 Production Semantic & Precision Backends.
 
-Goal: Convert semantic and precision retrieval from local scaffolding into measured, policy-gated retrieval-quality improvements without breaking ctxpack's local-first and source-safe contract.
+Goal: Convert semantic and precision retrieval from local scaffolding into measured, policy-gated retrieval-quality improvements without breaking ctxhelm's local-first and source-safe contract.
 
 Planned phases:
 
@@ -28,16 +28,16 @@ Planned phases:
 
 ## Core Value
 
-Given a coding task, ctxpack should return the smallest safe evidence set that makes an existing coding agent more likely to inspect the right files, run the right tests, and avoid irrelevant context.
+Given a coding task, ctxhelm should return the smallest safe evidence set that makes an existing coding agent more likely to inspect the right files, run the right tests, and avoid irrelevant context.
 
 ## Requirements
 
 ### Validated
 
-- ✓ Repository initialization generates portable `AGENTS.md`, `.ctxpack/ctxpack.toml`, and optional thin native adapter artifacts for Cursor, Claude Code, and OpenCode.
+- ✓ Repository initialization generates portable `AGENTS.md`, `.ctxhelm/ctxhelm.toml`, and optional thin native adapter artifacts for Cursor, Claude Code, and OpenCode.
 - ✓ The CLI exposes the main local workflows: `init`, `index`, `prepare-task`, `get-pack`, `search`, `symbols`, `related-tests`, `co-changes`, `dependencies`, `cards`, `eval`, and `serve-mcp`.
 - ✓ The MCP server exposes a deliberately small tool surface: `prepare_task`, `search`, `related`, `get_pack`, `related_tests`, and `current_diff`.
-- ✓ Safe inventory excludes ignored, generated, and sensitive paths by default and persists local inventory state under `CTXPACK_HOME` or `~/.ctxpack`.
+- ✓ Safe inventory excludes ignored, generated, and sensitive paths by default and persists local inventory state under `CTXHELM_HOME` or `~/.ctxhelm`.
 - ✓ Retrieval combines lexical search, symbol search, related tests, local dependency edges, current-diff anchors, and local co-change hints into task-conditioned context plans.
 - ✓ Context packs can be emitted as structured JSON or Markdown with budgeted sections, validation commands, snippets from safe files, and source-free provenance fields.
 - ✓ Local eval traces and historical retrieval evals are source-free and report file recall, lexical baseline comparison, missing files, and privacy status.
@@ -48,13 +48,13 @@ Given a coding task, ctxpack should return the smallest safe evidence set that m
 - ✓ Phase 3 validated measured retrieval lift gates: typed retrieval candidates, source-free attribution, fixed-budget ranking, status-aware historical eval labels, lexical comparison, signal ablations, grouped retrieval gaps, checklist reporting, CLI/MCP compatibility, and bounded RefactoringMiner smoke.
 - ✓ Phase 4 validated agent-native client durability: deterministic MCP protocol smoke from wrong cwd, required-mode Codex CLI and Claude Code real-client smokes with server-side `prepare_task`/`get_pack` evidence, explicit session-scoped pack resource diagnostics, bounded MCP pack cache behavior, and thin dynamic adapter guidance.
 - ✓ v1.1 validated repeatable local release artifacts, SHA-256 checksums, source-build fallbacks, and release artifact leakage audit.
-- ✓ v1.1 validated repo-local agent setup, actionable `ctxpack init` reporting, read-only `setup-check`, and first-pack smoke through deterministic MCP proof.
+- ✓ v1.1 validated repo-local agent setup, actionable `ctxhelm init` reporting, read-only `setup-check`, and first-pack smoke through deterministic MCP proof.
 - ✓ v1.1 validated installed-binary quickstart docs, agent setup matrix, troubleshooting docs, and proof-boundary documentation for Codex, Claude Code, Cursor, and OpenCode.
 - ✓ v1.1 validated a local release gate covering workspace tests, docs consistency, packaging/audit, selected-binary behavior, first-pack smoke, wrong-cwd MCP proof, and optional Codex/Claude wrappers.
 - ✓ v1.2 validated named benchmark suites for RefactoringMiner and additional real repositories with reproducible, source-free revision and budget metadata.
 - ✓ v1.2 validated fixed-budget file/test recall, lexical and no-context baseline deltas, signal ablations, and token ROI reporting.
 - ✓ v1.2 validated source-free retrieval gap taxonomy, future milestone recommendations, benchmark comparison, and regression thresholds.
-- ✓ v1.2 validated product proof generation, benchmark proof documentation, and optional release-gate benchmark smoke via `CTXPACK_BENCHMARK_CONFIG`.
+- ✓ v1.2 validated product proof generation, benchmark proof documentation, and optional release-gate benchmark smoke via `CTXHELM_BENCHMARK_CONFIG`.
 - ✓ v1.3 validated durable source-free SQLite storage, incremental indexing metadata, pack/eval/proof persistence, storage operations, and storage release gates.
 - ✓ v1.4 validated optional local semantic retrieval, source-free vector metadata, semantic fusion, semantic eval flags, documentation, and release-gate smoke coverage.
 - ✓ v1.5 validated Java/Kotlin symbol and dependency precision plus source-free SCIP/LSP bridge edge import.
@@ -74,12 +74,12 @@ Given a coding task, ctxpack should return the smallest safe evidence set that m
 
 ### Out of Scope
 
-- Autonomous code editing inside ctxpack — existing coding agents already own editing, permissions, approvals, and shell execution.
+- Autonomous code editing inside ctxhelm — existing coding agents already own editing, permissions, approvals, and shell execution.
 - Cloud indexing, cloud embeddings, or cloud reranking by default — local-first trust is part of the product contract.
-- A standalone daily chat app or editor replacement — ctxpack should improve agent-native workflows instead of becoming another coding surface.
+- A standalone daily chat app or editor replacement — ctxhelm should improve agent-native workflows instead of becoming another coding surface.
 - Hosted backend, team sync, SSO, or enterprise admin — useful later, but not part of v2.4 production semantic/precision backend work.
 - Cloud indexing, cloud embeddings, and cloud reranking by default — v2.4 may add explicit provider policy gates, but defaults stay local-only.
-- Full SWE-bench Pro execution harness — ctxpack should learn from contamination-aware benchmark design without taking on a hosted benchmark platform.
+- Full SWE-bench Pro execution harness — ctxhelm should learn from contamination-aware benchmark design without taking on a hosted benchmark platform.
 - Real-client agent outcome execution as a required release blocker — useful later, but environment-dependent and better suited to v2.5 deep integrations.
 
 ## Context
@@ -88,13 +88,13 @@ The product started from the thesis that code agents do not need another generic
 
 The codebase map in `.planning/codebase/` documents the current system:
 
-- `crates/ctxpack-core/src/contracts.rs` defines the stable typed contracts consumed by CLI and MCP.
-- `crates/ctxpack-index/src/lib.rs` is the stable facade for safe inventory, freshness, source-read policy, search, symbols, test mapping, dependency edges, git history, current diff, status-aware historical samples, and eval traces implemented in focused index modules.
-- `crates/ctxpack-compiler/src/lib.rs` is the stable facade for diagnostic-aware context-plan fusion, typed retrieval ranking, pack compilation, source revalidation, context-card generation, Markdown rendering, provenance, fixed-budget historical eval, benchmark suite execution, gap taxonomy, comparison, and proof reporting.
-- `crates/ctxpack-mcp/src/lib.rs` is the stable facade for JSON-RPC/MCP protocol, tools, resources, prompts, diagnostics, session-scoped pack cache, and tool/resource response shaping implemented in focused MCP modules.
-- `crates/ctxpack/src/main.rs` owns the user-facing CLI and command output.
+- `crates/ctxhelm-core/src/contracts.rs` defines the stable typed contracts consumed by CLI and MCP.
+- `crates/ctxhelm-index/src/lib.rs` is the stable facade for safe inventory, freshness, source-read policy, search, symbols, test mapping, dependency edges, git history, current diff, status-aware historical samples, and eval traces implemented in focused index modules.
+- `crates/ctxhelm-compiler/src/lib.rs` is the stable facade for diagnostic-aware context-plan fusion, typed retrieval ranking, pack compilation, source revalidation, context-card generation, Markdown rendering, provenance, fixed-budget historical eval, benchmark suite execution, gap taxonomy, comparison, and proof reporting.
+- `crates/ctxhelm-mcp/src/lib.rs` is the stable facade for JSON-RPC/MCP protocol, tools, resources, prompts, diagnostics, session-scoped pack cache, and tool/resource response shaping implemented in focused MCP modules.
+- `crates/ctxhelm/src/main.rs` owns the user-facing CLI and command output.
 
-v1 through v1.1 proved the local context broker, source-free safety model, agent-native protocol surface, packaging path, and setup/release gates. v1.2 proved the adoption claim with measured retrieval-quality evidence. v1.3 converted those measured needs into production-grade local storage. v1.4 used that storage foundation to add local semantic retrieval only as a measured, optional signal inside the existing context compiler. v1.5 added parser and precision-edge coverage where Java-heavy real repos exposed structural gaps. v1.6 turned durable repo summaries and session lessons into selective, source-free memory. v1.7 closed the learning loop by comparing ctxpack recommendations with what agents actually read, edit, test, and validate. v2.0 extended those local, source-free foundations across multi-repo workspaces and team-safe artifacts. v2.1 turned the accumulated evidence into inspectable diagnostic surfaces and added measured graph/embedding controls. v2.2 made the product installable, reproducible, and credible for public adoption. v2.3 turned the research and local evidence into repeatable evaluation, fast iteration, paired baselines, and source-free learned retrieval policy. v2.4 now uses that proof layer to build production semantic and precision backends only where fixed-corpus gates justify the added complexity.
+v1 through v1.1 proved the local context broker, source-free safety model, agent-native protocol surface, packaging path, and setup/release gates. v1.2 proved the adoption claim with measured retrieval-quality evidence. v1.3 converted those measured needs into production-grade local storage. v1.4 used that storage foundation to add local semantic retrieval only as a measured, optional signal inside the existing context compiler. v1.5 added parser and precision-edge coverage where Java-heavy real repos exposed structural gaps. v1.6 turned durable repo summaries and session lessons into selective, source-free memory. v1.7 closed the learning loop by comparing ctxhelm recommendations with what agents actually read, edit, test, and validate. v2.0 extended those local, source-free foundations across multi-repo workspaces and team-safe artifacts. v2.1 turned the accumulated evidence into inspectable diagnostic surfaces and added measured graph/embedding controls. v2.2 made the product installable, reproducible, and credible for public adoption. v2.3 turned the research and local evidence into repeatable evaluation, fast iteration, paired baselines, and source-free learned retrieval policy. v2.4 now uses that proof layer to build production semantic and precision backends only where fixed-corpus gates justify the added complexity.
 
 Milestone strategy from the original product vision:
 
@@ -116,10 +116,10 @@ Milestone strategy from the original product vision:
 
 - **Privacy**: Default behavior must stay local-only and source-safe for inventory, plans, traces, historical eval reports, benchmark reports, generated cards, and product proof. Packs may contain safe snippets, but every snippet path must remain filtered through the safe inventory policy.
 - **Product surface**: AGENTS.md, MCP, and thin native rules/adapters remain the primary surfaces. CLI exists for setup, debugging, and automation, not as the daily product center.
-- **Read-only scope**: ctxpack should not edit source code, run user project tests, install dependencies, or auto-commit user work. It can write its own local caches, traces, generated cards, adapter files, and planning/docs artifacts.
+- **Read-only scope**: ctxhelm should not edit source code, run user project tests, install dependencies, or auto-commit user work. It can write its own local caches, traces, generated cards, adapter files, and planning/docs artifacts.
 - **Implementation stack**: Keep the current Rust workspace architecture and typed contracts unless there is a clear measured reason to change.
 - **Evaluation**: New retrieval and storage work should be checked against source-free historical evals, with RefactoringMiner as a large-history external smoke target when practical.
-- **Validation**: Run `cargo test --workspace` before claiming implementation work complete, and `cargo run -p ctxpack -- --help` after CLI changes.
+- **Validation**: Run `cargo test --workspace` before claiming implementation work complete, and `cargo run -p ctxhelm -- --help` after CLI changes.
 
 ## Key Decisions
 
@@ -136,7 +136,7 @@ Milestone strategy from the original product vision:
 | Measured retrieval before client durability | Real clients should consume ranked, attributed, source-free context surfaces, not unstable heuristic output. | ✓ Validated in Phase 3 |
 | Real-client proof must be machine-checkable | Agent-native durability requires server-side or transcript evidence for `prepare_task` and `get_pack`, not final assistant prose. | ✓ Validated in Phase 4 |
 | Release artifacts must preserve clean-checkout semantics | Publication gates should not silently package dirty source unless maintainers explicitly opt into an in-flight validation override. | ✓ Validated in v1.1 audit |
-| Deterministic smokes must not write into target repos | ctxpack's read-only product contract applies to release validation as well as runtime agent use. | ✓ Validated in v1.1 audit |
+| Deterministic smokes must not write into target repos | ctxhelm's read-only product contract applies to release validation as well as runtime agent use. | ✓ Validated in v1.1 audit |
 | Deterministic protocol proof is the required gate | Real Codex/Claude client proof is valuable but remains optional and environment-gated; deterministic MCP proof is the portable release blocker. | ✓ Validated in Phase 8 |
 | Retrieval proof before bigger architecture | Storage, embeddings, parser precision, team features, and UI should be justified by measured retrieval gaps instead of speculative architecture desire. | ✓ Validated in v1.2 |
 | Precision overlays should be source-free bridges first | Direct SCIP/LSP project setup is fragile; a source-free edge overlay gives agents precise structure without making language tooling mandatory. | ✓ Validated in v1.5 |

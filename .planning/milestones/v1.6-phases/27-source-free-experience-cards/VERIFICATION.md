@@ -3,7 +3,7 @@
 Passed:
 
 ```bash
-CTXPACK_BIN="$PWD/target/debug/ctxpack" bash scripts/smoke-memory.sh
+CTXHELM_BIN="$PWD/target/debug/ctxhelm" bash scripts/smoke-memory.sh
 ```
 
 The smoke creates a trace, generates an experience card, checks pending review,

@@ -28,23 +28,23 @@ infer which concrete source or docs paths to inspect next.
 Focused tests passed:
 
 ```bash
-CARGO_TARGET_DIR=/tmp/ctxpack-phase104-target cargo test -p ctxpack --test release_packaging product_proof_checker_accepts_promote_and_rejects_block -- --nocapture
-CARGO_TARGET_DIR=/tmp/ctxpack-phase104-target cargo test -p ctxpack-core context_plan_public_json_shape_is_stable -- --nocapture
-CARGO_TARGET_DIR=/tmp/ctxpack-phase104-target cargo test -p ctxpack-compiler context_ -- --nocapture
+CARGO_TARGET_DIR=/tmp/ctxhelm-phase104-target cargo test -p ctxhelm --test release_packaging product_proof_checker_accepts_promote_and_rejects_block -- --nocapture
+CARGO_TARGET_DIR=/tmp/ctxhelm-phase104-target cargo test -p ctxhelm-core context_plan_public_json_shape_is_stable -- --nocapture
+CARGO_TARGET_DIR=/tmp/ctxhelm-phase104-target cargo test -p ctxhelm-compiler context_ -- --nocapture
 ```
 
 The three-repo proof excluding the locally blocked RefactoringMiner checkout
 promoted and passed the product-proof checker:
 
 ```bash
-python3 scripts/check-product-proof.py .ctxpack/e2e/phase104-context-area-next-read-paths-no-refminer-proof.json
+python3 scripts/check-product-proof.py .ctxhelm/e2e/phase104-context-area-next-read-paths-no-refminer-proof.json
 ```
 
 Reported metrics in that proof:
 
 | Repository | File Recall@10 | Source Recall@10 | Test Recall@10 | Effective Validation Recall@10 | Broad Context-Area Recall |
 |------------|---------------:|-----------------:|---------------:|--------------------------------:|--------------------------:|
-| ctxpack | 0.47460318 | 0.7166667 | n/a | n/a | 1.0 |
+| ctxhelm | 0.47460318 | 0.7166667 | n/a | n/a | 1.0 |
 | ReAgent | 0.5 | 1.0 | 1.0 | 1.0 | n/a |
 | VeriSchema | 0.18449473 | 0.31067252 | 0.7089947 | 1.0 | 0.71851856 |
 

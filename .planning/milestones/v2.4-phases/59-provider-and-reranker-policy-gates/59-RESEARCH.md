@@ -14,7 +14,7 @@ requirements:
 
 ## Objective
 
-Introduce explicit policy gates for semantic providers and rerankers so quality backends can be added without weakening ctxpack's trust boundary.
+Introduce explicit policy gates for semantic providers and rerankers so quality backends can be added without weakening ctxhelm's trust boundary.
 
 The default remains local-first and source-safe. Cloud embeddings, cloud reranking, and source-snippet transfer must stay off unless a repo policy explicitly allows them.
 
@@ -43,7 +43,7 @@ The missing layer is policy enforcement. Today provider status can tell us what 
 
 World-class retrieval will eventually need quality backends: local embeddings, local rerankers, optional cloud embeddings, optional cloud rerankers, and perhaps enterprise-hosted precision services. Without explicit policy gates, every improvement risks trust regressions.
 
-Reranking is especially sensitive because rerankers often want richer candidate text than embeddings. For ctxpack, the default reranker input must be source-free unless a policy allows source snippets.
+Reranking is especially sensitive because rerankers often want richer candidate text than embeddings. For ctxhelm, the default reranker input must be source-free unless a policy allows source snippets.
 
 ## Design Direction
 

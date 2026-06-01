@@ -1,0 +1,59 @@
+{
+  "checks": {
+    "archiveVerification": "required",
+    "benchmarkProof": "optional",
+    "claudeRealClient": "optional",
+    "codexRealClient": "optional",
+    "cursorRealClient": "not_claimed",
+    "demoArtifacts": "required",
+    "distributionMetadata": "required",
+    "opencodeRealClient": "not_claimed",
+    "releaseDocs": "required",
+    "releasePackage": "required",
+    "workspaceTests": "required"
+  },
+  "createdAt": "2026-05-31T21:45:58+00:00",
+  "distributionDecision": {
+    "cratesIo": "deferred",
+    "homebrewFormula": "deferred",
+    "localArchive": "ready",
+    "primaryChannel": "local_archive",
+    "reason": "v1.1.0 production candidate is archive-first; package-manager publication, signed installers, and self-update remain future work.",
+    "selfUpdate": "not_implemented",
+    "signedInstaller": "deferred"
+  },
+  "knownLimitations": [
+    "Cursor and OpenCode real-client proof is not claimed for v1.1.0.",
+    "Package-manager publication, signed installers, self-update, and hosted sync are future work."
+  ],
+  "package": "ctxhelm",
+  "privacyStatus": {
+    "localOnly": true,
+    "remoteEmbeddingsUsed": false,
+    "remoteRerankingUsed": false,
+    "sourceTextLogged": false
+  },
+  "proofLevel": "deterministic",
+  "releaseProof": {
+    "archiveName": "ctxhelm-v1.1.0-aarch64-apple-darwin.tar.gz",
+    "archiveSha256": "81f5ecd6d944d13ec70141b55a110cc808f584fc0e7b64a0ba087eda5e18f664",
+    "binarySha256": "92700827037f34b72e24fde627dd8b9f6506037cd0bf2a6e11dc66b3ac9887ee",
+    "binarySource": "archive",
+    "cleanColdFixtureProductProof": "passed",
+    "cleanColdFixtureRequired": true,
+    "requiredChecks": 28,
+    "resourceBackedGapSummaryContract": "checked",
+    "status": "passed",
+    "summarySha256": "f82483c983f42539ede9513028d3051c011935168acfdf1d03c67114742adf9b"
+  },
+  "schemaVersion": 1,
+  "status": "ready",
+  "unsupportedActions": [
+    "publishing",
+    "tag creation",
+    "global agent config mutation",
+    "user project test execution",
+    "cloud upload"
+  ],
+  "version": "1.1.0"
+}

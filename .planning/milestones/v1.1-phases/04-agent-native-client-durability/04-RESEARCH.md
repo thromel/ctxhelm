@@ -14,7 +14,7 @@
 ### Real Client Smokes
 - Add scriptable smoke paths for Codex CLI and Claude Code when the client binary is installed, but keep deterministic protocol-level tests as the local fallback.
 - Smokes must exercise actual MCP `prepare_task` and `get_pack` flows with explicit `repo` arguments, not only config discovery or server startup.
-- Scripts should skip clearly when a client is unavailable and fail only when a requested/available smoke path violates the ctxpack contract.
+- Scripts should skip clearly when a client is unavailable and fail only when a requested/available smoke path violates the ctxhelm contract.
 
 ### MCP Repo And Pack Semantics
 - Prefer explicit repo arguments in MCP tools over relying on the MCP server process working directory.
@@ -24,11 +24,11 @@
 
 ### Adapter Guidance
 - Keep generated AGENTS.md, Cursor rules, Claude commands, OpenCode config/rules, and any Codex guidance thin.
-- Adapter text should direct agents to call ctxpack dynamically for non-trivial code tasks and to load packs progressively.
+- Adapter text should direct agents to call ctxhelm dynamically for non-trivial code tasks and to load packs progressively.
 - Do not inject large generated repo context into adapter rules. Static cards are acceptable only as concise fallback context for environments where dynamic MCP is unavailable.
 
 ### Scope Control
-- Do not add autonomous source editing to ctxpack.
+- Do not add autonomous source editing to ctxhelm.
 - Do not widen the MCP tool list unless a current tool cannot represent the durability contract.
 - Do not add cloud indexing, cloud embeddings, cloud reranking, or vector search.
 
@@ -39,7 +39,7 @@ No `## Claude's Discretion` section exists in CONTEXT.md. The closest discretion
 ## Specific Ideas
 
 - Add `scripts/smoke-codex-mcp.sh` and `scripts/smoke-claude-mcp.sh`, or a shared smoke harness with client-specific wrappers.
-- Add a deterministic MCP JSON-RPC smoke that launches `ctxpack serve-mcp` via stdio and calls `prepare_task` and `get_pack` with explicit repo arguments; use it as fallback when real clients are absent.
+- Add a deterministic MCP JSON-RPC smoke that launches `ctxhelm serve-mcp` via stdio and calls `prepare_task` and `get_pack` with explicit repo arguments; use it as fallback when real clients are absent.
 - Add tests proving `get_pack` resource reads after a restart either reconstruct from source-free metadata or return a clear session-scoped diagnostic.
 - Add tests for wrong working directory: server started outside repo, explicit `repo` points to target repo, and output comes from that repo.
 - Add tests or diagnostics for MCP cache size/eviction/limits.
@@ -62,14 +62,14 @@ No `## Claude's Discretion` section exists in CONTEXT.md. The closest discretion
 | AGNT-01 | Codex CLI and Claude Code smoke scripts verify real MCP `prepare_task` and `get_pack` client paths with explicit `repo` arguments. | Use optional client-specific smoke scripts plus a deterministic stdio JSON-RPC harness; both installed clients are available locally (`codex-cli 0.130.0`, Claude Code `2.1.92`). |
 | AGNT-02 | MCP pack resources are clearly session-scoped or can be reconstructed from persisted source-free metadata across server restarts. | Current code is session-scoped via an in-process `OnceLock<Mutex<BTreeMap<...>>>`; research recommends either preserving this with explicit diagnostics or adding reconstruction from source-free plan metadata, not opaque cache dependence. |
 | AGNT-03 | MCP cache growth, reconnect behavior, and wrong-working-directory behavior are covered by tests or smoke scripts. | Current tests characterize session scope but do not cover cache bounds, multi-process restart, or wrong-cwd resource reads; add in-process and subprocess stdio tests around these cases. |
-| AGNT-04 | Generated adapter guidance stays thin and points agents to dynamic ctxpack calls rather than injecting large static context. | Current init constants already point to `prepare_task`; add snapshot/size/phrase tests and update wording to mention `get_pack` progressive loading and explicit `repo`. |
+| AGNT-04 | Generated adapter guidance stays thin and points agents to dynamic ctxhelm calls rather than injecting large static context. | Current init constants already point to `prepare_task`; add snapshot/size/phrase tests and update wording to mention `get_pack` progressive loading and explicit `repo`. |
 </phase_requirements>
 
 ## Summary
 
 Phase 4 should harden the existing Rust + direct JSON-RPC MCP implementation rather than introducing an MCP SDK, new retrieval libraries, cloud services, or a wider tool surface. The current code already exposes the right small MCP tool set (`prepare_task`, `search`, `related`, `get_pack`, `related_tests`, `current_diff`) and all tools accept optional `repo`, but resource reads still discover the repo from the MCP server process cwd and pack resources are stored in process-local memory.
 
-The primary implementation risk is confusing successful protocol tests with real client durability. Codex and Claude Code both have installed client binaries on this machine, but real model-driven tool invocation can be flaky or version-dependent. The durable plan is therefore two-tiered: deterministic stdio JSON-RPC smokes must verify the ctxpack contract every time, while Codex CLI and Claude Code scripts run when installed and either prove real client invocation or skip/fail with explicit status.
+The primary implementation risk is confusing successful protocol tests with real client durability. Codex and Claude Code both have installed client binaries on this machine, but real model-driven tool invocation can be flaky or version-dependent. The durable plan is therefore two-tiered: deterministic stdio JSON-RPC smokes must verify the ctxhelm contract every time, while Codex CLI and Claude Code scripts run when installed and either prove real client invocation or skip/fail with explicit status.
 
 **Primary recommendation:** Keep the current stack, add client smoke scripts plus deterministic MCP harnesses, make explicit `repo` mandatory in smoke paths, and either clearly document/test session-scoped pack resources or reconstruct packs from source-free metadata.
 
@@ -78,15 +78,15 @@ The primary implementation risk is confusing successful protocol tests with real
 - Default behavior must stay local-only and source-safe for inventory, plans, traces, historical eval reports, and generated cards.
 - Packs may include safe snippets, but every snippet path must remain filtered through the safe inventory policy.
 - AGENTS.md, MCP, and thin native rules/adapters are the primary product surfaces; CLI is for setup, debugging, and automation.
-- ctxpack must remain read-only with respect to user source: no source edits, user test execution, dependency installation, or auto-commits.
-- It may write local ctxpack state, traces, generated cards, adapter files, and planning/docs artifacts.
+- ctxhelm must remain read-only with respect to user source: no source edits, user test execution, dependency installation, or auto-commits.
+- It may write local ctxhelm state, traces, generated cards, adapter files, and planning/docs artifacts.
 - Keep the current Rust workspace architecture and typed contracts unless measured evidence justifies a change.
 - New retrieval work should be checked against source-free historical evals when practical.
 - Run `cargo test --workspace` before claiming implementation complete.
-- Run `cargo run -p ctxpack -- --help` after CLI changes.
+- Run `cargo run -p ctxhelm -- --help` after CLI changes.
 - Prefer structured reports and typed errors over ad hoc debug logging.
-- Keep public contracts in `ctxpack-core`, retrieval in `ctxpack-index`, plan/pack construction in `ctxpack-compiler`, MCP translation in `ctxpack-mcp`, and CLI rendering in `ctxpack`.
-- Do not add new barrel files for `ctxpack-index`, `ctxpack-compiler`, or `ctxpack-mcp` unless those crates are split into modules.
+- Keep public contracts in `ctxhelm-core`, retrieval in `ctxhelm-index`, plan/pack construction in `ctxhelm-compiler`, MCP translation in `ctxhelm-mcp`, and CLI rendering in `ctxhelm`.
+- Do not add new barrel files for `ctxhelm-index`, `ctxhelm-compiler`, or `ctxhelm-mcp` unless those crates are split into modules.
 
 ## Standard Stack
 
@@ -94,10 +94,10 @@ The primary implementation risk is confusing successful protocol tests with real
 
 | Library / Tool | Version | Purpose | Why Standard |
 |----------------|---------|---------|--------------|
-| Rust workspace / Cargo | cargo 1.87.0, rustc 1.87.0 | Build, test, and run ctxpack crates | Existing implementation stack; fast local CLI and typed library boundaries. |
+| Rust workspace / Cargo | cargo 1.87.0, rustc 1.87.0 | Build, test, and run ctxhelm crates | Existing implementation stack; fast local CLI and typed library boundaries. |
 | `serde` / `serde_json` | 1.0.228 / 1.0.149 | Public JSON contracts and JSON-RPC payloads | Existing MCP/CLI contract layer; preserves camelCase compatibility. |
 | Direct MCP over stdio JSON-RPC | MCP protocol `2025-11-25` in code | Local agent-client integration | Current code already implements required methods; no SDK migration is needed for this phase. |
-| `assert_cmd` + Rust tests | assert_cmd 2.2.2 | Binary CLI compatibility tests | Existing compiled-binary test pattern under `crates/ctxpack/tests`. |
+| `assert_cmd` + Rust tests | assert_cmd 2.2.2 | Binary CLI compatibility tests | Existing compiled-binary test pattern under `crates/ctxhelm/tests`. |
 | Bash + `python3` JSON validation | Python 3.14.2 available | Smoke scripts and output validation | Existing `scripts/smoke-historical-eval.sh` pattern; portable enough for local client smoke gates. |
 
 ### Supporting
@@ -106,7 +106,7 @@ The primary implementation risk is confusing successful protocol tests with real
 |------|---------|---------|-------------|
 | Codex CLI | 0.130.0 | Optional real-client MCP smoke | Run when `codex` is installed; isolate `CODEX_HOME` and avoid mutating user config. |
 | Claude Code | 2.1.92 | Optional real-client MCP smoke | Run when `claude` is installed; use project `.mcp.json` or temp config and strict MCP config where available. |
-| Git CLI | 2.45.1 | Fixture repos, current diff, history | Required by existing ctxpack retrieval and tests. |
+| Git CLI | 2.45.1 | Fixture repos, current diff, history | Required by existing ctxhelm retrieval and tests. |
 | `tempfile` | 3.27.0 | Isolated fixture repos and homes | Existing unit/integration test fixture style. |
 
 ### Alternatives Considered
@@ -133,23 +133,23 @@ scripts/
 `-- smoke-claude-mcp.sh         # Optional Claude Code real-client wrapper
 
 crates/
-|-- ctxpack-core/src/init.rs    # Thin adapter text and snapshot tests
-|-- ctxpack-mcp/src/resources.rs # Pack cache/resource semantics
-|-- ctxpack-mcp/src/tools.rs    # Explicit repo args for tools
-`-- ctxpack-mcp/src/lib.rs      # MCP protocol/reconnect/wrong-cwd tests
+|-- ctxhelm-core/src/init.rs    # Thin adapter text and snapshot tests
+|-- ctxhelm-mcp/src/resources.rs # Pack cache/resource semantics
+|-- ctxhelm-mcp/src/tools.rs    # Explicit repo args for tools
+`-- ctxhelm-mcp/src/lib.rs      # MCP protocol/reconnect/wrong-cwd tests
 ```
 
 ### Pattern 1: Two-Tier Client Smoke
 
-**What:** Add a deterministic MCP stdio smoke that launches `cargo run -p ctxpack -- serve-mcp`, sends `initialize`, `tools/call prepare_task`, `tools/call get_pack`, and `resources/read` requests, then validates JSON with `python3`. Wrap Codex and Claude Code real-client smokes around the same fixture and expected contract.
+**What:** Add a deterministic MCP stdio smoke that launches `cargo run -p ctxhelm -- serve-mcp`, sends `initialize`, `tools/call prepare_task`, `tools/call get_pack`, and `resources/read` requests, then validates JSON with `python3`. Wrap Codex and Claude Code real-client smokes around the same fixture and expected contract.
 
 **When to use:** Always for Phase 4 validation. Real clients should supplement, not replace, the deterministic harness.
 
 **Example:**
 
 ```bash
-CTXPACK_SMOKE_REPO="$fixture_repo" \
-CTXPACK_HOME="$fixture_home" \
+CTXHELM_SMOKE_REPO="$fixture_repo" \
+CTXHELM_HOME="$fixture_home" \
 python3 scripts/smoke-mcp-protocol.py \
   --repo "$fixture_repo" \
   --task "fix requireSession auth bug"
@@ -164,12 +164,12 @@ python3 scripts/smoke-mcp-protocol.py \
 **Example JSON-RPC request:**
 
 ```json
-{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"prepare_task","arguments":{"task":"fix requireSession auth bug","repo":"/tmp/ctxpack-fixture/repo","mode":"bug_fix","recordTrace":false}}}
+{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"prepare_task","arguments":{"task":"fix requireSession auth bug","repo":"/tmp/ctxhelm-fixture/repo","mode":"bug_fix","recordTrace":false}}}
 ```
 
 ### Pattern 3: Make Pack Resource Semantics Observable
 
-**What:** If resources stay session-scoped, tests and docs should explicitly assert that `ctxpack://pack/<task-id>/<budget>` works only after `prepare_task` in the same server process, and fails with a clear diagnostic after restart. If reconstruction is added, persist only source-free plan metadata and re-run safe pack compilation on `resources/read`.
+**What:** If resources stay session-scoped, tests and docs should explicitly assert that `ctxhelm://pack/<task-id>/<budget>` works only after `prepare_task` in the same server process, and fails with a clear diagnostic after restart. If reconstruction is added, persist only source-free plan metadata and re-run safe pack compilation on `resources/read`.
 
 **When to use:** AGNT-02 and AGNT-03. Do not leave pack resource behavior implicit.
 
@@ -178,7 +178,7 @@ python3 scripts/smoke-mcp-protocol.py \
 ```rust
 clear_pack_resource_cache();
 let missing = handle_line(
-    r#"{"jsonrpc":"2.0","id":50,"method":"resources/read","params":{"uri":"ctxpack://pack/not-yet-created/brief"}}"#,
+    r#"{"jsonrpc":"2.0","id":50,"method":"resources/read","params":{"uri":"ctxhelm://pack/not-yet-created/brief"}}"#,
 ).unwrap();
 assert_eq!(missing["error"]["code"], -32602);
 assert!(missing["error"]["message"].as_str().unwrap().contains("call prepare_task first"));
@@ -202,7 +202,7 @@ assert!(AGENTS_SECTION.len() < 1_500);
 
 ### Anti-Patterns to Avoid
 
-- **Config discovery as proof:** `codex mcp get` or `claude mcp list` only proves configuration, not that the agent called ctxpack.
+- **Config discovery as proof:** `codex mcp get` or `claude mcp list` only proves configuration, not that the agent called ctxhelm.
 - **Wrong-cwd fallback in smokes:** Starting the MCP server inside the target repo hides client cwd bugs.
 - **Unbounded pack cache:** A process-wide map without limits can grow indefinitely in long sessions.
 - **Protocol-only success for AGNT-01:** Deterministic protocol tests are necessary fallback, but AGNT-01 also needs optional real Codex and Claude scripts.
@@ -214,11 +214,11 @@ assert!(AGENTS_SECTION.len() < 1_500);
 |---------|-------------|-------------|-----|
 | Client-independent MCP verification | Prose scraping of agent replies | JSON-RPC stdio harness with structured JSON assertions | Stable, deterministic, and independent of model wording. |
 | Codex/Claude client configuration | Permanent mutation of user global config | Temp homes/project fixtures and generated snippets | Avoids polluting user setup and wrong-repo state. |
-| Tool output parsing | Regex over pretty text | `structuredContent` and JSON fields | MCP and ctxpack already expose typed data. |
+| Tool output parsing | Regex over pretty text | `structuredContent` and JSON fields | MCP and ctxhelm already expose typed data. |
 | Pack durability | Hidden in-memory behavior with no diagnostics | Explicit session-scoped diagnostic or source-free reconstruction | Prevents session surprises. |
 | Adapter context | Generated static repo dumps | Dynamic `prepare_task` / `get_pack` instructions and concise cards fallback | Static dumps get stale and consume context. |
 
-**Key insight:** The hard part is not adding more context. It is proving that real client sessions call the right dynamic ctxpack surface for the right repo, and that users can predict what survives a reconnect.
+**Key insight:** The hard part is not adding more context. It is proving that real client sessions call the right dynamic ctxhelm surface for the right repo, and that users can predict what survives a reconnect.
 
 ## Common Pitfalls
 
@@ -229,13 +229,13 @@ assert!(AGENTS_SECTION.len() < 1_500);
 **Warning signs:** Smoke only runs `codex mcp get`, `claude mcp get`, or server startup.
 
 ### Pitfall 2: Session-Scoped Pack URIs Look Durable
-**What goes wrong:** A returned `ctxpack://pack/<task-id>/<budget>` URI works in one process but fails after reconnect.
+**What goes wrong:** A returned `ctxhelm://pack/<task-id>/<budget>` URI works in one process but fails after reconnect.
 **Why it happens:** Current pack cache is process-local memory.
 **How to avoid:** Either document/test session scope or persist source-free reconstruction metadata.
 **Warning signs:** Resource-read tests use `clear_pack_resource_cache()` but no subprocess restart.
 
 ### Pitfall 3: Resource Reads Use Wrong Repo
-**What goes wrong:** `ctxpack://repo/summary`, file resources, or symbol resources read from the MCP server cwd instead of the active project.
+**What goes wrong:** `ctxhelm://repo/summary`, file resources, or symbol resources read from the MCP server cwd instead of the active project.
 **Why it happens:** Resource URIs currently do not carry repo and `read_resource` calls `discover_repo(None)`.
 **How to avoid:** Prefer tool calls with explicit `repo`; for resources, either add repo-scoped semantics or make wrong-cwd behavior explicit and diagnostic.
 **Warning signs:** Tests call `std::env::set_current_dir(&repo.repo)` before reading resources.
@@ -260,8 +260,8 @@ Verified patterns from current code and official docs:
 
 ```toml
 # Source: OpenAI Codex MCP docs
-[mcp_servers.ctxpack]
-command = "ctxpack"
+[mcp_servers.ctxhelm]
+command = "ctxhelm"
 args = ["serve-mcp"]
 cwd = "/path/to/repo"
 startup_timeout_sec = 10
@@ -275,8 +275,8 @@ Codex supports stdio MCP servers with `command`, `args`, `env`, `env_vars`, and 
 ```json
 {
   "mcpServers": {
-    "ctxpack": {
-      "command": "ctxpack",
+    "ctxhelm": {
+      "command": "ctxhelm",
       "args": ["serve-mcp"]
     }
   }
@@ -288,7 +288,7 @@ Claude Code supports project-scoped `.mcp.json` and names MCP tools as `mcp__<se
 ### Deterministic MCP Tool Call
 
 ```json
-{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"get_pack","arguments":{"task":"fix requireSession auth bug","repo":"/tmp/ctxpack-fixture/repo","mode":"bug_fix","budget":"brief","format":"json","recordTrace":false}}}
+{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"get_pack","arguments":{"task":"fix requireSession auth bug","repo":"/tmp/ctxhelm-fixture/repo","mode":"bug_fix","budget":"brief","format":"json","recordTrace":false}}}
 ```
 
 Assert `result.structuredContent.budget == "brief"`, `targetAgent` when supplied, and sections mention the expected safe fixture path.
@@ -299,12 +299,12 @@ Assert `result.structuredContent.budget == "brief"`, `targetAgent` when supplied
 |--------------|------------------|--------------------------|--------|
 | Codex global-only MCP setup assumptions | Codex supports user config and trusted project `.codex/config.toml`; MCP has optional `cwd`, `enabled_tools`, timeouts | Official Codex docs checked 2026-05-13 | Smoke scripts should isolate `CODEX_HOME` or use project config and avoid permanent global mutation. |
 | Claude `project` scope terminology only | Claude docs now describe `local`, `project`, and `user` scopes, with project `.mcp.json` approval behavior | Official Claude docs checked 2026-05-13 | Generated Claude snippets can stay project-local, but smokes must handle approval/strict config explicitly. |
-| MCP tools as text-only outputs | MCP 2025-11-25 schema supports `structuredContent` and resource links not necessarily listed in `resources/list` | Official MCP schema checked 2026-05-13 | ctxpack should assert structured output and can return tool-linked pack URIs without listing every dynamic pack resource. |
+| MCP tools as text-only outputs | MCP 2025-11-25 schema supports `structuredContent` and resource links not necessarily listed in `resources/list` | Official MCP schema checked 2026-05-13 | ctxhelm should assert structured output and can return tool-linked pack URIs without listing every dynamic pack resource. |
 | Session behavior only characterized in unit tests | Phase 4 requires restart/reconnect/wrong-cwd subprocess smokes | Local code and requirements checked 2026-05-13 | Add black-box process tests in addition to `handle_line` tests. |
 
 **Deprecated/outdated:**
 - Adapter text saying "the first implemented tool is prepare_task" is outdated because the MCP surface now includes six tools and `get_pack`.
-- Treating `ctxpack://pack/...` resources as durable is incorrect unless Phase 4 adds reconstruction.
+- Treating `ctxhelm://pack/...` resources as durable is incorrect unless Phase 4 adds reconstruction.
 
 ## Open Questions
 
@@ -319,7 +319,7 @@ Assert `result.structuredContent.budget == "brief"`, `targetAgent` when supplied
    - Recommendation: Keep real-client scripts optional/skipping and assert contract evidence when they run; rely on protocol smoke for deterministic CI.
 
 3. **Should resources accept repo arguments?**
-   - What we know: MCP `resources/read` params currently only include `uri`; ctxpack resource URIs do not encode repo.
+   - What we know: MCP `resources/read` params currently only include `uri`; ctxhelm resource URIs do not encode repo.
    - What's unclear: Whether changing URI shapes would break existing resource compatibility.
    - Recommendation: Do not break existing URIs. Prefer explicit-repo tools for dynamic operations, and add diagnostics/docs that repo resources use server cwd unless a future additive URI shape is introduced.
 
@@ -350,9 +350,9 @@ Skipped. `.planning/config.json` sets `workflow.nyquist_validation` to `false`.
 - Local repo: `.planning/REQUIREMENTS.md` - AGNT-01 through AGNT-04.
 - Local repo: `.planning/ROADMAP.md` and `.planning/PROJECT.md` - Phase goal and product constraints.
 - Local repo: `CLAUDE.md` and `AGENTS.md` - project constraints, validation, and architecture rules.
-- Local repo: `crates/ctxpack-mcp/src/tools.rs`, `resources.rs`, `schemas.rs`, `protocol.rs`, `lib.rs` - current MCP tool/resource/session behavior.
-- Local repo: `crates/ctxpack-core/src/init.rs` - generated adapter guidance.
-- Local repo: `crates/ctxpack/tests/cli_compat.rs`, `crates/ctxpack/tests/common/mod.rs`, `scripts/smoke-historical-eval.sh` - existing compatibility and smoke patterns.
+- Local repo: `crates/ctxhelm-mcp/src/tools.rs`, `resources.rs`, `schemas.rs`, `protocol.rs`, `lib.rs` - current MCP tool/resource/session behavior.
+- Local repo: `crates/ctxhelm-core/src/init.rs` - generated adapter guidance.
+- Local repo: `crates/ctxhelm/tests/cli_compat.rs`, `crates/ctxhelm/tests/common/mod.rs`, `scripts/smoke-historical-eval.sh` - existing compatibility and smoke patterns.
 - OpenAI Codex MCP docs: https://developers.openai.com/codex/mcp - Codex MCP config, stdio options, timeouts, `cwd`.
 - OpenAI Codex config basics: https://developers.openai.com/codex/config-basic - config scope and precedence.
 - Claude Code MCP docs: https://code.claude.com/docs/en/mcp - scopes, `.mcp.json`, project approval behavior.
@@ -363,7 +363,7 @@ Skipped. `.planning/config.json` sets `workflow.nyquist_validation` to `false`.
 ### Secondary (MEDIUM confidence)
 
 - OpenAI Codex GitHub README: https://github.com/openai/codex/blob/main/codex-rs/README.md - Codex CLI as MCP client and `codex exec`/`codex mcp` behavior.
-- Local memory index from prior ctxpack runs - used only to identify prior client-smoke risks; all actionable claims were rechecked against live repo or official docs.
+- Local memory index from prior ctxhelm runs - used only to identify prior client-smoke risks; all actionable claims were rechecked against live repo or official docs.
 
 ### Tertiary (LOW confidence)
 

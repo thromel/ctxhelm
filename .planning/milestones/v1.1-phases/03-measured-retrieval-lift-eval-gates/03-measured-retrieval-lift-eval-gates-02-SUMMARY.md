@@ -2,7 +2,7 @@
 phase: 03-measured-retrieval-lift-eval-gates
 plan: 02
 subsystem: retrieval-ranking
-tags: [rust, ctxpack-compiler, retrieval, ranking, attribution]
+tags: [rust, ctxhelm-compiler, retrieval, ranking, attribution]
 
 requires:
   - phase: 03-measured-retrieval-lift-eval-gates
@@ -13,7 +13,7 @@ provides:
   - Internal typed candidate ranking pass before ContextPlan projection
   - Source-free attribution on selected target files and related tests
   - One-hop dependency, test, history, anchor, current-diff, symbol, lexical, doc, and config signal fusion
-affects: [ctxpack-compiler, retrieval-eval, context-planning]
+affects: [ctxhelm-compiler, retrieval-eval, context-planning]
 
 tech-stack:
   added: []
@@ -23,14 +23,14 @@ tech-stack:
 
 key-files:
   created:
-    - crates/ctxpack-compiler/src/ranking.rs
+    - crates/ctxhelm-compiler/src/ranking.rs
     - .planning/phases/03-measured-retrieval-lift-eval-gates/03-measured-retrieval-lift-eval-gates-02-SUMMARY.md
   modified:
-    - crates/ctxpack-compiler/src/lib.rs
-    - crates/ctxpack-compiler/src/planning.rs
+    - crates/ctxhelm-compiler/src/lib.rs
+    - crates/ctxhelm-compiler/src/planning.rs
 
 key-decisions:
-  - "Keep ranking private to ctxpack-compiler while projecting through existing ContextPlan fields for compatibility."
+  - "Keep ranking private to ctxhelm-compiler while projecting through existing ContextPlan fields for compatibility."
   - "Treat explicit anchors and current-diff anchors as high-priority signals so active context remains first under fixed budgets."
   - "Infer current-diff attribution from safe changed paths without adding a new public planning parameter."
 
@@ -73,9 +73,9 @@ Each task was committed atomically:
 
 ## Files Created/Modified
 
-- `crates/ctxpack-compiler/src/ranking.rs` - Collects and ranks typed retrieval candidates, merges signal scores, applies one-hop expansion, and selects fixed-budget projections.
-- `crates/ctxpack-compiler/src/planning.rs` - Gathers reports first, invokes ranking, projects selected targets/tests/commands/candidates, and preserves compatibility risk flags.
-- `crates/ctxpack-compiler/src/lib.rs` - Registers the ranking module and adds planning-level regression tests.
+- `crates/ctxhelm-compiler/src/ranking.rs` - Collects and ranks typed retrieval candidates, merges signal scores, applies one-hop expansion, and selects fixed-budget projections.
+- `crates/ctxhelm-compiler/src/planning.rs` - Gathers reports first, invokes ranking, projects selected targets/tests/commands/candidates, and preserves compatibility risk flags.
+- `crates/ctxhelm-compiler/src/lib.rs` - Registers the ranking module and adds planning-level regression tests.
 - `.planning/phases/03-measured-retrieval-lift-eval-gates/03-measured-retrieval-lift-eval-gates-02-SUMMARY.md` - Captures Plan 02 execution results.
 
 ## Decisions Made
@@ -102,9 +102,9 @@ None. Stub scan found no `TODO`, `FIXME`, placeholder text, source-less UI place
 
 ## Verification
 
-- `cargo test -p ctxpack-compiler ranking -- --nocapture` passed.
-- `cargo test -p ctxpack-compiler prepare_context_plan -- --nocapture` passed.
-- `cargo test -p ctxpack-compiler` passed.
+- `cargo test -p ctxhelm-compiler ranking -- --nocapture` passed.
+- `cargo test -p ctxhelm-compiler prepare_context_plan -- --nocapture` passed.
+- `cargo test -p ctxhelm-compiler` passed.
 - `cargo test --workspace` passed.
 - `cargo fmt --all --check` passed.
 
@@ -118,7 +118,7 @@ Plan 03 can measure this ranked candidate layer against lexical retrieval at fix
 
 ## Self-Check: PASSED
 
-- Found files: `crates/ctxpack-compiler/src/ranking.rs`, `crates/ctxpack-compiler/src/planning.rs`, and this SUMMARY.
+- Found files: `crates/ctxhelm-compiler/src/ranking.rs`, `crates/ctxhelm-compiler/src/planning.rs`, and this SUMMARY.
 - Found commits via direct commit-object checks: `bc44424`, `9c4b0b9`, `8d3d278`, `94f4b15`.
 - Verified no known stubs in created or modified files.
 

@@ -524,16 +524,16 @@ dependencies = [
 ]
 
 [[package]]
-name = "ctxpack"
+name = "ctxhelm"
 version = "1.1.7"
 dependencies = [
  "anyhow",
  "assert_cmd",
  "clap",
- "ctxpack-compiler",
- "ctxpack-core",
- "ctxpack-index",
- "ctxpack-mcp",
+ "ctxhelm-compiler",
+ "ctxhelm-core",
+ "ctxhelm-index",
+ "ctxhelm-mcp",
  "predicates",
  "serde",
  "serde_json",
@@ -542,11 +542,11 @@ dependencies = [
 ]
 
 [[package]]
-name = "ctxpack-compiler"
+name = "ctxhelm-compiler"
 version = "1.1.7"
 dependencies = [
- "ctxpack-core",
- "ctxpack-index",
+ "ctxhelm-core",
+ "ctxhelm-index",
  "serde",
  "serde_json",
  "tempfile",
@@ -554,7 +554,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "ctxpack-core"
+name = "ctxhelm-core"
 version = "1.1.7"
 dependencies = [
  "serde",
@@ -565,11 +565,11 @@ dependencies = [
 ]
 
 [[package]]
-name = "ctxpack-index"
+name = "ctxhelm-index"
 version = "1.1.7"
 dependencies = [
  "blake3",
- "ctxpack-core",
+ "ctxhelm-core",
  "fastembed",
  "ignore",
  "rusqlite",
@@ -588,12 +588,12 @@ dependencies = [
 ]
 
 [[package]]
-name = "ctxpack-mcp"
+name = "ctxhelm-mcp"
 version = "1.1.7"
 dependencies = [
- "ctxpack-compiler",
- "ctxpack-core",
- "ctxpack-index",
+ "ctxhelm-compiler",
+ "ctxhelm-core",
+ "ctxhelm-index",
  "serde",
  "serde_json",
  "tempfile",

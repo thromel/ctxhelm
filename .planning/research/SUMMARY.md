@@ -2,7 +2,7 @@
 
 ## Research Question
 
-How should ctxpack turn semantic and precision retrieval from local scaffolding into a production-quality, measured retrieval improvement while preserving the local-first, read-only, source-safe product contract?
+How should ctxhelm turn semantic and precision retrieval from local scaffolding into a production-quality, measured retrieval improvement while preserving the local-first, read-only, source-safe product contract?
 
 ## Current Evidence
 
@@ -21,7 +21,7 @@ Conclusion: the current `local_hash` provider is useful as a privacy-safe contra
 
 ### 1. Local embeddings should use a real model backend, not hashes
 
-`fastembed` is a practical Rust-first candidate because it exposes `TextEmbedding`, supported model listing, configurable init options, ONNX sources, quantization modes, and bring-your-own embedding/reranker model structs. That matches ctxpack's local-first architecture and lets the first production backend remain in-process and source-safe.
+`fastembed` is a practical Rust-first candidate because it exposes `TextEmbedding`, supported model listing, configurable init options, ONNX sources, quantization modes, and bring-your-own embedding/reranker model structs. That matches ctxhelm's local-first architecture and lets the first production backend remain in-process and source-safe.
 
 Source: https://docs.rs/fastembed/
 
@@ -49,7 +49,7 @@ Sources:
 
 SCIP is a language-agnostic protocol for code navigation data such as go-to-definition and find-references. Sourcegraph's docs also show the operational reality: precise navigation is opt-in, requires indexes, and search-based navigation is the fallback when precise indexes are unavailable.
 
-ctxpack should mirror that: import or generate SCIP/LSP-derived edges when available, report missing/stale/degraded precision inputs, and fall back to lexical, Tree-sitter, graph, history, and test signals without failing the main workflow.
+ctxhelm should mirror that: import or generate SCIP/LSP-derived edges when available, report missing/stale/degraded precision inputs, and fall back to lexical, Tree-sitter, graph, history, and test signals without failing the main workflow.
 
 Sources:
 
@@ -60,7 +60,7 @@ Sources:
 
 Voyage and Cohere both describe the standard retrieval stack: embeddings produce vectors for semantic retrieval, rerankers score query-document relevance after first-stage retrieval, and reranking can refine BM25/vector candidates. OpenAI's current embedding docs also position embeddings as a relatedness/search primitive.
 
-For ctxpack, this supports optional provider interfaces, not default cloud use. Every cloud provider must require explicit repo policy, disclose source-sharing implications, record provider/model/dimension/version metadata, and pass paired eval gates before becoming recommended.
+For ctxhelm, this supports optional provider interfaces, not default cloud use. Every cloud provider must require explicit repo policy, disclose source-sharing implications, record provider/model/dimension/version metadata, and pass paired eval gates before becoming recommended.
 
 Sources:
 

@@ -7,7 +7,7 @@
 <domain>
 ## Phase Boundary
 
-Inventory already recognizes Java and Kotlin, but symbol extraction only covered TypeScript/JavaScript, Python, Rust, and Go. RefactoringMiner is Java-heavy, so ctxpack needed useful Java/Kotlin symbol records before precision evals could become meaningful.
+Inventory already recognizes Java and Kotlin, but symbol extraction only covered TypeScript/JavaScript, Python, Rust, and Go. RefactoringMiner is Java-heavy, so ctxhelm needed useful Java/Kotlin symbol records before precision evals could become meaningful.
 </domain>
 
 <decisions>

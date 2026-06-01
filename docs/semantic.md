@@ -1,37 +1,37 @@
 # Local Semantic Retrieval
 
-ctxpack supports optional local semantic retrieval as a secondary signal in the context compiler. It is disabled by default, uses the same safe inventory policy as lexical search and packs, and does not call cloud embedding or reranking services.
+ctxhelm supports optional local semantic retrieval as a secondary signal in the context compiler. It is disabled by default, uses the same safe inventory policy as lexical search and packs, and does not call cloud embedding or reranking services.
 
 ## Enable Per Invocation
 
 Semantic retrieval is explicit on each workflow that can use it:
 
 ```bash
-ctxpack search "payment webhook validation" --repo /path/to/repo --semantic
-ctxpack prepare-task "fix payment webhook validation" --repo /path/to/repo --semantic
-ctxpack get-pack "fix payment webhook validation" --repo /path/to/repo --semantic
-ctxpack eval history --repo /path/to/repo --semantic
+ctxhelm search "payment webhook validation" --repo /path/to/repo --semantic
+ctxhelm prepare-task "fix payment webhook validation" --repo /path/to/repo --semantic
+ctxhelm get-pack "fix payment webhook validation" --repo /path/to/repo --semantic
+ctxhelm eval history --repo /path/to/repo --semantic
 ```
 
-The default provider is `local_hash` with model `ctxpack-local-hash-v1`, cosine similarity, and local vector metadata only. `local_hash` is deterministic scaffold/test behavior. It exists to prove the semantic-retrieval contract, storage privacy boundary, and agent provenance without claiming production retrieval quality.
+The default provider is `local_hash` with model `ctxhelm-local-hash-v1`, cosine similarity, and local vector metadata only. `local_hash` is deterministic scaffold/test behavior. It exists to prove the semantic-retrieval contract, storage privacy boundary, and agent provenance without claiming production retrieval quality.
 
 To request the production local embedding backend, pass the provider explicitly:
 
 ```bash
-ctxpack semantic status --repo /path/to/repo \
+ctxhelm semantic status --repo /path/to/repo \
   --semantic-provider local_fastembed \
   --format json
 
-ctxpack index --repo /path/to/repo \
+ctxhelm index --repo /path/to/repo \
   --semantic \
   --semantic-provider local_fastembed
 
-ctxpack prepare-task "find payment webhook validation" \
+ctxhelm prepare-task "find payment webhook validation" \
   --repo /path/to/repo \
   --semantic \
   --semantic-provider local_fastembed
 
-ctxpack eval history --repo /path/to/repo \
+ctxhelm eval history --repo /path/to/repo \
   --semantic \
   --semantic-provider local_fastembed
 ```
@@ -42,7 +42,7 @@ provider as unavailable instead of falling back silently or calling a cloud
 provider.
 
 ```bash
-cargo build -p ctxpack --features local-embeddings
+cargo build -p ctxhelm --features local-embeddings
 ```
 
 ## Production Local Embedding Status
@@ -55,17 +55,17 @@ slower than default retrieval.
 
 Measured Phase 62 status:
 
-- `local_hash`: deterministic scaffold, model `ctxpack-local-hash-v1`, 64 dimensions, not a quality backend.
+- `local_hash`: deterministic scaffold, model `ctxhelm-local-hash-v1`, 64 dimensions, not a quality backend.
 - `local_fastembed`: production-local backend, quality backend `true`, local-only, no cloud source transfer.
 - Jina code model status: available as `JinaEmbeddingsV2BaseCode` with 768 dimensions, but too slow for the full two-repo eval loop in this implementation.
 - Phase 62 benchmark model: `AllMiniLML6V2Q` with 384 dimensions.
-- Model cache: defaults to repo `.ctxpack/cache/fastembed` when run inside a git repo, otherwise `CTXPACK_HOME/cache/fastembed`; override with `CTXPACK_FASTEMBED_CACHE_DIR`.
+- Model cache: defaults to repo `.ctxhelm/cache/fastembed` when run inside a git repo, otherwise `CTXHELM_HOME/cache/fastembed`; override with `CTXHELM_FASTEMBED_CACHE_DIR`.
 - Query-time vector cache: bounded in-process cache for repeated source-free document embeddings.
-- Expensive model prefilter: `local_fastembed` embeds at most 128 source-free candidate documents per query by default; override with `CTXPACK_FASTEMBED_DOCUMENT_LIMIT`.
+- Expensive model prefilter: `local_fastembed` embeds at most 128 source-free candidate documents per query by default; override with `CTXHELM_FASTEMBED_DOCUMENT_LIMIT`.
 
 Phase 62 result:
 
-| Variant | RefactoringMiner Recall@10 | ctxpack Recall@10 | Repo Runtime |
+| Variant | RefactoringMiner Recall@10 | ctxhelm Recall@10 | Repo Runtime |
 | --- | ---: | ---: | ---: |
 | Default, semantic off | 0.7767 | 0.2299 | 26.3s |
 | `local_hash` | 0.7767 | 0.2299 | 57.8s |
@@ -84,26 +84,26 @@ Semantic retrieval now indexes source-free semantic documents instead of raw fil
 - import/dependency edges
 - related-test paths and source-free relation reasons
 - docs/card file references
-- optional discovered or imported precision edge labels from `.ctxpack/precision-edges.json`
+- optional discovered or imported precision edge labels from `.ctxhelm/precision-edges.json`
 
 The document report is visible through semantic status:
 
 ```bash
-ctxpack semantic status --repo /path/to/repo --format json
+ctxhelm semantic status --repo /path/to/repo --format json
 ```
 
 The report includes `semanticDocumentCount`, `semanticFacetCount`, `precisionStatus`, `sourceTextLogged`, and `privacyStatus`. `sourceTextLogged` remains `false`; raw source bodies are not embedded, exported, or persisted by the default semantic document path.
 
-Phase 56 also defines `local_fastembed` as the optional real local embedding backend. It is compiled only when the `ctxpack` binary, `ctxpack-mcp`, `ctxpack-compiler`, or `ctxpack-index` is built with the `local-embeddings` Cargo feature. Normal workspace builds keep `local_fastembed` unavailable and return the warning diagnostic `semantic_provider_unavailable` if it is requested, rather than falling back silently or calling a cloud provider.
+Phase 56 also defines `local_fastembed` as the optional real local embedding backend. It is compiled only when the `ctxhelm` binary, `ctxhelm-mcp`, `ctxhelm-compiler`, or `ctxhelm-index` is built with the `local-embeddings` Cargo feature. Normal workspace builds keep `local_fastembed` unavailable and return the warning diagnostic `semantic_provider_unavailable` if it is requested, rather than falling back silently or calling a cloud provider.
 
 ## Index Vector Metadata
 
 To persist source-free vector metadata in the local SQLite store:
 
 ```bash
-ctxpack index --repo /path/to/repo --semantic
-ctxpack index --repo /path/to/repo --semantic --semantic-provider local_fastembed
-ctxpack storage status --repo /path/to/repo
+ctxhelm index --repo /path/to/repo --semantic
+ctxhelm index --repo /path/to/repo --semantic --semantic-provider local_fastembed
+ctxhelm storage status --repo /path/to/repo
 ```
 
 `--semantic` implies a safe inventory storage sync. The store records provider, model, dimensions, distance metric, file path, safe hash, privacy label, source-free semantic document metadata, and numeric vector JSON for providers such as `local_hash` and `local_fastembed`. It does not store raw file contents, prompts, snippets, secrets, or cloud payloads.
@@ -120,7 +120,7 @@ Semantic retrieval is intentionally weighted below exact path, active diff, symb
 
 Semantic retrieval uses:
 
-- `.gitignore`, `.ctxpackignore`, and `.cursorignore`
+- `.gitignore`, `.ctxhelmignore`, and `.cursorignore`
 - generated-file and sensitive-file exclusions
 - semantic-document construction before vectorization
 - local-only privacy status
@@ -135,7 +135,7 @@ source-free metadata providers are allowed by default; cloud embeddings, cloud
 reranking, source transfer, and reranking execution are denied or disabled until
 repo policy explicitly opts in.
 
-Promotion to a default retrieval signal is controlled by `ctxpack eval gate`.
+Promotion to a default retrieval signal is controlled by `ctxhelm eval gate`.
 The gate compares default retrieval against local semantic, precision-enriched
 semantic, full hybrid, and policy-allowed reranked variants on a fixed corpus.
 Neutral results produce `hold`; regressions or unsafe policy produce `block`.
@@ -154,4 +154,4 @@ Maintainers can run deterministic local coverage with:
 bash scripts/smoke-semantic.sh
 ```
 
-The release gate also runs `scripts/smoke-semantic.sh` and checks that source and secret sentinels are not persisted in ctxpack local state.
+The release gate also runs `scripts/smoke-semantic.sh` and checks that source and secret sentinels are not persisted in ctxhelm local state.

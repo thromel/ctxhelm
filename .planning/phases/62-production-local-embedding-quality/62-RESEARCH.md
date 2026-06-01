@@ -29,7 +29,7 @@ v2.4 added:
 Phase 61 baseline:
 
 - RefactoringMiner default Recall@10 `0.7767`, lexical `0.7792`.
-- ctxpack default Recall@10 `0.2270`, lexical `0.2742`.
+- ctxhelm default Recall@10 `0.2270`, lexical `0.2742`.
 
 ## Problem
 

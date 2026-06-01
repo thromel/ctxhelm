@@ -5,7 +5,7 @@ usage() {
   cat >&2 <<'EOF'
 usage: verify-public-archive-install.sh [--repo OWNER/REPO] [--tag TAG] [--target-label TARGET] [--expected-version VERSION] [--output PATH]
 
-Downloads ctxpack release assets from the public GitHub release URL, verifies
+Downloads ctxhelm release assets from the public GitHub release URL, verifies
 checksums, installs the binary into a temporary bin directory, and runs
 version/help/doctor plus the first-pack smoke against the installed binary.
 
@@ -14,10 +14,10 @@ upload, create tags, or run user project tests.
 EOF
 }
 
-repo="thromel/ctxpack"
+repo="thromel/ctxhelm"
 tag="v1.1.7"
 target_label="$(rustc -vV 2>/dev/null | awk '/^host:/ { print $2 }')"
-expected_version="ctxpack 1.1.7"
+expected_version="ctxhelm 1.1.7"
 output_path=""
 
 while [[ $# -gt 0 ]]; do
@@ -77,7 +77,7 @@ install_dir="$work_dir/install"
 mkdir -p "$download_dir" "$extract_dir" "$install_dir/bin"
 
 version="${tag#v}"
-prefix="ctxpack-v${version}-${target_label}"
+prefix="ctxhelm-v${version}-${target_label}"
 archive_name="${prefix}.tar.gz"
 manifest_name="${prefix}.manifest.json"
 audit_name="${prefix}.audit.json"
@@ -113,13 +113,13 @@ bash "$verify_release_archive_script" \
   --checksums "$download_dir/$checksums_name" >/dev/null
 
 tar -xzf "$download_dir/$archive_name" -C "$extract_dir"
-extracted_bin="$extract_dir/$prefix/ctxpack"
+extracted_bin="$extract_dir/$prefix/ctxhelm"
 if [[ ! -x "$extracted_bin" ]]; then
-  echo "extracted ctxpack binary missing or not executable: $extracted_bin" >&2
+  echo "extracted ctxhelm binary missing or not executable: $extracted_bin" >&2
   exit 65
 fi
-install -m 0755 "$extracted_bin" "$install_dir/bin/ctxpack"
-installed_bin="$install_dir/bin/ctxpack"
+install -m 0755 "$extracted_bin" "$install_dir/bin/ctxhelm"
+installed_bin="$install_dir/bin/ctxhelm"
 
 version_output="$("$installed_bin" --version)"
 if [[ "$version_output" != "$expected_version" ]]; then
@@ -148,7 +148,7 @@ if privacy.get("localOnly") is not True or privacy.get("sourceTextLogged") is no
     raise SystemExit("doctor privacy status is not source-free local-only")
 PY
 
-CTXPACK_BIN="$installed_bin" bash "$smoke_first_pack_script" >/dev/null
+CTXHELM_BIN="$installed_bin" bash "$smoke_first_pack_script" >/dev/null
 
 archive_sha="$(python3 - "$download_dir/$manifest_name" <<'PY'
 import json

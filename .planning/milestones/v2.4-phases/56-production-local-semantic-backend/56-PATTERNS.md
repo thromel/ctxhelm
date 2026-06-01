@@ -7,7 +7,7 @@
 
 ### Semantic provider and vectorization
 
-Closest file: `crates/ctxpack-index/src/semantic.rs`
+Closest file: `crates/ctxhelm-index/src/semantic.rs`
 
 Reuse:
 
@@ -25,8 +25,8 @@ Do not reuse as quality backend:
 
 Closest files:
 
-- `crates/ctxpack-index/src/policy.rs`
-- `crates/ctxpack-index/src/inventory.rs`
+- `crates/ctxhelm-index/src/policy.rs`
+- `crates/ctxhelm-index/src/inventory.rs`
 
 Reuse:
 
@@ -39,7 +39,7 @@ Every local embedding path must go through these existing source-read gates.
 
 ### Storage persistence
 
-Closest file: `crates/ctxpack-index/src/storage.rs`
+Closest file: `crates/ctxhelm-index/src/storage.rs`
 
 Reuse:
 
@@ -52,7 +52,7 @@ Phase 56 should extend metadata only if needed; avoid storing raw semantic docum
 
 ### Compiler policy/status reports
 
-Closest file: `crates/ctxpack-compiler/src/policy.rs`
+Closest file: `crates/ctxhelm-compiler/src/policy.rs`
 
 Reuse:
 
@@ -65,7 +65,7 @@ Provider status should be extended here rather than creating a second report pat
 
 ### CLI rendering
 
-Closest file: `crates/ctxpack/src/main.rs`
+Closest file: `crates/ctxhelm/src/main.rs`
 
 Reuse:
 
@@ -97,12 +97,12 @@ Reuse:
 
 | File | Role |
 |------|------|
-| `crates/ctxpack-index/Cargo.toml` | optional provider dependency/feature |
-| `crates/ctxpack-index/src/semantic.rs` | provider abstraction, local hash labeling, local embedding backend |
-| `crates/ctxpack-index/src/storage.rs` | source-free provider/vector metadata if schema needs extension |
-| `crates/ctxpack-core/src/contracts.rs` | provider status/report fields |
-| `crates/ctxpack-compiler/src/policy.rs` | semantic status report construction |
-| `crates/ctxpack/src/main.rs` | CLI output/status rendering |
+| `crates/ctxhelm-index/Cargo.toml` | optional provider dependency/feature |
+| `crates/ctxhelm-index/src/semantic.rs` | provider abstraction, local hash labeling, local embedding backend |
+| `crates/ctxhelm-index/src/storage.rs` | source-free provider/vector metadata if schema needs extension |
+| `crates/ctxhelm-core/src/contracts.rs` | provider status/report fields |
+| `crates/ctxhelm-compiler/src/policy.rs` | semantic status report construction |
+| `crates/ctxhelm/src/main.rs` | CLI output/status rendering |
 | `docs/semantic.md` | user-facing provider docs |
 | `docs/policy-embedding.md` | policy/status docs |
 | `scripts/smoke-semantic.sh` | deterministic smoke coverage |

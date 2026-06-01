@@ -10,4 +10,4 @@
 
 ## Notes
 
-Profiles are explicit local controls. ctxpack does not silently mutate retrieval policy from feedback events.
+Profiles are explicit local controls. ctxhelm does not silently mutate retrieval policy from feedback events.

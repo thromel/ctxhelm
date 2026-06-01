@@ -20,6 +20,6 @@ Prove the comparison path works through the CLI and remains source-free.
 
 ## Verification
 
-- `cargo test -p ctxpack-compiler ablation_historical_eval_groups_source_free_retrieval_gaps -- --nocapture`
-- `cargo test -p ctxpack --test cli_compat eval_compare_reports_source_free_metric_and_gap_deltas -- --nocapture`
+- `cargo test -p ctxhelm-compiler ablation_historical_eval_groups_source_free_retrieval_gaps -- --nocapture`
+- `cargo test -p ctxhelm --test cli_compat eval_compare_reports_source_free_metric_and_gap_deltas -- --nocapture`
 - `cargo test --workspace`

@@ -10,5 +10,5 @@ Persist proof report headline metadata and limitations in a source-free form.
 
 ## Verification
 
-- `ctxpack eval proof --config <suite> --store`
+- `ctxhelm eval proof --config <suite> --store`
 

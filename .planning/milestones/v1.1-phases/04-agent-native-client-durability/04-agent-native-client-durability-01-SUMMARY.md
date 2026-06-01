@@ -9,7 +9,7 @@ requires:
     provides: "Stable CLI/MCP compatibility surfaces and attributed retrieval outputs"
 provides:
   - "Deterministic stdio MCP protocol smoke with explicit repo arguments from a wrong server cwd"
-  - "Binary regression test for prepare_task, get_pack, search, related, related_tests, and current_diff through ctxpack serve-mcp"
+  - "Binary regression test for prepare_task, get_pack, search, related, related_tests, and current_diff through ctxhelm serve-mcp"
   - "Same-session pack resource read validation using prepare_task-returned resource URIs"
 affects: [agent-native-client-durability, mcp, smoke-scripts, cli-compat]
 
@@ -24,7 +24,7 @@ key-files:
     - scripts/smoke-mcp-protocol.sh
     - .planning/phases/04-agent-native-client-durability/04-agent-native-client-durability-01-SUMMARY.md
   modified:
-    - crates/ctxpack/tests/cli_compat.rs
+    - crates/ctxhelm/tests/cli_compat.rs
 
 key-decisions:
   - "Use deterministic JSON-RPC stdio as the Phase 4 hard gate before optional real-client smokes."
@@ -55,7 +55,7 @@ completed: 2026-05-13
 
 ## Accomplishments
 
-- Added a binary compatibility test that launches `ctxpack serve-mcp` from a temp directory outside the fixture repo and proves `prepare_task`, `get_pack`, `search`, `related`, `related_tests`, and `current_diff` all use the explicit `repo` argument.
+- Added a binary compatibility test that launches `ctxhelm serve-mcp` from a temp directory outside the fixture repo and proves `prepare_task`, `get_pack`, `search`, `related`, `related_tests`, and `current_diff` all use the explicit `repo` argument.
 - Added `scripts/smoke-mcp-protocol.sh`, a portable protocol gate that launches the stdio MCP server from the wrong cwd, sends newline-delimited JSON-RPC, validates structured content with `python3`, and reads the returned pack resource in the same server session.
 - Verified the new protocol gate together with the full workspace tests and CLI help.
 
@@ -66,7 +66,7 @@ completed: 2026-05-13
 
 ## Files Created/Modified
 
-- `crates/ctxpack/tests/cli_compat.rs` - Adds compiled-binary wrong-cwd MCP regression coverage across all repo-accepting implemented tools.
+- `crates/ctxhelm/tests/cli_compat.rs` - Adds compiled-binary wrong-cwd MCP regression coverage across all repo-accepting implemented tools.
 - `scripts/smoke-mcp-protocol.sh` - Adds the deterministic JSON-RPC stdio smoke, including same-session pack resource read validation.
 
 ## Decisions Made
@@ -90,9 +90,9 @@ None.
 
 ## Verification
 
-- `cargo test -p ctxpack --test cli_compat mcp_protocol -- --nocapture`
-- `CTXPACK_SMOKE_REPO="$PWD" CTXPACK_SMOKE_TASK="harden MCP explicit repo handling" bash scripts/smoke-mcp-protocol.sh`
-- `CTXPACK_SMOKE_REPO="$PWD" CTXPACK_SMOKE_TASK="harden MCP explicit repo handling" bash scripts/smoke-mcp-protocol.sh && cargo test --workspace && cargo run -p ctxpack -- --help`
+- `cargo test -p ctxhelm --test cli_compat mcp_protocol -- --nocapture`
+- `CTXHELM_SMOKE_REPO="$PWD" CTXHELM_SMOKE_TASK="harden MCP explicit repo handling" bash scripts/smoke-mcp-protocol.sh`
+- `CTXHELM_SMOKE_REPO="$PWD" CTXHELM_SMOKE_TASK="harden MCP explicit repo handling" bash scripts/smoke-mcp-protocol.sh && cargo test --workspace && cargo run -p ctxhelm -- --help`
 
 ## User Setup Required
 
@@ -104,7 +104,7 @@ Phase 4 now has a deterministic protocol-level hard gate. Later plans can focus 
 
 ## Self-Check: PASSED
 
-- Found `crates/ctxpack/tests/cli_compat.rs`
+- Found `crates/ctxhelm/tests/cli_compat.rs`
 - Found `scripts/smoke-mcp-protocol.sh`
 - Found `.planning/phases/04-agent-native-client-durability/04-agent-native-client-durability-01-SUMMARY.md`
 - Found commit `8ceaf1b`

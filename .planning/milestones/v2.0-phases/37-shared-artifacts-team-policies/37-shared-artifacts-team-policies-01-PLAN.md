@@ -14,14 +14,14 @@ manifests and initialize local team privacy policy templates.
   artifact export, optional cloud allowances, source snippet allowances, and
   secret redaction defaults.
 - Add index-layer artifact manifest export/import/inspect APIs.
-- Add CLI commands under `ctxpack workspace artifacts ...` and
-  `ctxpack workspace policy ...`.
+- Add CLI commands under `ctxhelm workspace artifacts ...` and
+  `ctxhelm workspace policy ...`.
 - Add docs, CLI tests, and release-gate smoke coverage.
 
 ## Verification
 
-- `cargo test -p ctxpack-core shared`
-- `cargo test -p ctxpack-index shared`
-- `cargo test -p ctxpack workspace --test cli_compat`
+- `cargo test -p ctxhelm-core shared`
+- `cargo test -p ctxhelm-index shared`
+- `cargo test -p ctxhelm workspace --test cli_compat`
 - `scripts/smoke-shared-artifacts.sh`
 

@@ -37,7 +37,7 @@ cleanup() {
   rm -rf "$work_dir"
 }
 trap cleanup EXIT
-proof_dir="${CTXPACK_PROOF_DIR:-"$work_dir/proof-bundle"}"
+proof_dir="${CTXHELM_PROOF_DIR:-"$work_dir/proof-bundle"}"
 proof_summary_path="$proof_dir/release-proof-summary.json"
 
 sha256_file() {
@@ -81,11 +81,11 @@ canonical_executable() {
     return 1
   fi
   if [[ ! "$candidate" = /* ]]; then
-    echo "CTXPACK_BIN must be an absolute path: $candidate" >&2
+    echo "CTXHELM_BIN must be an absolute path: $candidate" >&2
     exit 64
   fi
   if [[ ! -x "$candidate" ]]; then
-    echo "CTXPACK_BIN is not executable: $candidate" >&2
+    echo "CTXHELM_BIN is not executable: $candidate" >&2
     exit 64
   fi
   printf '%s/%s\n' "$(cd "$(dirname "$candidate")" && pwd -P)" "$(basename "$candidate")"
@@ -99,12 +99,12 @@ import sys
 
 dist = pathlib.Path(sys.argv[1])
 archives = sorted(
-    dist.glob("ctxpack-v*.tar.gz"),
+    dist.glob("ctxhelm-v*.tar.gz"),
     key=lambda path: path.stat().st_mtime,
     reverse=True,
 )
 if not archives:
-    raise SystemExit(f"no ctxpack release archive found in {dist}")
+    raise SystemExit(f"no ctxhelm release archive found in {dist}")
 print(archives[0])
 PY
 }
@@ -115,9 +115,9 @@ extract_binary_from_archive() {
   mkdir -p "$extract_dir"
   tar -xzf "$archive" -C "$extract_dir"
   local extracted
-  extracted="$(find "$extract_dir" -type f -name ctxpack -perm -111 | head -n 1)"
+  extracted="$(find "$extract_dir" -type f -name ctxhelm -perm -111 | head -n 1)"
   if [[ -z "$extracted" ]]; then
-    echo "release archive did not contain an executable ctxpack binary: $archive" >&2
+    echo "release archive did not contain an executable ctxhelm binary: $archive" >&2
     exit 65
   fi
   canonical_executable "$extracted"
@@ -131,9 +131,9 @@ cargo test --workspace
 log_step "release docs consistency"
 bash "$check_release_docs_script"
 
-dist_dir="${CTXPACK_DIST_DIR:-"$work_dir/dist"}"
+dist_dir="${CTXHELM_DIST_DIR:-"$work_dir/dist"}"
 log_step "release package and artifact audit"
-CTXPACK_DIST_DIR="$dist_dir" bash "$release_package_script"
+CTXHELM_DIST_DIR="$dist_dir" bash "$release_package_script"
 
 archive_path="$(latest_archive "$dist_dir")"
 manifest_path="${archive_path%.tar.gz}.manifest.json"
@@ -145,16 +145,16 @@ bash "$verify_release_archive_script" \
   --manifest "$manifest_path" \
   --checksums "$checksums_path"
 
-if [[ -n "${CTXPACK_BIN:-}" ]]; then
-  ctxpack_bin="$(canonical_executable "$CTXPACK_BIN")"
+if [[ -n "${CTXHELM_BIN:-}" ]]; then
+  ctxhelm_bin="$(canonical_executable "$CTXHELM_BIN")"
   binary_source="selected"
 else
-  ctxpack_bin="$(extract_binary_from_archive "$archive_path")"
+  ctxhelm_bin="$(extract_binary_from_archive "$archive_path")"
   binary_source="archive"
 fi
 archive_sha256="$(sha256_file "$archive_path")"
-real_client_required="${CTXPACK_REQUIRE_REAL_CLIENT:-0}"
-real_client_skip="${CTXPACK_SKIP_REAL_CLIENT:-}"
+real_client_required="${CTXHELM_REQUIRE_REAL_CLIENT:-0}"
+real_client_skip="${CTXHELM_SKIP_REAL_CLIENT:-}"
 if [[ -z "$real_client_skip" ]]; then
   if [[ "$real_client_required" == "1" ]]; then
     real_client_skip="0"
@@ -162,112 +162,112 @@ if [[ -z "$real_client_skip" ]]; then
     real_client_skip="1"
   fi
 fi
-clean_fixture_config="${CTXPACK_CLEAN_FIXTURE_CONFIG:-"$clean_fixture_config_default"}"
-clean_fixture_required="${CTXPACK_REQUIRE_CLEAN_FIXTURE_PROOF:-0}"
-clean_fixture_skip="${CTXPACK_SKIP_CLEAN_FIXTURE_PROOF:-0}"
+clean_fixture_config="${CTXHELM_CLEAN_FIXTURE_CONFIG:-"$clean_fixture_config_default"}"
+clean_fixture_required="${CTXHELM_REQUIRE_CLEAN_FIXTURE_PROOF:-0}"
+clean_fixture_skip="${CTXHELM_SKIP_CLEAN_FIXTURE_PROOF:-0}"
 
 log_step "selected binary identity"
-ctxpack_version="$("$ctxpack_bin" --version)"
-printf '%s\n' "$ctxpack_version"
-"$ctxpack_bin" --help >/dev/null
-binary_sha256="$(sha256_file "$ctxpack_bin")"
+ctxhelm_version="$("$ctxhelm_bin" --version)"
+printf '%s\n' "$ctxhelm_version"
+"$ctxhelm_bin" --help >/dev/null
+binary_sha256="$(sha256_file "$ctxhelm_bin")"
 
 log_step "first-pack smoke"
-CTXPACK_BIN="$ctxpack_bin" bash "$smoke_first_pack_script"
+CTXHELM_BIN="$ctxhelm_bin" bash "$smoke_first_pack_script"
 
 log_step "storage smoke"
-CTXPACK_BIN="$ctxpack_bin" bash "$smoke_storage_script"
+CTXHELM_BIN="$ctxhelm_bin" bash "$smoke_storage_script"
 
 log_step "memory smoke"
-CTXPACK_BIN="$ctxpack_bin" bash "$smoke_memory_script"
+CTXHELM_BIN="$ctxhelm_bin" bash "$smoke_memory_script"
 
 log_step "feedback smoke"
-CTXPACK_BIN="$ctxpack_bin" bash "$smoke_feedback_script"
+CTXHELM_BIN="$ctxhelm_bin" bash "$smoke_feedback_script"
 
 log_step "workspace smoke"
-CTXPACK_BIN="$ctxpack_bin" bash "$smoke_workspace_script"
+CTXHELM_BIN="$ctxhelm_bin" bash "$smoke_workspace_script"
 
 log_step "shared artifacts smoke"
-CTXPACK_BIN="$ctxpack_bin" bash "$smoke_shared_artifacts_script"
+CTXHELM_BIN="$ctxhelm_bin" bash "$smoke_shared_artifacts_script"
 
 log_step "inspector smoke"
-CTXPACK_BIN="$ctxpack_bin" bash "$smoke_inspector_script"
+CTXHELM_BIN="$ctxhelm_bin" bash "$smoke_inspector_script"
 
 log_step "retrieval health smoke"
-CTXPACK_BIN="$ctxpack_bin" bash "$smoke_retrieval_health_script"
+CTXHELM_BIN="$ctxhelm_bin" bash "$smoke_retrieval_health_script"
 
 log_step "graph smoke"
-CTXPACK_BIN="$ctxpack_bin" bash "$smoke_graph_script"
+CTXHELM_BIN="$ctxhelm_bin" bash "$smoke_graph_script"
 
 log_step "policy and embedding smoke"
-CTXPACK_BIN="$ctxpack_bin" bash "$smoke_policy_embedding_script"
+CTXHELM_BIN="$ctxhelm_bin" bash "$smoke_policy_embedding_script"
 
 log_step "agent preview smoke"
-CTXPACK_BIN="$ctxpack_bin" bash "$smoke_agent_preview_script"
+CTXHELM_BIN="$ctxhelm_bin" bash "$smoke_agent_preview_script"
 
 log_step "public demo artifacts smoke"
 bash "$smoke_demo_artifacts_script"
 
 log_step "distribution metadata smoke"
-CTXPACK_DIST_DIR="$dist_dir" bash "$smoke_distribution_metadata_script"
+CTXHELM_DIST_DIR="$dist_dir" bash "$smoke_distribution_metadata_script"
 
 log_step "release governance smoke"
 bash "$smoke_release_governance_script"
 
 log_step "semantic smoke"
-CTXPACK_BIN="$ctxpack_bin" bash "$smoke_semantic_script"
+CTXHELM_BIN="$ctxhelm_bin" bash "$smoke_semantic_script"
 
 log_step "precision smoke"
-CTXPACK_BIN="$ctxpack_bin" bash "$smoke_precision_script"
+CTXHELM_BIN="$ctxhelm_bin" bash "$smoke_precision_script"
 
 log_step "v2.3 eval smoke"
-CTXPACK_BIN="$ctxpack_bin" bash "$smoke_v23_eval_script"
+CTXHELM_BIN="$ctxhelm_bin" bash "$smoke_v23_eval_script"
 
 log_step "v2.4 semantic/precision gate smoke"
-CTXPACK_BIN="$ctxpack_bin" bash "$smoke_v24_gate_script"
+CTXHELM_BIN="$ctxhelm_bin" bash "$smoke_v24_gate_script"
 
 mkdir -p "$proof_dir"
 
 log_step "wrong-cwd MCP protocol smoke"
-CTXPACK_BIN="$ctxpack_bin" \
-  CTXPACK_ROOT="$repo_root" \
-  CTXPACK_SMOKE_REPO="$repo_root" \
-  CTXPACK_SMOKE_TASK="verify release gate MCP protocol proof" \
-  CTXPACK_SMOKE_PATH="crates/ctxpack-mcp/src/lib.rs" \
-  CTXPACK_SMOKE_QUERY="prepare_task" \
+CTXHELM_BIN="$ctxhelm_bin" \
+  CTXHELM_ROOT="$repo_root" \
+  CTXHELM_SMOKE_REPO="$repo_root" \
+  CTXHELM_SMOKE_TASK="verify release gate MCP protocol proof" \
+  CTXHELM_SMOKE_PATH="crates/ctxhelm-mcp/src/lib.rs" \
+  CTXHELM_SMOKE_QUERY="prepare_task" \
   bash "$smoke_mcp_protocol_script"
 
 log_step "Cursor setup and MCP protocol evidence"
-CTXPACK_BIN="$ctxpack_bin" \
-  CTXPACK_ROOT="$repo_root" \
-  CTXPACK_REAL_CLIENT_EVIDENCE_DIR="${CTXPACK_REAL_CLIENT_EVIDENCE_DIR:-}" \
+CTXHELM_BIN="$ctxhelm_bin" \
+  CTXHELM_ROOT="$repo_root" \
+  CTXHELM_REAL_CLIENT_EVIDENCE_DIR="${CTXHELM_REAL_CLIENT_EVIDENCE_DIR:-}" \
   bash "$smoke_cursor_mcp_script"
 
 log_step "OpenCode setup and MCP protocol evidence"
-CTXPACK_BIN="$ctxpack_bin" \
-  CTXPACK_ROOT="$repo_root" \
-  CTXPACK_REAL_CLIENT_EVIDENCE_DIR="${CTXPACK_REAL_CLIENT_EVIDENCE_DIR:-}" \
+CTXHELM_BIN="$ctxhelm_bin" \
+  CTXHELM_ROOT="$repo_root" \
+  CTXHELM_REAL_CLIENT_EVIDENCE_DIR="${CTXHELM_REAL_CLIENT_EVIDENCE_DIR:-}" \
   bash "$smoke_opencode_mcp_script"
 
 log_step "optional benchmark product proof"
-if [[ -n "${CTXPACK_BENCHMARK_CONFIG:-}" ]]; then
+if [[ -n "${CTXHELM_BENCHMARK_CONFIG:-}" ]]; then
   proof_report="$proof_dir/product-proof.json"
-  "$ctxpack_bin" eval proof --config "$CTXPACK_BENCHMARK_CONFIG" --format json >"$proof_report"
+  "$ctxhelm_bin" eval proof --config "$CTXHELM_BENCHMARK_CONFIG" --format json >"$proof_report"
   python3 "$repo_root/scripts/check-product-proof.py" "$proof_report"
   benchmark_status="passed"
 else
-  echo "benchmark product proof skipped: set CTXPACK_BENCHMARK_CONFIG=/path/to/suite.json"
+  echo "benchmark product proof skipped: set CTXHELM_BENCHMARK_CONFIG=/path/to/suite.json"
   benchmark_status="skipped"
 fi
 
 log_step "clean cold fixture product proof"
 clean_fixture_status="skipped"
 if [[ "$clean_fixture_skip" == "1" ]]; then
-  echo "clean cold fixture proof skipped: CTXPACK_SKIP_CLEAN_FIXTURE_PROOF=1"
+  echo "clean cold fixture proof skipped: CTXHELM_SKIP_CLEAN_FIXTURE_PROOF=1"
   clean_fixture_status="skipped_explicit"
 elif clean_fixture_error="$(clean_fixture_ready "$clean_fixture_config" 2>&1)"; then
   clean_fixture_report="$proof_dir/phase110-clean-fixture-product-proof.json"
-  "$ctxpack_bin" eval proof --config "$clean_fixture_config" --format json >"$clean_fixture_report"
+  "$ctxhelm_bin" eval proof --config "$clean_fixture_config" --format json >"$clean_fixture_report"
   python3 "$repo_root/scripts/check-product-proof.py" "$clean_fixture_report"
   clean_fixture_status="passed"
 else
@@ -276,56 +276,56 @@ else
     exit 66
   fi
   echo "$clean_fixture_error"
-  echo "clean cold fixture proof skipped: set CTXPACK_REQUIRE_CLEAN_FIXTURE_PROOF=1 to require it"
+  echo "clean cold fixture proof skipped: set CTXHELM_REQUIRE_CLEAN_FIXTURE_PROOF=1 to require it"
   clean_fixture_status="skipped_missing_fixtures"
 fi
 
 log_step "optional Codex real-client evidence"
 codex_status="skipped"
-CTXPACK_BIN="$ctxpack_bin" \
-  CTXPACK_ROOT="$repo_root" \
-  CTXPACK_SMOKE_REPO="$repo_root" \
-  CTXPACK_SMOKE_TASK="verify release gate Codex MCP proof" \
-  CTXPACK_SMOKE_PATH="crates/ctxpack-mcp/src/lib.rs" \
-  CTXPACK_SMOKE_QUERY="prepare_task" \
-  CTXPACK_SKIP_REAL_CLIENT="$real_client_skip" \
-  CTXPACK_REQUIRE_REAL_CLIENT="$real_client_required" \
-  CTXPACK_REAL_CLIENT_EVIDENCE_DIR="${CTXPACK_REAL_CLIENT_EVIDENCE_DIR:-}" \
+CTXHELM_BIN="$ctxhelm_bin" \
+  CTXHELM_ROOT="$repo_root" \
+  CTXHELM_SMOKE_REPO="$repo_root" \
+  CTXHELM_SMOKE_TASK="verify release gate Codex MCP proof" \
+  CTXHELM_SMOKE_PATH="crates/ctxhelm-mcp/src/lib.rs" \
+  CTXHELM_SMOKE_QUERY="prepare_task" \
+  CTXHELM_SKIP_REAL_CLIENT="$real_client_skip" \
+  CTXHELM_REQUIRE_REAL_CLIENT="$real_client_required" \
+  CTXHELM_REAL_CLIENT_EVIDENCE_DIR="${CTXHELM_REAL_CLIENT_EVIDENCE_DIR:-}" \
   bash "$smoke_codex_mcp_script"
-if [[ "$real_client_skip" != "1" && ( "$real_client_required" == "1" || "${CTXPACK_RUN_REAL_CLIENT:-0}" == "1" ) ]]; then
+if [[ "$real_client_skip" != "1" && ( "$real_client_required" == "1" || "${CTXHELM_RUN_REAL_CLIENT:-0}" == "1" ) ]]; then
   codex_status="passed"
 fi
 
 log_step "optional Claude real-client evidence"
 claude_status="skipped"
-CTXPACK_BIN="$ctxpack_bin" \
-  CTXPACK_ROOT="$repo_root" \
-  CTXPACK_SMOKE_REPO="$repo_root" \
-  CTXPACK_SMOKE_TASK="verify release gate Claude MCP proof" \
-  CTXPACK_SMOKE_PATH="crates/ctxpack-mcp/src/lib.rs" \
-  CTXPACK_SMOKE_QUERY="prepare_task" \
-  CTXPACK_SKIP_REAL_CLIENT="$real_client_skip" \
-  CTXPACK_REQUIRE_REAL_CLIENT="$real_client_required" \
-  CTXPACK_REAL_CLIENT_EVIDENCE_DIR="${CTXPACK_REAL_CLIENT_EVIDENCE_DIR:-}" \
+CTXHELM_BIN="$ctxhelm_bin" \
+  CTXHELM_ROOT="$repo_root" \
+  CTXHELM_SMOKE_REPO="$repo_root" \
+  CTXHELM_SMOKE_TASK="verify release gate Claude MCP proof" \
+  CTXHELM_SMOKE_PATH="crates/ctxhelm-mcp/src/lib.rs" \
+  CTXHELM_SMOKE_QUERY="prepare_task" \
+  CTXHELM_SKIP_REAL_CLIENT="$real_client_skip" \
+  CTXHELM_REQUIRE_REAL_CLIENT="$real_client_required" \
+  CTXHELM_REAL_CLIENT_EVIDENCE_DIR="${CTXHELM_REAL_CLIENT_EVIDENCE_DIR:-}" \
   bash "$smoke_claude_mcp_script"
-if [[ "$real_client_skip" != "1" && ( "$real_client_required" == "1" || "${CTXPACK_RUN_REAL_CLIENT:-0}" == "1" ) ]]; then
+if [[ "$real_client_skip" != "1" && ( "$real_client_required" == "1" || "${CTXHELM_RUN_REAL_CLIENT:-0}" == "1" ) ]]; then
   claude_status="passed"
 fi
 
 log_step "optional Claude workflow eval"
 claude_workflow_status="skipped"
-claude_workflow_required="${CTXPACK_REQUIRE_CLAUDE_WORKFLOW_EVAL:-0}"
-if [[ "${CTXPACK_RUN_CLAUDE_WORKFLOW_EVAL:-0}" == "1" || "$claude_workflow_required" == "1" ]]; then
+claude_workflow_required="${CTXHELM_REQUIRE_CLAUDE_WORKFLOW_EVAL:-0}"
+if [[ "${CTXHELM_RUN_CLAUDE_WORKFLOW_EVAL:-0}" == "1" || "$claude_workflow_required" == "1" ]]; then
   claude_workflow_report="$proof_dir/claude-workflow-eval.json"
-  CTXPACK_BIN="$ctxpack_bin" \
-    CTXPACK_ROOT="$repo_root" \
-    CTXPACK_SMOKE_REPO="$repo_root" \
-    CTXPACK_SMOKE_TASK="verify Claude Code can use ctxpack prepare_task and get_pack as a context workflow" \
-    CTXPACK_SMOKE_PATH="crates/ctxpack-mcp/src/lib.rs" \
-    CTXPACK_SMOKE_QUERY="prepare_task" \
-    CTXPACK_RUN_REAL_CLIENT="1" \
-    CTXPACK_REQUIRE_REAL_CLIENT="$claude_workflow_required" \
-    CTXPACK_CLAUDE_WORKFLOW_REPORT="$claude_workflow_report" \
+  CTXHELM_BIN="$ctxhelm_bin" \
+    CTXHELM_ROOT="$repo_root" \
+    CTXHELM_SMOKE_REPO="$repo_root" \
+    CTXHELM_SMOKE_TASK="verify Claude Code can use ctxhelm prepare_task and get_pack as a context workflow" \
+    CTXHELM_SMOKE_PATH="crates/ctxhelm-mcp/src/lib.rs" \
+    CTXHELM_SMOKE_QUERY="prepare_task" \
+    CTXHELM_RUN_REAL_CLIENT="1" \
+    CTXHELM_REQUIRE_REAL_CLIENT="$claude_workflow_required" \
+    CTXHELM_CLAUDE_WORKFLOW_REPORT="$claude_workflow_report" \
     bash "$claude_workflow_eval_script"
   claude_workflow_status="$(python3 - "$claude_workflow_report" <<'PY'
 import json
@@ -340,17 +340,17 @@ PY
     exit 67
   fi
 else
-  echo "Claude workflow eval skipped: set CTXPACK_RUN_CLAUDE_WORKFLOW_EVAL=1 or CTXPACK_REQUIRE_CLAUDE_WORKFLOW_EVAL=1"
+  echo "Claude workflow eval skipped: set CTXHELM_RUN_CLAUDE_WORKFLOW_EVAL=1 or CTXHELM_REQUIRE_CLAUDE_WORKFLOW_EVAL=1"
 fi
 
 log_step "release proof bundle"
-python3 - "$proof_summary_path" "$ctxpack_version" "$(basename "$ctxpack_bin")" "$binary_source" "$binary_sha256" "$(basename "$archive_path")" "$archive_sha256" "$(basename "$manifest_path")" "$(basename "$audit_report_path")" "$benchmark_status" "$clean_fixture_status" "$clean_fixture_required" "$codex_status" "$claude_status" "$claude_workflow_status" "$claude_workflow_required" "$real_client_required" <<'PY'
+python3 - "$proof_summary_path" "$ctxhelm_version" "$(basename "$ctxhelm_bin")" "$binary_source" "$binary_sha256" "$(basename "$archive_path")" "$archive_sha256" "$(basename "$manifest_path")" "$(basename "$audit_report_path")" "$benchmark_status" "$clean_fixture_status" "$clean_fixture_required" "$codex_status" "$claude_status" "$claude_workflow_status" "$claude_workflow_required" "$real_client_required" <<'PY'
 import json
 import sys
 
 (
     proof_summary_path,
-    ctxpack_version,
+    ctxhelm_version,
     binary_name,
     binary_source,
     binary_sha256,
@@ -373,8 +373,8 @@ required_checks = [
     "scripts/check-release-docs.sh",
     "scripts/release-package.sh",
     "scripts/verify-release-archive.sh",
-    "ctxpack --version",
-    "ctxpack --help",
+    "ctxhelm --version",
+    "ctxhelm --help",
     "scripts/smoke-first-pack.sh",
     "scripts/smoke-storage.sh",
     "scripts/smoke-memory.sh",
@@ -402,7 +402,7 @@ if clean_fixture_required == "1":
 payload = {
     "schemaVersion": 1,
     "status": "passed",
-    "ctxpackVersion": ctxpack_version,
+    "ctxhelmVersion": ctxhelm_version,
     "binaryIdentity": {
         "fileName": binary_name,
         "source": binary_source,
@@ -452,4 +452,4 @@ with open(proof_summary_path, "w", encoding="utf-8") as handle:
 PY
 echo "wrote release proof summary: $proof_summary_path"
 
-echo "release gate passed: binary=$ctxpack_bin archive=$archive_path proof=$proof_summary_path"
+echo "release gate passed: binary=$ctxhelm_bin archive=$archive_path proof=$proof_summary_path"

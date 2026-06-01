@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ctxpack_bin="${CTXPACK_BIN:-ctxpack}"
+ctxhelm_bin="${CTXHELM_BIN:-ctxhelm}"
 work_dir="$(mktemp -d)"
 cleanup() {
   rm -rf "$work_dir"
@@ -14,10 +14,10 @@ mkdir -p "$repo/src"
 git -C "$repo" init -q
 printf 'pub fn demo() {}\n' >"$repo/src/lib.rs"
 
-CTXPACK_HOME="$home" "$ctxpack_bin" index --repo "$repo" --store >"$work_dir/index-1.txt"
-CTXPACK_HOME="$home" "$ctxpack_bin" index --repo "$repo" --store >"$work_dir/index-2.txt"
-CTXPACK_HOME="$home" "$ctxpack_bin" storage status --repo "$repo" >"$work_dir/status.txt"
-CTXPACK_HOME="$home" "$ctxpack_bin" storage vacuum --repo "$repo" >"$work_dir/vacuum.txt"
+CTXHELM_HOME="$home" "$ctxhelm_bin" index --repo "$repo" --store >"$work_dir/index-1.txt"
+CTXHELM_HOME="$home" "$ctxhelm_bin" index --repo "$repo" --store >"$work_dir/index-2.txt"
+CTXHELM_HOME="$home" "$ctxhelm_bin" storage status --repo "$repo" >"$work_dir/status.txt"
+CTXHELM_HOME="$home" "$ctxhelm_bin" storage vacuum --repo "$repo" >"$work_dir/vacuum.txt"
 
 grep -F -- "created records: 1" "$work_dir/index-1.txt" >/dev/null
 grep -F -- "reused records: 1" "$work_dir/index-2.txt" >/dev/null

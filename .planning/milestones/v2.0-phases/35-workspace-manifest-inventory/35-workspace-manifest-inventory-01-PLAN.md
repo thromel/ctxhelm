@@ -5,11 +5,11 @@ type: implementation
 wave: 1
 depends_on: []
 files_modified:
-  - crates/ctxpack-core/src/contracts.rs
-  - crates/ctxpack-index/src/lib.rs
-  - crates/ctxpack-index/src/workspace.rs
-  - crates/ctxpack/src/main.rs
-  - crates/ctxpack/tests/cli_compat.rs
+  - crates/ctxhelm-core/src/contracts.rs
+  - crates/ctxhelm-index/src/lib.rs
+  - crates/ctxhelm-index/src/workspace.rs
+  - crates/ctxhelm/src/main.rs
+  - crates/ctxhelm/tests/cli_compat.rs
   - docs/workspace.md
   - README.md
   - docs/release.md
@@ -33,7 +33,7 @@ Add the v2.0 workspace foundation: a local multi-repo workspace manifest plus so
 <context>
 There is no Phase 35 `CONTEXT.md`; the user moved directly from discuss to plan. Use conservative defaults:
 
-- Manifest file: `.ctxpack/workspace.json`.
+- Manifest file: `.ctxhelm/workspace.json`.
 - Repositories are local paths with optional explicit IDs, display labels, and tags.
 - Workspace status aggregates source-free metadata only.
 - Existing single-repo commands remain unchanged when no workspace manifest is present.
@@ -45,10 +45,10 @@ There is no Phase 35 `CONTEXT.md`; the user moved directly from discuss to plan.
 <task id="35-01-01" type="execute">
 <title>Add workspace public contracts</title>
 <files>
-- `crates/ctxpack-core/src/contracts.rs`
+- `crates/ctxhelm-core/src/contracts.rs`
 </files>
 <read_first>
-- `crates/ctxpack-core/src/contracts.rs`
+- `crates/ctxhelm-core/src/contracts.rs`
 - Existing source-free contracts near `FeedbackSummary`, `PolicyQualityReport`, and `Storage*`-adjacent report types
 </read_first>
 <action>
@@ -75,27 +75,27 @@ Contracts must avoid source-bearing fields. Use path labels, repo IDs, counts, t
 <task id="35-01-02" type="execute">
 <title>Add workspace manifest loading and source-free status aggregation</title>
 <files>
-- `crates/ctxpack-index/src/workspace.rs`
-- `crates/ctxpack-index/src/lib.rs`
+- `crates/ctxhelm-index/src/workspace.rs`
+- `crates/ctxhelm-index/src/lib.rs`
 </files>
 <read_first>
-- `crates/ctxpack-index/src/lib.rs`
-- `crates/ctxpack-index/src/storage.rs`
-- `crates/ctxpack-index/src/policy.rs`
-- `crates/ctxpack-core/src/repo.rs`
+- `crates/ctxhelm-index/src/lib.rs`
+- `crates/ctxhelm-index/src/storage.rs`
+- `crates/ctxhelm-index/src/policy.rs`
+- `crates/ctxhelm-core/src/repo.rs`
 </read_first>
 <action>
-Create a focused `workspace.rs` module and re-export its public API from `ctxpack-index`. Implement:
+Create a focused `workspace.rs` module and re-export its public API from `ctxhelm-index`. Implement:
 
-- default workspace manifest path resolution: `<repo>/.ctxpack/workspace.json`
+- default workspace manifest path resolution: `<repo>/.ctxhelm/workspace.json`
 - manifest loading from explicit path or default path
 - validation for duplicate IDs/labels, missing paths, non-git roots, inaccessible paths, ignored/generated/sensitive labels, and unsafe strings
 - source-free per-repo status aggregation using existing inventory and storage status helpers
 - no raw source reads beyond existing safe inventory metadata
 </action>
 <acceptance_criteria>
-- `crates/ctxpack-index/src/workspace.rs` exists.
-- `ctxpack-index/src/lib.rs` exports workspace APIs.
+- `crates/ctxhelm-index/src/workspace.rs` exists.
+- `ctxhelm-index/src/lib.rs` exports workspace APIs.
 - Missing repo path yields a diagnostic instead of panicking.
 - Duplicate repo ID yields a diagnostic.
 - Status report includes per-repo inventory counts and storage compatibility when available.
@@ -106,26 +106,26 @@ Create a focused `workspace.rs` module and re-export its public API from `ctxpac
 <task id="35-01-03" type="execute">
 <title>Add CLI workspace init/status surface</title>
 <files>
-- `crates/ctxpack/src/main.rs`
-- `crates/ctxpack/tests/cli_compat.rs`
+- `crates/ctxhelm/src/main.rs`
+- `crates/ctxhelm/tests/cli_compat.rs`
 </files>
 <read_first>
-- `crates/ctxpack/src/main.rs`
-- `crates/ctxpack/tests/cli_compat.rs`
+- `crates/ctxhelm/src/main.rs`
+- `crates/ctxhelm/tests/cli_compat.rs`
 - Existing `storage`, `memory`, and `eval feedback` command patterns
 </read_first>
 <action>
 Add a small CLI surface:
 
-- `ctxpack workspace init --repo <path> [--member <path>] [--label <label>]`
-- `ctxpack workspace status --repo <path> [--manifest <path>] [--format json|markdown]`
+- `ctxhelm workspace init --repo <path> [--member <path>] [--label <label>]`
+- `ctxhelm workspace status --repo <path> [--manifest <path>] [--format json|markdown]`
 
-Keep output source-free and local-only. The initial `init` may create a minimal `.ctxpack/workspace.json` containing the current repo and any provided members. It must not scan source text beyond existing safe inventory behavior.
+Keep output source-free and local-only. The initial `init` may create a minimal `.ctxhelm/workspace.json` containing the current repo and any provided members. It must not scan source text beyond existing safe inventory behavior.
 </action>
 <acceptance_criteria>
-- `ctxpack --help` lists `workspace`.
-- `ctxpack workspace status --format json` emits `workspaceRoot`, `repos`, diagnostics, and `sourceTextLogged: false` or equivalent source-free privacy signal.
-- `ctxpack workspace init` writes `.ctxpack/workspace.json` without modifying source files outside `.ctxpack`.
+- `ctxhelm --help` lists `workspace`.
+- `ctxhelm workspace status --format json` emits `workspaceRoot`, `repos`, diagnostics, and `sourceTextLogged: false` or equivalent source-free privacy signal.
+- `ctxhelm workspace init` writes `.ctxhelm/workspace.json` without modifying source files outside `.ctxhelm`.
 - Existing CLI compatibility tests still pass.
 - New CLI compatibility test covers init/status with two temp repos and a source sentinel.
 </acceptance_criteria>
@@ -179,12 +179,12 @@ Run these checks before marking Phase 35 implementation complete:
 ```bash
 cargo fmt --all --check
 bash scripts/check-release-docs.sh
-CTXPACK_BIN=/tmp/ctxpack-target/debug/ctxpack bash scripts/smoke-workspace.sh
-CARGO_TARGET_DIR=/tmp/ctxpack-target cargo run -p ctxpack -- --help
-CARGO_TARGET_DIR=/tmp/ctxpack-target cargo test -p ctxpack-core workspace -- --nocapture
-CARGO_TARGET_DIR=/tmp/ctxpack-target cargo test -p ctxpack-index workspace -- --test-threads=1 --nocapture
-CARGO_TARGET_DIR=/tmp/ctxpack-target cargo test -p ctxpack workspace --test cli_compat -- --nocapture
-CARGO_TARGET_DIR=/tmp/ctxpack-target cargo test --workspace
+CTXHELM_BIN=/tmp/ctxhelm-target/debug/ctxhelm bash scripts/smoke-workspace.sh
+CARGO_TARGET_DIR=/tmp/ctxhelm-target cargo run -p ctxhelm -- --help
+CARGO_TARGET_DIR=/tmp/ctxhelm-target cargo test -p ctxhelm-core workspace -- --nocapture
+CARGO_TARGET_DIR=/tmp/ctxhelm-target cargo test -p ctxhelm-index workspace -- --test-threads=1 --nocapture
+CARGO_TARGET_DIR=/tmp/ctxhelm-target cargo test -p ctxhelm workspace --test cli_compat -- --nocapture
+CARGO_TARGET_DIR=/tmp/ctxhelm-target cargo test --workspace
 ```
 </verification>
 

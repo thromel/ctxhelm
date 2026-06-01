@@ -29,10 +29,10 @@ local dependency graph.
 Focused tests:
 
 ```bash
-cargo test -p ctxpack-index dependency_edges_resolve_python_from_imported_submodules -- --nocapture
-cargo test -p ctxpack-index related_dependency_edges_expand_python_package_reexports -- --nocapture
-cargo test -p ctxpack-index dependency_edges_resolve_safe_local_imports -- --nocapture
-cargo test -p ctxpack-index dependency_edges_resolve_java_and_kotlin_package_imports -- --nocapture
+cargo test -p ctxhelm-index dependency_edges_resolve_python_from_imported_submodules -- --nocapture
+cargo test -p ctxhelm-index related_dependency_edges_expand_python_package_reexports -- --nocapture
+cargo test -p ctxhelm-index dependency_edges_resolve_safe_local_imports -- --nocapture
+cargo test -p ctxhelm-index dependency_edges_resolve_java_and_kotlin_package_imports -- --nocapture
 ```
 
 A live VeriSchema dependency query now returns Python re-export edges from
@@ -51,15 +51,15 @@ and from `schema_agent/gates/gate_system.py` to:
 Command:
 
 ```bash
-cargo run -p ctxpack -- eval proof \
+cargo run -p ctxhelm -- eval proof \
   --config .planning/e2e/2026-05-30-phase73-broader-fixed-corpus-config.json \
-  --format json > /tmp/ctxpack-phase86-python-reexport-proof.json
+  --format json > /tmp/ctxhelm-phase86-python-reexport-proof.json
 ```
 
 The proof still blocks on the known cold runtime gate:
 
 ```text
-Blocked because proof runtime exceeded 5000ms per commit for: RefactoringMiner, ctxpack.
+Blocked because proof runtime exceeded 5000ms per commit for: RefactoringMiner, ctxhelm.
 ```
 
 Quality movement versus Phase 84 is flat and non-regressing:
@@ -67,7 +67,7 @@ Quality movement versus Phase 84 is flat and non-regressing:
 | Corpus | File Recall@10 | Source Recall@10 | Test Recall@10 | Effective Validation Recall@10 | Protected Target Miss-Rate@10 |
 | --- | --- | --- | --- | --- | --- |
 | RefactoringMiner | `0.6 -> 0.6` | `1.0 -> 1.0` | `1.0 -> 1.0` | `1.0 -> 1.0` | `0.0 -> 0.0` |
-| ctxpack | `0.44603175 -> 0.44603175` | `0.6333333 -> 0.6333333` | `0.0 -> 0.0` | `0.0 -> 0.0` | `0.0 -> 0.0` |
+| ctxhelm | `0.44603175 -> 0.44603175` | `0.6333333 -> 0.6333333` | `0.0 -> 0.0` | `0.0 -> 0.0` | `0.0 -> 0.0` |
 | ReAgent | `0.5 -> 0.5` | `1.0 -> 1.0` | `1.0 -> 1.0` | `1.0 -> 1.0` | `0.0 -> 0.0` |
 | VeriSchema | `0.17936651 -> 0.17936651` | `0.30409357 -> 0.30409357` | `0.7089947 -> 0.7089947` | `1.0 -> 1.0` | `0.2857143 -> 0.2857143` |
 

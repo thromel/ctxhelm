@@ -13,8 +13,8 @@
 
 | Option | Description | Selected |
 |--------|-------------|----------|
-| User-local default | Store SQLite under `CTXPACK_HOME` or `~/.ctxpack`, matching current inventory and trace behavior. | ✓ |
-| Repo-local default | Store SQLite under repo `.ctxpack/`, easier to inspect but risks repo pollution and accidental sharing. | |
+| User-local default | Store SQLite under `CTXHELM_HOME` or `~/.ctxhelm`, matching current inventory and trace behavior. | ✓ |
+| Repo-local default | Store SQLite under repo `.ctxhelm/`, easier to inspect but risks repo pollution and accidental sharing. | |
 | Hybrid default | Mix user-local and repo-local behavior automatically. | |
 
 **User's choice:** the agent selected the best option.

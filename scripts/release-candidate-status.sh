@@ -126,7 +126,7 @@ if proof_summary_path:
 
 payload = {
     "schemaVersion": 1,
-    "package": "ctxpack",
+    "package": "ctxhelm",
     "version": "1.1.7",
     "status": status,
     "createdAt": dt.datetime.now(dt.timezone.utc).replace(microsecond=0).isoformat(),
@@ -190,8 +190,8 @@ path = pathlib.Path(sys.argv[1])
 payload = json.loads(path.read_text())
 if payload.get("schemaVersion") != 1:
     raise SystemExit("schemaVersion must be 1")
-if payload.get("package") != "ctxpack":
-    raise SystemExit("package must be ctxpack")
+if payload.get("package") != "ctxhelm":
+    raise SystemExit("package must be ctxhelm")
 if payload.get("status") not in {"ready", "deferred", "blocked"}:
     raise SystemExit("status must be ready, deferred, or blocked")
 if payload.get("proofLevel") not in {"deterministic", "real-client"}:

@@ -26,7 +26,7 @@ implementation areas the agent should inspect next.
 Command:
 
 ```bash
-cargo run -p ctxpack -- eval history \
+cargo run -p ctxhelm -- eval history \
   --repo /Users/romel/Documents/GitHub/VeriSchema \
   --base b5cfb2a551d026514f505c45863db31277bcd1ad^ \
   --head b5cfb2a551d026514f505c45863db31277bcd1ad \
@@ -56,7 +56,7 @@ the broad commit.
 Debug command:
 
 ```bash
-cargo run -p ctxpack -- eval proof \
+cargo run -p ctxhelm -- eval proof \
   --config .planning/e2e/2026-05-30-phase73-broader-fixed-corpus-config.json \
   --format json
 ```
@@ -70,7 +70,7 @@ Debug result:
 Release command:
 
 ```bash
-cargo run --release -p ctxpack -- eval proof \
+cargo run --release -p ctxhelm -- eval proof \
   --config .planning/e2e/2026-05-30-phase73-broader-fixed-corpus-config.json \
   --format json
 ```
@@ -78,7 +78,7 @@ cargo run --release -p ctxpack -- eval proof \
 Release proof artifact:
 
 ```text
-.ctxpack/e2e/phase91-broad-context-area-release-proof.json
+.ctxhelm/e2e/phase91-broad-context-area-release-proof.json
 ```
 
 Release result:
@@ -86,7 +86,7 @@ Release result:
 | Corpus | Status | File Recall@10 | Context Recall@10 | Test Recall@10 | Protected Target Miss-Rate@10 | Runtime |
 | --- | --- | ---: | ---: | ---: | ---: | ---: |
 | RefactoringMiner | match | `0.6` | `1.0` | `1.0` | `0.0` | `8415ms` |
-| ctxpack | beat | `0.44603175` | `0.44444445` | `0.0` | `0.0` | `8752ms` |
+| ctxhelm | beat | `0.44603175` | `0.44444445` | `0.0` | `0.0` | `8752ms` |
 | ReAgent | beat | `0.5` | `1.0` | `1.0` | `0.0` | `4831ms` |
 | VeriSchema | beat | `0.18449473` | `0.23287672` | `0.7089947` | `0.2857143` | `7305ms` |
 
@@ -96,5 +96,5 @@ Release result:
 
 This phase improves production readiness by adding a measured source-free
 broad-task map channel. File-level ranking is unchanged, but broad evals now
-show whether ctxpack gives agents the right implementation areas to inspect
+show whether ctxhelm gives agents the right implementation areas to inspect
 after the initial target list.

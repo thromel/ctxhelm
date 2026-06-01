@@ -3,7 +3,7 @@
 ## Goal
 
 Make cold proof failures distinguish local Git/object-store health from
-ctxpack retrieval quality.
+ctxhelm retrieval quality.
 
 ## What Changed
 
@@ -25,15 +25,15 @@ ctxpack retrieval quality.
 Focused validation passed:
 
 ```text
-CARGO_NET_OFFLINE=true CARGO_TARGET_DIR=/tmp/ctxpack-phase109-target cargo test -p ctxpack-compiler benchmark_suite_embeds_report_when_history_sampling_is_unavailable -- --nocapture
-CARGO_NET_OFFLINE=true CARGO_TARGET_DIR=/tmp/ctxpack-phase109-target cargo test -p ctxpack-compiler benchmark_repo_environment_health_classifies_source_free_failures -- --nocapture
-CARGO_NET_OFFLINE=true CARGO_TARGET_DIR=/tmp/ctxpack-phase109-target cargo test -p ctxpack-compiler product_proof_release_gate_blocks_mixed_or_trailing_corpora -- --nocapture
+CARGO_NET_OFFLINE=true CARGO_TARGET_DIR=/tmp/ctxhelm-phase109-target cargo test -p ctxhelm-compiler benchmark_suite_embeds_report_when_history_sampling_is_unavailable -- --nocapture
+CARGO_NET_OFFLINE=true CARGO_TARGET_DIR=/tmp/ctxhelm-phase109-target cargo test -p ctxhelm-compiler benchmark_repo_environment_health_classifies_source_free_failures -- --nocapture
+CARGO_NET_OFFLINE=true CARGO_TARGET_DIR=/tmp/ctxhelm-phase109-target cargo test -p ctxhelm-compiler product_proof_release_gate_blocks_mixed_or_trailing_corpora -- --nocapture
 ```
 
 Cold proof artifact:
 
 ```text
-.ctxpack/e2e/phase109-environment-health-proof.json
+.ctxhelm/e2e/phase109-environment-health-proof.json
 ```
 
 The refreshed cold proof still blocks, but now blocks for environment health
@@ -46,7 +46,7 @@ evaluatedRepositoryCount = 1
 evaluatedCommitCount = 5
 
 RefactoringMiner = insufficient_evidence, git_history_unavailable
-ctxpack = insufficient_evidence, git_history_timeout
+ctxhelm = insufficient_evidence, git_history_timeout
 ReAgent = insufficient_evidence, git_history_timeout
 VeriSchema = beat, healthy
 ```

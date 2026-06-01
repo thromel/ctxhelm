@@ -26,13 +26,13 @@ The fix was to activate the dependency floor only for broad-scope prompts. That 
 ## Proof Command
 
 ```bash
-cargo run -p ctxpack -- eval proof \
+cargo run -p ctxhelm -- eval proof \
   --config .planning/e2e/2026-05-30-phase73-broader-fixed-corpus-config.json \
-  --format json > /tmp/ctxpack-phase84-dependency-broad-scope-proof.json
+  --format json > /tmp/ctxhelm-phase84-dependency-broad-scope-proof.json
 
-python3 scripts/check-product-proof.py /tmp/ctxpack-phase84-dependency-broad-scope-proof.json
-cp /tmp/ctxpack-phase84-dependency-broad-scope-proof.json \
-  .ctxpack/e2e/phase84-broad-scope-dependency-proof.json
+python3 scripts/check-product-proof.py /tmp/ctxhelm-phase84-dependency-broad-scope-proof.json
+cp /tmp/ctxhelm-phase84-dependency-broad-scope-proof.json \
+  .ctxhelm/e2e/phase84-broad-scope-dependency-proof.json
 ```
 
 ## Result
@@ -42,7 +42,7 @@ cp /tmp/ctxpack-phase84-dependency-broad-scope-proof.json \
 | Corpus | File Recall@10 Before | File Recall@10 After | Source Recall@10 Before | Source Recall@10 After | Broad-Scope Commits |
 | --- | ---: | ---: | ---: | ---: | ---: |
 | RefactoringMiner | 0.600 | 0.600 | 1.000 | 1.000 | 0 |
-| ctxpack | 0.446 | 0.446 | 0.633 | 0.633 | 0 |
+| ctxhelm | 0.446 | 0.446 | 0.633 | 0.633 | 0 |
 | ReAgent | 0.500 | 0.500 | 1.000 | 1.000 | 0 |
 | VeriSchema | 0.168 | 0.179 | 0.249 | 0.304 | 4 |
 
@@ -51,7 +51,7 @@ cp /tmp/ctxpack-phase84-dependency-broad-scope-proof.json \
 The measurable improvement is narrow and useful:
 
 - VeriSchema broad workflow/eval tasks now preserve more dependency source evidence.
-- RefactoringMiner, ctxpack, and ReAgent remain stable.
+- RefactoringMiner, ctxhelm, and ReAgent remain stable.
 - The proof still reports remaining `no_candidate_signal` families, so this does not hide parser/precision work that still needs a deeper fix.
 
 ## Remaining Follow-Up

@@ -1,0 +1,137 @@
+{
+  "schemaVersion": 1,
+  "taskType": "explain",
+  "contextAreaCount": 13,
+  "contextAreas": [
+    {
+      "area": "crates/ctxhelm-compiler",
+      "roleCounts": {
+        "source": 4
+      },
+      "selectedRoleCounts": {
+        "source": 4
+      },
+      "candidateCount": 4,
+      "selectedCount": 4,
+      "unselectedCount": 0,
+      "nextReadPaths": []
+    },
+    {
+      "area": "crates/ctxhelm",
+      "roleCounts": {
+        "source": 1,
+        "test": 1
+      },
+      "selectedRoleCounts": {
+        "source": 1,
+        "test": 1
+      },
+      "candidateCount": 2,
+      "selectedCount": 2,
+      "unselectedCount": 0,
+      "nextReadPaths": []
+    },
+    {
+      "area": "crates/ctxhelm-core",
+      "roleCounts": {
+        "source": 4
+      },
+      "selectedRoleCounts": {},
+      "candidateCount": 4,
+      "selectedCount": 0,
+      "unselectedCount": 4,
+      "nextReadPaths": [
+        "crates/ctxhelm-core/src/contracts.rs",
+        "crates/ctxhelm-core/src/init.rs",
+        "crates/ctxhelm-core/src/lib.rs",
+        "crates/ctxhelm-core/src/privacy.rs"
+      ]
+    },
+    {
+      "area": "crates/ctxhelm-index",
+      "roleCounts": {
+        "source": 4
+      },
+      "selectedRoleCounts": {},
+      "candidateCount": 4,
+      "selectedCount": 0,
+      "unselectedCount": 4,
+      "nextReadPaths": [
+        "crates/ctxhelm-index/src/artifacts.rs",
+        "crates/ctxhelm-index/src/dependencies.rs",
+        "crates/ctxhelm-index/src/feedback.rs",
+        "crates/ctxhelm-index/src/freshness.rs"
+      ]
+    },
+    {
+      "area": "crates/ctxhelm-mcp",
+      "roleCounts": {
+        "source": 4
+      },
+      "selectedRoleCounts": {},
+      "candidateCount": 4,
+      "selectedCount": 0,
+      "unselectedCount": 4,
+      "nextReadPaths": [
+        "crates/ctxhelm-mcp/src/lib.rs",
+        "crates/ctxhelm-mcp/src/prompts.rs",
+        "crates/ctxhelm-mcp/src/protocol.rs",
+        "crates/ctxhelm-mcp/src/resources.rs"
+      ]
+    },
+    {
+      "area": "docs",
+      "roleCounts": {
+        "docs": 3
+      },
+      "selectedRoleCounts": {
+        "docs": 2
+      },
+      "candidateCount": 3,
+      "selectedCount": 2,
+      "unselectedCount": 1,
+      "nextReadPaths": [
+        "docs/semantic.md"
+      ]
+    },
+    {
+      "area": ".planning/e2e",
+      "roleCounts": {
+        "docs": 3
+      },
+      "selectedRoleCounts": {
+        "docs": 1
+      },
+      "candidateCount": 3,
+      "selectedCount": 1,
+      "unselectedCount": 2,
+      "nextReadPaths": [
+        ".planning/e2e/2026-05-31-phase85-broad-context-areas.md",
+        ".planning/e2e/2026-05-31-phase91-broad-context-area-eval.md"
+      ]
+    },
+    {
+      "area": ".planning/MILESTONES.md",
+      "roleCounts": {
+        "docs": 1
+      },
+      "selectedRoleCounts": {
+        "docs": 1
+      },
+      "candidateCount": 1,
+      "selectedCount": 1,
+      "unselectedCount": 0,
+      "nextReadPaths": []
+    }
+  ],
+  "packRendering": {
+    "roleCountsRendered": true,
+    "selectedRolesRendered": true
+  },
+  "privacyStatus": {
+    "localOnly": true,
+    "sourceTextLogged": false,
+    "remoteEmbeddingsUsed": false,
+    "remoteRerankingUsed": false
+  }
+}

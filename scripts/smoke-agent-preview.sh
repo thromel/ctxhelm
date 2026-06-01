@@ -5,11 +5,11 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 TMP_DIR="$(mktemp -d)"
 trap 'rm -rf "${TMP_DIR}"' EXIT
 
-run_ctxpack() {
-  if [[ -n "${CTXPACK_BIN:-}" ]]; then
-    "${CTXPACK_BIN}" "$@"
+run_ctxhelm() {
+  if [[ -n "${CTXHELM_BIN:-}" ]]; then
+    "${CTXHELM_BIN}" "$@"
   else
-    cargo run -q -p ctxpack -- "$@"
+    cargo run -q -p ctxhelm -- "$@"
   fi
 }
 
@@ -34,8 +34,8 @@ reject_text() {
 REPO="${TMP_DIR}/repo"
 mkdir -p "${REPO}/src/auth" "${REPO}/tests/auth"
 git -C "${REPO}" init >/dev/null
-git -C "${REPO}" config user.email ctxpack@example.com
-git -C "${REPO}" config user.name ctxpack
+git -C "${REPO}" config user.email ctxhelm@example.com
+git -C "${REPO}" config user.name ctxhelm
 cat >"${REPO}/src/auth/session.ts" <<'EOF'
 export function requireSession() {
   return 'AGENT_PREVIEW_SOURCE_SENTINEL';
@@ -53,12 +53,12 @@ MD_OUT="${TMP_DIR}/agent-preview.md"
 
 (
   cd "${ROOT_DIR}"
-  run_ctxpack agent preview "fix requireSession preview bug" \
+  run_ctxhelm agent preview "fix requireSession preview bug" \
     --repo "${REPO}" \
     --mode bug-fix \
     --budget brief \
     --format json >"${JSON_OUT}"
-  run_ctxpack agent preview "fix requireSession preview bug" \
+  run_ctxhelm agent preview "fix requireSession preview bug" \
     --repo "${REPO}" \
     --target-agent claude-code \
     --mode bug-fix \
@@ -72,14 +72,14 @@ require_text "${JSON_OUT}" '"targetAgent": "opencode"'
 require_text "${JSON_OUT}" '"targetAgent": "generic"'
 require_text "${JSON_OUT}" '"prepare_task"'
 require_text "${JSON_OUT}" '"get_pack"'
-require_text "${JSON_OUT}" '"ctxpack://repo/summary"'
+require_text "${JSON_OUT}" '"ctxhelm://repo/summary"'
 require_text "${JSON_OUT}" '"AGENTS.md"'
 require_text "${JSON_OUT}" '"sourceTextLogged": false'
 require_text "${JSON_OUT}" '"sourceTextIncluded": false'
 require_text "${JSON_OUT}" '"localOnly": true'
 require_text "${MD_OUT}" "Claude Code"
-require_text "${MD_OUT}" ".claude/commands/ctxpack-bugfix.md"
-require_text "${MD_OUT}" "ctxpack suggests target files"
+require_text "${MD_OUT}" ".claude/commands/ctxhelm-bugfix.md"
+require_text "${MD_OUT}" "ctxhelm suggests target files"
 require_text "${MD_OUT}" "native file tools"
 reject_text "${JSON_OUT}" "AGENT_PREVIEW_SOURCE_SENTINEL"
 reject_text "${MD_OUT}" "AGENT_PREVIEW_SOURCE_SENTINEL"

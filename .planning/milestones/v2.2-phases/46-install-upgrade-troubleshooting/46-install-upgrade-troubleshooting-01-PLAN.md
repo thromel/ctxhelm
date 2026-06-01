@@ -13,7 +13,7 @@ troubleshooting docs.
 
 1. Inspect existing install docs, setup-check behavior, release docs, and CLI
    compatibility tests.
-2. Add `ctxpack doctor` with JSON and Markdown output.
+2. Add `ctxhelm doctor` with JSON and Markdown output.
 3. Verify active binary path, `--version`, `--help`, optional release manifest,
    and optional repo-local state compatibility.
 4. Update README, quickstart, release guide, agent setup matrix, and
@@ -26,8 +26,8 @@ troubleshooting docs.
 
 - `cargo fmt --all --check`
 - `bash scripts/check-release-docs.sh`
-- `CARGO_TARGET_DIR=/tmp/ctxpack-target-phase46-cli cargo test -p ctxpack --test cli_compat -- --nocapture`
-- `CARGO_TARGET_DIR=/tmp/ctxpack-target-release-packaging cargo test -p ctxpack --test release_packaging -- --nocapture`
-- `CARGO_TARGET_DIR=/tmp/ctxpack-target-phase46-cli cargo run -p ctxpack -- --help`
-- `CARGO_TARGET_DIR=/tmp/ctxpack-target-phase46-cli cargo run -p ctxpack -- doctor --help`
-- `CARGO_TARGET_DIR=/tmp/ctxpack-target-phase46-cli cargo run -p ctxpack -- doctor --repo . --binary /tmp/ctxpack-target-phase46-cli/debug/ctxpack --release-manifest /tmp/ctxpack-phase45-dist/ctxpack-v1.1.0-aarch64-apple-darwin.manifest.json --format json`
+- `CARGO_TARGET_DIR=/tmp/ctxhelm-target-phase46-cli cargo test -p ctxhelm --test cli_compat -- --nocapture`
+- `CARGO_TARGET_DIR=/tmp/ctxhelm-target-release-packaging cargo test -p ctxhelm --test release_packaging -- --nocapture`
+- `CARGO_TARGET_DIR=/tmp/ctxhelm-target-phase46-cli cargo run -p ctxhelm -- --help`
+- `CARGO_TARGET_DIR=/tmp/ctxhelm-target-phase46-cli cargo run -p ctxhelm -- doctor --help`
+- `CARGO_TARGET_DIR=/tmp/ctxhelm-target-phase46-cli cargo run -p ctxhelm -- doctor --repo . --binary /tmp/ctxhelm-target-phase46-cli/debug/ctxhelm --release-manifest /tmp/ctxhelm-phase45-dist/ctxhelm-v1.1.0-aarch64-apple-darwin.manifest.json --format json`

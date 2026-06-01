@@ -13,7 +13,7 @@ Expose the new baseline and token ROI fields through both machine-readable JSON 
 
 ## Tasks
 
-- Render no-context recall and lift in `ctxpack eval history` Markdown.
+- Render no-context recall and lift in `ctxhelm eval history` Markdown.
 - Render token ROI rows in historical eval Markdown.
 - Render no-context and token ROI summaries in benchmark suite Markdown.
 - Keep JSON output sourced directly from typed report contracts.

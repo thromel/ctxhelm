@@ -19,5 +19,5 @@ Status: Complete
 
 - `bash scripts/smoke-demo-artifacts.sh` passed.
 - `bash scripts/check-release-docs.sh` passed.
-- `CARGO_TARGET_DIR=/tmp/ctxpack-target-phase47 cargo test -p ctxpack --test release_packaging -- --nocapture` passed.
+- `CARGO_TARGET_DIR=/tmp/ctxhelm-target-phase47 cargo test -p ctxhelm --test release_packaging -- --nocapture` passed.
 

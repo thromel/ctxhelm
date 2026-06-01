@@ -7,19 +7,19 @@ requires:
   - phase: 04-agent-native-client-durability
     provides: stable CLI and MCP compatibility guards
 provides:
-  - Consistent ctxpack v1.1.0 Cargo package identity
+  - Consistent ctxhelm v1.1.0 Cargo package identity
   - Root MIT license artifact
-  - Top-level ctxpack --version diagnostic
+  - Top-level ctxhelm --version diagnostic
 affects: [release-packaging, docs, cli]
 tech-stack:
   added: []
   patterns: [workspace package metadata inheritance, binary-level release diagnostics]
 key-files:
   created: [LICENSE]
-  modified: [Cargo.toml, Cargo.lock, crates/ctxpack/Cargo.toml, crates/ctxpack-core/Cargo.toml, crates/ctxpack-index/Cargo.toml, crates/ctxpack-compiler/Cargo.toml, crates/ctxpack-mcp/Cargo.toml, crates/ctxpack/src/main.rs, crates/ctxpack/tests/cli_compat.rs]
+  modified: [Cargo.toml, Cargo.lock, crates/ctxhelm/Cargo.toml, crates/ctxhelm-core/Cargo.toml, crates/ctxhelm-index/Cargo.toml, crates/ctxhelm-compiler/Cargo.toml, crates/ctxhelm-mcp/Cargo.toml, crates/ctxhelm/src/main.rs, crates/ctxhelm/tests/cli_compat.rs]
 key-decisions:
-  - "Use workspace.package inheritance for v1.1.0 release metadata across all ctxpack crates."
-  - "Expose ctxpack --version through Clap package metadata without changing command names or JSON/MCP contracts."
+  - "Use workspace.package inheritance for v1.1.0 release metadata across all ctxhelm crates."
+  - "Expose ctxhelm --version through Clap package metadata without changing command names or JSON/MCP contracts."
 patterns-established:
   - "Release identity changes are guarded by cargo metadata and binary-level integration tests."
 requirements-completed: [PKG-01, PKG-03]
@@ -29,7 +29,7 @@ completed: 2026-05-13
 
 # Phase 05 Plan 01: Release Identity Summary
 
-**ctxpack v1.1.0 release identity with Cargo metadata inheritance, MIT license, and installed-binary version diagnostics**
+**ctxhelm v1.1.0 release identity with Cargo metadata inheritance, MIT license, and installed-binary version diagnostics**
 
 ## Performance
 
@@ -41,9 +41,9 @@ completed: 2026-05-13
 
 ## Accomplishments
 
-- Set all ctxpack workspace crates to `1.1.0` with license, repository, README, description, and Rust version metadata.
+- Set all ctxhelm workspace crates to `1.1.0` with license, repository, README, description, and Rust version metadata.
 - Added the root MIT `LICENSE` file referenced by release metadata.
-- Wired `ctxpack --version` through Clap and added integration coverage for metadata and version output.
+- Wired `ctxhelm --version` through Clap and added integration coverage for metadata and version output.
 
 ## Task Commits
 
@@ -56,9 +56,9 @@ completed: 2026-05-13
 
 - `Cargo.toml` - Workspace package metadata for v1.1.0.
 - `Cargo.lock` - Workspace package versions updated to `1.1.0`.
-- `crates/ctxpack*/Cargo.toml` - Workspace metadata inheritance for all ctxpack crates.
-- `crates/ctxpack/src/main.rs` - Top-level Clap version flag.
-- `crates/ctxpack/tests/cli_compat.rs` - Metadata and version compatibility tests.
+- `crates/ctxhelm*/Cargo.toml` - Workspace metadata inheritance for all ctxhelm crates.
+- `crates/ctxhelm/src/main.rs` - Top-level Clap version flag.
+- `crates/ctxhelm/tests/cli_compat.rs` - Metadata and version compatibility tests.
 - `LICENSE` - Root MIT license file.
 
 ## Decisions Made
@@ -75,7 +75,7 @@ completed: 2026-05-13
 - **Issue:** Updating workspace package versions changed the lockfile package entries, and leaving it unstaged would make `--locked` release builds inconsistent with manifests.
 - **Fix:** Committed the `Cargo.lock` package version updates with the manifest metadata changes.
 - **Files modified:** `Cargo.lock`
-- **Verification:** `cargo metadata --no-deps --format-version 1`, `cargo test -p ctxpack --test cli_compat workspace_packages_have_release_identity -- --nocapture`
+- **Verification:** `cargo metadata --no-deps --format-version 1`, `cargo test -p ctxhelm --test cli_compat workspace_packages_have_release_identity -- --nocapture`
 - **Committed in:** `d9ddf65`
 
 **Total deviations:** 1 auto-fixed (Rule 3)
@@ -92,10 +92,10 @@ None - no external service configuration required.
 ## Verification
 
 - `cargo metadata --no-deps --format-version 1` passed.
-- `cargo test -p ctxpack --test cli_compat version_reports_release_identity -- --nocapture` passed.
-- `cargo run -p ctxpack -- --version` printed `ctxpack 1.1.0`.
-- `cargo run -p ctxpack -- --help` listed the existing command surface plus `--version`.
-- `cargo run -p ctxpack -- prepare-task --help` remained compatible.
+- `cargo test -p ctxhelm --test cli_compat version_reports_release_identity -- --nocapture` passed.
+- `cargo run -p ctxhelm -- --version` printed `ctxhelm 1.1.0`.
+- `cargo run -p ctxhelm -- --help` listed the existing command surface plus `--version`.
+- `cargo run -p ctxhelm -- prepare-task --help` remained compatible.
 - `cargo test --workspace` passed.
 
 ## Next Phase Readiness

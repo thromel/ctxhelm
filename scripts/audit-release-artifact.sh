@@ -6,10 +6,10 @@ if [[ "$#" -eq 0 ]]; then
   exit 64
 fi
 
-# Forbidden path families include .ctxpack, traces.jsonl, request logs,
+# Forbidden path families include .ctxhelm, traces.jsonl, request logs,
 # temp homes, .env, key/token-looking paths, target/, .git/, and /Users/.
-FORBIDDEN_PATH_RE='(^|/)(\.ctxpack|\.git|target|cache|tmp)(/|$)|traces\.jsonl|request[-_]?logs?|requests\.jsonl|\.env|id_rsa|id_ed25519|token|secret|/Users/'
-FORBIDDEN_TEXT_RE='/Users/|/private/var/folders|/tmp/ctxpack|CTXPACK_HOME=[^[:space:]]+|AWS_[A-Z0-9_]+=|GH_TOKEN=|GITHUB_TOKEN=|API_KEY=|BEGIN [A-Z ]*PRIVATE KEY|id_rsa|id_ed25519|\.env|request[-_]?logs?|requests\.jsonl|token[[:alnum:]_.-]*=|secret[[:alnum:]_.-]*='
+FORBIDDEN_PATH_RE='(^|/)(\.ctxhelm|\.git|target|cache|tmp)(/|$)|traces\.jsonl|request[-_]?logs?|requests\.jsonl|\.env|id_rsa|id_ed25519|token|secret|/Users/'
+FORBIDDEN_TEXT_RE='/Users/|/private/var/folders|/tmp/ctxhelm|CTXHELM_HOME=[^[:space:]]+|AWS_[A-Z0-9_]+=|GH_TOKEN=|GITHUB_TOKEN=|API_KEY=|BEGIN [A-Z ]*PRIVATE KEY|id_rsa|id_ed25519|\.env|request[-_]?logs?|requests\.jsonl|token[[:alnum:]_.-]*=|secret[[:alnum:]_.-]*='
 
 write_audit_report() {
   local report_path="$1"
@@ -39,7 +39,7 @@ payload = {
         "sourceTextLogged": False,
     },
     "checks": [
-        "archive members do not include local ctxpack state",
+        "archive members do not include local ctxhelm state",
         "archive members do not include git internals or target debris",
         "archive members do not include secret-looking paths",
         "text payloads do not include machine-local paths or secret-looking values",
@@ -63,7 +63,7 @@ audit_archive() {
   trap cleanup_archive RETURN
 
   if [[ ! -f "${archive}" ]]; then
-    write_audit_report "${CTXPACK_AUDIT_REPORT:-}" "${archive}" "failed" 0 "archive not found"
+    write_audit_report "${CTXHELM_AUDIT_REPORT:-}" "${archive}" "failed" 0 "archive not found"
     echo "archive not found: ${archive}" >&2
     return 1
   fi
@@ -71,7 +71,7 @@ audit_archive() {
   case "${archive}" in
     *.tar.gz|*.tgz) ;;
     *)
-      write_audit_report "${CTXPACK_AUDIT_REPORT:-}" "${archive}" "failed" 0 "unsupported archive type"
+      write_audit_report "${CTXHELM_AUDIT_REPORT:-}" "${archive}" "failed" 0 "unsupported archive type"
       echo "unsupported archive type: ${archive}" >&2
       return 1
       ;;
@@ -84,14 +84,14 @@ audit_archive() {
   while IFS= read -r member; do
     [[ -z "${member}" ]] && continue
     if [[ "${member}" =~ ${FORBIDDEN_PATH_RE} ]]; then
-      write_audit_report "${CTXPACK_AUDIT_REPORT:-}" "${archive}" "failed" "${member_count}" "forbidden archive member: ${member}"
+      write_audit_report "${CTXHELM_AUDIT_REPORT:-}" "${archive}" "failed" "${member_count}" "forbidden archive member: ${member}"
       echo "forbidden archive member in ${archive}: ${member}" >&2
       return 1
     fi
   done <<< "${members}"
 
   tar -xzf "${archive}" -C "${extract_dir}"
-  if LC_ALL=C grep -I -R -l -E "${FORBIDDEN_TEXT_RE}" "${extract_dir}" >/tmp/ctxpack-audit-matches.$$ 2>/dev/null; then
+  if LC_ALL=C grep -I -R -l -E "${FORBIDDEN_TEXT_RE}" "${extract_dir}" >/tmp/ctxhelm-audit-matches.$$ 2>/dev/null; then
     local first_match=""
     while IFS= read -r path; do
       rel_path="${path#"${extract_dir}/"}"
@@ -99,14 +99,14 @@ audit_archive() {
         first_match="$rel_path"
       fi
       echo "forbidden text pattern in ${archive}: ${rel_path}" >&2
-    done </tmp/ctxpack-audit-matches.$$
-    rm -f /tmp/ctxpack-audit-matches.$$
-    write_audit_report "${CTXPACK_AUDIT_REPORT:-}" "${archive}" "failed" "${member_count}" "forbidden text pattern: ${first_match}"
+    done </tmp/ctxhelm-audit-matches.$$
+    rm -f /tmp/ctxhelm-audit-matches.$$
+    write_audit_report "${CTXHELM_AUDIT_REPORT:-}" "${archive}" "failed" "${member_count}" "forbidden text pattern: ${first_match}"
     return 1
   fi
-  rm -f /tmp/ctxpack-audit-matches.$$
+  rm -f /tmp/ctxhelm-audit-matches.$$
 
-  write_audit_report "${CTXPACK_AUDIT_REPORT:-}" "${archive}" "passed" "${member_count}" "artifact audit passed"
+  write_audit_report "${CTXHELM_AUDIT_REPORT:-}" "${archive}" "passed" "${member_count}" "artifact audit passed"
   echo "audit passed: ${archive}"
 }
 

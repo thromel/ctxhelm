@@ -1,6 +1,6 @@
 # Component Guide
 
-This guide breaks ctxpack down by component. Use it with
+This guide breaks ctxhelm down by component. Use it with
 [architecture.md](architecture.md) when you need to understand where a feature
 belongs or what trade-off a module owns.
 
@@ -20,7 +20,7 @@ flowchart TD
   Workspace --> Future["Workspace-aware planning"]
 ```
 
-## `ctxpack-core`
+## `ctxhelm-core`
 
 Owns public contracts and stable project setup behavior.
 
@@ -30,7 +30,7 @@ Primary responsibilities:
   feedback/policy reports, memory cards, and workspace reports
 - privacy status types
 - repo discovery
-- `ctxpack init` generated AGENTS/native-rule artifacts
+- `ctxhelm init` generated AGENTS/native-rule artifacts
 - setup-check contracts
 
 Design constraints:
@@ -41,7 +41,7 @@ Design constraints:
   model transcripts
 - setup artifacts stay repo-local and guidance-only
 
-## `ctxpack-index`
+## `ctxhelm-index`
 
 Owns repository intelligence extracted from local repositories.
 
@@ -66,7 +66,7 @@ Design constraints:
 - prefer diagnostics over panics when repository state is stale, missing, or
   partially inaccessible
 
-## `ctxpack-compiler`
+## `ctxhelm-compiler`
 
 Owns task-conditioned context selection.
 
@@ -92,7 +92,7 @@ Design constraints:
 - preserve single-repo behavior unless the caller explicitly uses workspace
   commands
 
-## `ctxpack-mcp`
+## `ctxhelm-mcp`
 
 Owns agent-native runtime integration.
 
@@ -125,7 +125,7 @@ Design constraints:
 - keep pack resources session-scoped
 - never mutate source files or global agent config
 
-## `ctxpack` CLI
+## `ctxhelm` CLI
 
 Owns local operator and smoke-test surfaces.
 
@@ -166,7 +166,7 @@ Rejected examples:
 
 ## Workspace Layer
 
-The workspace layer starts with `.ctxpack/workspace.json`, then builds toward
+The workspace layer starts with `.ctxhelm/workspace.json`, then builds toward
 workspace-aware planning.
 
 Phase 35:
@@ -191,9 +191,9 @@ Later phases:
 
 Use this rule when adding features:
 
-- stable public JSON type: `ctxpack-core`
-- local repo metadata extraction: `ctxpack-index`
-- task-conditioned ranking or packs: `ctxpack-compiler`
-- agent protocol surface: `ctxpack-mcp`
-- operator command or smoke hook: `ctxpack`
+- stable public JSON type: `ctxhelm-core`
+- local repo metadata extraction: `ctxhelm-index`
+- task-conditioned ranking or packs: `ctxhelm-compiler`
+- agent protocol surface: `ctxhelm-mcp`
+- operator command or smoke hook: `ctxhelm`
 - durable docs and trade-offs: `docs/`

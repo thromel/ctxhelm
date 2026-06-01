@@ -5,13 +5,13 @@ type: execute
 wave: 3
 depends_on: ["02-02"]
 files_modified:
-  - crates/ctxpack-index/src/lib.rs
-  - crates/ctxpack-index/src/search.rs
-  - crates/ctxpack-index/src/symbols.rs
-  - crates/ctxpack-index/src/related_tests.rs
-  - crates/ctxpack-index/src/dependencies.rs
-  - crates/ctxpack-index/src/git.rs
-  - crates/ctxpack-index/src/policy.rs
+  - crates/ctxhelm-index/src/lib.rs
+  - crates/ctxhelm-index/src/search.rs
+  - crates/ctxhelm-index/src/symbols.rs
+  - crates/ctxhelm-index/src/related_tests.rs
+  - crates/ctxhelm-index/src/dependencies.rs
+  - crates/ctxhelm-index/src/git.rs
+  - crates/ctxhelm-index/src/policy.rs
 autonomous: true
 requirements: [SAFE-01, SAFE-02, SAFE-05, DIAG-01, DIAG-04]
 must_haves:
@@ -20,28 +20,28 @@ must_haves:
     - "Unreadable, non-UTF-8, oversized, binary, skipped, or externally unavailable inputs become diagnostics instead of silent empty matches."
     - "Weak index-layer signals expose partial coverage reasons without changing ranking/eval behavior."
   artifacts:
-    - path: "crates/ctxpack-index/src/search.rs"
+    - path: "crates/ctxhelm-index/src/search.rs"
       provides: "Fresh lexical search with source-read diagnostics"
       contains: "load_or_refresh_inventory"
-    - path: "crates/ctxpack-index/src/symbols.rs"
+    - path: "crates/ctxhelm-index/src/symbols.rs"
       provides: "Fresh symbol extraction/search with parse/read diagnostics"
       contains: "read_safe_source"
-    - path: "crates/ctxpack-index/src/related_tests.rs"
+    - path: "crates/ctxhelm-index/src/related_tests.rs"
       provides: "Fresh related-test/test-map reads with source-read diagnostics"
       contains: "read_safe_source"
-    - path: "crates/ctxpack-index/src/dependencies.rs"
+    - path: "crates/ctxhelm-index/src/dependencies.rs"
       provides: "Fresh dependency graph reads with parse/read diagnostics"
       contains: "read_safe_source"
-    - path: "crates/ctxpack-index/src/git.rs"
+    - path: "crates/ctxhelm-index/src/git.rs"
       provides: "Structured git missing/timeout/partial diagnostics"
       contains: "git_timeout"
   key_links:
-    - from: "crates/ctxpack-index/src/search.rs"
-      to: "crates/ctxpack-index/src/freshness.rs"
+    - from: "crates/ctxhelm-index/src/search.rs"
+      to: "crates/ctxhelm-index/src/freshness.rs"
       via: "fresh inventory load"
       pattern: "load_or_refresh_inventory"
-    - from: "crates/ctxpack-index/src/*"
-      to: "crates/ctxpack-index/src/policy.rs"
+    - from: "crates/ctxhelm-index/src/*"
+      to: "crates/ctxhelm-index/src/policy.rs"
       via: "safe source reads"
       pattern: "read_safe_source"
 ---
@@ -97,13 +97,13 @@ pub struct DependencyEdge { pub source_path: String, pub target_path: String, ..
 
 <task type="auto" tdd="true">
   <name>Task 1: Route index retrieval through trusted inventory</name>
-  <files>crates/ctxpack-index/src/search.rs, crates/ctxpack-index/src/symbols.rs, crates/ctxpack-index/src/related_tests.rs, crates/ctxpack-index/src/dependencies.rs, crates/ctxpack-index/src/git.rs, crates/ctxpack-index/src/lib.rs</files>
+  <files>crates/ctxhelm-index/src/search.rs, crates/ctxhelm-index/src/symbols.rs, crates/ctxhelm-index/src/related_tests.rs, crates/ctxhelm-index/src/dependencies.rs, crates/ctxhelm-index/src/git.rs, crates/ctxhelm-index/src/lib.rs</files>
   <read_first>
-    - `crates/ctxpack-index/src/search.rs`
-    - `crates/ctxpack-index/src/symbols.rs`
-    - `crates/ctxpack-index/src/related_tests.rs`
-    - `crates/ctxpack-index/src/dependencies.rs`
-    - `crates/ctxpack-index/src/git.rs`
+    - `crates/ctxhelm-index/src/search.rs`
+    - `crates/ctxhelm-index/src/symbols.rs`
+    - `crates/ctxhelm-index/src/related_tests.rs`
+    - `crates/ctxhelm-index/src/dependencies.rs`
+    - `crates/ctxhelm-index/src/git.rs`
   </read_first>
   <behavior>
     - SAFE-01: search, symbol extraction/search, related tests, test map, dependency edges, co-change/current-diff/history safe labels use `load_or_refresh_inventory`.
@@ -114,15 +114,15 @@ pub struct DependencyEdge { pub source_path: String, pub target_path: String, ..
     Replace read-path uses of `load_or_build_inventory` with `load_or_refresh_inventory` for user-facing APIs. Preserve existing function names and return shapes where Phase 1 compatibility requires them; introduce additive diagnostic-bearing report variants only where necessary for compiler/MCP use. Do not change ranking weights, candidate scoring, eval metrics, or graph expansion behavior. Keep old `load_or_build_inventory` only as a compatibility wrapper if needed.
   </action>
   <verify>
-    <automated>cargo test -p ctxpack-index lexical_search -- --nocapture</automated>
-    <automated>cargo test -p ctxpack-index symbol -- --nocapture</automated>
-    <automated>cargo test -p ctxpack-index related_tests -- --nocapture</automated>
-    <automated>cargo test -p ctxpack-index dependency -- --nocapture</automated>
-    <automated>cargo test -p ctxpack-index current_diff -- --nocapture</automated>
+    <automated>cargo test -p ctxhelm-index lexical_search -- --nocapture</automated>
+    <automated>cargo test -p ctxhelm-index symbol -- --nocapture</automated>
+    <automated>cargo test -p ctxhelm-index related_tests -- --nocapture</automated>
+    <automated>cargo test -p ctxhelm-index dependency -- --nocapture</automated>
+    <automated>cargo test -p ctxhelm-index current_diff -- --nocapture</automated>
   </verify>
   <acceptance_criteria>
     - Existing index tests still pass.
-    - New stale-cache fixtures prove mutated files and ignore changes affect search/symbol/test/dependency results without running `ctxpack index`.
+    - New stale-cache fixtures prove mutated files and ignore changes affect search/symbol/test/dependency results without running `ctxhelm index`.
     - Diagnostic-bearing variants expose freshness/partial signal data for downstream plans.
   </acceptance_criteria>
   <done>Index read APIs use the trusted freshness path and preserve current retrieval behavior except for freshness and diagnostics.</done>
@@ -130,13 +130,13 @@ pub struct DependencyEdge { pub source_path: String, pub target_path: String, ..
 
 <task type="auto" tdd="true">
   <name>Task 2: Replace silent source read failures with diagnostics</name>
-  <files>crates/ctxpack-index/src/search.rs, crates/ctxpack-index/src/symbols.rs, crates/ctxpack-index/src/related_tests.rs, crates/ctxpack-index/src/dependencies.rs, crates/ctxpack-index/src/git.rs, crates/ctxpack-index/src/policy.rs</files>
+  <files>crates/ctxhelm-index/src/search.rs, crates/ctxhelm-index/src/symbols.rs, crates/ctxhelm-index/src/related_tests.rs, crates/ctxhelm-index/src/dependencies.rs, crates/ctxhelm-index/src/git.rs, crates/ctxhelm-index/src/policy.rs</files>
   <read_first>
-    - `crates/ctxpack-index/src/policy.rs`
-    - `crates/ctxpack-index/src/search.rs`
-    - `crates/ctxpack-index/src/symbols.rs`
-    - `crates/ctxpack-index/src/dependencies.rs`
-    - `crates/ctxpack-index/src/related_tests.rs`
+    - `crates/ctxhelm-index/src/policy.rs`
+    - `crates/ctxhelm-index/src/search.rs`
+    - `crates/ctxhelm-index/src/symbols.rs`
+    - `crates/ctxhelm-index/src/dependencies.rs`
+    - `crates/ctxhelm-index/src/related_tests.rs`
   </read_first>
   <behavior>
     - SAFE-05: unreadable, non-UTF-8, oversized, binary, deleted-after-inventory, or policy-skipped files emit structured diagnostics and are not treated as empty successful reads.
@@ -147,9 +147,9 @@ pub struct DependencyEdge { pub source_path: String, pub target_path: String, ..
     Replace `fs::read_to_string(...).unwrap_or_default()` and similar silent fallbacks in index modules with the central `read_safe_source` policy. Aggregate diagnostics without source snippets. Extend git helper diagnostics for missing git/timeout and partial history results without shelling through ad hoc process calls. Add tests for invalid UTF-8, oversized source-like files, deleted-after-inventory files, unreadable files on Unix, and partial graph/test/history coverage.
   </action>
   <verify>
-    <automated>cargo test -p ctxpack-index source_read -- --nocapture</automated>
-    <automated>cargo test -p ctxpack-index diagnostics -- --nocapture</automated>
-    <automated>cargo test -p ctxpack-index partial -- --nocapture</automated>
+    <automated>cargo test -p ctxhelm-index source_read -- --nocapture</automated>
+    <automated>cargo test -p ctxhelm-index diagnostics -- --nocapture</automated>
+    <automated>cargo test -p ctxhelm-index partial -- --nocapture</automated>
   </verify>
   <acceptance_criteria>
     - No user-facing index read path silently converts read failures into empty content.
@@ -163,15 +163,15 @@ pub struct DependencyEdge { pub source_path: String, pub target_path: String, ..
 
 <verification>
 ```bash
-cargo test -p ctxpack-index lexical_search -- --nocapture
-cargo test -p ctxpack-index symbol -- --nocapture
-cargo test -p ctxpack-index related_tests -- --nocapture
-cargo test -p ctxpack-index dependency -- --nocapture
-cargo test -p ctxpack-index current_diff -- --nocapture
-cargo test -p ctxpack-index source_read -- --nocapture
-cargo test -p ctxpack-index diagnostics -- --nocapture
-cargo test -p ctxpack-index partial -- --nocapture
-cargo test -p ctxpack-index
+cargo test -p ctxhelm-index lexical_search -- --nocapture
+cargo test -p ctxhelm-index symbol -- --nocapture
+cargo test -p ctxhelm-index related_tests -- --nocapture
+cargo test -p ctxhelm-index dependency -- --nocapture
+cargo test -p ctxhelm-index current_diff -- --nocapture
+cargo test -p ctxhelm-index source_read -- --nocapture
+cargo test -p ctxhelm-index diagnostics -- --nocapture
+cargo test -p ctxhelm-index partial -- --nocapture
+cargo test -p ctxhelm-index
 ```
 </verification>
 

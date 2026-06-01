@@ -7,19 +7,19 @@ cleanup() {
 }
 trap cleanup EXIT
 
-ctxpack_bin="${CTXPACK_BIN:-}"
-if [[ -z "$ctxpack_bin" ]]; then
-  ctxpack_bin="$(pwd -P)/target/debug/ctxpack"
+ctxhelm_bin="${CTXHELM_BIN:-}"
+if [[ -z "$ctxhelm_bin" ]]; then
+  ctxhelm_bin="$(pwd -P)/target/debug/ctxhelm"
 fi
-if [[ ! -x "$ctxpack_bin" ]]; then
-  echo "workspace smoke failed: CTXPACK_BIN is not executable: $ctxpack_bin" >&2
+if [[ ! -x "$ctxhelm_bin" ]]; then
+  echo "workspace smoke failed: CTXHELM_BIN is not executable: $ctxhelm_bin" >&2
   exit 64
 fi
 
 repo_a="$work_dir/repo-a"
 repo_b="$work_dir/repo-b"
-home="$work_dir/ctxpack-home"
-sentinel="CTXPACK_WORKSPACE_SOURCE_SENTINEL_DO_NOT_LEAK"
+home="$work_dir/ctxhelm-home"
+sentinel="CTXHELM_WORKSPACE_SOURCE_SENTINEL_DO_NOT_LEAK"
 
 create_repo() {
   local repo="$1"
@@ -30,8 +30,8 @@ create_repo() {
   printf '%s\n' "$sentinel" >"$repo/.env"
   printf '%s\n' "$sentinel" >"$repo/dist/generated.min.js"
   git -C "$repo" init >/dev/null
-  git -C "$repo" config user.email ctxpack@example.com
-  git -C "$repo" config user.name ctxpack
+  git -C "$repo" config user.email ctxhelm@example.com
+  git -C "$repo" config user.name ctxhelm
   git -C "$repo" add .
   git -C "$repo" commit -m "fixture $name" >/dev/null
 }
@@ -39,24 +39,24 @@ create_repo() {
 create_repo "$repo_a" "alpha"
 create_repo "$repo_b" "beta"
 
-export CTXPACK_HOME="$home"
+export CTXHELM_HOME="$home"
 
 init_json="$work_dir/workspace-init.json"
-"$ctxpack_bin" workspace init --repo "$repo_a" --member "$repo_b" --label primary --format json >"$init_json"
+"$ctxhelm_bin" workspace init --repo "$repo_a" --member "$repo_b" --label primary --format json >"$init_json"
 
-manifest="$repo_a/.ctxpack/workspace.json"
+manifest="$repo_a/.ctxhelm/workspace.json"
 if [[ ! -f "$manifest" ]]; then
   echo "workspace smoke failed: manifest was not created" >&2
   exit 1
 fi
 
 status_json="$work_dir/workspace-status.json"
-"$ctxpack_bin" workspace status --repo "$repo_a" --format json >"$status_json"
+"$ctxhelm_bin" workspace status --repo "$repo_a" --format json >"$status_json"
 
 plan_json="$work_dir/workspace-plan.json"
-"$ctxpack_bin" workspace prepare-task "fix beta redirect" --repo "$repo_a" --mode bug-fix --format json >"$plan_json"
+"$ctxhelm_bin" workspace prepare-task "fix beta redirect" --repo "$repo_a" --mode bug-fix --format json >"$plan_json"
 pack_json="$work_dir/workspace-pack.json"
-"$ctxpack_bin" workspace get-pack "fix beta redirect" --repo "$repo_a" --mode bug-fix --budget brief --target-agent codex --format json >"$pack_json"
+"$ctxhelm_bin" workspace get-pack "fix beta redirect" --repo "$repo_a" --mode bug-fix --budget brief --target-agent codex --format json >"$pack_json"
 
 python3 - "$init_json" "$status_json" "$plan_json" "$pack_json" "$manifest" "$sentinel" "$home" <<'PY'
 import json
@@ -122,6 +122,6 @@ for path in home.rglob("*"):
         raise SystemExit(f"workspace smoke failed: source sentinel persisted in {path}")
 PY
 
-"$ctxpack_bin" prepare-task "verify single repo still works" --repo "$repo_a" --no-trace >/dev/null
+"$ctxhelm_bin" prepare-task "verify single repo still works" --repo "$repo_a" --no-trace >/dev/null
 
 echo "workspace smoke passed"

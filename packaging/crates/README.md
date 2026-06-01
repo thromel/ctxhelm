@@ -5,14 +5,14 @@ path is a prebuilt local archive; crates.io publication is not part of v1.1.7.
 
 Before any future registry publication:
 
-- Confirm `crates/ctxpack/Cargo.toml` metadata, license, repository, README, and
+- Confirm `crates/ctxhelm/Cargo.toml` metadata, license, repository, README, and
   binary package boundaries.
-- Run `cargo package --manifest-path crates/ctxpack/Cargo.toml --locked` from a
+- Run `cargo package --manifest-path crates/ctxhelm/Cargo.toml --locked` from a
   clean checkout.
 - Run `bash scripts/smoke-distribution-metadata.sh` from a checkout with the
-  current release archive available through `CTXPACK_DIST_DIR`; it checks the
+  current release archive available through `CTXHELM_DIST_DIR`; it checks the
   `cargo package --list` boundary without publishing.
-- Verify package contents do not include local `.ctxpack` state, release proof
+- Verify package contents do not include local `.ctxhelm` state, release proof
   bundles, target directories, secrets, demo output generated outside
   `docs/demo-artifacts/`, or machine-local paths.
 - Keep cloud embeddings, cloud reranking, hosted sync, and global agent config

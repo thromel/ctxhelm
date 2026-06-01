@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ctxpack_bin="${CTXPACK_BIN:-ctxpack}"
+ctxhelm_bin="${CTXHELM_BIN:-ctxhelm}"
 work_dir="$(mktemp -d)"
 cleanup() {
   rm -rf "$work_dir"
@@ -15,8 +15,8 @@ mkdir -p "$repo/src/main/java/org/example/auth" \
   "$repo/src/main/kotlin/org/example/web" \
   "$home"
 git -C "$repo" init >/dev/null
-git -C "$repo" config user.email "ctxpack@example.com"
-git -C "$repo" config user.name "ctxpack"
+git -C "$repo" config user.email "ctxhelm@example.com"
+git -C "$repo" config user.name "ctxhelm"
 
 cat >"$repo/src/main/java/org/example/auth/AuthService.java" <<'JAVA'
 package org.example.auth;
@@ -56,7 +56,7 @@ git -C "$repo" add .
 git -C "$repo" commit -m fixture >/dev/null
 
 symbols_json="$work_dir/symbols.json"
-CTXPACK_HOME="$home" "$ctxpack_bin" symbols --repo "$repo" --query requireSession --limit 5 >"$symbols_json"
+CTXHELM_HOME="$home" "$ctxhelm_bin" symbols --repo "$repo" --query requireSession --limit 5 >"$symbols_json"
 python3 - "$symbols_json" <<'PY'
 import json
 import pathlib
@@ -68,7 +68,7 @@ if not any(item["symbol"]["language"] == "java" and item["symbol"]["name"] == "r
 PY
 
 deps_json="$work_dir/dependencies.json"
-CTXPACK_HOME="$home" "$ctxpack_bin" dependencies src/main/java/org/example/auth/AuthService.java --repo "$repo" --limit 10 >"$deps_json"
+CTXHELM_HOME="$home" "$ctxhelm_bin" dependencies src/main/java/org/example/auth/AuthService.java --repo "$repo" --limit 10 >"$deps_json"
 python3 - "$deps_json" <<'PY'
 import json
 import pathlib
@@ -84,8 +84,8 @@ if not any((edge["sourcePath"], edge["targetPath"]) == expected for edge in edge
 PY
 
 discover_json="$work_dir/precision-discover.json"
-CTXPACK_HOME="$home" "$ctxpack_bin" precision discover --repo "$repo" --limit 20 --format json >"$discover_json"
-python3 - "$discover_json" "$repo/.ctxpack/precision-edges.json" <<'PY'
+CTXHELM_HOME="$home" "$ctxhelm_bin" precision discover --repo "$repo" --limit 20 --format json >"$discover_json"
+python3 - "$discover_json" "$repo/.ctxhelm/precision-edges.json" <<'PY'
 import json
 import pathlib
 import sys
@@ -125,8 +125,8 @@ cat >"$precision_input" <<'JSON'
 JSON
 
 import_json="$work_dir/precision-import.json"
-CTXPACK_HOME="$home" "$ctxpack_bin" precision import --repo "$repo" --input "$precision_input" --format json >"$import_json"
-python3 - "$import_json" "$repo/.ctxpack/precision-edges.json" <<'PY'
+CTXHELM_HOME="$home" "$ctxhelm_bin" precision import --repo "$repo" --input "$precision_input" --format json >"$import_json"
+python3 - "$import_json" "$repo/.ctxhelm/precision-edges.json" <<'PY'
 import json
 import pathlib
 import sys
@@ -142,7 +142,7 @@ if "SECRET_SHOULD_NOT_PERSIST" in overlay:
 PY
 
 precision_deps_json="$work_dir/precision-dependencies.json"
-CTXPACK_HOME="$home" "$ctxpack_bin" dependencies src/main/kotlin/org/example/web/AuthController.kt --repo "$repo" --limit 10 >"$precision_deps_json"
+CTXHELM_HOME="$home" "$ctxhelm_bin" dependencies src/main/kotlin/org/example/web/AuthController.kt --repo "$repo" --limit 10 >"$precision_deps_json"
 python3 - "$precision_deps_json" <<'PY'
 import json
 import pathlib

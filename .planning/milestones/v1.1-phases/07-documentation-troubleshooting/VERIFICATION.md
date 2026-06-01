@@ -16,14 +16,14 @@ Passed. All three Phase 7 plans completed with summaries, task-level commits, an
 - README now presents an installed-binary install-to-first-pack path with explicit `--repo`, `setup-check`, `prepare-task`, and `get-pack` commands.
 - `docs/quickstart.md` provides the detailed first-pack walkthrough and explains session-scoped pack resources with `get_pack` as the durable reconnect path.
 - `docs/agent-setup.md` compares Codex CLI, Claude Code, Cursor, and OpenCode setup surfaces and separates generated artifact checks, deterministic protocol proof, and optional real-client proof.
-- `docs/troubleshooting.md` covers PATH failures, absolute MCP binary paths, `CTXPACK_HOME`, uninstall/state cleanup, wrong cwd behavior, MCP startup failures, stdout cleanliness, setup-check scope, and session-scoped pack resources.
+- `docs/troubleshooting.md` covers PATH failures, absolute MCP binary paths, `CTXHELM_HOME`, uninstall/state cleanup, wrong cwd behavior, MCP startup failures, stdout cleanliness, setup-check scope, and session-scoped pack resources.
 - `scripts/check-release-docs.sh` now checks README, release, quickstart, agent setup, and troubleshooting docs and rejects unsupported Cursor/OpenCode real-client proof claims.
 
 ## Final Verification Commands
 
 - `bash scripts/check-release-docs.sh` - passed
-- `cargo test -p ctxpack --test release_packaging release_docs -- --nocapture` - passed
-- `cargo run -p ctxpack -- --help` - passed
+- `cargo test -p ctxhelm --test release_packaging release_docs -- --nocapture` - passed
+- `cargo run -p ctxhelm -- --help` - passed
 - `cargo test --workspace` - passed
 
 ## Plan Summaries

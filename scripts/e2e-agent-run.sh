@@ -7,10 +7,10 @@ usage: e2e-agent-run.sh --target-file PATH [--target-file PATH ...] [--repo PATH
 
 Runs a source-free paired Claude Code agent-run evaluation:
   1. baseline native repository exploration
-  2. ctxpack prepare_task-assisted exploration
-  3. ctxpack prepare_task + get_pack-assisted exploration
+  2. ctxhelm prepare_task-assisted exploration
+  3. ctxhelm prepare_task + get_pack-assisted exploration
 
-Real Claude Code execution is optional. Set CTXPACK_RUN_REAL_CLIENT=1 to run the
+Real Claude Code execution is optional. Set CTXHELM_RUN_REAL_CLIENT=1 to run the
 client. Without it, the script writes a skipped source-free report that preserves
 the contract and does not pretend outcome proof exists.
 
@@ -22,12 +22,12 @@ EOF
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 repo_root="$(cd "$script_dir/.." && pwd -P)"
-repo_input="${CTXPACK_AGENT_RUN_REPO:-$PWD}"
-task="${CTXPACK_AGENT_RUN_TASK:-}"
-output_path="${CTXPACK_AGENT_RUN_REPORT:-}"
-run_real="${CTXPACK_RUN_REAL_CLIENT:-0}"
-require_real="${CTXPACK_REQUIRE_REAL_CLIENT:-0}"
-client_timeout_seconds="${CTXPACK_AGENT_RUN_TIMEOUT_SECONDS:-90}"
+repo_input="${CTXHELM_AGENT_RUN_REPO:-$PWD}"
+task="${CTXHELM_AGENT_RUN_TASK:-}"
+output_path="${CTXHELM_AGENT_RUN_REPORT:-}"
+run_real="${CTXHELM_RUN_REAL_CLIENT:-0}"
+require_real="${CTXHELM_REQUIRE_REAL_CLIENT:-0}"
+client_timeout_seconds="${CTXHELM_AGENT_RUN_TIMEOUT_SECONDS:-90}"
 target_files=()
 
 while [[ $# -gt 0 ]]; do
@@ -73,17 +73,17 @@ fi
 
 repo="$(cd "$repo_input" && pwd -P)"
 
-resolve_ctxpack_bin() {
-  if [[ -n "${CTXPACK_BIN:-}" ]]; then
-    if [[ ! "$CTXPACK_BIN" = /* || ! -x "$CTXPACK_BIN" ]]; then
-      echo "CTXPACK_BIN must be an absolute executable path: $CTXPACK_BIN" >&2
+resolve_ctxhelm_bin() {
+  if [[ -n "${CTXHELM_BIN:-}" ]]; then
+    if [[ ! "$CTXHELM_BIN" = /* || ! -x "$CTXHELM_BIN" ]]; then
+      echo "CTXHELM_BIN must be an absolute executable path: $CTXHELM_BIN" >&2
       exit 64
     fi
-    printf '%s\n' "$CTXPACK_BIN"
+    printf '%s\n' "$CTXHELM_BIN"
     return
   fi
-  cargo build -p ctxpack >/dev/null
-  printf '%s/target/debug/ctxpack\n' "$repo_root"
+  cargo build -p ctxhelm >/dev/null
+  printf '%s/target/debug/ctxhelm\n' "$repo_root"
 }
 
 work_dir="$(mktemp -d)"
@@ -92,8 +92,8 @@ cleanup() {
 }
 trap cleanup EXIT
 
-ctxpack_bin="$(resolve_ctxpack_bin)"
-ctxpack_version="$("$ctxpack_bin" --version)"
+ctxhelm_bin="$(resolve_ctxhelm_bin)"
+ctxhelm_version="$("$ctxhelm_bin" --version)"
 client_version="unavailable"
 if command -v claude >/dev/null 2>&1; then
   client_version="$(claude --version 2>&1 | head -n 1)"
@@ -141,7 +141,7 @@ payload = {
         "readFileCount": 0,
         "irrelevantReadCount": 0,
         "toolCallCount": 0,
-        "ctxpackToolCallCount": 0,
+        "ctxhelmToolCallCount": 0,
     },
     "sourceTextLogged": False,
     "rawTranscriptStored": False,
@@ -153,14 +153,14 @@ PY
 write_mcp_config() {
   local lane_dir="$1"
   local request_log="$2"
-  local wrapper="$lane_dir/ctxpack-mcp-server.sh"
+  local wrapper="$lane_dir/ctxhelm-mcp-server.sh"
   local config="$lane_dir/claude-mcp.json"
   {
     printf '%s\n' '#!/usr/bin/env bash'
     printf '%s\n' 'set -euo pipefail'
-    printf 'export CTXPACK_REAL_CLIENT_REQUEST_LOG=%q\n' "$request_log"
-    printf 'ctxpack_bin=%q\n' "$ctxpack_bin"
-    printf '%s\n' 'tee -a "$CTXPACK_REAL_CLIENT_REQUEST_LOG" | "$ctxpack_bin" serve-mcp'
+    printf 'export CTXHELM_REAL_CLIENT_REQUEST_LOG=%q\n' "$request_log"
+    printf 'ctxhelm_bin=%q\n' "$ctxhelm_bin"
+    printf '%s\n' 'tee -a "$CTXHELM_REAL_CLIENT_REQUEST_LOG" | "$ctxhelm_bin" serve-mcp'
   } >"$wrapper"
   chmod +x "$wrapper"
   python3 - "$config" "$wrapper" <<'PY'
@@ -170,7 +170,7 @@ import sys
 
 path, command = sys.argv[1:]
 pathlib.Path(path).write_text(
-    json.dumps({"mcpServers": {"ctxpack": {"command": command, "args": []}}}),
+    json.dumps({"mcpServers": {"ctxhelm": {"command": command, "args": []}}}),
     encoding="utf-8",
 )
 PY
@@ -184,11 +184,11 @@ run_lane() {
   mkdir -p "$lane_dir"
   local events="$lane_dir/events.jsonl"
   local stderr_log="$lane_dir/stderr.log"
-  local request_log="$lane_dir/ctxpack-requests.jsonl"
+  local request_log="$lane_dir/ctxhelm-requests.jsonl"
   local lane_json="$lane_dir/lane.json"
 
   if [[ "$run_real" != "1" && "$require_real" != "1" ]]; then
-    write_skip_lane "$lane" "$lane_json" "real Claude Code execution not requested; set CTXPACK_RUN_REAL_CLIENT=1"
+    write_skip_lane "$lane" "$lane_json" "real Claude Code execution not requested; set CTXHELM_RUN_REAL_CLIENT=1"
     printf '%s\n' "$lane_json"
     return
   fi
@@ -215,14 +215,14 @@ EOF
 )
   else
     mcp_config="$(write_mcp_config "$lane_dir" "$request_log")"
-    allowed="Read,Glob,Grep,LS,mcp__ctxpack__prepare_task"
+    allowed="Read,Glob,Grep,LS,mcp__ctxhelm__prepare_task"
     if [[ "$mode" == "brief" ]]; then
-      allowed="$allowed,mcp__ctxpack__get_pack"
+      allowed="$allowed,mcp__ctxhelm__get_pack"
     fi
     if [[ "$mode" == "plan" ]]; then
       prompt=$(cat <<EOF
 Do not edit files, do not run shell commands, and do not write files.
-First call ctxpack prepare_task with explicit repo "$repo" and task "$task".
+First call ctxhelm prepare_task with explicit repo "$repo" and task "$task".
 Then use native Read, Glob, Grep, or LS tools to inspect the most relevant implementation and validation files before answering.
 Return a short JSON object with keyFiles.
 EOF
@@ -230,8 +230,8 @@ EOF
     else
       prompt=$(cat <<EOF
 Do not edit files, do not run shell commands, and do not write files.
-First call ctxpack prepare_task with explicit repo "$repo" and task "$task".
-Then call ctxpack get_pack with explicit repo "$repo", the same task, budget "brief", format "json", and recordTrace false.
+First call ctxhelm prepare_task with explicit repo "$repo" and task "$task".
+Then call ctxhelm get_pack with explicit repo "$repo", the same task, budget "brief", format "json", and recordTrace false.
 Then use native Read, Glob, Grep, or LS tools to inspect the most relevant implementation and validation files before answering.
 Return a short JSON object with keyFiles.
 EOF
@@ -364,7 +364,7 @@ if events_file.exists():
                 if label and label not in read_files:
                     read_files.append(label)
 
-ctxpack_calls = []
+ctxhelm_calls = []
 if request_file.exists():
     for line in request_file.read_text(encoding="utf-8", errors="replace").splitlines():
         if not line.strip():
@@ -377,7 +377,7 @@ if request_file.exists():
             continue
         params = payload.get("params") or {}
         arguments = params.get("arguments") or {}
-        ctxpack_calls.append({
+        ctxhelm_calls.append({
             "name": params.get("name"),
             "hasRepo": arguments.get("repo") == repo_text,
             "hasTask": "task" in arguments,
@@ -406,18 +406,18 @@ payload = {
         "discoveredFileCount": len(discovered_files),
         "irrelevantReadCount": len(irrelevant_reads),
         "toolCallCount": len(tool_calls),
-        "ctxpackToolCallCount": len(ctxpack_calls),
+        "ctxhelmToolCallCount": len(ctxhelm_calls),
     },
     "targetHits": target_hits,
     "readFiles": read_files,
     "discoveredFiles": discovered_files,
     "irrelevantReads": irrelevant_reads,
     "toolCalls": tool_calls,
-    "ctxpackToolCalls": ctxpack_calls,
+    "ctxhelmToolCalls": ctxhelm_calls,
     "evidenceHashes": {
         "streamJsonSha256": events_hash,
         "stderrSha256": stderr_hash,
-        "ctxpackRequestLogSha256": request_hash,
+        "ctxhelmRequestLogSha256": request_hash,
     },
     "sourceTextLogged": False,
     "rawPromptStored": False,
@@ -430,16 +430,16 @@ PY
 }
 
 baseline_json="$(run_lane baseline baseline)"
-plan_json="$(run_lane ctxpack-plan plan)"
-brief_json="$(run_lane ctxpack-brief brief)"
+plan_json="$(run_lane ctxhelm-plan plan)"
+brief_json="$(run_lane ctxhelm-brief brief)"
 
-python3 - "$repo" "$task" "$ctxpack_version" "$client_version" "$target_json" "$baseline_json" "$plan_json" "$brief_json" "$output_path" <<'PY'
+python3 - "$repo" "$task" "$ctxhelm_version" "$client_version" "$target_json" "$baseline_json" "$plan_json" "$brief_json" "$output_path" <<'PY'
 import hashlib
 import json
 import pathlib
 import sys
 
-repo, task, ctxpack_version, client_version, target_path, *rest = sys.argv[1:]
+repo, task, ctxhelm_version, client_version, target_path, *rest = sys.argv[1:]
 lane_paths = rest[:3]
 output_path = rest[3]
 targets = json.loads(pathlib.Path(target_path).read_text(encoding="utf-8"))
@@ -451,25 +451,25 @@ best = max(
     key=lambda lane: (
         lane.get("metrics", {}).get("targetCoverage", 0.0),
         -lane.get("metrics", {}).get("irrelevantReadCount", 999_999),
-        lane.get("metrics", {}).get("ctxpackToolCallCount", 0),
+        lane.get("metrics", {}).get("ctxhelmToolCallCount", 0),
     ),
 )
 base_metrics = baseline.get("metrics", {})
 best_metrics = best.get("metrics", {})
 target_delta = best_metrics.get("targetCoverage", 0.0) - base_metrics.get("targetCoverage", 0.0)
 irrelevant_delta = base_metrics.get("irrelevantReadCount", 0) - best_metrics.get("irrelevantReadCount", 0)
-ctxpack_lanes = [lane for lane in lanes if lane.get("mode") in {"plan", "brief"}]
-ctxpack_called = any(lane.get("metrics", {}).get("ctxpackToolCallCount", 0) > 0 for lane in ctxpack_lanes)
+ctxhelm_lanes = [lane for lane in lanes if lane.get("mode") in {"plan", "brief"}]
+ctxhelm_called = any(lane.get("metrics", {}).get("ctxhelmToolCallCount", 0) > 0 for lane in ctxhelm_lanes)
 status = "passed" if any(lane.get("status") == "passed" for lane in lanes) else "skipped"
-if status == "passed" and not ctxpack_called:
+if status == "passed" and not ctxhelm_called:
     status = "degraded"
 
 payload = {
-    "schemaVersion": "ctxpack-agent-run-eval-v1",
+    "schemaVersion": "ctxhelm-agent-run-eval-v1",
     "status": status,
     "workflowKind": "paired-agent-context-run",
     "client": {"name": "claude", "version": client_version},
-    "ctxpackVersion": ctxpack_version,
+    "ctxhelmVersion": ctxhelm_version,
     "repo": {
         "label": pathlib.Path(repo).name,
         "pathSha256": hashlib.sha256(repo.encode("utf-8")).hexdigest(),
@@ -485,13 +485,13 @@ payload = {
         "bestLane": best.get("lane"),
         "targetCoverageDelta": target_delta,
         "irrelevantReadDelta": irrelevant_delta,
-        "ctxpackToolCallsObserved": ctxpack_called,
+        "ctxhelmToolCallsObserved": ctxhelm_called,
         "outcomeClaim": (
-            "ctxpack_improved"
-            if ctxpack_called and (target_delta > 0 or irrelevant_delta > 0)
+            "ctxhelm_improved"
+            if ctxhelm_called and (target_delta > 0 or irrelevant_delta > 0)
             else (
-                "ctxpack_matched"
-                if ctxpack_called and target_delta == 0 and irrelevant_delta == 0
+                "ctxhelm_matched"
+                if ctxhelm_called and target_delta == 0 and irrelevant_delta == 0
                 else "no_measured_lift"
             )
         ),

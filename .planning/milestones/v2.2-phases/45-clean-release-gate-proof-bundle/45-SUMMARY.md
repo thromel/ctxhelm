@@ -22,22 +22,22 @@
 
 - `bash -n scripts/audit-release-artifact.sh && bash -n scripts/release-package.sh && bash -n scripts/release-gate.sh && bash -n scripts/check-release-docs.sh`
 - `bash scripts/check-release-docs.sh`
-- `CARGO_TARGET_DIR=/tmp/ctxpack-target-release-packaging cargo test -p ctxpack --test release_packaging -- --nocapture`
-- `CTXPACK_ALLOW_DIRTY=1 CTXPACK_DIST_DIR=/tmp/ctxpack-phase45-dist CARGO_TARGET_DIR=/tmp/ctxpack-target-phase45-release bash scripts/release-package.sh`
-- `CTXPACK_ALLOW_DIRTY=1 CTXPACK_SKIP_REAL_CLIENT=1 CTXPACK_DIST_DIR=/tmp/ctxpack-phase45-gate-dist CTXPACK_PROOF_DIR=/tmp/ctxpack-phase45-proof CARGO_TARGET_DIR=/tmp/ctxpack-target-phase45-gate bash scripts/release-gate.sh`
+- `CARGO_TARGET_DIR=/tmp/ctxhelm-target-release-packaging cargo test -p ctxhelm --test release_packaging -- --nocapture`
+- `CTXHELM_ALLOW_DIRTY=1 CTXHELM_DIST_DIR=/tmp/ctxhelm-phase45-dist CARGO_TARGET_DIR=/tmp/ctxhelm-target-phase45-release bash scripts/release-package.sh`
+- `CTXHELM_ALLOW_DIRTY=1 CTXHELM_SKIP_REAL_CLIENT=1 CTXHELM_DIST_DIR=/tmp/ctxhelm-phase45-gate-dist CTXHELM_PROOF_DIR=/tmp/ctxhelm-phase45-proof CARGO_TARGET_DIR=/tmp/ctxhelm-target-phase45-gate bash scripts/release-gate.sh`
 
 ## Proof Evidence
 
 - Full deterministic release gate passed.
 - Workspace tests passed inside the release gate: 256 Rust tests plus doc tests.
 - Release package produced:
-  - `ctxpack-v1.1.0-aarch64-apple-darwin.tar.gz`
-  - `ctxpack-v1.1.0-aarch64-apple-darwin.manifest.json`
-  - `ctxpack-v1.1.0-aarch64-apple-darwin.audit.json`
-  - `ctxpack-v1.1.0-aarch64-apple-darwin.tar.gz.sha256`
+  - `ctxhelm-v1.1.0-aarch64-apple-darwin.tar.gz`
+  - `ctxhelm-v1.1.0-aarch64-apple-darwin.manifest.json`
+  - `ctxhelm-v1.1.0-aarch64-apple-darwin.audit.json`
+  - `ctxhelm-v1.1.0-aarch64-apple-darwin.tar.gz.sha256`
   - `sha256sums.txt`
 - Proof bundle summary was written to
-  `/tmp/ctxpack-phase45-proof/release-proof-summary.json`.
+  `/tmp/ctxhelm-phase45-proof/release-proof-summary.json`.
 - Proof summary recorded `privacyStatus.localOnly = true`,
   `sourceTextLogged = false`, benchmark proof `skipped`, Codex/Claude
   real-client proof `skipped`, and Cursor/OpenCode proof `not_claimed`.

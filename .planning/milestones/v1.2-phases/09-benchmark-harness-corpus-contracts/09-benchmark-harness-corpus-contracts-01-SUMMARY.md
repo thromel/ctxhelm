@@ -1,6 +1,6 @@
 # Summary: Plan 1
 
-Implemented typed benchmark suite contracts in `crates/ctxpack-compiler/src/eval.rs`:
+Implemented typed benchmark suite contracts in `crates/ctxhelm-compiler/src/eval.rs`:
 
 - `BenchmarkSuiteConfig`
 - `BenchmarkDefaults`

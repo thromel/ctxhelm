@@ -2,16 +2,16 @@
 phase: 01-compatibility-guardrails-module-boundaries
 plan: 03
 subsystem: indexing
-tags: [rust, ctxpack-index, module-boundaries, compatibility]
+tags: [rust, ctxhelm-index, module-boundaries, compatibility]
 
 requires:
   - phase: 01-compatibility-guardrails-module-boundaries
     provides: CLI, JSON, and MCP compatibility guardrails from Plans 01 and 02
 provides:
-  - Focused ctxpack-index modules behind stable crate-root exports
+  - Focused ctxhelm-index modules behind stable crate-root exports
   - Inventory, search, symbols, related-tests, dependencies, git/history/current-diff, and trace boundaries
   - Verified downstream compiler, MCP, and CLI compatibility after the split
-affects: [ctxpack-index, ctxpack-compiler, ctxpack-mcp, ctxpack-cli]
+affects: [ctxhelm-index, ctxhelm-compiler, ctxhelm-mcp, ctxhelm-cli]
 
 tech-stack:
   added: []
@@ -19,18 +19,18 @@ tech-stack:
 
 key-files:
   created:
-    - crates/ctxpack-index/src/inventory.rs
-    - crates/ctxpack-index/src/search.rs
-    - crates/ctxpack-index/src/symbols.rs
-    - crates/ctxpack-index/src/related_tests.rs
-    - crates/ctxpack-index/src/dependencies.rs
-    - crates/ctxpack-index/src/git.rs
-    - crates/ctxpack-index/src/traces.rs
+    - crates/ctxhelm-index/src/inventory.rs
+    - crates/ctxhelm-index/src/search.rs
+    - crates/ctxhelm-index/src/symbols.rs
+    - crates/ctxhelm-index/src/related_tests.rs
+    - crates/ctxhelm-index/src/dependencies.rs
+    - crates/ctxhelm-index/src/git.rs
+    - crates/ctxhelm-index/src/traces.rs
   modified:
-    - crates/ctxpack-index/src/lib.rs
+    - crates/ctxhelm-index/src/lib.rs
 
 key-decisions:
-  - "Kept ctxpack-index crate root as the public facade and re-exported existing API names from focused private modules."
+  - "Kept ctxhelm-index crate root as the public facade and re-exported existing API names from focused private modules."
   - "Kept existing co-located tests in lib.rs and exposed only test-needed git parsing helpers as crate-visible internals."
 
 patterns-established:
@@ -43,9 +43,9 @@ duration: 9m7s
 completed: 2026-05-13
 ---
 
-# Phase 01 Plan 03: Split ctxpack-index Summary
+# Phase 01 Plan 03: Split ctxhelm-index Summary
 
-**ctxpack-index now uses focused concern modules while preserving crate-root public imports for CLI, compiler, and MCP consumers.**
+**ctxhelm-index now uses focused concern modules while preserving crate-root public imports for CLI, compiler, and MCP consumers.**
 
 ## Performance
 
@@ -57,10 +57,10 @@ completed: 2026-05-13
 
 ## Accomplishments
 
-- Split inventory and lexical search out of the large `ctxpack-index/src/lib.rs` into `inventory.rs` and `search.rs`.
+- Split inventory and lexical search out of the large `ctxhelm-index/src/lib.rs` into `inventory.rs` and `search.rs`.
 - Split symbols, related test inference, and local dependency graph logic into `symbols.rs`, `related_tests.rs`, and `dependencies.rs`.
 - Split git-backed co-change/current-diff/history logic and eval trace persistence into `git.rs` and `traces.rs`.
-- Preserved crate-root public exports used by `ctxpack-compiler`, `ctxpack-mcp`, and the CLI.
+- Preserved crate-root public exports used by `ctxhelm-compiler`, `ctxhelm-mcp`, and the CLI.
 
 ## Task Commits
 
@@ -70,18 +70,18 @@ completed: 2026-05-13
 
 ## Files Created/Modified
 
-- `crates/ctxpack-index/src/lib.rs` - Crate-root facade with module declarations and public re-exports.
-- `crates/ctxpack-index/src/inventory.rs` - Inventory contracts, persistence, repo IDs, hashes, and path classification helpers.
-- `crates/ctxpack-index/src/search.rs` - Lexical search options, results, query tokenization, and scoring.
-- `crates/ctxpack-index/src/symbols.rs` - Symbol extraction and symbol search.
-- `crates/ctxpack-index/src/related_tests.rs` - Related-test inference, test map, and package-aware test command selection.
-- `crates/ctxpack-index/src/dependencies.rs` - Safe local import/dependency edge extraction.
-- `crates/ctxpack-index/src/git.rs` - Co-change hints, current-diff summaries, historical commit samples, and git helpers.
-- `crates/ctxpack-index/src/traces.rs` - Source-free eval trace append/list persistence.
+- `crates/ctxhelm-index/src/lib.rs` - Crate-root facade with module declarations and public re-exports.
+- `crates/ctxhelm-index/src/inventory.rs` - Inventory contracts, persistence, repo IDs, hashes, and path classification helpers.
+- `crates/ctxhelm-index/src/search.rs` - Lexical search options, results, query tokenization, and scoring.
+- `crates/ctxhelm-index/src/symbols.rs` - Symbol extraction and symbol search.
+- `crates/ctxhelm-index/src/related_tests.rs` - Related-test inference, test map, and package-aware test command selection.
+- `crates/ctxhelm-index/src/dependencies.rs` - Safe local import/dependency edge extraction.
+- `crates/ctxhelm-index/src/git.rs` - Co-change hints, current-diff summaries, historical commit samples, and git helpers.
+- `crates/ctxhelm-index/src/traces.rs` - Source-free eval trace append/list persistence.
 
 ## Decisions Made
 
-- Kept `ctxpack-index` import-compatible by re-exporting all existing public types and functions from `lib.rs`.
+- Kept `ctxhelm-index` import-compatible by re-exporting all existing public types and functions from `lib.rs`.
 - Kept shared inventory helpers `pub(crate)` rather than public, matching the module-boundary goal without expanding the API.
 - Kept tests co-located in `lib.rs` to avoid mixing structural refactor with test relocation.
 
@@ -100,18 +100,18 @@ None. The only placeholder-related match is the existing `is_placeholder_test_sc
 
 ## Verification
 
-- `cargo test -p ctxpack-index inventory -- --nocapture`
-- `cargo test -p ctxpack-index lexical_search -- --nocapture`
-- `cargo test -p ctxpack-index symbol -- --nocapture`
-- `cargo test -p ctxpack-index related_tests -- --nocapture`
-- `cargo test -p ctxpack-index dependency -- --nocapture`
-- `cargo test -p ctxpack-index current_diff -- --nocapture`
-- `cargo test -p ctxpack-index historical_commit -- --nocapture`
-- `cargo test -p ctxpack-index eval_traces -- --nocapture`
-- `cargo test -p ctxpack-index`
-- `cargo test -p ctxpack-compiler`
-- `cargo test -p ctxpack-mcp`
-- `cargo test -p ctxpack --test cli_compat`
+- `cargo test -p ctxhelm-index inventory -- --nocapture`
+- `cargo test -p ctxhelm-index lexical_search -- --nocapture`
+- `cargo test -p ctxhelm-index symbol -- --nocapture`
+- `cargo test -p ctxhelm-index related_tests -- --nocapture`
+- `cargo test -p ctxhelm-index dependency -- --nocapture`
+- `cargo test -p ctxhelm-index current_diff -- --nocapture`
+- `cargo test -p ctxhelm-index historical_commit -- --nocapture`
+- `cargo test -p ctxhelm-index eval_traces -- --nocapture`
+- `cargo test -p ctxhelm-index`
+- `cargo test -p ctxhelm-compiler`
+- `cargo test -p ctxhelm-mcp`
+- `cargo test -p ctxhelm --test cli_compat`
 - `cargo test --workspace`
 
 ## User Setup Required
@@ -120,7 +120,7 @@ None - no external service configuration required.
 
 ## Next Phase Readiness
 
-Plan 04 can split `ctxpack-compiler` and `ctxpack-mcp` behind stable facades with the existing compatibility guardrails still passing.
+Plan 04 can split `ctxhelm-compiler` and `ctxhelm-mcp` behind stable facades with the existing compatibility guardrails still passing.
 
 ## Self-Check: PASSED
 

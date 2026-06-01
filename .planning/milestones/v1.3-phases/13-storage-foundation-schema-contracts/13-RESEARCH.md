@@ -5,20 +5,20 @@
 
 ## Research Summary
 
-Phase 13 should add a small SQLite storage layer under `crates/ctxpack-index` while preserving the current JSON/JSONL state paths as fallback. The best dependency choice for the current Rust CLI is `rusqlite = "0.39.0"` with the `bundled` feature so the local CLI remains portable and does not require users to have a system SQLite development package installed.
+Phase 13 should add a small SQLite storage layer under `crates/ctxhelm-index` while preserving the current JSON/JSONL state paths as fallback. The best dependency choice for the current Rust CLI is `rusqlite = "0.39.0"` with the `bundled` feature so the local CLI remains portable and does not require users to have a system SQLite development package installed.
 
 ## Relevant Existing Patterns
 
-- `crates/ctxpack-index/src/inventory.rs` already owns `CTXPACK_HOME`, repo IDs, inventory path resolution, source-free inventory metadata, and JSON inventory persistence.
-- `crates/ctxpack-index/src/traces.rs` already owns source-free trace append/list behavior under `~/.ctxpack/repos/<repo-id>/traces.jsonl`.
-- `crates/ctxpack-index/src/freshness.rs` already compares stored inventory metadata against current repo state and emits stale diagnostics.
+- `crates/ctxhelm-index/src/inventory.rs` already owns `CTXHELM_HOME`, repo IDs, inventory path resolution, source-free inventory metadata, and JSON inventory persistence.
+- `crates/ctxhelm-index/src/traces.rs` already owns source-free trace append/list behavior under `~/.ctxhelm/repos/<repo-id>/traces.jsonl`.
+- `crates/ctxhelm-index/src/freshness.rs` already compares stored inventory metadata against current repo state and emits stale diagnostics.
 - Workspace dependency versions are centralized in root `Cargo.toml` and consumed from crate manifests.
-- Tests use `tempfile` plus isolated `CTXPACK_HOME`; storage tests should follow that pattern.
+- Tests use `tempfile` plus isolated `CTXHELM_HOME`; storage tests should follow that pattern.
 
 ## Dependency Notes
 
 - `rusqlite 0.39.0` is the current crates.io version checked during planning.
-- Use `rusqlite` in `crates/ctxpack-index`, not the CLI crate, so storage is available to compiler and MCP consumers through the index facade.
+- Use `rusqlite` in `crates/ctxhelm-index`, not the CLI crate, so storage is available to compiler and MCP consumers through the index facade.
 - Prefer `bundled` for portability. This is a local CLI binary, not a server deployment; avoiding system SQLite setup friction is worth the slightly larger build.
 
 ## Planning Implications
@@ -32,11 +32,11 @@ Phase 13 should add a small SQLite storage layer under `crates/ctxpack-index` wh
 
 Phase 13 validation should include:
 
-- Unit tests for store path resolution under `CTXPACK_HOME`, `HOME`, and explicit override.
+- Unit tests for store path resolution under `CTXHELM_HOME`, `HOME`, and explicit override.
 - Unit tests for schema initialization and idempotent migration records.
 - Unit tests or integration tests that initialize a store and assert all required table names exist.
 - Privacy fixture test that creates repo files containing unique source strings and verifies the SQLite file does not contain those strings.
-- Workspace validation with `cargo test --workspace` and `cargo run -p ctxpack -- --help`.
+- Workspace validation with `cargo test --workspace` and `cargo run -p ctxhelm -- --help`.
 
 ## Open Risks
 

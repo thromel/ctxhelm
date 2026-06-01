@@ -1,0 +1,26 @@
+{
+  "commitsAhead": 19,
+  "currentCommit": "a07e6be31a0605af1810e79cb18b34245fa7def0",
+  "gitRelation": "current_descends_from_release",
+  "privacyStatus": {
+    "localOnly": true,
+    "remoteEmbeddingsUsed": false,
+    "remoteRerankingUsed": false,
+    "sourceTextLogged": false
+  },
+  "publishedAt": "2026-05-31T21:42:54Z",
+  "releaseTargetCommit": "68383cbfc2fff00c4f53fbd2b7bf90527ac4bd7e",
+  "releaseUrl": "https://github.com/thromel/ctxhelm/releases/tag/v1.1.0",
+  "repo": "thromel/ctxhelm",
+  "schemaVersion": 1,
+  "sourceFree": true,
+  "status": "outdated",
+  "tag": "v1.1.0",
+  "unsupportedActions": [
+    "publishing",
+    "tag creation",
+    "asset upload",
+    "global install",
+    "global agent config mutation"
+  ]
+}

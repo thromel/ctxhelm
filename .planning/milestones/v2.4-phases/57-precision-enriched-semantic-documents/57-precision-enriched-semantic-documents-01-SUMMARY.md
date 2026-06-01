@@ -15,7 +15,7 @@ requirements_addressed:
 
 ## What Changed
 
-- Added shared source-free semantic document contracts in `ctxpack-core`.
+- Added shared source-free semantic document contracts in `ctxhelm-core`.
 - Added index-side semantic document construction from safe file metadata, symbols, dependency edges, related tests, docs, and precision overlays.
 - Replaced semantic search/vector inputs with source-free semantic document text instead of raw file bodies.
 - Added precision status reporting through semantic provider status.
@@ -29,13 +29,13 @@ Semantic documents and persisted vector metadata now report `sourceTextLogged=fa
 
 ## Verification
 
-- `cargo test -p ctxpack-core --no-fail-fast`
-- `cargo test -p ctxpack-index semantic --no-fail-fast`
-- `cargo test -p ctxpack-compiler semantic --no-fail-fast`
-- `CTXPACK_BIN=target/debug/ctxpack bash scripts/smoke-semantic.sh`
-- `CTXPACK_BIN=target/debug/ctxpack bash scripts/smoke-precision.sh`
+- `cargo test -p ctxhelm-core --no-fail-fast`
+- `cargo test -p ctxhelm-index semantic --no-fail-fast`
+- `cargo test -p ctxhelm-compiler semantic --no-fail-fast`
+- `CTXHELM_BIN=target/debug/ctxhelm bash scripts/smoke-semantic.sh`
+- `CTXHELM_BIN=target/debug/ctxhelm bash scripts/smoke-precision.sh`
 - `cargo test --workspace --no-fail-fast`
-- `cargo run -p ctxpack -- --help`
+- `cargo run -p ctxhelm -- --help`
 
 All listed verification passed.
 

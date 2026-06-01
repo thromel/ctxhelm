@@ -16,7 +16,7 @@ provenance, and blocks active application when thresholds fail.
    reports.
 3. Add guarded `apply` behavior so profiles with failed thresholds cannot
    become active.
-4. Add `ctxpack eval policy learn` with threshold arguments and Markdown/JSON
+4. Add `ctxhelm eval policy learn` with threshold arguments and Markdown/JSON
    output.
 5. Extend CLI tests for learned profile provenance, threshold pass/fail, apply,
    rollback, and source-free output.
@@ -26,9 +26,9 @@ provenance, and blocks active application when thresholds fail.
 
 - `cargo fmt --all`
 - `CARGO_INCREMENTAL=0 cargo check --workspace`
-- `CARGO_INCREMENTAL=0 cargo test -p ctxpack --test cli_compat eval_policy_and_outcome_reports_are_source_free`
-- `CARGO_INCREMENTAL=0 cargo run -p ctxpack -- eval policy learn --help`
-- `CARGO_INCREMENTAL=0 cargo run -p ctxpack -- --help`
+- `CARGO_INCREMENTAL=0 cargo test -p ctxhelm --test cli_compat eval_policy_and_outcome_reports_are_source_free`
+- `CARGO_INCREMENTAL=0 cargo run -p ctxhelm -- eval policy learn --help`
+- `CARGO_INCREMENTAL=0 cargo run -p ctxhelm -- --help`
 - `CARGO_INCREMENTAL=0 cargo test --workspace`
 - `git diff --check`
 - `gsd-sdk query roadmap.analyze`

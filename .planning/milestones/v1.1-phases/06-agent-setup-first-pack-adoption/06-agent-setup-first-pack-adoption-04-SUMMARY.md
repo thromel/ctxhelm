@@ -7,7 +7,7 @@ requires:
   - phase: 06-agent-setup-first-pack-adoption
     provides: setup-check command and refreshed adapter guidance
 provides:
-  - `CTXPACK_BIN` support for deterministic MCP protocol smoke
+  - `CTXHELM_BIN` support for deterministic MCP protocol smoke
   - `scripts/smoke-first-pack.sh` install-to-first-pack adoption smoke
   - CI/local guard tests for MCP protocol and first-pack script contracts
 affects: [release-gates, troubleshooting-docs, installed-binary-validation]
@@ -16,9 +16,9 @@ tech-stack:
   patterns: [selected-binary smoke scripts, temp repo adoption fixture, machine-checkable JSON validation]
 key-files:
   created: [.planning/phases/06-agent-setup-first-pack-adoption/06-agent-setup-first-pack-adoption-04-SUMMARY.md, scripts/smoke-first-pack.sh]
-  modified: [scripts/smoke-mcp-protocol.sh, crates/ctxpack/tests/cli_compat.rs]
+  modified: [scripts/smoke-mcp-protocol.sh, crates/ctxhelm/tests/cli_compat.rs]
 key-decisions:
-  - "First-pack smoke uses `CTXPACK_BIN` or `command -v ctxpack`, not cargo, for the user-facing path."
+  - "First-pack smoke uses `CTXHELM_BIN` or `command -v ctxhelm`, not cargo, for the user-facing path."
   - "Deterministic MCP protocol proof remains the hard gate; real Codex/Claude clients stay optional."
 patterns-established:
   - "Adoption smokes should use explicit `repo` arguments and validate structured JSON rather than assistant prose."
@@ -41,7 +41,7 @@ completed: 2026-05-13
 
 ## Accomplishments
 
-- Updated `scripts/smoke-mcp-protocol.sh` to honor `CTXPACK_BIN` while preserving cargo fallback.
+- Updated `scripts/smoke-mcp-protocol.sh` to honor `CTXHELM_BIN` while preserving cargo fallback.
 - Added `scripts/smoke-first-pack.sh`, which creates a temp git repo, runs init/setup-check, proves MCP, and validates prepare-task/get-pack JSON.
 - Added script-contract and execution tests for the MCP and first-pack smoke paths.
 
@@ -52,9 +52,9 @@ completed: 2026-05-13
 
 ## Files Created/Modified
 
-- `scripts/smoke-mcp-protocol.sh` - Supports selected installed/debug binary via `CTXPACK_BIN`.
+- `scripts/smoke-mcp-protocol.sh` - Supports selected installed/debug binary via `CTXHELM_BIN`.
 - `scripts/smoke-first-pack.sh` - Runs the end-to-end first-pack adoption smoke.
-- `crates/ctxpack/tests/cli_compat.rs` - Guards script contracts and executes first-pack smoke with the cargo-built binary.
+- `crates/ctxhelm/tests/cli_compat.rs` - Guards script contracts and executes first-pack smoke with the cargo-built binary.
 
 ## Decisions Made
 
@@ -79,11 +79,11 @@ None - no external service configuration required.
 
 ## Verification
 
-- `cargo test -p ctxpack --test cli_compat mcp_protocol -- --nocapture` - passed
-- `cargo test -p ctxpack --test cli_compat first_pack -- --nocapture` - passed
-- `cargo build -p ctxpack && CTXPACK_BIN="$(pwd)/target/debug/ctxpack" bash scripts/smoke-first-pack.sh` - passed
+- `cargo test -p ctxhelm --test cli_compat mcp_protocol -- --nocapture` - passed
+- `cargo test -p ctxhelm --test cli_compat first_pack -- --nocapture` - passed
+- `cargo build -p ctxhelm && CTXHELM_BIN="$(pwd)/target/debug/ctxhelm" bash scripts/smoke-first-pack.sh` - passed
 - `cargo test --workspace` - passed
-- `cargo run -p ctxpack -- --help` - passed
+- `cargo run -p ctxhelm -- --help` - passed
 
 ## Self-Check: PASSED
 

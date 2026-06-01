@@ -38,8 +38,8 @@ Add fixed-corpus semantic/precision/reranker evaluation gates and release proof 
 
 <task id="60.1" name="Extend benchmark variants for semantic and precision gates">
 <read_first>
-- `crates/ctxpack-compiler/src/eval.rs`
-- `crates/ctxpack-core/src/contracts.rs`
+- `crates/ctxhelm-compiler/src/eval.rs`
+- `crates/ctxhelm-core/src/contracts.rs`
 - `docs/benchmarking.md`
 - `scripts/smoke-v23-eval.sh`
 </read_first>
@@ -48,7 +48,7 @@ Add benchmark variant controls for lexical, lexical+graph, local semantic, preci
 </action>
 <verify>
 - Add eval tests for variant construction and skipped policy-blocked variants.
-- Run `cargo test -p ctxpack-compiler eval`.
+- Run `cargo test -p ctxhelm-compiler eval`.
 </verify>
 <acceptance_criteria>
 - Variants are deterministic for a fixed corpus manifest.
@@ -58,15 +58,15 @@ Add benchmark variant controls for lexical, lexical+graph, local semantic, preci
 
 <task id="60.2" name="Add gate metrics and named case diagnostics">
 <read_first>
-- `crates/ctxpack-compiler/src/eval.rs`
-- `crates/ctxpack-core/src/contracts.rs`
+- `crates/ctxhelm-compiler/src/eval.rs`
+- `crates/ctxhelm-core/src/contracts.rs`
 </read_first>
 <action>
 Extend reports with Recall@K, MRR@K where available, Test Recall@K, candidate precision proxy, token efficiency, runtime, cache status, named wins, named regressions, and named misses.
 </action>
 <verify>
 - Add tests using a small fixed manifest with known wins/regressions.
-- Run `cargo test -p ctxpack-compiler eval`.
+- Run `cargo test -p ctxhelm-compiler eval`.
 </verify>
 <acceptance_criteria>
 - Mixed results are visible in named-case diagnostics.
@@ -76,8 +76,8 @@ Extend reports with Recall@K, MRR@K where available, Test Recall@K, candidate pr
 
 <task id="60.3" name="Implement promote, hold, and block release gate">
 <read_first>
-- `crates/ctxpack-compiler/src/eval.rs`
-- `crates/ctxpack-core/src/contracts.rs`
+- `crates/ctxhelm-compiler/src/eval.rs`
+- `crates/ctxhelm-core/src/contracts.rs`
 - `docs/release.md`
 </read_first>
 <action>
@@ -85,7 +85,7 @@ Implement a release gate decision that can promote, hold, or block based on thre
 </action>
 <verify>
 - Add tests for promote, hold, block, missing report, critical regression, and unsafe privacy state.
-- Run `cargo test -p ctxpack-compiler gate`.
+- Run `cargo test -p ctxhelm-compiler gate`.
 </verify>
 <acceptance_criteria>
 - Unsafe privacy or unapproved provider state blocks release proof.
@@ -126,7 +126,7 @@ After all verification passes, update milestone state, roadmap checkboxes, and r
 </action>
 <verify>
 - Run `cargo test --workspace`.
-- Run `cargo run -p ctxpack -- --help`.
+- Run `cargo run -p ctxhelm -- --help`.
 - Run `git diff --check`.
 </verify>
 <acceptance_criteria>
@@ -138,12 +138,12 @@ After all verification passes, update milestone state, roadmap checkboxes, and r
 </tasks>
 
 <verification>
-- `cargo test -p ctxpack-compiler eval`
-- `cargo test -p ctxpack-compiler gate`
+- `cargo test -p ctxhelm-compiler eval`
+- `cargo test -p ctxhelm-compiler gate`
 - `scripts/smoke-v23-eval.sh`
 - v2.4 semantic/precision gate smoke script
 - `cargo test --workspace`
-- `cargo run -p ctxpack -- --help`
+- `cargo run -p ctxhelm -- --help`
 </verification>
 
 <success_criteria>

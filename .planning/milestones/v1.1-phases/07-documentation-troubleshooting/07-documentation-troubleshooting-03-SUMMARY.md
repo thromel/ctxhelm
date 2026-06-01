@@ -7,7 +7,7 @@ requires:
   - phase: 07-documentation-troubleshooting
     provides: README quickstart and agent setup docs from Plans 01-02
 provides:
-  - Troubleshooting reference for install, PATH, MCP startup, CTXPACK_HOME, cleanup, wrong-cwd, setup-check, and pack resource issues
+  - Troubleshooting reference for install, PATH, MCP startup, CTXHELM_HOME, cleanup, wrong-cwd, setup-check, and pack resource issues
   - Expanded release docs checker covering README, release, quickstart, agent setup, and troubleshooting docs
   - Rust integration test contract for Phase 7 docs consistency checks
 affects: [phase-08-release-gates, docs, packaging]
@@ -16,7 +16,7 @@ tech-stack:
   patterns: [grep-based docs consistency gate, TDD docs checker contract]
 key-files:
   created: [docs/troubleshooting.md]
-  modified: [scripts/check-release-docs.sh, crates/ctxpack/tests/release_packaging.rs]
+  modified: [scripts/check-release-docs.sh, crates/ctxhelm/tests/release_packaging.rs]
 key-decisions:
   - "The docs gate remains a narrow grep-based shell check instead of a Markdown parser."
   - "Troubleshooting docs state setup-check validates repo-local artifacts only and does not run real agent clients."
@@ -41,7 +41,7 @@ completed: 2026-05-13
 
 ## Accomplishments
 
-- Added `docs/troubleshooting.md` covering PATH failures, absolute MCP binary paths, `CTXPACK_HOME`, uninstall/state cleanup, wrong cwd, MCP startup, stdout cleanliness, setup-check scope, and session-scoped pack resources.
+- Added `docs/troubleshooting.md` covering PATH failures, absolute MCP binary paths, `CTXHELM_HOME`, uninstall/state cleanup, wrong cwd, MCP startup, stdout cleanliness, setup-check scope, and session-scoped pack resources.
 - Added a failing Rust docs-gate contract first, then expanded `scripts/check-release-docs.sh` to satisfy it.
 - Verified the checker, focused release docs test, CLI help, and full workspace tests.
 
@@ -55,7 +55,7 @@ completed: 2026-05-13
 
 - `docs/troubleshooting.md` - Operational troubleshooting and state cleanup reference.
 - `scripts/check-release-docs.sh` - Docs consistency checks for Phase 7 docs and unsupported proof claims.
-- `crates/ctxpack/tests/release_packaging.rs` - Integration-test contract for the docs checker.
+- `crates/ctxhelm/tests/release_packaging.rs` - Integration-test contract for the docs checker.
 
 ## Decisions Made
 
@@ -80,23 +80,23 @@ None - no external service configuration required.
 
 ## Next Phase Readiness
 
-Phase 8 release gates can reuse `bash scripts/check-release-docs.sh`, `cargo test --workspace`, and `cargo run -p ctxpack -- --help` as documentation and release-readiness checks.
+Phase 8 release gates can reuse `bash scripts/check-release-docs.sh`, `cargo test --workspace`, and `cargo run -p ctxhelm -- --help` as documentation and release-readiness checks.
 
 ## Verification
 
-- `python3 -c 'from pathlib import Path; d=Path("docs/troubleshooting.md").read_text(); required=["command not found","absolute","PATH","CTXPACK_HOME","~/.ctxpack","uninstall","state cleanup","wrong cwd","explicit `--repo`","MCP startup","stdout","setup-check","does not run real agent clients","session-scoped","get_pack"]; missing=[s for s in required if s not in d]; assert not missing, missing'`
-- RED: `cargo test -p ctxpack --test release_packaging release_docs -- --nocapture` failed on missing `docs/quickstart.md` checker coverage before script changes.
-- GREEN: `bash -n scripts/check-release-docs.sh && bash scripts/check-release-docs.sh && cargo test -p ctxpack --test release_packaging release_docs -- --nocapture`
+- `python3 -c 'from pathlib import Path; d=Path("docs/troubleshooting.md").read_text(); required=["command not found","absolute","PATH","CTXHELM_HOME","~/.ctxhelm","uninstall","state cleanup","wrong cwd","explicit `--repo`","MCP startup","stdout","setup-check","does not run real agent clients","session-scoped","get_pack"]; missing=[s for s in required if s not in d]; assert not missing, missing'`
+- RED: `cargo test -p ctxhelm --test release_packaging release_docs -- --nocapture` failed on missing `docs/quickstart.md` checker coverage before script changes.
+- GREEN: `bash -n scripts/check-release-docs.sh && bash scripts/check-release-docs.sh && cargo test -p ctxhelm --test release_packaging release_docs -- --nocapture`
 - `bash scripts/check-release-docs.sh`
-- `cargo test -p ctxpack --test release_packaging release_docs -- --nocapture`
-- `cargo run -p ctxpack -- --help`
+- `cargo test -p ctxhelm --test release_packaging release_docs -- --nocapture`
+- `cargo run -p ctxhelm -- --help`
 - `cargo test --workspace`
 
 ## Self-Check: PASSED
 
 - Found created file: `docs/troubleshooting.md`
 - Found modified file: `scripts/check-release-docs.sh`
-- Found modified file: `crates/ctxpack/tests/release_packaging.rs`
+- Found modified file: `crates/ctxhelm/tests/release_packaging.rs`
 - Found task commit: `7f99bd8`
 - Found task commit: `5c08619`
 - Found task commit: `bd1a0e2`

@@ -41,7 +41,7 @@ completed: 2026-05-13
 ## Accomplishments
 
 - Added `docs/agent-setup.md` with generated artifacts, write scope, global-config mutation status, setup-check coverage, and proof status for all four target clients.
-- Defined deterministic protocol proof as direct JSON-RPC/MCP smoke through `ctxpack serve-mcp` with explicit-repo `prepare_task` and `get_pack` evidence.
+- Defined deterministic protocol proof as direct JSON-RPC/MCP smoke through `ctxhelm serve-mcp` with explicit-repo `prepare_task` and `get_pack` evidence.
 - Documented optional real-client proof for Codex CLI and Claude Code while avoiding unsupported Cursor/OpenCode tool-call claims.
 
 ## Task Commits

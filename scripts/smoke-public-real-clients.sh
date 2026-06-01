@@ -5,10 +5,10 @@ usage() {
   cat >&2 <<'EOF'
 usage: smoke-public-real-clients.sh [--repo OWNER/REPO] [--tag TAG] [--target-label TARGET] [--expected-version VERSION] [--smoke-repo PATH] [--output PATH]
 
-Downloads ctxpack release assets from the public GitHub release URL, verifies
+Downloads ctxhelm release assets from the public GitHub release URL, verifies
 the archive, and runs the Codex CLI plus Claude Code MCP smoke wrappers against
 the extracted release binary. Real-client checks remain optional unless
-CTXPACK_REQUIRE_REAL_CLIENT=1 is set; skipped clients write source-free evidence
+CTXHELM_REQUIRE_REAL_CLIENT=1 is set; skipped clients write source-free evidence
 when an output path is provided.
 
 This script does not install globally, mutate agent configuration, publish,
@@ -16,10 +16,10 @@ upload, create tags, or run user project tests.
 EOF
 }
 
-repo="thromel/ctxpack"
+repo="thromel/ctxhelm"
 tag="v1.1.7"
 target_label="$(rustc -vV 2>/dev/null | awk '/^host:/ { print $2 }')"
-expected_version="ctxpack 1.1.7"
+expected_version="ctxhelm 1.1.7"
 smoke_repo="$PWD"
 output_path=""
 
@@ -100,7 +100,7 @@ else
 fi
 
 version="${tag#v}"
-prefix="ctxpack-v${version}-${target_label}"
+prefix="ctxhelm-v${version}-${target_label}"
 archive_name="${prefix}.tar.gz"
 manifest_name="${prefix}.manifest.json"
 audit_name="${prefix}.audit.json"
@@ -136,13 +136,13 @@ bash "$verify_release_archive_script" \
   --checksums "$download_dir/$checksums_name" >/dev/null
 
 tar -xzf "$download_dir/$archive_name" -C "$extract_dir"
-ctxpack_bin="$extract_dir/$prefix/ctxpack"
-if [[ ! -x "$ctxpack_bin" ]]; then
-  echo "extracted ctxpack binary missing or not executable: $ctxpack_bin" >&2
+ctxhelm_bin="$extract_dir/$prefix/ctxhelm"
+if [[ ! -x "$ctxhelm_bin" ]]; then
+  echo "extracted ctxhelm binary missing or not executable: $ctxhelm_bin" >&2
   exit 65
 fi
 
-version_output="$("$ctxpack_bin" --version)"
+version_output="$("$ctxhelm_bin" --version)"
 if [[ "$version_output" != "$expected_version" ]]; then
   echo "version mismatch: $version_output != $expected_version" >&2
   exit 65
@@ -154,22 +154,22 @@ run_smoke() {
   local stdout_log="$work_dir/${client}.stdout"
   local stderr_log="$work_dir/${client}.stderr"
   set +e
-  local require_resource_scope="${CTXPACK_REQUIRE_RESOURCE_SCOPE:-1}"
-  if [[ "$expected_version" == "ctxpack 1.1.0" ]]; then
-    require_resource_scope="${CTXPACK_PUBLIC_SMOKE_REQUIRE_RESOURCE_SCOPE:-0}"
+  local require_resource_scope="${CTXHELM_REQUIRE_RESOURCE_SCOPE:-1}"
+  if [[ "$expected_version" == "ctxhelm 1.1.0" ]]; then
+    require_resource_scope="${CTXHELM_PUBLIC_SMOKE_REQUIRE_RESOURCE_SCOPE:-0}"
   fi
-  CTXPACK_BIN="$ctxpack_bin" \
-    CTXPACK_SMOKE_REPO="$smoke_repo" \
-    CTXPACK_RUN_REAL_CLIENT="${CTXPACK_RUN_REAL_CLIENT:-1}" \
-    CTXPACK_REQUIRE_REAL_CLIENT="${CTXPACK_REQUIRE_REAL_CLIENT:-0}" \
-    CTXPACK_SKIP_REAL_CLIENT="${CTXPACK_SKIP_REAL_CLIENT:-0}" \
-    CTXPACK_REQUIRE_RESOURCE_SCOPE="$require_resource_scope" \
-    CTXPACK_REAL_CLIENT_EVIDENCE_DIR="$evidence_dir" \
+  CTXHELM_BIN="$ctxhelm_bin" \
+    CTXHELM_SMOKE_REPO="$smoke_repo" \
+    CTXHELM_RUN_REAL_CLIENT="${CTXHELM_RUN_REAL_CLIENT:-1}" \
+    CTXHELM_REQUIRE_REAL_CLIENT="${CTXHELM_REQUIRE_REAL_CLIENT:-0}" \
+    CTXHELM_SKIP_REAL_CLIENT="${CTXHELM_SKIP_REAL_CLIENT:-0}" \
+    CTXHELM_REQUIRE_RESOURCE_SCOPE="$require_resource_scope" \
+    CTXHELM_REAL_CLIENT_EVIDENCE_DIR="$evidence_dir" \
     bash "$script" >"$stdout_log" 2>"$stderr_log"
   local status=$?
   set -e
   printf '%s\n' "$status" >"$work_dir/${client}.status"
-  if [[ "$status" != "0" && "${CTXPACK_REQUIRE_REAL_CLIENT:-0}" == "1" ]]; then
+  if [[ "$status" != "0" && "${CTXHELM_REQUIRE_REAL_CLIENT:-0}" == "1" ]]; then
     echo "public ${client} real-client smoke failed; see wrapper diagnostics above" >&2
   fi
 }

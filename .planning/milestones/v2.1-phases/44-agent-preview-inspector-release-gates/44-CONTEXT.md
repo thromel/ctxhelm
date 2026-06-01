@@ -5,9 +5,9 @@
 
 ## Goal
 
-Users can preview how ctxpack will present context to Codex, Claude Code,
+Users can preview how ctxhelm will present context to Codex, Claude Code,
 Cursor, OpenCode, and generic MCP clients while preserving the product boundary:
-ctxpack recommends files, packs, tests, tools, and constraints; coding agents
+ctxhelm recommends files, packs, tests, tools, and constraints; coding agents
 own file reads, edits, shell commands, and approvals.
 
 ## Requirements
@@ -26,7 +26,7 @@ own file reads, edits, shell commands, and approvals.
 - Phase 41: retrieval-health reports
 - Phase 42: graph neighborhoods
 - Phase 43: semantic provider and policy experiment reports
-- Existing adapter guidance from `ctxpack_core::init`
+- Existing adapter guidance from `ctxhelm_core::init`
 
 ## Non-goals
 

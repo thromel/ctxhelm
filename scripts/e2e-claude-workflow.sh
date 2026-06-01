@@ -2,31 +2,31 @@
 set -euo pipefail
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
-ctxpack_root="${CTXPACK_ROOT:-$(cd "$script_dir/.." && pwd -P)}"
-claude_smoke_script="$ctxpack_root/scripts/smoke-claude-mcp.sh"
-repo_input="${CTXPACK_SMOKE_REPO:-$PWD}"
-task="${CTXPACK_SMOKE_TASK:-fix requireSession auth bug}"
-anchor_path="${CTXPACK_SMOKE_PATH:-crates/ctxpack-mcp/src/lib.rs}"
-query="${CTXPACK_SMOKE_QUERY:-prepare_task}"
-report_path="${CTXPACK_CLAUDE_WORKFLOW_REPORT:-}"
-require_real="${CTXPACK_REQUIRE_REAL_CLIENT:-0}"
-run_real="${CTXPACK_RUN_REAL_CLIENT:-0}"
+ctxhelm_root="${CTXHELM_ROOT:-$(cd "$script_dir/.." && pwd -P)}"
+claude_smoke_script="$ctxhelm_root/scripts/smoke-claude-mcp.sh"
+repo_input="${CTXHELM_SMOKE_REPO:-$PWD}"
+task="${CTXHELM_SMOKE_TASK:-fix requireSession auth bug}"
+anchor_path="${CTXHELM_SMOKE_PATH:-crates/ctxhelm-mcp/src/lib.rs}"
+query="${CTXHELM_SMOKE_QUERY:-prepare_task}"
+report_path="${CTXHELM_CLAUDE_WORKFLOW_REPORT:-}"
+require_real="${CTXHELM_REQUIRE_REAL_CLIENT:-0}"
+run_real="${CTXHELM_RUN_REAL_CLIENT:-0}"
 
-resolve_ctxpack_bin() {
-  if [[ -n "${CTXPACK_BIN:-}" ]]; then
-    if [[ ! "$CTXPACK_BIN" = /* ]]; then
-      echo "CTXPACK_BIN must be absolute: $CTXPACK_BIN" >&2
+resolve_ctxhelm_bin() {
+  if [[ -n "${CTXHELM_BIN:-}" ]]; then
+    if [[ ! "$CTXHELM_BIN" = /* ]]; then
+      echo "CTXHELM_BIN must be absolute: $CTXHELM_BIN" >&2
       exit 64
     fi
-    if [[ ! -x "$CTXPACK_BIN" ]]; then
-      echo "CTXPACK_BIN is not executable: $CTXPACK_BIN" >&2
+    if [[ ! -x "$CTXHELM_BIN" ]]; then
+      echo "CTXHELM_BIN is not executable: $CTXHELM_BIN" >&2
       exit 64
     fi
-    printf '%s/%s\n' "$(cd "$(dirname "$CTXPACK_BIN")" && pwd -P)" "$(basename "$CTXPACK_BIN")"
+    printf '%s/%s\n' "$(cd "$(dirname "$CTXHELM_BIN")" && pwd -P)" "$(basename "$CTXHELM_BIN")"
     return
   fi
-  cargo build -p ctxpack >/dev/null
-  printf '%s/target/debug/ctxpack\n' "$ctxpack_root"
+  cargo build -p ctxhelm >/dev/null
+  printf '%s/target/debug/ctxhelm\n' "$ctxhelm_root"
 }
 
 write_report() {
@@ -34,14 +34,14 @@ write_report() {
   local status="$2"
   local smoke_status="$3"
   local repo="$4"
-  local ctxpack_version="$5"
+  local ctxhelm_version="$5"
   local client_version="$6"
   local smoke_stdout="$7"
   local smoke_stderr="$8"
   local evidence_file="$9"
   local summary_file="${10}"
 
-  python3 - "$path" "$status" "$smoke_status" "$repo" "$task" "$ctxpack_version" "$client_version" "$smoke_stdout" "$smoke_stderr" "$evidence_file" "$summary_file" "$require_real" "$run_real" <<'PY'
+  python3 - "$path" "$status" "$smoke_status" "$repo" "$task" "$ctxhelm_version" "$client_version" "$smoke_stdout" "$smoke_stderr" "$evidence_file" "$summary_file" "$require_real" "$run_real" <<'PY'
 import hashlib
 import json
 import pathlib
@@ -53,7 +53,7 @@ import sys
     smoke_status,
     repo,
     task,
-    ctxpack_version,
+    ctxhelm_version,
     client_version,
     smoke_stdout,
     smoke_stderr,
@@ -91,11 +91,11 @@ request_hash = summary.get("requestLogSha256") or evidence.get("requestLogSha256
 client_version = client_version or evidence.get("clientVersion") or "unavailable"
 
 payload = {
-    "schemaVersion": "ctxpack-claude-workflow-eval-v1",
+    "schemaVersion": "ctxhelm-claude-workflow-eval-v1",
     "workflowKind": "claude-code-mcp-context-workflow",
     "status": status,
     "smokeExitStatus": int(smoke_status),
-    "ctxpackVersion": ctxpack_version,
+    "ctxhelmVersion": ctxhelm_version,
     "client": "claude",
     "clientVersion": client_version,
     "repo": {
@@ -167,8 +167,8 @@ PY
 }
 
 repo="$(cd "$repo_input" && pwd -P)"
-ctxpack_bin="$(resolve_ctxpack_bin)"
-ctxpack_version="$("$ctxpack_bin" --version)"
+ctxhelm_bin="$(resolve_ctxhelm_bin)"
+ctxhelm_version="$("$ctxhelm_bin" --version)"
 client_version=""
 if command -v claude >/dev/null 2>&1; then
   client_version="$(claude --version 2>&1 | head -n 1)"
@@ -180,21 +180,21 @@ cleanup() {
 }
 trap cleanup EXIT
 
-evidence_dir="${CTXPACK_CLAUDE_WORKFLOW_EVIDENCE_DIR:-"$work_dir/evidence"}"
+evidence_dir="${CTXHELM_CLAUDE_WORKFLOW_EVIDENCE_DIR:-"$work_dir/evidence"}"
 mkdir -p "$evidence_dir"
 stdout_log="$work_dir/claude-workflow-stdout.log"
 stderr_log="$work_dir/claude-workflow-stderr.log"
 
 set +e
-CTXPACK_BIN="$ctxpack_bin" \
-  CTXPACK_ROOT="$ctxpack_root" \
-  CTXPACK_SMOKE_REPO="$repo" \
-  CTXPACK_SMOKE_TASK="$task" \
-  CTXPACK_SMOKE_PATH="$anchor_path" \
-  CTXPACK_SMOKE_QUERY="$query" \
-  CTXPACK_REAL_CLIENT_EVIDENCE_DIR="$evidence_dir" \
-  CTXPACK_RUN_REAL_CLIENT="$run_real" \
-  CTXPACK_REQUIRE_REAL_CLIENT="$require_real" \
+CTXHELM_BIN="$ctxhelm_bin" \
+  CTXHELM_ROOT="$ctxhelm_root" \
+  CTXHELM_SMOKE_REPO="$repo" \
+  CTXHELM_SMOKE_TASK="$task" \
+  CTXHELM_SMOKE_PATH="$anchor_path" \
+  CTXHELM_SMOKE_QUERY="$query" \
+  CTXHELM_REAL_CLIENT_EVIDENCE_DIR="$evidence_dir" \
+  CTXHELM_RUN_REAL_CLIENT="$run_real" \
+  CTXHELM_REQUIRE_REAL_CLIENT="$require_real" \
   bash "$claude_smoke_script" >"$stdout_log" 2>"$stderr_log"
 smoke_status=$?
 set -e
@@ -209,7 +209,7 @@ else
   workflow_status="failed"
 fi
 
-write_report "$report_path" "$workflow_status" "$smoke_status" "$repo" "$ctxpack_version" "$client_version" "$stdout_log" "$stderr_log" "$evidence_file" "$summary_file"
+write_report "$report_path" "$workflow_status" "$smoke_status" "$repo" "$ctxhelm_version" "$client_version" "$stdout_log" "$stderr_log" "$evidence_file" "$summary_file"
 
 if [[ "$workflow_status" == "failed" ]]; then
   cat "$stderr_log" >&2
@@ -217,7 +217,7 @@ if [[ "$workflow_status" == "failed" ]]; then
 fi
 
 if [[ "$workflow_status" == "passed" ]]; then
-  echo "ctxpack Claude workflow eval passed"
+  echo "ctxhelm Claude workflow eval passed"
 else
-  echo "ctxpack Claude workflow eval skipped"
+  echo "ctxhelm Claude workflow eval skipped"
 fi

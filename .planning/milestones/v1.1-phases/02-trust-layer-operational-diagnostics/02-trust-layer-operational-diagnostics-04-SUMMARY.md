@@ -2,7 +2,7 @@
 phase: 02-trust-layer-operational-diagnostics
 plan: 04
 subsystem: trust-layer
-tags: [rust, ctxpack-compiler, diagnostics, safe-source-reads, context-packs, context-cards]
+tags: [rust, ctxhelm-compiler, diagnostics, safe-source-reads, context-packs, context-cards]
 
 requires:
   - phase: 02-trust-layer-operational-diagnostics
@@ -12,7 +12,7 @@ provides:
   - Pack snippet source revalidation through fresh safe inventory and read_safe_source
   - Source-free context cards generated from fresh inventory with degraded-input diagnostics
   - Deterministic weak-plan and snippet revalidation fixtures
-affects: [ctxpack-compiler, ctxpack-index, ctxpack-cli, trust-layer-operational-diagnostics]
+affects: [ctxhelm-compiler, ctxhelm-index, ctxhelm-cli, trust-layer-operational-diagnostics]
 
 tech-stack:
   added: []
@@ -25,12 +25,12 @@ key-files:
   created:
     - .planning/phases/02-trust-layer-operational-diagnostics/02-trust-layer-operational-diagnostics-04-SUMMARY.md
   modified:
-    - crates/ctxpack-compiler/src/lib.rs
-    - crates/ctxpack-compiler/src/planning.rs
-    - crates/ctxpack-compiler/src/packs.rs
-    - crates/ctxpack-compiler/src/cards.rs
-    - crates/ctxpack-index/src/lib.rs
-    - crates/ctxpack/src/main.rs
+    - crates/ctxhelm-compiler/src/lib.rs
+    - crates/ctxhelm-compiler/src/planning.rs
+    - crates/ctxhelm-compiler/src/packs.rs
+    - crates/ctxhelm-compiler/src/cards.rs
+    - crates/ctxhelm-index/src/lib.rs
+    - crates/ctxhelm/src/main.rs
 
 key-decisions:
   - "Compiler planning consumes diagnostic report APIs and mirrors warning/error diagnostics into riskFlags for compatibility."
@@ -80,12 +80,12 @@ Each task was committed atomically:
 
 ## Files Created/Modified
 
-- `crates/ctxpack-compiler/src/lib.rs` - Added deterministic TDD fixtures for weak plans, source-free diagnostics, pack revalidation, and fresh source-free cards.
-- `crates/ctxpack-compiler/src/planning.rs` - Wires diagnostic report APIs into `ContextPlan.diagnostics` and riskFlag projection.
-- `crates/ctxpack-compiler/src/packs.rs` - Revalidates snippet reads with fresh inventory and emits pack warnings/diagnostics for skipped paths.
-- `crates/ctxpack-compiler/src/cards.rs` - Generates cards from fresh inventory and report APIs with additive report diagnostics.
-- `crates/ctxpack-index/src/lib.rs` - Re-exports `SOURCE_READ_MAX_BYTES` for compiler source-read reuse.
-- `crates/ctxpack/src/main.rs` - Updates the CLI card renderer test fixture for the additive diagnostics field.
+- `crates/ctxhelm-compiler/src/lib.rs` - Added deterministic TDD fixtures for weak plans, source-free diagnostics, pack revalidation, and fresh source-free cards.
+- `crates/ctxhelm-compiler/src/planning.rs` - Wires diagnostic report APIs into `ContextPlan.diagnostics` and riskFlag projection.
+- `crates/ctxhelm-compiler/src/packs.rs` - Revalidates snippet reads with fresh inventory and emits pack warnings/diagnostics for skipped paths.
+- `crates/ctxhelm-compiler/src/cards.rs` - Generates cards from fresh inventory and report APIs with additive report diagnostics.
+- `crates/ctxhelm-index/src/lib.rs` - Re-exports `SOURCE_READ_MAX_BYTES` for compiler source-read reuse.
+- `crates/ctxhelm/src/main.rs` - Updates the CLI card renderer test fixture for the additive diagnostics field.
 
 ## Decisions Made
 
@@ -101,7 +101,7 @@ Each task was committed atomically:
 - **Found during:** Overall workspace verification after Task 2
 - **Issue:** Adding diagnostics to `ContextCardsReport` required the CLI renderer unit-test fixture to populate the new additive field.
 - **Fix:** Added `diagnostics: Vec::new()` to the fixture while preserving existing rendering assertions.
-- **Files modified:** `crates/ctxpack/src/main.rs`
+- **Files modified:** `crates/ctxhelm/src/main.rs`
 - **Verification:** `cargo test --workspace` passed.
 - **Committed in:** `e735210`
 
@@ -125,13 +125,13 @@ None. Stub scan found no `TODO`, `FIXME`, placeholder text, or hardcoded empty U
 
 ## Verification
 
-- `cargo test -p ctxpack-compiler diagnostics -- --nocapture` passed.
-- `cargo test -p ctxpack-compiler low_information -- --nocapture` passed.
-- `cargo test -p ctxpack-compiler unavailable -- --nocapture` passed.
-- `cargo test -p ctxpack-compiler pack -- --nocapture` passed.
-- `cargo test -p ctxpack-compiler revalidates -- --nocapture` passed.
-- `cargo test -p ctxpack-compiler cards -- --nocapture` passed.
-- `cargo test -p ctxpack-compiler` passed.
+- `cargo test -p ctxhelm-compiler diagnostics -- --nocapture` passed.
+- `cargo test -p ctxhelm-compiler low_information -- --nocapture` passed.
+- `cargo test -p ctxhelm-compiler unavailable -- --nocapture` passed.
+- `cargo test -p ctxhelm-compiler pack -- --nocapture` passed.
+- `cargo test -p ctxhelm-compiler revalidates -- --nocapture` passed.
+- `cargo test -p ctxhelm-compiler cards -- --nocapture` passed.
+- `cargo test -p ctxhelm-compiler` passed.
 - `cargo test --workspace` passed.
 
 ## User Setup Required

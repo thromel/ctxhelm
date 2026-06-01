@@ -9,7 +9,7 @@ Started on 2026-05-17.
 - Added `WorkspaceContextPlan` and `WorkspaceRepoPlan` contracts.
 - Added compiler support for workspace-aware `prepare-task`.
 - Added CLI support:
-  - `ctxpack workspace prepare-task <task> --repo <path>`
+  - `ctxhelm workspace prepare-task <task> --repo <path>`
 - Added source-free routing tests:
   - core contract test
   - compiler repo-routing test
@@ -32,10 +32,10 @@ All passed:
 ```bash
 cargo fmt --all --check
 bash scripts/check-release-docs.sh
-CTXPACK_BIN=/tmp/ctxpack-target/debug/ctxpack bash scripts/smoke-workspace.sh
-CARGO_TARGET_DIR=/tmp/ctxpack-target cargo run -p ctxpack -- workspace prepare-task --help
-CARGO_TARGET_DIR=/tmp/ctxpack-target cargo test -p ctxpack-core workspace -- --nocapture
-CARGO_TARGET_DIR=/tmp/ctxpack-target cargo test -p ctxpack-compiler workspace -- --nocapture
-CARGO_TARGET_DIR=/tmp/ctxpack-target cargo test -p ctxpack workspace --test cli_compat -- --nocapture
-CARGO_TARGET_DIR=/tmp/ctxpack-target cargo test --workspace
+CTXHELM_BIN=/tmp/ctxhelm-target/debug/ctxhelm bash scripts/smoke-workspace.sh
+CARGO_TARGET_DIR=/tmp/ctxhelm-target cargo run -p ctxhelm -- workspace prepare-task --help
+CARGO_TARGET_DIR=/tmp/ctxhelm-target cargo test -p ctxhelm-core workspace -- --nocapture
+CARGO_TARGET_DIR=/tmp/ctxhelm-target cargo test -p ctxhelm-compiler workspace -- --nocapture
+CARGO_TARGET_DIR=/tmp/ctxhelm-target cargo test -p ctxhelm workspace --test cli_compat -- --nocapture
+CARGO_TARGET_DIR=/tmp/ctxhelm-target cargo test --workspace
 ```

@@ -22,11 +22,11 @@ learned retrieval-policy profiles from source-free local evidence.
 
 ## Implementation Areas
 
-- `crates/ctxpack-core/src/contracts.rs`
-- `crates/ctxpack-index/src/feedback.rs`
-- `crates/ctxpack-index/src/lib.rs`
-- `crates/ctxpack/src/main.rs`
-- `crates/ctxpack/tests/cli_compat.rs`
+- `crates/ctxhelm-core/src/contracts.rs`
+- `crates/ctxhelm-index/src/feedback.rs`
+- `crates/ctxhelm-index/src/lib.rs`
+- `crates/ctxhelm/src/main.rs`
+- `crates/ctxhelm/tests/cli_compat.rs`
 - `docs/feedback.md`
 - `docs/feature-exports.md`
 - `docs/learned-policy.md`

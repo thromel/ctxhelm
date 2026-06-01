@@ -32,13 +32,13 @@ lexical baseline.
 - `local_hash` reports as `deterministic_scaffold` with
   `qualityBackend=false`.
 - `local_fastembed` reports as `production_local` with `qualityBackend=true`.
-- Fastembed model cache defaults to repo `.ctxpack/cache/fastembed` inside a git
-  repo, otherwise `CTXPACK_HOME/cache/fastembed`, and can be overridden with
-  `CTXPACK_FASTEMBED_CACHE_DIR`.
+- Fastembed model cache defaults to repo `.ctxhelm/cache/fastembed` inside a git
+  repo, otherwise `CTXHELM_HOME/cache/fastembed`, and can be overridden with
+  `CTXHELM_FASTEMBED_CACHE_DIR`.
 - Fastembed source-free vector reuse is bounded in process.
 - Fastembed query-time candidate embedding is bounded by
-  `CTXPACK_FASTEMBED_DOCUMENT_LIMIT`, default `128`.
-- `.ctxpack/cache/` and `.fastembed_cache/` are excluded from repo inventory and
+  `CTXHELM_FASTEMBED_DOCUMENT_LIMIT`, default `128`.
+- `.ctxhelm/cache/` and `.fastembed_cache/` are excluded from repo inventory and
   git tracking.
 
 ## Evidence
@@ -49,15 +49,15 @@ Source-free E2E summary:
 
 Ignored large JSON artifacts:
 
-- `.ctxpack/e2e/phase62-default-report.json`
-- `.ctxpack/e2e/phase62-local-hash-report.json`
-- `.ctxpack/e2e/phase62-local-fastembed-report.json`
-- `.ctxpack/e2e/phase62-local-fastembed-status.json`
-- `.ctxpack/e2e/phase62-local-fastembed-minilm-status.json`
+- `.ctxhelm/e2e/phase62-default-report.json`
+- `.ctxhelm/e2e/phase62-local-hash-report.json`
+- `.ctxhelm/e2e/phase62-local-fastembed-report.json`
+- `.ctxhelm/e2e/phase62-local-fastembed-status.json`
+- `.ctxhelm/e2e/phase62-local-fastembed-minilm-status.json`
 
 ## Results
 
-| Variant | RefactoringMiner Recall@10 | ctxpack Recall@10 | Total repo runtime |
+| Variant | RefactoringMiner Recall@10 | ctxhelm Recall@10 | Total repo runtime |
 | --- | ---: | ---: | ---: |
 | Default, semantic off | 0.7767 | 0.2299 | 26.3s |
 | `local_hash` | 0.7767 | 0.2299 | 57.8s |

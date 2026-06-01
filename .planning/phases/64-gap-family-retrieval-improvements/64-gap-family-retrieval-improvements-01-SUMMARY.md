@@ -34,7 +34,7 @@ RefactoringMiner:
 - test Recall@10: unchanged at `0.0`
 - protected miss rate: `0.0 -> 0.0526`
 
-ctxpack:
+ctxhelm:
 
 - Recall@10: `0.2049 -> 0.1947`
 - MRR@K: `0.6333 -> 0.6083`
@@ -44,10 +44,10 @@ ctxpack:
 ## Validation
 
 ```bash
-cargo test -p ctxpack-compiler -- --nocapture
-cargo run -p ctxpack -- eval benchmark --config .ctxpack/e2e/phase62-default-config.json --format json
+cargo test -p ctxhelm-compiler -- --nocapture
+cargo run -p ctxhelm -- eval benchmark --config .ctxhelm/e2e/phase62-default-config.json --format json
 cargo test --workspace --no-fail-fast
-cargo run -p ctxpack -- --help
+cargo run -p ctxhelm -- --help
 git diff --check
 ```
 
@@ -56,9 +56,9 @@ All validation commands passed.
 ## Follow-Up
 
 - Phase 65 should decide whether this default is shippable given the small
-  ctxpack Recall@10 regression.
+  ctxhelm Recall@10 regression.
 - Symbol protected evidence still has budget pressure when exact lexical and
   symbol candidates exceed the pack budget.
 - The next retrieval-quality work should address test mapping for
-  `src/test/java/org/refactoringminer/mcp/*.java` and ctxpack documentation
+  `src/test/java/org/refactoringminer/mcp/*.java` and ctxhelm documentation
   `no_candidate_signal` gaps.

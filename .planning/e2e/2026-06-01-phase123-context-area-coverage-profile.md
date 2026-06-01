@@ -14,10 +14,10 @@ batch.
 ```bash
 cargo fmt --all -- --check
 bash -n scripts/smoke-mcp-protocol.sh scripts/check-release-docs.sh
-cargo test -p ctxpack-mcp resources_public_uri_shapes_are_stable -- --nocapture
-cargo build -p ctxpack
-CTXPACK_BIN="$(pwd)/target/debug/ctxpack" \
-  CTXPACK_SMOKE_REPO="$(pwd)" \
+cargo test -p ctxhelm-mcp resources_public_uri_shapes_are_stable -- --nocapture
+cargo build -p ctxhelm
+CTXHELM_BIN="$(pwd)/target/debug/ctxhelm" \
+  CTXHELM_SMOKE_REPO="$(pwd)" \
   bash scripts/smoke-mcp-protocol.sh
 bash scripts/check-release-docs.sh
 ```
@@ -26,12 +26,12 @@ bash scripts/check-release-docs.sh
 
 Durable proof:
 
-- `.ctxpack/e2e/phase123-context-area-coverage-profile.json`
+- `.ctxhelm/e2e/phase123-context-area-coverage-profile.json`
 
 The proof records:
 
-- `ctxpack://repo/context-areas` entries include `coverageProfile`.
-- `ctxpack://repo/context-area/{encoded-area}` includes `coverageProfile`.
+- `ctxhelm://repo/context-areas` entries include `coverageProfile`.
+- `ctxhelm://repo/context-area/{encoded-area}` includes `coverageProfile`.
 - `coverageProfile.sourceTextLogged = false`.
 - Specific area resources expose `recommendedFirstBatch`.
 - MCP protocol smoke checks the new field.

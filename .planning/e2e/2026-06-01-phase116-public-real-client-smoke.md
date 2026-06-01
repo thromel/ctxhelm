@@ -11,29 +11,29 @@ published `v1.1.0` GitHub archive binary, not a build-tree binary.
 
 ```bash
 bash scripts/smoke-public-real-clients.sh \
-  --repo thromel/ctxpack \
+  --repo thromel/ctxhelm \
   --tag v1.1.0 \
   --target-label aarch64-apple-darwin \
-  --expected-version "ctxpack 1.1.0" \
+  --expected-version "ctxhelm 1.1.0" \
   --smoke-repo "$(pwd)" \
-  --output .ctxpack/e2e/phase116-public-real-client-smoke.json
+  --output .ctxhelm/e2e/phase116-public-real-client-smoke.json
 ```
 
 ## Result
 
 The public release archive was downloaded from GitHub, checksum-verified,
-archive-verified, extracted, and used as the selected `CTXPACK_BIN`.
+archive-verified, extracted, and used as the selected `CTXHELM_BIN`.
 
 Summary artifact:
 
-- `.ctxpack/e2e/phase116-public-real-client-smoke.json`
+- `.ctxhelm/e2e/phase116-public-real-client-smoke.json`
 
 Evidence sidecars:
 
-- `.ctxpack/e2e/phase116-public-real-client-smoke-evidence/codex-mcp-evidence.json`
-- `.ctxpack/e2e/phase116-public-real-client-smoke-evidence/codex-mcp-request-summary.json`
-- `.ctxpack/e2e/phase116-public-real-client-smoke-evidence/claude-mcp-evidence.json`
-- `.ctxpack/e2e/phase116-public-real-client-smoke-evidence/claude-mcp-request-summary.json`
+- `.ctxhelm/e2e/phase116-public-real-client-smoke-evidence/codex-mcp-evidence.json`
+- `.ctxhelm/e2e/phase116-public-real-client-smoke-evidence/codex-mcp-request-summary.json`
+- `.ctxhelm/e2e/phase116-public-real-client-smoke-evidence/claude-mcp-evidence.json`
+- `.ctxhelm/e2e/phase116-public-real-client-smoke-evidence/claude-mcp-request-summary.json`
 
 ## Client Verdicts
 
@@ -44,11 +44,11 @@ Evidence sidecars:
 
 Codex was installed but exited before producing machine-checkable tool-call
 evidence. Because real-client proof is optional unless
-`CTXPACK_REQUIRE_REAL_CLIENT=1`, this is recorded as source-free skip evidence,
+`CTXHELM_REQUIRE_REAL_CLIENT=1`, this is recorded as source-free skip evidence,
 not as a product failure or as passed Codex proof.
 
 Claude Code produced server-side request-log evidence for explicit-repo
-`prepare_task` and `get_pack` calls through the released `ctxpack 1.1.0` binary.
+`prepare_task` and `get_pack` calls through the released `ctxhelm 1.1.0` binary.
 
 ## Privacy And Boundary
 

@@ -6,7 +6,7 @@
 <domain>
 ## Phase Boundary
 
-Create ctxpack's first durable local SQLite storage layer: store location resolution, source-free schema contracts, version/migration metadata, and privacy tests. This phase establishes the storage foundation only. Incremental indexing behavior, storage-backed benchmark comparison, and operational repair/cleanup commands belong to Phases 14-16.
+Create ctxhelm's first durable local SQLite storage layer: store location resolution, source-free schema contracts, version/migration metadata, and privacy tests. This phase establishes the storage foundation only. Incremental indexing behavior, storage-backed benchmark comparison, and operational repair/cleanup commands belong to Phases 14-16.
 
 </domain>
 
@@ -14,9 +14,9 @@ Create ctxpack's first durable local SQLite storage layer: store location resolu
 ## Implementation Decisions
 
 ### Store Location
-- **D-01:** Default durable storage should remain user-local under `CTXPACK_HOME` or `~/.ctxpack`, matching the current inventory and trace state model.
+- **D-01:** Default durable storage should remain user-local under `CTXHELM_HOME` or `~/.ctxhelm`, matching the current inventory and trace state model.
 - **D-02:** The store path must be explicit in metadata and diagnostics so users can see exactly which SQLite file is being used.
-- **D-03:** Repo-local `.ctxpack/` remains for repo-owned config, generated cards, and adapter artifacts. Do not default to committing or storing the SQLite database in the repo.
+- **D-03:** Repo-local `.ctxhelm/` remains for repo-owned config, generated cards, and adapter artifacts. Do not default to committing or storing the SQLite database in the repo.
 - **D-04:** Allow an explicit store path override for tests, advanced users, and future repo-local/cloud-task workflows, but keep the default private and local.
 
 ### Source-Free Boundary
@@ -56,12 +56,12 @@ Create ctxpack's first durable local SQLite storage layer: store location resolu
 - `.planning/codebase/INTEGRATIONS.md` — current local filesystem storage, MCP surfaces, and no database/remote-service integrations.
 
 ### Existing Storage Code
-- `crates/ctxpack-index/src/inventory.rs` — current inventory path resolution, JSON inventory persistence, `CTXPACK_HOME` fallback, and safe inventory report.
-- `crates/ctxpack-index/src/traces.rs` — current source-free trace append/list path.
-- `crates/ctxpack-index/src/freshness.rs` — current inventory freshness metadata and stale-cache diagnostics.
-- `crates/ctxpack-core/src/contracts.rs` — stable typed contracts that storage records must not break.
-- `crates/ctxpack/src/main.rs` — CLI command boundary and existing index/eval command flows.
-- `crates/ctxpack-mcp/src/resources.rs` — current session-scoped MCP pack resource cache.
+- `crates/ctxhelm-index/src/inventory.rs` — current inventory path resolution, JSON inventory persistence, `CTXHELM_HOME` fallback, and safe inventory report.
+- `crates/ctxhelm-index/src/traces.rs` — current source-free trace append/list path.
+- `crates/ctxhelm-index/src/freshness.rs` — current inventory freshness metadata and stale-cache diagnostics.
+- `crates/ctxhelm-core/src/contracts.rs` — stable typed contracts that storage records must not break.
+- `crates/ctxhelm/src/main.rs` — CLI command boundary and existing index/eval command flows.
+- `crates/ctxhelm-mcp/src/resources.rs` — current session-scoped MCP pack resource cache.
 
 </canonical_refs>
 
@@ -69,31 +69,31 @@ Create ctxpack's first durable local SQLite storage layer: store location resolu
 ## Existing Code Insights
 
 ### Reusable Assets
-- `ctxpack_index::ctxpack_home()` pattern in `crates/ctxpack-index/src/inventory.rs`: reuse the same `CTXPACK_HOME` / `HOME/.ctxpack` fallback model for default store location.
-- `repo_id_for_path()` in `crates/ctxpack-index/src/inventory.rs`: reuse deterministic local repo IDs for storage partitioning.
-- `InventoryMetadata` and freshness checks in `crates/ctxpack-index/src/freshness.rs`: reuse metadata concepts for schema version, options fingerprint, ignore-policy drift, and stale diagnostics.
-- Source-free eval and pack contracts in `crates/ctxpack-core/src/contracts.rs`: use these as the privacy baseline for stored trace, benchmark, and pack metadata.
+- `ctxhelm_index::ctxhelm_home()` pattern in `crates/ctxhelm-index/src/inventory.rs`: reuse the same `CTXHELM_HOME` / `HOME/.ctxhelm` fallback model for default store location.
+- `repo_id_for_path()` in `crates/ctxhelm-index/src/inventory.rs`: reuse deterministic local repo IDs for storage partitioning.
+- `InventoryMetadata` and freshness checks in `crates/ctxhelm-index/src/freshness.rs`: reuse metadata concepts for schema version, options fingerprint, ignore-policy drift, and stale diagnostics.
+- Source-free eval and pack contracts in `crates/ctxhelm-core/src/contracts.rs`: use these as the privacy baseline for stored trace, benchmark, and pack metadata.
 
 ### Established Patterns
 - Public data flows are typed Rust structs serialized to JSON at the CLI/MCP boundary. Storage should follow the same typed-contract pattern.
 - Current state writes are local-only and best-effort where possible. Storage failures should degrade with diagnostics instead of hiding low-confidence behavior.
-- Tests already use `tempfile` and isolated `CTXPACK_HOME`; storage tests should follow that fixture style.
+- Tests already use `tempfile` and isolated `CTXHELM_HOME`; storage tests should follow that fixture style.
 
 ### Integration Points
-- `crates/ctxpack-index` is the natural first home for storage path resolution and repository metadata persistence.
-- `crates/ctxpack-core` should own shared typed storage-facing contracts only if they become public across crates.
-- `crates/ctxpack-compiler` will later use storage for benchmark/proof/pack metadata, but Phase 13 should avoid prematurely rewiring every compiler path.
-- `crates/ctxpack-mcp` should surface storage diagnostics only after CLI/index storage contracts exist.
+- `crates/ctxhelm-index` is the natural first home for storage path resolution and repository metadata persistence.
+- `crates/ctxhelm-core` should own shared typed storage-facing contracts only if they become public across crates.
+- `crates/ctxhelm-compiler` will later use storage for benchmark/proof/pack metadata, but Phase 13 should avoid prematurely rewiring every compiler path.
+- `crates/ctxhelm-mcp` should surface storage diagnostics only after CLI/index storage contracts exist.
 
 </code_context>
 
 <specifics>
 ## Specific Ideas
 
-- Add a focused storage module, likely under `crates/ctxpack-index`, with `StoreConfig`, `StorePaths`, `StorageMetadata`, `SchemaVersion`, and typed record structs.
+- Add a focused storage module, likely under `crates/ctxhelm-index`, with `StoreConfig`, `StorePaths`, `StorageMetadata`, `SchemaVersion`, and typed record structs.
 - Use SQLite as the durable store, but keep source-free JSON/JSONL fallback behavior during Phase 13.
 - Add tests that insert realistic source-like fixture text into repo files and assert the SQLite database does not contain that raw text.
-- Store path diagnostics should mention whether storage came from `CTXPACK_HOME`, default home, repo-local explicit override, or test override.
+- Store path diagnostics should mention whether storage came from `CTXHELM_HOME`, default home, repo-local explicit override, or test override.
 - Migration history should be queryable without opening source files.
 
 </specifics>

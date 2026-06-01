@@ -1,12 +1,12 @@
 # Distribution Metadata
 
-ctxpack v1.1.7 ships through public release archives and a public Apple Silicon
+ctxhelm v1.1.7 ships through public release archives and a public Apple Silicon
 Homebrew tap. This document records the distribution metadata and the boundaries
 for channels that remain deferred.
 
 ## Package Templates
 
-- `packaging/homebrew/ctxpack.rb.template` renders the `thromel/tap/ctxpack`
+- `packaging/homebrew/ctxhelm.rb.template` renders the `thromel/tap/ctxhelm`
   Homebrew formula from the current release archive URL and SHA-256 digest.
 - `packaging/crates/README.md` records crates.io preparation checks, not a
   registry publication claim.
@@ -17,7 +17,7 @@ for channels that remain deferred.
   version, GitHub release archive URL, and SHA-256 digest.
 - `scripts/verify-homebrew-tap.sh` verifies the published `thromel/tap`
   formula by tapping it, checking Ruby syntax/style/audit, installing it through
-  Homebrew, running the formula test, and checking `ctxpack --version`.
+  Homebrew, running the formula test, and checking `ctxhelm --version`.
 
 The metadata is local-only and source-free. It does not include raw source,
 prompts, secrets, terminal logs, or machine-local paths.
@@ -28,14 +28,14 @@ Verify an already-built archive from a clean temporary extraction directory:
 
 ```bash
 bash scripts/verify-release-archive.sh \
-  --archive dist/ctxpack-v1.1.7-aarch64-apple-darwin.tar.gz \
-  --manifest dist/ctxpack-v1.1.7-aarch64-apple-darwin.manifest.json \
+  --archive dist/ctxhelm-v1.1.7-aarch64-apple-darwin.tar.gz \
+  --manifest dist/ctxhelm-v1.1.7-aarch64-apple-darwin.manifest.json \
   --checksums dist/sha256sums.txt
 ```
 
 The verifier checks checksum consistency, extracts the archive into a temporary
-directory, runs `ctxpack --version`, runs `ctxpack --help`, and runs
-`ctxpack doctor` against the extracted binary and release manifest. It does not install binaries, mutate global agent configuration, publish artifacts, or run user project tests.
+directory, runs `ctxhelm --version`, runs `ctxhelm --help`, and runs
+`ctxhelm doctor` against the extracted binary and release manifest. It does not install binaries, mutate global agent configuration, publish artifacts, or run user project tests.
 
 ## Update Metadata Boundary
 
@@ -55,17 +55,17 @@ Apple Silicon macOS users can install from the public tap:
 
 ```bash
 brew tap thromel/tap
-brew install ctxpack
-ctxpack --version
+brew install ctxhelm
+ctxhelm --version
 ```
 
 The v1.1.7 tap proof verifies:
 
 - `brew tap thromel/tap`
-- `brew audit --strict --new ctxpack`
-- `brew install thromel/tap/ctxpack`
-- `brew test thromel/tap/ctxpack`
-- installed binary output `ctxpack 1.1.7`
+- `brew audit --strict --new ctxhelm`
+- `brew install thromel/tap/ctxhelm`
+- `brew test thromel/tap/ctxhelm`
+- installed binary output `ctxhelm 1.1.7`
 
 The formula is currently constrained to `arch: :arm64` because the published
 archive asset is `aarch64-apple-darwin`.
@@ -104,7 +104,7 @@ create tags, upload assets, install binaries, or mutate release state.
 The public install path can be verified with
 `scripts/verify-public-archive-install.sh`. That check downloads the GitHub
 release assets, verifies checksums, installs only into a temporary bin
-directory, and runs `ctxpack doctor` plus the first-pack smoke.
+directory, and runs `ctxhelm doctor` plus the first-pack smoke.
 
 Optional Codex CLI and Claude Code behavior against the public archive binary
 can be checked with `scripts/smoke-public-real-clients.sh`. That script reuses
@@ -112,16 +112,16 @@ the public GitHub release assets, runs the existing real-client wrappers with th
 extracted binary, and records source-free pass or skip evidence without global
 installation or agent-config mutation. Current public archive checks keep the
 stricter resource-scope assertions enabled by default. Older archives can still
-be checked in compatibility mode by setting `CTXPACK_REQUIRE_RESOURCE_SCOPE=0`.
+be checked in compatibility mode by setting `CTXHELM_REQUIRE_RESOURCE_SCOPE=0`.
 
 The public Homebrew tap can be verified with:
 
 ```bash
 bash scripts/verify-homebrew-tap.sh \
   --tap thromel/tap \
-  --formula ctxpack \
-  --expected-version "ctxpack 1.1.7" \
-  --expected-url https://github.com/thromel/ctxpack/releases/download/v1.1.7/ctxpack-v1.1.7-aarch64-apple-darwin.tar.gz \
+  --formula ctxhelm \
+  --expected-version "ctxhelm 1.1.7" \
+  --expected-url https://github.com/thromel/ctxhelm/releases/download/v1.1.7/ctxhelm-v1.1.7-aarch64-apple-darwin.tar.gz \
   --expected-sha256 <sha256-from-release-asset>
 ```
 
@@ -137,11 +137,11 @@ Run:
 bash scripts/smoke-distribution-metadata.sh
 ```
 
-When `CTXPACK_DIST_DIR` points at a built release archive, the smoke also renders
+When `CTXHELM_DIST_DIR` points at a built release archive, the smoke also renders
 a concrete Homebrew formula candidate from the exact archive digest and checks
 that no placeholders or machine-local paths remain. It also runs
-`cargo package --manifest-path crates/ctxpack/Cargo.toml --locked --allow-dirty --list` and
-fails if the future crates.io package boundary includes local `.ctxpack` state,
+`cargo package --manifest-path crates/ctxhelm/Cargo.toml --locked --allow-dirty --list` and
+fails if the future crates.io package boundary includes local `.ctxhelm` state,
 planning proof artifacts, build output, secrets, request summaries, traces, or
 machine-local paths.
 

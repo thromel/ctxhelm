@@ -23,7 +23,7 @@
 - Do not make the UI the daily coding surface.
 - Do not leak source through reports, shared artifacts, graph labels, or UI
   exports.
-- Do not import a generic GraphRAG framework before proving lift on ctxpack's
+- Do not import a generic GraphRAG framework before proving lift on ctxhelm's
   code-specific graph.
 - Do not promote new embedding providers or dimensions without benchmark and
   feedback evidence.

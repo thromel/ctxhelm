@@ -10,8 +10,8 @@ Passed.
 
 ## Evidence
 
-- `cargo test -p ctxpack-index storage`
-- `cargo test -p ctxpack`
+- `cargo test -p ctxhelm-index storage`
+- `cargo test -p ctxhelm`
 
 ## Requirements
 

@@ -4,7 +4,7 @@
 
 Phase 59 is complete.
 
-ctxpack now has explicit provider and reranker policy gates. Local source-free
+ctxhelm now has explicit provider and reranker policy gates. Local source-free
 semantic metadata providers remain allowed, while cloud embeddings, cloud
 reranking, source transfer, and reranker execution remain denied or disabled by
 default.
@@ -23,7 +23,7 @@ default.
   - `ContextPack`
   - `SemanticProviderStatusReport`
   - `RetrievalPolicyExperimentReport`
-- Added `.ctxpack/provider-policy.json` loading with safe defaults when absent.
+- Added `.ctxhelm/provider-policy.json` loading with safe defaults when absent.
 - Kept existing team privacy policy as an additional gate for cloud/source
   transfer.
 - Enforced semantic provider decisions before semantic retrieval runs.
@@ -38,14 +38,14 @@ default.
 
 ## Verification
 
-- `cargo test -p ctxpack-core policy --no-fail-fast`
-- `cargo test -p ctxpack-compiler policy --no-fail-fast`
-- `cargo test -p ctxpack-compiler rerank --no-fail-fast`
-- `cargo test -p ctxpack --test cli_compat policy --no-fail-fast`
+- `cargo test -p ctxhelm-core policy --no-fail-fast`
+- `cargo test -p ctxhelm-compiler policy --no-fail-fast`
+- `cargo test -p ctxhelm-compiler rerank --no-fail-fast`
+- `cargo test -p ctxhelm --test cli_compat policy --no-fail-fast`
 - `cargo test --workspace --no-fail-fast`
-- `CTXPACK_BIN=target/debug/ctxpack bash scripts/smoke-policy-embedding.sh`
-- `CTXPACK_BIN=target/debug/ctxpack bash scripts/smoke-semantic.sh`
-- `cargo run -p ctxpack -- --help`
+- `CTXHELM_BIN=target/debug/ctxhelm bash scripts/smoke-policy-embedding.sh`
+- `CTXHELM_BIN=target/debug/ctxhelm bash scripts/smoke-semantic.sh`
+- `cargo run -p ctxhelm -- --help`
 - `git diff --check`
 
 ## Notes

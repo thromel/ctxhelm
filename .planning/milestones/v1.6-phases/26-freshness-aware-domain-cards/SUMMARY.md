@@ -1,6 +1,6 @@
 # Phase 26 Summary
 
-`ctxpack cards generate` now writes repo overview, testing, dependency graph,
+`ctxhelm cards generate` now writes repo overview, testing, dependency graph,
 and domain cards, then stores matching deterministic memory records.
 
 Domain records include source links, input hashes, freshness, review status,

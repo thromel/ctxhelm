@@ -18,7 +18,7 @@ warnings, selected memory, and section budgets without exposing raw source text.
 <decisions>
 ## Implementation Decisions
 
-1. Keep delivery as a static HTML export from `ctxpack inspector export`.
+1. Keep delivery as a static HTML export from `ctxhelm inspector export`.
 2. Add client-side filters for path/reason text, source-bearing sections, and
    evidence/category views.
 3. Render warnings, diagnostics, retrieval candidates, selected memory, and
@@ -35,7 +35,7 @@ warnings, selected memory, and section budgets without exposing raw source text.
 
 - `render_pack_inspector_html` currently creates a basic static page from
   `PackInspectorView`.
-- CLI support already exists through `ctxpack inspector export`.
+- CLI support already exists through `ctxhelm inspector export`.
 - Release docs currently know about docs but not an inspector smoke.
 - There is no frontend build system in the repo, so Phase 40 should avoid
   adding one.

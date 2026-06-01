@@ -11,7 +11,7 @@ only candidate/label paths, not the full repository.
 
 - Added a `HistoryMode::ValidationOnly` planner path for historical eval
   snapshots.
-- Historical parent snapshots now use `.ctxpack/eval-history.json` to enrich
+- Historical parent snapshots now use `.ctxhelm/eval-history.json` to enrich
   related-test discovery and command generation, but do not use that partial
   snapshot history to rank non-test target files.
 - Co-changed tests that come from history are enriched from the safe test map so
@@ -27,22 +27,22 @@ paths only, no source snippets, prompt text, terminal logs, or future commits.
 Command:
 
 ```bash
-cargo run -p ctxpack -- eval proof \
-  --config .ctxpack/e2e/v25-multirepo-baseline-config.json \
-  --format json > /tmp/ctxpack-phase76-two-repo-proof.json
-python3 scripts/check-product-proof.py /tmp/ctxpack-phase76-two-repo-proof.json
+cargo run -p ctxhelm -- eval proof \
+  --config .ctxhelm/e2e/v25-multirepo-baseline-config.json \
+  --format json > /tmp/ctxhelm-phase76-two-repo-proof.json
+python3 scripts/check-product-proof.py /tmp/ctxhelm-phase76-two-repo-proof.json
 ```
 
 Committed artifact:
 
-- `.ctxpack/e2e/phase76-parent-bounded-validation-history-proof.json`
+- `.ctxhelm/e2e/phase76-parent-bounded-validation-history-proof.json`
 
 Result:
 
 | Corpus | Gate status | Context Recall@10 | Lexical Context Recall@10 | Test Recall@10 | Protected target miss@10 |
 | --- | --- | ---: | ---: | ---: | ---: |
 | RefactoringMiner | `beat` | 0.778 | 0.741 | 1.000 | 0.059 |
-| ctxpack | `beat` | 0.444 | 0.361 | 1.000 | 0.040 |
+| ctxhelm | `beat` | 0.444 | 0.361 | 1.000 | 0.040 |
 
 Gate decision: `promote`.
 
@@ -51,21 +51,21 @@ Gate decision: `promote`.
 Command:
 
 ```bash
-cargo run -p ctxpack -- eval proof \
+cargo run -p ctxhelm -- eval proof \
   --config .planning/e2e/2026-05-30-phase73-broader-fixed-corpus-config.json \
-  --format json > /tmp/ctxpack-phase76-broader-proof.json
+  --format json > /tmp/ctxhelm-phase76-broader-proof.json
 ```
 
 Committed artifact:
 
-- `.ctxpack/e2e/phase76-broader-parent-bounded-validation-history-proof.json`
+- `.ctxhelm/e2e/phase76-broader-parent-bounded-validation-history-proof.json`
 
 Result:
 
 | Corpus | Gate status | Context Recall@10 | Lexical Context Recall@10 | Test Recall@10 | Protected target miss@10 |
 | --- | --- | ---: | ---: | ---: | ---: |
 | RefactoringMiner | `match` | 1.000 | 1.000 | 1.000 | 0.000 |
-| ctxpack | `beat` | 0.361 | 0.306 | 0.000 | 0.100 |
+| ctxhelm | `beat` | 0.361 | 0.306 | 0.000 | 0.100 |
 | ReAgent | `beat` | 0.714 | 0.571 | 1.000 | 0.000 |
 | VeriSchema | `trail` | 0.151 | 0.082 | 0.709 | 0.143 |
 
@@ -80,10 +80,10 @@ where ten test slots are insufficient to cover all changed tests.
 
 ```bash
 cargo fmt --check
-cargo test -p ctxpack-compiler historical_eval_uses_parent_bounded_sidecar_for_cochanged_tests -- --nocapture
-cargo test -p ctxpack-compiler historical_eval_uses_parent_snapshot_without_future_context -- --nocapture
-cargo test -p ctxpack-compiler selection_promotes_cochanged_validation_tests -- --nocapture
-cargo run -p ctxpack -- eval proof --config .ctxpack/e2e/v25-multirepo-baseline-config.json --format json
-python3 scripts/check-product-proof.py /tmp/ctxpack-phase76-two-repo-proof.json
-cargo run -p ctxpack -- eval proof --config .planning/e2e/2026-05-30-phase73-broader-fixed-corpus-config.json --format json
+cargo test -p ctxhelm-compiler historical_eval_uses_parent_bounded_sidecar_for_cochanged_tests -- --nocapture
+cargo test -p ctxhelm-compiler historical_eval_uses_parent_snapshot_without_future_context -- --nocapture
+cargo test -p ctxhelm-compiler selection_promotes_cochanged_validation_tests -- --nocapture
+cargo run -p ctxhelm -- eval proof --config .ctxhelm/e2e/v25-multirepo-baseline-config.json --format json
+python3 scripts/check-product-proof.py /tmp/ctxhelm-phase76-two-repo-proof.json
+cargo run -p ctxhelm -- eval proof --config .planning/e2e/2026-05-30-phase73-broader-fixed-corpus-config.json --format json
 ```

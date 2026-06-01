@@ -5,11 +5,11 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 TMP_DIR="$(mktemp -d)"
 trap 'rm -rf "${TMP_DIR}"' EXIT
 
-run_ctxpack() {
-  if [[ -n "${CTXPACK_BIN:-}" ]]; then
-    "${CTXPACK_BIN}" "$@"
+run_ctxhelm() {
+  if [[ -n "${CTXHELM_BIN:-}" ]]; then
+    "${CTXHELM_BIN}" "$@"
   else
-    cargo run -q -p ctxpack -- "$@"
+    cargo run -q -p ctxhelm -- "$@"
   fi
 }
 
@@ -34,8 +34,8 @@ reject_text() {
 REPO="${TMP_DIR}/repo"
 mkdir -p "${REPO}/src/auth" "${REPO}/tests/auth"
 git -C "${REPO}" init >/dev/null
-git -C "${REPO}" config user.email ctxpack@example.com
-git -C "${REPO}" config user.name ctxpack
+git -C "${REPO}" config user.email ctxhelm@example.com
+git -C "${REPO}" config user.name ctxhelm
 cat >"${REPO}/src/auth/cookies.ts" <<'EOF'
 export function parseCookie() {
   return 'POLICY_EMBED_SOURCE_SENTINEL';
@@ -62,12 +62,12 @@ EXPERIMENT_JSON="${TMP_DIR}/policy-experiments.json"
 
 (
   cd "${ROOT_DIR}"
-  run_ctxpack semantic status \
+  run_ctxhelm semantic status \
     --repo "${REPO}" \
     --query "fix requireSession policy bug" \
     --mode bug-fix \
     --format json >"${STATUS_JSON}"
-  run_ctxpack eval policy experiments "fix requireSession policy bug" \
+  run_ctxhelm eval policy experiments "fix requireSession policy bug" \
     --repo "${REPO}" \
     --limit 2 \
     --format json >"${EXPERIMENT_JSON}"

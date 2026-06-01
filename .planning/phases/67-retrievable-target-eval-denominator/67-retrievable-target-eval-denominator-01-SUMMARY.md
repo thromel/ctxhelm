@@ -15,21 +15,21 @@ Completed an eval-correctness hardening pass. Historical eval now distinguishes 
 
 ## Proof
 
-`ctxpack eval proof --config .ctxpack/e2e/phase62-default-config.json --format json`
-wrote `.ctxpack/e2e/phase67-retrievable-target-proof.json`.
+`ctxhelm eval proof --config .ctxhelm/e2e/phase62-default-config.json --format json`
+wrote `.ctxhelm/e2e/phase67-retrievable-target-proof.json`.
 
-| Corpus | Status | ctxpack Recall@10 | Lexical Recall@10 | Delta | Test Recall@10 | Protected miss-rate@10 |
+| Corpus | Status | ctxhelm Recall@10 | Lexical Recall@10 | Delta | Test Recall@10 | Protected miss-rate@10 |
 | --- | --- | ---: | ---: | ---: | ---: | ---: |
 | RefactoringMiner | `trail` | 0.7392 | 0.7792 | -0.0400 | 1.0000 | 0.0526 |
-| ctxpack | `match` | 0.2277 | 0.2326 | -0.0049 | 1.0000 | 0.1500 |
+| ctxhelm | `match` | 0.2277 | 0.2326 | -0.0049 | 1.0000 | 0.1500 |
 
 ## Decision
 
-The denominator is now more accurate and ctxpack Recall@10 improved on the ctxpack corpus, but the default still does not beat lexical. The release gate correctly remains `block`.
+The denominator is now more accurate and ctxhelm Recall@10 improved on the ctxhelm corpus, but the default still does not beat lexical. The release gate correctly remains `block`.
 
 ## Next Blockers
 
 - RefactoringMiner source dependency misses still need parser/precision improvements.
-- ctxpack still misses repeated existing `.planning`, `docs`, and `scripts` targets.
-- ctxpack source files in `crates/ctxpack-compiler/src` and `crates/ctxpack-index/src` are still frequently ranked below budget.
+- ctxhelm still misses repeated existing `.planning`, `docs`, and `scripts` targets.
+- ctxhelm source files in `crates/ctxhelm-compiler/src` and `crates/ctxhelm-index/src` are still frequently ranked below budget.
 - Protected evidence miss-rate remains non-zero.

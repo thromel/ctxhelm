@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "ctxpack release update metadata",
+  "title": "ctxhelm release update metadata",
   "type": "object",
   "required": [
     "schemaVersion",
@@ -13,7 +13,7 @@
   ],
   "properties": {
     "schemaVersion": {"type": "integer", "const": 1},
-    "package": {"type": "string", "const": "ctxpack"},
+    "package": {"type": "string", "const": "ctxhelm"},
     "version": {"type": "string"},
     "artifacts": {
       "type": "array",

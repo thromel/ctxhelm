@@ -16,9 +16,9 @@ status: patterns
 
 ## Closest Code Analogs
 
-- `crates/ctxpack-compiler/src/policy.rs`: provider status and policy experiment reporting.
-- `crates/ctxpack-index/src/semantic.rs`: semantic provider config and availability.
-- `crates/ctxpack-core/src/contracts.rs`: report and policy-shaped contracts.
+- `crates/ctxhelm-compiler/src/policy.rs`: provider status and policy experiment reporting.
+- `crates/ctxhelm-index/src/semantic.rs`: semantic provider config and availability.
+- `crates/ctxhelm-core/src/contracts.rs`: report and policy-shaped contracts.
 - `docs/policy-embedding.md`: current policy framing for embeddings.
 
 ## Implementation Notes

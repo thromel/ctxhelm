@@ -1,9 +1,9 @@
 {
-  "manifestVersion": "ctxpack-benchmark-corpus-v2.5",
+  "manifestVersion": "ctxhelm-benchmark-corpus-v2.5",
   "name": "phase73-broader-fixed-corpus-probe",
   "corpusId": "phase73-broader-fixed-corpus-2026-05-30",
   "privacyLabel": "source_free_local",
-  "description": "Optional broader production-readiness probe across RefactoringMiner, ctxpack, ReAgent, and VeriSchema. This is not the required release gate because it currently blocks broader promotion.",
+  "description": "Optional broader production-readiness probe across RefactoringMiner, ctxhelm, ReAgent, and VeriSchema. This is not the required release gate because it currently blocks broader promotion.",
   "defaults": {
     "limit": 5,
     "rankingBudget": 10,
@@ -25,7 +25,7 @@
       "privacyLabel": "source_free_local"
     },
     {
-      "name": "ctxpack",
+      "name": "ctxhelm",
       "path": "../..",
       "revisionRangeId": "phase72-pre-test-seed-head-history-limit-5",
       "head": "7f439fa1b1f2784aed6425b695d7c35944ea7955",

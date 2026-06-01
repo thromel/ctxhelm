@@ -1,7 +1,7 @@
-# ctxpack Demo Artifacts
+# ctxhelm Demo Artifacts
 
 These artifacts are static, source-free examples for public adoption docs. They
-show the shape of ctxpack outputs without copying repository source code,
+show the shape of ctxhelm outputs without copying repository source code,
 prompts, terminal logs, secrets, or machine-local paths.
 
 Artifacts:

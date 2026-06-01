@@ -1,20 +1,20 @@
 # Retrieval Health
 
-Retrieval health reports summarize whether ctxpack is selecting useful context
+Retrieval health reports summarize whether ctxhelm is selecting useful context
 over time. They combine source-free historical eval evidence with source-free
 feedback policy evidence.
 
 Run:
 
 ```bash
-ctxpack eval health --repo /path/to/repo --limit 20 --format markdown
-ctxpack eval health --repo /path/to/repo --limit 20 --format json
+ctxhelm eval health --repo /path/to/repo --limit 20 --format markdown
+ctxhelm eval health --repo /path/to/repo --limit 20 --format json
 ```
 
 The report includes:
 
 - file and test recall from historical eval
-- ctxpack lift over lexical/no-context baselines
+- ctxhelm lift over lexical/no-context baselines
 - token ROI by pack budget
 - feedback-derived context precision and validation coverage
 - signal contribution summaries
@@ -39,5 +39,5 @@ bash scripts/smoke-retrieval-health.sh
 ```
 
 The smoke creates a temporary repository with real git history, runs
-`ctxpack eval health`, verifies JSON and Markdown output, and rejects a source
+`ctxhelm eval health`, verifies JSON and Markdown output, and rejects a source
 sentinel from the report artifacts.

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ctxpack_bin="${CTXPACK_BIN:-ctxpack}"
+ctxhelm_bin="${CTXHELM_BIN:-ctxhelm}"
 work_dir="$(mktemp -d)"
 cleanup() {
   rm -rf "$work_dir"
@@ -18,8 +18,8 @@ eval_json="$work_dir/eval.json"
 
 mkdir -p "$repo/src/payments" "$home"
 git -C "$repo" init -q
-git -C "$repo" config user.email "ctxpack@example.com"
-git -C "$repo" config user.name "ctxpack"
+git -C "$repo" config user.email "ctxhelm@example.com"
+git -C "$repo" config user.name "ctxhelm"
 printf '# Fixture\n' >"$repo/README.md"
 git -C "$repo" add .
 git -C "$repo" commit -m "initial fixture" >/dev/null
@@ -27,35 +27,35 @@ git -C "$repo" commit -m "initial fixture" >/dev/null
 cat >"$repo/src/payments/webhooks.ts" <<'SRC'
 export function verifyPaymentWebhook(event: string) {
   if (!event.includes("payment")) {
-    throw new Error("CTXPACK_SEMANTIC_SOURCE_SENTINEL");
+    throw new Error("CTXHELM_SEMANTIC_SOURCE_SENTINEL");
   }
   return "payment webhook validation";
 }
 SRC
-printf 'SECRET=CTXPACK_SEMANTIC_SECRET_SENTINEL\n' >"$repo/.env"
+printf 'SECRET=CTXHELM_SEMANTIC_SECRET_SENTINEL\n' >"$repo/.env"
 git -C "$repo" add src/payments/webhooks.ts .env
 git -C "$repo" commit -m "add payment webhook validation" >/dev/null
 
-export CTXPACK_HOME="$home"
+export CTXHELM_HOME="$home"
 
-"$ctxpack_bin" index --repo "$repo" --semantic --store-path "$store" >"$work_dir/index.txt"
-"$ctxpack_bin" storage status --repo "$repo" --path "$store" >"$work_dir/status.txt"
-"$ctxpack_bin" semantic status --repo "$repo" --format json >"$work_dir/semantic-status.json"
-"$ctxpack_bin" semantic status --repo "$repo" --semantic-provider local_fastembed --format json >"$work_dir/semantic-fastembed-status.json"
-"$ctxpack_bin" search "verifyPaymentWebhook payments webhooks" --repo "$repo" --limit 5 --semantic >"$search_json"
-"$ctxpack_bin" prepare-task "verifyPaymentWebhook payments webhooks" \
+"$ctxhelm_bin" index --repo "$repo" --semantic --store-path "$store" >"$work_dir/index.txt"
+"$ctxhelm_bin" storage status --repo "$repo" --path "$store" >"$work_dir/status.txt"
+"$ctxhelm_bin" semantic status --repo "$repo" --format json >"$work_dir/semantic-status.json"
+"$ctxhelm_bin" semantic status --repo "$repo" --semantic-provider local_fastembed --format json >"$work_dir/semantic-fastembed-status.json"
+"$ctxhelm_bin" search "verifyPaymentWebhook payments webhooks" --repo "$repo" --limit 5 --semantic >"$search_json"
+"$ctxhelm_bin" prepare-task "verifyPaymentWebhook payments webhooks" \
   --repo "$repo" \
   --mode bug-fix \
   --semantic \
   --no-trace >"$plan_json"
-"$ctxpack_bin" get-pack "verifyPaymentWebhook payments webhooks" \
+"$ctxhelm_bin" get-pack "verifyPaymentWebhook payments webhooks" \
   --repo "$repo" \
   --mode bug-fix \
   --budget brief \
   --format json \
   --semantic \
   --no-trace >"$pack_json"
-"$ctxpack_bin" eval history \
+"$ctxhelm_bin" eval history \
   --repo "$repo" \
   --limit 1 \
   --budget 5 \
@@ -134,11 +134,11 @@ if not evaluation.get("privacyStatus", {}).get("localOnly"):
     raise SystemExit("eval history privacyStatus.localOnly was not true")
 PY
 
-if grep -R -- "CTXPACK_SEMANTIC_SOURCE_SENTINEL" "$home" "$store" >/dev/null 2>&1; then
+if grep -R -- "CTXHELM_SEMANTIC_SOURCE_SENTINEL" "$home" "$store" >/dev/null 2>&1; then
   echo "semantic smoke failed: source sentinel was persisted" >&2
   exit 1
 fi
-if grep -R -- "CTXPACK_SEMANTIC_SECRET_SENTINEL" "$home" "$store" >/dev/null 2>&1; then
+if grep -R -- "CTXHELM_SEMANTIC_SECRET_SENTINEL" "$home" "$store" >/dev/null 2>&1; then
   echo "semantic smoke failed: secret sentinel was persisted" >&2
   exit 1
 fi

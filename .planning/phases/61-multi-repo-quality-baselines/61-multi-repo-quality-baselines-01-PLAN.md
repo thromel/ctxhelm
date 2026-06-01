@@ -14,7 +14,7 @@ depends_on:
 # Phase 61 Plan: Multi-Repo Quality Baselines
 
 <objective>
-Add a source-free multi-repo retrieval-quality baseline path so ctxpack can compare default, lexical, semantic, graph, reranked, and learned-policy variants across real repositories without overfitting to RefactoringMiner.
+Add a source-free multi-repo retrieval-quality baseline path so ctxhelm can compare default, lexical, semantic, graph, reranked, and learned-policy variants across real repositories without overfitting to RefactoringMiner.
 </objective>
 
 <threat_model>
@@ -36,8 +36,8 @@ Add a source-free multi-repo retrieval-quality baseline path so ctxpack can comp
 
 <task id="61.1" name="Inspect existing benchmark and proof contracts">
 <read_first>
-- `crates/ctxpack-compiler/src/eval.rs`
-- `crates/ctxpack-core/src/contracts.rs`
+- `crates/ctxhelm-compiler/src/eval.rs`
+- `crates/ctxhelm-core/src/contracts.rs`
 - `docs/benchmarking.md`
 - `.planning/e2e/2026-05-22-refactoringminer-semantic-fusion-regression.md`
 </read_first>
@@ -55,8 +55,8 @@ Map the existing single-repo benchmark, proof, and baseline reports to a multi-r
 
 <task id="61.2" name="Add multi-repo baseline manifest support">
 <read_first>
-- `crates/ctxpack-compiler/src/eval.rs`
-- `crates/ctxpack/src/main.rs`
+- `crates/ctxhelm-compiler/src/eval.rs`
+- `crates/ctxhelm/src/main.rs`
 - existing benchmark config parsing tests
 </read_first>
 <action>
@@ -64,7 +64,7 @@ Add a manifest-driven or CLI-supported multi-repo baseline command/report that r
 </action>
 <verify>
 - Add tests for manifest parsing, missing repo diagnostics, stable options, and source-free JSON shape.
-- Run `cargo test -p ctxpack-compiler benchmark`.
+- Run `cargo test -p ctxhelm-compiler benchmark`.
 </verify>
 <acceptance_criteria>
 - The report includes repo label, path-derived repo id, revision range, limit, budget, variants, and privacy status.
@@ -82,7 +82,7 @@ Run the multi-repo baseline against RefactoringMiner and one second real local r
 </action>
 <verify>
 - Save a concise source-free E2E summary under `.planning/e2e/`.
-- Keep large JSON outputs under ignored `.ctxpack/e2e/`.
+- Keep large JSON outputs under ignored `.ctxhelm/e2e/`.
 </verify>
 <acceptance_criteria>
 - The summary reports per-repo default vs lexical status.
@@ -101,7 +101,7 @@ Document how to run and interpret multi-repo baselines. Update phase state only 
 </action>
 <verify>
 - `cargo test --workspace`
-- `cargo run -p ctxpack -- --help`
+- `cargo run -p ctxhelm -- --help`
 - `git diff --check`
 </verify>
 <acceptance_criteria>
@@ -113,15 +113,15 @@ Document how to run and interpret multi-repo baselines. Update phase state only 
 </tasks>
 
 <verification>
-- `cargo test -p ctxpack-compiler benchmark`
+- `cargo test -p ctxhelm-compiler benchmark`
 - two-repo baseline E2E
 - `cargo test --workspace`
-- `cargo run -p ctxpack -- --help`
+- `cargo run -p ctxhelm -- --help`
 - `git diff --check`
 </verification>
 
 <success_criteria>
-- ctxpack can produce a source-free multi-repo retrieval-quality baseline.
+- ctxhelm can produce a source-free multi-repo retrieval-quality baseline.
 - RefactoringMiner is no longer the only product-quality proof point.
 - Reports make lexical/default/semantic quality status visible per repo.
 </success_criteria>

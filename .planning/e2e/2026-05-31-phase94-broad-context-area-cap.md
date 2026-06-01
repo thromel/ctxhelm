@@ -35,24 +35,24 @@ production move is to improve progressive area guidance outside that budget.
 Focused tests:
 
 ```bash
-cargo test -p ctxpack-compiler context_areas -- --nocapture
-cargo test -p ctxpack-compiler broad_source_area_candidates -- --nocapture
+cargo test -p ctxhelm-compiler context_areas -- --nocapture
+cargo test -p ctxhelm-compiler broad_source_area_candidates -- --nocapture
 ```
 
 Broad proof:
 
 ```bash
-cargo run --release -p ctxpack -- eval proof \
+cargo run --release -p ctxhelm -- eval proof \
   --config .planning/e2e/2026-05-31-phase92-area-aware-gap-proof-config.json \
-  --format json > /tmp/ctxpack-phase94-context-area-cap-proof.json
+  --format json > /tmp/ctxhelm-phase94-context-area-cap-proof.json
 
 python3 scripts/check-product-proof.py \
-  .ctxpack/e2e/phase94-context-area-cap-proof.json
+  .ctxhelm/e2e/phase94-context-area-cap-proof.json
 ```
 
 Committed proof:
 
-- `.ctxpack/e2e/phase94-context-area-cap-proof.json`
+- `.ctxhelm/e2e/phase94-context-area-cap-proof.json`
 
 Result:
 

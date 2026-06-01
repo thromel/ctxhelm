@@ -22,13 +22,13 @@ separation.
 
 <threat_model>
 - A broad ranking tweak hides candidate-generation gaps instead of fixing them.
-- A RefactoringMiner improvement regresses ctxpack or protected evidence.
+- A RefactoringMiner improvement regresses ctxhelm or protected evidence.
 - Test recall improvements mask source recall losses.
 - Graph expansion recurses from weak semantic-only seeds and bloats context.
 </threat_model>
 
 <must_haves>
-- Reuse the existing `ctxpack eval benchmark` reports.
+- Reuse the existing `ctxhelm eval benchmark` reports.
 - Target a named gap family from Phase 63.
 - Add focused tests for the retrieval behavior changed.
 - Report source recall, test recall, protected evidence, runtime, and named gaps.
@@ -39,7 +39,7 @@ separation.
 <task id="64.1" name="Group measured gap families">
 <read_first>
 - `.planning/e2e/2026-05-30-phase63-reranker-fusion-promotion.md`
-- `crates/ctxpack-compiler/src/eval.rs`
+- `crates/ctxhelm-compiler/src/eval.rs`
 - `docs/benchmarking.md`
 </read_first>
 <action>
@@ -55,9 +55,9 @@ Create a source-free gap-family work item list and choose the first target.
 
 <task id="64.2" name="Reproduce and inspect candidate absence">
 <read_first>
-- `.ctxpack/e2e/phase63-default-report.json` if available
-- `crates/ctxpack-index/src/lib.rs`
-- `crates/ctxpack-compiler/src/planning.rs`
+- `.ctxhelm/e2e/phase63-default-report.json` if available
+- `crates/ctxhelm-index/src/lib.rs`
+- `crates/ctxhelm-compiler/src/planning.rs`
 </read_first>
 <action>
 Inspect why wrapper-family Java files are marked `no_candidate_signal`.
@@ -72,9 +72,9 @@ Inspect why wrapper-family Java files are marked `no_candidate_signal`.
 
 <task id="64.3" name="Implement targeted retrieval fix">
 <read_first>
-- `crates/ctxpack-index/src/lib.rs`
-- `crates/ctxpack-compiler/src/planning.rs`
-- `crates/ctxpack-compiler/src/ranking.rs`
+- `crates/ctxhelm-index/src/lib.rs`
+- `crates/ctxhelm-compiler/src/planning.rs`
+- `crates/ctxhelm-compiler/src/ranking.rs`
 </read_first>
 <action>
 Add the smallest retrieval change that makes the selected gap family eligible
@@ -91,7 +91,7 @@ while preserving exact-seed and protected-evidence behavior.
 
 <task id="64.4" name="Run before/after proof and update state">
 <read_first>
-- `.ctxpack/e2e/phase62-default-config.json`
+- `.ctxhelm/e2e/phase62-default-config.json`
 - `.planning/STATE.md`
 - `.planning/ROADMAP.md`
 </read_first>
@@ -100,7 +100,7 @@ Run the fixed two-repo corpus and commit a concise source-free E2E summary.
 </action>
 <verify>
 - `cargo test --workspace --no-fail-fast`
-- `cargo run -p ctxpack -- --help`
+- `cargo run -p ctxhelm -- --help`
 - `git diff --check`
 </verify>
 <acceptance_criteria>
@@ -115,7 +115,7 @@ Run the fixed two-repo corpus and commit a concise source-free E2E summary.
 - focused retrieval tests
 - two-repo benchmark before/after comparison
 - `cargo test --workspace --no-fail-fast`
-- `cargo run -p ctxpack -- --help`
+- `cargo run -p ctxhelm -- --help`
 - `git diff --check`
 </verification>
 

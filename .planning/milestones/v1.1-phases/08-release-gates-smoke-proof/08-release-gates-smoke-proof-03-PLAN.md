@@ -8,7 +8,7 @@ files_modified:
   - docs/release.md
   - scripts/check-release-docs.sh
   - scripts/release-gate.sh
-  - crates/ctxpack/tests/release_packaging.rs
+  - crates/ctxhelm/tests/release_packaging.rs
 autonomous: true
 requirements: [SMOKE-01, SMOKE-02, SMOKE-03, SMOKE-04]
 must_haves:
@@ -24,7 +24,7 @@ must_haves:
       provides: "Docs consistency coverage for release gate and proof boundaries"
     - path: "scripts/release-gate.sh"
       provides: "Final gate wiring to optional real-client evidence wrappers"
-    - path: "crates/ctxpack/tests/release_packaging.rs"
+    - path: "crates/ctxhelm/tests/release_packaging.rs"
       provides: "Release docs/gate contract coverage"
   key_links:
     - from: "docs/release.md"
@@ -33,8 +33,8 @@ must_haves:
       pattern: "scripts/release-gate\\.sh"
     - from: "scripts/check-release-docs.sh"
       to: "docs/release.md"
-      via: "grep checks for release gate, CTXPACK_BIN, CTXPACK_REQUIRE_REAL_CLIENT, and no publish/tag language"
-      pattern: "release-gate|CTXPACK_BIN|CTXPACK_REQUIRE_REAL_CLIENT|publish|tag"
+      via: "grep checks for release gate, CTXHELM_BIN, CTXHELM_REQUIRE_REAL_CLIENT, and no publish/tag language"
+      pattern: "release-gate|CTXHELM_BIN|CTXHELM_REQUIRE_REAL_CLIENT|publish|tag"
     - from: "scripts/release-gate.sh"
       to: "scripts/smoke-codex-mcp.sh and scripts/smoke-claude-mcp.sh"
       via: "optional real-client evidence hooks"
@@ -74,7 +74,7 @@ Output: Release docs/checker updates, final release-gate wiring, and full Phase 
 @scripts/release-gate.sh
 @scripts/smoke-codex-mcp.sh
 @scripts/smoke-claude-mcp.sh
-@crates/ctxpack/tests/release_packaging.rs
+@crates/ctxhelm/tests/release_packaging.rs
 
 <decision_trace>
 - SMOKE-01 through SMOKE-04 are the only Phase 8 requirements in scope.
@@ -89,41 +89,41 @@ Output: Release docs/checker updates, final release-gate wiring, and full Phase 
 <task type="auto">
   <name>Task 1: Document release gate usage and proof boundaries</name>
   <files>docs/release.md</files>
-  <action>Update `docs/release.md` with a maintainer "Release gate" section. Document `bash scripts/release-gate.sh` as the local pre-publication blocker, `CTXPACK_BIN=/absolute/path/to/ctxpack bash scripts/release-gate.sh` for selected installed/extracted binaries, default package/extract behavior when no binary is selected, required checks (`cargo test --workspace`, docs checker, release packaging/audit, `--version`, `--help`, first-pack smoke, wrong-cwd MCP protocol smoke), optional checks (`scripts/smoke-codex-mcp.sh`, `scripts/smoke-claude-mcp.sh`), and env vars `CTXPACK_SKIP_REAL_CLIENT`, `CTXPACK_REQUIRE_REAL_CLIENT`, and `CTXPACK_REAL_CLIENT_EVIDENCE_DIR`. State explicitly that this gate does not publish, upload, create tags, mutate global agent config, or run user project tests.</action>
+  <action>Update `docs/release.md` with a maintainer "Release gate" section. Document `bash scripts/release-gate.sh` as the local pre-publication blocker, `CTXHELM_BIN=/absolute/path/to/ctxhelm bash scripts/release-gate.sh` for selected installed/extracted binaries, default package/extract behavior when no binary is selected, required checks (`cargo test --workspace`, docs checker, release packaging/audit, `--version`, `--help`, first-pack smoke, wrong-cwd MCP protocol smoke), optional checks (`scripts/smoke-codex-mcp.sh`, `scripts/smoke-claude-mcp.sh`), and env vars `CTXHELM_SKIP_REAL_CLIENT`, `CTXHELM_REQUIRE_REAL_CLIENT`, and `CTXHELM_REAL_CLIENT_EVIDENCE_DIR`. State explicitly that this gate does not publish, upload, create tags, mutate global agent config, or run user project tests.</action>
   <verify>
-    <automated>python3 -c "from pathlib import Path; d=Path('docs/release.md').read_text(); required=['scripts/release-gate.sh','CTXPACK_BIN','CTXPACK_REQUIRE_REAL_CLIENT','CTXPACK_SKIP_REAL_CLIENT','CTXPACK_REAL_CLIENT_EVIDENCE_DIR','cargo test --workspace','scripts/check-release-docs.sh','scripts/release-package.sh','scripts/smoke-first-pack.sh','scripts/smoke-mcp-protocol.sh','scripts/smoke-codex-mcp.sh','scripts/smoke-claude-mcp.sh','does not publish','does not create tags']; missing=[s for s in required if s not in d]; assert not missing, missing"</automated>
+    <automated>python3 -c "from pathlib import Path; d=Path('docs/release.md').read_text(); required=['scripts/release-gate.sh','CTXHELM_BIN','CTXHELM_REQUIRE_REAL_CLIENT','CTXHELM_SKIP_REAL_CLIENT','CTXHELM_REAL_CLIENT_EVIDENCE_DIR','cargo test --workspace','scripts/check-release-docs.sh','scripts/release-package.sh','scripts/smoke-first-pack.sh','scripts/smoke-mcp-protocol.sh','scripts/smoke-codex-mcp.sh','scripts/smoke-claude-mcp.sh','does not publish','does not create tags']; missing=[s for s in required if s not in d]; assert not missing, missing"</automated>
   </verify>
   <done>Maintainer release docs explain the complete Phase 8 gate and proof boundaries.</done>
 </task>
 
 <task type="auto" tdd="true">
   <name>Task 2: Expand docs checker for release gate consistency</name>
-  <files>scripts/check-release-docs.sh, crates/ctxpack/tests/release_packaging.rs</files>
+  <files>scripts/check-release-docs.sh, crates/ctxhelm/tests/release_packaging.rs</files>
   <behavior>
     - Test 1: Release docs checker requires `docs/release.md` to name `scripts/release-gate.sh` and all release gate component scripts.
-    - Test 2: Release docs checker requires `CTXPACK_BIN`, `CTXPACK_REQUIRE_REAL_CLIENT`, `CTXPACK_SKIP_REAL_CLIENT`, and `CTXPACK_REAL_CLIENT_EVIDENCE_DIR` documentation.
+    - Test 2: Release docs checker requires `CTXHELM_BIN`, `CTXHELM_REQUIRE_REAL_CLIENT`, `CTXHELM_SKIP_REAL_CLIENT`, and `CTXHELM_REAL_CLIENT_EVIDENCE_DIR` documentation.
     - Test 3: Release docs checker rejects claims that the gate publishes, tags, uploads, creates GitHub releases, or requires Cursor/OpenCode real-client proof.
     - Test 4: Rust release docs contract expects the new release-gate checks and still passes without parsing Markdown.
   </behavior>
-  <action>Extend `scripts/check-release-docs.sh` with grep-style release gate checks and forbidden-claim checks. Update `crates/ctxpack/tests/release_packaging.rs` release docs contract to require the checker to cover the release gate and proof-boundary strings. Keep the checker small and deterministic; do not add a Markdown parser or network/client probing.</action>
+  <action>Extend `scripts/check-release-docs.sh` with grep-style release gate checks and forbidden-claim checks. Update `crates/ctxhelm/tests/release_packaging.rs` release docs contract to require the checker to cover the release gate and proof-boundary strings. Keep the checker small and deterministic; do not add a Markdown parser or network/client probing.</action>
   <verify>
-    <automated>bash -n scripts/check-release-docs.sh && bash scripts/check-release-docs.sh && cargo test -p ctxpack --test release_packaging release_docs -- --nocapture</automated>
+    <automated>bash -n scripts/check-release-docs.sh && bash scripts/check-release-docs.sh && cargo test -p ctxhelm --test release_packaging release_docs -- --nocapture</automated>
   </verify>
   <done>Docs consistency checks guard the Phase 8 release gate documentation and proof boundaries.</done>
 </task>
 
 <task type="auto" tdd="true">
   <name>Task 3: Wire optional real-client hooks into final gate and run full verification</name>
-  <files>scripts/release-gate.sh, crates/ctxpack/tests/release_packaging.rs</files>
+  <files>scripts/release-gate.sh, crates/ctxhelm/tests/release_packaging.rs</files>
   <behavior>
     - Test 1: `scripts/release-gate.sh` invokes `scripts/smoke-codex-mcp.sh` and `scripts/smoke-claude-mcp.sh` after deterministic first-pack and MCP protocol gates.
-    - Test 2: The gate passes through `CTXPACK_BIN`, `CTXPACK_SKIP_REAL_CLIENT`, `CTXPACK_REQUIRE_REAL_CLIENT`, and `CTXPACK_REAL_CLIENT_EVIDENCE_DIR` to optional real-client wrappers.
-    - Test 3: With `CTXPACK_SKIP_REAL_CLIENT=1`, the final gate can complete without real-client auth after deterministic proof passes.
-    - Test 4: With `CTXPACK_REQUIRE_REAL_CLIENT=1`, missing Codex/Claude evidence fails through the wrappers.
+    - Test 2: The gate passes through `CTXHELM_BIN`, `CTXHELM_SKIP_REAL_CLIENT`, `CTXHELM_REQUIRE_REAL_CLIENT`, and `CTXHELM_REAL_CLIENT_EVIDENCE_DIR` to optional real-client wrappers.
+    - Test 3: With `CTXHELM_SKIP_REAL_CLIENT=1`, the final gate can complete without real-client auth after deterministic proof passes.
+    - Test 4: With `CTXHELM_REQUIRE_REAL_CLIENT=1`, missing Codex/Claude evidence fails through the wrappers.
   </behavior>
-  <action>Update `scripts/release-gate.sh` if Plan 01 did not already wire optional real-client hooks after deterministic release checks. Keep default behavior portable: real clients are attempted/skipped according to wrapper semantics, and required only when `CTXPACK_REQUIRE_REAL_CLIENT=1`. Update release gate contract tests accordingly. Run the full release gate with a selected local binary and `CTXPACK_SKIP_REAL_CLIENT=1` to prove the deterministic Phase 8 gate without requiring auth.</action>
+  <action>Update `scripts/release-gate.sh` if Plan 01 did not already wire optional real-client hooks after deterministic release checks. Keep default behavior portable: real clients are attempted/skipped according to wrapper semantics, and required only when `CTXHELM_REQUIRE_REAL_CLIENT=1`. Update release gate contract tests accordingly. Run the full release gate with a selected local binary and `CTXHELM_SKIP_REAL_CLIENT=1` to prove the deterministic Phase 8 gate without requiring auth.</action>
   <verify>
-    <automated>cargo test -p ctxpack --test release_packaging release_gate -- --nocapture && cargo build -p ctxpack && CTXPACK_BIN="$(pwd)/target/debug/ctxpack" CTXPACK_SKIP_REAL_CLIENT=1 bash scripts/release-gate.sh</automated>
+    <automated>cargo test -p ctxhelm --test release_packaging release_gate -- --nocapture && cargo build -p ctxhelm && CTXHELM_BIN="$(pwd)/target/debug/ctxhelm" CTXHELM_SKIP_REAL_CLIENT=1 bash scripts/release-gate.sh</automated>
   </verify>
   <done>The final release gate ties together installed-binary proof, docs consistency, packaging/audit, first-pack/MCP protocol proof, and optional versioned real-client evidence hooks.</done>
 </task>
@@ -132,11 +132,11 @@ Output: Release docs/checker updates, final release-gate wiring, and full Phase 
 
 <verification>
 - `bash scripts/check-release-docs.sh`
-- `cargo test -p ctxpack --test release_packaging release_docs release_gate -- --nocapture`
-- `cargo test -p ctxpack --test cli_compat real_client -- --nocapture`
-- `cargo build -p ctxpack && CTXPACK_BIN="$(pwd)/target/debug/ctxpack" CTXPACK_SKIP_REAL_CLIENT=1 bash scripts/release-gate.sh`
+- `cargo test -p ctxhelm --test release_packaging release_docs release_gate -- --nocapture`
+- `cargo test -p ctxhelm --test cli_compat real_client -- --nocapture`
+- `cargo build -p ctxhelm && CTXHELM_BIN="$(pwd)/target/debug/ctxhelm" CTXHELM_SKIP_REAL_CLIENT=1 bash scripts/release-gate.sh`
 - `cargo test --workspace`
-- `cargo run -p ctxpack -- --help`
+- `cargo run -p ctxhelm -- --help`
 </verification>
 
 <success_criteria>

@@ -10,7 +10,7 @@ cleanup() {
 trap cleanup EXIT
 
 demo_dir="$work_dir/demo-artifacts"
-CTXPACK_DEMO_DIR="$demo_dir" bash "$repo_root/scripts/generate-demo-artifacts.sh" >/dev/null
+CTXHELM_DEMO_DIR="$demo_dir" bash "$repo_root/scripts/generate-demo-artifacts.sh" >/dev/null
 
 for required in \
   README.md \

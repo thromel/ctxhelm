@@ -17,13 +17,13 @@ Make context-vs-all-file product-proof divergence machine-checkable instead of r
 ## Proof Command
 
 ```bash
-cargo run -p ctxpack -- eval proof \
+cargo run -p ctxhelm -- eval proof \
   --config .planning/e2e/2026-05-30-phase73-broader-fixed-corpus-config.json \
-  --format json > /tmp/ctxpack-phase83-context-divergence-proof.json
+  --format json > /tmp/ctxhelm-phase83-context-divergence-proof.json
 
-python3 scripts/check-product-proof.py /tmp/ctxpack-phase83-context-divergence-proof.json
-cp /tmp/ctxpack-phase83-context-divergence-proof.json \
-  .ctxpack/e2e/phase83-context-divergence-proof.json
+python3 scripts/check-product-proof.py /tmp/ctxhelm-phase83-context-divergence-proof.json
+cp /tmp/ctxhelm-phase83-context-divergence-proof.json \
+  .ctxhelm/e2e/phase83-context-divergence-proof.json
 ```
 
 ## Result
@@ -33,7 +33,7 @@ cp /tmp/ctxpack-phase83-context-divergence-proof.json \
 | Corpus | Status | File Recall@10 | Lexical File Recall@10 | File Delta | Context Recall@10 | Lexical Context Recall@10 | Context Delta | Context vs All-File | Lexical Context vs All-File | Explained |
 | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |
 | RefactoringMiner | `match` | 0.600 | 1.000 | -0.400 | 1.000 | 1.000 | +0.000 | +0.400 | +0.000 | true |
-| ctxpack | `beat` | 0.446 | 0.306 | +0.140 | 0.444 | 0.306 | +0.139 | -0.002 | -0.001 | true |
+| ctxhelm | `beat` | 0.446 | 0.306 | +0.140 | 0.444 | 0.306 | +0.139 | -0.002 | -0.001 | true |
 | ReAgent | `beat` | 0.500 | 0.550 | -0.050 | 1.000 | 0.571 | +0.429 | +0.500 | +0.021 | true |
 | VeriSchema | `beat` | 0.168 | 0.122 | +0.046 | 0.205 | 0.082 | +0.123 | +0.038 | -0.040 | true |
 

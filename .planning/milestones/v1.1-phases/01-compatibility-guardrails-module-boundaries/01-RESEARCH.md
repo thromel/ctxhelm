@@ -17,7 +17,7 @@
 
 ### CLI guardrails
 - **D-04:** Add binary-level CLI tests for representative core commands rather than only renderer/helper tests. The minimum command set should include `--help`, `index`, `prepare-task`, `get-pack`, `search`, `related-tests`, `dependencies`, `eval history`, and `serve-mcp` startup/protocol smoke where practical.
-- **D-05:** CLI tests should use real temporary repositories and temporary `CTXPACK_HOME`, matching the existing fixture style in `.planning/codebase/TESTING.md`.
+- **D-05:** CLI tests should use real temporary repositories and temporary `CTXHELM_HOME`, matching the existing fixture style in `.planning/codebase/TESTING.md`.
 - **D-06:** Exact test harness choice is flexible, but the default planning assumption should be `assert_cmd`-style binary tests or an equivalent Cargo-supported approach that exercises the compiled binary rather than only direct function calls.
 
 ### MCP guardrails
@@ -47,29 +47,29 @@
 
 | ID | Description | Research Support |
 |----|-------------|------------------|
-| CONT-01 | Maintainer can run binary-level CLI tests that exercise core commands and verify output shape, repo path handling, and write side effects. | Use Cargo integration tests under `crates/ctxpack/tests/` with `assert_cmd`, real temp git repos, command-local `CTXPACK_HOME`, and JSON parsing assertions. |
+| CONT-01 | Maintainer can run binary-level CLI tests that exercise core commands and verify output shape, repo path handling, and write side effects. | Use Cargo integration tests under `crates/ctxhelm/tests/` with `assert_cmd`, real temp git repos, command-local `CTXHELM_HOME`, and JSON parsing assertions. |
 | CONT-02 | Maintainer can change internal modules without changing public JSON contracts for context plans, packs, eval traces, MCP structured content, and CLI outputs. | Add field-set/type-shape tests using `serde_json::Value` over `ContextPlan`, `ContextPack`, `EvalTrace`, `HistoricalEvalReport`, CLI JSON outputs, and MCP `structuredContent`. |
-| CONT-03 | Maintainer can run MCP handler/resource/prompt tests that verify current tool names, resource URI shapes, session behavior, and error responses. | Extend existing `ctxpack-mcp` in-process JSON-RPC tests for exact tool/resource/prompt lists, all six implemented tools, file/symbol/repo/pack resources, and protocol error codes. |
+| CONT-03 | Maintainer can run MCP handler/resource/prompt tests that verify current tool names, resource URI shapes, session behavior, and error responses. | Extend existing `ctxhelm-mcp` in-process JSON-RPC tests for exact tool/resource/prompt lists, all six implemented tools, file/symbol/repo/pack resources, and protocol error codes. |
 | CONT-04 | Maintainer can split large modules into focused submodules while preserving existing CLI, MCP, and library behavior. | Use crate-root facade modules with `pub use`, move code in small concern slices after guardrails pass, and rerun focused plus workspace tests after each split. |
 </phase_requirements>
 
 ## Summary
 
-Phase 1 should be planned as a protection phase, not a product behavior phase. The existing repo already has good inline unit and integration-style tests, but it does not yet have binary-level tests for the compiled `ctxpack` executable. The highest-leverage first step is to add CLI integration tests in `crates/ctxpack/tests/` using `assert_cmd` and the repo's existing temp-repo fixture style. These tests should parse JSON where possible and inspect stable field names, paths, side effects, and protocol lines instead of snapshotting entire dynamic outputs.
+Phase 1 should be planned as a protection phase, not a product behavior phase. The existing repo already has good inline unit and integration-style tests, but it does not yet have binary-level tests for the compiled `ctxhelm` executable. The highest-leverage first step is to add CLI integration tests in `crates/ctxhelm/tests/` using `assert_cmd` and the repo's existing temp-repo fixture style. These tests should parse JSON where possible and inspect stable field names, paths, side effects, and protocol lines instead of snapshotting entire dynamic outputs.
 
-For MCP and JSON compatibility, the current code is already close to the right shape: `ctxpack-mcp` has in-process JSON-RPC tests, `ctxpack-core` has explicit serde field-name tests, and all protocol responses are built with `serde_json::Value`. Phase 1 should extend these into compatibility tests before moving code. MCP tests must preserve the intentionally small implemented tool set and must assert both `structuredContent` and `content[0].text`, matching the MCP specification's backwards-compatibility guidance for structured tool results.
+For MCP and JSON compatibility, the current code is already close to the right shape: `ctxhelm-mcp` has in-process JSON-RPC tests, `ctxhelm-core` has explicit serde field-name tests, and all protocol responses are built with `serde_json::Value`. Phase 1 should extend these into compatibility tests before moving code. MCP tests must preserve the intentionally small implemented tool set and must assert both `structuredContent` and `content[0].text`, matching the MCP specification's backwards-compatibility guidance for structured tool results.
 
-**Primary recommendation:** Plan Wave 0 as compatibility harness work, then split modules behind unchanged crate-root facades one crate at a time: `ctxpack-index`, then `ctxpack-compiler`, then `ctxpack-mcp`.
+**Primary recommendation:** Plan Wave 0 as compatibility harness work, then split modules behind unchanged crate-root facades one crate at a time: `ctxhelm-index`, then `ctxhelm-compiler`, then `ctxhelm-mcp`.
 
 ## Project Constraints (from CLAUDE.md and AGENTS.md)
 
-- Keep ctxpack local-first, source-safe, and read-only; do not add autonomous editing, cloud indexing, cloud embeddings, or cloud reranking.
+- Keep ctxhelm local-first, source-safe, and read-only; do not add autonomous editing, cloud indexing, cloud embeddings, or cloud reranking.
 - Product surface remains agent-native: AGENTS.md, MCP, and thin native adapters. CLI is for setup, debugging, and automation.
 - Prefer small typed contracts over stringly typed output.
 - Preserve the Rust workspace and typed-contract architecture unless measurement justifies a change.
 - Add focused tests for context selection, privacy, generated agent instructions, and now public compatibility surfaces.
-- Do not run user project tests automatically from ctxpack; ctxpack may recommend commands only.
-- Validation for implementation work remains `cargo test --workspace`; after CLI changes also run `cargo run -p ctxpack -- --help`.
+- Do not run user project tests automatically from ctxhelm; ctxhelm may recommend commands only.
+- Validation for implementation work remains `cargo test --workspace`; after CLI changes also run `cargo run -p ctxhelm -- --help`.
 - Project-local skill directories `.claude/skills/` and `.agents/skills/` were not present during research.
 
 ## Standard Stack
@@ -82,7 +82,7 @@ For MCP and JSON compatibility, the current code is already close to the right s
 | `assert_cmd` | 2.2.2, published 2026-05-11 | Binary-level CLI tests | Official docs describe `Command::cargo_bin`, env/current-dir setup, stdin, timeouts, and stdout/stderr assertions. This matches CONT-01. |
 | `predicates` | 3.1.4, published 2026-02-11 | Text predicates for help/Markdown output | Pairs with `assert_cmd` for stable substring/contains assertions without full-output snapshots. |
 | `serde_json` | existing workspace dep, lockfile has 1.0.149 | Structured JSON parsing and field-shape assertions | Already used in contracts and MCP tests; avoids string matching for public JSON. |
-| `tempfile` | existing workspace dep, lockfile has 3.27.0 | Isolated repos and `CTXPACK_HOME` fixtures | Already used throughout index/compiler/MCP tests; keep fixture style consistent. |
+| `tempfile` | existing workspace dep, lockfile has 3.27.0 | Isolated repos and `CTXHELM_HOME` fixtures | Already used throughout index/compiler/MCP tests; keep fixture style consistent. |
 
 ### Supporting
 
@@ -97,16 +97,16 @@ For MCP and JSON compatibility, the current code is already close to the right s
 
 | Instead of | Could Use | Tradeoff |
 |------------|-----------|----------|
-| `assert_cmd` | Direct `std::process::Command` plus `env!("CARGO_BIN_EXE_ctxpack")` | Fewer dependencies, but more boilerplate for assertions, timeouts, and output inspection. |
+| `assert_cmd` | Direct `std::process::Command` plus `env!("CARGO_BIN_EXE_ctxhelm")` | Fewer dependencies, but more boilerplate for assertions, timeouts, and output inspection. |
 | Structured JSON assertions | Full `insta` snapshots | Snapshots catch broad drift but churn on UUIDs, hashes, paths, ordering, and formatting unless carefully redacted. |
 | Hand-written per-command fixtures | `trycmd` cases | `trycmd` is strong for many simple commands, but this phase needs dynamic temp repos, temp homes, and side-effect checks. |
 
 **Installation:**
 
 ```bash
-cargo add --dev assert_cmd@2.2.2 predicates@3.1.4 -p ctxpack
+cargo add --dev assert_cmd@2.2.2 predicates@3.1.4 -p ctxhelm
 # Optional only if the plan adds snapshot side-effect tests:
-cargo add --dev snapbox@1.2.1 -p ctxpack
+cargo add --dev snapbox@1.2.1 -p ctxhelm
 ```
 
 **Version verification:** Verified with `cargo search`, `cargo info`, and crates.io API on 2026-05-13. Local toolchain is `rustc 1.87.0`, `cargo 1.87.0`, and `git 2.45.1`.
@@ -116,7 +116,7 @@ cargo add --dev snapbox@1.2.1 -p ctxpack
 ### Recommended Project Structure
 
 ```text
-crates/ctxpack/
+crates/ctxhelm/
 |-- Cargo.toml                 # add assert_cmd/predicates dev-deps here
 |-- src/main.rs                # keep command definitions and renderer helpers
 `-- tests/
@@ -124,11 +124,11 @@ crates/ctxpack/
     `-- common/
         `-- mod.rs             # temp repo, git, JSON shape helpers
 
-crates/ctxpack-core/src/
+crates/ctxhelm-core/src/
 |-- contracts.rs               # extend contract serialization shape tests
 `-- lib.rs                     # unchanged public exports
 
-crates/ctxpack-index/src/
+crates/ctxhelm-index/src/
 |-- lib.rs                     # facade: mod declarations + pub use
 |-- inventory.rs
 |-- search.rs
@@ -138,7 +138,7 @@ crates/ctxpack-index/src/
 |-- git.rs
 `-- traces.rs
 
-crates/ctxpack-compiler/src/
+crates/ctxhelm-compiler/src/
 |-- lib.rs                     # facade: public API preserved
 |-- planning.rs
 |-- packs.rs
@@ -146,7 +146,7 @@ crates/ctxpack-compiler/src/
 |-- eval.rs
 `-- render.rs
 
-crates/ctxpack-mcp/src/
+crates/ctxhelm-mcp/src/
 |-- lib.rs                     # facade: run_stdio_server/run_server preserved
 |-- protocol.rs
 |-- schemas.rs
@@ -157,13 +157,13 @@ crates/ctxpack-mcp/src/
 
 ### Pattern 1: Binary Tests Live Beside the CLI Package
 
-**What:** Add integration tests under `crates/ctxpack/tests/`, not the workspace root and not inline in `main.rs`.
+**What:** Add integration tests under `crates/ctxhelm/tests/`, not the workspace root and not inline in `main.rs`.
 
-**When to use:** Any test that must execute the compiled `ctxpack` binary, validate Clap wiring, verify stdout/stderr, or inspect CLI side effects.
+**When to use:** Any test that must execute the compiled `ctxhelm` binary, validate Clap wiring, verify stdout/stderr, or inspect CLI side effects.
 
-**Why:** Cargo integration tests are separate binaries. Cargo automatically builds binary targets for package integration tests and exposes `CARGO_BIN_EXE_<name>` for locating them. `assert_cmd::Command::cargo_bin("ctxpack")` wraps this pattern.
+**Why:** Cargo integration tests are separate binaries. Cargo automatically builds binary targets for package integration tests and exposes `CARGO_BIN_EXE_<name>` for locating them. `assert_cmd::Command::cargo_bin("ctxhelm")` wraps this pattern.
 
-**Plan implication:** Put CLI compatibility tests in one integration test target, e.g. `crates/ctxpack/tests/cli_compat.rs`, to avoid many separate integration-test crates and to share fixture helpers.
+**Plan implication:** Put CLI compatibility tests in one integration test target, e.g. `crates/ctxhelm/tests/cli_compat.rs`, to avoid many separate integration-test crates and to share fixture helpers.
 
 ### Pattern 2: Structured Assertions First, Golden Snapshots Second
 
@@ -175,7 +175,7 @@ crates/ctxpack-mcp/src/
 
 ### Pattern 3: MCP Compatibility Tests Stay In-Process First
 
-**What:** Extend the existing `handle_line`/`run_server` tests in `ctxpack-mcp` for protocol behavior, then add one CLI binary `serve-mcp` smoke.
+**What:** Extend the existing `handle_line`/`run_server` tests in `ctxhelm-mcp` for protocol behavior, then add one CLI binary `serve-mcp` smoke.
 
 **When to use:** Tool/resource/prompt lists, handler dispatch, session-scoped pack resources, JSON-RPC errors, and `structuredContent` plus text compatibility.
 
@@ -188,7 +188,7 @@ crates/ctxpack-mcp/src/
 **Example:**
 
 ```rust
-// crates/ctxpack-index/src/lib.rs
+// crates/ctxhelm-index/src/lib.rs
 mod dependencies;
 mod inventory;
 mod search;
@@ -201,7 +201,7 @@ pub use inventory::{
 pub use search::{lexical_search, SearchOptions, SearchResult};
 ```
 
-**When to use:** Every split in `ctxpack-index`, `ctxpack-compiler`, and `ctxpack-mcp`.
+**When to use:** Every split in `ctxhelm-index`, `ctxhelm-compiler`, and `ctxhelm-mcp`.
 
 **Plan implication:** Do not update CLI or MCP call sites just because code moved. If a public API must change, add a characterization test first and treat the API change as a separate explicit compatibility decision.
 
@@ -211,7 +211,7 @@ pub use search::{lexical_search, SearchOptions, SearchResult};
 2. **Wave 1 - CLI command coverage:** cover `prepare-task`, `get-pack`, `search`, `related-tests`, `dependencies`, `eval history`, and `serve-mcp` binary smoke.
 3. **Wave 2 - Public JSON contracts:** extend core/compiler contract tests for `ContextPlan`, `ContextPack`, `EvalTrace`, `HistoricalEvalReport`, and representative CLI JSON outputs.
 4. **Wave 3 - MCP compatibility:** harden in-process MCP tests for exact tool/resource/prompt surfaces, all six tool `structuredContent` shapes, text fallbacks, resource reads, session pack resources, and error codes.
-5. **Wave 4 - Module splitting:** split `ctxpack-index` first, then `ctxpack-compiler`, then `ctxpack-mcp`, rerunning focused tests after each crate and `cargo test --workspace` at the end.
+5. **Wave 4 - Module splitting:** split `ctxhelm-index` first, then `ctxhelm-compiler`, then `ctxhelm-mcp`, rerunning focused tests after each crate and `cargo test --workspace` at the end.
 6. **Wave 5 - Cleanup and docs:** update only internal code organization notes if needed; do not change user-facing behavior or README command promises unless a test documents an intentional additive compatibility guarantee.
 
 ### Anti-Patterns to Avoid
@@ -228,16 +228,16 @@ Minimum binary tests for CONT-01:
 
 | Command | Assertions |
 |---------|------------|
-| `ctxpack --help` | exits 0; contains command names; no exact full help snapshot. |
-| `ctxpack index --repo <repo>` | uses explicit repo; writes inventory under command-local `CTXPACK_HOME`; excludes sensitive/generated defaults; stdout reports counts. |
-| `ctxpack prepare-task ... --repo <repo> --mode bug-fix --target-agent codex` | stdout parses as `ContextPlan`; stable camelCase fields; expected target/test paths; trace append side effect exists. |
-| `ctxpack get-pack ... --format json` | stdout parses as `ContextPack`; includes `repoId`, `taskHash`, `targetAgent`, `budget`, sections, warnings, privacy status. |
-| `ctxpack get-pack ... --format markdown` | contains stable headings such as `# Context Pack` and provenance header fields; avoid full snapshot. |
-| `ctxpack search <query> --repo <repo>` | JSON array shape and source-free summary fields. |
-| `ctxpack related-tests <path> --repo <repo>` | JSON array shape and targeted command presence. |
-| `ctxpack dependencies <path> --repo <repo>` | JSON array shape with `sourcePath`, `targetPath`, and `kind`. |
-| `ctxpack eval history --repo <repo> --limit 1 --format json` | JSON report shape, source-free fields, bounded result count. |
-| `ctxpack serve-mcp` | feed `initialize` and `tools/list` over stdin; parse one JSON-RPC response per line. |
+| `ctxhelm --help` | exits 0; contains command names; no exact full help snapshot. |
+| `ctxhelm index --repo <repo>` | uses explicit repo; writes inventory under command-local `CTXHELM_HOME`; excludes sensitive/generated defaults; stdout reports counts. |
+| `ctxhelm prepare-task ... --repo <repo> --mode bug-fix --target-agent codex` | stdout parses as `ContextPlan`; stable camelCase fields; expected target/test paths; trace append side effect exists. |
+| `ctxhelm get-pack ... --format json` | stdout parses as `ContextPack`; includes `repoId`, `taskHash`, `targetAgent`, `budget`, sections, warnings, privacy status. |
+| `ctxhelm get-pack ... --format markdown` | contains stable headings such as `# Context Pack` and provenance header fields; avoid full snapshot. |
+| `ctxhelm search <query> --repo <repo>` | JSON array shape and source-free summary fields. |
+| `ctxhelm related-tests <path> --repo <repo>` | JSON array shape and targeted command presence. |
+| `ctxhelm dependencies <path> --repo <repo>` | JSON array shape with `sourcePath`, `targetPath`, and `kind`. |
+| `ctxhelm eval history --repo <repo> --limit 1 --format json` | JSON report shape, source-free fields, bounded result count. |
+| `ctxhelm serve-mcp` | feed `initialize` and `tools/list` over stdin; parse one JSON-RPC response per line. |
 
 ## MCP Compatibility Guardrails
 
@@ -256,7 +256,7 @@ MCP test matrix for CONT-03:
 
 | Surface | Required Assertions |
 |---------|---------------------|
-| `initialize` | `protocolVersion` stays current local value, `serverInfo.name == "ctxpack"`, capabilities include tools/resources/prompts with `listChanged: false`. |
+| `initialize` | `protocolVersion` stays current local value, `serverInfo.name == "ctxhelm"`, capabilities include tools/resources/prompts with `listChanged: false`. |
 | `tools/list` | exactly six tools, stable names/order, stable required args and enum encodings, `includeCurrentDiff` camelCase input field preserved. |
 | `tools/call prepare_task` | `structuredContent` is a `ContextPlan`; `content[0].text` contains serialized JSON fallback; pack resource URIs include brief/standard/deep. |
 | `tools/call get_pack` | `structuredContent` is a `ContextPack`; Markdown mode text fallback and JSON mode structured output both work. |
@@ -264,8 +264,8 @@ MCP test matrix for CONT-03:
 | `tools/call related` | structured `resolvedPaths`, `symbolMatches`, `relatedTests`, `coChangeHints`, `dependencyEdges`, and warnings shape. |
 | `tools/call related_tests` | structured array of test results and text fallback. |
 | `tools/call current_diff` | structured `staged`, `unstaged`, `untracked`, `excluded`, `privacyStatus`; source text remains false. |
-| `resources/list` | exact repo resources: `ctxpack://repo/summary`, `ctxpack://repo/test-map`, `ctxpack://repo/dependency-graph`, `ctxpack://pack/guide`. |
-| `resources/read` | repo resources, safe file slices, `ctxpack://symbol/<name>`, and same-process `ctxpack://pack/<id>` reads. |
+| `resources/list` | exact repo resources: `ctxhelm://repo/summary`, `ctxhelm://repo/test-map`, `ctxhelm://repo/dependency-graph`, `ctxhelm://pack/guide`. |
+| `resources/read` | repo resources, safe file slices, `ctxhelm://symbol/<name>`, and same-process `ctxhelm://pack/<id>` reads. |
 | `prompts/list` and `prompts/get` | six prompt names and stable message/content shape. |
 | Errors | parse error `-32700`, method not found `-32601`, invalid params `-32602`, unknown tool/resource errors. |
 
@@ -294,13 +294,13 @@ fn object_keys(value: &serde_json::Value) -> Vec<&str> {
 }
 ```
 
-Prefer key-set and selected-value assertions over JSON Schema generation for Phase 1. JSON Schema is useful later if ctxpack publishes schemas or MCP `outputSchema`, but it is extra dependency and maintenance surface right now.
+Prefer key-set and selected-value assertions over JSON Schema generation for Phase 1. JSON Schema is useful later if ctxhelm publishes schemas or MCP `outputSchema`, but it is extra dependency and maintenance surface right now.
 
 ## Don't Hand-Roll
 
 | Problem | Don't Build | Use Instead | Why |
 |---------|-------------|-------------|-----|
-| Finding and running the compiled CLI binary | Custom target-dir path guessing | `assert_cmd::Command::cargo_bin("ctxpack")` | Cargo already exposes binary paths for integration tests; path guessing breaks across profiles and workspaces. |
+| Finding and running the compiled CLI binary | Custom target-dir path guessing | `assert_cmd::Command::cargo_bin("ctxhelm")` | Cargo already exposes binary paths for integration tests; path guessing breaks across profiles and workspaces. |
 | CLI stdout/stderr assertions | Manual process wrappers everywhere | `assert_cmd` plus `predicates` | Gives success/failure, stdin, timeout, env, cwd, stdout, and stderr support. |
 | Temp repo/home fixtures | Shared persistent fixture dirs | `tempfile::TempDir` plus real `git` commands | Existing tests already rely on isolated real repos and avoid persistent local state. |
 | JSON contract checks | String contains checks for JSON | `serde_json::Value` shape assertions | Protects field names and enum encodings without formatting brittleness. |
@@ -315,10 +315,10 @@ This is a module-boundary/refactor phase, so runtime state was audited for non-s
 
 | Category | Items Found | Action Required |
 |----------|-------------|-----------------|
-| Stored data | Existing ctxpack local data under `CTXPACK_HOME` or `~/.ctxpack/repos/<repo-id>/`: `inventory.json` and `traces.jsonl` use public JSON contracts such as repo IDs, task hashes, file paths, and eval trace fields. No Rust module names are stored. | No data migration for module splits. Add compatibility tests so code moves do not change serialized field names. |
-| Live service config | None found in repo. MCP client configs may refer to the `ctxpack serve-mcp` command, not Rust module paths. | Preserve CLI command name and `serve-mcp` behavior. No external service patch in Phase 1. |
+| Stored data | Existing ctxhelm local data under `CTXHELM_HOME` or `~/.ctxhelm/repos/<repo-id>/`: `inventory.json` and `traces.jsonl` use public JSON contracts such as repo IDs, task hashes, file paths, and eval trace fields. No Rust module names are stored. | No data migration for module splits. Add compatibility tests so code moves do not change serialized field names. |
+| Live service config | None found in repo. MCP client configs may refer to the `ctxhelm serve-mcp` command, not Rust module paths. | Preserve CLI command name and `serve-mcp` behavior. No external service patch in Phase 1. |
 | OS-registered state | None found in repo for launchd/systemd/pm2/task scheduler style registrations. | None. |
-| Secrets/env vars | `CTXPACK_HOME` is a public env var used in tests/runtime. No secret key names tied to module names found. | Preserve `CTXPACK_HOME`; binary tests should set it per command, not globally when possible. |
+| Secrets/env vars | `CTXHELM_HOME` is a public env var used in tests/runtime. No secret key names tied to module names found. | Preserve `CTXHELM_HOME`; binary tests should set it per command, not globally when possible. |
 | Build artifacts | Cargo `target/` may contain stale incremental artifacts after moves; no committed build artifacts. | Rerun Cargo tests after each split. If Cargo gets stuck or stale, planner may include `cargo clean -p <crate>` as a troubleshooting fallback, not a default task. |
 
 ## Common Pitfalls
@@ -329,7 +329,7 @@ This is a module-boundary/refactor phase, so runtime state was audited for non-s
 
 **Why it happens:** Existing CLI tests are renderer/helper tests in `main.rs`, not compiled-binary tests.
 
-**How to avoid:** Put representative command tests in `crates/ctxpack/tests/cli_compat.rs` using `assert_cmd`.
+**How to avoid:** Put representative command tests in `crates/ctxhelm/tests/cli_compat.rs` using `assert_cmd`.
 
 **Warning signs:** A plan claims CONT-01 with only direct Rust function calls.
 
@@ -345,11 +345,11 @@ This is a module-boundary/refactor phase, so runtime state was audited for non-s
 
 ### Pitfall 3: Global Environment Leaks Across Tests
 
-**What goes wrong:** Tests pass or fail depending on execution order because `CTXPACK_HOME` or process cwd remains changed.
+**What goes wrong:** Tests pass or fail depending on execution order because `CTXHELM_HOME` or process cwd remains changed.
 
 **Why it happens:** Existing inline tests use global env and sometimes cwd with an `env_lock`; binary tests can avoid this by setting command-local env and cwd.
 
-**How to avoid:** Prefer `.env("CTXPACK_HOME", temp_home)` and `.current_dir(repo)` on `assert_cmd::Command`. Use a mutex only when mutating process-global env/cwd in in-process tests.
+**How to avoid:** Prefer `.env("CTXHELM_HOME", temp_home)` and `.current_dir(repo)` on `assert_cmd::Command`. Use a mutex only when mutating process-global env/cwd in in-process tests.
 
 **Warning signs:** New tests call `std::env::set_var` without a guard or cleanup.
 
@@ -357,7 +357,7 @@ This is a module-boundary/refactor phase, so runtime state was audited for non-s
 
 **What goes wrong:** A test prepares a pack in one process and reads the resource in another, then concludes resources are broken.
 
-**Why it happens:** Current pack-resource cache is process-local in `ctxpack-mcp`.
+**Why it happens:** Current pack-resource cache is process-local in `ctxhelm-mcp`.
 
 **How to avoid:** Characterize same-process/session behavior in Phase 1. Do not require cross-process resource durability until Phase 4.
 
@@ -371,7 +371,7 @@ This is a module-boundary/refactor phase, so runtime state was audited for non-s
 
 **How to avoid:** Keep crate-root facades stable with `pub use`; run compiler tests and binary/MCP compatibility tests after each move.
 
-**Warning signs:** A module split plan includes broad edits to `crates/ctxpack/src/main.rs` or `ctxpack-mcp` call sites before tests fail.
+**Warning signs:** A module split plan includes broad edits to `crates/ctxhelm/src/main.rs` or `ctxhelm-mcp` call sites before tests fail.
 
 ### Pitfall 6: MCP Spec Drift Becomes Product Scope
 
@@ -398,9 +398,9 @@ use serde_json::Value;
 fn prepare_task_binary_preserves_context_plan_shape() {
     let fixture = FixtureRepo::new();
 
-    let output = Command::cargo_bin("ctxpack")
+    let output = Command::cargo_bin("ctxhelm")
         .unwrap()
-        .env("CTXPACK_HOME", &fixture.home)
+        .env("CTXHELM_HOME", &fixture.home)
         .args([
             "prepare-task",
             "fix requireSession bug",
@@ -427,7 +427,7 @@ fn prepare_task_binary_preserves_context_plan_shape() {
 ### MCP Structured And Text Compatibility
 
 ```rust
-// Source: current ctxpack-mcp handler style and MCP structuredContent guidance.
+// Source: current ctxhelm-mcp handler style and MCP structuredContent guidance.
 #[test]
 fn prepare_task_returns_structured_content_and_text_fallback() {
     let response = handle_line(r#"{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"prepare_task","arguments":{"task":"fix bug","repo":"/tmp/repo","mode":"bug_fix"}}}"#)
@@ -463,7 +463,7 @@ fn assert_object_keys(value: &serde_json::Value, expected: &[&str]) {
 ### Facade-Preserving Module Split
 
 ```rust
-// crates/ctxpack-mcp/src/lib.rs
+// crates/ctxhelm-mcp/src/lib.rs
 mod protocol;
 mod resources;
 mod tools;
@@ -485,7 +485,7 @@ Keep the public functions visible from the crate root. Move tests with the priva
 **Deprecated/outdated:**
 
 - `assert_cli`: Do not use. `assert_cmd` docs identify it as the successor.
-- Full source-text snapshots for search/plan/eval outputs: avoid because ctxpack's product contract emphasizes source-free summaries for many surfaces.
+- Full source-text snapshots for search/plan/eval outputs: avoid because ctxhelm's product contract emphasizes source-free summaries for many surfaces.
 - MCP SDK migration as compatibility work: out of scope for Phase 1.
 
 ## Open Questions
@@ -513,7 +513,7 @@ Keep the public functions visible from the crate root. Move tests with the priva
 | Cargo | Test runner and dependency management | yes | `cargo 1.87.0` | None needed |
 | git CLI | Fixture repos, index/history/current diff tests | yes | `git 2.45.1` | No good fallback for this phase |
 | crates.io access | Version verification and adding test deps | yes | API reachable 2026-05-13 | Manual Cargo.toml edit if `cargo add` is unavailable |
-| Node.js | GSD tooling only | yes | `node` ran init/version scripts | Not required by ctxpack tests |
+| Node.js | GSD tooling only | yes | `node` ran init/version scripts | Not required by ctxhelm tests |
 
 **Missing dependencies with no fallback:**
 - None found.
@@ -526,11 +526,11 @@ Keep the public functions visible from the crate root. Move tests with the priva
 `.planning/config.json` explicitly sets `workflow.nyquist_validation` to `false`, so no Nyquist validation architecture is included. Phase 1 still needs these implementation validation commands:
 
 ```bash
-cargo test -p ctxpack --test cli_compat
-cargo test -p ctxpack-core contracts
-cargo test -p ctxpack-mcp
+cargo test -p ctxhelm --test cli_compat
+cargo test -p ctxhelm-core contracts
+cargo test -p ctxhelm-mcp
 cargo test --workspace
-cargo run -p ctxpack -- --help
+cargo run -p ctxhelm -- --help
 ```
 
 ## Sources
@@ -538,7 +538,7 @@ cargo run -p ctxpack -- --help
 ### Primary (HIGH confidence)
 
 - Local project files: `.planning/phases/01-compatibility-guardrails-module-boundaries/01-CONTEXT.md`, `.planning/REQUIREMENTS.md`, `.planning/ROADMAP.md`, `.planning/STATE.md`, `.planning/codebase/CONVENTIONS.md`, `.planning/codebase/STRUCTURE.md`, `.planning/codebase/TESTING.md`.
-- Local code: `Cargo.toml`, `crates/ctxpack/src/main.rs`, `crates/ctxpack-core/src/contracts.rs`, `crates/ctxpack-index/src/lib.rs`, `crates/ctxpack-compiler/src/lib.rs`, `crates/ctxpack-mcp/src/lib.rs`.
+- Local code: `Cargo.toml`, `crates/ctxhelm/src/main.rs`, `crates/ctxhelm-core/src/contracts.rs`, `crates/ctxhelm-index/src/lib.rs`, `crates/ctxhelm-compiler/src/lib.rs`, `crates/ctxhelm-mcp/src/lib.rs`.
 - Cargo Book, Cargo Targets: https://doc.rust-lang.org/cargo/reference/cargo-targets.html
 - assert_cmd 2.2.2 docs: https://docs.rs/assert_cmd/latest/assert_cmd/
 - MCP 2025-06-18 Tools spec: https://modelcontextprotocol.io/specification/2025-06-18/server/tools
@@ -562,7 +562,7 @@ cargo run -p ctxpack -- --help
 
 - Standard stack: HIGH - Current versions verified through Cargo/crates.io and official docs; matches phase constraints.
 - Architecture: HIGH - Based on live repo structure, Cargo behavior, and existing test conventions.
-- Pitfalls: HIGH - Derived from current code patterns, official MCP/Cargo behavior, and prior ctxpack execution history.
+- Pitfalls: HIGH - Derived from current code patterns, official MCP/Cargo behavior, and prior ctxhelm execution history.
 - Module split order: MEDIUM-HIGH - Strongly grounded in crate ownership, but exact file boundaries should be adjusted during implementation to minimize diff risk.
 
 **Research date:** 2026-05-13

@@ -16,8 +16,8 @@ gates without expanding the MCP tool surface.
 
 ## Verification
 
-- `cargo test -p ctxpack-mcp resources`
-- `cargo test -p ctxpack script_contract --test release_packaging`
+- `cargo test -p ctxhelm-mcp resources`
+- `cargo test -p ctxhelm script_contract --test release_packaging`
 - `scripts/smoke-shared-artifacts.sh`
 - `scripts/check-release-docs.sh`
 

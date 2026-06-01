@@ -4,8 +4,8 @@
 
 - `bash scripts/smoke-feedback.sh`
 - `bash scripts/check-release-docs.sh`
-- `CARGO_TARGET_DIR=/tmp/ctxpack-target cargo run -p ctxpack -- --help`
-- `CARGO_TARGET_DIR=/tmp/ctxpack-target cargo test --workspace`
+- `CARGO_TARGET_DIR=/tmp/ctxhelm-target cargo run -p ctxhelm -- --help`
+- `CARGO_TARGET_DIR=/tmp/ctxhelm-target cargo test --workspace`
 
 ## Result
 

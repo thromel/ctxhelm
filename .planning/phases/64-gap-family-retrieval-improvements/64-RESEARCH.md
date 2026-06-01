@@ -20,7 +20,7 @@ before/after proof on the fixed v2.5 two-repo corpus.
 ## Current Evidence
 
 Phase 63 proved that a broad local metadata reranker is not safe to promote yet.
-It improved RefactoringMiner aggregate Recall@10 but regressed ctxpack and
+It improved RefactoringMiner aggregate Recall@10 but regressed ctxhelm and
 demoted protected evidence.
 
 The most actionable Phase 63 gaps are:
@@ -29,8 +29,8 @@ The most actionable Phase 63 gaps are:
   `src/main/java/org/refactoringminer/astDiff/matchers/wrappers/*.java`.
 - RefactoringMiner: `no_candidate_signal` for
   `src/main/java/gr/uom/java/xmi/decomposition/*.java`.
-- ctxpack: docs/planning `no_candidate_signal`.
-- ctxpack: compiler `ranked_below_budget_dependency`.
+- ctxhelm: docs/planning `no_candidate_signal`.
+- ctxhelm: compiler `ranked_below_budget_dependency`.
 
 ## Problem
 
@@ -58,7 +58,7 @@ The likely fix surface is one of:
 Any fix must be measured against:
 
 - RefactoringMiner Recall@10 and gap count for the wrapper family;
-- ctxpack Recall@10 to catch collateral regressions;
+- ctxhelm Recall@10 to catch collateral regressions;
 - test recall separately from source recall;
 - protected evidence miss rate.
 

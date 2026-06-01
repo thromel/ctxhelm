@@ -1,0 +1,35 @@
+{
+  "archiveName": "ctxhelm-v1.1.1-aarch64-apple-darwin.tar.gz",
+  "archiveSha256": "8def6fd05eea21842e732e2c058f5a3147cf3cf33b85c69579785182aa7dd437",
+  "binarySha256": "745cf52d3cf4c1ac9b8611c8f9a33a86069ad151224cb82649e62da0263cccf7",
+  "checks": {
+    "archiveVerified": true,
+    "checksumsVerified": true,
+    "doctorPassed": true,
+    "downloadedPublicAssets": true,
+    "firstPackSmokePassed": true,
+    "helpPassed": true,
+    "installedToTemporaryBin": true,
+    "versionPassed": true
+  },
+  "downloadBaseUrl": "https://github.com/thromel/ctxhelm/releases/download/v1.1.1",
+  "privacyStatus": {
+    "localOnly": true,
+    "remoteEmbeddingsUsed": false,
+    "remoteRerankingUsed": false,
+    "sourceTextLogged": false
+  },
+  "releaseUrl": "https://github.com/thromel/ctxhelm/releases/tag/v1.1.1",
+  "repo": "thromel/ctxhelm",
+  "schemaVersion": 1,
+  "tag": "v1.1.1",
+  "targetLabel": "aarch64-apple-darwin",
+  "unsupportedActions": [
+    "global install",
+    "global agent config mutation",
+    "publishing",
+    "tag creation",
+    "user project test execution"
+  ],
+  "version": "ctxhelm 1.1.1"
+}

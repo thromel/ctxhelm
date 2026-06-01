@@ -5,12 +5,12 @@
 
 ## Delivered
 
-- Added `ctxpack doctor` for read-only install and upgrade diagnostics.
+- Added `ctxhelm doctor` for read-only install and upgrade diagnostics.
 - `doctor` verifies:
   - absolute binary path
   - binary exists
-  - `ctxpack --version`
-  - `ctxpack --help`
+  - `ctxhelm --version`
+  - `ctxhelm --help`
   - optional release manifest version/privacy/checksum metadata
   - optional repo-local storage compatibility
 - Added JSON and Markdown doctor output.
@@ -23,11 +23,11 @@
 
 - `cargo fmt --all --check`
 - `bash scripts/check-release-docs.sh`
-- `CARGO_TARGET_DIR=/tmp/ctxpack-target-phase46-cli cargo test -p ctxpack --test cli_compat -- --nocapture`
-- `CARGO_TARGET_DIR=/tmp/ctxpack-target-release-packaging cargo test -p ctxpack --test release_packaging -- --nocapture`
-- `CARGO_TARGET_DIR=/tmp/ctxpack-target-phase46-cli cargo run -p ctxpack -- --help`
-- `CARGO_TARGET_DIR=/tmp/ctxpack-target-phase46-cli cargo run -p ctxpack -- doctor --help`
-- `CARGO_TARGET_DIR=/tmp/ctxpack-target-phase46-cli cargo run -p ctxpack -- doctor --repo . --binary /tmp/ctxpack-target-phase46-cli/debug/ctxpack --release-manifest /tmp/ctxpack-phase45-dist/ctxpack-v1.1.0-aarch64-apple-darwin.manifest.json --format json`
+- `CARGO_TARGET_DIR=/tmp/ctxhelm-target-phase46-cli cargo test -p ctxhelm --test cli_compat -- --nocapture`
+- `CARGO_TARGET_DIR=/tmp/ctxhelm-target-release-packaging cargo test -p ctxhelm --test release_packaging -- --nocapture`
+- `CARGO_TARGET_DIR=/tmp/ctxhelm-target-phase46-cli cargo run -p ctxhelm -- --help`
+- `CARGO_TARGET_DIR=/tmp/ctxhelm-target-phase46-cli cargo run -p ctxhelm -- doctor --help`
+- `CARGO_TARGET_DIR=/tmp/ctxhelm-target-phase46-cli cargo run -p ctxhelm -- doctor --repo . --binary /tmp/ctxhelm-target-phase46-cli/debug/ctxhelm --release-manifest /tmp/ctxhelm-phase45-dist/ctxhelm-v1.1.0-aarch64-apple-darwin.manifest.json --format json`
 
 ## Notes
 

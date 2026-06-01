@@ -18,13 +18,13 @@
 ## Verification
 
 - `cargo fmt --all`
-- `cargo test -p ctxpack-compiler pack_inspector_view_keeps_source_snippets_out_of_metadata -- --nocapture`
+- `cargo test -p ctxhelm-compiler pack_inspector_view_keeps_source_snippets_out_of_metadata -- --nocapture`
 - `bash scripts/smoke-inspector.sh`
 - `bash scripts/check-release-docs.sh`
 - `bash -n scripts/release-gate.sh`
 - `bash -n scripts/smoke-inspector.sh`
-- `cargo test -p ctxpack release_gate_script_contract -- --nocapture`
-- `cargo test -p ctxpack release_docs_check_passes -- --nocapture`
+- `cargo test -p ctxhelm release_gate_script_contract -- --nocapture`
+- `cargo test -p ctxhelm release_docs_check_passes -- --nocapture`
 - `cargo test --workspace`
 - Playwright render sanity check through bundled Node runtime:
   desktop and narrow mobile viewports loaded with no sentinel leak and working

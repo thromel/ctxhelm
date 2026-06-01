@@ -91,7 +91,7 @@ Gate object:
 
 1. Build semantic documents from safe inventory, symbols, tests, docs, cards, and optional precision edges.
 2. Embed documents locally by default.
-3. Persist source-free vector metadata and local vector files under ctxpack storage.
+3. Persist source-free vector metadata and local vector files under ctxhelm storage.
 4. At query time, construct lexical, semantic, and reranker queries from the same task facets.
 5. Fuse semantic candidates with existing lexical/graph/history/test candidates.
 6. Run paired evals before changing default policy.

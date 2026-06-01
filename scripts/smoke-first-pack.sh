@@ -2,27 +2,27 @@
 set -euo pipefail
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
-ctxpack_root="$(cd "$script_dir/.." && pwd -P)"
-protocol_script="$ctxpack_root/scripts/smoke-mcp-protocol.sh"
+ctxhelm_root="$(cd "$script_dir/.." && pwd -P)"
+protocol_script="$ctxhelm_root/scripts/smoke-mcp-protocol.sh"
 
-if [[ -n "${CTXPACK_BIN:-}" ]]; then
-  if [[ ! -x "$CTXPACK_BIN" ]]; then
-    echo "CTXPACK_BIN is not executable: $CTXPACK_BIN" >&2
+if [[ -n "${CTXHELM_BIN:-}" ]]; then
+  if [[ ! -x "$CTXHELM_BIN" ]]; then
+    echo "CTXHELM_BIN is not executable: $CTXHELM_BIN" >&2
     exit 1
   fi
-  ctxpack_bin="$(cd "$(dirname "$CTXPACK_BIN")" && pwd -P)/$(basename "$CTXPACK_BIN")"
+  ctxhelm_bin="$(cd "$(dirname "$CTXHELM_BIN")" && pwd -P)/$(basename "$CTXHELM_BIN")"
 else
-  if ! command -v ctxpack >/dev/null 2>&1; then
-    echo "ctxpack is not on PATH; set CTXPACK_BIN=/absolute/path/to/ctxpack" >&2
+  if ! command -v ctxhelm >/dev/null 2>&1; then
+    echo "ctxhelm is not on PATH; set CTXHELM_BIN=/absolute/path/to/ctxhelm" >&2
     exit 1
   fi
-  resolved="$(command -v ctxpack)"
-  ctxpack_bin="$(cd "$(dirname "$resolved")" && pwd -P)/$(basename "$resolved")"
+  resolved="$(command -v ctxhelm)"
+  ctxhelm_bin="$(cd "$(dirname "$resolved")" && pwd -P)/$(basename "$resolved")"
 fi
 
 work_dir="$(mktemp -d)"
 repo="$work_dir/repo"
-ctxpack_home="$work_dir/ctxpack-home"
+ctxhelm_home="$work_dir/ctxhelm-home"
 prepare_json="$work_dir/prepare-task.json"
 pack_json="$work_dir/get-pack.json"
 
@@ -31,7 +31,7 @@ cleanup() {
 }
 trap cleanup EXIT
 
-mkdir -p "$repo/src/auth" "$repo/tests/auth" "$ctxpack_home"
+mkdir -p "$repo/src/auth" "$repo/tests/auth" "$ctxhelm_home"
 cat >"$repo/src/auth/session.ts" <<'SRC'
 import { issueToken } from "./token";
 
@@ -60,36 +60,36 @@ cat >"$repo/package.json" <<'SRC'
 SRC
 
 git -C "$repo" init >/dev/null
-git -C "$repo" config user.email "ctxpack@example.com"
-git -C "$repo" config user.name "ctxpack"
+git -C "$repo" config user.email "ctxhelm@example.com"
+git -C "$repo" config user.name "ctxhelm"
 git -C "$repo" add .
 git -C "$repo" commit -m "fixture" >/dev/null
 
-export CTXPACK_HOME="$ctxpack_home"
+export CTXHELM_HOME="$ctxhelm_home"
 
-"$ctxpack_bin" --version >/dev/null
-"$ctxpack_bin" --help >/dev/null
-"$ctxpack_bin" init --repo "$repo" --cursor --claude --opencode >/dev/null
-"$ctxpack_bin" setup-check --repo "$repo" --cursor --claude --opencode >/dev/null
+"$ctxhelm_bin" --version >/dev/null
+"$ctxhelm_bin" --help >/dev/null
+"$ctxhelm_bin" init --repo "$repo" --cursor --claude --opencode >/dev/null
+"$ctxhelm_bin" setup-check --repo "$repo" --cursor --claude --opencode >/dev/null
 
-echo "ctxpack first-pack smoke: running scripts/smoke-mcp-protocol.sh"
-CTXPACK_BIN="$ctxpack_bin" \
-  CTXPACK_ROOT="$ctxpack_root" \
-  CTXPACK_SMOKE_REPO="$repo" \
-  CTXPACK_SMOKE_TASK="fix requireSession auth bug" \
-  CTXPACK_SMOKE_PATH="src/auth/session.ts" \
-  CTXPACK_SMOKE_QUERY="requireSession" \
-  CTXPACK_HOME="$ctxpack_home" \
+echo "ctxhelm first-pack smoke: running scripts/smoke-mcp-protocol.sh"
+CTXHELM_BIN="$ctxhelm_bin" \
+  CTXHELM_ROOT="$ctxhelm_root" \
+  CTXHELM_SMOKE_REPO="$repo" \
+  CTXHELM_SMOKE_TASK="fix requireSession auth bug" \
+  CTXHELM_SMOKE_PATH="src/auth/session.ts" \
+  CTXHELM_SMOKE_QUERY="requireSession" \
+  CTXHELM_HOME="$ctxhelm_home" \
   bash "$protocol_script" >/dev/null
 
-"$ctxpack_bin" prepare-task "fix requireSession auth bug" \
+"$ctxhelm_bin" prepare-task "fix requireSession auth bug" \
   --repo "$repo" \
   --mode bug-fix \
   --path src/auth/session.ts \
   --target-agent codex \
   --no-trace >"$prepare_json"
 
-"$ctxpack_bin" get-pack "fix requireSession auth bug" \
+"$ctxhelm_bin" get-pack "fix requireSession auth bug" \
   --repo "$repo" \
   --mode bug-fix \
   --budget brief \
@@ -118,4 +118,4 @@ if not pack.get("sections"):
     raise SystemExit("get-pack: sections is empty")
 PY
 
-echo "ctxpack first-pack smoke ok: repo=$repo binary=$ctxpack_bin"
+echo "ctxhelm first-pack smoke ok: repo=$repo binary=$ctxhelm_bin"

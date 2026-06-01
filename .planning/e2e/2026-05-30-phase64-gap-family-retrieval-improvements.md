@@ -38,22 +38,22 @@ that only become reachable after broader lexical evidence seeds graph expansion.
 ## Commands
 
 ```bash
-cargo test -p ctxpack-compiler -- --nocapture
-cargo run -p ctxpack -- \
-  eval benchmark --config .ctxpack/e2e/phase62-default-config.json --format json
+cargo test -p ctxhelm-compiler -- --nocapture
+cargo run -p ctxhelm -- \
+  eval benchmark --config .ctxhelm/e2e/phase62-default-config.json --format json
 cargo test --workspace --no-fail-fast
-cargo run -p ctxpack -- --help
+cargo run -p ctxhelm -- --help
 git diff --check
 ```
 
-Large JSON reports were kept under ignored `.ctxpack/e2e/`.
+Large JSON reports were kept under ignored `.ctxhelm/e2e/`.
 
 ## Results
 
 | Repo | Phase 63 Recall@10 | Phase 64 Recall@10 | Delta | Phase 63 MRR@K | Phase 64 MRR@K | Test Recall@10 delta | Protected miss-rate delta | Runtime delta |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
 | RefactoringMiner | 0.1375 | 0.7392 | +0.6017 | 0.1500 | 0.7367 | +0.0000 | +0.0526 | +17.2s |
-| ctxpack | 0.2049 | 0.1947 | -0.0102 | 0.6333 | 0.6083 | +0.0000 | -0.0354 | +1.7s |
+| ctxhelm | 0.2049 | 0.1947 | -0.0102 | 0.6333 | 0.6083 | +0.0000 | -0.0354 | +1.7s |
 
 ## Gap Outcome
 
@@ -73,7 +73,7 @@ Lexical protected evidence had zero misses in the final report, but symbol
 budget pressure remains a follow-up for Phase 65 release proof or a future
 symbol-budget pass.
 
-The ctxpack corpus had a small Recall@10 regression (`-0.0102`) while protected
+The ctxhelm corpus had a small Recall@10 regression (`-0.0102`) while protected
 miss rate improved. Phase 65 should decide whether this default is shippable,
 needs a per-repo/task gate, or should stay behind an eval flag.
 

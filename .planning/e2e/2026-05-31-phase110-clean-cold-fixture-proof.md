@@ -22,28 +22,28 @@ Command:
 
 ```bash
 scripts/prepare-proof-fixtures.sh
-CARGO_NET_OFFLINE=true CARGO_TARGET_DIR=/tmp/ctxpack-phase110-target \
-  cargo run -p ctxpack -- eval proof \
+CARGO_NET_OFFLINE=true CARGO_TARGET_DIR=/tmp/ctxhelm-phase110-target \
+  cargo run -p ctxhelm -- eval proof \
   --config .planning/e2e/2026-05-31-phase110-clean-cold-fixture-config.json \
-  --format json > .ctxpack/e2e/phase110-clean-fixture-proof.json
+  --format json > .ctxhelm/e2e/phase110-clean-fixture-proof.json
 ```
 
 Proof artifact:
 
-- `.ctxpack/e2e/phase110-clean-fixture-proof.json`
+- `.ctxhelm/e2e/phase110-clean-fixture-proof.json`
 
 Result:
 
 - `releaseGate.decision = promote`
 - RefactoringMiner: `match`, Context Recall@10 `1.0`, lexical context `1.0`, Test Recall@10 `1.0`, runtime `9254ms`
-- ctxpack: `beat`, Context Recall@10 `0.3889`, lexical context `0.3056`, runtime `6331ms`
+- ctxhelm: `beat`, Context Recall@10 `0.3889`, lexical context `0.3056`, runtime `6331ms`
 - ReAgent: `beat`, Context Recall@10 `1.0`, lexical context `0.2857`, Test Recall@10 `1.0`, runtime `12043ms`
 - VeriSchema: `beat`, Context Recall@10 `0.2055`, lexical context `0.0822`, effective validation recall `1.0`
 
 ## Rejected / Diagnosed Runs
 
 - Partial blobless fixtures now fail closed as `git_object_store_unavailable` instead of producing empty `retrievalTargetFiles`.
-- Full fixtures with stale parent-snapshot inventory caches blocked on quality with zero recall for RefactoringMiner, ctxpack, and ReAgent. That was a cache correctness bug.
+- Full fixtures with stale parent-snapshot inventory caches blocked on quality with zero recall for RefactoringMiner, ctxhelm, and ReAgent. That was a cache correctness bug.
 - Fresh snapshots before the symbol-facet fix restored quality but blocked on cold runtime: RefactoringMiner took about `64.8s` because commit-subject acronyms forced whole-repo symbol extraction.
 
 ## Remaining Work

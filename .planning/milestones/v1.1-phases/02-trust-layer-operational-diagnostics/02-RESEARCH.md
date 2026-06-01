@@ -26,7 +26,7 @@
 - Add stable structured diagnostics for stale inventory, weak/low-information plans, missing git, git timeouts, unreadable files, skipped files, parse gaps, partial graph/test/history coverage, and cache/trace write failures.
 - Preserve existing `riskFlags` compatibility while making diagnostics richer and more machine-readable for CLI and MCP clients.
 - Diagnostics should be source-free: include paths, roles, reason codes, counts, hashes, and command/error categories, but not source snippets or prompt text.
-- Prefer typed contracts in `ctxpack-core` over ad hoc strings in CLI/MCP renderers.
+- Prefer typed contracts in `ctxhelm-core` over ad hoc strings in CLI/MCP renderers.
 
 ### Cache And Trace Writes
 - Context retrieval should remain usable in constrained home-directory environments.
@@ -55,9 +55,9 @@
 
 | ID | Description | Research Support |
 |----|-------------|------------------|
-| SAFE-01 | User-facing read paths detect stale inventory metadata before returning search, symbol, test, dependency, pack, card, or MCP results. | Use one `load_or_refresh_inventory`/freshness envelope in `ctxpack-index`, then route all read APIs through it. |
+| SAFE-01 | User-facing read paths detect stale inventory metadata before returning search, symbol, test, dependency, pack, card, or MCP results. | Use one `load_or_refresh_inventory`/freshness envelope in `ctxhelm-index`, then route all read APIs through it. |
 | SAFE-02 | User-facing read paths either rebuild stale inventory or return structured stale-cache diagnostics that explain what changed. | Return `InventoryLoadReport` with `status`, `rebuildAttempted`, `rebuildSucceeded`, and source-free stale reasons. |
-| SAFE-03 | ctxpack classifies sensitive and generated files through a centralized privacy policy with table-driven tests for common credential, auth, generated, vendored, and binary path families. | Move path/content classification from `inventory.rs` helpers into a tested source policy module used by inventory and source reads. |
+| SAFE-03 | ctxhelm classifies sensitive and generated files through a centralized privacy policy with table-driven tests for common credential, auth, generated, vendored, and binary path families. | Move path/content classification from `inventory.rs` helpers into a tested source policy module used by inventory and source reads. |
 | SAFE-04 | Pack, file-resource, and card generation revalidate every source-bearing path against the current safe inventory immediately before reading source text. | Replace direct `fs::read_to_string` in pack/resource code with `read_safe_source_slice`. |
 | SAFE-05 | Unreadable, non-UTF-8, oversized, skipped, or externally unavailable inputs produce structured diagnostics instead of silently becoming empty matches. | Stop `unwrap_or_default` content reads in search/symbol/dependency/test paths; collect diagnostics by reason code. |
 | SAFE-06 | Trace/cache writes are visible and controllable enough that context retrieval can remain usable in read-only or constrained home-directory environments. | Add non-fatal trace/cache write wrappers and expose `cacheStatus`/`traceStatus` diagnostics in CLI/MCP surfaces. |
@@ -68,7 +68,7 @@
 
 ## Project Constraints (from CLAUDE.md)
 
-- Keep ctxpack local-first, read-only in the product sense, and agent-native through AGENTS.md, MCP, and thin native adapter surfaces.
+- Keep ctxhelm local-first, read-only in the product sense, and agent-native through AGENTS.md, MCP, and thin native adapter surfaces.
 - Do not add autonomous editing, cloud indexing, cloud embeddings, or cloud reranking by default.
 - Prefer small typed contracts over stringly typed command output.
 - Add focused tests for context selection, privacy, and generated agent instruction behavior.
@@ -77,12 +77,12 @@
 - Return structured data contracts from library layers; keep formatting in CLI/MCP boundary helpers.
 - Do not add ad hoc library logging; return structured reports or typed errors.
 - Run `cargo test --workspace` before claiming implementation complete.
-- Run `cargo run -p ctxpack -- --help` after CLI changes.
+- Run `cargo run -p ctxhelm -- --help` after CLI changes.
 - No project-local `.claude/skills` or `.agents/skills` were found during research.
 
 ## Summary
 
-Phase 2 should not add a new retrieval stack. The standard implementation path is to harden the existing Phase 1 module split by adding a typed trust layer around inventory loading and source reads. The trust layer belongs mostly in `ctxpack-index`, with stable additive contract fields in `ctxpack-core`, pack/card revalidation in `ctxpack-compiler`, and CLI/MCP projection in `ctxpack` and `ctxpack-mcp`.
+Phase 2 should not add a new retrieval stack. The standard implementation path is to harden the existing Phase 1 module split by adding a typed trust layer around inventory loading and source reads. The trust layer belongs mostly in `ctxhelm-index`, with stable additive contract fields in `ctxhelm-core`, pack/card revalidation in `ctxhelm-compiler`, and CLI/MCP projection in `ctxhelm` and `ctxhelm-mcp`.
 
 The current high-risk facts are concrete: `load_or_build_inventory` reuses any existing inventory JSON without checking filesystem or ignore-policy freshness; several read paths convert unreadable or invalid UTF-8 files into empty strings; `prepare-task`, `get-pack`, and MCP equivalents fail if trace writes fail; packs read snippets directly from plan paths without current safe-inventory revalidation. These are Phase 2's implementation targets.
 
@@ -97,7 +97,7 @@ The current high-risk facts are concrete: `load_or_build_inventory` reuses any e
 | Rust workspace | rustc/cargo 1.87.0 | Existing implementation language and package manager | Matches current product and Phase 1 guardrails. |
 | serde | 1.0.228 | Stable camelCase JSON contracts | Already used for `ContextPlan`, `ContextPack`, inventory, traces, MCP payloads. |
 | serde_json | 1.0.149 | CLI JSON, MCP JSON-RPC, local JSON files | Existing public JSON behavior is Phase 1 protected. |
-| ignore | 0.4.25 | Gitignore/custom-ignore aware repository walking | Already handles `.gitignore`, `.ctxpackignore`, `.cursorignore`; do not bypass it. |
+| ignore | 0.4.25 | Gitignore/custom-ignore aware repository walking | Already handles `.gitignore`, `.ctxhelmignore`, `.cursorignore`; do not bypass it. |
 | blake3 | 1.8.5 | File hashes, task hashes, repo-local state fingerprints | Fast deterministic hashes already in inventory and trace paths. |
 | uuid | 1.23.1 | Repo/plan/pack/trace IDs | Existing contracts use UUIDs; preserve generated ID semantics. |
 | thiserror | 2.0.18 | Library error enums | Existing pattern for typed domain errors. |
@@ -109,7 +109,7 @@ The current high-risk facts are concrete: `load_or_build_inventory` reuses any e
 |---------|---------|---------|-------------|
 | clap | 4.6.1 | CLI flags such as optional trace/cache controls | Only for user-facing CLI additions. |
 | tempfile | 3.27.0 | Temp repos, temp homes, historical worktrees | Use for deterministic stale/cache/privacy fixtures. |
-| assert_cmd | 2.2.2 | Binary-level CLI compatibility tests | Extend `crates/ctxpack/tests/cli_compat.rs`. |
+| assert_cmd | 2.2.2 | Binary-level CLI compatibility tests | Extend `crates/ctxhelm/tests/cli_compat.rs`. |
 | predicates | 3.1.4 | CLI stdout assertions | Use sparingly with JSON shape assertions. |
 | system git | 2.45.1 | diff/current-diff/history signals | Keep calls centralized in `git.rs`; surface timeout/missing-tool diagnostics. |
 | system tar | bsdtar 3.8.1 | Historical eval archive extraction | Phase 2 should only diagnose availability; Phase 3 owns eval upgrades. |
@@ -146,22 +146,22 @@ Versions above were verified from `Cargo.lock`, `cargo tree`, `cargo info`, and 
 ### Recommended Project Structure
 
 ```text
-crates/ctxpack-core/src/contracts.rs        # Add additive Diagnostic/CacheStatus/TraceStatus contracts
-crates/ctxpack-index/src/policy.rs          # Central path/content/source-read policy
-crates/ctxpack-index/src/freshness.rs       # Inventory metadata, freshness check, rebuild/load report
-crates/ctxpack-index/src/inventory.rs       # Inventory build/write/load facade uses policy + freshness
-crates/ctxpack-index/src/search.rs          # Uses trusted inventory + diagnostic-aware source reads
-crates/ctxpack-index/src/symbols.rs         # Same read-policy path
-crates/ctxpack-index/src/related_tests.rs   # Same read-policy path
-crates/ctxpack-index/src/dependencies.rs    # Same read-policy path
-crates/ctxpack-index/src/git.rs             # Git diagnostics stay centralized
-crates/ctxpack-index/src/traces.rs          # Add non-fatal trace write status
-crates/ctxpack-compiler/src/planning.rs     # Attach diagnostics; preserve riskFlags projection
-crates/ctxpack-compiler/src/packs.rs        # Revalidate snippets before reading
-crates/ctxpack-compiler/src/cards.rs        # Use trusted inventory and diagnostics
-crates/ctxpack-mcp/src/tools.rs             # Expose diagnostics in structuredContent
-crates/ctxpack-mcp/src/resources.rs         # Revalidate file resources with same policy
-crates/ctxpack/src/main.rs                  # CLI projection, optional no-trace/cache flags if added
+crates/ctxhelm-core/src/contracts.rs        # Add additive Diagnostic/CacheStatus/TraceStatus contracts
+crates/ctxhelm-index/src/policy.rs          # Central path/content/source-read policy
+crates/ctxhelm-index/src/freshness.rs       # Inventory metadata, freshness check, rebuild/load report
+crates/ctxhelm-index/src/inventory.rs       # Inventory build/write/load facade uses policy + freshness
+crates/ctxhelm-index/src/search.rs          # Uses trusted inventory + diagnostic-aware source reads
+crates/ctxhelm-index/src/symbols.rs         # Same read-policy path
+crates/ctxhelm-index/src/related_tests.rs   # Same read-policy path
+crates/ctxhelm-index/src/dependencies.rs    # Same read-policy path
+crates/ctxhelm-index/src/git.rs             # Git diagnostics stay centralized
+crates/ctxhelm-index/src/traces.rs          # Add non-fatal trace write status
+crates/ctxhelm-compiler/src/planning.rs     # Attach diagnostics; preserve riskFlags projection
+crates/ctxhelm-compiler/src/packs.rs        # Revalidate snippets before reading
+crates/ctxhelm-compiler/src/cards.rs        # Use trusted inventory and diagnostics
+crates/ctxhelm-mcp/src/tools.rs             # Expose diagnostics in structuredContent
+crates/ctxhelm-mcp/src/resources.rs         # Revalidate file resources with same policy
+crates/ctxhelm/src/main.rs                  # CLI projection, optional no-trace/cache flags if added
 ```
 
 ### Pattern 1: Additive Diagnostics Contract
@@ -279,16 +279,16 @@ fn project_diagnostics_to_risk_flags(diagnostics: &[Diagnostic]) -> Vec<RiskFlag
 | Public JSON rendering | Manual JSON strings | `serde` contracts with camelCase tests | Phase 1 guards contract shape through serialization tests. |
 | Source-read policy | Per-module `fs::read_to_string` branches | Central `SourceReadPolicy` in index | Prevents privacy drift between inventory, packs, cards, MCP resources, and search. |
 | Git diagnostics | Ad hoc process calls outside `git.rs` | Existing `git_stdout_with_timeout` wrapper, extended diagnostics | Keeps missing git/timeouts/fallback behavior consistent. |
-| CLI compatibility tests | Shell scripts only | `assert_cmd` binary tests plus fixture repos | Existing guardrails verify real binary behavior and `CTXPACK_HOME` side effects. |
+| CLI compatibility tests | Shell scripts only | `assert_cmd` binary tests plus fixture repos | Existing guardrails verify real binary behavior and `CTXHELM_HOME` side effects. |
 
-**Key insight:** ctxpack's trust failure mode is not one bad branch; it is divergence between inventory, source reads, cache writes, CLI JSON, and MCP JSON. Central contracts are cheaper than trying to synchronize ad hoc checks later.
+**Key insight:** ctxhelm's trust failure mode is not one bad branch; it is divergence between inventory, source reads, cache writes, CLI JSON, and MCP JSON. Central contracts are cheaper than trying to synchronize ad hoc checks later.
 
 ## Current Code Findings
 
 | Area | Current Behavior | Phase 2 Action | Confidence |
 |------|------------------|----------------|------------|
 | Inventory freshness | `load_or_build_inventory` returns cached inventory if `inventory.json` exists. | Add freshness metadata/check and refresh-on-read envelope. | HIGH |
-| Ignore files | Walker uses `.gitignore`, `.ctxpackignore`, `.cursorignore`, git excludes. | Include ignore-file fingerprints in freshness. | HIGH |
+| Ignore files | Walker uses `.gitignore`, `.ctxhelmignore`, `.cursorignore`, git excludes. | Include ignore-file fingerprints in freshness. | HIGH |
 | Sensitive paths | Denylist covers `.env`, cert/key extensions, dumps, `secret`, `credentials`. | Expand in centralized policy with table-driven tests. | HIGH |
 | Generated paths | Denylist covers node_modules, target, dist, build, coverage, vendor, selected resource directories, lockfiles. | Centralize, add binary/oversized/non-UTF-8/generated fixtures. | HIGH |
 | Search/symbol/dependency/test reads | Several modules use `read_to_string(...).unwrap_or_default()`. | Return diagnostics for unreadable/non-UTF-8/oversized instead of empty content. | HIGH |
@@ -307,7 +307,7 @@ Freshness invalidation points:
 
 - File created, deleted, renamed, or size/mtime/hash changed.
 - File moved into or out of sensitive/generated/vendor/binary/oversized classification.
-- `.gitignore`, `.git/info/exclude`, `.ctxpackignore`, or `.cursorignore` changed.
+- `.gitignore`, `.git/info/exclude`, `.ctxhelmignore`, or `.cursorignore` changed.
 - Inventory options changed (`includeGenerated`, `includeSensitive`, future size limits).
 - Source policy version changed.
 - Inventory schema version changed.
@@ -315,7 +315,7 @@ Freshness invalidation points:
 
 Read-path policy:
 
-- `ctxpack index` remains an explicit write and should fail if inventory cannot be written.
+- `ctxhelm index` remains an explicit write and should fail if inventory cannot be written.
 - Search, symbols, related tests, dependencies, prepare-task, get-pack, cards, MCP tools/resources should prefer fresh rebuild.
 - If cache write fails but in-memory rebuild succeeds, continue with diagnostics.
 - If rebuild fails and stale cache exists, return stale diagnostics only for operations where returning stale data is explicitly accepted by the new API/flag; default should be conservative for source-bearing reads.
@@ -384,14 +384,14 @@ MCP and CLI shape:
 
 Current write points:
 
-- Inventory cache: `write_inventory` writes `CTXPACK_HOME/repos/<repo-id>/inventory.json`.
-- Eval traces: `append_eval_trace` appends `CTXPACK_HOME/repos/<repo-id>/traces.jsonl`.
-- Cards: `cards generate` writes repo-local `.ctxpack/cards/*.md`.
+- Inventory cache: `write_inventory` writes `CTXHELM_HOME/repos/<repo-id>/inventory.json`.
+- Eval traces: `append_eval_trace` appends `CTXHELM_HOME/repos/<repo-id>/traces.jsonl`.
+- Cards: `cards generate` writes repo-local `.ctxhelm/cards/*.md`.
 - MCP pack resources: in-memory session cache, not filesystem.
 
 Recommended behavior:
 
-- Keep explicit `ctxpack index` and `ctxpack cards generate` write failures fatal.
+- Keep explicit `ctxhelm index` and `ctxhelm cards generate` write failures fatal.
 - Make trace writes non-fatal for `prepare-task`, `get-pack`, MCP `prepare_task`, and MCP `get_pack`.
 - Make inventory cache write failures non-fatal when a read path can build a fresh in-memory inventory.
 - Expose `cacheStatus` and `traceStatus` in diagnostics, including target path and reason category but not source or prompt text.
@@ -403,24 +403,24 @@ Use Phase 1 guardrails rather than a new test harness.
 
 | Test Area | Location | Fixtures |
 |-----------|----------|----------|
-| Freshness create/delete/rename | `crates/ctxpack-index/src/lib.rs` or `freshness.rs` tests | temp repo, stale inventory, file mutation after cache |
-| Ignore invalidation | index tests | mutate `.ctxpackignore`, `.cursorignore`, `.gitignore`, `.git/info/exclude` |
+| Freshness create/delete/rename | `crates/ctxhelm-index/src/lib.rs` or `freshness.rs` tests | temp repo, stale inventory, file mutation after cache |
+| Ignore invalidation | index tests | mutate `.ctxhelmignore`, `.cursorignore`, `.gitignore`, `.git/info/exclude` |
 | Privacy corpus | policy tests | `.npmrc`, `.pypirc`, `.netrc`, `id_rsa`, service account JSON, tfstate, generated/vendor/binary |
 | Source-read diagnostics | policy/search/symbol/dependency tests | unreadable file on Unix, invalid UTF-8, oversized file, deleted-after-inventory |
-| Pack revalidation | `crates/ctxpack-compiler/src/lib.rs` | plan points to file later made sensitive/generated/deleted |
-| MCP diagnostics shape | `crates/ctxpack-mcp/src/lib.rs` | `prepare_task`, `get_pack`, `search`, file resource, current_diff |
-| CLI compatibility | `crates/ctxpack/tests/cli_compat.rs` | stale cache JSON shape, read-only `CTXPACK_HOME`, non-fatal trace write |
+| Pack revalidation | `crates/ctxhelm-compiler/src/lib.rs` | plan points to file later made sensitive/generated/deleted |
+| MCP diagnostics shape | `crates/ctxhelm-mcp/src/lib.rs` | `prepare_task`, `get_pack`, `search`, file resource, current_diff |
+| CLI compatibility | `crates/ctxhelm/tests/cli_compat.rs` | stale cache JSON shape, read-only `CTXHELM_HOME`, non-fatal trace write |
 | Weak plan | compiler + CLI/MCP | low-information task like `Fixes #1061` and empty/near-empty repo |
 
 Required validation commands:
 
 ```bash
-cargo test -p ctxpack-index
-cargo test -p ctxpack-compiler
-cargo test -p ctxpack-mcp
-cargo test -p ctxpack --test cli_compat
+cargo test -p ctxhelm-index
+cargo test -p ctxhelm-compiler
+cargo test -p ctxhelm-mcp
+cargo test -p ctxhelm --test cli_compat
 cargo test --workspace
-cargo run -p ctxpack -- --help
+cargo run -p ctxhelm -- --help
 ```
 
 ## Code Examples
@@ -484,7 +484,7 @@ fn policy_excludes_common_credentials() {
 | Cache exists means cache is valid | Cache carries metadata and is checked before every user-facing read | Phase 2 | Prevents stale/deleted/sensitive files from driving results. |
 | Per-module direct file reads | Central source-read policy with diagnostics | Phase 2 | Prevents silent weak matches and source leakage. |
 | `riskFlags` as only diagnostics | Additive `diagnostics` plus `riskFlags` projection | Phase 2 | Machine-readable diagnostics without breaking existing clients. |
-| Fatal trace writes during read operations | Non-fatal trace/cache status for context retrieval | Phase 2 | ctxpack remains usable in constrained home directories. |
+| Fatal trace writes during read operations | Non-fatal trace/cache status for context retrieval | Phase 2 | ctxhelm remains usable in constrained home directories. |
 | Git failures mostly string warnings | Structured `git_missing`/`git_timeout` diagnostics | Phase 2 | Users can distinguish weak task from missing external signal. |
 
 **Deprecated/outdated:**
@@ -507,7 +507,7 @@ fn policy_excludes_common_credentials() {
 **Warning signs:** Phase 1 CLI compatibility tests fail on shape assertions.
 
 ### Pitfall 3: Rebuild-on-Read Makes Constrained Homes Fatal
-**What goes wrong:** A read path builds a fresh inventory but then fails because `CTXPACK_HOME` is read-only.
+**What goes wrong:** A read path builds a fresh inventory but then fails because `CTXHELM_HOME` is read-only.
 **Why it happens:** Build and cache-write are coupled.
 **How to avoid:** Return fresh in-memory inventory even when cache persistence fails; emit `cache_write_failed`.
 **Warning signs:** Search/prepare-task fails in read-only temp home despite repo files being readable.
@@ -561,12 +561,12 @@ fn policy_excludes_common_credentials() {
 - `.planning/REQUIREMENTS.md` - SAFE/DIAG requirement text.
 - `.planning/ROADMAP.md` - Phase 2 success criteria and boundaries.
 - `AGENTS.md` and `CLAUDE.md` - project constraints and validation commands.
-- `crates/ctxpack-index/src/inventory.rs` - current cache load/build, classification, ctxpack home, inventory write behavior.
-- `crates/ctxpack-index/src/search.rs`, `symbols.rs`, `related_tests.rs`, `dependencies.rs`, `git.rs`, `traces.rs` - read paths, git timeouts, trace writes.
-- `crates/ctxpack-core/src/contracts.rs` - current public contract shapes and `riskFlags`.
-- `crates/ctxpack-compiler/src/planning.rs`, `packs.rs`, `cards.rs` - planning, pack snippets, card generation.
-- `crates/ctxpack-mcp/src/tools.rs`, `resources.rs`, `lib.rs` - MCP tool/resource structured content.
-- `crates/ctxpack/tests/cli_compat.rs` and `crates/ctxpack/tests/common/mod.rs` - Phase 1 binary guardrails.
+- `crates/ctxhelm-index/src/inventory.rs` - current cache load/build, classification, ctxhelm home, inventory write behavior.
+- `crates/ctxhelm-index/src/search.rs`, `symbols.rs`, `related_tests.rs`, `dependencies.rs`, `git.rs`, `traces.rs` - read paths, git timeouts, trace writes.
+- `crates/ctxhelm-core/src/contracts.rs` - current public contract shapes and `riskFlags`.
+- `crates/ctxhelm-compiler/src/planning.rs`, `packs.rs`, `cards.rs` - planning, pack snippets, card generation.
+- `crates/ctxhelm-mcp/src/tools.rs`, `resources.rs`, `lib.rs` - MCP tool/resource structured content.
+- `crates/ctxhelm/tests/cli_compat.rs` and `crates/ctxhelm/tests/common/mod.rs` - Phase 1 binary guardrails.
 - `Cargo.lock`, `cargo tree --workspace --depth 1`, `cargo metadata --format-version 1 --no-deps` - dependency versions.
 
 ### Secondary (MEDIUM confidence)

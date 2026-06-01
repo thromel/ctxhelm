@@ -26,7 +26,7 @@ This phase turns the existing benchmark suite JSON into a v2.3 fixed corpus mani
 ## Existing Code Insights
 
 ### Reusable Assets
-- `crates/ctxpack-compiler/src/eval.rs` already owns benchmark suite config, historical eval reports, product proof, and comparison reports.
+- `crates/ctxhelm-compiler/src/eval.rs` already owns benchmark suite config, historical eval reports, product proof, and comparison reports.
 - `docs/benchmarking.md` already documents suite JSON and privacy boundaries.
 - `.planning/e2e/2026-05-19-refactoringminer-full-e2e.md` records the current RefactoringMiner Recall@10 and lexical baseline evidence.
 
@@ -36,16 +36,16 @@ This phase turns the existing benchmark suite JSON into a v2.3 fixed corpus mani
 - Existing suites should remain valid through defaulted new fields.
 
 ### Integration Points
-- `ctxpack eval benchmark --config ...`
-- `ctxpack eval proof --config ...`
-- Release gates can opt into external benchmark proof through `CTXPACK_BENCHMARK_CONFIG`.
+- `ctxhelm eval benchmark --config ...`
+- `ctxhelm eval proof --config ...`
+- Release gates can opt into external benchmark proof through `CTXHELM_BENCHMARK_CONFIG`.
 
 </code_context>
 
 <specifics>
 ## Specific Ideas
 
-- Add `.ctxpack/benchmarks/refactoringminer-v23.json` with the May 19 baseline.
+- Add `.ctxhelm/benchmarks/refactoringminer-v23.json` with the May 19 baseline.
 - Surface manifest version, corpus ID, privacy label, revision range ID, and baseline deltas in reports.
 
 </specifics>

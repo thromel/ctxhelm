@@ -7,8 +7,8 @@ Repo under test: `../RefactoringMiner`
 Command shape:
 
 ```bash
-cargo run -p ctxpack -- eval baselines --repo ../RefactoringMiner --limit 20 --budget 10 --parallelism 4 --force --format json
-cargo run -p ctxpack -- eval baselines --repo ../RefactoringMiner --limit 20 --budget 10 --parallelism 4 --force --semantic --semantic-provider local_hash --format json
+cargo run -p ctxhelm -- eval baselines --repo ../RefactoringMiner --limit 20 --budget 10 --parallelism 4 --force --format json
+cargo run -p ctxhelm -- eval baselines --repo ../RefactoringMiner --limit 20 --budget 10 --parallelism 4 --force --semantic --semantic-provider local_hash --format json
 ```
 
 ## Issue Found
@@ -52,5 +52,5 @@ The semantic integration now works without hurting the combined ranking, but it 
 
 Evidence JSON:
 
-- `.ctxpack/e2e/refminer-baselines-default-semseedfix-2026-05-22.json`
-- `.ctxpack/e2e/refminer-baselines-local-hash-semseedfix-2026-05-22.json`
+- `.ctxhelm/e2e/refminer-baselines-default-semseedfix-2026-05-22.json`
+- `.ctxhelm/e2e/refminer-baselines-local-hash-semseedfix-2026-05-22.json`

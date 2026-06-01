@@ -3,11 +3,11 @@
 ## Question
 
 What stack additions or changes are needed for an optional pack inspector UI and
-deeper graph/embedding retrieval in the existing Rust/MCP ctxpack architecture?
+deeper graph/embedding retrieval in the existing Rust/MCP ctxhelm architecture?
 
 ## Current Baseline
 
-ctxpack already has:
+ctxhelm already has:
 
 - Rust CLI and MCP crates.
 - Source-free storage, eval, benchmark, feedback, memory, semantic metadata,
@@ -24,7 +24,7 @@ worth the extra surface area.
 
 Initial stack:
 
-- Rust HTTP/JSON view endpoints in a small `ctxpack-inspector` or `ctxpack-ui`
+- Rust HTTP/JSON view endpoints in a small `ctxhelm-inspector` or `ctxhelm-ui`
   layer.
 - Static web frontend for local pack/graph/report inspection.
 - Cytoscape.js for graph views where compound nodes and graph layouts matter.
@@ -33,7 +33,7 @@ Initial stack:
 
 Tauri is a good later packaging candidate because it pairs a Rust backend with a
 web frontend and uses the OS WebView instead of bundling a browser engine. Its
-permission model also fits ctxpack's local-first boundary, but it adds packaging
+permission model also fits ctxhelm's local-first boundary, but it adds packaging
 and ACL work that should not block the first inspector.
 
 ### Graph Visualization
@@ -45,12 +45,12 @@ Use Cytoscape.js for repository/evidence graph visualization:
 - Layout extensions let us choose simple defaults first and improve later.
 
 React Flow is better for editable workflow diagrams than dense dependency and
-evidence graphs. Since ctxpack should not become an editor, Cytoscape.js is the
+evidence graphs. Since ctxhelm should not become an editor, Cytoscape.js is the
 better first graph library.
 
 ### Retrieval Layer
 
-Do not import a generic GraphRAG framework directly into ctxpack.
+Do not import a generic GraphRAG framework directly into ctxhelm.
 
 Instead, implement code-specific GraphRAG as an internal retrieval policy:
 

@@ -10,7 +10,7 @@ requires:
 provides:
   - Public JSON shape tests for ContextPlan, ContextPack, EvalTrace, and HistoricalEvalReport
   - MCP compatibility tests for capabilities, tools, resources, prompts, structuredContent, text fallback, session-scoped packs, and JSON-RPC errors
-affects: [ctxpack-core, ctxpack-compiler, ctxpack-mcp, module-boundaries]
+affects: [ctxhelm-core, ctxhelm-compiler, ctxhelm-mcp, module-boundaries]
 
 tech-stack:
   added: []
@@ -23,9 +23,9 @@ key-files:
   created:
     - .planning/phases/01-compatibility-guardrails-module-boundaries/01-compatibility-guardrails-module-boundaries-02-SUMMARY.md
   modified:
-    - crates/ctxpack-core/src/contracts.rs
-    - crates/ctxpack-compiler/src/lib.rs
-    - crates/ctxpack-mcp/src/lib.rs
+    - crates/ctxhelm-core/src/contracts.rs
+    - crates/ctxhelm-compiler/src/lib.rs
+    - crates/ctxhelm-mcp/src/lib.rs
 
 key-decisions:
   - "Guard public JSON compatibility with explicit field-presence and snake_case-absence assertions rather than schema generation."
@@ -43,7 +43,7 @@ completed: 2026-05-13
 
 # Phase 01 Plan 02: Compatibility Guardrails Module Boundaries Summary
 
-**Source-free JSON and MCP protocol guardrails for ctxpack public compatibility surfaces.**
+**Source-free JSON and MCP protocol guardrails for ctxhelm public compatibility surfaces.**
 
 ## Performance
 
@@ -66,9 +66,9 @@ completed: 2026-05-13
 
 ## Files Created/Modified
 
-- `crates/ctxpack-core/src/contracts.rs` - Added public JSON shape guards for core contracts and source-free eval traces.
-- `crates/ctxpack-compiler/src/lib.rs` - Added historical eval report public JSON shape guard.
-- `crates/ctxpack-mcp/src/lib.rs` - Added MCP public-surface, session-scoped pack resource, and JSON-RPC error compatibility tests.
+- `crates/ctxhelm-core/src/contracts.rs` - Added public JSON shape guards for core contracts and source-free eval traces.
+- `crates/ctxhelm-compiler/src/lib.rs` - Added historical eval report public JSON shape guard.
+- `crates/ctxhelm-mcp/src/lib.rs` - Added MCP public-surface, session-scoped pack resource, and JSON-RPC error compatibility tests.
 - `.planning/phases/01-compatibility-guardrails-module-boundaries/01-compatibility-guardrails-module-boundaries-02-SUMMARY.md` - Captures Plan 02 execution results.
 
 ## Decisions Made
@@ -82,7 +82,7 @@ None - plan executed as scoped compatibility guardrail work. The `tdd="true"` ta
 
 ## Issues Encountered
 
-- Parallel Plan 1 files were present during execution (`crates/ctxpack/tests/common/mod.rs` and `crates/ctxpack/tests/cli_compat.rs`). They were not staged or committed by this plan.
+- Parallel Plan 1 files were present during execution (`crates/ctxhelm/tests/common/mod.rs` and `crates/ctxhelm/tests/cli_compat.rs`). They were not staged or committed by this plan.
 
 ## Authentication Gates
 
@@ -94,12 +94,12 @@ None. The only stub-pattern hit was the intentional MCP error text `"pack resour
 
 ## Verification
 
-- `cargo test -p ctxpack-core public_json_shape -- --nocapture` passed.
-- `cargo test -p ctxpack-compiler public_json_shape -- --nocapture` passed.
-- `cargo test -p ctxpack-mcp public_surface -- --nocapture` passed.
-- `cargo test -p ctxpack-mcp session_scoped -- --nocapture` passed.
-- `cargo test -p ctxpack-mcp error_codes -- --nocapture` passed.
-- `cargo test -p ctxpack-core -p ctxpack-compiler -p ctxpack-mcp` passed.
+- `cargo test -p ctxhelm-core public_json_shape -- --nocapture` passed.
+- `cargo test -p ctxhelm-compiler public_json_shape -- --nocapture` passed.
+- `cargo test -p ctxhelm-mcp public_surface -- --nocapture` passed.
+- `cargo test -p ctxhelm-mcp session_scoped -- --nocapture` passed.
+- `cargo test -p ctxhelm-mcp error_codes -- --nocapture` passed.
+- `cargo test -p ctxhelm-core -p ctxhelm-compiler -p ctxhelm-mcp` passed.
 - `cargo test --workspace` passed.
 
 ## User Setup Required
@@ -112,7 +112,7 @@ CONT-02 and CONT-03 now have guardrails for public JSON and MCP protocol drift. 
 
 ## Self-Check: PASSED
 
-- Found files: `crates/ctxpack-core/src/contracts.rs`, `crates/ctxpack-compiler/src/lib.rs`, `crates/ctxpack-mcp/src/lib.rs`, and this SUMMARY.
+- Found files: `crates/ctxhelm-core/src/contracts.rs`, `crates/ctxhelm-compiler/src/lib.rs`, `crates/ctxhelm-mcp/src/lib.rs`, and this SUMMARY.
 - Found commits via direct commit-object checks: `9c2a482`, `4a96afa`.
 - Note: the standard `git log --oneline --all` self-check command is currently blocked by malformed parallel refs named `refs/heads/master 2` and `refs/heads/master 3`; direct `git cat-file -e <hash>^{commit}` checks confirmed both Plan 02 commits exist.
 

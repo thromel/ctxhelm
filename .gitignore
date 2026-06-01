@@ -1,9 +1,9 @@
 .worktrees/
 /target/
 /dist/
-/.ctxpack/cache/
-/.ctxpack/e2e/
-/.ctxpack/index/
+/.ctxhelm/cache/
+/.ctxhelm/e2e/
+/.ctxhelm/index/
 /.fastembed_cache/
 *.log
 .DS_Store

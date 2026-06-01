@@ -1,4 +1,4 @@
 # Phase 17 Verification
 
-- `CARGO_TARGET_DIR=/tmp/ctxpack-target cargo test -p ctxpack-index -p ctxpack-compiler`
-- `CTXPACK_BIN=/tmp/ctxpack-target/debug/ctxpack bash scripts/smoke-semantic.sh`
+- `CARGO_TARGET_DIR=/tmp/ctxhelm-target cargo test -p ctxhelm-index -p ctxhelm-compiler`
+- `CTXHELM_BIN=/tmp/ctxhelm-target/debug/ctxhelm bash scripts/smoke-semantic.sh`

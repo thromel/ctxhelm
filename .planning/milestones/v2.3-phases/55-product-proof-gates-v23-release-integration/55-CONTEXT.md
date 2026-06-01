@@ -26,10 +26,10 @@ without requiring external repositories by default.
 
 ## Implementation Areas
 
-- `crates/ctxpack-compiler/src/eval.rs`
-- `crates/ctxpack/src/main.rs`
-- `crates/ctxpack/tests/cli_compat.rs`
-- `crates/ctxpack/tests/release_packaging.rs`
+- `crates/ctxhelm-compiler/src/eval.rs`
+- `crates/ctxhelm/src/main.rs`
+- `crates/ctxhelm/tests/cli_compat.rs`
+- `crates/ctxhelm/tests/release_packaging.rs`
 - `scripts/smoke-v23-eval.sh`
 - `scripts/release-gate.sh`
 - `scripts/check-release-docs.sh`

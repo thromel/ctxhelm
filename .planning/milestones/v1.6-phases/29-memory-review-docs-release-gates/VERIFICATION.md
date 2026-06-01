@@ -3,6 +3,6 @@
 Passed:
 
 ```bash
-CTXPACK_BIN="$PWD/target/debug/ctxpack" bash scripts/smoke-memory.sh
+CTXHELM_BIN="$PWD/target/debug/ctxhelm" bash scripts/smoke-memory.sh
 bash scripts/check-release-docs.sh
 ```

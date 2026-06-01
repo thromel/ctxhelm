@@ -5,8 +5,8 @@ type: execute
 wave: 5
 depends_on: [01, 02, 03, 04]
 files_modified:
-  - crates/ctxpack/tests/cli_compat.rs
-  - crates/ctxpack-mcp/src/lib.rs
+  - crates/ctxhelm/tests/cli_compat.rs
+  - crates/ctxhelm-mcp/src/lib.rs
   - scripts/smoke-historical-eval.sh
 autonomous: true
 requirements: [DIAG-03, RETR-05, EVAL-04, EVAL-05]
@@ -17,15 +17,15 @@ must_haves:
     - "Maintainer can run a bounded historical-eval smoke on this repo or RefactoringMiner without full-worktree checkout costs."
     - "Final validation runs workspace tests and CLI help after all Phase 3 changes."
   artifacts:
-    - path: "crates/ctxpack/tests/cli_compat.rs"
+    - path: "crates/ctxhelm/tests/cli_compat.rs"
       provides: "Binary CLI compatibility checks for additive retrieval/eval fields"
-    - path: "crates/ctxpack-mcp/src/lib.rs"
+    - path: "crates/ctxhelm-mcp/src/lib.rs"
       provides: "MCP compatibility checks for attributed ContextPlan structuredContent"
     - path: "scripts/smoke-historical-eval.sh"
       provides: "Bounded source-free large-repo-ready eval smoke"
   key_links:
-    - from: "crates/ctxpack/src/main.rs"
-      to: "crates/ctxpack/tests/cli_compat.rs"
+    - from: "crates/ctxhelm/src/main.rs"
+      to: "crates/ctxhelm/tests/cli_compat.rs"
       via: "compiled binary eval history and prepare-task JSON"
       pattern: "retrievalCandidates"
 ---
@@ -65,15 +65,15 @@ Output: Compatibility tests, smoke script, and final workspace validation.
 
 <task type="auto" tdd="true">
   <name>Task 1: Guard CLI and MCP additive compatibility</name>
-  <files>crates/ctxpack/tests/cli_compat.rs, crates/ctxpack-mcp/src/lib.rs</files>
+  <files>crates/ctxhelm/tests/cli_compat.rs, crates/ctxhelm-mcp/src/lib.rs</files>
   <behavior>
-    - Test 1: `ctxpack prepare-task` JSON compatibility still includes existing keys and now includes retrievalCandidates plus target/test attribution.
-    - Test 2: `ctxpack eval history --format json --budget 10` includes eval range, metrics, ablations, gap summaries, and sourceTextLogged=false.
+    - Test 1: `ctxhelm prepare-task` JSON compatibility still includes existing keys and now includes retrievalCandidates plus target/test attribution.
+    - Test 2: `ctxhelm eval history --format json --budget 10` includes eval range, metrics, ablations, gap summaries, and sourceTextLogged=false.
     - Test 3: MCP tool list is unchanged and `prepare_task` structuredContent exposes attributed recommendations.
   </behavior>
   <action>Update binary and MCP compatibility tests for additive Phase 3 fields per D-02. Do not add MCP tools, resources, prompts, or client durability behavior; Phase 4 owns real client restart/wrong-repo semantics. Keep old shape assertions for targetFiles, relatedTests, riskFlags, diagnostics, privacyStatus, and existing eval fields.</action>
   <verify>
-    <automated>cargo test -p ctxpack --test cli_compat -- --nocapture && cargo test -p ctxpack-mcp public_surface -- --nocapture && cargo test -p ctxpack-mcp prepare_task -- --nocapture</automated>
+    <automated>cargo test -p ctxhelm --test cli_compat -- --nocapture && cargo test -p ctxhelm-mcp public_surface -- --nocapture && cargo test -p ctxhelm-mcp prepare_task -- --nocapture</automated>
   </verify>
   <done>CLI and MCP compatibility tests prove Phase 3 fields are additive and existing surfaces still work.</done>
 </task>
@@ -82,14 +82,14 @@ Output: Compatibility tests, smoke script, and final workspace validation.
   <name>Task 2: Add bounded source-free historical eval smoke script</name>
   <files>scripts/smoke-historical-eval.sh</files>
   <behavior>
-    - Test 1: Script runs against `CTXPACK_SMOKE_REPO` or the current repo with a small limit and JSON output.
-    - Test 2: Script accepts `CTXPACK_REFACTORINGMINER_REPO=/Users/romel/Documents/GitHub/RefactoringMiner` when present but skips clearly when absent.
+    - Test 1: Script runs against `CTXHELM_SMOKE_REPO` or the current repo with a small limit and JSON output.
+    - Test 2: Script accepts `CTXHELM_REFACTORINGMINER_REPO=/Users/romel/Documents/GitHub/RefactoringMiner` when present but skips clearly when absent.
     - Test 3: Script fails if the report contains source text, prompt/task text fields, or missing fixed-budget eval metadata.
     - Test 4: Script passes `--budget "$budget"` to every eval run and fails if the JSON report budget does not match.
   </behavior>
-  <action>Create a portable bash smoke script for EVAL-04. Default to `CTXPACK_SMOKE_REPO=${PWD}`, `CTXPACK_SMOKE_LIMIT=3`, and `CTXPACK_SMOKE_BUDGET=10`; if `CTXPACK_REFACTORINGMINER_REPO` is set and exists, run the same bounded eval there. The script must run `cargo run -p ctxpack -- eval history --repo "$repo" --limit "$limit" --budget "$budget" --format json`, validate source-free fields and matching budget metadata using `python3` or `ruby` available on macOS, and print a compact summary. It must not checkout entire external worktrees beyond the eval implementation, run project tests, upload data, or require network access.</action>
+  <action>Create a portable bash smoke script for EVAL-04. Default to `CTXHELM_SMOKE_REPO=${PWD}`, `CTXHELM_SMOKE_LIMIT=3`, and `CTXHELM_SMOKE_BUDGET=10`; if `CTXHELM_REFACTORINGMINER_REPO` is set and exists, run the same bounded eval there. The script must run `cargo run -p ctxhelm -- eval history --repo "$repo" --limit "$limit" --budget "$budget" --format json`, validate source-free fields and matching budget metadata using `python3` or `ruby` available on macOS, and print a compact summary. It must not checkout entire external worktrees beyond the eval implementation, run project tests, upload data, or require network access.</action>
   <verify>
-    <automated>CTXPACK_SMOKE_REPO="$PWD" CTXPACK_SMOKE_LIMIT=2 CTXPACK_SMOKE_BUDGET=10 bash scripts/smoke-historical-eval.sh</automated>
+    <automated>CTXHELM_SMOKE_REPO="$PWD" CTXHELM_SMOKE_LIMIT=2 CTXHELM_SMOKE_BUDGET=10 bash scripts/smoke-historical-eval.sh</automated>
   </verify>
   <done>Maintainer has a repeatable bounded smoke path for current repo and optional RefactoringMiner verification.</done>
 </task>
@@ -99,7 +99,7 @@ Output: Compatibility tests, smoke script, and final workspace validation.
   <files>None</files>
   <action>Run the full validation gate after Tasks 1-2: workspace tests, CLI help, and a small eval history smoke. This task is validation-only. If a validation command exposes a bug, stop and report the blocker with the owning earlier plan/task that must be reopened; do not hide missing implementation inside the final validation plan. Do not add cloud/vector features, parser/runtime migrations, or Phase 4 client durability.</action>
   <verify>
-    <automated>cargo test --workspace && cargo run -p ctxpack -- --help && CTXPACK_SMOKE_REPO="$PWD" CTXPACK_SMOKE_LIMIT=2 CTXPACK_SMOKE_BUDGET=10 bash scripts/smoke-historical-eval.sh</automated>
+    <automated>cargo test --workspace && cargo run -p ctxhelm -- --help && CTXHELM_SMOKE_REPO="$PWD" CTXHELM_SMOKE_LIMIT=2 CTXHELM_SMOKE_BUDGET=10 bash scripts/smoke-historical-eval.sh</automated>
   </verify>
   <done>All Phase 3 code paths pass workspace validation, CLI help validation, and bounded source-free historical eval smoke.</done>
 </task>
@@ -107,11 +107,11 @@ Output: Compatibility tests, smoke script, and final workspace validation.
 </tasks>
 
 <verification>
-- `cargo test -p ctxpack --test cli_compat -- --nocapture`
-- `cargo test -p ctxpack-mcp public_surface -- --nocapture`
+- `cargo test -p ctxhelm --test cli_compat -- --nocapture`
+- `cargo test -p ctxhelm-mcp public_surface -- --nocapture`
 - `cargo test --workspace`
-- `cargo run -p ctxpack -- --help`
-- `CTXPACK_SMOKE_REPO="$PWD" CTXPACK_SMOKE_LIMIT=2 CTXPACK_SMOKE_BUDGET=10 bash scripts/smoke-historical-eval.sh`
+- `cargo run -p ctxhelm -- --help`
+- `CTXHELM_SMOKE_REPO="$PWD" CTXHELM_SMOKE_LIMIT=2 CTXHELM_SMOKE_BUDGET=10 bash scripts/smoke-historical-eval.sh`
 </verification>
 
 <success_criteria>

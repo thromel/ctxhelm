@@ -2,11 +2,11 @@
 
 Memory review now has CLI controls:
 
-- `ctxpack memory list`
-- `ctxpack memory show`
-- `ctxpack memory approve`
-- `ctxpack memory reject`
-- `ctxpack memory disable`
-- `ctxpack memory regenerate`
+- `ctxhelm memory list`
+- `ctxhelm memory show`
+- `ctxhelm memory approve`
+- `ctxhelm memory reject`
+- `ctxhelm memory disable`
+- `ctxhelm memory regenerate`
 
 Docs and release gates now include repo memory.

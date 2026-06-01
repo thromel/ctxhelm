@@ -14,7 +14,7 @@ depends_on:
 # Phase 62 Plan: Production Local Embedding Quality
 
 <objective>
-Evaluate and harden production local embedding retrieval so ctxpack can decide whether local semantic retrieval should remain opt-in, be tuned, or be promoted under v2.5 quality gates.
+Evaluate and harden production local embedding retrieval so ctxhelm can decide whether local semantic retrieval should remain opt-in, be tuned, or be promoted under v2.5 quality gates.
 </objective>
 
 <threat_model>
@@ -36,8 +36,8 @@ Evaluate and harden production local embedding retrieval so ctxpack can decide w
 
 <task id="62.1" name="Verify local embedding feature and provider status">
 <read_first>
-- `crates/ctxpack-index/src/semantic.rs`
-- `crates/ctxpack-compiler/src/policy.rs`
+- `crates/ctxhelm-index/src/semantic.rs`
+- `crates/ctxhelm-compiler/src/policy.rs`
 - `docs/semantic.md`
 </read_first>
 <action>
@@ -45,7 +45,7 @@ Build with the local embeddings feature and run semantic provider status for `lo
 </action>
 <verify>
 - `cargo test --workspace --features local-embeddings --no-fail-fast`
-- `cargo run -p ctxpack --features local-embeddings -- semantic status --semantic-provider local_fastembed --format json`
+- `cargo run -p ctxhelm --features local-embeddings -- semantic status --semantic-provider local_fastembed --format json`
 </verify>
 <acceptance_criteria>
 - Provider status is source-free and explicit.
@@ -59,7 +59,7 @@ Build with the local embeddings feature and run semantic provider status for `lo
 - `.planning/phases/61-multi-repo-quality-baselines/61-multi-repo-quality-baselines-01-SUMMARY.md`
 </read_first>
 <action>
-Run default, `local_hash`, and `local_fastembed` variants on the same two-repo corpus. Keep large JSON under ignored `.ctxpack/e2e/` and commit only a concise source-free summary.
+Run default, `local_hash`, and `local_fastembed` variants on the same two-repo corpus. Keep large JSON under ignored `.ctxhelm/e2e/` and commit only a concise source-free summary.
 </action>
 <verify>
 - Compare Recall@10, MRR@10, runtime, signal saturation, and named regressions.
@@ -72,9 +72,9 @@ Run default, `local_hash`, and `local_fastembed` variants on the same two-repo c
 
 <task id="62.3" name="Fix cache or provider issues discovered by real eval">
 <read_first>
-- `crates/ctxpack-index/src/policy.rs`
-- `crates/ctxpack-index/src/storage.rs`
-- `crates/ctxpack-index/src/semantic.rs`
+- `crates/ctxhelm-index/src/policy.rs`
+- `crates/ctxhelm-index/src/storage.rs`
+- `crates/ctxhelm-index/src/semantic.rs`
 </read_first>
 <action>
 If real eval exposes cache pollution, missing diagnostics, stale vectors, or provider metadata gaps, fix the highest-impact issue with focused tests.
@@ -101,7 +101,7 @@ Document production local embedding results, limitations, and recommended use. C
 </action>
 <verify>
 - `cargo test --workspace`
-- `cargo run -p ctxpack -- --help`
+- `cargo run -p ctxhelm -- --help`
 - `git diff --check`
 </verify>
 <acceptance_criteria>
@@ -117,7 +117,7 @@ Document production local embedding results, limitations, and recommended use. C
 - local embedding provider status
 - two-repo production embedding E2E
 - `cargo test --workspace`
-- `cargo run -p ctxpack -- --help`
+- `cargo run -p ctxhelm -- --help`
 - `git diff --check`
 </verification>
 

@@ -21,5 +21,5 @@ Maintainers can define fixed source-free benchmark corpora and lock the first la
 ## Verification
 
 - `cargo check --workspace`
-- `cargo test -p ctxpack-compiler benchmark_suite_runs_multiple_repos_source_free -- --nocapture`
+- `cargo test -p ctxhelm-compiler benchmark_suite_runs_multiple_repos_source_free -- --nocapture`
 - RefactoringMiner external run is intentionally deferred to the v2.3 optional large-repo gate because the locked suite is a multi-minute benchmark.

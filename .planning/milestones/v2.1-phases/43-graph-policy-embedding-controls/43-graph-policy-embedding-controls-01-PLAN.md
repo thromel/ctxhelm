@@ -15,7 +15,7 @@ Implement GRAPH-03 and EMBED-01 through EMBED-04:
 
 1. Add semantic provider and policy experiment contracts.
 2. Add compiler report builders.
-3. Add `ctxpack semantic status` and `ctxpack eval policy experiments`.
+3. Add `ctxhelm semantic status` and `ctxhelm eval policy experiments`.
 4. Add docs and smoke coverage.
 5. Run formatting, smokes, CLI help, and workspace tests.
 
@@ -24,8 +24,8 @@ Implement GRAPH-03 and EMBED-01 through EMBED-04:
 - `cargo fmt --all`
 - `bash scripts/smoke-policy-embedding.sh`
 - `bash scripts/check-release-docs.sh`
-- `cargo run -p ctxpack -- semantic status --help`
-- `cargo run -p ctxpack -- eval policy experiments --help`
+- `cargo run -p ctxhelm -- semantic status --help`
+- `cargo run -p ctxhelm -- eval policy experiments --help`
 - `cargo test --workspace`
 
 ## Non-goals

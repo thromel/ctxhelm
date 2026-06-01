@@ -13,13 +13,13 @@ repo-boundary-aware workspace context packs.
 - Add `WorkspaceContextPack` with per-repo nested `ContextPack` objects under
   `repoPacks`.
 - Keep single-repo `prepare-task` and `get-pack` behavior unchanged unless the
-  caller explicitly uses `ctxpack workspace ...`.
+  caller explicitly uses `ctxhelm workspace ...`.
 - Add source-free tests, docs, and smoke coverage.
 
 ## Verification
 
-- `cargo test -p ctxpack-core workspace`
-- `cargo test -p ctxpack-compiler workspace`
-- `cargo test -p ctxpack workspace --test cli_compat`
+- `cargo test -p ctxhelm-core workspace`
+- `cargo test -p ctxhelm-compiler workspace`
+- `cargo test -p ctxhelm workspace --test cli_compat`
 - `scripts/smoke-workspace.sh`
 

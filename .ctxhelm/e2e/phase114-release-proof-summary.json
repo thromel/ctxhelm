@@ -1,0 +1,154 @@
+{
+  "binaryIdentity": {
+    "fileName": "ctxhelm",
+    "sha256": "92700827037f34b72e24fde627dd8b9f6506037cd0bf2a6e11dc66b3ac9887ee",
+    "source": "archive"
+  },
+  "ctxhelmVersion": "ctxhelm 1.1.0",
+  "optionalProofs": {
+    "benchmarkProductProof": "skipped",
+    "claudeRealClientProof": "skipped",
+    "cleanColdFixtureProductProof": "passed",
+    "cleanColdFixtureRequired": true,
+    "codexRealClientProof": "skipped",
+    "cursorRealClientProof": "not_claimed",
+    "opencodeRealClientProof": "not_claimed",
+    "realClientRequired": false,
+    "resourceBackedGapSummaryContract": "checked"
+  },
+  "privacyStatus": {
+    "localOnly": true,
+    "remoteEmbeddingsUsed": false,
+    "remoteRerankingUsed": false,
+    "sourceTextLogged": false
+  },
+  "releaseArchive": {
+    "auditReport": "ctxhelm-v1.1.0-aarch64-apple-darwin.audit.json",
+    "manifest": "ctxhelm-v1.1.0-aarch64-apple-darwin.manifest.json",
+    "name": "ctxhelm-v1.1.0-aarch64-apple-darwin.tar.gz",
+    "sha256": "81f5ecd6d944d13ec70141b55a110cc808f584fc0e7b64a0ba087eda5e18f664"
+  },
+  "requiredChecks": [
+    {
+      "name": "cargo test --workspace",
+      "status": "passed"
+    },
+    {
+      "name": "scripts/check-release-docs.sh",
+      "status": "passed"
+    },
+    {
+      "name": "scripts/release-package.sh",
+      "status": "passed"
+    },
+    {
+      "name": "scripts/verify-release-archive.sh",
+      "status": "passed"
+    },
+    {
+      "name": "ctxhelm --version",
+      "status": "passed"
+    },
+    {
+      "name": "ctxhelm --help",
+      "status": "passed"
+    },
+    {
+      "name": "scripts/smoke-first-pack.sh",
+      "status": "passed"
+    },
+    {
+      "name": "scripts/smoke-storage.sh",
+      "status": "passed"
+    },
+    {
+      "name": "scripts/smoke-memory.sh",
+      "status": "passed"
+    },
+    {
+      "name": "scripts/smoke-feedback.sh",
+      "status": "passed"
+    },
+    {
+      "name": "scripts/smoke-workspace.sh",
+      "status": "passed"
+    },
+    {
+      "name": "scripts/smoke-shared-artifacts.sh",
+      "status": "passed"
+    },
+    {
+      "name": "scripts/smoke-inspector.sh",
+      "status": "passed"
+    },
+    {
+      "name": "scripts/smoke-retrieval-health.sh",
+      "status": "passed"
+    },
+    {
+      "name": "scripts/smoke-graph.sh",
+      "status": "passed"
+    },
+    {
+      "name": "scripts/smoke-policy-embedding.sh",
+      "status": "passed"
+    },
+    {
+      "name": "scripts/smoke-agent-preview.sh",
+      "status": "passed"
+    },
+    {
+      "name": "scripts/smoke-demo-artifacts.sh",
+      "status": "passed"
+    },
+    {
+      "name": "scripts/smoke-distribution-metadata.sh",
+      "status": "passed"
+    },
+    {
+      "name": "scripts/smoke-release-governance.sh",
+      "status": "passed"
+    },
+    {
+      "name": "scripts/smoke-semantic.sh",
+      "status": "passed"
+    },
+    {
+      "name": "scripts/smoke-precision.sh",
+      "status": "passed"
+    },
+    {
+      "name": "scripts/smoke-v23-eval.sh",
+      "status": "passed"
+    },
+    {
+      "name": "scripts/smoke-v24-gate.sh",
+      "status": "passed"
+    },
+    {
+      "name": "scripts/smoke-mcp-protocol.sh",
+      "status": "passed"
+    },
+    {
+      "name": "scripts/smoke-cursor-mcp.sh",
+      "status": "passed"
+    },
+    {
+      "name": "scripts/smoke-opencode-mcp.sh",
+      "status": "passed"
+    },
+    {
+      "name": "clean cold fixture product proof",
+      "status": "passed"
+    }
+  ],
+  "schemaVersion": 1,
+  "status": "passed",
+  "unsupportedActions": [
+    "publishing",
+    "tag creation",
+    "global agent config mutation",
+    "user project test execution",
+    "cloud upload"
+  ]
+}

@@ -1,6 +1,6 @@
-# ctxpack Architecture
+# ctxhelm Architecture
 
-RepoWinnow is the product; `ctxpack` is the CLI, crate, and MCP namespace.
+ctxhelm is the product; `ctxhelm` is the CLI, crate, and MCP namespace.
 Together, they form a local-first context broker for coding agents. The system
 does not edit code, own the chat UI, or replace an agent. Its job is to compile
 small, evidence-labeled context plans and packs so existing agents inspect
@@ -12,8 +12,8 @@ better files, tests, examples, and constraints.
 flowchart TD
   User["Developer"] --> Agent["Existing coding agent"]
   Agent --> Static["AGENTS.md and native rules"]
-  Agent --> MCP["ctxpack MCP server"]
-  Agent --> CLI["ctxpack CLI"]
+  Agent --> MCP["ctxhelm MCP server"]
+  Agent --> CLI["ctxhelm CLI"]
   MCP --> Compiler["Context compiler"]
   CLI --> Compiler
   Compiler --> Index["Repository intelligence"]
@@ -28,7 +28,7 @@ flowchart TD
 ```
 
 The important boundary is read-only context. Agents use their own file read,
-edit, and shell tools after ctxpack tells them where to look.
+edit, and shell tools after ctxhelm tells them where to look.
 
 ## Documentation Map
 
@@ -39,7 +39,7 @@ edit, and shell tools after ctxpack tells them where to look.
   packing.
 - [Pack inspector](inspector.md) documents source-free pack decision exports.
 - [Agent preview](agent-preview.md) documents how each coding agent should
-  consume ctxpack tools, resources, guidance, and pack URIs.
+  consume ctxhelm tools, resources, guidance, and pack URIs.
 - [Retrieval health](retrieval-health.md) documents source-free context-quality
   reports.
 - [Graph neighborhoods](graph.md) documents source-free relationship reports.
@@ -61,11 +61,11 @@ edit, and shell tools after ctxpack tells them where to look.
 
 ```mermaid
 flowchart LR
-  Core["ctxpack-core\ncontracts, privacy, init artifacts"] --> Index["ctxpack-index\ninventory, search, graph, storage, feedback, workspace"]
-  Core --> Compiler["ctxpack-compiler\nplanning, packs, evals, cards"]
-  Core --> Mcp["ctxpack-mcp\nMCP tools, resources, prompts"]
+  Core["ctxhelm-core\ncontracts, privacy, init artifacts"] --> Index["ctxhelm-index\ninventory, search, graph, storage, feedback, workspace"]
+  Core --> Compiler["ctxhelm-compiler\nplanning, packs, evals, cards"]
+  Core --> Mcp["ctxhelm-mcp\nMCP tools, resources, prompts"]
   Index --> Compiler
-  Compiler --> Cli["ctxpack\nCLI"]
+  Compiler --> Cli["ctxhelm\nCLI"]
   Index --> Cli
   Mcp --> Cli
 ```
@@ -76,7 +76,7 @@ flowchart LR
 sequenceDiagram
   participant D as Developer
   participant A as Agent
-  participant C as ctxpack
+  participant C as ctxhelm
   participant R as Repository
   D->>A: "Fix this bug"
   A->>C: prepare_task(task, repo)
@@ -134,7 +134,7 @@ logs, model transcripts, or source snippets.
 
 ```mermaid
 flowchart TD
-  Manifest[".ctxpack/workspace.json"] --> RepoA["Repo A status"]
+  Manifest[".ctxhelm/workspace.json"] --> RepoA["Repo A status"]
   Manifest --> RepoB["Repo B status"]
   Manifest --> RepoC["Repo C status"]
   RepoA --> WorkspaceStatus["WorkspaceInventoryReport"]
@@ -161,8 +161,8 @@ and workspace-aware packs depend on this inventory foundation and arrive later.
 
 ## Safety Invariants
 
-- ctxpack does not edit source files.
-- ctxpack does not mutate global Codex, Claude, Cursor, or OpenCode config.
+- ctxhelm does not edit source files.
+- ctxhelm does not mutate global Codex, Claude, Cursor, or OpenCode config.
 - Cloud embeddings, cloud reranking, and hosted sync are not default behavior.
 - Public reports include `sourceTextLogged: false` where they summarize agent
   sessions, workspace status, feedback, or eval artifacts.
@@ -171,16 +171,16 @@ and workspace-aware packs depend on this inventory foundation and arrive later.
 
 ## How To Read The Code
 
-Start with the contracts in `crates/ctxpack-core/src/contracts.rs`. Then follow
+Start with the contracts in `crates/ctxhelm-core/src/contracts.rs`. Then follow
 the implementation by capability:
 
-- inventory and ignore policy: `crates/ctxpack-index/src/inventory.rs`
-- source-read policy: `crates/ctxpack-index/src/policy.rs`
-- lexical retrieval: `crates/ctxpack-index/src/search.rs`
-- symbols and dependencies: `crates/ctxpack-index/src/symbols.rs` and
-  `crates/ctxpack-index/src/dependencies.rs`
-- context planning: `crates/ctxpack-compiler/src/planning.rs`
-- pack rendering: `crates/ctxpack-compiler/src/packs.rs`
-- CLI surfaces: `crates/ctxpack/src/main.rs`
-- MCP surfaces: `crates/ctxpack-mcp/src/lib.rs`
-- workspace foundation: `crates/ctxpack-index/src/workspace.rs`
+- inventory and ignore policy: `crates/ctxhelm-index/src/inventory.rs`
+- source-read policy: `crates/ctxhelm-index/src/policy.rs`
+- lexical retrieval: `crates/ctxhelm-index/src/search.rs`
+- symbols and dependencies: `crates/ctxhelm-index/src/symbols.rs` and
+  `crates/ctxhelm-index/src/dependencies.rs`
+- context planning: `crates/ctxhelm-compiler/src/planning.rs`
+- pack rendering: `crates/ctxhelm-compiler/src/packs.rs`
+- CLI surfaces: `crates/ctxhelm/src/main.rs`
+- MCP surfaces: `crates/ctxhelm-mcp/src/lib.rs`
+- workspace foundation: `crates/ctxhelm-index/src/workspace.rs`

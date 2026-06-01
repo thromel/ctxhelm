@@ -2,7 +2,7 @@
 phase: 02-trust-layer-operational-diagnostics
 plan: 03
 subsystem: trust-layer
-tags: [rust, ctxpack-index, freshness, source-read-policy, diagnostics]
+tags: [rust, ctxhelm-index, freshness, source-read-policy, diagnostics]
 
 requires:
   - phase: 02-trust-layer-operational-diagnostics
@@ -12,7 +12,7 @@ provides:
   - Diagnostic-bearing report variants for downstream compiler/MCP integration
   - Source-read diagnostics for non-UTF-8, oversized, deleted-after-inventory, and policy-skipped index inputs
   - Partial coverage diagnostics for graph, test-map, and git-history signals
-affects: [ctxpack-index, ctxpack-compiler, ctxpack-mcp, trust-layer-operational-diagnostics]
+affects: [ctxhelm-index, ctxhelm-compiler, ctxhelm-mcp, trust-layer-operational-diagnostics]
 
 tech-stack:
   added: []
@@ -25,13 +25,13 @@ key-files:
   created:
     - .planning/phases/02-trust-layer-operational-diagnostics/02-trust-layer-operational-diagnostics-03-SUMMARY.md
   modified:
-    - crates/ctxpack-index/src/lib.rs
-    - crates/ctxpack-index/src/search.rs
-    - crates/ctxpack-index/src/symbols.rs
-    - crates/ctxpack-index/src/related_tests.rs
-    - crates/ctxpack-index/src/dependencies.rs
-    - crates/ctxpack-index/src/git.rs
-    - crates/ctxpack-index/src/policy.rs
+    - crates/ctxhelm-index/src/lib.rs
+    - crates/ctxhelm-index/src/search.rs
+    - crates/ctxhelm-index/src/symbols.rs
+    - crates/ctxhelm-index/src/related_tests.rs
+    - crates/ctxhelm-index/src/dependencies.rs
+    - crates/ctxhelm-index/src/git.rs
+    - crates/ctxhelm-index/src/policy.rs
 
 key-decisions:
   - "Index read APIs keep existing result shapes while exposing diagnostic report variants for downstream compiler and MCP wiring."
@@ -80,13 +80,13 @@ Each task was committed atomically:
 
 ## Files Created/Modified
 
-- `crates/ctxpack-index/src/lib.rs` - Added freshness/source-read/partial-signal tests and re-exported report APIs.
-- `crates/ctxpack-index/src/search.rs` - Added `SearchReport`, fresh inventory loading, and safe source reads for lexical scoring.
-- `crates/ctxpack-index/src/symbols.rs` - Added symbol report APIs and parse-gap diagnostics for skipped source reads.
-- `crates/ctxpack-index/src/related_tests.rs` - Added related-test report APIs and test-map partial diagnostics.
-- `crates/ctxpack-index/src/dependencies.rs` - Added dependency report APIs and graph partial diagnostics.
-- `crates/ctxpack-index/src/git.rs` - Added report APIs for co-change, current diff, and history diagnostics.
-- `crates/ctxpack-index/src/policy.rs` - Added shared `SOURCE_READ_MAX_BYTES`.
+- `crates/ctxhelm-index/src/lib.rs` - Added freshness/source-read/partial-signal tests and re-exported report APIs.
+- `crates/ctxhelm-index/src/search.rs` - Added `SearchReport`, fresh inventory loading, and safe source reads for lexical scoring.
+- `crates/ctxhelm-index/src/symbols.rs` - Added symbol report APIs and parse-gap diagnostics for skipped source reads.
+- `crates/ctxhelm-index/src/related_tests.rs` - Added related-test report APIs and test-map partial diagnostics.
+- `crates/ctxhelm-index/src/dependencies.rs` - Added dependency report APIs and graph partial diagnostics.
+- `crates/ctxhelm-index/src/git.rs` - Added report APIs for co-change, current diff, and history diagnostics.
+- `crates/ctxhelm-index/src/policy.rs` - Added shared `SOURCE_READ_MAX_BYTES`.
 - `.planning/phases/02-trust-layer-operational-diagnostics/02-trust-layer-operational-diagnostics-03-SUMMARY.md` - This execution summary.
 
 ## Decisions Made
@@ -103,14 +103,14 @@ Each task was committed atomically:
 - **Found during:** Task 2 workspace verification
 - **Issue:** The first diagnostic implementation made `co_change_hints` degrade missing git to an empty result, which broke existing compiler risk-flag behavior.
 - **Fix:** Kept diagnostic degradation on `co_change_hints_report` while restoring strict error behavior for legacy `co_change_hints`.
-- **Files modified:** `crates/ctxpack-index/src/git.rs`
-- **Verification:** `cargo test -p ctxpack-compiler prepare_context_plan -- --nocapture` and `cargo test --workspace` passed.
+- **Files modified:** `crates/ctxhelm-index/src/git.rs`
+- **Verification:** `cargo test -p ctxhelm-compiler prepare_context_plan -- --nocapture` and `cargo test --workspace` passed.
 - **Committed in:** `b6de6ec`
 
 **2. [Rule 3 - Blocking] Cleared stale Cargo incremental artifact**
 - **Found during:** Overall workspace verification
 - **Issue:** `cargo test --workspace` failed creating an incremental dependency graph file under `target/debug/incremental` after parallel focused cargo runs.
-- **Fix:** Ran `cargo clean -p ctxpack-mcp` to remove generated build artifacts, then reran workspace tests.
+- **Fix:** Ran `cargo clean -p ctxhelm-mcp` to remove generated build artifacts, then reran workspace tests.
 - **Files modified:** None, generated build output only.
 - **Verification:** `cargo test --workspace` passed.
 - **Committed in:** Not applicable; generated artifact cleanup only.
@@ -134,15 +134,15 @@ None. Stub scan found no task-blocking stubs; matches for `placeholder` were exi
 
 ## Verification
 
-- `cargo test -p ctxpack-index lexical_search -- --nocapture` passed.
-- `cargo test -p ctxpack-index symbol -- --nocapture` passed.
-- `cargo test -p ctxpack-index related_tests -- --nocapture` passed.
-- `cargo test -p ctxpack-index dependency -- --nocapture` passed.
-- `cargo test -p ctxpack-index current_diff -- --nocapture` passed.
-- `cargo test -p ctxpack-index source_read -- --nocapture` passed.
-- `cargo test -p ctxpack-index diagnostics -- --nocapture` passed.
-- `cargo test -p ctxpack-index partial -- --nocapture` passed.
-- `cargo test -p ctxpack-index` passed: 44 tests plus doctests.
+- `cargo test -p ctxhelm-index lexical_search -- --nocapture` passed.
+- `cargo test -p ctxhelm-index symbol -- --nocapture` passed.
+- `cargo test -p ctxhelm-index related_tests -- --nocapture` passed.
+- `cargo test -p ctxhelm-index dependency -- --nocapture` passed.
+- `cargo test -p ctxhelm-index current_diff -- --nocapture` passed.
+- `cargo test -p ctxhelm-index source_read -- --nocapture` passed.
+- `cargo test -p ctxhelm-index diagnostics -- --nocapture` passed.
+- `cargo test -p ctxhelm-index partial -- --nocapture` passed.
+- `cargo test -p ctxhelm-index` passed: 44 tests plus doctests.
 - `cargo test --workspace` passed.
 
 ## User Setup Required

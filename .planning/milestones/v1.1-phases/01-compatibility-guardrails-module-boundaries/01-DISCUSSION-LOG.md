@@ -28,7 +28,7 @@ The structured question UI was unavailable in this Codex mode, so the workflow f
 
 | Option | Description | Selected |
 |--------|-------------|----------|
-| Binary-level smoke coverage | Exercise representative commands through the compiled binary with temp repos and temp `CTXPACK_HOME`. | yes |
+| Binary-level smoke coverage | Exercise representative commands through the compiled binary with temp repos and temp `CTXHELM_HOME`. | yes |
 | Renderer/helper-only tests | Continue testing only internal render helpers and lower-layer functions. | |
 | Full shell-script E2E suite | Build a broad shell-driven suite for every command immediately. | |
 

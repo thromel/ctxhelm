@@ -5,10 +5,10 @@ type: execute
 wave: 4
 depends_on: ["02-03"]
 files_modified:
-  - crates/ctxpack-compiler/src/lib.rs
-  - crates/ctxpack-compiler/src/planning.rs
-  - crates/ctxpack-compiler/src/packs.rs
-  - crates/ctxpack-compiler/src/cards.rs
+  - crates/ctxhelm-compiler/src/lib.rs
+  - crates/ctxhelm-compiler/src/planning.rs
+  - crates/ctxhelm-compiler/src/packs.rs
+  - crates/ctxhelm-compiler/src/cards.rs
 autonomous: true
 requirements: [SAFE-01, SAFE-02, SAFE-04, SAFE-05, DIAG-01, DIAG-04]
 must_haves:
@@ -17,26 +17,26 @@ must_haves:
     - "Context packs revalidate every source-bearing snippet path against current safe inventory immediately before reading."
     - "Context cards are generated from fresh safe inventory and remain source-free while reporting degraded inputs."
   artifacts:
-    - path: "crates/ctxpack-compiler/src/planning.rs"
+    - path: "crates/ctxhelm-compiler/src/planning.rs"
       provides: "Plan-level diagnostics and riskFlags compatibility projection"
       contains: "diagnostics"
-    - path: "crates/ctxpack-compiler/src/packs.rs"
+    - path: "crates/ctxhelm-compiler/src/packs.rs"
       provides: "Pack snippet revalidation through index policy"
       contains: "read_safe_source"
-    - path: "crates/ctxpack-compiler/src/cards.rs"
+    - path: "crates/ctxhelm-compiler/src/cards.rs"
       provides: "Fresh inventory and diagnostics for source-free cards"
       contains: "load_or_refresh_inventory"
   key_links:
-    - from: "crates/ctxpack-compiler/src/planning.rs"
-      to: "crates/ctxpack-index/src/search.rs"
+    - from: "crates/ctxhelm-compiler/src/planning.rs"
+      to: "crates/ctxhelm-index/src/search.rs"
       via: "diagnostic-aware retrieval reports"
       pattern: "diagnostics"
-    - from: "crates/ctxpack-compiler/src/packs.rs"
-      to: "crates/ctxpack-index/src/policy.rs"
+    - from: "crates/ctxhelm-compiler/src/packs.rs"
+      to: "crates/ctxhelm-index/src/policy.rs"
       via: "safe snippet reads"
       pattern: "read_safe_source"
-    - from: "crates/ctxpack-compiler/src/cards.rs"
-      to: "crates/ctxpack-index/src/freshness.rs"
+    - from: "crates/ctxhelm-compiler/src/cards.rs"
+      to: "crates/ctxhelm-index/src/freshness.rs"
       via: "fresh safe inventory"
       pattern: "load_or_refresh_inventory"
 ---
@@ -91,12 +91,12 @@ Plan 03 provides diagnostic-aware index reports and `read_safe_source`.
 
 <task type="auto" tdd="true">
   <name>Task 1: Surface plan diagnostics while preserving riskFlags</name>
-  <files>crates/ctxpack-compiler/src/lib.rs, crates/ctxpack-compiler/src/planning.rs</files>
+  <files>crates/ctxhelm-compiler/src/lib.rs, crates/ctxhelm-compiler/src/planning.rs</files>
   <read_first>
-    - `crates/ctxpack-compiler/src/planning.rs`
-    - `crates/ctxpack-compiler/src/lib.rs`
-    - `crates/ctxpack-index/src/search.rs`
-    - `crates/ctxpack-index/src/git.rs`
+    - `crates/ctxhelm-compiler/src/planning.rs`
+    - `crates/ctxhelm-compiler/src/lib.rs`
+    - `crates/ctxhelm-index/src/search.rs`
+    - `crates/ctxhelm-index/src/git.rs`
   </read_first>
   <behavior>
     - DIAG-01: context plans include structured diagnostics for `low_information_task`, stale/rebuilt/cache status, missing git/git timeout, skipped files, parse gaps, and partial graph/test/history coverage.
@@ -107,9 +107,9 @@ Plan 03 provides diagnostic-aware index reports and `read_safe_source`.
     Extend planning fusion to merge index diagnostics into `ContextPlan.diagnostics`. Convert existing low-information and unavailable path/risk-flag logic into diagnostics first, then project warning/error diagnostics into `risk_flags` without removing existing risk messages that compatibility tests expect. Keep `missing_info_questions` for low-information tasks. Do not alter candidate scoring or introduce Phase 3 typed ranking work.
   </action>
   <verify>
-    <automated>cargo test -p ctxpack-compiler diagnostics -- --nocapture</automated>
-    <automated>cargo test -p ctxpack-compiler low_information -- --nocapture</automated>
-    <automated>cargo test -p ctxpack-compiler unavailable -- --nocapture</automated>
+    <automated>cargo test -p ctxhelm-compiler diagnostics -- --nocapture</automated>
+    <automated>cargo test -p ctxhelm-compiler low_information -- --nocapture</automated>
+    <automated>cargo test -p ctxhelm-compiler unavailable -- --nocapture</automated>
   </verify>
   <acceptance_criteria>
     - Plans for low-information tasks include both `diagnostics` and `missingInfoQuestions`.
@@ -121,12 +121,12 @@ Plan 03 provides diagnostic-aware index reports and `read_safe_source`.
 
 <task type="auto" tdd="true">
   <name>Task 2: Revalidate pack snippets and source-free cards</name>
-  <files>crates/ctxpack-compiler/src/lib.rs, crates/ctxpack-compiler/src/packs.rs, crates/ctxpack-compiler/src/cards.rs</files>
+  <files>crates/ctxhelm-compiler/src/lib.rs, crates/ctxhelm-compiler/src/packs.rs, crates/ctxhelm-compiler/src/cards.rs</files>
   <read_first>
-    - `crates/ctxpack-compiler/src/packs.rs`
-    - `crates/ctxpack-compiler/src/cards.rs`
-    - `crates/ctxpack-index/src/policy.rs`
-    - `crates/ctxpack-index/src/freshness.rs`
+    - `crates/ctxhelm-compiler/src/packs.rs`
+    - `crates/ctxhelm-compiler/src/cards.rs`
+    - `crates/ctxhelm-index/src/policy.rs`
+    - `crates/ctxhelm-index/src/freshness.rs`
   </read_first>
   <behavior>
     - SAFE-04: pack snippets are read only after revalidating each target/test path against the current safe inventory.
@@ -138,10 +138,10 @@ Plan 03 provides diagnostic-aware index reports and `read_safe_source`.
     Replace direct file reads in pack rendering/snippet extraction with `load_or_refresh_inventory` plus `read_safe_source`. Add pack/card diagnostics to returned `ContextPack` and warnings text, preserving Markdown sections and existing JSON fields. Ensure generated context cards continue to be source-free summaries and report skipped/degraded inputs using diagnostics rather than contents. Do not add retrieval ranking or historical eval failure grouping.
   </action>
   <verify>
-    <automated>cargo test -p ctxpack-compiler pack -- --nocapture</automated>
-    <automated>cargo test -p ctxpack-compiler revalidates -- --nocapture</automated>
-    <automated>cargo test -p ctxpack-compiler cards -- --nocapture</automated>
-    <automated>cargo test -p ctxpack-compiler diagnostics -- --nocapture</automated>
+    <automated>cargo test -p ctxhelm-compiler pack -- --nocapture</automated>
+    <automated>cargo test -p ctxhelm-compiler revalidates -- --nocapture</automated>
+    <automated>cargo test -p ctxhelm-compiler cards -- --nocapture</automated>
+    <automated>cargo test -p ctxhelm-compiler diagnostics -- --nocapture</automated>
   </verify>
   <acceptance_criteria>
     - Packs never include snippets for paths that are no longer safe at read time.
@@ -155,13 +155,13 @@ Plan 03 provides diagnostic-aware index reports and `read_safe_source`.
 
 <verification>
 ```bash
-cargo test -p ctxpack-compiler diagnostics -- --nocapture
-cargo test -p ctxpack-compiler low_information -- --nocapture
-cargo test -p ctxpack-compiler unavailable -- --nocapture
-cargo test -p ctxpack-compiler pack -- --nocapture
-cargo test -p ctxpack-compiler revalidates -- --nocapture
-cargo test -p ctxpack-compiler cards -- --nocapture
-cargo test -p ctxpack-compiler
+cargo test -p ctxhelm-compiler diagnostics -- --nocapture
+cargo test -p ctxhelm-compiler low_information -- --nocapture
+cargo test -p ctxhelm-compiler unavailable -- --nocapture
+cargo test -p ctxhelm-compiler pack -- --nocapture
+cargo test -p ctxhelm-compiler revalidates -- --nocapture
+cargo test -p ctxhelm-compiler cards -- --nocapture
+cargo test -p ctxhelm-compiler
 ```
 </verification>
 

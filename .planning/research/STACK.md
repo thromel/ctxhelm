@@ -17,11 +17,11 @@ Why it fits:
 
 Adoption shape:
 
-- Add a provider trait behind ctxpack's existing semantic provider metadata.
+- Add a provider trait behind ctxhelm's existing semantic provider metadata.
 - Keep `local_hash` as a deterministic test provider.
 - Add a real local provider such as `local_fastembed`.
 - Store model id, dimensions, output dtype if available, cache path, provider version, and privacy status.
-- Require explicit `ctxpack semantic build` or equivalent before runtime use.
+- Require explicit `ctxhelm semantic build` or equivalent before runtime use.
 
 Source: https://docs.rs/fastembed/
 
@@ -29,7 +29,7 @@ Source: https://docs.rs/fastembed/
 
 Preferred v2.4 direction:
 
-- Start with SQLite-backed metadata plus compact vector persistence under ctxpack storage.
+- Start with SQLite-backed metadata plus compact vector persistence under ctxhelm storage.
 - Keep the search abstraction independent from storage so an HNSW/sqvec/Lance-style index can be swapped later.
 - Optimize for deterministic local eval before introducing a heavy external vector server.
 
@@ -50,7 +50,7 @@ Why it fits:
 
 Operational shape:
 
-- Keep import path first because ctxpack already has precision-edge import.
+- Keep import path first because ctxhelm already has precision-edge import.
 - Add discovery/status for language indexers.
 - Add optional generation helpers later in the milestone if safe and deterministic.
 - Always report degraded precision status rather than failing context planning.

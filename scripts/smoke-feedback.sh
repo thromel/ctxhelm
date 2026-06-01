@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ctxpack_bin="${CTXPACK_BIN:-ctxpack}"
+ctxhelm_bin="${CTXHELM_BIN:-ctxhelm}"
 work_dir="$(mktemp -d)"
 cleanup() {
   rm -rf "$work_dir"
@@ -12,11 +12,11 @@ repo="$work_dir/repo"
 home="$work_dir/home"
 mkdir -p "$repo/src/auth" "$repo/tests/auth" "$home"
 git -C "$repo" init >/dev/null
-git -C "$repo" config user.email ctxpack@example.com
-git -C "$repo" config user.name ctxpack
+git -C "$repo" config user.email ctxhelm@example.com
+git -C "$repo" config user.name ctxhelm
 cat >"$repo/src/auth/session.ts" <<'SRC'
 export function requireSession() {
-  return "CTXPACK_FEEDBACK_SOURCE_SENTINEL";
+  return "CTXHELM_FEEDBACK_SOURCE_SENTINEL";
 }
 SRC
 cat >"$repo/tests/auth/session.test.ts" <<'SRC'
@@ -26,9 +26,9 @@ SRC
 git -C "$repo" add .
 git -C "$repo" commit -m "add auth session" >/dev/null
 
-export CTXPACK_HOME="$home"
+export CTXHELM_HOME="$home"
 
-"$ctxpack_bin" eval feedback record \
+"$ctxhelm_bin" eval feedback record \
   --repo "$repo" \
   --task-hash task-hash-1 \
   --mode bug-fix \
@@ -45,10 +45,10 @@ export CTXPACK_HOME="$home"
   --tag accepted_fix \
   --format json >"$work_dir/record.json"
 
-"$ctxpack_bin" eval feedback list --repo "$repo" --format json >"$work_dir/list.json"
-"$ctxpack_bin" eval feedback summary --repo "$repo" --format json >"$work_dir/summary.json"
-"$ctxpack_bin" eval policy report --repo "$repo" --format json >"$work_dir/policy-report.json"
-"$ctxpack_bin" eval policy tune --repo "$repo" --format json >"$work_dir/profile.json"
+"$ctxhelm_bin" eval feedback list --repo "$repo" --format json >"$work_dir/list.json"
+"$ctxhelm_bin" eval feedback summary --repo "$repo" --format json >"$work_dir/summary.json"
+"$ctxhelm_bin" eval policy report --repo "$repo" --format json >"$work_dir/policy-report.json"
+"$ctxhelm_bin" eval policy tune --repo "$repo" --format json >"$work_dir/profile.json"
 profile_id="$(python3 - "$work_dir/profile.json" <<'PY'
 import json
 import pathlib
@@ -56,9 +56,9 @@ import sys
 print(json.loads(pathlib.Path(sys.argv[1]).read_text())["id"])
 PY
 )"
-"$ctxpack_bin" eval policy apply "$profile_id" --repo "$repo" --format json >"$work_dir/apply.json"
-"$ctxpack_bin" eval policy rollback --repo "$repo" --format json >"$work_dir/rollback.json"
-"$ctxpack_bin" eval outcome compare --repo "$repo" --format json >"$work_dir/outcome.json"
+"$ctxhelm_bin" eval policy apply "$profile_id" --repo "$repo" --format json >"$work_dir/apply.json"
+"$ctxhelm_bin" eval policy rollback --repo "$repo" --format json >"$work_dir/rollback.json"
+"$ctxhelm_bin" eval outcome compare --repo "$repo" --format json >"$work_dir/outcome.json"
 
 python3 - "$work_dir" "$home" <<'PY'
 import json
@@ -97,7 +97,7 @@ if outcome["eventCount"] != 1 or outcome["sourceTextLogged"]:
 
 for path in home.glob("repos/*/*"):
     data = path.read_bytes()
-    if b"CTXPACK_FEEDBACK_SOURCE_SENTINEL" in data:
+    if b"CTXHELM_FEEDBACK_SOURCE_SENTINEL" in data:
         raise SystemExit(f"feedback storage leaked source sentinel in {path}")
 PY
 

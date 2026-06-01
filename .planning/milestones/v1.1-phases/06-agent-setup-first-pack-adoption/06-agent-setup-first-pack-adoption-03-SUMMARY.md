@@ -7,16 +7,16 @@ requires:
   - phase: 06-agent-setup-first-pack-adoption
     provides: structured init report and refreshed adapter guidance
 provides:
-  - Read-only `ctxpack setup-check` command
+  - Read-only `ctxhelm setup-check` command
   - Typed setup validation report for generated files, JSON snippets, and thin guidance
   - CLI status rendering with pass, warn, and fail outcomes
 affects: [first-pack-smoke, release-gates, troubleshooting-docs]
 tech-stack:
-  added: [serde_json as normal ctxpack-core dependency]
+  added: [serde_json as normal ctxhelm-core dependency]
   patterns: [typed validation reports, non-mutating CLI checks]
 key-files:
   created: [.planning/phases/06-agent-setup-first-pack-adoption/06-agent-setup-first-pack-adoption-03-SUMMARY.md]
-  modified: [crates/ctxpack-core/Cargo.toml, crates/ctxpack-core/src/init.rs, crates/ctxpack-core/src/lib.rs, crates/ctxpack/src/main.rs, crates/ctxpack/tests/cli_compat.rs]
+  modified: [crates/ctxhelm-core/Cargo.toml, crates/ctxhelm-core/src/init.rs, crates/ctxhelm-core/src/lib.rs, crates/ctxhelm/src/main.rs, crates/ctxhelm/tests/cli_compat.rs]
 key-decisions:
   - "`setup-check` validates repo-local generated artifacts and never runs or mutates real agent clients."
   - "Warnings do not fail setup-check; missing or malformed expected artifacts do."
@@ -30,7 +30,7 @@ completed: 2026-05-13
 
 # Phase 06 Plan 03: Setup Check Summary
 
-**Read-only `ctxpack setup-check` validation for generated setup artifacts and adapter snippets**
+**Read-only `ctxhelm setup-check` validation for generated setup artifacts and adapter snippets**
 
 ## Performance
 
@@ -43,21 +43,21 @@ completed: 2026-05-13
 ## Accomplishments
 
 - Added `SetupCheckReport`, `SetupCheckItem`, and `SetupCheckStatus` contracts.
-- Implemented read-only validation for AGENTS, ctxpack config, Cursor, Claude, and OpenCode generated artifacts.
-- Exposed `ctxpack setup-check` with adapter flags, help text, pass/warn/fail output, and non-zero failure exit.
+- Implemented read-only validation for AGENTS, ctxhelm config, Cursor, Claude, and OpenCode generated artifacts.
+- Exposed `ctxhelm setup-check` with adapter flags, help text, pass/warn/fail output, and non-zero failure exit.
 
 ## Task Commits
 
 1. **Task 1: Add core setup validation report** - `bd0bdda` (test), `8c1089b` (feat), `241c43c` (fix)
-2. **Task 2: Expose `ctxpack setup-check` through the CLI** - `6881dbe` (test), `d6479a3` (feat)
+2. **Task 2: Expose `ctxhelm setup-check` through the CLI** - `6881dbe` (test), `d6479a3` (feat)
 
 ## Files Created/Modified
 
-- `crates/ctxpack-core/Cargo.toml` - Promotes existing workspace `serde_json` dependency for production JSON validation.
-- `crates/ctxpack-core/src/init.rs` - Adds setup-check report types, validator, and tests.
-- `crates/ctxpack-core/src/lib.rs` - Re-exports setup-check public contracts.
-- `crates/ctxpack/src/main.rs` - Adds `setup-check` subcommand and renderer.
-- `crates/ctxpack/tests/cli_compat.rs` - Adds setup-check CLI compatibility tests.
+- `crates/ctxhelm-core/Cargo.toml` - Promotes existing workspace `serde_json` dependency for production JSON validation.
+- `crates/ctxhelm-core/src/init.rs` - Adds setup-check report types, validator, and tests.
+- `crates/ctxhelm-core/src/lib.rs` - Re-exports setup-check public contracts.
+- `crates/ctxhelm/src/main.rs` - Adds `setup-check` subcommand and renderer.
+- `crates/ctxhelm/tests/cli_compat.rs` - Adds setup-check CLI compatibility tests.
 
 ## Decisions Made
 
@@ -70,10 +70,10 @@ completed: 2026-05-13
 
 **1. [Rule 3 - Blocking] Declared production JSON parsing dependency**
 - **Found during:** Task 2 CLI test build
-- **Issue:** `ctxpack-core` used `serde_json` in `run_setup_check`, but `serde_json` was only a dev-dependency.
-- **Fix:** Moved the existing workspace `serde_json` dependency into normal `ctxpack-core` dependencies.
-- **Files modified:** `crates/ctxpack-core/Cargo.toml`
-- **Verification:** `cargo test -p ctxpack --test cli_compat setup_check -- --nocapture`, `cargo test --workspace`
+- **Issue:** `ctxhelm-core` used `serde_json` in `run_setup_check`, but `serde_json` was only a dev-dependency.
+- **Fix:** Moved the existing workspace `serde_json` dependency into normal `ctxhelm-core` dependencies.
+- **Files modified:** `crates/ctxhelm-core/Cargo.toml`
+- **Verification:** `cargo test -p ctxhelm --test cli_compat setup_check -- --nocapture`, `cargo test --workspace`
 - **Committed in:** `241c43c`
 
 ---
@@ -95,11 +95,11 @@ None - no external service configuration required.
 
 ## Verification
 
-- `cargo test -p ctxpack-core setup_check -- --nocapture` - passed
-- `cargo test -p ctxpack --test cli_compat setup_check -- --nocapture` - passed
-- `cargo run -p ctxpack -- init --repo "$repo" --cursor --claude --opencode` - passed
-- `cargo run -p ctxpack -- setup-check --repo "$repo" --cursor --claude --opencode` - passed
-- `cargo run -p ctxpack -- --help` - passed
+- `cargo test -p ctxhelm-core setup_check -- --nocapture` - passed
+- `cargo test -p ctxhelm --test cli_compat setup_check -- --nocapture` - passed
+- `cargo run -p ctxhelm -- init --repo "$repo" --cursor --claude --opencode` - passed
+- `cargo run -p ctxhelm -- setup-check --repo "$repo" --cursor --claude --opencode` - passed
+- `cargo run -p ctxhelm -- --help` - passed
 - `cargo test --workspace` - passed
 
 ## Self-Check: PASSED

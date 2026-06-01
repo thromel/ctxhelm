@@ -25,9 +25,9 @@ Phase 9 established named benchmark-suite contracts, multi-repo benchmark execut
 
 ```bash
 cargo check --workspace
-cargo test -p ctxpack-compiler benchmark_suite_runs_multiple_repos_with_source_free_metadata -- --nocapture
-cargo test -p ctxpack --test cli_compat eval_benchmark_runs_named_suite_source_free -- --nocapture
-cargo run -p ctxpack -- eval benchmark --help
+cargo test -p ctxhelm-compiler benchmark_suite_runs_multiple_repos_with_source_free_metadata -- --nocapture
+cargo test -p ctxhelm --test cli_compat eval_benchmark_runs_named_suite_source_free -- --nocapture
+cargo run -p ctxhelm -- eval benchmark --help
 ```
 
 ## Notes

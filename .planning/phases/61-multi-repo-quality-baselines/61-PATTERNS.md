@@ -6,7 +6,7 @@ Prefer extending `eval benchmark`, `eval baselines`, and product proof contracts
 
 ## Keep Large Evidence Local
 
-Store full JSON outputs under ignored `.ctxpack/e2e/`. Commit only concise source-free summaries under `.planning/e2e/`.
+Store full JSON outputs under ignored `.ctxhelm/e2e/`. Commit only concise source-free summaries under `.planning/e2e/`.
 
 ## Use Real Repos, Not Toy Fixtures
 
@@ -14,4 +14,4 @@ Unit tests can use small fixtures, but acceptance requires RefactoringMiner plus
 
 ## Preserve Honest Claims
 
-If ctxpack trails lexical on a corpus, report that plainly. The milestone goal is quality improvement, not positive-looking wording.
+If ctxhelm trails lexical on a corpus, report that plainly. The milestone goal is quality improvement, not positive-looking wording.

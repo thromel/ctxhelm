@@ -16,7 +16,7 @@ completed: 2026-05-14
 
 ## Validation
 
-- `cargo test -p ctxpack-index storage`
+- `cargo test -p ctxhelm-index storage`
 - `cargo test --workspace`
-- `cargo run -p ctxpack -- --help`
+- `cargo run -p ctxhelm -- --help`
 

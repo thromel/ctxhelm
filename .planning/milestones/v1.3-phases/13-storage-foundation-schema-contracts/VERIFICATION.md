@@ -12,16 +12,16 @@ Maintainers can initialize a versioned SQLite store that captures source-free re
 
 | Requirement | Status | Evidence |
 |-------------|--------|----------|
-| STORE-01 | Passed | `initialize_store`, `StoreConfig`, explicit override tests, default `CTXPACK_HOME` path tests |
+| STORE-01 | Passed | `initialize_store`, `StoreConfig`, explicit override tests, default `CTXHELM_HOME` path tests |
 | STORE-02 | Passed | Required source-free tables for repos/files/symbols/chunks/edges/tests/history/traces/packs/benchmarks/proof |
 | STORE-03 | Passed | `storage_metadata`, `schema_migrations`, compatibility diagnostics, schema version tests |
 | STORE-04 | Passed | Source/prompt sentinel tests and schema column privacy tests |
 
 ## Validation Commands
 
-- `cargo test -p ctxpack-index storage`
+- `cargo test -p ctxhelm-index storage`
 - `cargo test --workspace`
-- `cargo run -p ctxpack -- --help`
+- `cargo run -p ctxhelm -- --help`
 - `bash scripts/check-release-docs.sh`
 
 ## Notes

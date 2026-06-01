@@ -8,12 +8,12 @@ Make historical retrieval metrics measure files that could actually be retrieved
 
 ## Problem
 
-Phase 66 fixed Test Recall@10, but ctxpack still showed many `no_candidate_signal` gaps for newly added planning, docs, and script files. Those files were present in the final patch but absent from the parent snapshot used for retrieval. Counting them in Recall@K mixed two different capabilities:
+Phase 66 fixed Test Recall@10, but ctxhelm still showed many `no_candidate_signal` gaps for newly added planning, docs, and script files. Those files were present in the final patch but absent from the parent snapshot used for retrieval. Counting them in Recall@K mixed two different capabilities:
 
 - selecting existing repository context before editing;
 - inventing paths for new files that do not exist yet.
 
-ctxpack is a context broker, so the release proof should evaluate retrieval over existing context and report newly-added files separately.
+ctxhelm is a context broker, so the release proof should evaluate retrieval over existing context and report newly-added files separately.
 
 ## Plan
 

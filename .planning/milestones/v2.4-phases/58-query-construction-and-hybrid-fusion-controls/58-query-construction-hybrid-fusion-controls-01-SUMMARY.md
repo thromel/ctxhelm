@@ -29,13 +29,13 @@ Query traces store task hashes and bounded source-free facets. They do not store
 
 ## Verification
 
-- `cargo test -p ctxpack-core query_trace --no-fail-fast`
-- `cargo test -p ctxpack-compiler planning::tests --no-fail-fast`
-- `cargo test -p ctxpack-compiler prepare_context_plan_recommends_related_test_with_attribution_and_command --no-fail-fast`
-- `cargo test -p ctxpack --test cli_compat --no-fail-fast`
+- `cargo test -p ctxhelm-core query_trace --no-fail-fast`
+- `cargo test -p ctxhelm-compiler planning::tests --no-fail-fast`
+- `cargo test -p ctxhelm-compiler prepare_context_plan_recommends_related_test_with_attribution_and_command --no-fail-fast`
+- `cargo test -p ctxhelm --test cli_compat --no-fail-fast`
 - `bash scripts/smoke-v23-eval.sh`
 - `cargo test --workspace --no-fail-fast`
-- `cargo run -p ctxpack -- --help`
+- `cargo run -p ctxhelm -- --help`
 - `git diff --check`
 
 All listed verification passed.

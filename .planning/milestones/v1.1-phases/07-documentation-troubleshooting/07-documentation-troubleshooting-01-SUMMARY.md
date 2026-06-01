@@ -19,7 +19,7 @@ key-files:
   created: [docs/quickstart.md]
   modified: [README.md]
 key-decisions:
-  - "Normal-user documentation uses the installed ctxpack binary with explicit --repo arguments; source checkout commands are kept in Development or fallback contexts."
+  - "Normal-user documentation uses the installed ctxhelm binary with explicit --repo arguments; source checkout commands are kept in Development or fallback contexts."
   - "First-pack docs describe session-scoped MCP pack resources and get_pack as the durable reconnect path."
 patterns-established:
   - "README keeps a concise path and delegates deeper operational explanation to dedicated docs."
@@ -42,7 +42,7 @@ completed: 2026-05-13
 
 ## Accomplishments
 
-- Reworked README so the first normal-user flow uses `ctxpack`, not `cargo run`, after release archive install.
+- Reworked README so the first normal-user flow uses `ctxhelm`, not `cargo run`, after release archive install.
 - Added `docs/quickstart.md` with explicit `--repo` setup validation, first `prepare-task`, first `get-pack`, and MCP session-scope caveats.
 - Preserved source-checkout commands only as Development or maintainer validation context.
 
@@ -58,7 +58,7 @@ completed: 2026-05-13
 
 ## Decisions Made
 
-- Normal-user docs should assume `ctxpack` is installed and on `PATH`; source checkout commands are not the default onboarding route.
+- Normal-user docs should assume `ctxhelm` is installed and on `PATH`; source checkout commands are not the default onboarding route.
 - MCP `packOptions[*].resourceUri` values are described as same-session conveniences, while `get_pack` is the durable path after reconnects.
 
 ## Deviations from Plan
@@ -83,9 +83,9 @@ Plan 02 can link to the installed-binary quickstart and expand the agent setup/p
 
 ## Verification
 
-- `python3 -c 'from pathlib import Path; r=Path("README.md").read_text(); assert "docs/quickstart.md" in r; assert "ctxpack init --repo" in r; assert "ctxpack setup-check --repo" in r; assert "ctxpack prepare-task" in r; assert "ctxpack get-pack" in r; assert "cargo run -p ctxpack -- init" not in r; assert "cargo run -p ctxpack -- serve-mcp" not in r'`
-- `python3 -c 'from pathlib import Path; q=Path("docs/quickstart.md").read_text(); required=["ctxpack --version","ctxpack --help","ctxpack init --repo","ctxpack setup-check --repo","ctxpack prepare-task","ctxpack get-pack","--budget brief","explicit `--repo`","session-scoped"]; missing=[s for s in required if s not in q]; assert not missing, missing; assert "cargo run -p ctxpack -- init" not in q; assert "Cursor real-client" not in q; assert "OpenCode real-client" not in q'`
-- `cargo run -p ctxpack -- --help`
+- `python3 -c 'from pathlib import Path; r=Path("README.md").read_text(); assert "docs/quickstart.md" in r; assert "ctxhelm init --repo" in r; assert "ctxhelm setup-check --repo" in r; assert "ctxhelm prepare-task" in r; assert "ctxhelm get-pack" in r; assert "cargo run -p ctxhelm -- init" not in r; assert "cargo run -p ctxhelm -- serve-mcp" not in r'`
+- `python3 -c 'from pathlib import Path; q=Path("docs/quickstart.md").read_text(); required=["ctxhelm --version","ctxhelm --help","ctxhelm init --repo","ctxhelm setup-check --repo","ctxhelm prepare-task","ctxhelm get-pack","--budget brief","explicit `--repo`","session-scoped"]; missing=[s for s in required if s not in q]; assert not missing, missing; assert "cargo run -p ctxhelm -- init" not in q; assert "Cursor real-client" not in q; assert "OpenCode real-client" not in q'`
+- `cargo run -p ctxhelm -- --help`
 
 ## Self-Check: PASSED
 

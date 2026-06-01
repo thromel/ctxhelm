@@ -36,15 +36,15 @@ Make query construction explicit and source-free, then use the resulting facets 
 
 <task id="58.1" name="Add query facet and trace contracts">
 <read_first>
-- `crates/ctxpack-core/src/contracts.rs`
-- `crates/ctxpack-compiler/src/planning.rs`
+- `crates/ctxhelm-core/src/contracts.rs`
+- `crates/ctxhelm-compiler/src/planning.rs`
 </read_first>
 <action>
 Add contracts for query facets, retriever query sets, query construction traces, and fusion control summaries. Keep fields source-free and bounded.
 </action>
 <verify>
 - Add serialization tests for representative facets: explicit path, symbol, stack frame, error phrase, domain phrase, commit clue, current diff anchor.
-- Run `cargo test -p ctxpack-core`.
+- Run `cargo test -p ctxhelm-core`.
 </verify>
 <acceptance_criteria>
 - Query traces can be emitted without source bodies.
@@ -54,16 +54,16 @@ Add contracts for query facets, retriever query sets, query construction traces,
 
 <task id="58.2" name="Implement query construction in the compiler">
 <read_first>
-- `crates/ctxpack-compiler/src/planning.rs`
-- `crates/ctxpack-compiler/src/search.rs`
-- `crates/ctxpack-compiler/src/ranking.rs`
+- `crates/ctxhelm-compiler/src/planning.rs`
+- `crates/ctxhelm-compiler/src/search.rs`
+- `crates/ctxhelm-compiler/src/ranking.rs`
 </read_first>
 <action>
 Implement a query construction module or helper that extracts facets from task text, explicit paths, active/current diff paths, stack-trace-like text, symbol-like identifiers, route/config tokens, commit-like clues, and conceptual phrases.
 </action>
 <verify>
 - Add compiler tests for path extraction, symbol extraction, stack trace extraction, current diff anchors, and conceptual query phrases.
-- Run `cargo test -p ctxpack-compiler query`.
+- Run `cargo test -p ctxhelm-compiler query`.
 </verify>
 <acceptance_criteria>
 - Existing callers still work with only raw task text.
@@ -74,9 +74,9 @@ Implement a query construction module or helper that extracts facets from task t
 
 <task id="58.3" name="Refactor retrievers to consume the shared query set">
 <read_first>
-- `crates/ctxpack-compiler/src/planning.rs`
-- `crates/ctxpack-compiler/src/ranking.rs`
-- `crates/ctxpack-compiler/src/eval.rs`
+- `crates/ctxhelm-compiler/src/planning.rs`
+- `crates/ctxhelm-compiler/src/ranking.rs`
+- `crates/ctxhelm-compiler/src/eval.rs`
 </read_first>
 <action>
 Wire lexical, semantic, symbol, history, test, memory, and graph seed generation to the shared query set. Record query facet provenance on candidate signals.
@@ -84,7 +84,7 @@ Wire lexical, semantic, symbol, history, test, memory, and graph seed generation
 <verify>
 - Add tests showing a candidate can report which query facet matched it.
 - Add tests showing semantic-only matches are capped below explicit anchors.
-- Run `cargo test -p ctxpack-compiler ranking`.
+- Run `cargo test -p ctxhelm-compiler ranking`.
 </verify>
 <acceptance_criteria>
 - Fusion behavior is deterministic for a fixed query trace.
@@ -95,8 +95,8 @@ Wire lexical, semantic, symbol, history, test, memory, and graph seed generation
 
 <task id="58.4" name="Add hybrid fusion controls and fixed eval variants">
 <read_first>
-- `crates/ctxpack-compiler/src/eval.rs`
-- `crates/ctxpack-core/src/contracts.rs`
+- `crates/ctxhelm-compiler/src/eval.rs`
+- `crates/ctxhelm-core/src/contracts.rs`
 - `docs/benchmarking.md`
 </read_first>
 <action>
@@ -124,7 +124,7 @@ Document how query traces explain retrieval outcomes and how hybrid controls pre
 </action>
 <verify>
 - Run `cargo test --workspace`.
-- Run `cargo run -p ctxpack -- --help`.
+- Run `cargo run -p ctxhelm -- --help`.
 - Run `git diff --check`.
 </verify>
 <acceptance_criteria>
@@ -136,12 +136,12 @@ Document how query traces explain retrieval outcomes and how hybrid controls pre
 </tasks>
 
 <verification>
-- `cargo test -p ctxpack-core`
-- `cargo test -p ctxpack-compiler query`
-- `cargo test -p ctxpack-compiler ranking`
+- `cargo test -p ctxhelm-core`
+- `cargo test -p ctxhelm-compiler query`
+- `cargo test -p ctxhelm-compiler ranking`
 - `scripts/smoke-v23-eval.sh`
 - `cargo test --workspace`
-- `cargo run -p ctxpack -- --help`
+- `cargo run -p ctxhelm -- --help`
 </verification>
 
 <success_criteria>

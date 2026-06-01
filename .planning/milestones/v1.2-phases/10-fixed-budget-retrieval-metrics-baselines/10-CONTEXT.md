@@ -7,7 +7,7 @@
 <domain>
 ## Phase Boundary
 
-Extend the v1.2 benchmark reports so maintainers can compare ctxpack's hybrid retrieval against lexical-only and no-context baselines under fixed budgets. Add token ROI estimates for brief, standard, and deep packs. This phase should remain source-free and should not introduce embeddings, cloud reranking, storage migrations, regression trend comparison, or product proof prose.
+Extend the v1.2 benchmark reports so maintainers can compare ctxhelm's hybrid retrieval against lexical-only and no-context baselines under fixed budgets. Add token ROI estimates for brief, standard, and deep packs. This phase should remain source-free and should not introduce embeddings, cloud reranking, storage migrations, regression trend comparison, or product proof prose.
 
 </domain>
 
@@ -20,7 +20,7 @@ The historical eval JSON is already a public compatibility surface. Add Phase 10
 
 ### No-Context Baseline Means Zero Files
 
-Use a zero-file baseline to represent an agent starting without ctxpack-provided context. This is the cleanest source-free baseline until editor-open-file anchors are available through an integration-specific trace.
+Use a zero-file baseline to represent an agent starting without ctxhelm-provided context. This is the cleanest source-free baseline until editor-open-file anchors are available through an integration-specific trace.
 
 ### Token ROI Is Estimated, Not Claimed Runtime Cost
 
@@ -35,10 +35,10 @@ Metrics may include paths, roles, hashes, counts, budgets, and booleans. They mu
 <code_context>
 ## Existing Code Insights
 
-- `crates/ctxpack-compiler/src/eval.rs` owns historical eval contracts, ranking metrics, lexical baseline comparison, signal ablations, and benchmark suite execution.
-- `crates/ctxpack/src/main.rs` renders historical and benchmark Markdown reports and exposes JSON through `--format json`.
-- `crates/ctxpack-compiler/src/lib.rs` contains contract-shape and source-free unit tests for historical eval reports.
-- `crates/ctxpack/tests/cli_compat.rs` guards CLI JSON and Markdown compatibility.
+- `crates/ctxhelm-compiler/src/eval.rs` owns historical eval contracts, ranking metrics, lexical baseline comparison, signal ablations, and benchmark suite execution.
+- `crates/ctxhelm/src/main.rs` renders historical and benchmark Markdown reports and exposes JSON through `--format json`.
+- `crates/ctxhelm-compiler/src/lib.rs` contains contract-shape and source-free unit tests for historical eval reports.
+- `crates/ctxhelm/tests/cli_compat.rs` guards CLI JSON and Markdown compatibility.
 - `docs/benchmarking.md` and `README.md` describe the eval contract.
 
 </code_context>

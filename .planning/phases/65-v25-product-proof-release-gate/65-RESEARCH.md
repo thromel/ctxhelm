@@ -15,7 +15,7 @@ requirements:
 ## Objective
 
 Turn v2.5 retrieval evidence into a shippable or held product decision. The
-proof must say when ctxpack beats lexical, when it merely matches, and when it
+proof must say when ctxhelm beats lexical, when it merely matches, and when it
 trails. Release gates should block unsafe or mixed default-promotion claims.
 
 ## Current Evidence
@@ -28,8 +28,8 @@ Phase 64 improved a specific RefactoringMiner gap family:
 But the default is not automatically production-ready:
 
 - RefactoringMiner still trails lexical baseline in the final Phase 64 report:
-  `0.7392` ctxpack vs `0.7792` lexical.
-- ctxpack had a small Recall@10 regression: `0.2049 -> 0.1947`.
+  `0.7392` ctxhelm vs `0.7792` lexical.
+- ctxhelm had a small Recall@10 regression: `0.2049 -> 0.1947`.
 - Symbol protected evidence still has budget pressure under K=10.
 - Test Recall@10 remains `0.0` on the two-repo proof.
 
@@ -37,9 +37,9 @@ But the default is not automatically production-ready:
 
 The product proof should be honest enough to block premature release claims:
 
-- `beat`: ctxpack clears lexical by more than the proof threshold.
-- `match`: ctxpack is within threshold of lexical.
-- `trail`: ctxpack falls below lexical by more than the threshold.
+- `beat`: ctxhelm clears lexical by more than the proof threshold.
+- `match`: ctxhelm is within threshold of lexical.
+- `trail`: ctxhelm falls below lexical by more than the threshold.
 - `insufficient_evidence`: repo failed or produced no eval report.
 
 Default promotion should require every required corpus to beat lexical while
@@ -47,7 +47,7 @@ remaining local-only and within runtime/protected-evidence constraints.
 
 ## Design Direction
 
-Reuse `ctxpack eval proof` rather than inventing a new evaluator. Add release
+Reuse `ctxhelm eval proof` rather than inventing a new evaluator. Add release
 decision fields to the proof JSON and Markdown:
 
 - release decision: `promote`, `hold`, or `block`

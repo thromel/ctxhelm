@@ -16,9 +16,9 @@ tech-stack:
   patterns: [local archive member audit, text payload leakage scan, package-script audit gate]
 key-files:
   created: [scripts/audit-release-artifact.sh]
-  modified: [scripts/release-package.sh, crates/ctxpack/tests/release_packaging.rs]
+  modified: [scripts/release-package.sh, crates/ctxhelm/tests/release_packaging.rs]
 key-decisions:
-  - "Audit archive member paths for local ctxpack state, traces, request logs, caches, target debris, git internals, and secret-looking names."
+  - "Audit archive member paths for local ctxhelm state, traces, request logs, caches, target debris, git internals, and secret-looking names."
   - "Scan included text payloads for machine-specific paths and secret-looking assignments without printing source contents."
 patterns-established:
   - "Release packaging must call the artifact audit immediately after archive creation and before checksum success output."
@@ -42,7 +42,7 @@ completed: 2026-05-13
 ## Accomplishments
 
 - Added `scripts/audit-release-artifact.sh` for `.tar.gz` member inspection and extracted text-payload scanning.
-- Added synthetic archive tests proving `.ctxpack/repos/.../traces.jsonl` fails and a minimal release archive passes.
+- Added synthetic archive tests proving `.ctxhelm/repos/.../traces.jsonl` fails and a minimal release archive passes.
 - Integrated the audit into `scripts/release-package.sh` before checksum writing and success output.
 
 ## Task Commits
@@ -56,12 +56,12 @@ completed: 2026-05-13
 
 - `scripts/audit-release-artifact.sh` - Audits release archive names and text payloads.
 - `scripts/release-package.sh` - Runs the audit after archive creation.
-- `crates/ctxpack/tests/release_packaging.rs` - Adds audit contract and synthetic archive tests.
+- `crates/ctxhelm/tests/release_packaging.rs` - Adds audit contract and synthetic archive tests.
 
 ## Decisions Made
 
-- Treated `.ctxpack`, traces, caches, `.git`, `target/`, request logs, and secret-looking names as forbidden archive member paths.
-- Kept text scanning focused on machine-specific paths and secret-looking assignments so normal README descriptions of local ctxpack behavior do not create false positives.
+- Treated `.ctxhelm`, traces, caches, `.git`, `target/`, request logs, and secret-looking names as forbidden archive member paths.
+- Kept text scanning focused on machine-specific paths and secret-looking assignments so normal README descriptions of local ctxhelm behavior do not create false positives.
 
 ## Deviations from Plan
 
@@ -77,8 +77,8 @@ None - no external service configuration required.
 
 ## Verification
 
-- `cargo test -p ctxpack --test release_packaging release_artifact_audit -- --nocapture` passed.
-- `CTXPACK_ALLOW_DIRTY=1 CTXPACK_DIST_DIR="$(mktemp -d)" bash scripts/release-package.sh` passed and printed `audit passed`.
+- `cargo test -p ctxhelm --test release_packaging release_artifact_audit -- --nocapture` passed.
+- `CTXHELM_ALLOW_DIRTY=1 CTXHELM_DIST_DIR="$(mktemp -d)" bash scripts/release-package.sh` passed and printed `audit passed`.
 - `cargo test --workspace` passed.
 
 ## Next Phase Readiness
@@ -88,7 +88,7 @@ Plan 04 can document the release install, checksum, fallback, and audit flow aga
 ## Self-Check: PASSED
 
 - Created file exists: `scripts/audit-release-artifact.sh`
-- Modified files exist: `scripts/release-package.sh`, `crates/ctxpack/tests/release_packaging.rs`
+- Modified files exist: `scripts/release-package.sh`, `crates/ctxhelm/tests/release_packaging.rs`
 - Commits exist: `ca5f4bb`, `be613c0`, `e74f7ba`, `c0cef8b`
 
 ---

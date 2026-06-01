@@ -30,7 +30,7 @@ Passed locally:
 ```bash
 cargo fmt --all -- --check
 cargo clippy --workspace --all-targets --locked -- -D warnings
-cargo test -p ctxpack --test release_packaging ci_workflow_contract -- --nocapture
+cargo test -p ctxhelm --test release_packaging ci_workflow_contract -- --nocapture
 bash scripts/check-release-docs.sh
 git diff --check
 ```
@@ -41,7 +41,7 @@ the Node.js 20 runtime warning.
 Public CI after push:
 
 ```text
-run: https://github.com/thromel/ctxpack/actions/runs/26728393271
+run: https://github.com/thromel/ctxhelm/actions/runs/26728393271
 head: 8c071cae3561104cce5becaabea1efb9a0767345
 workspace job: passed in 1m23s
 release-gate smoke job: passed in 1m57s

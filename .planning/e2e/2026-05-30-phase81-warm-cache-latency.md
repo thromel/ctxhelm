@@ -30,16 +30,16 @@ four-repo fixed corpus.
 Command:
 
 ```bash
-rm -rf /tmp/ctxpack-phase81-cache && mkdir -p /tmp/ctxpack-phase81-cache
-CTXPACK_HOME=/tmp/ctxpack-phase81-cache cargo run -p ctxpack -- eval proof \
+rm -rf /tmp/ctxhelm-phase81-cache && mkdir -p /tmp/ctxhelm-phase81-cache
+CTXHELM_HOME=/tmp/ctxhelm-phase81-cache cargo run -p ctxhelm -- eval proof \
   --config .planning/e2e/2026-05-30-phase81-warm-cache-proof-config.json \
-  --format json > /tmp/ctxpack-phase81-cold-proof.json
-python3 scripts/check-product-proof.py /tmp/ctxpack-phase81-cold-proof.json
+  --format json > /tmp/ctxhelm-phase81-cold-proof.json
+python3 scripts/check-product-proof.py /tmp/ctxhelm-phase81-cold-proof.json
 ```
 
 Committed artifact:
 
-- `.ctxpack/e2e/phase81-warm-cache-cold-proof.json`
+- `.ctxhelm/e2e/phase81-warm-cache-cold-proof.json`
 
 Gate decision: `promote`.
 
@@ -48,22 +48,22 @@ Gate decision: `promote`.
 Command:
 
 ```bash
-CTXPACK_HOME=/tmp/ctxpack-phase81-cache cargo run -p ctxpack -- eval proof \
+CTXHELM_HOME=/tmp/ctxhelm-phase81-cache cargo run -p ctxhelm -- eval proof \
   --config .planning/e2e/2026-05-30-phase81-warm-cache-proof-config.json \
-  --format json > /tmp/ctxpack-phase81-warm-proof.json
-python3 scripts/check-product-proof.py /tmp/ctxpack-phase81-warm-proof.json
+  --format json > /tmp/ctxhelm-phase81-warm-proof.json
+python3 scripts/check-product-proof.py /tmp/ctxhelm-phase81-warm-proof.json
 ```
 
 Committed artifact:
 
-- `.ctxpack/e2e/phase81-warm-cache-warm-proof.json`
+- `.ctxhelm/e2e/phase81-warm-cache-warm-proof.json`
 
 Gate decision: `promote`.
 
 | Corpus | Cold runtime ms | Warm runtime ms | Warm cache hits | Warm cache misses | Warm commit ms | Warm slow commits |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
 | RefactoringMiner | 8571 | 1 | 1 | 0 | 0 | 0 |
-| ctxpack | 8097 | 1 | 1 | 0 | 0 | 0 |
+| ctxhelm | 8097 | 1 | 1 | 0 | 0 | 0 |
 | ReAgent | 4986 | 1 | 1 | 0 | 0 | 0 |
 | VeriSchema | 6560 | 1 | 1 | 0 | 0 | 0 |
 
@@ -74,7 +74,7 @@ The warm proof preserves the Phase 80 quality behavior:
 | Corpus | Gate status | Context Recall@10 | Lexical Context Recall@10 | Effective validation recall | Protected target miss@10 |
 | --- | --- | ---: | ---: | ---: | ---: |
 | RefactoringMiner | `match` | 1.000 | 1.000 | 1.000 | 0.000 |
-| ctxpack | `beat` | 0.444 | 0.306 | 0.000 | 0.000 |
+| ctxhelm | `beat` | 0.444 | 0.306 | 0.000 | 0.000 |
 | ReAgent | `beat` | 1.000 | 0.571 | 1.000 | 0.000 |
 | VeriSchema | `beat` | 0.205 | 0.082 | 1.000 | 0.000 |
 
@@ -82,8 +82,8 @@ The warm proof preserves the Phase 80 quality behavior:
 
 ```bash
 cargo fmt --check
-cargo test -p ctxpack-compiler cached_eval_runtime_reports_warm_lookup_cost -- --nocapture
-cargo run -p ctxpack -- eval proof --config .planning/e2e/2026-05-30-phase81-warm-cache-proof-config.json --format json
-python3 scripts/check-product-proof.py /tmp/ctxpack-phase81-cold-proof.json
-python3 scripts/check-product-proof.py /tmp/ctxpack-phase81-warm-proof.json
+cargo test -p ctxhelm-compiler cached_eval_runtime_reports_warm_lookup_cost -- --nocapture
+cargo run -p ctxhelm -- eval proof --config .planning/e2e/2026-05-30-phase81-warm-cache-proof-config.json --format json
+python3 scripts/check-product-proof.py /tmp/ctxhelm-phase81-cold-proof.json
+python3 scripts/check-product-proof.py /tmp/ctxhelm-phase81-warm-proof.json
 ```

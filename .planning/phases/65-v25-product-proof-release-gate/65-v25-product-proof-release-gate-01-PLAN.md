@@ -22,7 +22,7 @@ hold, or block the current retrieval default from measured evidence.
 </objective>
 
 <threat_model>
-- A big RefactoringMiner improvement hides that ctxpack still trails lexical on
+- A big RefactoringMiner improvement hides that ctxhelm still trails lexical on
   required corpora.
 - Optional proof in the release gate becomes a report-generation smoke instead
   of a product-quality blocker.
@@ -31,7 +31,7 @@ hold, or block the current retrieval default from measured evidence.
 </threat_model>
 
 <must_haves>
-- Reuse `ctxpack eval proof` and existing benchmark suite configs.
+- Reuse `ctxhelm eval proof` and existing benchmark suite configs.
 - Product proof reports beat/match/trail per corpus and variant.
 - Release gate fails non-promote benchmark proof when a config is supplied.
 - Docs state the current retrieval recommendation honestly.
@@ -62,7 +62,7 @@ product-proof decision is not `promote`.
 - Release packaging contract tests cover the new proof fields.
 </verify>
 <acceptance_criteria>
-- `CTXPACK_BENCHMARK_CONFIG` is a quality gate, not only a report smoke.
+- `CTXHELM_BENCHMARK_CONFIG` is a quality gate, not only a report smoke.
 </acceptance_criteria>
 </task>
 
@@ -71,7 +71,7 @@ product-proof decision is not `promote`.
 Run the v2.5 two-repo proof and record the promote/hold/block decision.
 </action>
 <verify>
-- `ctxpack eval proof --config .ctxpack/e2e/phase62-default-config.json --format json`
+- `ctxhelm eval proof --config .ctxhelm/e2e/phase62-default-config.json --format json`
 - Inspect `releaseGate`.
 </verify>
 <acceptance_criteria>
@@ -85,7 +85,7 @@ Update benchmarking/release docs, Phase 65 summary, roadmap, and state.
 </action>
 <verify>
 - `cargo test --workspace --no-fail-fast`
-- `cargo run -p ctxpack -- --help`
+- `cargo run -p ctxhelm -- --help`
 - `git diff --check`
 </verify>
 <acceptance_criteria>

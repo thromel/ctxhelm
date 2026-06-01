@@ -16,7 +16,7 @@ status: patterns
 
 ## Closest Code Analogs
 
-- `crates/ctxpack-compiler/src/eval.rs`: historical eval, paired baselines, benchmark suite, product proof.
+- `crates/ctxhelm-compiler/src/eval.rs`: historical eval, paired baselines, benchmark suite, product proof.
 - `scripts/smoke-v23-eval.sh`: fixed-corpus eval proof.
 - `docs/benchmarking.md`: current eval docs and report interpretation.
 - `docs/release.md`: release proof documentation.

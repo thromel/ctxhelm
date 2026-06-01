@@ -8,7 +8,7 @@
 - Added `RetrievalHealthReport` and child source-free contracts.
 - Added compiler aggregation from `HistoricalEvalReport` and
   `PolicyQualityReport`.
-- Added `ctxpack eval health` with Markdown and JSON output.
+- Added `ctxhelm eval health` with Markdown and JSON output.
 - Added retrieval-health documentation.
 - Added `scripts/smoke-retrieval-health.sh` and wired it into release docs and
   the release gate.
@@ -22,12 +22,12 @@
 - `bash scripts/check-release-docs.sh`
 - `bash -n scripts/release-gate.sh`
 - `bash -n scripts/smoke-retrieval-health.sh`
-- `cargo run -p ctxpack -- eval health --help`
-- `cargo test -p ctxpack release_gate_script_contract -- --nocapture`
-- `cargo test -p ctxpack release_docs_check_passes -- --nocapture`
+- `cargo run -p ctxhelm -- eval health --help`
+- `cargo test -p ctxhelm release_gate_script_contract -- --nocapture`
+- `cargo test -p ctxhelm release_docs_check_passes -- --nocapture`
 - `cargo test --workspace`
 
-All commands passed using `CARGO_TARGET_DIR=/tmp/ctxpack-target-phase39` where
+All commands passed using `CARGO_TARGET_DIR=/tmp/ctxhelm-target-phase39` where
 applicable.
 
 ## Next

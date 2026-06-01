@@ -73,7 +73,7 @@ Use the existing local storage model:
 
 Additive changes are preferred:
 
-- `ctxpack workspace ...` for setup/status/export
+- `ctxhelm workspace ...` for setup/status/export
 - workspace-aware `prepare-task` and `get-pack` arguments
 - MCP resources for workspace summary and shared artifact manifests
 - no large new MCP tool list unless release smokes prove it is necessary

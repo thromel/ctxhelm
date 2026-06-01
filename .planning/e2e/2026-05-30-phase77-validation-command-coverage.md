@@ -30,26 +30,26 @@ channel when they actually cover changed test paths.
 Command:
 
 ```bash
-cargo run -p ctxpack -- eval proof \
-  --config .ctxpack/e2e/v25-multirepo-baseline-config.json \
-  --format json > /tmp/ctxpack-phase77-two-repo-proof.json
-python3 scripts/check-product-proof.py /tmp/ctxpack-phase77-two-repo-proof.json
+cargo run -p ctxhelm -- eval proof \
+  --config .ctxhelm/e2e/v25-multirepo-baseline-config.json \
+  --format json > /tmp/ctxhelm-phase77-two-repo-proof.json
+python3 scripts/check-product-proof.py /tmp/ctxhelm-phase77-two-repo-proof.json
 ```
 
 Committed artifact:
 
-- `.ctxpack/e2e/phase77-validation-command-coverage-proof.json`
+- `.ctxhelm/e2e/phase77-validation-command-coverage-proof.json`
 
 Result:
 
 | Corpus | Gate status | Context Recall@10 | Lexical Context Recall@10 | Test Recall@10 | Effective validation recall | Protected target miss@10 |
 | --- | --- | ---: | ---: | ---: | ---: | ---: |
 | RefactoringMiner | `beat` | 0.778 | 0.741 | 1.000 | 1.000 | 0.059 |
-| ctxpack | `beat` | 0.423 | 0.352 | 0.000 | 0.000 | 0.083 |
+| ctxhelm | `beat` | 0.423 | 0.352 | 0.000 | 0.000 | 0.083 |
 
 Gate decision: `promote`.
 
-The ctxpack required slice has no validation-test targets in this refreshed
+The ctxhelm required slice has no validation-test targets in this refreshed
 source-free proof, so its `0.000` validation values are not a gate failure.
 
 ## Broader Fixed-Corpus Probe
@@ -57,21 +57,21 @@ source-free proof, so its `0.000` validation values are not a gate failure.
 Command:
 
 ```bash
-cargo run -p ctxpack -- eval proof \
+cargo run -p ctxhelm -- eval proof \
   --config .planning/e2e/2026-05-30-phase73-broader-fixed-corpus-config.json \
-  --format json > /tmp/ctxpack-phase77-broader-proof.json
+  --format json > /tmp/ctxhelm-phase77-broader-proof.json
 ```
 
 Committed artifact:
 
-- `.ctxpack/e2e/phase77-broader-validation-command-coverage-proof.json`
+- `.ctxhelm/e2e/phase77-broader-validation-command-coverage-proof.json`
 
 Result:
 
 | Corpus | Gate status | Context Recall@10 | Lexical Context Recall@10 | Test Recall@10 | Validation command recall | Effective validation recall | Protected target miss@10 |
 | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |
 | RefactoringMiner | `match` | 1.000 | 1.000 | 1.000 | 0.000 | 1.000 | 0.000 |
-| ctxpack | `beat` | 0.361 | 0.306 | 0.000 | 0.000 | 0.000 | 0.100 |
+| ctxhelm | `beat` | 0.361 | 0.306 | 0.000 | 0.000 | 0.000 | 0.100 |
 | ReAgent | `beat` | 0.714 | 0.571 | 1.000 | 1.000 | 1.000 | 0.000 |
 | VeriSchema | `beat` | 0.151 | 0.082 | 0.709 | 1.000 | 1.000 | 0.143 |
 
@@ -86,10 +86,10 @@ not a context-channel beat.
 
 ```bash
 cargo fmt --check
-cargo test -p ctxpack-compiler broad_validation_tasks_add_suite_fallback_command -- --nocapture
-cargo test -p ctxpack-compiler product_proof_release_gate_accepts_broad_validation_command_coverage -- --nocapture
-cargo test -p ctxpack-compiler validation_command_coverage_recognizes_broad_pytest -- --nocapture
-cargo run -p ctxpack -- eval proof --config .ctxpack/e2e/v25-multirepo-baseline-config.json --format json
-python3 scripts/check-product-proof.py /tmp/ctxpack-phase77-two-repo-proof.json
-cargo run -p ctxpack -- eval proof --config .planning/e2e/2026-05-30-phase73-broader-fixed-corpus-config.json --format json
+cargo test -p ctxhelm-compiler broad_validation_tasks_add_suite_fallback_command -- --nocapture
+cargo test -p ctxhelm-compiler product_proof_release_gate_accepts_broad_validation_command_coverage -- --nocapture
+cargo test -p ctxhelm-compiler validation_command_coverage_recognizes_broad_pytest -- --nocapture
+cargo run -p ctxhelm -- eval proof --config .ctxhelm/e2e/v25-multirepo-baseline-config.json --format json
+python3 scripts/check-product-proof.py /tmp/ctxhelm-phase77-two-repo-proof.json
+cargo run -p ctxhelm -- eval proof --config .planning/e2e/2026-05-30-phase73-broader-fixed-corpus-config.json --format json
 ```

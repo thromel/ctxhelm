@@ -1,7 +1,7 @@
 {
-  "manifestVersion": "ctxpack-benchmark-corpus-v2.3",
+  "manifestVersion": "ctxhelm-benchmark-corpus-v2.3",
   "name": "refactoringminer-semantic-ablation",
-  "corpusId": "ctxpack-semantic-ablation-refactoringminer-local-semantic-20",
+  "corpusId": "ctxhelm-semantic-ablation-refactoringminer-local-semantic-20",
   "privacyLabel": "source_free_local",
   "description": "Local semantic retrieval variant for RefactoringMiner semantic ablation.",
   "defaults": {
@@ -21,7 +21,7 @@
   "repositories": [
     {
       "name": "RefactoringMiner-clean",
-      "path": "/tmp/ctxpack-rm-semantic.k0Bwre/RefactoringMiner-clean",
+      "path": "/tmp/ctxhelm-rm-semantic.k0Bwre/RefactoringMiner-clean",
       "revisionRangeId": "refactoringminer-semantic-ablation-head-20",
       "privacyLabel": "source_free_local",
       "limit": 20,

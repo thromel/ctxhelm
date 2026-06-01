@@ -2,7 +2,7 @@
 
 ## Pitfalls
 
-- Memory bloat: if every card is injected into every pack, ctxpack becomes the context dump it was designed to avoid.
+- Memory bloat: if every card is injected into every pack, ctxhelm becomes the context dump it was designed to avoid.
 - Stale generated summaries: architecture cards become harmful when source files move or behavior changes.
 - Privacy drift: experience cards can accidentally store prompt text, terminal logs, or source snippets if derived too eagerly.
 - Unreviewed model prose: generated summaries can sound authoritative while being wrong or obsolete.

@@ -41,11 +41,11 @@ Passed:
 ```bash
 cargo fmt --all -- --check
 cargo clippy --workspace --all-targets --locked -- -D warnings
-cargo test -p ctxpack --test release_packaging -- --nocapture
+cargo test -p ctxhelm --test release_packaging -- --nocapture
 bash scripts/check-release-docs.sh
 cargo test --workspace --locked --no-fail-fast
-cargo run -p ctxpack --locked -- --help
-CTXPACK_ALLOW_DIRTY=1 CTXPACK_SKIP_CLEAN_FIXTURE_PROOF=1 CTXPACK_SKIP_REAL_CLIENT=1 bash scripts/release-gate.sh
+cargo run -p ctxhelm --locked -- --help
+CTXHELM_ALLOW_DIRTY=1 CTXHELM_SKIP_CLEAN_FIXTURE_PROOF=1 CTXHELM_SKIP_REAL_CLIENT=1 bash scripts/release-gate.sh
 ```
 
 The release-gate smoke passed through archive packaging/audit, clean extraction,

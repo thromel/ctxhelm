@@ -8,4 +8,4 @@ Added `docs/benchmarking.md` with:
 - adding-a-repo workflow
 - RefactoringMiner as the primary v1.2 large-history target
 
-README now links to benchmarking docs and includes `ctxpack eval benchmark`.
+README now links to benchmarking docs and includes `ctxhelm eval benchmark`.

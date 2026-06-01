@@ -12,19 +12,19 @@ Phases 96-101 exposed context-area resources and made retrieval-gap summaries
 point to them. Those resources still resolved their repository from the MCP
 server cwd. In the release and real-client smokes, `prepare_task` and
 `get_pack` pass an explicit repo from a non-repo server cwd. That meant an
-agent could receive `ctxpack://repo/context-area/...` and fail to read it when
+agent could receive `ctxhelm://repo/context-area/...` and fail to read it when
 following the URI.
 
 ## Implementation
 
-- Added an MCP session repo hint in `ctxpack-mcp`.
+- Added an MCP session repo hint in `ctxhelm-mcp`.
 - `prepare_task`, `get_pack`, `search`, `related`, and `related_tests` remember
   the explicit repo they resolved.
 - Repo-scoped resources first try the server cwd as before, then fall back to
   the last explicit repo when cwd discovery fails.
 - `scripts/smoke-mcp-protocol.sh` now reads:
-  - `ctxpack://repo/context-areas`
-  - a dynamic `ctxpack://repo/context-area/{encoded-area}` resource for the
+  - `ctxhelm://repo/context-areas`
+  - a dynamic `ctxhelm://repo/context-area/{encoded-area}` resource for the
     anchor path
 - The protocol smoke verifies `sourceTextLogged = false`, non-empty path counts,
   and non-empty `nextReadBatches`.
@@ -35,14 +35,14 @@ following the URI.
 ## Validation
 
 ```bash
-cargo test -p ctxpack-mcp repo_resources_use_last_explicit_tool_repo_when_server_cwd_is_not_repo -- --nocapture
-cargo test -p ctxpack --test cli_compat -- --nocapture
-CTXPACK_SMOKE_REPO="/Users/romel/Documents/GitHub/Agent Memory" \
-  CTXPACK_SMOKE_TASK="verify release gate MCP protocol proof" \
-  CTXPACK_SMOKE_PATH="crates/ctxpack-mcp/src/lib.rs" \
-  CTXPACK_SMOKE_QUERY="prepare_task" \
+cargo test -p ctxhelm-mcp repo_resources_use_last_explicit_tool_repo_when_server_cwd_is_not_repo -- --nocapture
+cargo test -p ctxhelm --test cli_compat -- --nocapture
+CTXHELM_SMOKE_REPO="/Users/romel/Documents/GitHub/Agent Memory" \
+  CTXHELM_SMOKE_TASK="verify release gate MCP protocol proof" \
+  CTXHELM_SMOKE_PATH="crates/ctxhelm-mcp/src/lib.rs" \
+  CTXHELM_SMOKE_QUERY="prepare_task" \
   bash scripts/smoke-mcp-protocol.sh
-CTXPACK_BIN="/Users/romel/Documents/GitHub/Agent Memory/target/debug/ctxpack" \
+CTXHELM_BIN="/Users/romel/Documents/GitHub/Agent Memory/target/debug/ctxhelm" \
   bash scripts/smoke-cursor-mcp.sh
 ```
 

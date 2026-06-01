@@ -16,5 +16,5 @@ Make storage freshness observable through typed status reports and CLI-readable 
 
 ## Verification
 
-- `ctxpack storage status --repo <repo>`
+- `ctxhelm storage status --repo <repo>`
 

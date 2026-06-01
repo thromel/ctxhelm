@@ -8,8 +8,8 @@ logging.
 
 ## Change
 
-`ctxpack://repo/context-areas` and
-`ctxpack://repo/context-area/{encoded-area}` now expose an
+`ctxhelm://repo/context-areas` and
+`ctxhelm://repo/context-area/{encoded-area}` now expose an
 `inspectionStrategy` object derived only from safe inventory metadata:
 
 - `initialBatch`: the first next-read batch agents should inspect.
@@ -45,7 +45,7 @@ floor.
 Focused MCP resource contract:
 
 ```bash
-cargo test -p ctxpack-mcp resources_public_uri_shapes_are_stable -- --nocapture
+cargo test -p ctxhelm-mcp resources_public_uri_shapes_are_stable -- --nocapture
 ```
 
 Result: passed.
@@ -53,13 +53,13 @@ Result: passed.
 Pinned clean fixture proof:
 
 ```bash
-cargo run -p ctxpack -- eval proof --config .planning/e2e/2026-05-31-phase110-clean-cold-fixture-config.json --format json
+cargo run -p ctxhelm -- eval proof --config .planning/e2e/2026-05-31-phase110-clean-cold-fixture-config.json --format json
 ```
 
 Result: `releaseGate.decision = promote`.
 
 The proof preserves the promoted baseline: RefactoringMiner remains a lexical
-ceiling match, while ctxpack, ReAgent, and VeriSchema beat lexical on the
+ceiling match, while ctxhelm, ReAgent, and VeriSchema beat lexical on the
 measured context channel and VeriSchema keeps Effective Validation Recall@10
 at `1.0`.
 

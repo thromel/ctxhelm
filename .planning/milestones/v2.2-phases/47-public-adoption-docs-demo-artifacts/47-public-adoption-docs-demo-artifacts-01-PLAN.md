@@ -17,5 +17,5 @@
 
 - `bash scripts/smoke-demo-artifacts.sh`
 - `bash scripts/check-release-docs.sh`
-- `CARGO_TARGET_DIR=/tmp/ctxpack-target-phase47 cargo test -p ctxpack --test release_packaging -- --nocapture`
+- `CARGO_TARGET_DIR=/tmp/ctxhelm-target-phase47 cargo test -p ctxhelm --test release_packaging -- --nocapture`
 

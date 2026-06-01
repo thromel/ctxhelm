@@ -11,16 +11,16 @@ validation-heavy, or docs-only before choosing native file reads.
 ## Commands
 
 ```bash
-CARGO_NET_OFFLINE=true CARGO_TARGET_DIR=/tmp/ctxpack-phase117-target \
-  cargo run -p ctxpack -- prepare-task \
+CARGO_NET_OFFLINE=true CARGO_TARGET_DIR=/tmp/ctxhelm-phase117-target \
+  cargo run -p ctxhelm -- prepare-task \
   --repo "$(pwd)" \
   --mode explain \
   --no-trace \
   "promote broad context area proof and update release docs" \
   > /tmp/phase117-plan.json
 
-CARGO_NET_OFFLINE=true CARGO_TARGET_DIR=/tmp/ctxpack-phase117-target \
-  cargo run -p ctxpack -- get-pack \
+CARGO_NET_OFFLINE=true CARGO_TARGET_DIR=/tmp/ctxhelm-phase117-target \
+  cargo run -p ctxhelm -- get-pack \
   --repo "$(pwd)" \
   --mode explain \
   --budget brief \
@@ -34,7 +34,7 @@ CARGO_NET_OFFLINE=true CARGO_TARGET_DIR=/tmp/ctxpack-phase117-target \
 
 Durable proof:
 
-- `.ctxpack/e2e/phase117-context-area-role-signals.json`
+- `.ctxhelm/e2e/phase117-context-area-role-signals.json`
 
 The proof records:
 
@@ -46,11 +46,11 @@ The proof records:
 
 Example role signals:
 
-- `crates/ctxpack-compiler`: `roleCounts.source = 4`,
+- `crates/ctxhelm-compiler`: `roleCounts.source = 4`,
   `selectedRoleCounts.source = 4`
-- `crates/ctxpack`: `roleCounts.source = 1`, `roleCounts.test = 1`,
+- `crates/ctxhelm`: `roleCounts.source = 1`, `roleCounts.test = 1`,
   `selectedRoleCounts.source = 1`, `selectedRoleCounts.test = 1`
-- `crates/ctxpack-core`: `roleCounts.source = 4`, no selected roles,
+- `crates/ctxhelm-core`: `roleCounts.source = 4`, no selected roles,
   four `nextReadPaths`
 
 ## Boundary

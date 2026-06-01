@@ -15,7 +15,7 @@ works through the real Claude Code client path.
 Public release:
 
 ```text
-https://github.com/thromel/ctxpack/releases/tag/v1.1.1
+https://github.com/thromel/ctxhelm/releases/tag/v1.1.1
 ```
 
 Release target:
@@ -27,7 +27,7 @@ Release target:
 Archive:
 
 ```text
-ctxpack-v1.1.1-aarch64-apple-darwin.tar.gz
+ctxhelm-v1.1.1-aarch64-apple-darwin.tar.gz
 ```
 
 Archive SHA-256:
@@ -46,11 +46,11 @@ Binary SHA-256:
 
 Durable artifacts:
 
-- `.ctxpack/e2e/phase130-github-release.json`
-- `.ctxpack/e2e/phase130-public-release-freshness.json`
-- `.ctxpack/e2e/phase130-public-archive-install.json`
-- `.ctxpack/e2e/phase130-public-real-client-smoke.json`
-- `.ctxpack/e2e/phase130-public-real-client-smoke-evidence/`
+- `.ctxhelm/e2e/phase130-github-release.json`
+- `.ctxhelm/e2e/phase130-public-release-freshness.json`
+- `.ctxhelm/e2e/phase130-public-archive-install.json`
+- `.ctxhelm/e2e/phase130-public-real-client-smoke.json`
+- `.ctxhelm/e2e/phase130-public-real-client-smoke-evidence/`
 
 Freshness result:
 
@@ -68,7 +68,7 @@ privacyStatus.sourceTextLogged: false
 Public archive install result:
 
 ```text
-version: ctxpack 1.1.1
+version: ctxhelm 1.1.1
 downloadedPublicAssets: true
 checksumsVerified: true
 archiveVerified: true
@@ -99,7 +99,7 @@ Codex CLI 0.44.0: skipped
 ## Boundary
 
 The proof remains archive-first and source-free. The verification scripts did
-not globally install ctxpack, mutate agent configuration, publish additional
+not globally install ctxhelm, mutate agent configuration, publish additional
 assets, create tags, or run user project tests.
 
 Homebrew, crates.io, signed installers, self-update, and required real-client

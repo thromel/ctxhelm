@@ -17,5 +17,5 @@ Persist safe inventory file records into SQLite and classify each re-indexed pat
 
 ## Verification
 
-- `cargo test -p ctxpack-index storage`
+- `cargo test -p ctxhelm-index storage`
 

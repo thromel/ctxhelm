@@ -1,6 +1,6 @@
 # Policy And Embedding Controls
 
-ctxpack keeps semantic retrieval and cloud model use explicit. Default context
+ctxhelm keeps semantic retrieval and cloud model use explicit. Default context
 planning remains local lexical, graph, tests, history, memory, and feedback
 signals. Local semantic retrieval is opt-in, and cloud embeddings/reranking stay
 disabled unless a future policy gate explicitly enables them.
@@ -22,17 +22,17 @@ plans, packs, and retrieval-policy experiment reports. The default policy is:
 This means local source-free metadata providers such as `local_hash` can run
 when explicitly requested, while cloud embedding providers, cloud rerankers, and
 source-transfer paths are denied by default. Reranking is represented as a
-typed provider decision but remains disabled unless `.ctxpack/provider-policy.json`
+typed provider decision but remains disabled unless `.ctxhelm/provider-policy.json`
 enables the deterministic local metadata reranker. The older
 `enableLocalFixtureReranker` key is still accepted as a compatibility alias.
 
 Inspect the local semantic provider:
 
 ```bash
-ctxpack semantic status --repo /path/to/repo --query "payment webhook validation"
+ctxhelm semantic status --repo /path/to/repo --query "payment webhook validation"
 ```
 
-The default provider is `local_hash` with model ID `ctxpack-local-hash-v1`.
+The default provider is `local_hash` with model ID `ctxhelm-local-hash-v1`.
 It is deterministic scaffold/test behavior, source-free in reports, and exists
 to make semantic policy paths testable without enabling cloud embeddings or
 cloud reranking.
@@ -47,7 +47,7 @@ and keeps `remoteEmbeddingsUsed: false`.
 Optional repo policy lives at:
 
 ```text
-.ctxpack/provider-policy.json
+.ctxhelm/provider-policy.json
 ```
 
 Example local metadata policy:
@@ -73,7 +73,7 @@ instead of silently pretending a backend ran.
 Compare retrieval-policy experiment rows without changing default ranking:
 
 ```bash
-ctxpack eval policy experiments "fix requireSession bug" --repo /path/to/repo
+ctxhelm eval policy experiments "fix requireSession bug" --repo /path/to/repo
 ```
 
 The policy experiment report includes lexical-only, hybrid local semantic,

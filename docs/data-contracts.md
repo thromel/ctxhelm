@@ -1,6 +1,6 @@
 # Data Contracts
 
-ctxpack contracts are the boundary between the retrieval engine, CLI, MCP, and
+ctxhelm contracts are the boundary between the retrieval engine, CLI, MCP, and
 agents. They should be small, typed, additive, and source-free by default.
 
 ## Contract Families
@@ -68,7 +68,7 @@ retrieval candidates, selected memory, and privacy status.
 It includes ordered sections, token estimates, warnings, diagnostics, and
 privacy status.
 
-`PackInspectorView` answers: how did ctxpack select and package evidence?
+`PackInspectorView` answers: how did ctxhelm select and package evidence?
 
 It links a `ContextPlan` and `ContextPack` through pack/task/repo IDs, target
 agent, budget, token estimate, warnings, diagnostics, selected memory,
@@ -77,7 +77,7 @@ It never copies `PackSection.content`; source-bearing sections are labeled with
 `sourceBearing: true` and `sourceTextLogged: false`. See
 [Pack inspector](inspector.md).
 
-`AgentPreviewReport` answers: how should a target coding agent consume ctxpack?
+`AgentPreviewReport` answers: how should a target coding agent consume ctxhelm?
 
 It exposes target agents, MCP tool names, MCP resource URIs, AGENTS/native-rule
 guidance paths, pack resource URIs, recommended next steps, and the read/edit

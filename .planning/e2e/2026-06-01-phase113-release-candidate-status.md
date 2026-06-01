@@ -29,24 +29,24 @@ and distribution decisions.
 ## Artifact
 
 ```text
-.ctxpack/e2e/phase113-release-candidate-status.json
+.ctxhelm/e2e/phase113-release-candidate-status.json
 ```
 
 Generated with:
 
 ```bash
 bash scripts/release-candidate-status.sh create \
-  --output .ctxpack/e2e/phase113-release-candidate-status.json \
+  --output .ctxhelm/e2e/phase113-release-candidate-status.json \
   --status ready \
   --proof-level deterministic \
-  --proof-summary .ctxpack/e2e/phase112-clean-release-gate-summary.json
+  --proof-summary .ctxhelm/e2e/phase112-clean-release-gate-summary.json
 ```
 
 Validated with:
 
 ```bash
 bash scripts/release-candidate-status.sh validate \
-  --input .ctxpack/e2e/phase113-release-candidate-status.json
+  --input .ctxhelm/e2e/phase113-release-candidate-status.json
 bash scripts/smoke-release-governance.sh
 ```
 

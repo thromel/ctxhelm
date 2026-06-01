@@ -15,7 +15,7 @@ depends_on:
 # Phase 63 Plan: Reranker And Fusion Promotion
 
 <objective>
-Implement and evaluate promotion-safe reranker/fusion comparison so ctxpack can decide whether any local ranking variant should become a stronger default.
+Implement and evaluate promotion-safe reranker/fusion comparison so ctxhelm can decide whether any local ranking variant should become a stronger default.
 </objective>
 
 <threat_model>
@@ -37,9 +37,9 @@ Implement and evaluate promotion-safe reranker/fusion comparison so ctxpack can 
 
 <task id="63.1" name="Inspect current ranking and gate behavior">
 <read_first>
-- `crates/ctxpack-compiler/src/ranking.rs`
-- `crates/ctxpack-compiler/src/policy.rs`
-- `crates/ctxpack-compiler/src/eval.rs`
+- `crates/ctxhelm-compiler/src/ranking.rs`
+- `crates/ctxhelm-compiler/src/policy.rs`
+- `crates/ctxhelm-compiler/src/eval.rs`
 - `docs/benchmarking.md`
 </read_first>
 <action>
@@ -55,8 +55,8 @@ Map existing reranker/fusion knobs, benchmark report fields, and promotion gate 
 
 <task id="63.2" name="Add protected-evidence promotion checks">
 <read_first>
-- `crates/ctxpack-compiler/src/ranking.rs`
-- `crates/ctxpack-compiler/src/eval.rs`
+- `crates/ctxhelm-compiler/src/ranking.rs`
+- `crates/ctxhelm-compiler/src/eval.rs`
 </read_first>
 <action>
 Ensure benchmark reports and promotion gates can detect when explicit anchors, current diff, exact lexical matches, or high-confidence symbols are demoted by a variant.
@@ -75,7 +75,7 @@ Ensure benchmark reports and promotion gates can detect when explicit anchors, c
 - `.planning/e2e/2026-05-30-phase62-production-local-embedding-quality.md`
 </read_first>
 <action>
-Run the fixed two-repo corpus with baseline and available reranker/fusion variants. Save large outputs under ignored `.ctxpack/e2e/` and commit a concise source-free summary.
+Run the fixed two-repo corpus with baseline and available reranker/fusion variants. Save large outputs under ignored `.ctxhelm/e2e/` and commit a concise source-free summary.
 </action>
 <verify>
 - Compare Recall@10, MRR@10, precision proxy, test recall, token ROI, runtime, privacy, and named regressions.
@@ -96,7 +96,7 @@ Document the variant comparison workflow, promotion gates, and outcome. Complete
 </action>
 <verify>
 - `cargo test --workspace --no-fail-fast`
-- `cargo run -p ctxpack -- --help`
+- `cargo run -p ctxhelm -- --help`
 - `git diff --check`
 </verify>
 <acceptance_criteria>
@@ -111,7 +111,7 @@ Document the variant comparison workflow, promotion gates, and outcome. Complete
 - focused ranking/eval tests
 - two-repo reranker/fusion E2E
 - `cargo test --workspace --no-fail-fast`
-- `cargo run -p ctxpack -- --help`
+- `cargo run -p ctxhelm -- --help`
 - `git diff --check`
 </verification>
 

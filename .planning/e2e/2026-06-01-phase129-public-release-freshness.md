@@ -27,14 +27,14 @@ Command:
 ```bash
 bash scripts/check-public-release-freshness.sh \
   --tag v1.1.0 \
-  --repo thromel/ctxpack \
-  --output .ctxpack/e2e/phase129-public-release-freshness.json
+  --repo thromel/ctxhelm \
+  --output .ctxhelm/e2e/phase129-public-release-freshness.json
 ```
 
 Durable artifact:
 
 ```text
-.ctxpack/e2e/phase129-public-release-freshness.json
+.ctxhelm/e2e/phase129-public-release-freshness.json
 ```
 
 Result:

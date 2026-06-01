@@ -23,28 +23,28 @@ bounded steady-state lookup threshold.
 Command:
 
 ```bash
-rm -rf /tmp/ctxpack-phase82-cache && mkdir -p /tmp/ctxpack-phase82-cache
-CTXPACK_HOME=/tmp/ctxpack-phase82-cache cargo run -p ctxpack -- eval proof \
+rm -rf /tmp/ctxhelm-phase82-cache && mkdir -p /tmp/ctxhelm-phase82-cache
+CTXHELM_HOME=/tmp/ctxhelm-phase82-cache cargo run -p ctxhelm -- eval proof \
   --config .planning/e2e/2026-05-30-phase81-warm-cache-proof-config.json \
-  --format json > /tmp/ctxpack-phase82-warm-gate-cold-proof.json
-CTXPACK_HOME=/tmp/ctxpack-phase82-cache cargo run -p ctxpack -- eval proof \
+  --format json > /tmp/ctxhelm-phase82-warm-gate-cold-proof.json
+CTXHELM_HOME=/tmp/ctxhelm-phase82-cache cargo run -p ctxhelm -- eval proof \
   --config .planning/e2e/2026-05-30-phase81-warm-cache-proof-config.json \
-  --format json > /tmp/ctxpack-phase82-warm-gate-warm-proof.json
-python3 scripts/check-product-proof.py /tmp/ctxpack-phase82-warm-gate-cold-proof.json
-python3 scripts/check-product-proof.py /tmp/ctxpack-phase82-warm-gate-warm-proof.json
+  --format json > /tmp/ctxhelm-phase82-warm-gate-warm-proof.json
+python3 scripts/check-product-proof.py /tmp/ctxhelm-phase82-warm-gate-cold-proof.json
+python3 scripts/check-product-proof.py /tmp/ctxhelm-phase82-warm-gate-warm-proof.json
 ```
 
 Committed artifacts:
 
-- `.ctxpack/e2e/phase82-warm-cache-gate-cold-proof.json`
-- `.ctxpack/e2e/phase82-warm-cache-gate-warm-proof.json`
+- `.ctxhelm/e2e/phase82-warm-cache-gate-cold-proof.json`
+- `.ctxhelm/e2e/phase82-warm-cache-gate-warm-proof.json`
 
 Both gates promote.
 
 | Corpus | Warm runtime ms | Cache hits | Cache misses | Warm commit ms | Warm slow commits |
 | --- | ---: | ---: | ---: | ---: | ---: |
 | RefactoringMiner | 1 | 1 | 0 | 0 | 0 |
-| ctxpack | 1 | 1 | 0 | 0 | 0 |
+| ctxhelm | 1 | 1 | 0 | 0 | 0 |
 | ReAgent | 1 | 1 | 0 | 0 | 0 |
 | VeriSchema | 1 | 1 | 0 | 0 | 0 |
 
@@ -55,7 +55,7 @@ Every warm corpus verdict includes a source-free note of the form
 
 ```bash
 cargo fmt --check
-cargo test -p ctxpack-compiler warm_cache -- --nocapture
-python3 scripts/check-product-proof.py .ctxpack/e2e/phase82-warm-cache-gate-cold-proof.json
-python3 scripts/check-product-proof.py .ctxpack/e2e/phase82-warm-cache-gate-warm-proof.json
+cargo test -p ctxhelm-compiler warm_cache -- --nocapture
+python3 scripts/check-product-proof.py .ctxhelm/e2e/phase82-warm-cache-gate-cold-proof.json
+python3 scripts/check-product-proof.py .ctxhelm/e2e/phase82-warm-cache-gate-warm-proof.json
 ```

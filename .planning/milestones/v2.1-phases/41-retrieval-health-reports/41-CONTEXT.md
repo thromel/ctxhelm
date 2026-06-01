@@ -8,7 +8,7 @@
 ## Phase Boundary
 
 Phase 41 adds source-free retrieval health reporting. It should aggregate the
-evidence ctxpack already produces: historical eval recall, token ROI, retrieval
+evidence ctxhelm already produces: historical eval recall, token ROI, retrieval
 gap families, signal ablations, and feedback/policy quality.
 
 This phase should not add a hosted analytics backend or raw session logging.
@@ -19,9 +19,9 @@ This phase should not add a hosted analytics backend or raw session logging.
 
 1. Build the health report from `HistoricalEvalReport` plus
    `PolicyQualityReport`.
-2. Keep the contract in `ctxpack-core` so CLI, inspector, and future MCP/UI
+2. Keep the contract in `ctxhelm-core` so CLI, inspector, and future MCP/UI
    surfaces share one shape.
-3. Add `ctxpack eval health` as the CLI entry point.
+3. Add `ctxhelm eval health` as the CLI entry point.
 4. Keep the report source-free with `sourceTextLogged: false`.
 5. Use existing eval and feedback flows instead of adding a new storage schema.
 </decisions>
@@ -44,7 +44,7 @@ This phase should not add a hosted analytics backend or raw session logging.
 - Add a compact `RetrievalHealthReport`.
 - Add health metric rows, token ROI rows, signal contribution rows, gap family
   rows, and low-confidence flags.
-- Add Markdown and JSON output through `ctxpack eval health`.
+- Add Markdown and JSON output through `ctxhelm eval health`.
 - Add docs/smoke coverage after the CLI path is stable.
 </specifics>
 

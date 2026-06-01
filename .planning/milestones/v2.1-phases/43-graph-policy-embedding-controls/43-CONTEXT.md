@@ -35,8 +35,8 @@ cloud embeddings, or introduce cloud reranking.
 <specifics>
 ## Specific Ideas
 
-- `ctxpack semantic status --query "..."`
-- `ctxpack eval policy experiments "..."`
+- `ctxhelm semantic status --query "..."`
+- `ctxhelm eval policy experiments "..."`
 - Include provider kind, model ID, dimensions, vector counts, semantic usage,
   cloud gates, and privacy flags.
 </specifics>

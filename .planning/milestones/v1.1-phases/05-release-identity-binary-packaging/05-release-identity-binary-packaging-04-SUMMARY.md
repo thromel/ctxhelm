@@ -16,7 +16,7 @@ tech-stack:
   patterns: [grep-based docs consistency gate, explicit out-of-scope release channels]
 key-files:
   created: [docs/release.md, scripts/check-release-docs.sh]
-  modified: [README.md, crates/ctxpack/tests/release_packaging.rs]
+  modified: [README.md, crates/ctxhelm/tests/release_packaging.rs]
 key-decisions:
   - "Document prebuilt archives and SHA-256 checksums as the normal v1.1.0 install path."
   - "Keep crates.io, Homebrew, self-update, signed installers, cloud telemetry, and global agent config mutation explicitly out of v1.1 scope."
@@ -41,7 +41,7 @@ completed: 2026-05-13
 
 ## Accomplishments
 
-- Added a README release install section covering archive download, checksum verification, binary install, `ctxpack --version`, and `ctxpack --help`.
+- Added a README release install section covering archive download, checksum verification, binary install, `ctxhelm --version`, and `ctxhelm --help`.
 - Added `docs/release.md` with maintainer packaging, source-build fallbacks, audit details, and out-of-scope release channels.
 - Added `scripts/check-release-docs.sh` plus Rust integration coverage to keep release docs aligned with v1.1.0 commands.
 
@@ -57,7 +57,7 @@ completed: 2026-05-13
 - `README.md` - User-facing v1.1.0 archive install path.
 - `docs/release.md` - Maintainer release, fallback, checksum, and audit guide.
 - `scripts/check-release-docs.sh` - Release docs consistency gate.
-- `crates/ctxpack/tests/release_packaging.rs` - Docs script contract and execution tests.
+- `crates/ctxhelm/tests/release_packaging.rs` - Docs script contract and execution tests.
 
 ## Decisions Made
 
@@ -79,9 +79,9 @@ None - no external service configuration required.
 ## Verification
 
 - `bash scripts/check-release-docs.sh` passed.
-- `cargo test -p ctxpack --test release_packaging release_docs -- --nocapture` passed.
-- `cargo run -p ctxpack -- --version` printed `ctxpack 1.1.0`.
-- `cargo run -p ctxpack -- --help` passed.
+- `cargo test -p ctxhelm --test release_packaging release_docs -- --nocapture` passed.
+- `cargo run -p ctxhelm -- --version` printed `ctxhelm 1.1.0`.
+- `cargo run -p ctxhelm -- --help` passed.
 - `cargo test --workspace` passed.
 
 ## Next Phase Readiness
@@ -91,7 +91,7 @@ Phase 5 now has coherent release identity, binary packaging, artifact audit, and
 ## Self-Check: PASSED
 
 - Created files exist: `docs/release.md`, `scripts/check-release-docs.sh`
-- Modified files exist: `README.md`, `crates/ctxpack/tests/release_packaging.rs`
+- Modified files exist: `README.md`, `crates/ctxhelm/tests/release_packaging.rs`
 - Commits exist: `dd1887d`, `97e3244`, `2e3eac2`, `9cca6ef`
 
 ---

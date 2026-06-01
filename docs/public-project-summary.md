@@ -1,6 +1,6 @@
 # Public Project Summary
 
-RepoWinnow, powered by the `ctxpack` CLI, is a local-first context broker for
+ctxhelm, powered by the `ctxhelm` CLI, is a local-first context broker for
 AI coding agents. Given a coding task, it compiles a small, task-conditioned
 evidence set: likely target files, related tests, validation commands,
 graph/history/memory signals, and agent-specific context guidance.
@@ -20,15 +20,15 @@ graph/history/memory signals, and agent-specific context guidance.
 
 The public posture is source-free by default.
 
-- RepoWinnow does not edit source code.
-- RepoWinnow does not run user project tests automatically.
-- RepoWinnow does not require cloud embeddings or cloud reranking.
-- RepoWinnow does not mutate global agent configuration.
-- RepoWinnow does not provide hosted sync, enterprise admin, signed installers, or
+- ctxhelm does not edit source code.
+- ctxhelm does not run user project tests automatically.
+- ctxhelm does not require cloud embeddings or cloud reranking.
+- ctxhelm does not mutate global agent configuration.
+- ctxhelm does not provide hosted sync, enterprise admin, signed installers, or
   self-update in the current release.
 
 ## One-sentence Portfolio Copy
 
-RepoWinnow is a local, read-only context compiler that makes Codex, Claude
+ctxhelm is a local, read-only context compiler that makes Codex, Claude
 Code, Cursor, OpenCode, and other coding agents better at finding the right
 files, tests, and constraints before they edit.

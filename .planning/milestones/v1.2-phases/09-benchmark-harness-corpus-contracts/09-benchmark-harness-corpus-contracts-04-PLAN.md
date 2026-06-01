@@ -20,5 +20,5 @@ Document how maintainers add and run local real-repo benchmark suites.
 
 ## Verification
 
-- CLI help for `ctxpack eval benchmark` works.
+- CLI help for `ctxhelm eval benchmark` works.
 - README links to benchmarking docs.

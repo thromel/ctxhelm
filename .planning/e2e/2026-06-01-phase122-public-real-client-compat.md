@@ -10,21 +10,21 @@ new MCP protocol assertions that are not present in an already-published archive
 `scripts/smoke-public-real-clients.sh` downloads the public `v1.1.0` archive but
 uses the current source-tree wrapper scripts. After Phase 118, the current
 `scripts/smoke-mcp-protocol.sh` required `resourceScope` fields on context-area
-resources. The public `ctxpack 1.1.0` archive predates that assertion, so the
+resources. The public `ctxhelm 1.1.0` archive predates that assertion, so the
 public real-client smoke failed before Codex or Claude wrappers could write
 source-free pass/skip evidence.
 
-This was a release-evidence compatibility bug, not a user-facing ctxpack runtime
+This was a release-evidence compatibility bug, not a user-facing ctxhelm runtime
 bug.
 
 ## Changes
 
-- Added `CTXPACK_REQUIRE_RESOURCE_SCOPE`, defaulting to `1`, to
+- Added `CTXHELM_REQUIRE_RESOURCE_SCOPE`, defaulting to `1`, to
   `scripts/smoke-mcp-protocol.sh`.
 - Kept current build/release-candidate protocol checks strict by default.
 - Made `scripts/smoke-public-real-clients.sh` set
-  `CTXPACK_REQUIRE_RESOURCE_SCOPE=0` only for the published `ctxpack 1.1.0`
-  archive, unless overridden by `CTXPACK_PUBLIC_SMOKE_REQUIRE_RESOURCE_SCOPE`.
+  `CTXHELM_REQUIRE_RESOURCE_SCOPE=0` only for the published `ctxhelm 1.1.0`
+  archive, unless overridden by `CTXHELM_PUBLIC_SMOKE_REQUIRE_RESOURCE_SCOPE`.
 - Added Rust contract coverage for the new compatibility knob.
 - Updated release and distribution docs so the compatibility boundary is
   explicit and not confused with weakening current release gates.
@@ -34,19 +34,19 @@ bug.
 Passed focused proof:
 
 ```bash
-CTXPACK_REQUIRE_RESOURCE_SCOPE=0 \
-  CTXPACK_BIN=<downloaded public v1.1.0 archive binary> \
-  CTXPACK_SMOKE_REPO=/Users/romel/Documents/GitHub/ctxpack-release-gate-clean-20260601 \
+CTXHELM_REQUIRE_RESOURCE_SCOPE=0 \
+  CTXHELM_BIN=<downloaded public v1.1.0 archive binary> \
+  CTXHELM_SMOKE_REPO=/Users/romel/Documents/GitHub/ctxhelm-release-gate-clean-20260601 \
   bash scripts/smoke-mcp-protocol.sh
 
-CTXPACK_BIN=/Users/romel/Documents/GitHub/ctxpack-release-gate-clean-20260601/target/debug/ctxpack \
-  CTXPACK_SMOKE_REPO=/Users/romel/Documents/GitHub/ctxpack-release-gate-clean-20260601 \
+CTXHELM_BIN=/Users/romel/Documents/GitHub/ctxhelm-release-gate-clean-20260601/target/debug/ctxhelm \
+  CTXHELM_SMOKE_REPO=/Users/romel/Documents/GitHub/ctxhelm-release-gate-clean-20260601 \
   bash scripts/smoke-mcp-protocol.sh
 
-CTXPACK_RUN_REAL_CLIENT=1 \
+CTXHELM_RUN_REAL_CLIENT=1 \
   bash scripts/smoke-public-real-clients.sh \
-    --smoke-repo /Users/romel/Documents/GitHub/ctxpack-release-gate-clean-20260601 \
-    --output /tmp/ctxpack-public-real-client-rerun.json
+    --smoke-repo /Users/romel/Documents/GitHub/ctxhelm-release-gate-clean-20260601 \
+    --output /tmp/ctxhelm-public-real-client-rerun.json
 ```
 
 Observed public real-client results:

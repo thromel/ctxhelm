@@ -3,7 +3,7 @@
 ## Goal
 
 Reduce the remaining broad-task protected target misses without using gold labels
-or changing ctxpack's local-first/source-free proof boundary.
+or changing ctxhelm's local-first/source-free proof boundary.
 
 ## Change
 
@@ -22,15 +22,15 @@ setup/run/smoke lifecycle scripts in the workflow-script reserve.
 Command:
 
 ```bash
-cargo run -p ctxpack -- eval proof \
+cargo run -p ctxhelm -- eval proof \
   --config .planning/e2e/2026-05-31-phase110-clean-cold-fixture-config.json \
-  --format json > /tmp/ctxpack-phase128-proof.json
-python3 scripts/check-product-proof.py .ctxpack/e2e/phase128-broad-operational-floor.json
+  --format json > /tmp/ctxhelm-phase128-proof.json
+python3 scripts/check-product-proof.py .ctxhelm/e2e/phase128-broad-operational-floor.json
 ```
 
 Durable artifact:
 
-- `.ctxpack/e2e/phase128-broad-operational-floor.json`
+- `.ctxhelm/e2e/phase128-broad-operational-floor.json`
 
 Result:
 
@@ -42,16 +42,16 @@ Result:
 - average file delta `+0.14154172`
 - average agent-evidence delta `+0.19379663`
 - average context delta `+0.23717105`
-- protected target miss-rate `0.0` on RefactoringMiner, ctxpack, ReAgent, and VeriSchema
+- protected target miss-rate `0.0` on RefactoringMiner, ctxhelm, ReAgent, and VeriSchema
 
-Compared with Phase 127, the change clears the ctxpack planning-doc protected
+Compared with Phase 127, the change clears the ctxhelm planning-doc protected
 miss and the VeriSchema workflow-script protected miss while preserving the
 zero-trailing-corpus lexical comparison.
 
 ## Focused Tests
 
 ```bash
-cargo test -p ctxpack-compiler broad_selection_reserves -- --nocapture
+cargo test -p ctxhelm-compiler broad_selection_reserves -- --nocapture
 ```
 
 The focused tests prove that broad selection reserves:

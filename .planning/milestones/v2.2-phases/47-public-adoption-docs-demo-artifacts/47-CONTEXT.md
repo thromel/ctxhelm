@@ -2,7 +2,7 @@
 
 Milestone: v2.2 Release & Distribution Hardening
 
-Goal: make ctxpack understandable to a public first-time user without leaking
+Goal: make ctxhelm understandable to a public first-time user without leaking
 source or overstating unsupported distribution claims.
 
 ## Inputs
@@ -15,7 +15,7 @@ source or overstating unsupported distribution claims.
 ## Constraints
 
 - Demo artifacts must be static and source-free.
-- Public copy must describe ctxpack as a read-only context compiler for existing
+- Public copy must describe ctxhelm as a read-only context compiler for existing
   coding agents, not as an autonomous coding agent.
 - Release gates must validate demo artifacts before publication.
 - Unsupported claims remain excluded: hosted sync, self-update, signed

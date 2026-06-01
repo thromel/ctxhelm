@@ -4,7 +4,7 @@ Status: Complete
 
 ## Completed
 
-- Added `packaging/homebrew/ctxpack.rb.template` as a future Homebrew formula
+- Added `packaging/homebrew/ctxhelm.rb.template` as a future Homebrew formula
   template, explicitly not a published tap formula.
 - Added `packaging/crates/README.md` for future crates.io preparation checks.
 - Added `packaging/release/update-metadata.schema.json` and
@@ -22,7 +22,7 @@ Status: Complete
 
 - `bash scripts/smoke-distribution-metadata.sh` passed.
 - `bash scripts/check-release-docs.sh` passed.
-- `CARGO_TARGET_DIR=/tmp/ctxpack-target-phase48 cargo test -p ctxpack --test release_packaging -- --nocapture` passed.
+- `CARGO_TARGET_DIR=/tmp/ctxhelm-target-phase48 cargo test -p ctxhelm --test release_packaging -- --nocapture` passed.
 - Actual packaging plus `scripts/verify-release-archive.sh` passed against
-  `/tmp/ctxpack-phase48-dist`.
+  `/tmp/ctxhelm-phase48-dist`.
 

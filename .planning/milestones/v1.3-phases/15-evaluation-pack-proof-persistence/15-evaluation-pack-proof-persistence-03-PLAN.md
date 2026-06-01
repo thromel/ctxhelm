@@ -10,6 +10,6 @@ Persist historical eval and benchmark metrics/gaps into storage with explicit op
 
 ## Verification
 
-- `ctxpack eval history --repo <repo> --store`
-- `ctxpack eval benchmark --config <suite> --store`
+- `ctxhelm eval history --repo <repo> --store`
+- `ctxhelm eval benchmark --config <suite> --store`
 

@@ -14,15 +14,15 @@ requirements:
 
 ## Objective
 
-Make retrieval quality claims reproducible across more than one real repository. RefactoringMiner is a strong benchmark because it has rich history and known ctxpack misses, but a single repo can overfit policy decisions. Phase 61 should create a reusable multi-repo baseline artifact that keeps reports source-free and comparable.
+Make retrieval quality claims reproducible across more than one real repository. RefactoringMiner is a strong benchmark because it has rich history and known ctxhelm misses, but a single repo can overfit policy decisions. Phase 61 should create a reusable multi-repo baseline artifact that keeps reports source-free and comparable.
 
 ## Current State
 
-ctxpack can already run:
+ctxhelm can already run:
 
-- `ctxpack eval history`
-- `ctxpack eval baselines`
-- `ctxpack eval benchmark`
+- `ctxhelm eval history`
+- `ctxhelm eval baselines`
+- `ctxhelm eval benchmark`
 - paired default/lexical/no-context/signal-only/ablation reports
 - source-free gap summaries and token ROI
 
@@ -65,7 +65,7 @@ The report should aggregate:
    - Known lexical baseline still ahead.
    - Known MCP/source/test gap families.
 
-2. Current ctxpack repo or another local real repo with enough history.
+2. Current ctxhelm repo or another local real repo with enough history.
    - Use whichever has stable local availability and enough commits.
    - Avoid toy-only fixtures.
 
@@ -80,4 +80,4 @@ The report should aggregate:
 - A manifest-driven baseline command or report path exists.
 - At least two real repos can be evaluated with one command/config.
 - Reports are source-free and include per-repo plus aggregate quality.
-- Output identifies whether ctxpack beats, matches, or trails lexical per repo.
+- Output identifies whether ctxhelm beats, matches, or trails lexical per repo.

@@ -9,5 +9,5 @@
     {"agent": "cursor", "tools": ["prepare_task", "get_pack"], "ownsEdits": true},
     {"agent": "opencode", "tools": ["prepare_task", "get_pack"], "ownsEdits": true}
   ],
-  "ctxpackBoundary": "ctxpack recommends context; agents read, edit, and run commands."
+  "ctxhelmBoundary": "ctxhelm recommends context; agents read, edit, and run commands."
 }

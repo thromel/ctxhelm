@@ -20,7 +20,7 @@ inspect every required corpus and name the failing status.
 ## Keep Optional Proof Strict
 
 The default release gate may skip external corpora, but when a benchmark config
-is provided through `CTXPACK_BENCHMARK_CONFIG`, the gate should fail on
+is provided through `CTXHELM_BENCHMARK_CONFIG`, the gate should fail on
 non-promote results. A skipped proof is not evidence of product quality.
 
 ## Do Not Hide Test Recall

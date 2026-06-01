@@ -5,9 +5,9 @@ type: execute
 wave: 2
 depends_on: [01]
 files_modified:
-  - crates/ctxpack-compiler/src/ranking.rs
-  - crates/ctxpack-compiler/src/planning.rs
-  - crates/ctxpack-compiler/src/lib.rs
+  - crates/ctxhelm-compiler/src/ranking.rs
+  - crates/ctxhelm-compiler/src/planning.rs
+  - crates/ctxhelm-compiler/src/lib.rs
 autonomous: true
 requirements: [RETR-01, RETR-02, RETR-03, RETR-04, PARS-01]
 must_haves:
@@ -18,13 +18,13 @@ must_haves:
     - "Graph and test expansion is one-hop and consumes the same target/test budget as lexical candidates."
     - "Every recommended target file and related test has source-free attribution."
   artifacts:
-    - path: "crates/ctxpack-compiler/src/ranking.rs"
+    - path: "crates/ctxhelm-compiler/src/ranking.rs"
       provides: "Candidate collection, signal fusion, one-hop expansion, and fixed-budget selection"
-    - path: "crates/ctxpack-compiler/src/planning.rs"
+    - path: "crates/ctxhelm-compiler/src/planning.rs"
       provides: "ContextPlan projection from ranked candidates"
   key_links:
-    - from: "crates/ctxpack-compiler/src/planning.rs"
-      to: "crates/ctxpack-compiler/src/ranking.rs"
+    - from: "crates/ctxhelm-compiler/src/planning.rs"
+      to: "crates/ctxhelm-compiler/src/ranking.rs"
       via: "collect signals -> rank candidates -> project targetFiles/relatedTests"
       pattern: "rank_.*candidates"
 ---
@@ -79,7 +79,7 @@ pub(crate) const PREPARE_TASK_TARGET_LIMIT: usize = 8;
 
 <task type="auto" tdd="true">
   <name>Task 1: Implement deterministic candidate scoring and one-hop expansion</name>
-  <files>crates/ctxpack-compiler/src/ranking.rs, crates/ctxpack-compiler/src/lib.rs</files>
+  <files>crates/ctxhelm-compiler/src/ranking.rs, crates/ctxhelm-compiler/src/lib.rs</files>
   <behavior>
     - Test 1: Multiple signals for the same path merge into one candidate with per-signal scores and evidence.
     - Test 2: One-hop dependency/test/history expansion adds neighbor candidates but does not recursively expand from those neighbors.
@@ -88,14 +88,14 @@ pub(crate) const PREPARE_TASK_TARGET_LIMIT: usize = 8;
   </behavior>
   <action>Create `ranking.rs` as an internal compiler module per D-01/D-04. Define private ranking inputs around existing index result structs and emit core `RetrievalCandidate` values plus selected target/test projections. Include signal weights for anchor/currentDiff, symbol, lexical, dependency, relatedTest, coChange/history, docs/config role boosts, and explicit reason codes. Materialize docs, commits, and config as their own typed candidate kinds when those signals are available; they may also influence file/test ranking, but they must not disappear into file-only scores. Keep all evidence source-free per D-03; do not carry search snippets, commit subjects, task strings, or symbol signatures.</action>
   <verify>
-    <automated>cargo test -p ctxpack-compiler ranking -- --nocapture</automated>
+    <automated>cargo test -p ctxhelm-compiler ranking -- --nocapture</automated>
   </verify>
   <done>Ranking unit tests prove signal merge, one-hop expansion, fixed budgets, and deterministic ordering.</done>
 </task>
 
 <task type="auto" tdd="true">
   <name>Task 2: Wire ranking into context planning while preserving compatibility</name>
-  <files>crates/ctxpack-compiler/src/planning.rs, crates/ctxpack-compiler/src/ranking.rs, crates/ctxpack-compiler/src/lib.rs</files>
+  <files>crates/ctxhelm-compiler/src/planning.rs, crates/ctxhelm-compiler/src/ranking.rs, crates/ctxhelm-compiler/src/lib.rs</files>
   <behavior>
     - Test 1: A dependency neighbor that lacks lexical matches can become a ranked target when connected to a strong seed.
     - Test 2: A related test can be recommended with attribution and validation command without increasing target file budget.
@@ -105,7 +105,7 @@ pub(crate) const PREPARE_TASK_TARGET_LIMIT: usize = 8;
   </behavior>
   <action>Refactor `prepare_context_plan_with_paths_and_history` to gather reports first, pass them into `ranking.rs`, and project selected candidates into `target_files`, `related_tests`, `recommended_commands`, and `retrieval_candidates`. Keep `targetFiles` and `relatedTests` shapes additive per D-02 from Plan 01. Keep diagnostics aggregation and riskFlag projection from Phase 2. Do not change MCP tool names or add parser/runtime dependencies per D-11.</action>
   <verify>
-    <automated>cargo test -p ctxpack-compiler prepare_context_plan -- --nocapture</automated>
+    <automated>cargo test -p ctxhelm-compiler prepare_context_plan -- --nocapture</automated>
   </verify>
   <done>Context planning uses ranked candidates, graph/test/history/current-diff signals affect selection, and recommendations carry source-free attribution.</done>
 </task>
@@ -113,9 +113,9 @@ pub(crate) const PREPARE_TASK_TARGET_LIMIT: usize = 8;
 </tasks>
 
 <verification>
-- `cargo test -p ctxpack-compiler ranking -- --nocapture`
-- `cargo test -p ctxpack-compiler prepare_context_plan -- --nocapture`
-- `cargo test -p ctxpack-compiler`
+- `cargo test -p ctxhelm-compiler ranking -- --nocapture`
+- `cargo test -p ctxhelm-compiler prepare_context_plan -- --nocapture`
+- `cargo test -p ctxhelm-compiler`
 </verification>
 
 <success_criteria>

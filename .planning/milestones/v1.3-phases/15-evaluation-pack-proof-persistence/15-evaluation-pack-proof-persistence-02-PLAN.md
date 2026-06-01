@@ -10,5 +10,5 @@ Allow users to persist context pack metadata without persisting pack snippets by
 
 ## Verification
 
-- `ctxpack get-pack ... --store`
+- `ctxhelm get-pack ... --store`
 

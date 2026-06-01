@@ -23,9 +23,9 @@ key-files:
   created:
     - .planning/phases/04-agent-native-client-durability/04-agent-native-client-durability-03-SUMMARY.md
   modified:
-    - crates/ctxpack-mcp/src/resources.rs
-    - crates/ctxpack-mcp/src/lib.rs
-    - crates/ctxpack/tests/cli_compat.rs
+    - crates/ctxhelm-mcp/src/resources.rs
+    - crates/ctxhelm-mcp/src/lib.rs
+    - crates/ctxhelm/tests/cli_compat.rs
 
 key-decisions:
   - "Preserve process-local MCP pack resources and make the session boundary explicit instead of adding persistence or reconstruction."
@@ -33,7 +33,7 @@ key-decisions:
   - "Bound pack resource cache growth privately with deterministic oldest-key eviction and test-only inspection helpers."
 
 patterns-established:
-  - "Restart behavior for pack resources should be tested through two separate ctxpack serve-mcp subprocess invocations."
+  - "Restart behavior for pack resources should be tested through two separate ctxhelm serve-mcp subprocess invocations."
   - "Long-running MCP cache behavior should be covered by in-process tests without widening the public MCP tool surface."
 
 requirements-completed: [AGNT-02, AGNT-03]
@@ -56,8 +56,8 @@ completed: 2026-05-13
 
 ## Accomplishments
 
-- Updated the pack guide and missing-pack error path so users can see that `ctxpack://pack/...` URIs are MCP-session scoped and only valid in the same server process.
-- Added a binary subprocess restart regression that creates a pack URI in one `ctxpack serve-mcp` process, then proves a second process returns the clear session-scoped diagnostic.
+- Updated the pack guide and missing-pack error path so users can see that `ctxhelm://pack/...` URIs are MCP-session scoped and only valid in the same server process.
+- Added a binary subprocess restart regression that creates a pack URI in one `ctxhelm serve-mcp` process, then proves a second process returns the clear session-scoped diagnostic.
 - Bounded the in-memory pack resource cache with deterministic oldest-key eviction while keeping the newest generated URI readable.
 
 ## Task Commits
@@ -69,9 +69,9 @@ completed: 2026-05-13
 
 ## Files Created/Modified
 
-- `crates/ctxpack-mcp/src/resources.rs` - Adds explicit session diagnostics, a richer pack guide, private cache limit, insertion-order tracking, and deterministic eviction.
-- `crates/ctxpack-mcp/src/lib.rs` - Adds in-process tests for guide wording, missing-resource diagnostics, cache bounds, eviction, and newest URI readability.
-- `crates/ctxpack/tests/cli_compat.rs` - Adds subprocess restart coverage for session-scoped pack URI behavior.
+- `crates/ctxhelm-mcp/src/resources.rs` - Adds explicit session diagnostics, a richer pack guide, private cache limit, insertion-order tracking, and deterministic eviction.
+- `crates/ctxhelm-mcp/src/lib.rs` - Adds in-process tests for guide wording, missing-resource diagnostics, cache bounds, eviction, and newest URI readability.
+- `crates/ctxhelm/tests/cli_compat.rs` - Adds subprocess restart coverage for session-scoped pack URI behavior.
 - `.planning/phases/04-agent-native-client-durability/04-agent-native-client-durability-03-SUMMARY.md` - Records execution results.
 
 ## Decisions Made
@@ -96,11 +96,11 @@ None.
 ## Verification
 
 - `cargo fmt --all --check`
-- `cargo test -p ctxpack-mcp pack_resource -- --nocapture`
-- `cargo test -p ctxpack-mcp pack_resource_cache -- --nocapture`
-- `cargo test -p ctxpack --test cli_compat pack_resource -- --nocapture`
+- `cargo test -p ctxhelm-mcp pack_resource -- --nocapture`
+- `cargo test -p ctxhelm-mcp pack_resource_cache -- --nocapture`
+- `cargo test -p ctxhelm --test cli_compat pack_resource -- --nocapture`
 - `cargo test --workspace`
-- `cargo run -p ctxpack -- --help`
+- `cargo run -p ctxhelm -- --help`
 
 ## User Setup Required
 
@@ -112,9 +112,9 @@ Plan 03 closes the process-local pack-resource durability concern with explicit 
 
 ## Self-Check: PASSED
 
-- Found `crates/ctxpack-mcp/src/resources.rs`
-- Found `crates/ctxpack-mcp/src/lib.rs`
-- Found `crates/ctxpack/tests/cli_compat.rs`
+- Found `crates/ctxhelm-mcp/src/resources.rs`
+- Found `crates/ctxhelm-mcp/src/lib.rs`
+- Found `crates/ctxhelm/tests/cli_compat.rs`
 - Found `.planning/phases/04-agent-native-client-durability/04-agent-native-client-durability-03-SUMMARY.md`
 - Found commit `d1c7408`
 - Found commit `c10dca6`

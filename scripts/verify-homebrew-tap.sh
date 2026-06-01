@@ -14,7 +14,7 @@ EOF
 }
 
 tap="thromel/tap"
-formula="ctxpack"
+formula="ctxhelm"
 expected_version=""
 expected_url=""
 expected_sha256=""
@@ -113,7 +113,7 @@ import sys
     installed_version,
 ) = sys.argv[1:]
 payload = {
-    "schemaVersion": "ctxpack-homebrew-tap-proof-v1",
+    "schemaVersion": "ctxhelm-homebrew-tap-proof-v1",
     "tap": tap,
     "formula": formula,
     "formulaPath": formula_path,

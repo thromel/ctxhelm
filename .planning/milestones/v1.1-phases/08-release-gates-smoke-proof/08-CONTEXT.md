@@ -16,14 +16,14 @@ This phase creates the final v1.1 release gate that blocks publication unless in
 
 ### Release Gate Shape
 - Add one maintainer-facing release gate command/script that orchestrates existing checks.
-- The gate must smoke an installed/extracted or selected `ctxpack` binary, not only `cargo run`.
+- The gate must smoke an installed/extracted or selected `ctxhelm` binary, not only `cargo run`.
 - It should check help/version, release packaging, artifact audit, init/setup artifacts, first-pack smoke, docs consistency, and deterministic MCP protocol behavior.
 - It should remain local and deterministic by default.
 
 ### MCP And Client Proof
 - Deterministic MCP protocol smoke is the hard required proof.
-- The protocol smoke must support `CTXPACK_BIN` or equivalent selected-binary execution from the wrong cwd with explicit `repo`.
-- Codex CLI and Claude Code real-client smokes remain optional unless `CTXPACK_REQUIRE_REAL_CLIENT=1` is set.
+- The protocol smoke must support `CTXHELM_BIN` or equivalent selected-binary execution from the wrong cwd with explicit `repo`.
+- Codex CLI and Claude Code real-client smokes remain optional unless `CTXHELM_REQUIRE_REAL_CLIENT=1` is set.
 - When real-client smokes run, they must record machine-checkable `prepare_task` and `get_pack` evidence and exact client versions.
 
 ### Release Readiness Output
@@ -48,13 +48,13 @@ This phase creates the final v1.1 release gate that blocks publication unless in
 - `scripts/smoke-mcp-protocol.sh` provides deterministic MCP proof and now supports selected binary execution.
 - `scripts/smoke-first-pack.sh` validates install-to-first-pack behavior.
 - `scripts/smoke-codex-mcp.sh` and `scripts/smoke-claude-mcp.sh` provide optional real-client wrappers.
-- `crates/ctxpack/tests/release_packaging.rs` and `crates/ctxpack/tests/cli_compat.rs` guard script and protocol behavior.
+- `crates/ctxhelm/tests/release_packaging.rs` and `crates/ctxhelm/tests/cli_compat.rs` guard script and protocol behavior.
 
 ### Established Patterns
 - Prefer deterministic shell scripts with `set -euo pipefail`.
 - Keep optional real-client checks skippable by default and required only via explicit env.
-- Use temp directories and isolated `CTXPACK_HOME` for smokes.
-- Do not let release gates rely on developer-local `.ctxpack`, `.codex`, `.claude`, or source checkout side effects.
+- Use temp directories and isolated `CTXHELM_HOME` for smokes.
+- Do not let release gates rely on developer-local `.ctxhelm`, `.codex`, `.claude`, or source checkout side effects.
 
 ### Integration Points
 - Release gate tests can inspect script contracts and run lightweight checks.
@@ -68,7 +68,7 @@ This phase creates the final v1.1 release gate that blocks publication unless in
 
 - Add `scripts/release-gate.sh`.
 - Add contract tests that it invokes `cargo test --workspace`, `check-release-docs.sh`, `release-package.sh`, `smoke-first-pack.sh`, and deterministic MCP smoke with a selected binary.
-- Include optional real-client smoke hooks for Codex and Claude controlled by `CTXPACK_SKIP_REAL_CLIENT` / `CTXPACK_REQUIRE_REAL_CLIENT`.
+- Include optional real-client smoke hooks for Codex and Claude controlled by `CTXHELM_SKIP_REAL_CLIENT` / `CTXHELM_REQUIRE_REAL_CLIENT`.
 - Ensure the gate avoids publishing, tagging, or uploading.
 
 </specifics>

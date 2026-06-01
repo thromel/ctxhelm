@@ -30,13 +30,13 @@ proof checking fail on shape rather than on an explicit quality verdict.
 Focused regression:
 
 ```bash
-CARGO_TARGET_DIR=/tmp/ctxpack-phase105-target cargo test -p ctxpack-compiler benchmark_suite_embeds_report_when_history_sampling_is_unavailable -- --nocapture
+CARGO_TARGET_DIR=/tmp/ctxhelm-phase105-target cargo test -p ctxhelm-compiler benchmark_suite_embeds_report_when_history_sampling_is_unavailable -- --nocapture
 ```
 
 CLI proof fixture:
 
 ```bash
-CARGO_TARGET_DIR=/tmp/ctxpack-phase105-target cargo run -p ctxpack -- eval proof --config /tmp/ctxpack-phase105-historyless-config.json --format json > .ctxpack/e2e/phase105-history-unavailable-proof.json
+CARGO_TARGET_DIR=/tmp/ctxhelm-phase105-target cargo run -p ctxhelm -- eval proof --config /tmp/ctxhelm-phase105-historyless-config.json --format json > .ctxhelm/e2e/phase105-history-unavailable-proof.json
 ```
 
 Observed source-free proof summary:

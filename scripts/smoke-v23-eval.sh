@@ -7,11 +7,11 @@ cleanup() {
 }
 trap cleanup EXIT
 
-run_ctxpack() {
-  if [[ -n "${CTXPACK_BIN:-}" ]]; then
-    "$CTXPACK_BIN" "$@"
+run_ctxhelm() {
+  if [[ -n "${CTXHELM_BIN:-}" ]]; then
+    "$CTXHELM_BIN" "$@"
   else
-    cargo run -q -p ctxpack -- "$@"
+    cargo run -q -p ctxhelm -- "$@"
   fi
 }
 
@@ -19,13 +19,13 @@ repo="$work_dir/repo"
 home="$work_dir/home"
 mkdir -p "$repo/src/auth" "$repo/tests/auth" "$home"
 git -C "$repo" init -q
-git -C "$repo" config user.email ctxpack@example.com
-git -C "$repo" config user.name ctxpack
+git -C "$repo" config user.email ctxhelm@example.com
+git -C "$repo" config user.name ctxhelm
 
 cat >"$repo/src/auth/session.ts" <<'SRC'
 export function requireSession(user?: { id: string }) {
   if (!user) {
-    return "CTXPACK_V23_SOURCE_SENTINEL";
+    return "CTXHELM_V23_SOURCE_SENTINEL";
   }
   return user.id;
 }
@@ -59,9 +59,9 @@ SRC
 git -C "$repo" add .
 git -C "$repo" commit -m "fix missing auth session handling" >/dev/null
 
-export CTXPACK_HOME="$home"
+export CTXHELM_HOME="$home"
 
-run_ctxpack eval features export \
+run_ctxhelm eval features export \
   --repo "$repo" \
   --mode bug-fix \
   --target-agent codex \
@@ -69,7 +69,7 @@ run_ctxpack eval features export \
   --format json \
   "fix requireSession auth handling" >"$work_dir/features.json"
 
-run_ctxpack eval feedback record \
+run_ctxhelm eval feedback record \
   --repo "$repo" \
   --task-hash v23-smoke-task \
   --mode bug-fix \
@@ -86,12 +86,12 @@ run_ctxpack eval feedback record \
   --tag accepted_fix \
   --format json >"$work_dir/feedback.json"
 
-run_ctxpack eval policy learn \
+run_ctxhelm eval policy learn \
   --repo "$repo" \
   --min-gold-or-selected-rows 0 \
   --format json >"$work_dir/learned-policy.json"
 
-run_ctxpack eval baselines \
+run_ctxhelm eval baselines \
   --repo "$repo" \
   --limit 2 \
   --budget 10 \
@@ -105,9 +105,9 @@ import sys
 suite_path = pathlib.Path(sys.argv[1])
 repo = pathlib.Path(sys.argv[2])
 suite = {
-    "manifestVersion": "ctxpack-benchmark-corpus-v2.3",
+    "manifestVersion": "ctxhelm-benchmark-corpus-v2.3",
     "name": "v23-eval-smoke",
-    "corpusId": "ctxpack-v23-local-smoke",
+    "corpusId": "ctxhelm-v23-local-smoke",
     "privacyLabel": "local-source-free-smoke",
     "defaults": {
         "limit": 2,
@@ -126,7 +126,7 @@ suite = {
 suite_path.write_text(json.dumps(suite, indent=2) + "\n", encoding="utf-8")
 PY
 
-run_ctxpack eval proof \
+run_ctxhelm eval proof \
   --config "$work_dir/suite.json" \
   --format json >"$work_dir/proof.json"
 
@@ -136,7 +136,7 @@ import pathlib
 import sys
 
 work = pathlib.Path(sys.argv[1])
-sentinel = "CTXPACK_V23_SOURCE_SENTINEL"
+sentinel = "CTXHELM_V23_SOURCE_SENTINEL"
 
 def load(name):
     path = work / name
@@ -179,9 +179,9 @@ if not baselines.get("privacyStatus", {}).get("localOnly"):
     raise SystemExit("paired baseline privacyStatus.localOnly was not true")
 
 summary = proof.get("v23EvalSummary", {})
-if summary.get("manifestVersion") != "ctxpack-benchmark-corpus-v2.3":
+if summary.get("manifestVersion") != "ctxhelm-benchmark-corpus-v2.3":
     raise SystemExit("product proof manifest version mismatch")
-if summary.get("fixedCorpusId") != "ctxpack-v23-local-smoke":
+if summary.get("fixedCorpusId") != "ctxhelm-v23-local-smoke":
     raise SystemExit("product proof fixed corpus mismatch")
 if not summary.get("pairedBaselineVerdicts"):
     raise SystemExit("product proof paired baseline verdicts were empty")

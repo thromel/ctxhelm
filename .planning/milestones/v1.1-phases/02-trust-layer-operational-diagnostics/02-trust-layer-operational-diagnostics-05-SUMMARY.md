@@ -2,7 +2,7 @@
 phase: 02-trust-layer-operational-diagnostics
 plan: 05
 subsystem: trust-layer
-tags: [rust, ctxpack-cli, ctxpack-mcp, diagnostics, trace-status, safe-resources]
+tags: [rust, ctxhelm-cli, ctxhelm-mcp, diagnostics, trace-status, safe-resources]
 
 requires:
   - phase: 02-trust-layer-operational-diagnostics
@@ -13,7 +13,7 @@ provides:
   - MCP tool diagnostics for plan, pack, search, related, related_tests, and current_diff read paths
   - MCP file resources revalidated through fresh safe inventory and read_safe_source
   - Full Phase 2 workspace validation
-affects: [ctxpack-cli, ctxpack-mcp, ctxpack-index, trust-layer-operational-diagnostics]
+affects: [ctxhelm-cli, ctxhelm-mcp, ctxhelm-index, trust-layer-operational-diagnostics]
 
 tech-stack:
   added: []
@@ -27,14 +27,14 @@ key-files:
   created:
     - .planning/phases/02-trust-layer-operational-diagnostics/02-trust-layer-operational-diagnostics-05-SUMMARY.md
   modified:
-    - crates/ctxpack-index/src/traces.rs
-    - crates/ctxpack-index/src/lib.rs
-    - crates/ctxpack/src/main.rs
-    - crates/ctxpack/tests/cli_compat.rs
-    - crates/ctxpack-mcp/src/tools.rs
-    - crates/ctxpack-mcp/src/resources.rs
-    - crates/ctxpack-mcp/src/schemas.rs
-    - crates/ctxpack-mcp/src/lib.rs
+    - crates/ctxhelm-index/src/traces.rs
+    - crates/ctxhelm-index/src/lib.rs
+    - crates/ctxhelm/src/main.rs
+    - crates/ctxhelm/tests/cli_compat.rs
+    - crates/ctxhelm-mcp/src/tools.rs
+    - crates/ctxhelm-mcp/src/resources.rs
+    - crates/ctxhelm-mcp/src/schemas.rs
+    - crates/ctxhelm-mcp/src/lib.rs
 
 key-decisions:
   - "Trace recording remains on by default, with additive CLI --no-trace and MCP recordTrace controls for read-oriented commands."
@@ -43,7 +43,7 @@ key-decisions:
 
 patterns-established:
   - "Use try_append_eval_trace for prepare-task/get-pack style read paths and append returned diagnostics instead of failing the command."
-  - "Use report variants from ctxpack-index when MCP surfaces need diagnostics while retaining legacy result fields."
+  - "Use report variants from ctxhelm-index when MCP surfaces need diagnostics while retaining legacy result fields."
   - "Use read_safe_source for MCP file resources, not direct fs::read_to_string."
 
 requirements-completed: [SAFE-01, SAFE-02, SAFE-04, SAFE-05, SAFE-06, DIAG-01, DIAG-02, DIAG-04]
@@ -84,14 +84,14 @@ Each task was committed atomically:
 
 ## Files Created/Modified
 
-- `crates/ctxpack-index/src/traces.rs` - Added non-fatal trace append status and `trace_write_failed` diagnostics.
-- `crates/ctxpack-index/src/lib.rs` - Re-exported `try_append_eval_trace`.
-- `crates/ctxpack/src/main.rs` - Added CLI `--no-trace` controls and trace diagnostics projection for plan/pack JSON.
-- `crates/ctxpack/tests/cli_compat.rs` - Added binary tests for diagnostics fields, stale cache diagnostics, constrained `CTXPACK_HOME`, and no-trace help.
-- `crates/ctxpack-mcp/src/tools.rs` - Switched MCP read tools to diagnostics-aware report APIs and non-fatal trace writes.
-- `crates/ctxpack-mcp/src/resources.rs` - Revalidated file resources through fresh safe inventory and `read_safe_source`.
-- `crates/ctxpack-mcp/src/schemas.rs` - Added `recordTrace` schema controls for `prepare_task` and `get_pack`.
-- `crates/ctxpack-mcp/src/lib.rs` - Added MCP diagnostics, trace-write, and safe file-resource tests.
+- `crates/ctxhelm-index/src/traces.rs` - Added non-fatal trace append status and `trace_write_failed` diagnostics.
+- `crates/ctxhelm-index/src/lib.rs` - Re-exported `try_append_eval_trace`.
+- `crates/ctxhelm/src/main.rs` - Added CLI `--no-trace` controls and trace diagnostics projection for plan/pack JSON.
+- `crates/ctxhelm/tests/cli_compat.rs` - Added binary tests for diagnostics fields, stale cache diagnostics, constrained `CTXHELM_HOME`, and no-trace help.
+- `crates/ctxhelm-mcp/src/tools.rs` - Switched MCP read tools to diagnostics-aware report APIs and non-fatal trace writes.
+- `crates/ctxhelm-mcp/src/resources.rs` - Revalidated file resources through fresh safe inventory and `read_safe_source`.
+- `crates/ctxhelm-mcp/src/schemas.rs` - Added `recordTrace` schema controls for `prepare_task` and `get_pack`.
+- `crates/ctxhelm-mcp/src/lib.rs` - Added MCP diagnostics, trace-write, and safe file-resource tests.
 
 ## Decisions Made
 
@@ -107,8 +107,8 @@ Each task was committed atomically:
 - **Found during:** Task 2 full MCP verification
 - **Issue:** Switching `related` to diagnostic report APIs changed the existing warning text for unavailable git co-change history.
 - **Fix:** Restored the existing "co-change hints were unavailable" wording while retaining structured diagnostics.
-- **Files modified:** `crates/ctxpack-mcp/src/tools.rs`
-- **Verification:** `cargo test -p ctxpack-mcp -- --nocapture` passed.
+- **Files modified:** `crates/ctxhelm-mcp/src/tools.rs`
+- **Verification:** `cargo test -p ctxhelm-mcp -- --nocapture` passed.
 - **Committed in:** `98a5d1d`
 
 ---
@@ -131,13 +131,13 @@ None. Stub scan found only the intentional MCP session-scoped pack-resource erro
 
 ## Verification
 
-- `cargo test -p ctxpack --test cli_compat -- --nocapture` passed.
-- `cargo test -p ctxpack-mcp diagnostics -- --nocapture` passed.
-- `cargo test -p ctxpack-mcp file_resource -- --nocapture` passed.
-- `cargo test -p ctxpack-mcp trace -- --nocapture` passed.
-- `cargo test -p ctxpack-mcp -- --nocapture` passed.
+- `cargo test -p ctxhelm --test cli_compat -- --nocapture` passed.
+- `cargo test -p ctxhelm-mcp diagnostics -- --nocapture` passed.
+- `cargo test -p ctxhelm-mcp file_resource -- --nocapture` passed.
+- `cargo test -p ctxhelm-mcp trace -- --nocapture` passed.
+- `cargo test -p ctxhelm-mcp -- --nocapture` passed.
 - `cargo test --workspace` passed.
-- `cargo run -p ctxpack -- --help` passed.
+- `cargo run -p ctxhelm -- --help` passed.
 
 ## User Setup Required
 

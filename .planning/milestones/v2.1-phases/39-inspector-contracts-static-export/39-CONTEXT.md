@@ -12,7 +12,7 @@ not to build the full web UI yet. The goal is to expose typed metadata views of
 `ContextPlan` and `ContextPack` decisions so later phases can render,
 filter, and evaluate packs without reading raw source snippets.
 
-The inspector must preserve ctxpack's product boundary:
+The inspector must preserve ctxhelm's product boundary:
 - local-first by default
 - read-only
 - agent-native
@@ -23,7 +23,7 @@ The inspector must preserve ctxpack's product boundary:
 <decisions>
 ## Implementation Decisions
 
-1. Add stable typed contracts in `ctxpack-core` for `PackInspectorView` and its
+1. Add stable typed contracts in `ctxhelm-core` for `PackInspectorView` and its
    child records.
 2. Build the inspector from an existing `ContextPlan` plus `ContextPack` so the
    view keeps links to task, pack, candidates, tests, commands, diagnostics,
@@ -40,10 +40,10 @@ The inspector must preserve ctxpack's product boundary:
 <code_context>
 ## Existing Code Insights
 
-- Contracts live in `crates/ctxpack-core/src/contracts.rs`.
+- Contracts live in `crates/ctxhelm-core/src/contracts.rs`.
 - Pack compilation and Markdown rendering live in
-  `crates/ctxpack-compiler/src/packs.rs`.
-- CLI subcommands are centralized in `crates/ctxpack/src/main.rs`.
+  `crates/ctxhelm-compiler/src/packs.rs`.
+- CLI subcommands are centralized in `crates/ctxhelm/src/main.rs`.
 - Existing pack generation can include source-bearing sections
   `target_snippets` and `test_snippets`; inspector metadata must mark those
   sections without copying their content.
@@ -55,7 +55,7 @@ The inspector must preserve ctxpack's product boundary:
 - Add `source_text_logged: false` directly to the inspector view.
 - Add `source_bearing_section_count` and per-section `source_bearing`.
 - Add `privacy_label`-style metadata through existing `PrivacyStatus`.
-- Add `ctxpack inspector export <task> --format json|markdown|html`.
+- Add `ctxhelm inspector export <task> --format json|markdown|html`.
 - Keep `PackFormat` unchanged to avoid touching unrelated command surfaces.
 </specifics>
 

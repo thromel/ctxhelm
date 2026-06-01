@@ -10,32 +10,32 @@ local metadata reranker should be promoted as a stronger default.
 ## Commands
 
 ```bash
-cargo test -p ctxpack-compiler gate_decision -- --nocapture
-cargo test -p ctxpack-compiler protected_evidence -- --nocapture
-cargo test -p ctxpack historical_eval_report_renders_source_free_metrics -- --nocapture
+cargo test -p ctxhelm-compiler gate_decision -- --nocapture
+cargo test -p ctxhelm-compiler protected_evidence -- --nocapture
+cargo test -p ctxhelm historical_eval_report_renders_source_free_metrics -- --nocapture
 
-cargo run -p ctxpack -- \
-  eval benchmark --config .ctxpack/e2e/phase62-default-config.json --format json
+cargo run -p ctxhelm -- \
+  eval benchmark --config .ctxhelm/e2e/phase62-default-config.json --format json
 
-cargo run -p ctxpack -- \
-  eval benchmark --config .ctxpack/e2e/phase63-local-reranker-config.json --format json
+cargo run -p ctxhelm -- \
+  eval benchmark --config .ctxhelm/e2e/phase63-local-reranker-config.json --format json
 
-cargo run -p ctxpack -- \
+cargo run -p ctxhelm -- \
   eval gate --limit 5 --budget 10 --format json
 ```
 
-Large JSON reports were kept under ignored `.ctxpack/e2e/`.
+Large JSON reports were kept under ignored `.ctxhelm/e2e/`.
 
 ## Variant Results
 
 | Repo | Default Recall@10 | Reranked Recall@10 | Delta | Default MRR@K | Reranked MRR@K | Test Recall@10 delta | Protected miss-rate delta | Runtime delta |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
 | RefactoringMiner | 0.1375 | 0.6642 | +0.5267 | 0.1500 | 0.6125 | +1.0000 | +0.1509 | +13.4s |
-| ctxpack | 0.2049 | 0.1927 | -0.0122 | 0.6333 | 0.7167 | +0.5000 | +0.0000 | -0.6s |
+| ctxhelm | 0.2049 | 0.1927 | -0.0122 | 0.6333 | 0.7167 | +0.5000 | +0.0000 | -0.6s |
 
 ## Gate Result
 
-`ctxpack eval gate --limit 5 --budget 10 --format json` returned:
+`ctxhelm eval gate --limit 5 --budget 10 --format json` returned:
 
 - decision: `block`
 - reason: `Blocked because named regressions were detected.`
@@ -50,7 +50,7 @@ Large JSON reports were kept under ignored `.ctxpack/e2e/`.
 Named regressions included:
 
 - `9d6baddb0ce7`: local metadata reranker retrieved fewer gold changed files than default.
-- `f247e826e4ac`: local metadata reranker demoted `crates/ctxpack-core/src/contracts.rs`, a protected evidence path kept by default.
+- `f247e826e4ac`: local metadata reranker demoted `crates/ctxhelm-core/src/contracts.rs`, a protected evidence path kept by default.
 - `feeaac955897`: local metadata reranker demoted protected script evidence kept by default.
 
 ## Decision
@@ -66,4 +66,4 @@ Phase 64 should target measured gap families instead of promoting the broad
 reranker:
 
 - RefactoringMiner: `no_candidate_signal` under `src/main/java/org/refactoringminer/astDiff/matchers/wrappers/*.java`.
-- ctxpack: docs/planning `no_candidate_signal` and compiler `ranked_below_budget_dependency`.
+- ctxhelm: docs/planning `no_candidate_signal` and compiler `ranked_below_budget_dependency`.

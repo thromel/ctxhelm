@@ -10,5 +10,5 @@ Create typed storage input records for context packs, benchmark runs, metrics, g
 
 ## Verification
 
-- `cargo test -p ctxpack-index storage`
+- `cargo test -p ctxhelm-index storage`
 

@@ -26,17 +26,17 @@ key-files:
     - scripts/smoke-claude-mcp.sh
     - .planning/phases/04-agent-native-client-durability/04-agent-native-client-durability-04-SUMMARY.md
   modified:
-    - crates/ctxpack/tests/cli_compat.rs
+    - crates/ctxhelm/tests/cli_compat.rs
 
 key-decisions:
   - "Keep deterministic protocol smoke as the hard gate before any Codex or Claude attempt."
-  - "Use isolated temp state for CTXPACK_HOME, Codex execution, Claude MCP config, and server-side request logs."
+  - "Use isolated temp state for CTXHELM_HOME, Codex execution, Claude MCP config, and server-side request logs."
   - "Require machine-checkable prepare_task and get_pack calls with the explicit repo; final assistant prose is not proof."
 
 patterns-established:
   - "Real-client smoke wrappers should report passed, skipped, or failed status explicitly."
-  - "CTXPACK_REQUIRE_REAL_CLIENT=1 turns missing client evidence into a nonzero result."
-  - "CTXPACK_SKIP_REAL_CLIENT=1 still runs the protocol hard gate before skipping client invocation."
+  - "CTXHELM_REQUIRE_REAL_CLIENT=1 turns missing client evidence into a nonzero result."
+  - "CTXHELM_SKIP_REAL_CLIENT=1 still runs the protocol hard gate before skipping client invocation."
 
 requirements-completed: [AGNT-01]
 
@@ -58,7 +58,7 @@ completed: 2026-05-13
 
 ## Accomplishments
 
-- Added `scripts/smoke-codex-mcp.sh`, which always runs `scripts/smoke-mcp-protocol.sh`, then attempts `codex exec` from an isolated temp config/state path unless `CTXPACK_SKIP_REAL_CLIENT=1`.
+- Added `scripts/smoke-codex-mcp.sh`, which always runs `scripts/smoke-mcp-protocol.sh`, then attempts `codex exec` from an isolated temp config/state path unless `CTXHELM_SKIP_REAL_CLIENT=1`.
 - Added `scripts/smoke-claude-mcp.sh`, which always runs the protocol gate, then attempts `claude -p` with a temp strict MCP config unless real-client mode is skipped.
 - Added compatibility coverage proving both wrappers parse with `bash -n`, mention `prepare_task`, `get_pack`, and `repo`, support optional/required modes, and invoke the protocol gate before client execution.
 - Implemented machine-checkable evidence validation by teeing client-to-server JSON-RPC requests and requiring both `prepare_task` and `get_pack` calls with the explicit repo.
@@ -79,12 +79,12 @@ _Note: Task 1 followed TDD RED first; Task 2 made the contract tests pass._
 
 - `scripts/smoke-codex-mcp.sh` - Optional Codex CLI real-client wrapper with isolated `CODEX_HOME`, protocol-first execution, explicit repo prompt, and server-side evidence validation.
 - `scripts/smoke-claude-mcp.sh` - Optional Claude Code real-client wrapper with temp MCP config, protocol-first execution, explicit repo prompt, and server-side evidence validation.
-- `crates/ctxpack/tests/cli_compat.rs` - Adds wrapper syntax and contract guards that do not depend on client installation or auth.
+- `crates/ctxhelm/tests/cli_compat.rs` - Adds wrapper syntax and contract guards that do not depend on client installation or auth.
 
 ## Decisions Made
 
-- Use server-side request instrumentation as the durable proof mechanism because client JSON/event formats are less stable than the inbound JSON-RPC calls ctxpack receives.
-- Keep real clients optional by default, but make `CTXPACK_REQUIRE_REAL_CLIENT=1` fail when installed clients cannot produce the required evidence.
+- Use server-side request instrumentation as the durable proof mechanism because client JSON/event formats are less stable than the inbound JSON-RPC calls ctxhelm receives.
+- Keep real clients optional by default, but make `CTXHELM_REQUIRE_REAL_CLIENT=1` fail when installed clients cannot produce the required evidence.
 - Keep all client configuration temporary and process-local; the wrappers do not mutate global Codex or Claude config.
 
 ## Deviations from Plan
@@ -95,8 +95,8 @@ _Note: Task 1 followed TDD RED first; Task 2 made the contract tests pass._
 - **Found during:** Task 2 verification
 - **Issue:** The new Rust test read `scripts/...` relative to the crate test process directory and failed even though the scripts existed at the workspace root.
 - **Fix:** Resolve scripts from `CARGO_MANIFEST_DIR` up to the workspace root before reading and running `bash -n`.
-- **Files modified:** `crates/ctxpack/tests/cli_compat.rs`
-- **Verification:** `cargo test -p ctxpack --test cli_compat real_client_smoke_scripts -- --nocapture`
+- **Files modified:** `crates/ctxhelm/tests/cli_compat.rs`
+- **Verification:** `cargo test -p ctxhelm --test cli_compat real_client_smoke_scripts -- --nocapture`
 - **Committed in:** `abf1343`
 
 **2. [Rule 1 - Bug] Added Claude stream-json verbosity flag**
@@ -104,7 +104,7 @@ _Note: Task 1 followed TDD RED first; Task 2 made the contract tests pass._
 - **Issue:** The installed Claude CLI rejected `--output-format stream-json` without `--verbose`.
 - **Fix:** Add `--verbose` to the Claude wrapper invocation.
 - **Files modified:** `scripts/smoke-claude-mcp.sh`
-- **Verification:** `CTXPACK_SMOKE_REPO="$PWD" bash scripts/smoke-claude-mcp.sh`
+- **Verification:** `CTXHELM_SMOKE_REPO="$PWD" bash scripts/smoke-claude-mcp.sh`
 - **Committed in:** `abf1343`
 
 ---
@@ -114,7 +114,7 @@ _Note: Task 1 followed TDD RED first; Task 2 made the contract tests pass._
 
 ## Known Stubs
 
-None. The `mcp_servers.ctxpack.args=[]` Codex config override is an intentional empty MCP server argument list, not placeholder data.
+None. The `mcp_servers.ctxhelm.args=[]` Codex config override is an intentional empty MCP server argument list, not placeholder data.
 
 ## Issues Encountered
 
@@ -125,17 +125,17 @@ None. The `mcp_servers.ctxpack.args=[]` Codex config override is an intentional 
 
 - `bash -n scripts/smoke-codex-mcp.sh`
 - `bash -n scripts/smoke-claude-mcp.sh`
-- `CTXPACK_SKIP_REAL_CLIENT=1 bash scripts/smoke-codex-mcp.sh`
-- `CTXPACK_SKIP_REAL_CLIENT=1 bash scripts/smoke-claude-mcp.sh`
-- `cargo test -p ctxpack --test cli_compat real_client_smoke_scripts -- --nocapture`
-- `CTXPACK_SMOKE_REPO="$PWD" bash scripts/smoke-mcp-protocol.sh`
-- `CTXPACK_SMOKE_REPO="$PWD" bash scripts/smoke-codex-mcp.sh`
-- `CTXPACK_SMOKE_REPO="$PWD" bash scripts/smoke-claude-mcp.sh`
-- `CTXPACK_REQUIRE_REAL_CLIENT=1 CTXPACK_SMOKE_REPO="$PWD" bash scripts/smoke-codex-mcp.sh` - passed with server-side `prepare_task` and `get_pack` evidence
-- `CTXPACK_REQUIRE_REAL_CLIENT=1 CTXPACK_SMOKE_REPO="$PWD" bash scripts/smoke-claude-mcp.sh` - passed with server-side `prepare_task` and `get_pack` evidence
+- `CTXHELM_SKIP_REAL_CLIENT=1 bash scripts/smoke-codex-mcp.sh`
+- `CTXHELM_SKIP_REAL_CLIENT=1 bash scripts/smoke-claude-mcp.sh`
+- `cargo test -p ctxhelm --test cli_compat real_client_smoke_scripts -- --nocapture`
+- `CTXHELM_SMOKE_REPO="$PWD" bash scripts/smoke-mcp-protocol.sh`
+- `CTXHELM_SMOKE_REPO="$PWD" bash scripts/smoke-codex-mcp.sh`
+- `CTXHELM_SMOKE_REPO="$PWD" bash scripts/smoke-claude-mcp.sh`
+- `CTXHELM_REQUIRE_REAL_CLIENT=1 CTXHELM_SMOKE_REPO="$PWD" bash scripts/smoke-codex-mcp.sh` - passed with server-side `prepare_task` and `get_pack` evidence
+- `CTXHELM_REQUIRE_REAL_CLIENT=1 CTXHELM_SMOKE_REPO="$PWD" bash scripts/smoke-claude-mcp.sh` - passed with server-side `prepare_task` and `get_pack` evidence
 - `cargo fmt --all --check`
 - `cargo test --workspace`
-- `cargo run -p ctxpack -- --help`
+- `cargo run -p ctxhelm -- --help`
 
 ## User Setup Required
 
@@ -153,7 +153,7 @@ Phase 4 now has deterministic MCP protocol coverage, bounded/session-scoped pack
 
 - Found `scripts/smoke-codex-mcp.sh`
 - Found `scripts/smoke-claude-mcp.sh`
-- Found `crates/ctxpack/tests/cli_compat.rs`
+- Found `crates/ctxhelm/tests/cli_compat.rs`
 - Found `.planning/phases/04-agent-native-client-durability/04-agent-native-client-durability-04-SUMMARY.md`
 - Found commit `2e64f0b`
 - Found commit `abf1343`

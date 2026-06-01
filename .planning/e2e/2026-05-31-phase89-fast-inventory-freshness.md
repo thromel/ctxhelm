@@ -21,30 +21,30 @@ cache hit inside a single context-plan compilation.
 Focused freshness tests:
 
 ```bash
-cargo test -p ctxpack-index freshness -- --nocapture
+cargo test -p ctxhelm-index freshness -- --nocapture
 ```
 
 Pinned broader debug proof:
 
 ```bash
-cargo run -p ctxpack -- eval proof \
+cargo run -p ctxhelm -- eval proof \
   --config .planning/e2e/2026-05-30-phase73-broader-fixed-corpus-config.json \
-  --format json > .ctxpack/e2e/phase89-fast-inventory-freshness-proof.json
+  --format json > .ctxhelm/e2e/phase89-fast-inventory-freshness-proof.json
 ```
 
 Pinned broader release proof:
 
 ```bash
-cargo run --release -p ctxpack -- eval proof \
+cargo run --release -p ctxhelm -- eval proof \
   --config .planning/e2e/2026-05-30-phase73-broader-fixed-corpus-config.json \
-  --format json > .ctxpack/e2e/phase89-fast-inventory-freshness-release-proof.json
+  --format json > .ctxhelm/e2e/phase89-fast-inventory-freshness-release-proof.json
 ```
 
 Product proof checker:
 
 ```bash
 python3 scripts/check-product-proof.py \
-  .ctxpack/e2e/phase89-fast-inventory-freshness-release-proof.json
+  .ctxhelm/e2e/phase89-fast-inventory-freshness-release-proof.json
 ```
 
 ## Result
@@ -54,7 +54,7 @@ Quality metrics match Phase 88; runtime improves materially.
 | Corpus | Phase 88 total ms | Phase 89 debug total ms | Phase 89 release total ms | Phase 89 release result |
 | --- | ---: | ---: | ---: | --- |
 | RefactoringMiner | `23871` | `21938` | `8279` | `match`, promoted as single-commit lexical ceiling |
-| ctxpack | `25232` | `19386` | `8317` | `beat` |
+| ctxhelm | `25232` | `19386` | `8317` | `beat` |
 | ReAgent | `17629` | `14675` | `4264` | `beat` |
 | VeriSchema | `18051` | `17076` | `6590` | `beat` |
 
@@ -67,7 +67,7 @@ releaseGate.decision = promote
 The release proof is the authoritative production-readiness artifact because it
 measures the optimized CLI binary. The debug proof remains useful diagnostics:
 it now blocks only on the RefactoringMiner single-commit cold-start threshold,
-while ctxpack, ReAgent, and VeriSchema no longer exceed the per-commit gate in
+while ctxhelm, ReAgent, and VeriSchema no longer exceed the per-commit gate in
 debug mode.
 
 ## Next Work

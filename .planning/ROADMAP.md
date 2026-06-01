@@ -1,10 +1,10 @@
-# Roadmap: RepoWinnow
+# Roadmap: ctxhelm
 
 ## Overview
 
 This roadmap tracks v2.5 Production Retrieval Quality and its immediate production-readiness follow-ups. v2.4 made semantic, precision, provider, and reranker paths source-safe and policy-gated, then the fresh RefactoringMiner proof fixed a semantic fusion regression. The current fixed two-repo product proof promotes default local retrieval under a channel-aware gate: non-test context recall beats lexical on both corpora, while validation-test recall is measured separately through `recommended_tests`.
 
-v2.5 therefore focuses on measured retrieval quality, not more surface area. The milestone must prove whether production local embeddings, reranking, graph/test/history fixes, and learned fusion can beat lexical baseline on real repositories while staying local-first and source-safe. Phase 66 fixed the false zero-test-recall signal by measuring `recommended_tests` as its own validation channel. Phase 67 fixed the denominator for historical retrieval metrics by separating all safe changed files from parent-snapshot `retrievalTargetFiles`. Phase 69 promoted default local retrieval under the channel-aware proof, Phase 70 refreshed real-client MCP evidence for Codex CLI and Claude Code, Phase 71 reduced archive-artifact retrieval noise in ctxpack's own history, Phase 72 broadened repeated-lift validation while improving validation-test recall seeding, Phase 73 pinned a broader optional fixed-corpus probe, Phase 76 split partial-snapshot history into validation-only mode for historical eval, Phase 77 added broad validation-command coverage for multi-area smoke/eval tasks, Phase 78 made the broader proof gate lexical-ceiling aware, Phase 79 added protected target floors, Phase 80 fixed symbol-floor duplicate accounting, Phase 81 made warm-cache runtime proof trustworthy, Phase 82 made warm-cache runtime enforceable, Phase 83 made context-vs-all-file divergence machine-checkable, Phase 84 added broad-scope task accounting plus scoped dependency source floors, Phase 85 added source-free context-area hints for broad prepare-task plans and packs, Phase 86 added bounded Python package re-export graph coverage, Phase 87 fixed validation-covered test gap accounting, Phase 88 added bounded broad source-area candidates, Phase 89 reduced repeated inventory freshness overhead so the pinned broader release proof promotes, Phase 90 proved the packaged release gate from a clean worktree with the broad benchmark enabled, Phase 91 made broad context-area coverage measurable in historical eval, Phase 92 made broad-area gap taxonomy area-aware, Phase 93 added source-free symbol/dependency index caches so clean cold large-repo proof promotes, Phase 94 improved wide-task progressive area coverage without target-file churn, Phase 95 made generated broad packs tell agents which zero-selected areas to read next, Phase 96 made those broad areas consumable as source-free MCP resources, Phase 97 improved broad governance/proof/eval task classification, Phase 98 split source-free broad context-area classification from target-file source floors for archive/docs tasks, Phase 99 added source-free read batches to context-area MCP resources, Phase 100 made retrieval-gap summaries resource-backed, Phase 101 made that resource-backed shape part of the product-proof checker, Phase 102 made repo-scoped MCP resources consumable after explicit-repo tool calls from a non-repo server cwd, Phase 103 added pinned broad fixed-corpus floors, Phase 104 added source-free next-read paths and unselected counts to broad context areas, Phase 105 made history-unavailable benchmark repos produce embedded insufficient-evidence reports instead of missing reports, Phase 106 hardened Codex/Claude real-client evidence with source-free request metadata, Phase 107 fixed the hydrated full four-repo proof path, Phase 108 bounded cold Git failure modes, Phase 109 made cold proof environment-health blockers machine-readable, Phase 110 promoted a clean cold full-fixture proof by fixing stale parent-snapshot inventory reuse and false symbol extraction, Phase 111 wired that clean fixture proof into the packaged release gate, Phase 112 passed the clean packaged release gate with the clean fixture proof required, Phase 113 recorded source-free release-candidate status that binds `ready` to the archive binary proof and archive-first distribution decisions, Phase 114 published plus verified the public `v1.1.0` GitHub archive release, Phase 115 verified the public archive install path from GitHub release assets, Phase 116 refreshed optional real-client evidence against the public archive binary, Phase 117 added source-free role signals to broad context-area guidance, Phase 118 added explicit safe-inventory resource-scope metadata to context-area MCP resources, Phase 119 removed an observed `CTXPACK_HOME` test-environment race from `ctxpack-index` release validation, Phase 120 added public GitHub Actions CI release-gate enforcement, Phase 121 moved public CI JavaScript actions to Node 24 and verified the public run passed without Node 20 warning text, Phase 122 fixed public archive real-client smoke compatibility with post-release MCP protocol assertions, Phase 123 added source-free coverage profiles to context-area MCP resources, Phase 124 added source-free inspection strategies to context-area resources, Phase 125 added explicit source-free lexical comparison summaries to product proof output, Phase 126 added agent-evidence lexical comparison for the actual context/test/validation evidence set ctxpack gives agents, Phase 127 added narrow-plan validation-test reservation so raw target-file recall no longer trails lexical on any measured corpus, Phase 128 added broad operational floors so protected target miss-rate is zero across all four measured corpora, Phase 129 added public release freshness proof so publication claims cannot silently imply the already-published archive contains the latest post-release hardening, Phase 130 published plus verified a current public `v1.1.1` archive with `commitsAhead = 0`, public install proof, and refreshed optional real-client evidence, Phase 131 added product-aware release freshness plus published and verified the public `v1.1.2` archive with Claude Code integration evidence, Phase 132 added source-free Claude Code workflow eval proof with explicit-repo `prepare_task` and `get_pack` calls, Phase 133 aligned the public README with the product wedge and current proof snapshot, Phase 134 published plus verified the current public `v1.1.3` archive, Phase 135 added Homebrew/crates readiness gates without publishing package-manager artifacts, Phase 136 published plus verified the current public `v1.1.4` archive, Phase 137 published plus verified the public Apple Silicon Homebrew tap, Phase 138 published plus verified the current public `v1.1.5` archive and refreshed Homebrew tap, Phase 139 introduced the short-lived ContextMason brand while preserving the `ctxpack` compatibility surface, Phase 140 published plus verified the public `v1.1.6` archive and Homebrew tap, Phase 141 replaced ContextMason with RepoWinnow after availability review, and Phase 142 published plus verified the public `v1.1.7` RepoWinnow archive and Homebrew tap.
+v2.5 therefore focuses on measured retrieval quality, not more surface area. The milestone must prove whether production local embeddings, reranking, graph/test/history fixes, and learned fusion can beat lexical baseline on real repositories while staying local-first and source-safe. Phase 66 fixed the false zero-test-recall signal by measuring `recommended_tests` as its own validation channel. Phase 67 fixed the denominator for historical retrieval metrics by separating all safe changed files from parent-snapshot `retrievalTargetFiles`. Phase 69 promoted default local retrieval under the channel-aware proof, Phase 70 refreshed real-client MCP evidence for Codex CLI and Claude Code, Phase 71 reduced archive-artifact retrieval noise in ctxhelm's own history, Phase 72 broadened repeated-lift validation while improving validation-test recall seeding, Phase 73 pinned a broader optional fixed-corpus probe, Phase 76 split partial-snapshot history into validation-only mode for historical eval, Phase 77 added broad validation-command coverage for multi-area smoke/eval tasks, Phase 78 made the broader proof gate lexical-ceiling aware, Phase 79 added protected target floors, Phase 80 fixed symbol-floor duplicate accounting, Phase 81 made warm-cache runtime proof trustworthy, Phase 82 made warm-cache runtime enforceable, Phase 83 made context-vs-all-file divergence machine-checkable, Phase 84 added broad-scope task accounting plus scoped dependency source floors, Phase 85 added source-free context-area hints for broad prepare-task plans and packs, Phase 86 added bounded Python package re-export graph coverage, Phase 87 fixed validation-covered test gap accounting, Phase 88 added bounded broad source-area candidates, Phase 89 reduced repeated inventory freshness overhead so the pinned broader release proof promotes, Phase 90 proved the packaged release gate from a clean worktree with the broad benchmark enabled, Phase 91 made broad context-area coverage measurable in historical eval, Phase 92 made broad-area gap taxonomy area-aware, Phase 93 added source-free symbol/dependency index caches so clean cold large-repo proof promotes, Phase 94 improved wide-task progressive area coverage without target-file churn, Phase 95 made generated broad packs tell agents which zero-selected areas to read next, Phase 96 made those broad areas consumable as source-free MCP resources, Phase 97 improved broad governance/proof/eval task classification, Phase 98 split source-free broad context-area classification from target-file source floors for archive/docs tasks, Phase 99 added source-free read batches to context-area MCP resources, Phase 100 made retrieval-gap summaries resource-backed, Phase 101 made that resource-backed shape part of the product-proof checker, Phase 102 made repo-scoped MCP resources consumable after explicit-repo tool calls from a non-repo server cwd, Phase 103 added pinned broad fixed-corpus floors, Phase 104 added source-free next-read paths and unselected counts to broad context areas, Phase 105 made history-unavailable benchmark repos produce embedded insufficient-evidence reports instead of missing reports, Phase 106 hardened Codex/Claude real-client evidence with source-free request metadata, Phase 107 fixed the hydrated full four-repo proof path, Phase 108 bounded cold Git failure modes, Phase 109 made cold proof environment-health blockers machine-readable, Phase 110 promoted a clean cold full-fixture proof by fixing stale parent-snapshot inventory reuse and false symbol extraction, Phase 111 wired that clean fixture proof into the packaged release gate, Phase 112 passed the clean packaged release gate with the clean fixture proof required, Phase 113 recorded source-free release-candidate status that binds `ready` to the archive binary proof and archive-first distribution decisions, Phase 114 published plus verified the public `v1.1.0` GitHub archive release, Phase 115 verified the public archive install path from GitHub release assets, Phase 116 refreshed optional real-client evidence against the public archive binary, Phase 117 added source-free role signals to broad context-area guidance, Phase 118 added explicit safe-inventory resource-scope metadata to context-area MCP resources, Phase 119 removed an observed `CTXHELM_HOME` test-environment race from `ctxhelm-index` release validation, Phase 120 added public GitHub Actions CI release-gate enforcement, Phase 121 moved public CI JavaScript actions to Node 24 and verified the public run passed without Node 20 warning text, Phase 122 fixed public archive real-client smoke compatibility with post-release MCP protocol assertions, Phase 123 added source-free coverage profiles to context-area MCP resources, Phase 124 added source-free inspection strategies to context-area resources, Phase 125 added explicit source-free lexical comparison summaries to product proof output, Phase 126 added agent-evidence lexical comparison for the actual context/test/validation evidence set ctxhelm gives agents, Phase 127 added narrow-plan validation-test reservation so raw target-file recall no longer trails lexical on any measured corpus, Phase 128 added broad operational floors so protected target miss-rate is zero across all four measured corpora, Phase 129 added public release freshness proof so publication claims cannot silently imply the already-published archive contains the latest post-release hardening, Phase 130 published plus verified a current public `v1.1.1` archive with `commitsAhead = 0`, public install proof, and refreshed optional real-client evidence, Phase 131 added product-aware release freshness plus published and verified the public `v1.1.2` archive with Claude Code integration evidence, Phase 132 added source-free Claude Code workflow eval proof with explicit-repo `prepare_task` and `get_pack` calls, Phase 133 aligned the public README with the product wedge and current proof snapshot, Phase 134 published plus verified the current public `v1.1.3` archive, Phase 135 added Homebrew/crates readiness gates without publishing package-manager artifacts, Phase 136 published plus verified the current public `v1.1.4` archive, Phase 137 published plus verified the public Apple Silicon Homebrew tap, Phase 138 published plus verified the current public `v1.1.5` archive and refreshed Homebrew tap, Phase 139 introduced the short-lived ctxhelm brand while preserving the `ctxhelm` compatibility surface, Phase 140 published plus verified the public `v1.1.6` archive and Homebrew tap, Phase 141 replaced ctxhelm with ctxhelm after availability review, and Phase 142 published plus verified the public `v1.1.7` ctxhelm archive and Homebrew tap.
 
 ## v2.5 Production Retrieval Quality
 
@@ -25,7 +25,7 @@ v2.5 therefore focuses on measured retrieval quality, not more surface area. The
 - [x] **Phase 67: Retrievable Target Eval Denominator** - Maintainers can distinguish all safe changed files from files that existed in the parent snapshot and could be retrieved as context.
 - [x] **Phase 69: Channel-Aware Product Proof Gate** - Maintainers can promote default local retrieval when context recall beats lexical while validation-test recall is proven separately.
 - [x] **Phase 70: Real-Client MCP Proof Refresh** - Maintainers can verify Codex CLI and Claude Code still invoke `prepare_task` and `get_pack` through actual MCP client paths after promotion.
-- [x] **Phase 71: Archive Artifact Dampening** - Maintainers can reduce ctxpack planning-archive retrieval noise without excluding archived evidence from search.
+- [x] **Phase 71: Archive Artifact Dampening** - Maintainers can reduce ctxhelm planning-archive retrieval noise without excluding archived evidence from search.
 - [x] **Phase 72: Broader Repeated-Lift Validation** - Maintainers can probe more local repositories, improve validation-test recall seeding, and keep broader promotion gaps explicit.
 - [x] **Phase 73: Broader Fixed-Corpus Fixture** - Maintainers can rerun the broader probe from a pinned committed config instead of a temporary manifest.
 - [x] **Phase 74: Protected Evidence Diagnostics** - Maintainers can separate protected retrieval-target misses from non-target exact/symbol pressure.
@@ -61,19 +61,19 @@ v2.5 therefore focuses on measured retrieval quality, not more surface area. The
 - [x] **Phase 104: Context Area Next-Read Paths** - Broad context areas expose docs, unselected counts, and concrete source-free next-read paths for agents without changing top-10 ranking.
 - [x] **Phase 105: History-Unavailable Embedded Reports** - Benchmark repos with unavailable git history keep embedded reports and block as insufficient evidence instead of producing `report: null`.
 - [x] **Phase 106: Real-Client Request Evidence Hardening** - Codex CLI and Claude Code smoke evidence records source-free request hashes, line counts, explicit repo tool-call counts, and sanitized observed tool-call summaries.
-- [x] **Phase 107: Hydrated Four-Repo Proof Path** - The broad proof hydrates RefactoringMiner, ctxpack, ReAgent, and VeriSchema with embedded reports instead of hanging or returning missing evidence.
+- [x] **Phase 107: Hydrated Four-Repo Proof Path** - The broad proof hydrates RefactoringMiner, ctxhelm, ReAgent, and VeriSchema with embedded reports instead of hanging or returning missing evidence.
 - [x] **Phase 108: Cold Git Bounds** - Cold parent snapshots use external caches, no-rename subject sampling, bounded object-batch reads, and completion manifests; the proof now fails fast on local unreadable Git objects without poisoning later caches.
 - [x] **Phase 109: Environment Health Verdicts** - Cold proofs now classify degraded Git history/object-store environments before treating insufficient evidence as retrieval-quality failure.
-- [x] **Phase 110: Clean Cold Fixture Proof** - Clean detached full fixtures promote across RefactoringMiner, ctxpack, ReAgent, and VeriSchema after parent-snapshot cache invalidation and symbol-facet gating.
+- [x] **Phase 110: Clean Cold Fixture Proof** - Clean detached full fixtures promote across RefactoringMiner, ctxhelm, ReAgent, and VeriSchema after parent-snapshot cache invalidation and symbol-facet gating.
 - [x] **Phase 111: Clean Fixture Release Gate** - The packaged release gate runs or requires the clean cold fixture product proof and records source-free proof-summary status.
-- [x] **Phase 112: Clean Release Gate With Required Fixture Proof** - A clean release-candidate checkout passes the full packaged release gate with `CTXPACK_REQUIRE_CLEAN_FIXTURE_PROOF=1`.
+- [x] **Phase 112: Clean Release Gate With Required Fixture Proof** - A clean release-candidate checkout passes the full packaged release gate with `CTXHELM_REQUIRE_CLEAN_FIXTURE_PROOF=1`.
 - [x] **Phase 113: Release Candidate Status** - Source-free release-candidate metadata records archive/binary proof, required clean fixture proof, and archive-first distribution decisions.
 - [x] **Phase 114: Public Archive Release** - The `v1.1.0` GitHub archive release is published and verified against source-free asset digests.
 - [x] **Phase 115: Public Archive Install Verification** - The public archive install path downloads GitHub release assets, verifies checksums, installs temporarily, and passes version/help/doctor/first-pack checks.
 - [x] **Phase 116: Public Archive Real-Client Smoke** - Optional Codex CLI and Claude Code real-client evidence is refreshed against the public archive binary with source-free pass/skip artifacts.
 - [x] **Phase 117: Context Area Role Signals** - Broad plan-level context areas expose source-free role counts and selected-role counts, and packs render those signals for progressive native reads.
 - [x] **Phase 118: Context Area Resource Scope** - Context-area MCP resources expose source-free `resourceScope` metadata so agents can distinguish inventory-wide resource counts from task-conditioned plan counts.
-- [x] **Phase 119: Index Test Environment Lock** - `ctxpack-index` tests that mutate `CTXPACK_HOME` share one crate-wide lock, removing an observed release-validation flake.
+- [x] **Phase 119: Index Test Environment Lock** - `ctxhelm-index` tests that mutate `CTXHELM_HOME` share one crate-wide lock, removing an observed release-validation flake.
 - [x] **Phase 120: Public CI Release Gate** - GitHub Actions enforce formatting, clippy, locked tests, CLI help, release-doc consistency, and release-gate smoke on public pushes and pull requests.
 - [x] **Phase 121: CI Node 24 Runtime Guard** - Public GitHub Actions use Node 24 action majors and pass without Node 20 deprecation warning text.
 - [x] **Phase 122: Public Real-Client Protocol Compatibility** - Public archive real-client smoke stays compatible with `v1.1.0` while current MCP resource-scope checks remain strict.
@@ -87,16 +87,16 @@ v2.5 therefore focuses on measured retrieval quality, not more surface area. The
 - [x] **Phase 130: Public v1.1.1 Release Currentness** - The refreshed public archive release is current with main, installable from GitHub assets, and covered by refreshed optional real-client smoke evidence.
 - [x] **Phase 131: Product-Aware Freshness Release** - Public freshness checks distinguish proof-only commits from product-impacting drift, and the public v1.1.2 archive is verified with Claude Code integration evidence.
 - [x] **Phase 132: Claude Workflow Eval** - Maintainers can require a source-free Claude Code workflow eval proving real explicit-repo `prepare_task` and `get_pack` calls without storing raw prompts or raw MCP traffic.
-- [x] **Phase 133: Product README Positioning** - Public docs explain why ctxpack is useful beyond native agent search, show the current proof snapshot, and gate current client-evidence strings.
+- [x] **Phase 133: Product README Positioning** - Public docs explain why ctxhelm is useful beyond native agent search, show the current proof snapshot, and gate current client-evidence strings.
 - [x] **Phase 134: Public v1.1.3 Release Currentness** - The current public archive release targets the latest product commit, installs from GitHub assets, and carries refreshed optional real-client proof.
 - [x] **Phase 135: Distribution Readiness** - Deferred Homebrew and crates.io install channels are mechanically checked through formula rendering and package-boundary smoke proof without publishing them.
 - [x] **Phase 136: Public v1.1.4 Release Currentness** - The current public archive release includes the distribution-readiness gate, installs from GitHub assets, and carries refreshed optional real-client proof.
 - [x] **Phase 137: Public Homebrew Tap** - The public `thromel/tap` Homebrew install path passes strict audit, install, formula test, and installed-version proof for Apple Silicon macOS.
 - [x] **Phase 138: Public v1.1.5 Release Currentness** - The current public archive and public Homebrew tap both target the latest product commit and carry refreshed archive, tap, freshness, and real-client proof.
-- [x] **Phase 139: ContextMason Brand Identity** - Public product surfaces used the short-lived ContextMason name while `ctxpack` remained the CLI, package, Homebrew formula, and MCP namespace.
-- [x] **Phase 140: Public v1.1.6 Release Currentness** - The ContextMason-branded public archive and Homebrew tap both targeted the latest product commit and carried refreshed archive, tap, freshness, and real-client proof.
-- [x] **Phase 141: RepoWinnow Brand Identity** - Public product surfaces use RepoWinnow after availability review found ContextMason too close to an adjacent Mason MCP/code-context product.
-- [x] **Phase 142: Public v1.1.7 Release Currentness** - The RepoWinnow-branded public archive and Homebrew tap both target the latest product commit and carry refreshed archive, tap, freshness, and real-client proof.
+- [x] **Phase 139: ctxhelm Brand Identity** - Public product surfaces used the short-lived ctxhelm name while `ctxhelm` remained the CLI, package, Homebrew formula, and MCP namespace.
+- [x] **Phase 140: Public v1.1.6 Release Currentness** - The ctxhelm-branded public archive and Homebrew tap both targeted the latest product commit and carried refreshed archive, tap, freshness, and real-client proof.
+- [x] **Phase 141: ctxhelm Brand Identity** - Public product surfaces use ctxhelm after availability review found ctxhelm too close to an adjacent Mason MCP/code-context product.
+- [x] **Phase 142: Public v1.1.7 Release Currentness** - The ctxhelm-branded public archive and Homebrew tap both target the latest product commit and carry refreshed archive, tap, freshness, and real-client proof.
 - [x] **Phase 143: Paired Agent-Run Outcome Harness** - Claude Code paired-run evidence compares native baseline, `prepare_task`, and brief-pack lanes; the brief-pack lane preserves target coverage while reducing irrelevant reads in a source-free report.
 
 ## Phase Details
@@ -266,11 +266,11 @@ Plans:
 **Evidence**:
 
 - [x] `.planning/e2e/2026-05-30-phase69-channel-aware-product-proof.md`
-- [x] `.ctxpack/e2e/phase69-channel-scoped-governance-proof.json`
+- [x] `.ctxhelm/e2e/phase69-channel-scoped-governance-proof.json`
 
 ### Phase 70: Real-Client MCP Proof Refresh
 
-**Goal**: Maintainers can verify that Codex CLI and Claude Code still invoke ctxpack through actual MCP client paths after the Phase 69 promotion.
+**Goal**: Maintainers can verify that Codex CLI and Claude Code still invoke ctxhelm through actual MCP client paths after the Phase 69 promotion.
 
 **Depends on**: Phase 69
 
@@ -289,7 +289,7 @@ Plans:
 
 ### Phase 71: Archive Artifact Dampening
 
-**Goal**: Maintainers can reduce ctxpack planning-archive retrieval noise without excluding archived evidence from search.
+**Goal**: Maintainers can reduce ctxhelm planning-archive retrieval noise without excluding archived evidence from search.
 
 **Depends on**: Phase 69
 
@@ -300,12 +300,12 @@ Plans:
 1. `.planning/milestones/**` and `.planning/e2e/**/*.json` stay searchable but no longer dominate generic lexical retrieval.
 2. Symbol budget reserve activates only when archive lexical artifacts are present.
 3. The fixed two-repo proof still promotes default local retrieval.
-4. ctxpack protected evidence miss-rate improves on the current-history proof without changing RefactoringMiner.
+4. ctxhelm protected evidence miss-rate improves on the current-history proof without changing RefactoringMiner.
 
 **Evidence**:
 
 - [x] `.planning/e2e/2026-05-30-phase71-archive-artifact-dampening.md`
-- [x] `.ctxpack/e2e/phase71-archive-artifact-dampening-proof.json`
+- [x] `.ctxhelm/e2e/phase71-archive-artifact-dampening-proof.json`
 
 ### Phase 72: Broader Repeated-Lift Validation
 
@@ -338,7 +338,7 @@ Plans:
 
 1. The broader probe config is committed under `.planning/e2e`.
 2. External repository paths are relative to the config file.
-3. Repository heads are pinned so ctxpack development commits do not silently change the probe.
+3. Repository heads are pinned so ctxhelm development commits do not silently change the probe.
 4. Docs state that the broader fixture is optional and currently blocks broader promotion.
 
 **Evidence**:
@@ -365,8 +365,8 @@ retrievable target misses or non-target exact/symbol pressure.
 **Evidence**:
 
 - [x] `.planning/e2e/2026-05-30-phase74-protected-evidence-diagnostics.md`
-- [x] `.ctxpack/e2e/phase74-protected-evidence-diagnostics-proof.json`
-- [x] `.ctxpack/e2e/phase74-broader-protected-evidence-diagnostics-proof.json`
+- [x] `.ctxhelm/e2e/phase74-protected-evidence-diagnostics-proof.json`
+- [x] `.ctxhelm/e2e/phase74-broader-protected-evidence-diagnostics-proof.json`
 
 ### Phase 75: Parent-Bounded History And Test Reserve
 
@@ -387,8 +387,8 @@ and validation-test selection protects tests that co-change with target files.
 **Evidence**:
 
 - [x] `.planning/e2e/2026-05-30-phase75-parent-history-test-reserve.md`
-- [x] `.ctxpack/e2e/phase75-parent-history-test-reserve-proof.json`
-- [x] `.ctxpack/e2e/phase75-broader-parent-history-test-reserve-proof.json`
+- [x] `.ctxhelm/e2e/phase75-parent-history-test-reserve-proof.json`
+- [x] `.ctxhelm/e2e/phase75-broader-parent-history-test-reserve-proof.json`
 
 ### Phase 76: Parent-Bounded Validation History
 
@@ -410,8 +410,8 @@ non-test target ranking signal.
 **Evidence**:
 
 - [x] `.planning/e2e/2026-05-30-phase76-parent-bounded-validation-history.md`
-- [x] `.ctxpack/e2e/phase76-parent-bounded-validation-history-proof.json`
-- [x] `.ctxpack/e2e/phase76-broader-parent-bounded-validation-history-proof.json`
+- [x] `.ctxhelm/e2e/phase76-parent-bounded-validation-history-proof.json`
+- [x] `.ctxhelm/e2e/phase76-broader-parent-bounded-validation-history-proof.json`
 
 ### Phase 77: Validation Command Coverage
 
@@ -433,8 +433,8 @@ recall.
 **Evidence**:
 
 - [x] `.planning/e2e/2026-05-30-phase77-validation-command-coverage.md`
-- [x] `.ctxpack/e2e/phase77-validation-command-coverage-proof.json`
-- [x] `.ctxpack/e2e/phase77-broader-validation-command-coverage-proof.json`
+- [x] `.ctxhelm/e2e/phase77-validation-command-coverage-proof.json`
+- [x] `.ctxhelm/e2e/phase77-broader-validation-command-coverage-proof.json`
 
 ### Phase 78: Ceiling-Aware Broader Gate
 
@@ -456,7 +456,7 @@ misses are zero.
 **Evidence**:
 
 - [x] `.planning/e2e/2026-05-30-phase78-ceiling-aware-broader-gate.md`
-- [x] `.ctxpack/e2e/phase78-ceiling-aware-broader-proof.json`
+- [x] `.ctxhelm/e2e/phase78-ceiling-aware-broader-proof.json`
 
 ### Phase 79: Protected Target Floors
 
@@ -478,8 +478,8 @@ fallback context.
 **Evidence**:
 
 - [x] `.planning/e2e/2026-05-30-phase79-protected-target-floors.md`
-- [x] `.ctxpack/e2e/phase79-protected-target-floors-proof.json`
-- [x] `.ctxpack/e2e/phase79-broader-protected-target-floors-proof.json`
+- [x] `.ctxhelm/e2e/phase79-protected-target-floors-proof.json`
+- [x] `.ctxhelm/e2e/phase79-broader-protected-target-floors-proof.json`
 
 ### Phase 80: Unique Symbol Floor Accounting
 
@@ -499,8 +499,8 @@ duplicate attempts for files already selected by lexical floors.
 **Evidence**:
 
 - [x] `.planning/e2e/2026-05-30-phase80-unique-symbol-floor.md`
-- [x] `.ctxpack/e2e/phase80-unique-symbol-floor-proof.json`
-- [x] `.ctxpack/e2e/phase80-broader-unique-symbol-floor-proof.json`
+- [x] `.ctxhelm/e2e/phase80-unique-symbol-floor-proof.json`
+- [x] `.ctxhelm/e2e/phase80-broader-unique-symbol-floor-proof.json`
 
 ### Phase 81: Warm Cache Latency Proof
 
@@ -522,8 +522,8 @@ not stale cold-run timings.
 
 - [x] `.planning/e2e/2026-05-30-phase81-warm-cache-latency.md`
 - [x] `.planning/e2e/2026-05-30-phase81-warm-cache-proof-config.json`
-- [x] `.ctxpack/e2e/phase81-warm-cache-cold-proof.json`
-- [x] `.ctxpack/e2e/phase81-warm-cache-warm-proof.json`
+- [x] `.ctxhelm/e2e/phase81-warm-cache-cold-proof.json`
+- [x] `.ctxhelm/e2e/phase81-warm-cache-warm-proof.json`
 
 ### Phase 82: Warm Cache Release Gate
 
@@ -543,8 +543,8 @@ only a diagnostic artifact.
 **Evidence**:
 
 - [x] `.planning/e2e/2026-05-30-phase82-warm-cache-gate.md`
-- [x] `.ctxpack/e2e/phase82-warm-cache-gate-cold-proof.json`
-- [x] `.ctxpack/e2e/phase82-warm-cache-gate-warm-proof.json`
+- [x] `.ctxhelm/e2e/phase82-warm-cache-gate-cold-proof.json`
+- [x] `.ctxhelm/e2e/phase82-warm-cache-gate-warm-proof.json`
 
 ### Phase 83: Context Divergence Accounting
 
@@ -557,7 +557,7 @@ not only explained in prose notes.
 
 **Success Criteria**:
 
-1. Product-proof corpus verdicts expose context-vs-all-file deltas for ctxpack
+1. Product-proof corpus verdicts expose context-vs-all-file deltas for ctxhelm
    and lexical.
 2. Product-proof promotion blocks unexplained all-file lexical deficits.
 3. The source-free product-proof checker fails if divergence fields are missing
@@ -568,7 +568,7 @@ not only explained in prose notes.
 **Evidence**:
 
 - [x] `.planning/e2e/2026-05-30-phase83-context-divergence-accounting.md`
-- [x] `.ctxpack/e2e/phase83-context-divergence-proof.json`
+- [x] `.ctxhelm/e2e/phase83-context-divergence-proof.json`
 
 ### Phase 84: Broad Scope Dependency Floors
 
@@ -594,7 +594,7 @@ spans many files.
 **Evidence**:
 
 - [x] `.planning/e2e/2026-05-31-phase84-broad-scope-dependency-floors.md`
-- [x] `.ctxpack/e2e/phase84-broad-scope-dependency-proof.json`
+- [x] `.ctxhelm/e2e/phase84-broad-scope-dependency-proof.json`
 
 ### Phase 85: Broad Context Areas
 
@@ -619,7 +619,7 @@ test, or validation budgets.
 **Evidence**:
 
 - [x] `.planning/e2e/2026-05-31-phase85-broad-context-areas.md`
-- [x] `.ctxpack/e2e/phase85-context-areas-warm-proof.json`
+- [x] `.ctxhelm/e2e/phase85-context-areas-warm-proof.json`
 
 ### Phase 86: Python Package Re-Export Graph Coverage
 
@@ -692,7 +692,7 @@ budget.
 **Evidence**:
 
 - [x] `.planning/e2e/2026-05-31-phase104-context-area-next-read-paths.md`
-- [x] `.ctxpack/e2e/phase104-context-area-next-read-paths-no-refminer-proof.json`
+- [x] `.ctxhelm/e2e/phase104-context-area-next-read-paths-no-refminer-proof.json`
 
 ### Phase 105: History-Unavailable Embedded Reports
 
@@ -718,7 +718,7 @@ git history sampling is unavailable or times out.
 **Evidence**:
 
 - [x] `.planning/e2e/2026-05-31-phase105-history-unavailable-report.md`
-- [x] `.ctxpack/e2e/phase105-history-unavailable-proof.json`
+- [x] `.ctxhelm/e2e/phase105-history-unavailable-proof.json`
 
 ### Phase 106: Real-Client Request Evidence Hardening
 
@@ -733,7 +733,7 @@ or source-bearing prompt data.
 **Success Criteria**:
 
 1. Codex and Claude real-client smoke evidence keeps the existing client,
-   ctxpack, repo, `prepare_task`, and `get_pack` fields for compatibility.
+   ctxhelm, repo, `prepare_task`, and `get_pack` fields for compatibility.
 2. Evidence adds a request evidence schema version, request-log SHA-256, request
    line count, explicit repo tool-call count, and sanitized observed tool-call
    metadata.
@@ -767,15 +767,15 @@ downgrading the proof to a smaller corpus.
    of full-tree scans or whole-revision archive extraction.
 3. Bad single parent-snapshot paths are skipped without blocking the whole
    repository proof.
-4. The cold four-repo proof embeds reports for RefactoringMiner, ctxpack,
+4. The cold four-repo proof embeds reports for RefactoringMiner, ctxhelm,
    ReAgent, and VeriSchema, even if it still blocks on runtime.
 5. The warm/cache four-repo proof promotes with all four corpus verdicts.
 
 **Evidence**:
 
 - [x] `.planning/e2e/2026-05-31-phase107-hydrated-four-repo-proof.md`
-- [x] `.ctxpack/e2e/phase107-hydrated-four-repo-cold-proof.json`
-- [x] `.ctxpack/e2e/phase107-hydrated-four-repo-warm-proof.json`
+- [x] `.ctxhelm/e2e/phase107-hydrated-four-repo-cold-proof.json`
+- [x] `.ctxhelm/e2e/phase107-hydrated-four-repo-warm-proof.json`
 
 ## Requirement Coverage
 

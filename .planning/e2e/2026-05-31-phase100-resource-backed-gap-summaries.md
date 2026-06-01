@@ -28,24 +28,24 @@ next.
 Focused tests:
 
 ```bash
-cargo test -p ctxpack-compiler retrieval_gap_summaries_skip_validation_covered_tests -- --nocapture
-cargo test -p ctxpack-compiler ablation_historical_eval_groups_source_free_retrieval_gaps -- --nocapture
+cargo test -p ctxhelm-compiler retrieval_gap_summaries_skip_validation_covered_tests -- --nocapture
+cargo test -p ctxhelm-compiler ablation_historical_eval_groups_source_free_retrieval_gaps -- --nocapture
 ```
 
 Broad proof:
 
 ```bash
-cargo run --release -p ctxpack -- eval proof \
+cargo run --release -p ctxhelm -- eval proof \
   --config .planning/e2e/2026-05-31-phase92-area-aware-gap-proof-config.json \
-  --format json > .ctxpack/e2e/phase100-resource-backed-gap-summaries-proof.json
+  --format json > .ctxhelm/e2e/phase100-resource-backed-gap-summaries-proof.json
 
 python3 scripts/check-product-proof.py \
-  .ctxpack/e2e/phase100-resource-backed-gap-summaries-proof.json
+  .ctxhelm/e2e/phase100-resource-backed-gap-summaries-proof.json
 ```
 
 Committed proof:
 
-- `.ctxpack/e2e/phase100-resource-backed-gap-summaries-proof.json`
+- `.ctxhelm/e2e/phase100-resource-backed-gap-summaries-proof.json`
 
 Result:
 
@@ -55,8 +55,8 @@ Result:
   the four-repo proof.
 - VeriSchema `area_context_only` and ranked-below-budget gap summaries now carry
   resource URIs such as
-  `ctxpack://repo/context-area/schema_agent%2Fcore`.
-- ctxpack remains File Recall@10 `0.47460318`, Source Recall@10 `0.7166667`,
+  `ctxhelm://repo/context-area/schema_agent%2Fcore`.
+- ctxhelm remains File Recall@10 `0.47460318`, Source Recall@10 `0.7166667`,
   and broad context-area recall `1.0`.
 - VeriSchema remains File Recall@10 `0.18449473`, Source Recall@10
   `0.31067252`, Test Recall@10 `0.7089947`, Effective Validation Recall@10

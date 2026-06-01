@@ -10,7 +10,7 @@ source snippets.
 
 - `scripts/smoke-codex-mcp.sh` and `scripts/smoke-claude-mcp.sh` now preserve
   the existing compatibility fields: `client`, `clientVersion`,
-  `ctxpackVersion`, `repo`, `deterministicProtocol`,
+  `ctxhelmVersion`, `repo`, `deterministicProtocol`,
   `deterministicContextAreaResourceRead`, `prepareTask`, `getPack`, and
   `required`.
 - Evidence now adds `requestEvidenceSchemaVersion`,
@@ -34,7 +34,7 @@ Claude Code real-client smoke produced this sanitized request summary:
 
 ```json
 {
-  "requestEvidenceSchemaVersion": "ctxpack-real-client-evidence-v2",
+  "requestEvidenceSchemaVersion": "ctxhelm-real-client-evidence-v2",
   "serverSideRequestLog": true,
   "requestLogLineCount": 7,
   "explicitRepoToolCallCount": 2,
@@ -68,12 +68,12 @@ Passed:
 cargo fmt --check
 git diff --check
 bash scripts/check-release-docs.sh
-CARGO_TARGET_DIR=/tmp/ctxpack-phase106-target cargo test -p ctxpack --test cli_compat real_client_smoke_scripts_have_contract_guards -- --nocapture
-CTXPACK_BIN=/tmp/ctxpack-phase106-target/debug/ctxpack CTXPACK_SKIP_REAL_CLIENT=1 bash scripts/smoke-codex-mcp.sh
-CTXPACK_BIN=/tmp/ctxpack-phase106-target/debug/ctxpack CTXPACK_SKIP_REAL_CLIENT=1 bash scripts/smoke-claude-mcp.sh
-CTXPACK_BIN=/tmp/ctxpack-phase106-target/debug/ctxpack CTXPACK_RUN_REAL_CLIENT=1 CTXPACK_REAL_CLIENT_EVIDENCE_DIR=/tmp/ctxpack-phase106-real-client-evidence CTXPACK_SMOKE_REPO="$PWD" bash scripts/smoke-claude-mcp.sh
-CARGO_TARGET_DIR=/tmp/ctxpack-phase106-target cargo test --workspace --no-fail-fast
-CARGO_TARGET_DIR=/tmp/ctxpack-phase106-target cargo run -p ctxpack -- --help
+CARGO_TARGET_DIR=/tmp/ctxhelm-phase106-target cargo test -p ctxhelm --test cli_compat real_client_smoke_scripts_have_contract_guards -- --nocapture
+CTXHELM_BIN=/tmp/ctxhelm-phase106-target/debug/ctxhelm CTXHELM_SKIP_REAL_CLIENT=1 bash scripts/smoke-codex-mcp.sh
+CTXHELM_BIN=/tmp/ctxhelm-phase106-target/debug/ctxhelm CTXHELM_SKIP_REAL_CLIENT=1 bash scripts/smoke-claude-mcp.sh
+CTXHELM_BIN=/tmp/ctxhelm-phase106-target/debug/ctxhelm CTXHELM_RUN_REAL_CLIENT=1 CTXHELM_REAL_CLIENT_EVIDENCE_DIR=/tmp/ctxhelm-phase106-real-client-evidence CTXHELM_SMOKE_REPO="$PWD" bash scripts/smoke-claude-mcp.sh
+CARGO_TARGET_DIR=/tmp/ctxhelm-phase106-target cargo test --workspace --no-fail-fast
+CARGO_TARGET_DIR=/tmp/ctxhelm-phase106-target cargo run -p ctxhelm -- --help
 ```
 
 Observed real clients:
@@ -83,7 +83,7 @@ Observed real clients:
 - Codex CLI `0.44.0` did not produce real-client tool-call evidence in this
   environment because the stream disconnected after retries. The wrapper no
   longer fails on unsupported `--ephemeral` or `--ignore-user-config` options;
-  optional Codex evidence remains skipped unless `CTXPACK_REQUIRE_REAL_CLIENT=1`
+  optional Codex evidence remains skipped unless `CTXHELM_REQUIRE_REAL_CLIENT=1`
   is set.
 
 Deferred full gate:

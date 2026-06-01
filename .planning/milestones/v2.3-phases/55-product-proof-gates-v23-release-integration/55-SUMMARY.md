@@ -2,7 +2,7 @@
 
 ## Outcome
 
-Phase 55 is complete. ctxpack product proof now carries the v2.3 evaluation
+Phase 55 is complete. ctxhelm product proof now carries the v2.3 evaluation
 summary needed for release evidence, and the release gate has a deterministic
 local smoke that proves the v2.3 contract without RefactoringMiner or any other
 external repository.
@@ -28,10 +28,10 @@ context metrics from agent sessions.
 
 ## Files Changed
 
-- `crates/ctxpack-compiler/src/eval.rs`
-- `crates/ctxpack/src/main.rs`
-- `crates/ctxpack/tests/cli_compat.rs`
-- `crates/ctxpack/tests/release_packaging.rs`
+- `crates/ctxhelm-compiler/src/eval.rs`
+- `crates/ctxhelm/src/main.rs`
+- `crates/ctxhelm/tests/cli_compat.rs`
+- `crates/ctxhelm/tests/release_packaging.rs`
 - `scripts/smoke-v23-eval.sh`
 - `scripts/release-gate.sh`
 - `scripts/check-release-docs.sh`

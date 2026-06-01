@@ -8,7 +8,7 @@ requires:
     provides: v1.1.0 release identity and binary version diagnostic
 provides:
   - Repeatable local release archive script
-  - Versioned tar.gz artifact with README, LICENSE, VERSION, and ctxpack binary
+  - Versioned tar.gz artifact with README, LICENSE, VERSION, and ctxhelm binary
   - SHA-256 checksum outputs
   - Extracted-binary smoke verification outside the checkout
 affects: [release-packaging, artifact-audit, docs]
@@ -16,13 +16,13 @@ tech-stack:
   added: []
   patterns: [script contract tests, local dist artifact generation, extracted binary smoke]
 key-files:
-  created: [scripts/release-package.sh, crates/ctxpack/tests/release_packaging.rs]
+  created: [scripts/release-package.sh, crates/ctxhelm/tests/release_packaging.rs]
   modified: [.gitignore]
 key-decisions:
   - "Use a local shell script to build GitHub Releases-style tar.gz archives with locked Cargo dependencies."
-  - "Keep generated release archives under an ignored dist directory or CTXPACK_DIST_DIR override."
+  - "Keep generated release archives under an ignored dist directory or CTXHELM_DIST_DIR override."
 patterns-established:
-  - "Packaging scripts must build with cargo build -p ctxpack --release --locked and smoke the extracted binary."
+  - "Packaging scripts must build with cargo build -p ctxhelm --release --locked and smoke the extracted binary."
 requirements-completed: [PKG-01, PKG-02]
 duration: 6min
 completed: 2026-05-13
@@ -42,8 +42,8 @@ completed: 2026-05-13
 
 ## Accomplishments
 
-- Added `scripts/release-package.sh` for repeatable local release builds using `cargo build -p ctxpack --release --locked`.
-- Produced versioned `ctxpack-v1.1.0-{target}.tar.gz` archives containing only the binary, `README.md`, `LICENSE`, and `VERSION`.
+- Added `scripts/release-package.sh` for repeatable local release builds using `cargo build -p ctxhelm --release --locked`.
+- Produced versioned `ctxhelm-v1.1.0-{target}.tar.gz` archives containing only the binary, `README.md`, `LICENSE`, and `VERSION`.
 - Wrote per-archive `.sha256` files plus `sha256sums.txt`, then verified the extracted binary with `--version` and `--help`.
 
 ## Task Commits
@@ -56,13 +56,13 @@ completed: 2026-05-13
 ## Files Created/Modified
 
 - `scripts/release-package.sh` - Builds, stages, archives, checksums, and smokes local release artifacts.
-- `crates/ctxpack/tests/release_packaging.rs` - Guards packaging script contracts.
+- `crates/ctxhelm/tests/release_packaging.rs` - Guards packaging script contracts.
 - `.gitignore` - Ignores generated `/dist/` artifacts.
 
 ## Decisions Made
 
 - Kept release packaging local-only and filesystem-based; no GitHub API, package-manager publish path, signing service, or updater was added.
-- Used `CTXPACK_ALLOW_DIRTY=1` only as an explicit escape hatch for local verification during this dirty multi-plan execution.
+- Used `CTXHELM_ALLOW_DIRTY=1` only as an explicit escape hatch for local verification during this dirty multi-plan execution.
 
 ## Deviations from Plan
 
@@ -73,11 +73,11 @@ completed: 2026-05-13
 - **Issue:** A pipeline-based `cargo metadata | python3` command substitution left the Python reader waiting in this shell environment during the dirty-check smoke.
 - **Fix:** Wrote Cargo metadata to a temporary file and had Python read that file directly.
 - **Files modified:** `scripts/release-package.sh`
-- **Verification:** `bash scripts/release-package.sh` now exits cleanly with code 65 on a dirty checkout, and `CTXPACK_ALLOW_DIRTY=1 CTXPACK_DIST_DIR="$(mktemp -d)" bash scripts/release-package.sh` succeeds.
+- **Verification:** `bash scripts/release-package.sh` now exits cleanly with code 65 on a dirty checkout, and `CTXHELM_ALLOW_DIRTY=1 CTXHELM_DIST_DIR="$(mktemp -d)" bash scripts/release-package.sh` succeeds.
 - **Committed in:** `b7da228`
 
 **Total deviations:** 1 auto-fixed (Rule 1)
-**Impact on plan:** Improved packaging reliability without expanding scope or changing runtime ctxpack behavior.
+**Impact on plan:** Improved packaging reliability without expanding scope or changing runtime ctxhelm behavior.
 
 ## Issues Encountered
 
@@ -89,10 +89,10 @@ None - no external service configuration required.
 
 ## Verification
 
-- `cargo test -p ctxpack --test release_packaging release_package_script_contract -- --nocapture` passed.
-- `CTXPACK_ALLOW_DIRTY=1 CTXPACK_DIST_DIR="$(mktemp -d)" bash scripts/release-package.sh` passed.
+- `cargo test -p ctxhelm --test release_packaging release_package_script_contract -- --nocapture` passed.
+- `CTXHELM_ALLOW_DIRTY=1 CTXHELM_DIST_DIR="$(mktemp -d)" bash scripts/release-package.sh` passed.
 - `cargo test --workspace` passed.
-- `cargo run -p ctxpack -- --help` passed.
+- `cargo run -p ctxhelm -- --help` passed.
 
 ## Next Phase Readiness
 
@@ -100,7 +100,7 @@ Plan 03 can add artifact privacy and hygiene auditing to the archive path create
 
 ## Self-Check: PASSED
 
-- Created files exist: `scripts/release-package.sh`, `crates/ctxpack/tests/release_packaging.rs`
+- Created files exist: `scripts/release-package.sh`, `crates/ctxhelm/tests/release_packaging.rs`
 - Modified file exists: `.gitignore`
 - Commits exist: `151850c`, `dac62da`, `e047eda`, `b7da228`
 

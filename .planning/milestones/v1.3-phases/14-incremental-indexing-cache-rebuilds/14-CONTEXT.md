@@ -26,7 +26,7 @@ Phase 14 makes the new SQLite store useful for repeated indexing. The phase shou
 - Preserve generated and sensitive exclusion counts as diagnostics, not content.
 
 ### the agent's Discretion
-Implementation details can stay in `ctxpack-index::storage` as long as the crate facade exposes typed reports for CLI and future compiler consumers.
+Implementation details can stay in `ctxhelm-index::storage` as long as the crate facade exposes typed reports for CLI and future compiler consumers.
 
 </decisions>
 
@@ -34,16 +34,16 @@ Implementation details can stay in `ctxpack-index::storage` as long as the crate
 ## Existing Code Insights
 
 ### Reusable Assets
-- `crates/ctxpack-index/src/inventory.rs` already builds safe inventory entries and manifest metadata.
-- `crates/ctxpack-index/src/storage.rs` already initializes the source-free SQLite schema.
-- `crates/ctxpack/src/main.rs` owns CLI rendering and can expose storage sync without changing MCP behavior.
+- `crates/ctxhelm-index/src/inventory.rs` already builds safe inventory entries and manifest metadata.
+- `crates/ctxhelm-index/src/storage.rs` already initializes the source-free SQLite schema.
+- `crates/ctxhelm/src/main.rs` owns CLI rendering and can expose storage sync without changing MCP behavior.
 
 ### Established Patterns
 - Public CLI output is compact Markdown/text by default, with JSON formats where already supported.
 - Source-free diagnostics use typed `Diagnostic` records and policy-filtered paths.
 
 ### Integration Points
-- `ctxpack index --repo <path>` is the natural command to attach storage-backed incremental sync.
+- `ctxhelm index --repo <path>` is the natural command to attach storage-backed incremental sync.
 - `StoreConfig` remains the typed entry point for default or explicit database paths.
 
 </code_context>

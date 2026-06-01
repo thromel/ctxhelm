@@ -7,7 +7,7 @@ freshness, review metadata, and regeneration reasons.
 
 ## Work
 
-- Extend `ctxpack cards generate`.
+- Extend `ctxhelm cards generate`.
 - Persist deterministic domain memory records.
 - Keep Markdown cards source-snippet-free.
 

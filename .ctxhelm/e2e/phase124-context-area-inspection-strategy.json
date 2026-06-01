@@ -1,0 +1,78 @@
+{
+  "phase": 124,
+  "name": "Context Area Inspection Strategy",
+  "status": "passed",
+  "timestamp": "2026-06-01T00:58:58Z",
+  "rankingChanged": false,
+  "toolSurfaceChanged": false,
+  "sourceTextLogged": false,
+  "privacyStatus": {
+    "localOnly": true,
+    "remoteEmbeddingsUsed": false,
+    "remoteRerankingUsed": false
+  },
+  "resourceFieldsAdded": [
+    "ctxhelm://repo/context-areas areas[].inspectionStrategy",
+    "ctxhelm://repo/context-area/{encoded-area} inspectionStrategy"
+  ],
+  "inspectionStrategyFields": [
+    "initialBatch",
+    "preferredOrder",
+    "pathBudget",
+    "stopRule",
+    "sourceTextLogged"
+  ],
+  "rejectedExperiment": {
+    "name": "classify shell scripts as config",
+    "status": "reverted",
+    "reason": "The scratch four-repo proof blocked and displaced VeriSchema validation evidence.",
+    "observedBefore": {
+      "veriSchemaFileRecallAt10": 0.17423832,
+      "veriSchemaEffectiveValidationRecallAt10": 1.0,
+      "releaseGateDecision": "promote"
+    },
+    "observedAfter": {
+      "veriSchemaFileRecallAt10": 0.16914026,
+      "veriSchemaEffectiveValidationRecallAt10": 0.85714287,
+      "releaseGateDecision": "block"
+    }
+  },
+  "validation": [
+    {
+      "command": "cargo test -p ctxhelm-mcp resources_public_uri_shapes_are_stable -- --nocapture",
+      "status": "passed"
+    },
+    {
+      "command": "cargo run -p ctxhelm -- eval proof --config .planning/e2e/2026-05-31-phase110-clean-cold-fixture-config.json --format json",
+      "status": "passed",
+      "releaseGateDecision": "promote",
+      "releaseGateReason": "Every evaluated corpus beat lexical or reached a perfect lexical ceiling on non-test context recall while maintaining validation-test recall under local-only proof thresholds.",
+      "repoResults": [
+        {
+          "repo": "RefactoringMiner",
+          "fileRecallAt10": 0.6,
+          "lexicalRecallAt10": 1.0,
+          "effectiveValidationRecallAt10": 1.0
+        },
+        {
+          "repo": "ctxhelm",
+          "fileRecallAt10": 0.3968254,
+          "lexicalRecallAt10": 0.30634922,
+          "effectiveValidationRecallAt10": 0.0
+        },
+        {
+          "repo": "ReAgent",
+          "fileRecallAt10": 0.5,
+          "lexicalRecallAt10": 0.4,
+          "effectiveValidationRecallAt10": 1.0
+        },
+        {
+          "repo": "VeriSchema",
+          "fileRecallAt10": 0.17423832,
+          "lexicalRecallAt10": 0.122021124,
+          "effectiveValidationRecallAt10": 1.0
+        }
+      ]
+    }
+  ]
+}

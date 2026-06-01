@@ -1,0 +1,31 @@
+{
+  "schemaVersion": "ctxhelm-product-doc-proof-v1",
+  "phase": 133,
+  "status": "passed",
+  "date": "2026-06-01",
+  "scope": "public-readme-positioning",
+  "changedPublicDocs": [
+    "README.md",
+    "docs/agent-setup.md"
+  ],
+  "proofAssertions": {
+    "readmeExplainsWhyCtxpack": true,
+    "readmeHasCurrentProofSnapshot": true,
+    "readmeStatesReadOnlyBoundary": true,
+    "readmeStatesAgentEvidenceLexicalComparison": true,
+    "readmeStatesProtectedTargetMissRate": true,
+    "claudeWorkflowVersionCurrent": "2.1.159",
+    "codexEvidenceVersionCurrent": "0.44.0",
+    "codexEvidenceBoundary": "optional_source_free_skip",
+    "claudeWorkflowEvidenceBoundary": "explicit_repo_prepare_task_and_get_pack",
+    "staleClientVersionChecksReleaseGated": true
+  },
+  "privacyStatus": {
+    "localOnly": true,
+    "sourceTextLogged": false,
+    "rawPromptStored": false,
+    "rawMcpTrafficStored": false,
+    "remoteEmbeddingsUsed": false,
+    "remoteRerankingUsed": false
+  }
+}

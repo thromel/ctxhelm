@@ -16,7 +16,7 @@ Keep benchmark reports focused on fixed-budget target retrieval quality rather t
 - Reuse existing file Recall@5/10 and role Recall@5/10 metrics.
 - Preserve useful-target precision-like metrics through `precisionAtK`.
 - Preserve top missing file summaries and grouped retrieval failures.
-- Ensure no-context and lexical baselines use the same K budget as ctxpack.
+- Ensure no-context and lexical baselines use the same K budget as ctxhelm.
 
 ## Verification
 

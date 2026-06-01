@@ -21,7 +21,7 @@
 - Do not auto-write arbitrary lessons from raw chat transcripts.
 - Do not make card generation cloud-dependent.
 - Do not inject all memory into AGENTS.md or every pack.
-- Do not make ctxpack an autonomous session logger that captures private prompts by default.
+- Do not make ctxhelm an autonomous session logger that captures private prompts by default.
 - Do not claim full learning/tuning; adaptive policy is v1.7.
 
 ## Sources

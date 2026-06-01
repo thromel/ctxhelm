@@ -14,9 +14,9 @@ Phase 5 completed all four plans with `--no-transition`. The release identity, l
 
 ## Verified Artifacts
 
-- `ctxpack --version` reports `ctxpack 1.1.0`.
-- Cargo metadata reports version `1.1.0`, license `MIT`, repository, README, description, and Rust version for all ctxpack workspace crates.
-- `scripts/release-package.sh` builds `ctxpack` with `cargo build -p ctxpack --release --locked`, creates `ctxpack-v1.1.0-{target}.tar.gz`, writes SHA-256 checksum files, audits the archive, extracts it outside the checkout, and verifies `--version` plus `--help`.
+- `ctxhelm --version` reports `ctxhelm 1.1.0`.
+- Cargo metadata reports version `1.1.0`, license `MIT`, repository, README, description, and Rust version for all ctxhelm workspace crates.
+- `scripts/release-package.sh` builds `ctxhelm` with `cargo build -p ctxhelm --release --locked`, creates `ctxhelm-v1.1.0-{target}.tar.gz`, writes SHA-256 checksum files, audits the archive, extracts it outside the checkout, and verifies `--version` plus `--help`.
 - `scripts/audit-release-artifact.sh` rejects local-state archive members and secret/machine-specific text patterns without printing source contents.
 - `README.md` and `docs/release.md` document archive install, checksum verification, source-build fallbacks, maintainer packaging, artifact audit, and deferred channels.
 - `scripts/check-release-docs.sh` passes and guards stale version/install documentation.
@@ -26,10 +26,10 @@ Phase 5 completed all four plans with `--no-transition`. The release identity, l
 ```bash
 cargo metadata --no-deps --format-version 1
 bash scripts/check-release-docs.sh
-cargo test -p ctxpack --test release_packaging -- --nocapture
-CTXPACK_DIST_DIR="$(mktemp -d)" bash scripts/release-package.sh
-cargo run -p ctxpack -- --version
-cargo run -p ctxpack -- --help
+cargo test -p ctxhelm --test release_packaging -- --nocapture
+CTXHELM_DIST_DIR="$(mktemp -d)" bash scripts/release-package.sh
+cargo run -p ctxhelm -- --version
+cargo run -p ctxhelm -- --help
 cargo test --workspace
 ```
 
@@ -48,5 +48,5 @@ None.
 
 ## Notes
 
-- Generated release artifacts were written under temporary `CTXPACK_DIST_DIR` directories during verification, not committed.
-- The repository remains local-first and read-only; release scripts only build and audit ctxpack artifacts.
+- Generated release artifacts were written under temporary `CTXHELM_DIST_DIR` directories during verification, not committed.
+- The repository remains local-first and read-only; release scripts only build and audit ctxhelm artifacts.

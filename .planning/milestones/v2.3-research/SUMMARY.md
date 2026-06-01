@@ -4,7 +4,7 @@ See `.planning/research/SUMMARY.md` for the active research synthesis. This mile
 
 - Process-level context retrieval metrics matter more than final pass/fail alone.
 - Contamination-aware, fixed corpora are required before making world-class claims.
-- ctxpack's current RefactoringMiner result is useful but only slightly above lexical baseline, so v2.3 must improve proof quality before larger retrieval architecture.
+- ctxhelm's current RefactoringMiner result is useful but only slightly above lexical baseline, so v2.3 must improve proof quality before larger retrieval architecture.
 - Evaluation speed is now a product bottleneck.
 - Learned policy must be source-free, opt-in, and threshold-gated.
 

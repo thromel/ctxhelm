@@ -31,10 +31,10 @@ Threshold checks should produce pass/fail booleans in the comparison report. The
 <code_context>
 ## Existing Code Insights
 
-- `crates/ctxpack-compiler/src/eval.rs` owns gap summary construction, benchmark suite reports, and typed eval contracts.
-- `crates/ctxpack/src/main.rs` owns CLI subcommands and Markdown rendering.
+- `crates/ctxhelm-compiler/src/eval.rs` owns gap summary construction, benchmark suite reports, and typed eval contracts.
+- `crates/ctxhelm/src/main.rs` owns CLI subcommands and Markdown rendering.
 - `docs/benchmarking.md` documents benchmark setup and interpretation.
-- `crates/ctxpack/tests/cli_compat.rs` is the right place for command-level compare coverage.
+- `crates/ctxhelm/tests/cli_compat.rs` is the right place for command-level compare coverage.
 
 </code_context>
 

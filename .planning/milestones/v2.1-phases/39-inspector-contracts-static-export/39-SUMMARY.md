@@ -9,7 +9,7 @@
 - Added compiler conversion from `ContextPlan` plus `ContextPack` to inspector
   metadata.
 - Added Markdown and static HTML inspector renderers.
-- Added `ctxpack inspector export <task>` with JSON, Markdown, HTML, and
+- Added `ctxhelm inspector export <task>` with JSON, Markdown, HTML, and
   `--output` support.
 - Added docs for source-free inspector artifacts and wired release-doc checks.
 - Added sentinel coverage proving source-bearing snippet text is not copied into
@@ -18,15 +18,15 @@
 ## Verification
 
 - `cargo fmt --all`
-- `cargo test -p ctxpack-compiler pack_inspector_view_keeps_source_snippets_out_of_metadata -- --nocapture`
-- `cargo test -p ctxpack inspector_export_command_parses_static_formats -- --nocapture`
+- `cargo test -p ctxhelm-compiler pack_inspector_view_keeps_source_snippets_out_of_metadata -- --nocapture`
+- `cargo test -p ctxhelm inspector_export_command_parses_static_formats -- --nocapture`
 - `bash scripts/check-release-docs.sh`
-- Temp-repo `ctxpack inspector export ... --format json` sentinel smoke
+- Temp-repo `ctxhelm inspector export ... --format json` sentinel smoke
 - `cargo test --workspace`
-- `cargo run -p ctxpack -- --help`
-- `cargo run -p ctxpack -- inspector export --help`
+- `cargo run -p ctxhelm -- --help`
+- `cargo run -p ctxhelm -- inspector export --help`
 
-All commands passed using `CARGO_TARGET_DIR=/tmp/ctxpack-target-phase39` where
+All commands passed using `CARGO_TARGET_DIR=/tmp/ctxhelm-target-phase39` where
 applicable to avoid stale shared-target metadata stalls.
 
 ## Next

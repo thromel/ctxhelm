@@ -40,7 +40,7 @@ def current_reachable_gap_summaries(report: dict):
 def validate_resource_backed_gap_summaries(report: dict) -> None:
     for repo_name, index, gap in current_reachable_gap_summaries(report):
         uri = gap.get("contextAreaResourceUri")
-        if not isinstance(uri, str) or not uri.startswith("ctxpack://repo/context-area/"):
+        if not isinstance(uri, str) or not uri.startswith("ctxhelm://repo/context-area/"):
             fail(
                 "current reachable retrieval gap lacked context-area resource URI: "
                 + str(repo_name)
@@ -72,7 +72,7 @@ BROAD_FIXED_CORPUS_FLOORS = {
         "testRecallAt10": 1.0,
         "effectiveValidationRecallAt10": 1.0,
     },
-    "ctxpack": {
+    "ctxhelm": {
         "fileRecallAt10": 0.47460318,
         "sourceRecallAt10": 0.7166667,
         "broadContextAreaRecall": 1.0,

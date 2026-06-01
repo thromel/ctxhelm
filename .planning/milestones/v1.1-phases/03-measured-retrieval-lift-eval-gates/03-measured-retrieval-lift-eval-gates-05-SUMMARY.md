@@ -23,8 +23,8 @@ key-files:
   created:
     - scripts/smoke-historical-eval.sh
   modified:
-    - crates/ctxpack/tests/cli_compat.rs
-    - crates/ctxpack-mcp/src/lib.rs
+    - crates/ctxhelm/tests/cli_compat.rs
+    - crates/ctxhelm-mcp/src/lib.rs
 
 key-decisions:
   - "Keep Plan 05 validation additive: tests assert new Phase 3 fields while preserving existing CLI/MCP keys and tool names."
@@ -58,7 +58,7 @@ completed: 2026-05-13
 
 - Added CLI compatibility assertions for `prepare-task` JSON retrieval candidates, target/test attribution, historical eval range metadata, fixed-budget ranking metrics, ablations, gap summaries, and `sourceTextLogged=false`.
 - Added MCP compatibility assertions that `prepare_task` structuredContent exposes attributed target/test recommendations and retrieval candidates while the tool list remains unchanged.
-- Added `scripts/smoke-historical-eval.sh`, a bounded source-free smoke path for the current repo and optional RefactoringMiner verification via `CTXPACK_REFACTORINGMINER_REPO`.
+- Added `scripts/smoke-historical-eval.sh`, a bounded source-free smoke path for the current repo and optional RefactoringMiner verification via `CTXHELM_REFACTORINGMINER_REPO`.
 - Ran the full Phase 3 validation gate: workspace tests, CLI help, and bounded historical eval smoke.
 
 ## Task Commits
@@ -71,8 +71,8 @@ Each task was committed atomically:
 
 ## Files Created/Modified
 
-- `crates/ctxpack/tests/cli_compat.rs` - Extends binary CLI compatibility tests for additive retrieval/eval fields and source-free historical eval reports.
-- `crates/ctxpack-mcp/src/lib.rs` - Extends MCP prepare_task compatibility tests for attributed structuredContent without adding or changing tools.
+- `crates/ctxhelm/tests/cli_compat.rs` - Extends binary CLI compatibility tests for additive retrieval/eval fields and source-free historical eval reports.
+- `crates/ctxhelm-mcp/src/lib.rs` - Extends MCP prepare_task compatibility tests for attributed structuredContent without adding or changing tools.
 - `scripts/smoke-historical-eval.sh` - Runs bounded `eval history` JSON smoke checks with configurable repo, limit, budget, and optional RefactoringMiner target.
 
 ## Decisions Made
@@ -111,13 +111,13 @@ None.
 
 ## Verification
 
-- `cargo test -p ctxpack --test cli_compat -- --nocapture`
-- `cargo test -p ctxpack-mcp public_surface -- --nocapture`
-- `cargo test -p ctxpack-mcp prepare_task -- --nocapture`
-- `CTXPACK_SMOKE_REPO="$PWD" CTXPACK_SMOKE_LIMIT=2 CTXPACK_SMOKE_BUDGET=10 bash scripts/smoke-historical-eval.sh`
+- `cargo test -p ctxhelm --test cli_compat -- --nocapture`
+- `cargo test -p ctxhelm-mcp public_surface -- --nocapture`
+- `cargo test -p ctxhelm-mcp prepare_task -- --nocapture`
+- `CTXHELM_SMOKE_REPO="$PWD" CTXHELM_SMOKE_LIMIT=2 CTXHELM_SMOKE_BUDGET=10 bash scripts/smoke-historical-eval.sh`
 - `cargo test --workspace`
-- `cargo run -p ctxpack -- --help`
-- `CTXPACK_SMOKE_REPO="$PWD" CTXPACK_SMOKE_LIMIT=2 CTXPACK_SMOKE_BUDGET=10 bash scripts/smoke-historical-eval.sh`
+- `cargo run -p ctxhelm -- --help`
+- `CTXHELM_SMOKE_REPO="$PWD" CTXHELM_SMOKE_LIMIT=2 CTXHELM_SMOKE_BUDGET=10 bash scripts/smoke-historical-eval.sh`
 
 ## Next Phase Readiness
 

@@ -6,14 +6,14 @@ Expose source-free broad context-area guidance for archive/docs retrieval tasks
 without spending target-file budget on broad source floors unless the task is
 actually implementation/eval shaped.
 
-Phase 97 still had two ctxpack historical commits that were too broad for a
+Phase 97 still had two ctxhelm historical commits that were too broad for a
 small file pack but were not recognized as broad context-area tasks:
 
 - `dampen archive artifacts retrieval`
 - `MCP docs record real client mcp proof refresh`
 
 A direct classifier expansion made both tasks broad, but the first proof attempt
-regressed ctxpack File Recall@10 from `0.47460318` to `0.34444445` because broad
+regressed ctxhelm File Recall@10 from `0.47460318` to `0.34444445` because broad
 source floors displaced docs in the 10-file target budget. The accepted fix
 separates source-free context-area guidance from target-file source-floor
 spending.
@@ -36,34 +36,34 @@ spending.
 Focused tests:
 
 ```bash
-cargo test -p ctxpack-compiler product_proof_and_historical_eval_tasks_are_multi_area -- --nocapture
-cargo test -p ctxpack-compiler docs_and_archive_multi_area_tasks_do_not_spend_target_file_source_floors -- --nocapture
+cargo test -p ctxhelm-compiler product_proof_and_historical_eval_tasks_are_multi_area -- --nocapture
+cargo test -p ctxhelm-compiler docs_and_archive_multi_area_tasks_do_not_spend_target_file_source_floors -- --nocapture
 ```
 
 Broad proof:
 
 ```bash
-cargo run --release -p ctxpack -- eval proof \
+cargo run --release -p ctxhelm -- eval proof \
   --config .planning/e2e/2026-05-31-phase92-area-aware-gap-proof-config.json \
-  --format json > .ctxpack/e2e/phase98-broader-broad-task-classification-proof.json
+  --format json > .ctxhelm/e2e/phase98-broader-broad-task-classification-proof.json
 
 python3 scripts/check-product-proof.py \
-  .ctxpack/e2e/phase98-broader-broad-task-classification-proof.json
+  .ctxhelm/e2e/phase98-broader-broad-task-classification-proof.json
 ```
 
 Committed proof:
 
-- `.ctxpack/e2e/phase98-broader-broad-task-classification-proof.json`
+- `.ctxhelm/e2e/phase98-broader-broad-task-classification-proof.json`
 
 Result:
 
 - `releaseGate.decision = promote`
 - RefactoringMiner stays at File Recall@10 `0.6`, Source Recall@10 `1.0`,
   Test Recall@10 `1.0`, Effective Validation Recall@10 `1.0`
-- ctxpack stays at File Recall@10 `0.47460318` and Source Recall@10
+- ctxhelm stays at File Recall@10 `0.47460318` and Source Recall@10
   `0.7166667`, matching Phase 97 while adding broad context areas for the two
   newly classified archive/docs tasks
-- ctxpack broad context-area recall remains `1.0`
+- ctxhelm broad context-area recall remains `1.0`
 - ReAgent stays at File Recall@10 `0.5`, Source Recall@10 `1.0`, Test
   Recall@10 `1.0`, Effective Validation Recall@10 `1.0`
 - VeriSchema stays at File Recall@10 `0.18449473`, Source Recall@10

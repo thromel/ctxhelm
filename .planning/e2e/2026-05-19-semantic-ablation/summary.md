@@ -12,7 +12,7 @@
 
 ## Variants
 
-| Variant | semanticEnabled | fileRecallAt10 | lexicalBaselineRecallAt10 | ctxpackLiftAt10 | testRecallAt10 | MRR@10 | runtime.totalMillis |
+| Variant | semanticEnabled | fileRecallAt10 | lexicalBaselineRecallAt10 | ctxhelmLiftAt10 | testRecallAt10 | MRR@10 | runtime.totalMillis |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
 | Default | `false` | `0.518631` | `0.5007738` | `0.017857194` | `0.4722222` | `0.6375` | `84398` |
 | Local semantic | `true` | `0.518631` | `0.5007738` | `0.017857194` | `0.4722222` | `0.6350` | `104901` |

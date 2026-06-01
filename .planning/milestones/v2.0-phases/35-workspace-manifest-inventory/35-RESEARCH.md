@@ -19,15 +19,15 @@ Cross-repo task routing, workspace packs, shared artifact import/export, team po
 
 ## Existing Architecture To Reuse
 
-- `crates/ctxpack-core/src/contracts.rs` owns public JSON-compatible contracts.
-- `crates/ctxpack-index/src/lib.rs` re-exports index/storage/privacy functions from focused modules.
-- `crates/ctxpack-index/src/storage.rs` already exposes source-free storage status APIs that can be reused per repo.
-- `crates/ctxpack/src/main.rs` owns clap command definitions and Markdown/JSON renderers.
-- Existing tests prefer temp repositories, `CTXPACK_HOME`, and sentinel checks that prove source text is not persisted.
+- `crates/ctxhelm-core/src/contracts.rs` owns public JSON-compatible contracts.
+- `crates/ctxhelm-index/src/lib.rs` re-exports index/storage/privacy functions from focused modules.
+- `crates/ctxhelm-index/src/storage.rs` already exposes source-free storage status APIs that can be reused per repo.
+- `crates/ctxhelm/src/main.rs` owns clap command definitions and Markdown/JSON renderers.
+- Existing tests prefer temp repositories, `CTXHELM_HOME`, and sentinel checks that prove source text is not persisted.
 
 ## Recommended Defaults
 
-- Manifest location: `.ctxpack/workspace.json` for the first implementation.
+- Manifest location: `.ctxhelm/workspace.json` for the first implementation.
 - Paths: allow repo-relative and absolute local paths; normalize/canonicalize during load.
 - Repo IDs: allow optional explicit IDs; otherwise derive the existing stable repo ID through `RepoRoot`.
 - Labels/tags: source-free user-provided strings with validation against newlines/control text.

@@ -13,19 +13,19 @@ Passed. All four Phase 6 plans completed with summaries, atomic commits, and fin
 
 ## Verified Outcomes
 
-- `ctxpack init` reports created, updated, unchanged, and skipped repo-local artifacts with actionable next steps.
+- `ctxhelm init` reports created, updated, unchanged, and skipped repo-local artifacts with actionable next steps.
 - Generated Codex, Claude Code, Cursor, and OpenCode guidance stays thin, repo-explicit, progressive-pack aware, and session-scope aware.
-- `ctxpack setup-check` validates generated setup artifacts read-only and exits non-zero for missing or malformed expected files.
-- `scripts/smoke-mcp-protocol.sh` supports `CTXPACK_BIN` while preserving cargo fallback.
+- `ctxhelm setup-check` validates generated setup artifacts read-only and exits non-zero for missing or malformed expected files.
+- `scripts/smoke-mcp-protocol.sh` supports `CTXHELM_BIN` while preserving cargo fallback.
 - `scripts/smoke-first-pack.sh` proves install-to-init-to-setup-check-to-MCP-to-first-pack flow with machine-checkable JSON.
 
 ## Final Verification Commands
 
 - `cargo test --workspace` - passed
-- `cargo run -p ctxpack -- --help` - passed
-- `cargo test -p ctxpack --test cli_compat mcp_protocol -- --nocapture` - passed
-- `cargo test -p ctxpack --test cli_compat first_pack -- --nocapture` - passed
-- `cargo build -p ctxpack && CTXPACK_BIN="$(pwd)/target/debug/ctxpack" bash scripts/smoke-first-pack.sh` - passed
+- `cargo run -p ctxhelm -- --help` - passed
+- `cargo test -p ctxhelm --test cli_compat mcp_protocol -- --nocapture` - passed
+- `cargo test -p ctxhelm --test cli_compat first_pack -- --nocapture` - passed
+- `cargo build -p ctxhelm && CTXHELM_BIN="$(pwd)/target/debug/ctxhelm" bash scripts/smoke-first-pack.sh` - passed
 
 ## Plan Summaries
 
@@ -40,4 +40,4 @@ None.
 
 ## Notes
 
-The phase preserves ctxpack read-only product boundaries. No code path mutates global agent configuration; generated setup remains repo-local or copy/paste-oriented.
+The phase preserves ctxhelm read-only product boundaries. No code path mutates global agent configuration; generated setup remains repo-local or copy/paste-oriented.

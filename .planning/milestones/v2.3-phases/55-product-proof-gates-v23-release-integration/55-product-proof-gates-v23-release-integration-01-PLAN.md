@@ -25,11 +25,11 @@ keeping large external repos optional.
 
 - `cargo fmt --all`
 - `CARGO_INCREMENTAL=0 cargo check --workspace`
-- `CARGO_INCREMENTAL=0 cargo test -p ctxpack --test cli_compat eval_proof_generates_source_free_product_report`
-- `CARGO_INCREMENTAL=0 cargo test -p ctxpack --test release_packaging release_gate_script_contract`
-- `CARGO_INCREMENTAL=0 cargo run -p ctxpack -- eval proof --help`
-- `CARGO_INCREMENTAL=0 cargo run -p ctxpack -- --help`
-- `CTXPACK_BIN="$(pwd)/target/debug/ctxpack" bash scripts/smoke-v23-eval.sh`
+- `CARGO_INCREMENTAL=0 cargo test -p ctxhelm --test cli_compat eval_proof_generates_source_free_product_report`
+- `CARGO_INCREMENTAL=0 cargo test -p ctxhelm --test release_packaging release_gate_script_contract`
+- `CARGO_INCREMENTAL=0 cargo run -p ctxhelm -- eval proof --help`
+- `CARGO_INCREMENTAL=0 cargo run -p ctxhelm -- --help`
+- `CTXHELM_BIN="$(pwd)/target/debug/ctxhelm" bash scripts/smoke-v23-eval.sh`
 - `CARGO_INCREMENTAL=0 cargo test --workspace`
 - `git diff --check`
 - `gsd-sdk query roadmap.analyze`

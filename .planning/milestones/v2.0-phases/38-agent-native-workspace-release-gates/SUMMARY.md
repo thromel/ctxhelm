@@ -3,8 +3,8 @@
 ## Completed
 
 - Added MCP resources:
-  - `ctxpack://workspace/status`
-  - `ctxpack://workspace/shared-artifacts`
+  - `ctxhelm://workspace/status`
+  - `ctxhelm://workspace/shared-artifacts`
 - Preserved the existing six-tool MCP surface.
 - Updated README and integration docs to describe workspace resources.
 - Extended `scripts/smoke-shared-artifacts.sh` to start a live MCP server and

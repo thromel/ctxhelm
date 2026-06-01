@@ -7,7 +7,7 @@ contamination from source-repo child paths.
 
 ## What Changed
 
-- Parent snapshot caches now live under the local ctxpack home instead of inside
+- Parent snapshot caches now live under the local ctxhelm home instead of inside
   the source repository, so snapshot scans do not inherit the live repo `.git`
   ancestor.
 - Parent snapshot extraction no longer uses `git archive`; that path regressed
@@ -28,27 +28,27 @@ Focused validation passed:
 
 ```text
 cargo fmt --check
-CARGO_NET_OFFLINE=true CARGO_TARGET_DIR=/tmp/ctxpack-phase108b-target cargo test -p ctxpack-compiler parent_snapshot_batch_reader_extracts_multiple_paths -- --nocapture
-CARGO_NET_OFFLINE=true CARGO_TARGET_DIR=/tmp/ctxpack-phase108b-target cargo test -p ctxpack-compiler historical_eval_parent_snapshot_extracts_only_indexable_paths -- --nocapture
-CARGO_NET_OFFLINE=true CARGO_TARGET_DIR=/tmp/ctxpack-phase108b-target cargo test -p ctxpack-compiler historical_eval_uses_parent_snapshot_without_future_context -- --nocapture
-CARGO_NET_OFFLINE=true CARGO_TARGET_DIR=/tmp/ctxpack-phase108b-target cargo test -p ctxpack-compiler parent_snapshot_command_helper_times_out_instead_of_hanging -- --nocapture
-CARGO_NET_OFFLINE=true CARGO_TARGET_DIR=/tmp/ctxpack-phase108b-target cargo test -p ctxpack-compiler incomplete_parent_snapshot_manifests_are_not_reusable -- --nocapture
-CARGO_NET_OFFLINE=true CARGO_TARGET_DIR=/tmp/ctxpack-phase108b-target cargo test -p ctxpack-compiler sidecar_only_parent_snapshot_cache_is_not_reusable -- --nocapture
-CARGO_NET_OFFLINE=true CARGO_TARGET_DIR=/tmp/ctxpack-phase108b-target cargo test -p ctxpack-index co_change_hints_use_eval_history_sidecar_when_snapshot_has_no_git -- --nocapture
-CARGO_NET_OFFLINE=true CARGO_TARGET_DIR=/tmp/ctxpack-phase108b-target cargo test -p ctxpack-index historical_commit_collection_uses_fast_no_rename_diff -- --nocapture
+CARGO_NET_OFFLINE=true CARGO_TARGET_DIR=/tmp/ctxhelm-phase108b-target cargo test -p ctxhelm-compiler parent_snapshot_batch_reader_extracts_multiple_paths -- --nocapture
+CARGO_NET_OFFLINE=true CARGO_TARGET_DIR=/tmp/ctxhelm-phase108b-target cargo test -p ctxhelm-compiler historical_eval_parent_snapshot_extracts_only_indexable_paths -- --nocapture
+CARGO_NET_OFFLINE=true CARGO_TARGET_DIR=/tmp/ctxhelm-phase108b-target cargo test -p ctxhelm-compiler historical_eval_uses_parent_snapshot_without_future_context -- --nocapture
+CARGO_NET_OFFLINE=true CARGO_TARGET_DIR=/tmp/ctxhelm-phase108b-target cargo test -p ctxhelm-compiler parent_snapshot_command_helper_times_out_instead_of_hanging -- --nocapture
+CARGO_NET_OFFLINE=true CARGO_TARGET_DIR=/tmp/ctxhelm-phase108b-target cargo test -p ctxhelm-compiler incomplete_parent_snapshot_manifests_are_not_reusable -- --nocapture
+CARGO_NET_OFFLINE=true CARGO_TARGET_DIR=/tmp/ctxhelm-phase108b-target cargo test -p ctxhelm-compiler sidecar_only_parent_snapshot_cache_is_not_reusable -- --nocapture
+CARGO_NET_OFFLINE=true CARGO_TARGET_DIR=/tmp/ctxhelm-phase108b-target cargo test -p ctxhelm-index co_change_hints_use_eval_history_sidecar_when_snapshot_has_no_git -- --nocapture
+CARGO_NET_OFFLINE=true CARGO_TARGET_DIR=/tmp/ctxhelm-phase108b-target cargo test -p ctxhelm-index historical_commit_collection_uses_fast_no_rename_diff -- --nocapture
 ```
 
 Cold proof artifact:
 
 ```text
-.ctxpack/e2e/phase108-cold-git-bounded-proof.json
+.ctxhelm/e2e/phase108-cold-git-bounded-proof.json
 ```
 
 The cold proof still blocks:
 
 ```text
 decision = block
-reason = RefactoringMiner, ctxpack, and ReAgent insufficient evidence
+reason = RefactoringMiner, ctxhelm, and ReAgent insufficient evidence
 evaluatedRepositoryCount = 1
 evaluatedCommitCount = 5
 VeriSchema = beat, runtime 7463ms
@@ -69,4 +69,4 @@ store availability in the cold proof environment:
 Phase 108 therefore improves failure mode and bounds the hang, but does not make
 the cold four-repo production proof promotable. The next phase should add an
 explicit source-free object-read health check and a proof verdict that separates
-environment object-store failure from ctxpack retrieval quality.
+environment object-store failure from ctxhelm retrieval quality.

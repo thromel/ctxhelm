@@ -14,7 +14,7 @@ Generate an adoption-facing report from source-free benchmark suite output.
 ## Tasks
 
 - Add `ProductProofReport` and `ProductProofMetric`.
-- Summarize average file recall, lexical baseline recall, ctxpack lift, test recall, and brief token ROI.
+- Summarize average file recall, lexical baseline recall, ctxhelm lift, test recall, and brief token ROI.
 - Include limitations, helps-when, does-not-help-when, and future-work sections.
 - Embed the source-free benchmark report in JSON output.
 

@@ -6,26 +6,26 @@ Date: 2026-05-19
 
 This run used a real large repository instead of toy fixtures:
 
-- Subject repo: `/tmp/refminer-ctxpack-e2e`
+- Subject repo: `/tmp/refminer-ctxhelm-e2e`
 - Source: clean clone of `/Users/romel/Documents/GitHub/RefactoringMiner`
 - Scale: 1.9 GB, 38,753 files
-- ctxpack release binary tested: `/tmp/ctxpack-claude-e2e/ctxpack-v1.1.0-aarch64-apple-darwin/ctxpack`
-- patched local binary tested: `target/debug/ctxpack`
-- Isolated ctxpack home: `/tmp/ctxpack-refminer-home`
-- Evidence directory: `/tmp/ctxpack-refminer-e2e`
+- ctxhelm release binary tested: `/tmp/ctxhelm-claude-e2e/ctxhelm-v1.1.0-aarch64-apple-darwin/ctxhelm`
+- patched local binary tested: `target/debug/ctxhelm`
+- Isolated ctxhelm home: `/tmp/ctxhelm-refminer-home`
+- Evidence directory: `/tmp/ctxhelm-refminer-e2e`
 
 The original RefactoringMiner checkout was not modified.
 
 ## User-Visible Answer
 
-ctxpack is useful, but the real e2e shows it is not yet consistently better than baseline lexical retrieval on a large Java repository.
+ctxhelm is useful, but the real e2e shows it is not yet consistently better than baseline lexical retrieval on a large Java repository.
 
 What works:
 
 - Local indexing completes on a large repo.
 - `prepare-task`, `get-pack`, graph, inspector, cards, memory, and agent preview all return structured source-free outputs.
 - Memory storage and selection work after card generation.
-- Claude Code can call ctxpack through MCP against the real RefactoringMiner clone.
+- Claude Code can call ctxhelm through MCP against the real RefactoringMiner clone.
 - Historical eval now evaluates real commits after fixing a sampler bug found by this run.
 - A follow-up ranking fix moved historical Recall@10 above the lexical baseline on this slice.
 
@@ -101,7 +101,7 @@ Root cause:
 
 - RefactoringMiner has recent commits where `git diff-tree` takes seconds.
 - Example timings from the first 20 commits included about 5.7s, 8.4s, and 37.7s diff-tree calls.
-- ctxpack had a 250ms per-commit diff timeout and treated one slow commit as a failure of the whole sample set.
+- ctxhelm had a 250ms per-commit diff timeout and treated one slow commit as a failure of the whole sample set.
 
 Fix applied:
 
@@ -131,8 +131,8 @@ Follow-up ranking result after debugging:
 - `fileRecallAt10: 0.5186`
 - `lexicalBaselineRecallAt5: 0.4532`
 - `lexicalBaselineRecallAt10: 0.5008`
-- `ctxpackLiftAt5: 0.0`
-- `ctxpackLiftAt10: 0.0179`
+- `ctxhelmLiftAt5: 0.0`
+- `ctxhelmLiftAt10: 0.0179`
 - `sourceRecallAt10: 0.4611`
 - `testRecallAt10: 0.4722`
 - real time: 279.18s
@@ -149,8 +149,8 @@ Follow-up eval-diagnostics and related-test ranking result:
 - `fileRecallAt10: 0.5186`
 - `lexicalBaselineRecallAt5: 0.4532`
 - `lexicalBaselineRecallAt10: 0.5008`
-- `ctxpackLiftAt5: 0.0`
-- `ctxpackLiftAt10: 0.0179`
+- `ctxhelmLiftAt5: 0.0`
+- `ctxhelmLiftAt10: 0.0179`
 - `sourceRecallAt10: 0.4611`
 - `testRecallAt10: 0.4722`
 - runtime total: `191097ms`
@@ -241,10 +241,10 @@ Evidence:
 {
   "client": "claude",
   "clientVersion": "2.1.143 (Claude Code)",
-  "ctxpackVersion": "ctxpack 1.1.0",
+  "ctxhelmVersion": "ctxhelm 1.1.0",
   "getPack": true,
   "prepareTask": true,
-  "repo": "/private/tmp/refminer-ctxpack-e2e",
+  "repo": "/private/tmp/refminer-ctxhelm-e2e",
   "required": true
 }
 ```
@@ -270,8 +270,8 @@ Fix:
 
 Files:
 
-- `crates/ctxpack-index/src/git.rs`
-- `crates/ctxpack-index/src/lib.rs`
+- `crates/ctxhelm-index/src/git.rs`
+- `crates/ctxhelm-index/src/lib.rs`
 
 ### REF-E2E-002: All-Agent Preview Recomputed Too Much
 
@@ -288,7 +288,7 @@ Fix:
 
 Files:
 
-- `crates/ctxpack-compiler/src/agent_preview.rs`
+- `crates/ctxhelm-compiler/src/agent_preview.rs`
 
 Remaining issue:
 
@@ -310,8 +310,8 @@ Fix:
 
 Files:
 
-- `crates/ctxpack-index/src/search.rs`
-- `crates/ctxpack-compiler/src/ranking.rs`
+- `crates/ctxhelm-index/src/search.rs`
+- `crates/ctxhelm-compiler/src/ranking.rs`
 
 ### REF-E2E-004: History and Graph Signals Were Misweighted
 
@@ -330,9 +330,9 @@ Fix:
 
 Files:
 
-- `crates/ctxpack-index/src/dependencies.rs`
-- `crates/ctxpack-compiler/src/planning.rs`
-- `crates/ctxpack-compiler/src/ranking.rs`
+- `crates/ctxhelm-index/src/dependencies.rs`
+- `crates/ctxhelm-compiler/src/planning.rs`
+- `crates/ctxhelm-compiler/src/ranking.rs`
 
 ### REF-E2E-005: Java Tests Had No Runnable Commands
 
@@ -349,7 +349,7 @@ Fix:
 
 Files:
 
-- `crates/ctxpack-index/src/related_tests.rs`
+- `crates/ctxhelm-index/src/related_tests.rs`
 
 ## Remaining Product Gaps
 
@@ -359,8 +359,8 @@ Status: partially fixed.
 
 Evidence:
 
-- original ctxpack file recall@10: `0.2569`
-- fixed ctxpack file recall@10: `0.5186`
+- original ctxhelm file recall@10: `0.2569`
+- fixed ctxhelm file recall@10: `0.5186`
 - lexical baseline recall@10: `0.5008`
 
 Likely causes:
@@ -440,34 +440,34 @@ Commands passed:
 cargo fmt --check
 git diff --check
 CARGO_INCREMENTAL=0 cargo test --workspace
-CARGO_INCREMENTAL=0 cargo run -p ctxpack -- --help
+CARGO_INCREMENTAL=0 cargo run -p ctxhelm -- --help
 ```
 
 Targeted tests passed:
 
 ```bash
-CARGO_INCREMENTAL=0 cargo test -p ctxpack-index historical_commit_collection_skips_per_commit_diff_failures -- --nocapture
-CARGO_INCREMENTAL=0 cargo test -p ctxpack-compiler agent_preview -- --nocapture
-CARGO_INCREMENTAL=0 cargo test -p ctxpack-compiler ranking -- --nocapture
-CARGO_INCREMENTAL=0 cargo test -p ctxpack-index lexical_search_ignores_common_task_verbs -- --nocapture
-CARGO_INCREMENTAL=0 cargo test -p ctxpack-index related_tests_uses_gradle_java_test_class_command -- --nocapture
-CARGO_INCREMENTAL=0 cargo test -p ctxpack-index related_tests -- --nocapture
-CARGO_INCREMENTAL=0 cargo test -p ctxpack-compiler historical_eval -- --nocapture
-CARGO_INCREMENTAL=0 cargo test -p ctxpack historical_eval_report_renders_source_free_metrics -- --nocapture
-CARGO_INCREMENTAL=0 cargo test -p ctxpack --test cli_compat search_related_tests_dependencies_and_eval_history_emit_json_shapes -- --nocapture
-CARGO_INCREMENTAL=0 cargo test -p ctxpack-mcp related_call -- --nocapture
+CARGO_INCREMENTAL=0 cargo test -p ctxhelm-index historical_commit_collection_skips_per_commit_diff_failures -- --nocapture
+CARGO_INCREMENTAL=0 cargo test -p ctxhelm-compiler agent_preview -- --nocapture
+CARGO_INCREMENTAL=0 cargo test -p ctxhelm-compiler ranking -- --nocapture
+CARGO_INCREMENTAL=0 cargo test -p ctxhelm-index lexical_search_ignores_common_task_verbs -- --nocapture
+CARGO_INCREMENTAL=0 cargo test -p ctxhelm-index related_tests_uses_gradle_java_test_class_command -- --nocapture
+CARGO_INCREMENTAL=0 cargo test -p ctxhelm-index related_tests -- --nocapture
+CARGO_INCREMENTAL=0 cargo test -p ctxhelm-compiler historical_eval -- --nocapture
+CARGO_INCREMENTAL=0 cargo test -p ctxhelm historical_eval_report_renders_source_free_metrics -- --nocapture
+CARGO_INCREMENTAL=0 cargo test -p ctxhelm --test cli_compat search_related_tests_dependencies_and_eval_history_emit_json_shapes -- --nocapture
+CARGO_INCREMENTAL=0 cargo test -p ctxhelm-mcp related_call -- --nocapture
 ```
 
 Claude Code e2e passed:
 
 ```bash
-CTXPACK_BIN=/tmp/ctxpack-claude-e2e/ctxpack-v1.1.0-aarch64-apple-darwin/ctxpack \
-CTXPACK_REQUIRE_REAL_CLIENT=1 \
-CTXPACK_REAL_CLIENT_EVIDENCE_DIR=/tmp/ctxpack-refminer-claude-evidence \
-CTXPACK_ROOT="/Users/romel/Documents/GitHub/Agent Memory" \
-CTXPACK_SMOKE_REPO="/tmp/refminer-ctxpack-e2e" \
-CTXPACK_SMOKE_TASK="Default MCP repository path to working directory" \
-CTXPACK_SMOKE_PATH="src/main/java/org/refactoringminer/mcp/RefactoringMinerMcpTools.java" \
-CTXPACK_SMOKE_QUERY="Default MCP repository path" \
+CTXHELM_BIN=/tmp/ctxhelm-claude-e2e/ctxhelm-v1.1.0-aarch64-apple-darwin/ctxhelm \
+CTXHELM_REQUIRE_REAL_CLIENT=1 \
+CTXHELM_REAL_CLIENT_EVIDENCE_DIR=/tmp/ctxhelm-refminer-claude-evidence \
+CTXHELM_ROOT="/Users/romel/Documents/GitHub/Agent Memory" \
+CTXHELM_SMOKE_REPO="/tmp/refminer-ctxhelm-e2e" \
+CTXHELM_SMOKE_TASK="Default MCP repository path to working directory" \
+CTXHELM_SMOKE_PATH="src/main/java/org/refactoringminer/mcp/RefactoringMinerMcpTools.java" \
+CTXHELM_SMOKE_QUERY="Default MCP repository path" \
 bash scripts/smoke-claude-mcp.sh
 ```

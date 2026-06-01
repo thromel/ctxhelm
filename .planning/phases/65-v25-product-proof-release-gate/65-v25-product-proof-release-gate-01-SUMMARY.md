@@ -19,7 +19,7 @@ requirements_addressed:
   `beat`, `match`, `trail`, or `insufficient_evidence`.
 - Added release decision logic that blocks non-promote proof results.
 - Extracted product-proof validation to `scripts/check-product-proof.py`.
-- Wired optional `CTXPACK_BENCHMARK_CONFIG` release-gate proof to fail when the
+- Wired optional `CTXHELM_BENCHMARK_CONFIG` release-gate proof to fail when the
   proof does not promote.
 - Updated benchmarking and release docs with current v2.5 recommendation.
 
@@ -27,9 +27,9 @@ requirements_addressed:
 
 The current v2.5 two-repo proof blocks default promotion:
 
-- RefactoringMiner: `trail`, ctxpack Recall@10 `0.7392`, lexical Recall@10
+- RefactoringMiner: `trail`, ctxhelm Recall@10 `0.7392`, lexical Recall@10
   `0.7792`, delta `-0.0400`.
-- ctxpack: `match`, ctxpack Recall@10 `0.1974`, lexical Recall@10 `0.2021`,
+- ctxhelm: `match`, ctxhelm Recall@10 `0.1974`, lexical Recall@10 `0.2021`,
   delta `-0.0046`.
 - Decision: `block`.
 - Default promotion allowed: `false`.
@@ -37,13 +37,13 @@ The current v2.5 two-repo proof blocks default promotion:
 ## Validation
 
 ```bash
-cargo test -p ctxpack-compiler product_proof_release_gate -- --nocapture
-cargo test -p ctxpack --test release_packaging -- --nocapture
-cargo run -p ctxpack -- eval proof --config .ctxpack/e2e/phase62-default-config.json --format json
-python3 scripts/check-product-proof.py .ctxpack/e2e/phase65-product-proof.json
+cargo test -p ctxhelm-compiler product_proof_release_gate -- --nocapture
+cargo test -p ctxhelm --test release_packaging -- --nocapture
+cargo run -p ctxhelm -- eval proof --config .ctxhelm/e2e/phase62-default-config.json --format json
+python3 scripts/check-product-proof.py .ctxhelm/e2e/phase65-product-proof.json
 bash scripts/check-release-docs.sh
 cargo test --workspace --no-fail-fast
-cargo run -p ctxpack -- --help
+cargo run -p ctxhelm -- --help
 git diff --check
 ```
 

@@ -35,7 +35,7 @@ Use direct CLI output rather than adding MCP storage tools in this milestone; MC
 ### Reusable Assets
 - `scripts/release-gate.sh` already has a selected-binary smoke-test structure.
 - `scripts/check-release-docs.sh` already enforces documentation consistency.
-- CLI command structure in `crates/ctxpack/src/main.rs` supports nested subcommands.
+- CLI command structure in `crates/ctxhelm/src/main.rs` supports nested subcommands.
 
 ### Established Patterns
 - Release gates avoid publishing or mutating global agent config.

@@ -1,6 +1,6 @@
 # Paired Baselines And Ablations
 
-`ctxpack eval baselines` compares the default ctxpack context-file ranking
+`ctxhelm eval baselines` compares the default ctxhelm context-file ranking
 against simpler baselines and single-signal variants on the same historical
 commit corpus. The report is source-free: it records paths, metrics, signal
 families, verdicts, and privacy status, but not source snippets, prompt text,
@@ -9,25 +9,25 @@ commit subjects, stack traces, or terminal logs.
 ## Run
 
 ```bash
-ctxpack eval baselines --repo /path/to/repo --limit 20 --budget 10
-ctxpack eval baselines --repo /path/to/repo --limit 20 --budget 10 --format json
-ctxpack eval baselines --repo /path/to/repo --cache --parallelism 4 --format markdown
+ctxhelm eval baselines --repo /path/to/repo --limit 20 --budget 10
+ctxhelm eval baselines --repo /path/to/repo --limit 20 --budget 10 --format json
+ctxhelm eval baselines --repo /path/to/repo --cache --parallelism 4 --format markdown
 ```
 
 Use `--min-lift` and `--max-regression` to tune verdict thresholds:
 
 ```bash
-ctxpack eval baselines --repo /path/to/repo --min-lift 0.05 --max-regression 0.02
+ctxhelm eval baselines --repo /path/to/repo --min-lift 0.05 --max-regression 0.02
 ```
 
 ## Compared Variants
 
 The report always includes:
 
-- `ctxpack_default`: the current hybrid ranking under the fixed context-file
+- `ctxhelm_default`: the current hybrid ranking under the fixed context-file
   budget.
 - `lexical_baseline`: exact/BM25-style path and identifier ranking.
-- `no_context`: zero-file baseline for an agent starting without ctxpack
+- `no_context`: zero-file baseline for an agent starting without ctxhelm
   context.
 - `semantic_only`: candidates that carried the semantic signal.
 - `graph_only`: candidates that carried dependency/graph signal.
@@ -51,7 +51,7 @@ Each row includes:
 - MRR@K.
 - Test recommendation rate.
 - Average recommended context files.
-- Delta against `ctxpack_default`.
+- Delta against `ctxhelm_default`.
 - Delta against `lexical_baseline`.
 - Verdict.
 
@@ -74,9 +74,9 @@ Verdicts are thresholded so raw deltas do not get over-read:
   `--max-regression`.
 - `insufficient_evidence`: the corpus or signal had no usable evidence.
 
-`lexicalStatus` and `lexicalDeltaAtK` call out whether default ctxpack is ahead
+`lexicalStatus` and `lexicalDeltaAtK` call out whether default ctxhelm is ahead
 of, tied with, or behind exact lexical search. Lexical parity is not failure:
-it may still mean ctxpack adds tests, validation commands, graph evidence, and
+it may still mean ctxhelm adds tests, validation commands, graph evidence, and
 progressive context structure. Lexical regression is serious and should block
 world-class claims until the missed-family taxonomy explains it.
 

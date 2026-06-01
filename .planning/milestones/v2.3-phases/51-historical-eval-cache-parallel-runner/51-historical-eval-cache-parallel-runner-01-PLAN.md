@@ -23,8 +23,8 @@ Maintainers can run large-history evals faster through cache reuse, parallel sam
 
 - `cargo fmt --all`
 - `CARGO_INCREMENTAL=0 cargo check --workspace`
-- `CARGO_INCREMENTAL=0 cargo test -p ctxpack-compiler historical_eval_reuses_source_free_cache_and_parallelism_metadata -- --nocapture`
-- `CARGO_INCREMENTAL=0 cargo test -p ctxpack-compiler benchmark_suite_runs_multiple_repos_with_source_free_metadata -- --nocapture`
-- `cargo run -p ctxpack -- eval history --help`
-- `cargo run -p ctxpack -- eval health --help`
+- `CARGO_INCREMENTAL=0 cargo test -p ctxhelm-compiler historical_eval_reuses_source_free_cache_and_parallelism_metadata -- --nocapture`
+- `CARGO_INCREMENTAL=0 cargo test -p ctxhelm-compiler benchmark_suite_runs_multiple_repos_with_source_free_metadata -- --nocapture`
+- `cargo run -p ctxhelm -- eval history --help`
+- `cargo run -p ctxhelm -- eval health --help`
 - `git diff --check`

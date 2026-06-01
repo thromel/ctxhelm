@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ctxpack_bin="${CTXPACK_BIN:-ctxpack}"
+ctxhelm_bin="${CTXHELM_BIN:-ctxhelm}"
 work_dir="$(mktemp -d)"
 cleanup() {
   rm -rf "$work_dir"
@@ -12,11 +12,11 @@ repo="$work_dir/repo"
 home="$work_dir/home"
 mkdir -p "$repo/src/auth" "$repo/tests/auth" "$home"
 git -C "$repo" init >/dev/null
-git -C "$repo" config user.email ctxpack@example.com
-git -C "$repo" config user.name ctxpack
+git -C "$repo" config user.email ctxhelm@example.com
+git -C "$repo" config user.name ctxhelm
 cat >"$repo/src/auth/session.ts" <<'SRC'
 export function requireSession() {
-  return "CTXPACK_MEMORY_SOURCE_SENTINEL";
+  return "CTXHELM_MEMORY_SOURCE_SENTINEL";
 }
 SRC
 cat >"$repo/tests/auth/session.test.ts" <<'SRC'
@@ -26,14 +26,14 @@ SRC
 git -C "$repo" add .
 git -C "$repo" commit -m "add auth session" >/dev/null
 
-export CTXPACK_HOME="$home"
+export CTXHELM_HOME="$home"
 
-"$ctxpack_bin" cards generate --repo "$repo" --format json >"$work_dir/cards.json"
-"$ctxpack_bin" storage status --repo "$repo" --format json >"$work_dir/status.json"
-"$ctxpack_bin" prepare-task "fix requireSession auth session bug" --repo "$repo" --mode bug-fix >"$work_dir/plan.json"
-"$ctxpack_bin" get-pack "fix requireSession auth session bug" --repo "$repo" --mode bug-fix --budget brief >"$work_dir/pack.md"
-"$ctxpack_bin" memory generate-experience --repo "$repo" --format json >"$work_dir/experience.json"
-"$ctxpack_bin" memory list --repo "$repo" --include-disabled --format json >"$work_dir/memory-before.json"
+"$ctxhelm_bin" cards generate --repo "$repo" --format json >"$work_dir/cards.json"
+"$ctxhelm_bin" storage status --repo "$repo" --format json >"$work_dir/status.json"
+"$ctxhelm_bin" prepare-task "fix requireSession auth session bug" --repo "$repo" --mode bug-fix >"$work_dir/plan.json"
+"$ctxhelm_bin" get-pack "fix requireSession auth session bug" --repo "$repo" --mode bug-fix --budget brief >"$work_dir/pack.md"
+"$ctxhelm_bin" memory generate-experience --repo "$repo" --format json >"$work_dir/experience.json"
+"$ctxhelm_bin" memory list --repo "$repo" --include-disabled --format json >"$work_dir/memory-before.json"
 
 python3 - "$work_dir" "$home" <<'PY'
 import json
@@ -62,11 +62,11 @@ if experience["cards"] and experience["cards"][0]["reviewStatus"] != "pending":
 pending = [card for card in memory if card["kind"] == "experience"]
 if not pending:
     raise SystemExit("experience memory card was not listed")
-database_paths = list(home.glob("repos/*/ctxpack.sqlite3"))
+database_paths = list(home.glob("repos/*/ctxhelm.sqlite3"))
 if len(database_paths) != 1:
     raise SystemExit(f"expected one storage database, found {database_paths}")
 database_bytes = database_paths[0].read_bytes()
-if b"CTXPACK_MEMORY_SOURCE_SENTINEL" in database_bytes:
+if b"CTXHELM_MEMORY_SOURCE_SENTINEL" in database_bytes:
     raise SystemExit("storage leaked source sentinel")
 print(pending[0]["id"])
 PY
@@ -80,9 +80,9 @@ print(next(card["id"] for card in cards if card["kind"] == "experience"))
 PY
 )"
 
-"$ctxpack_bin" memory show "$experience_id" --repo "$repo" --format json >"$work_dir/show.json"
-"$ctxpack_bin" memory approve "$experience_id" --repo "$repo" --format json >"$work_dir/approve.json"
-"$ctxpack_bin" memory disable "$experience_id" --repo "$repo" --format json >"$work_dir/disable.json"
+"$ctxhelm_bin" memory show "$experience_id" --repo "$repo" --format json >"$work_dir/show.json"
+"$ctxhelm_bin" memory approve "$experience_id" --repo "$repo" --format json >"$work_dir/approve.json"
+"$ctxhelm_bin" memory disable "$experience_id" --repo "$repo" --format json >"$work_dir/disable.json"
 
 python3 - "$work_dir/show.json" "$work_dir/approve.json" "$work_dir/disable.json" <<'PY'
 import json

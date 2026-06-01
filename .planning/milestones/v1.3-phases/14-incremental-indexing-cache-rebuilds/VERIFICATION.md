@@ -10,10 +10,10 @@ Passed.
 
 ## Evidence
 
-- `cargo test -p ctxpack-index storage`
-- `cargo test -p ctxpack`
-- `ctxpack index --repo <tmp-repo> --store`
-- `ctxpack storage status --repo <tmp-repo>`
+- `cargo test -p ctxhelm-index storage`
+- `cargo test -p ctxhelm`
+- `ctxhelm index --repo <tmp-repo> --store`
+- `ctxhelm storage status --repo <tmp-repo>`
 
 ## Requirements
 

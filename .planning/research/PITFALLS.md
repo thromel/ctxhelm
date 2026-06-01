@@ -24,7 +24,7 @@ Mitigation:
 
 ## Pitfall 3: Precision Indexer Fragility
 
-SCIP/LSP generation can depend on build tools, dependency installation, language servers, and repo setup. Making it mandatory would violate ctxpack's low-friction local broker contract.
+SCIP/LSP generation can depend on build tools, dependency installation, language servers, and repo setup. Making it mandatory would violate ctxhelm's low-friction local broker contract.
 
 Mitigation:
 

@@ -1,6 +1,6 @@
 # Agent Integrations
 
-ctxpack is agent-native: the daily workflow stays inside Codex, Claude Code,
+ctxhelm is agent-native: the daily workflow stays inside Codex, Claude Code,
 Cursor, OpenCode, and other MCP-compatible coding agents.
 
 ## Integration Layers
@@ -10,10 +10,10 @@ flowchart TD
   Agent["Coding agent"] --> Static["AGENTS.md"]
   Agent --> Native["Native rules and commands"]
   Agent --> MCP["MCP tools/resources/prompts"]
-  MCP --> Ctxpack["ctxpack server"]
-  Static --> Behavior["Call ctxpack for non-trivial context"]
+  MCP --> Ctxhelm["ctxhelm server"]
+  Static --> Behavior["Call ctxhelm for non-trivial context"]
   Native --> Behavior
-  Ctxpack --> Plan["Context plan or pack"]
+  Ctxhelm --> Plan["Context plan or pack"]
 ```
 
 ## AGENTS.md
@@ -21,7 +21,7 @@ flowchart TD
 AGENTS.md is the broadest compatibility layer. It should contain stable,
 high-signal behavior:
 
-- call ctxpack for non-trivial code changes
+- call ctxhelm for non-trivial code changes
 - read target files with native tools
 - request larger packs only when needed
 - run targeted validation commands when returned
@@ -43,8 +43,8 @@ Large content belongs behind resources, not additional tools.
 
 Workspace metadata is also exposed as resources rather than new tools:
 
-- `ctxpack://workspace/status`
-- `ctxpack://workspace/shared-artifacts`
+- `ctxhelm://workspace/status`
+- `ctxhelm://workspace/shared-artifacts`
 
 Agents can load these when they need multi-repo status or team artifact
 metadata. This keeps the model-facing tool decision set stable while still
@@ -53,11 +53,11 @@ making workspace context available.
 ## Native Rules
 
 Cursor rules, Claude commands, and OpenCode snippets are thin adapters. They
-should guide behavior without duplicating ctxpack internals.
+should guide behavior without duplicating ctxhelm internals.
 
 ## Trade-Offs
 
-- Keeping ctxpack read-only avoids competing with agent permission/editing
+- Keeping ctxhelm read-only avoids competing with agent permission/editing
   models.
 - Keeping the MCP tool surface small reduces context overhead.
 - Static docs help cloud or isolated tasks, but dynamic MCP is better for fresh

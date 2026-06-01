@@ -1,15 +1,15 @@
 # Agent Preview
 
-`ctxpack agent preview` shows how ctxpack expects an existing coding agent to
+`ctxhelm agent preview` shows how ctxhelm expects an existing coding agent to
 consume a task-specific plan or pack.
 
 ```bash
-ctxpack agent preview "fix login redirect" --repo /path/to/repo
-ctxpack agent preview "fix login redirect" --target-agent codex --format json
-ctxpack agent preview "fix login redirect" --target-agent claude-code
-ctxpack agent preview "fix login redirect" --target-agent cursor
-ctxpack agent preview "fix login redirect" --target-agent opencode
-ctxpack agent preview "fix login redirect" --target-agent generic
+ctxhelm agent preview "fix login redirect" --repo /path/to/repo
+ctxhelm agent preview "fix login redirect" --target-agent codex --format json
+ctxhelm agent preview "fix login redirect" --target-agent claude-code
+ctxhelm agent preview "fix login redirect" --target-agent cursor
+ctxhelm agent preview "fix login redirect" --target-agent opencode
+ctxhelm agent preview "fix login redirect" --target-agent generic
 ```
 
 The default target is `all`, which emits previews for Codex CLI, Claude Code,
@@ -22,11 +22,11 @@ Each preview includes:
 - target agent name
 - same-session pack resource URI
 - MCP tools such as `prepare_task`, `get_pack`, `related`, and `related_tests`
-- MCP resources such as `ctxpack://repo/summary` and `ctxpack://pack/...`
+- MCP resources such as `ctxhelm://repo/summary` and `ctxhelm://pack/...`
 - `AGENTS.md` guidance
 - native rule, command, or adapter snippet paths where applicable
 - recommended next steps
-- ownership boundary between ctxpack and the target agent
+- ownership boundary between ctxhelm and the target agent
 
 ## Boundary
 
@@ -36,7 +36,7 @@ cloud payloads.
 
 The preview makes this division explicit:
 
-- ctxpack suggests files, tests, context packs, and validation commands.
+- ctxhelm suggests files, tests, context packs, and validation commands.
 - the coding agent reads files with native tools.
 - the coding agent edits files and runs shell commands through its permission
   model.

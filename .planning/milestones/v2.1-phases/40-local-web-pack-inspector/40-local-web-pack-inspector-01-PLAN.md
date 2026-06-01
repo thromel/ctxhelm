@@ -27,7 +27,7 @@ Implement UI-01 through UI-04:
 - Focused compiler HTML test
 - `bash scripts/smoke-inspector.sh`
 - `bash scripts/check-release-docs.sh`
-- `cargo run -p ctxpack -- inspector export --help`
+- `cargo run -p ctxhelm -- inspector export --help`
 - `cargo test --workspace`
 
 ## Non-goals

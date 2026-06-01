@@ -1,7 +1,7 @@
 {
-  "manifestVersion": "ctxpack-benchmark-corpus-v2.3",
+  "manifestVersion": "ctxhelm-benchmark-corpus-v2.3",
   "name": "v2.3-refactoringminer-regression-clean-e2e",
-  "corpusId": "ctxpack-v2.3-refactoringminer-20-commit-clean-e2e",
+  "corpusId": "ctxhelm-v2.3-refactoringminer-20-commit-clean-e2e",
   "privacyLabel": "source_free_local",
   "description": "Clean worktree RefactoringMiner regression check for v2.3 E2E.",
   "defaults": {
@@ -21,7 +21,7 @@
   "repositories": [
     {
       "name": "RefactoringMiner-clean",
-      "path": "/private/tmp/ctxpack-rm-worktree.8gcLMR/RefactoringMiner-clean",
+      "path": "/private/tmp/ctxhelm-rm-worktree.8gcLMR/RefactoringMiner-clean",
       "revisionRangeId": "refactoringminer-clean-head-20",
       "privacyLabel": "source_free_local",
       "limit": 20,

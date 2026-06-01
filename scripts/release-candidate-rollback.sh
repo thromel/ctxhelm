@@ -7,7 +7,7 @@ usage: release-candidate-rollback.sh --candidate-dir PATH [--metadata PATH --pre
 
 Removes a local release candidate artifact directory and optionally restores
 previous release metadata. The candidate directory must contain the marker file
-.ctxpack-release-candidate. The script refuses dangerous paths and does not
+.ctxhelm-release-candidate. The script refuses dangerous paths and does not
 touch repository source files.
 EOF
 }
@@ -49,8 +49,8 @@ if [[ ! -d "$candidate_dir" ]]; then
   echo "candidate directory not found: $candidate_dir" >&2
   exit 66
 fi
-if [[ ! -f "$candidate_dir/.ctxpack-release-candidate" ]]; then
-  echo "refusing rollback: missing .ctxpack-release-candidate marker in $candidate_dir" >&2
+if [[ ! -f "$candidate_dir/.ctxhelm-release-candidate" ]]; then
+  echo "refusing rollback: missing .ctxhelm-release-candidate marker in $candidate_dir" >&2
   exit 65
 fi
 

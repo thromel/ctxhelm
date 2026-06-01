@@ -2,45 +2,45 @@
 set -euo pipefail
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
-ctxpack_root="${CTXPACK_ROOT:-$(cd "$script_dir/.." && pwd -P)}"
-protocol_script="$ctxpack_root/scripts/smoke-mcp-protocol.sh"
-repo_input="${CTXPACK_SMOKE_REPO:-$PWD}"
-task="${CTXPACK_SMOKE_TASK:-fix requireSession auth bug}"
-anchor_path="${CTXPACK_SMOKE_PATH:-crates/ctxpack-mcp/src/lib.rs}"
-query="${CTXPACK_SMOKE_QUERY:-prepare_task}"
-require_real="${CTXPACK_REQUIRE_REAL_CLIENT:-0}"
-run_real="${CTXPACK_RUN_REAL_CLIENT:-0}"
+ctxhelm_root="${CTXHELM_ROOT:-$(cd "$script_dir/.." && pwd -P)}"
+protocol_script="$ctxhelm_root/scripts/smoke-mcp-protocol.sh"
+repo_input="${CTXHELM_SMOKE_REPO:-$PWD}"
+task="${CTXHELM_SMOKE_TASK:-fix requireSession auth bug}"
+anchor_path="${CTXHELM_SMOKE_PATH:-crates/ctxhelm-mcp/src/lib.rs}"
+query="${CTXHELM_SMOKE_QUERY:-prepare_task}"
+require_real="${CTXHELM_REQUIRE_REAL_CLIENT:-0}"
+run_real="${CTXHELM_RUN_REAL_CLIENT:-0}"
 
-resolve_ctxpack_bin() {
-  if [[ -n "${CTXPACK_BIN:-}" ]]; then
-    if [[ ! "$CTXPACK_BIN" = /* ]]; then
-      echo "CTXPACK_BIN must be absolute: $CTXPACK_BIN" >&2
+resolve_ctxhelm_bin() {
+  if [[ -n "${CTXHELM_BIN:-}" ]]; then
+    if [[ ! "$CTXHELM_BIN" = /* ]]; then
+      echo "CTXHELM_BIN must be absolute: $CTXHELM_BIN" >&2
       exit 64
     fi
-    if [[ ! -x "$CTXPACK_BIN" ]]; then
-      echo "CTXPACK_BIN is not executable: $CTXPACK_BIN" >&2
+    if [[ ! -x "$CTXHELM_BIN" ]]; then
+      echo "CTXHELM_BIN is not executable: $CTXHELM_BIN" >&2
       exit 64
     fi
-    printf '%s/%s\n' "$(cd "$(dirname "$CTXPACK_BIN")" && pwd -P)" "$(basename "$CTXPACK_BIN")"
+    printf '%s/%s\n' "$(cd "$(dirname "$CTXHELM_BIN")" && pwd -P)" "$(basename "$CTXHELM_BIN")"
     return
   fi
-  cargo build -p ctxpack >/dev/null
-  printf '%s/target/debug/ctxpack\n' "$ctxpack_root"
+  cargo build -p ctxhelm >/dev/null
+  printf '%s/target/debug/ctxhelm\n' "$ctxhelm_root"
 }
 
 fail_or_skip() {
   local reason="$1"
-  if [[ -n "${CTXPACK_REAL_CLIENT_EVIDENCE_DIR:-}" && -n "${repo:-}" && -n "${ctxpack_version:-}" ]]; then
+  if [[ -n "${CTXHELM_REAL_CLIENT_EVIDENCE_DIR:-}" && -n "${repo:-}" && -n "${ctxhelm_version:-}" ]]; then
     write_skip_evidence \
-      "${CTXPACK_REAL_CLIENT_EVIDENCE_DIR}/codex-mcp-evidence.json" \
+      "${CTXHELM_REAL_CLIENT_EVIDENCE_DIR}/codex-mcp-evidence.json" \
       "$reason" \
       "${request_log:-}"
   fi
   if [[ "$require_real" == "1" ]]; then
-    echo "ctxpack Codex MCP smoke failed: $reason" >&2
+    echo "ctxhelm Codex MCP smoke failed: $reason" >&2
     exit 1
   fi
-  echo "ctxpack Codex MCP smoke skipped: $reason"
+  echo "ctxhelm Codex MCP smoke skipped: $reason"
   exit 0
 }
 
@@ -48,13 +48,13 @@ write_skip_evidence() {
   local evidence_file="$1"
   local reason="$2"
   local request_log_path="${3:-}"
-  python3 - "$evidence_file" "$repo" "${client_version:-unavailable}" "$ctxpack_version" "$require_real" "$reason" "$request_log_path" <<'PY'
+  python3 - "$evidence_file" "$repo" "${client_version:-unavailable}" "$ctxhelm_version" "$require_real" "$reason" "$request_log_path" <<'PY'
 import hashlib
 import json
 import pathlib
 import sys
 
-path, repo, client_version, ctxpack_version, required, reason, request_log_path = sys.argv[1:]
+path, repo, client_version, ctxhelm_version, required, reason, request_log_path = sys.argv[1:]
 
 def request_log_summary(log_path, expected_repo):
     raw = b""
@@ -93,7 +93,7 @@ def request_log_summary(log_path, expected_repo):
             entry["recordTraceFalse"] = arguments.get("recordTrace") is False
         observed.append(entry)
     return {
-        "requestEvidenceSchemaVersion": "ctxpack-real-client-evidence-v2",
+        "requestEvidenceSchemaVersion": "ctxhelm-real-client-evidence-v2",
         "serverSideRequestLog": bool(raw),
         "requestLogSha256": hashlib.sha256(raw).hexdigest(),
         "requestLogLineCount": len(lines),
@@ -105,7 +105,7 @@ summary = request_log_summary(request_log_path, repo)
 evidence = {
     "client": "codex",
     "clientVersion": client_version,
-    "ctxpackVersion": ctxpack_version,
+    "ctxhelmVersion": ctxhelm_version,
     "repo": repo,
     "status": "skipped",
     "skipReason": reason,
@@ -130,13 +130,13 @@ PY
 write_evidence() {
   local evidence_file="$1"
   local request_log_path="$2"
-  python3 - "$evidence_file" "$repo" "$client_version" "$ctxpack_version" "$require_real" "$request_log_path" <<'PY'
+  python3 - "$evidence_file" "$repo" "$client_version" "$ctxhelm_version" "$require_real" "$request_log_path" <<'PY'
 import hashlib
 import json
 import pathlib
 import sys
 
-path, repo, client_version, ctxpack_version, required, request_log_path = sys.argv[1:]
+path, repo, client_version, ctxhelm_version, required, request_log_path = sys.argv[1:]
 
 def request_log_summary(log_path, expected_repo):
     raw = b""
@@ -175,7 +175,7 @@ def request_log_summary(log_path, expected_repo):
             entry["recordTraceFalse"] = arguments.get("recordTrace") is False
         observed.append(entry)
     return {
-        "requestEvidenceSchemaVersion": "ctxpack-real-client-evidence-v2",
+        "requestEvidenceSchemaVersion": "ctxhelm-real-client-evidence-v2",
         "serverSideRequestLog": True,
         "requestLogSha256": hashlib.sha256(raw).hexdigest(),
         "requestLogLineCount": len(lines),
@@ -187,7 +187,7 @@ summary = request_log_summary(request_log_path, repo)
 evidence = {
     "client": "codex",
     "clientVersion": client_version,
-    "ctxpackVersion": ctxpack_version,
+    "ctxhelmVersion": ctxhelm_version,
     "repo": repo,
     "status": "passed",
     "deterministicProtocol": True,
@@ -209,46 +209,46 @@ if path:
     payload = json.dumps(evidence, sort_keys=True)
     target.write_text(payload + "\n", encoding="utf-8")
 else:
-    print("ctxpack Codex MCP smoke evidence: " + payload)
+    print("ctxhelm Codex MCP smoke evidence: " + payload)
 PY
 }
 
 repo="$(cd "$repo_input" && pwd -P)"
-ctxpack_bin="$(resolve_ctxpack_bin)"
-ctxpack_home="$(mktemp -d)"
+ctxhelm_bin="$(resolve_ctxhelm_bin)"
+ctxhelm_home="$(mktemp -d)"
 work_dir="$(mktemp -d)"
 cleanup() {
-  rm -rf "$ctxpack_home" "$work_dir"
+  rm -rf "$ctxhelm_home" "$work_dir"
 }
 trap cleanup EXIT
 
-ctxpack_version="$("$ctxpack_bin" --version)"
+ctxhelm_version="$("$ctxhelm_bin" --version)"
 
-echo "ctxpack Codex MCP smoke: running deterministic protocol gate"
-CTXPACK_BIN="$ctxpack_bin" \
-  CTXPACK_ROOT="$ctxpack_root" \
-  CTXPACK_SMOKE_REPO="$repo" \
-  CTXPACK_SMOKE_TASK="$task" \
-  CTXPACK_SMOKE_PATH="$anchor_path" \
-  CTXPACK_SMOKE_QUERY="$query" \
-  CTXPACK_HOME="$ctxpack_home" \
+echo "ctxhelm Codex MCP smoke: running deterministic protocol gate"
+CTXHELM_BIN="$ctxhelm_bin" \
+  CTXHELM_ROOT="$ctxhelm_root" \
+  CTXHELM_SMOKE_REPO="$repo" \
+  CTXHELM_SMOKE_TASK="$task" \
+  CTXHELM_SMOKE_PATH="$anchor_path" \
+  CTXHELM_SMOKE_QUERY="$query" \
+  CTXHELM_HOME="$ctxhelm_home" \
   bash "$protocol_script"
 
-if [[ "${CTXPACK_SKIP_REAL_CLIENT:-0}" == "1" ]]; then
-  reason="CTXPACK_SKIP_REAL_CLIENT=1 after protocol gate passed"
-  if [[ -n "${CTXPACK_REAL_CLIENT_EVIDENCE_DIR:-}" ]]; then
-    write_skip_evidence "${CTXPACK_REAL_CLIENT_EVIDENCE_DIR}/codex-mcp-evidence.json" "$reason" ""
+if [[ "${CTXHELM_SKIP_REAL_CLIENT:-0}" == "1" ]]; then
+  reason="CTXHELM_SKIP_REAL_CLIENT=1 after protocol gate passed"
+  if [[ -n "${CTXHELM_REAL_CLIENT_EVIDENCE_DIR:-}" ]]; then
+    write_skip_evidence "${CTXHELM_REAL_CLIENT_EVIDENCE_DIR}/codex-mcp-evidence.json" "$reason" ""
   fi
-  echo "ctxpack Codex MCP smoke skipped: $reason"
+  echo "ctxhelm Codex MCP smoke skipped: $reason"
   exit 0
 fi
 
 if [[ "$require_real" != "1" && "$run_real" != "1" ]]; then
-  reason="set CTXPACK_RUN_REAL_CLIENT=1 or CTXPACK_REQUIRE_REAL_CLIENT=1 after protocol gate passed"
-  if [[ -n "${CTXPACK_REAL_CLIENT_EVIDENCE_DIR:-}" ]]; then
-    write_skip_evidence "${CTXPACK_REAL_CLIENT_EVIDENCE_DIR}/codex-mcp-evidence.json" "$reason" ""
+  reason="set CTXHELM_RUN_REAL_CLIENT=1 or CTXHELM_REQUIRE_REAL_CLIENT=1 after protocol gate passed"
+  if [[ -n "${CTXHELM_REAL_CLIENT_EVIDENCE_DIR:-}" ]]; then
+    write_skip_evidence "${CTXHELM_REAL_CLIENT_EVIDENCE_DIR}/codex-mcp-evidence.json" "$reason" ""
   fi
-  echo "ctxpack Codex MCP smoke skipped: $reason"
+  echo "ctxhelm Codex MCP smoke skipped: $reason"
   exit 0
 fi
 
@@ -257,26 +257,26 @@ if ! command -v codex >/dev/null 2>&1; then
 fi
 
 client_version="$(codex --version 2>&1 | head -n 1)"
-request_log="$work_dir/ctxpack-mcp-requests.jsonl"
+request_log="$work_dir/ctxhelm-mcp-requests.jsonl"
 events="$work_dir/codex-events.jsonl"
 last_message="$work_dir/codex-last-message.txt"
 stderr_log="$work_dir/codex-stderr.log"
-server_wrapper="$work_dir/ctxpack-mcp-server.sh"
+server_wrapper="$work_dir/ctxhelm-mcp-server.sh"
 outside_cwd="$work_dir/outside-repo"
 mkdir -p "$outside_cwd"
 
 {
   printf '%s\n' '#!/usr/bin/env bash'
   printf '%s\n' 'set -euo pipefail'
-  printf 'export CTXPACK_HOME=%q\n' "$ctxpack_home"
-  printf 'export CTXPACK_REAL_CLIENT_REQUEST_LOG=%q\n' "$request_log"
-  printf 'ctxpack_bin=%q\n' "$ctxpack_bin"
-  printf '%s\n' 'tee -a "$CTXPACK_REAL_CLIENT_REQUEST_LOG" | "$ctxpack_bin" serve-mcp'
+  printf 'export CTXHELM_HOME=%q\n' "$ctxhelm_home"
+  printf 'export CTXHELM_REAL_CLIENT_REQUEST_LOG=%q\n' "$request_log"
+  printf 'ctxhelm_bin=%q\n' "$ctxhelm_bin"
+  printf '%s\n' 'tee -a "$CTXHELM_REAL_CLIENT_REQUEST_LOG" | "$ctxhelm_bin" serve-mcp'
 } >"$server_wrapper"
 chmod +x "$server_wrapper"
 
 prompt=$(cat <<EOF
-Use the ctxpack MCP server. Call prepare_task first with explicit repo "$repo" and task "$task".
+Use the ctxhelm MCP server. Call prepare_task first with explicit repo "$repo" and task "$task".
 Then call get_pack with the same explicit repo "$repo", the same task, budget "brief", format "json", and recordTrace false.
 Do not use shell commands for this smoke. The smoke requires machine-checkable tool-call evidence for prepare_task and get_pack with the repo argument.
 EOF
@@ -301,11 +301,11 @@ codex_exec_args+=(
   --dangerously-bypass-approvals-and-sandbox
   --json
   --output-last-message "$last_message"
-  -c "mcp_servers.ctxpack.command=\"$server_wrapper\""
-  -c "mcp_servers.ctxpack.args=[]"
-  -c "mcp_servers.ctxpack.cwd=\"$outside_cwd\""
-  -c "mcp_servers.ctxpack.startup_timeout_sec=30"
-  -c "mcp_servers.ctxpack.tool_timeout_sec=120"
+  -c "mcp_servers.ctxhelm.command=\"$server_wrapper\""
+  -c "mcp_servers.ctxhelm.args=[]"
+  -c "mcp_servers.ctxhelm.cwd=\"$outside_cwd\""
+  -c "mcp_servers.ctxhelm.startup_timeout_sec=30"
+  -c "mcp_servers.ctxhelm.tool_timeout_sec=120"
   "$prompt"
 )
 
@@ -347,20 +347,20 @@ if missing:
 PY
 then
   evidence_path=""
-  if [[ -n "${CTXPACK_REAL_CLIENT_EVIDENCE_DIR:-}" ]]; then
-    evidence_path="${CTXPACK_REAL_CLIENT_EVIDENCE_DIR}/codex-mcp-evidence.json"
+  if [[ -n "${CTXHELM_REAL_CLIENT_EVIDENCE_DIR:-}" ]]; then
+    evidence_path="${CTXHELM_REAL_CLIENT_EVIDENCE_DIR}/codex-mcp-evidence.json"
   fi
   write_evidence "$evidence_path" "$request_log"
-  echo "ctxpack Codex MCP smoke passed: server-side instrumentation recorded prepare_task and get_pack with repo=$repo"
+  echo "ctxhelm Codex MCP smoke passed: server-side instrumentation recorded prepare_task and get_pack with repo=$repo"
   exit 0
 fi
 
 reason="codex did not produce machine-checkable prepare_task/get_pack evidence"
 if [[ "$client_status" != "0" ]]; then
-  reason="$reason (codex exit $client_status; auth/model/client refusal is optional unless CTXPACK_REQUIRE_REAL_CLIENT=1)"
+  reason="$reason (codex exit $client_status; auth/model/client refusal is optional unless CTXHELM_REQUIRE_REAL_CLIENT=1)"
 fi
 if [[ -s "$stderr_log" ]]; then
-  echo "ctxpack Codex MCP smoke diagnostic stderr:" >&2
+  echo "ctxhelm Codex MCP smoke diagnostic stderr:" >&2
   tail -n 40 "$stderr_log" >&2
 fi
 fail_or_skip "$reason"

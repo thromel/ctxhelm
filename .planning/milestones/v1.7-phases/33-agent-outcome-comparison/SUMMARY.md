@@ -6,7 +6,7 @@
 - Added aggregation by plan-only, brief, standard, and deep pack budgets.
 - Added pass, blocked, correction, validation, context-size, and useful-target-token metrics.
 - Added changed-sample and low-information diagnostics.
-- Added `ctxpack eval outcome compare` with Markdown and JSON output.
+- Added `ctxhelm eval outcome compare` with Markdown and JSON output.
 
 ## Notes
 

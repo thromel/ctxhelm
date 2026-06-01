@@ -6,12 +6,12 @@ type: implementation
 wave: 1
 depends_on: []
 files_modified:
-  - crates/ctxpack-index/Cargo.toml
-  - crates/ctxpack-index/src/semantic.rs
-  - crates/ctxpack-index/src/storage.rs
-  - crates/ctxpack-core/src/contracts.rs
-  - crates/ctxpack-compiler/src/policy.rs
-  - crates/ctxpack/src/main.rs
+  - crates/ctxhelm-index/Cargo.toml
+  - crates/ctxhelm-index/src/semantic.rs
+  - crates/ctxhelm-index/src/storage.rs
+  - crates/ctxhelm-core/src/contracts.rs
+  - crates/ctxhelm-compiler/src/policy.rs
+  - crates/ctxhelm/src/main.rs
   - docs/semantic.md
   - docs/policy-embedding.md
   - scripts/smoke-semantic.sh
@@ -36,7 +36,7 @@ Add the production local semantic backend foundation: a real local embedding-pro
 </objective>
 
 <threat_model>
-**Assets:** proprietary source code, generated semantic vectors, provider/model metadata, local cache paths, benchmark reports, and ctxpack storage.
+**Assets:** proprietary source code, generated semantic vectors, provider/model metadata, local cache paths, benchmark reports, and ctxhelm storage.
 
 **Threats:**
 
@@ -60,7 +60,7 @@ Add the production local semantic backend foundation: a real local embedding-pro
 - `local_hash` remains deterministic scaffold/test behavior and is not described as a quality embedding backend.
 - Cloud embeddings and cloud reranking remain disabled by default.
 - Semantic storage and reports remain source-free: provider/model/vector metadata only, no raw source text or semantic document text.
-- Existing `--semantic`, `ctxpack semantic status`, MCP additive semantic arguments, and existing JSON field names stay backward-compatible.
+- Existing `--semantic`, `ctxhelm semantic status`, MCP additive semantic arguments, and existing JSON field names stay backward-compatible.
 - Phase 56 does not enable semantic defaults; quality promotion belongs to Phase 60 gates.
 </truths>
 </must_haves>
@@ -69,17 +69,17 @@ Add the production local semantic backend foundation: a real local embedding-pro
 <task id="T1" type="tdd">
   <title>Extend semantic provider metadata and scaffold labeling</title>
   <read_first>
-    - crates/ctxpack-index/src/semantic.rs
-    - crates/ctxpack-core/src/contracts.rs
-    - crates/ctxpack-compiler/src/policy.rs
+    - crates/ctxhelm-index/src/semantic.rs
+    - crates/ctxhelm-core/src/contracts.rs
+    - crates/ctxhelm-compiler/src/policy.rs
     - docs/semantic.md
     - docs/policy-embedding.md
   </read_first>
   <files>
-    - crates/ctxpack-index/src/semantic.rs
-    - crates/ctxpack-core/src/contracts.rs
-    - crates/ctxpack-compiler/src/policy.rs
-    - crates/ctxpack/src/main.rs
+    - crates/ctxhelm-index/src/semantic.rs
+    - crates/ctxhelm-core/src/contracts.rs
+    - crates/ctxhelm-compiler/src/policy.rs
+    - crates/ctxhelm/src/main.rs
     - docs/semantic.md
     - docs/policy-embedding.md
   </files>
@@ -87,12 +87,12 @@ Add the production local semantic backend foundation: a real local embedding-pro
     Add explicit provider status fields that distinguish provider id, model id, dimensions, distance metric, local-only status, default-enabled status, and quality/scaffold status. Preserve existing `SemanticProviderConfig` camelCase JSON fields. Add a stable label for `local_hash` such as `qualityBackend: false` or `providerRole: "deterministic_scaffold"` and propagate it into `semantic_provider_status_report` plus `render_semantic_provider_status`. Update docs so `local_hash` is described as deterministic scaffold/test behavior, not a retrieval-quality backend.
   </action>
   <verify>
-    - cargo test -p ctxpack-index semantic_search_is_disabled_by_default semantic_search_finds_conceptual_safe_files -- --nocapture
-    - cargo test -p ctxpack-compiler semantic_provider_status -- --nocapture
-    - cargo run -p ctxpack -- semantic status --repo . --format json
+    - cargo test -p ctxhelm-index semantic_search_is_disabled_by_default semantic_search_finds_conceptual_safe_files -- --nocapture
+    - cargo test -p ctxhelm-compiler semantic_provider_status -- --nocapture
+    - cargo run -p ctxhelm -- semantic status --repo . --format json
   </verify>
   <acceptance_criteria>
-    - `cargo run -p ctxpack -- semantic status --repo . --format json` includes provider id `local_hash`, model id `ctxpack-local-hash-v1`, `enabledByDefault: false`, `cloudEmbeddingsAllowed: false`, and a machine-readable field showing `local_hash` is scaffold/test behavior rather than a quality backend.
+    - `cargo run -p ctxhelm -- semantic status --repo . --format json` includes provider id `local_hash`, model id `ctxhelm-local-hash-v1`, `enabledByDefault: false`, `cloudEmbeddingsAllowed: false`, and a machine-readable field showing `local_hash` is scaffold/test behavior rather than a quality backend.
     - `docs/semantic.md` contains the string `local_hash` and states it is deterministic scaffold/test behavior.
     - Existing semantic disabled-by-default tests still pass.
   </acceptance_criteria>
@@ -101,29 +101,29 @@ Add the production local semantic backend foundation: a real local embedding-pro
 <task id="T2" type="tdd">
   <title>Add optional real local embedding provider behind a feature gate</title>
   <read_first>
-    - crates/ctxpack-index/Cargo.toml
-    - crates/ctxpack-index/src/semantic.rs
+    - crates/ctxhelm-index/Cargo.toml
+    - crates/ctxhelm-index/src/semantic.rs
     - Cargo.toml
     - Cargo.lock
   </read_first>
   <files>
     - Cargo.toml
     - Cargo.lock
-    - crates/ctxpack-index/Cargo.toml
-    - crates/ctxpack-index/src/semantic.rs
+    - crates/ctxhelm-index/Cargo.toml
+    - crates/ctxhelm-index/src/semantic.rs
   </files>
   <action>
-    Add an optional `local-embeddings` Cargo feature for `ctxpack-index` and wire a real local embedding provider id `local_fastembed` behind that feature. Use the `fastembed` crate as the first real local backend when the feature is enabled. Keep `local_hash` as the default provider for normal builds. Add provider construction so unsupported or feature-disabled `local_fastembed` requests return a warning diagnostic such as `semantic_provider_unavailable` instead of panicking or falling back silently.
+    Add an optional `local-embeddings` Cargo feature for `ctxhelm-index` and wire a real local embedding provider id `local_fastembed` behind that feature. Use the `fastembed` crate as the first real local backend when the feature is enabled. Keep `local_hash` as the default provider for normal builds. Add provider construction so unsupported or feature-disabled `local_fastembed` requests return a warning diagnostic such as `semantic_provider_unavailable` instead of panicking or falling back silently.
   </action>
   <verify>
-    - cargo check -p ctxpack-index
-    - cargo check -p ctxpack-index --features local-embeddings
-    - cargo test -p ctxpack-index semantic_provider_unavailable_without_feature -- --nocapture
+    - cargo check -p ctxhelm-index
+    - cargo check -p ctxhelm-index --features local-embeddings
+    - cargo test -p ctxhelm-index semantic_provider_unavailable_without_feature -- --nocapture
   </verify>
   <acceptance_criteria>
-    - `crates/ctxpack-index/Cargo.toml` defines feature `local-embeddings`.
-    - Default `cargo check -p ctxpack-index` does not require model downloads or cloud credentials.
-    - `cargo check -p ctxpack-index --features local-embeddings` compiles the real local provider path.
+    - `crates/ctxhelm-index/Cargo.toml` defines feature `local-embeddings`.
+    - Default `cargo check -p ctxhelm-index` does not require model downloads or cloud credentials.
+    - `cargo check -p ctxhelm-index --features local-embeddings` compiles the real local provider path.
     - Requesting provider `local_fastembed` without the feature yields diagnostic code `semantic_provider_unavailable` and does not use cloud services.
   </acceptance_criteria>
 </task>
@@ -131,51 +131,51 @@ Add the production local semantic backend foundation: a real local embedding-pro
 <task id="T3" type="execute">
   <title>Persist source-free provider/vector metadata for both providers</title>
   <read_first>
-    - crates/ctxpack-index/src/storage.rs
-    - crates/ctxpack-index/src/semantic.rs
+    - crates/ctxhelm-index/src/storage.rs
+    - crates/ctxhelm-index/src/semantic.rs
     - docs/storage.md
   </read_first>
   <files>
-    - crates/ctxpack-index/src/storage.rs
-    - crates/ctxpack-index/src/semantic.rs
+    - crates/ctxhelm-index/src/storage.rs
+    - crates/ctxhelm-index/src/semantic.rs
     - docs/storage.md
   </files>
   <action>
     Ensure semantic vector persistence records provider id, model id, dimensions, distance metric, safe file hash, privacy status, and vector metadata for `local_hash` and `local_fastembed` without storing raw source text or semantic document text. If schema changes are required, add a backward-compatible migration and keep existing semantic vector records readable. Extend the existing `persists_semantic_vectors_without_source_text` style test to cover the new provider metadata fields.
   </action>
   <verify>
-    - cargo test -p ctxpack-index persists_semantic_vectors_without_source_text -- --nocapture
-    - cargo run -p ctxpack -- index --repo . --store --semantic
-    - cargo run -p ctxpack -- storage status --repo . --format json
+    - cargo test -p ctxhelm-index persists_semantic_vectors_without_source_text -- --nocapture
+    - cargo run -p ctxhelm -- index --repo . --store --semantic
+    - cargo run -p ctxhelm -- storage status --repo . --format json
   </verify>
   <acceptance_criteria>
     - The `semantic_vectors` persistence path stores provider/model/dimensions/distance metadata for every vector record.
     - Storage tests assert that a sentinel source string is absent from stored semantic metadata.
-    - `ctxpack storage status --repo . --format json` reports semantic vector counts without exposing source text.
+    - `ctxhelm storage status --repo . --format json` reports semantic vector counts without exposing source text.
   </acceptance_criteria>
 </task>
 
 <task id="T4" type="execute">
   <title>Expose backend status through CLI and existing semantic workflows</title>
   <read_first>
-    - crates/ctxpack/src/main.rs
-    - crates/ctxpack-compiler/src/policy.rs
-    - crates/ctxpack-compiler/src/planning.rs
-    - crates/ctxpack-compiler/src/ranking.rs
+    - crates/ctxhelm/src/main.rs
+    - crates/ctxhelm-compiler/src/policy.rs
+    - crates/ctxhelm-compiler/src/planning.rs
+    - crates/ctxhelm-compiler/src/ranking.rs
   </read_first>
   <files>
-    - crates/ctxpack/src/main.rs
-    - crates/ctxpack-compiler/src/policy.rs
-    - crates/ctxpack-compiler/src/planning.rs
-    - crates/ctxpack-compiler/src/ranking.rs
+    - crates/ctxhelm/src/main.rs
+    - crates/ctxhelm-compiler/src/policy.rs
+    - crates/ctxhelm-compiler/src/planning.rs
+    - crates/ctxhelm-compiler/src/ranking.rs
   </files>
   <action>
-    Update `ctxpack semantic status`, `ctxpack index --semantic`, `ctxpack search --semantic`, `ctxpack prepare-task --semantic`, and `ctxpack get-pack --semantic` output paths so semantic candidates and status reports include the selected provider id, model id, scaffold/quality status, local-only privacy status, and provider warnings. Preserve existing command names and additive MCP semantics. Do not add a new MCP tool.
+    Update `ctxhelm semantic status`, `ctxhelm index --semantic`, `ctxhelm search --semantic`, `ctxhelm prepare-task --semantic`, and `ctxhelm get-pack --semantic` output paths so semantic candidates and status reports include the selected provider id, model id, scaffold/quality status, local-only privacy status, and provider warnings. Preserve existing command names and additive MCP semantics. Do not add a new MCP tool.
   </action>
   <verify>
-    - cargo run -p ctxpack -- semantic status --repo . --query "semantic backend provider" --format json
-    - cargo run -p ctxpack -- search "semantic backend provider" --repo . --semantic --format json
-    - cargo run -p ctxpack -- prepare-task "improve semantic backend provider status" --repo . --semantic --format json
+    - cargo run -p ctxhelm -- semantic status --repo . --query "semantic backend provider" --format json
+    - cargo run -p ctxhelm -- search "semantic backend provider" --repo . --semantic --format json
+    - cargo run -p ctxhelm -- prepare-task "improve semantic backend provider status" --repo . --semantic --format json
   </verify>
   <acceptance_criteria>
     - Semantic candidate reasons include provider id and model id.
@@ -207,7 +207,7 @@ Add the production local semantic backend foundation: a real local embedding-pro
   <verify>
     - bash scripts/smoke-semantic.sh
     - bash scripts/check-release-docs.sh
-    - cargo run -p ctxpack -- --help
+    - cargo run -p ctxhelm -- --help
   </verify>
   <acceptance_criteria>
     - `docs/semantic.md` documents `local_hash`, `local_fastembed`, `local-embeddings`, and cloud-disabled behavior.
@@ -223,13 +223,13 @@ Run focused checks while implementing each task, then run:
 ```bash
 cargo fmt --all
 cargo test --workspace
-cargo check -p ctxpack-index --features local-embeddings
-cargo run -p ctxpack -- --help
+cargo check -p ctxhelm-index --features local-embeddings
+cargo run -p ctxhelm -- --help
 bash scripts/smoke-semantic.sh
 bash scripts/check-release-docs.sh
 ```
 
-If `cargo check -p ctxpack-index --features local-embeddings` requires a network download or unavailable local model cache, record the skip reason and prove the default workspace remains green without that feature.
+If `cargo check -p ctxhelm-index --features local-embeddings` requires a network download or unavailable local model cache, record the skip reason and prove the default workspace remains green without that feature.
 </verification>
 
 <success_criteria>

@@ -5,10 +5,10 @@ type: execute
 wave: 3
 depends_on: [01, 02]
 files_modified:
-  - crates/ctxpack-index/src/git.rs
-  - crates/ctxpack-index/src/lib.rs
-  - crates/ctxpack-compiler/src/eval.rs
-  - crates/ctxpack-compiler/src/lib.rs
+  - crates/ctxhelm-index/src/git.rs
+  - crates/ctxhelm-index/src/lib.rs
+  - crates/ctxhelm-compiler/src/eval.rs
+  - crates/ctxhelm-compiler/src/lib.rs
 autonomous: true
 requirements: [EVAL-01, EVAL-02, EVAL-05]
 must_haves:
@@ -17,13 +17,13 @@ must_haves:
     - "Commit labels include source-free path status and role information for additions, modifications, deletes, renames, generated files, sensitive files, and historical-only files."
     - "Historical eval avoids future leakage by classifying paths against parent/head snapshots instead of current inventory only."
   artifacts:
-    - path: "crates/ctxpack-index/src/git.rs"
+    - path: "crates/ctxhelm-index/src/git.rs"
       provides: "Status-aware historical commit sampling from git name-status metadata"
-    - path: "crates/ctxpack-compiler/src/eval.rs"
+    - path: "crates/ctxhelm-compiler/src/eval.rs"
       provides: "Frozen range metadata and role/status labels in eval reports"
   key_links:
-    - from: "crates/ctxpack-index/src/git.rs"
-      to: "crates/ctxpack-compiler/src/eval.rs"
+    - from: "crates/ctxhelm-index/src/git.rs"
+      to: "crates/ctxhelm-compiler/src/eval.rs"
       via: "HistoricalCommitSample changed path records"
       pattern: "changed_paths"
 ---
@@ -85,7 +85,7 @@ pub struct HistoricalEvalOptions {
 
 <task type="auto" tdd="true">
   <name>Task 1: Replace path-only history samples with name-status records</name>
-  <files>crates/ctxpack-index/src/git.rs, crates/ctxpack-index/src/lib.rs</files>
+  <files>crates/ctxhelm-index/src/git.rs, crates/ctxhelm-index/src/lib.rs</files>
   <behavior>
     - Test 1: A rename commit yields one changed-path record with `changeKind=renamed`, `path`, and `oldPath`.
     - Test 2: A delete commit yields a deleted label instead of disappearing from the sample.
@@ -94,22 +94,22 @@ pub struct HistoricalEvalOptions {
   </behavior>
   <action>Use git name-status metadata with rename detection, such as `git diff-tree --name-status -z -M`, instead of name-only diffs per D-08. Add public index structs for `HistoricalChangedPath`, `ChangeKind`, `LabelScope`, and exclusion reason codes. Preserve `safe_changed_files` as a compatibility projection, but make the rich records the source of truth. Keep commit titles internal for task replay only and never expose them in serialized reports per D-09.</action>
   <verify>
-    <automated>cargo test -p ctxpack-index historical_commit -- --nocapture</automated>
+    <automated>cargo test -p ctxhelm-index historical_commit -- --nocapture</automated>
   </verify>
   <done>Index history samples retain rename/delete/status metadata, safe path projections, exclusion counts, and bounded git traversal.</done>
 </task>
 
 <task type="auto" tdd="true">
   <name>Task 2: Add frozen eval range metadata and role/status labels</name>
-  <files>crates/ctxpack-compiler/src/eval.rs, crates/ctxpack-compiler/src/lib.rs</files>
+  <files>crates/ctxhelm-compiler/src/eval.rs, crates/ctxhelm-compiler/src/lib.rs</files>
   <behavior>
     - Test 1: HistoricalEvalReport includes `evalRangeId`, `budget`, `effectiveFilters`, base/head refs, limit, mode, and repo id.
     - Test 2: Each commit eval includes changed-path labels with role, change kind, label scope, and excluded reason where applicable.
     - Test 3: Historical-only and deleted paths are labeled explicitly without leaking source or prompt text.
   </behavior>
-  <action>Extend `HistoricalEvalOptions` with a fixed retrieval budget field defaulted at the CLI boundary later, and extend `HistoricalEvalReport`/`HistoricalCommitEval` with source-free range and label records per D-07/D-08. Build labels from the rich index sample records and classify against parent/head snapshots where needed; do not rely on current inventory alone. Re-export any new public eval structs from `ctxpack-compiler/src/lib.rs` when they appear in public report fields.</action>
+  <action>Extend `HistoricalEvalOptions` with a fixed retrieval budget field defaulted at the CLI boundary later, and extend `HistoricalEvalReport`/`HistoricalCommitEval` with source-free range and label records per D-07/D-08. Build labels from the rich index sample records and classify against parent/head snapshots where needed; do not rely on current inventory alone. Re-export any new public eval structs from `ctxhelm-compiler/src/lib.rs` when they appear in public report fields.</action>
   <verify>
-    <automated>cargo test -p ctxpack-compiler historical_eval -- --nocapture</automated>
+    <automated>cargo test -p ctxhelm-compiler historical_eval -- --nocapture</automated>
   </verify>
   <done>Historical eval JSON is reproducible, source-free, and explicit about role/status labels and effective filters.</done>
 </task>
@@ -117,9 +117,9 @@ pub struct HistoricalEvalOptions {
 </tasks>
 
 <verification>
-- `cargo test -p ctxpack-index historical_commit -- --nocapture`
-- `cargo test -p ctxpack-compiler historical_eval -- --nocapture`
-- `cargo test -p ctxpack-index -p ctxpack-compiler`
+- `cargo test -p ctxhelm-index historical_commit -- --nocapture`
+- `cargo test -p ctxhelm-compiler historical_eval -- --nocapture`
+- `cargo test -p ctxhelm-index -p ctxhelm-compiler`
 </verification>
 
 <success_criteria>

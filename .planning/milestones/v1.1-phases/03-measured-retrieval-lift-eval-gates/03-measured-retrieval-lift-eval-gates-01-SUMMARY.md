@@ -2,7 +2,7 @@
 phase: 03-measured-retrieval-lift-eval-gates
 plan: 01
 subsystem: retrieval-contracts
-tags: [rust, serde-json, ctxpack-core, ctxpack-compiler, retrieval]
+tags: [rust, serde-json, ctxhelm-core, ctxhelm-compiler, retrieval]
 
 requires:
   - phase: 01-compatibility-guardrails-module-boundaries
@@ -13,7 +13,7 @@ provides:
   - Additive typed retrieval candidate contracts on ContextPlan
   - Source-free attribution records on TargetFile and RelatedTest
   - Empty default wiring for current compiler plan construction
-affects: [ctxpack-core, ctxpack-compiler, measured-retrieval-lift-eval-gates]
+affects: [ctxhelm-core, ctxhelm-compiler, measured-retrieval-lift-eval-gates]
 
 tech-stack:
   added: []
@@ -25,9 +25,9 @@ key-files:
   created:
     - .planning/phases/03-measured-retrieval-lift-eval-gates/03-measured-retrieval-lift-eval-gates-01-SUMMARY.md
   modified:
-    - crates/ctxpack-core/src/contracts.rs
-    - crates/ctxpack-compiler/src/planning.rs
-    - crates/ctxpack-compiler/src/lib.rs
+    - crates/ctxhelm-core/src/contracts.rs
+    - crates/ctxhelm-compiler/src/planning.rs
+    - crates/ctxhelm-compiler/src/lib.rs
 
 key-decisions:
   - "Add retrievalCandidates and attribution as additive serde fields with default empty vectors to preserve old JSON compatibility."
@@ -72,9 +72,9 @@ Each task was committed atomically:
 
 ## Files Created/Modified
 
-- `crates/ctxpack-core/src/contracts.rs` - Adds typed retrieval candidates, signal scores, source-free evidence, additive attribution, and compatibility tests.
-- `crates/ctxpack-compiler/src/planning.rs` - Initializes empty attribution on constructed targets/tests and empty `retrievalCandidates` on base plans.
-- `crates/ctxpack-compiler/src/lib.rs` - Updates pack revalidation fixture target files with empty attribution.
+- `crates/ctxhelm-core/src/contracts.rs` - Adds typed retrieval candidates, signal scores, source-free evidence, additive attribution, and compatibility tests.
+- `crates/ctxhelm-compiler/src/planning.rs` - Initializes empty attribution on constructed targets/tests and empty `retrievalCandidates` on base plans.
+- `crates/ctxhelm-compiler/src/lib.rs` - Updates pack revalidation fixture target files with empty attribution.
 - `.planning/phases/03-measured-retrieval-lift-eval-gates/03-measured-retrieval-lift-eval-gates-01-SUMMARY.md` - Captures Plan 01 execution results.
 
 ## Decisions Made
@@ -101,11 +101,11 @@ None. Stub scan found no `TODO`, `FIXME`, placeholder text, or hardcoded empty U
 
 ## Verification
 
-- `cargo test -p ctxpack-core retrieval -- --nocapture` passed.
-- `cargo test -p ctxpack-core -p ctxpack-compiler -p ctxpack -- --nocapture` passed.
+- `cargo test -p ctxhelm-core retrieval -- --nocapture` passed.
+- `cargo test -p ctxhelm-core -p ctxhelm-compiler -p ctxhelm -- --nocapture` passed.
 - `cargo fmt --all --check` passed.
 - `cargo test --workspace` passed.
-- `cargo run -p ctxpack -- --help` passed.
+- `cargo run -p ctxhelm -- --help` passed.
 
 ## User Setup Required
 
@@ -117,7 +117,7 @@ Plan 02 can build the internal ranking/projection layer on top of the typed cont
 
 ## Self-Check: PASSED
 
-- Found files: `crates/ctxpack-core/src/contracts.rs`, `crates/ctxpack-compiler/src/planning.rs`, `crates/ctxpack-compiler/src/lib.rs`, and this SUMMARY.
+- Found files: `crates/ctxhelm-core/src/contracts.rs`, `crates/ctxhelm-compiler/src/planning.rs`, `crates/ctxhelm-compiler/src/lib.rs`, and this SUMMARY.
 - Found commits via direct commit-object checks: `801d690`, `baecdc5`, `d32f1ed`.
 - Verified no known stubs in created or modified files.
 

@@ -2,7 +2,7 @@
 phase: 03-measured-retrieval-lift-eval-gates
 plan: 03
 subsystem: retrieval-eval
-tags: [rust, ctxpack-index, ctxpack-compiler, historical-eval, git]
+tags: [rust, ctxhelm-index, ctxhelm-compiler, historical-eval, git]
 
 requires:
   - phase: 03-measured-retrieval-lift-eval-gates
@@ -13,7 +13,7 @@ provides:
   - Status-aware historical commit samples from git name-status metadata
   - Source-free historical labels for safe, generated, sensitive, historical-only, rename, and delete paths
   - Frozen historical eval metadata with evalRangeId, budget, effective filters, refs, limit, mode, target agent, and repo id
-affects: [ctxpack-index, ctxpack-compiler, ctxpack-cli, retrieval-eval]
+affects: [ctxhelm-index, ctxhelm-compiler, ctxhelm-cli, retrieval-eval]
 
 tech-stack:
   added: []
@@ -26,11 +26,11 @@ key-files:
   created:
     - .planning/phases/03-measured-retrieval-lift-eval-gates/03-measured-retrieval-lift-eval-gates-03-SUMMARY.md
   modified:
-    - crates/ctxpack-index/src/git.rs
-    - crates/ctxpack-index/src/lib.rs
-    - crates/ctxpack-compiler/src/eval.rs
-    - crates/ctxpack-compiler/src/lib.rs
-    - crates/ctxpack/src/main.rs
+    - crates/ctxhelm-index/src/git.rs
+    - crates/ctxhelm-index/src/lib.rs
+    - crates/ctxhelm-compiler/src/eval.rs
+    - crates/ctxhelm-compiler/src/lib.rs
+    - crates/ctxhelm/src/main.rs
 
 key-decisions:
   - "Preserve safeChangedFiles as the compatibility projection while making changedPaths/changedPathLabels the rich source-free label surface."
@@ -78,11 +78,11 @@ Each task was committed atomically:
 
 ## Files Created/Modified
 
-- `crates/ctxpack-index/src/git.rs` - Adds public rich historical label contracts, name-status parsing, rename/delete support, and bounded revision traversal.
-- `crates/ctxpack-index/src/lib.rs` - Re-exports index label contracts and adds history-sampling regressions.
-- `crates/ctxpack-compiler/src/eval.rs` - Adds frozen eval metadata and carries rich changed-path labels into commit eval records.
-- `crates/ctxpack-compiler/src/lib.rs` - Re-exports eval metadata types and adds historical eval report regressions.
-- `crates/ctxpack/src/main.rs` - Updates the CLI markdown report fixture/rendering for the new public eval fields.
+- `crates/ctxhelm-index/src/git.rs` - Adds public rich historical label contracts, name-status parsing, rename/delete support, and bounded revision traversal.
+- `crates/ctxhelm-index/src/lib.rs` - Re-exports index label contracts and adds history-sampling regressions.
+- `crates/ctxhelm-compiler/src/eval.rs` - Adds frozen eval metadata and carries rich changed-path labels into commit eval records.
+- `crates/ctxhelm-compiler/src/lib.rs` - Re-exports eval metadata types and adds historical eval report regressions.
+- `crates/ctxhelm/src/main.rs` - Updates the CLI markdown report fixture/rendering for the new public eval fields.
 - `.planning/phases/03-measured-retrieval-lift-eval-gates/03-measured-retrieval-lift-eval-gates-03-SUMMARY.md` - Captures Plan 03 execution results.
 
 ## Decisions Made
@@ -99,8 +99,8 @@ Each task was committed atomically:
 - **Found during:** Overall verification after Task 2
 - **Issue:** `cargo test --workspace` failed because the CLI test fixture constructed `HistoricalEvalReport` and `HistoricalCommitEval` without the new public fields.
 - **Fix:** Populated the new fixture fields and rendered frozen metadata in historical eval markdown output.
-- **Files modified:** `crates/ctxpack/src/main.rs`
-- **Verification:** `cargo test --workspace` and `cargo run -p ctxpack -- --help` passed.
+- **Files modified:** `crates/ctxhelm/src/main.rs`
+- **Verification:** `cargo test --workspace` and `cargo run -p ctxhelm -- --help` passed.
 - **Committed in:** `0d70b3d`
 
 ### Scope Adjustments
@@ -126,11 +126,11 @@ None. Stub scan found no `TODO`, `FIXME`, placeholder text, source-less UI place
 
 ## Verification
 
-- `cargo test -p ctxpack-index historical_commit -- --nocapture` passed.
-- `cargo test -p ctxpack-compiler historical_eval -- --nocapture` passed.
-- `cargo test -p ctxpack-index -p ctxpack-compiler` passed.
+- `cargo test -p ctxhelm-index historical_commit -- --nocapture` passed.
+- `cargo test -p ctxhelm-compiler historical_eval -- --nocapture` passed.
+- `cargo test -p ctxhelm-index -p ctxhelm-compiler` passed.
 - `cargo test --workspace` passed.
-- `cargo run -p ctxpack -- --help` passed.
+- `cargo run -p ctxhelm -- --help` passed.
 
 ## User Setup Required
 

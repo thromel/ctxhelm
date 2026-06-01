@@ -6,20 +6,20 @@
 
 **Runner:**
 - Rust built-in test harness via `cargo test`.
-- Workspace members are defined in `Cargo.toml`: `crates/ctxpack`, `crates/ctxpack-core`, `crates/ctxpack-index`, `crates/ctxpack-compiler`, and `crates/ctxpack-mcp`.
+- Workspace members are defined in `Cargo.toml`: `crates/ctxhelm`, `crates/ctxhelm-core`, `crates/ctxhelm-index`, `crates/ctxhelm-compiler`, and `crates/ctxhelm-mcp`.
 - No separate test framework config file is detected.
 - `tokio` is a workspace dependency in `Cargo.toml`, but no `#[tokio::test]` tests are detected.
 
 **Assertion Library:**
 - Rust standard assertions: `assert!`, `assert_eq!`, `assert_ne!`, `matches!`.
-- JSON assertions use `serde_json::Value` indexing and `serde_json::json!`, especially in `crates/ctxpack-core/src/contracts.rs` and `crates/ctxpack-mcp/src/lib.rs`.
+- JSON assertions use `serde_json::Value` indexing and `serde_json::json!`, especially in `crates/ctxhelm-core/src/contracts.rs` and `crates/ctxhelm-mcp/src/lib.rs`.
 
 **Run Commands:**
 ```bash
 cargo test --workspace                         # Run all tests
-cargo test -p ctxpack-index                    # Run one crate's tests
-cargo test -p ctxpack-mcp prepare_task -- --nocapture  # Run matching tests with output
-cargo run -p ctxpack -- --help                 # Validate CLI surface after CLI changes
+cargo test -p ctxhelm-index                    # Run one crate's tests
+cargo test -p ctxhelm-mcp prepare_task -- --nocapture  # Run matching tests with output
+cargo run -p ctxhelm -- --help                 # Validate CLI surface after CLI changes
 ```
 
 **Watch Mode:**
@@ -35,35 +35,35 @@ cargo run -p ctxpack -- --help                 # Validate CLI surface after CLI 
 - No top-level `tests/` directory and no `*.test.*` or `*.spec.*` files are detected.
 
 **Naming:**
-- Test module names are `tests` for most files and `writer_tests` for a second focused module in `crates/ctxpack-core/src/init.rs`.
+- Test module names are `tests` for most files and `writer_tests` for a second focused module in `crates/ctxhelm-core/src/init.rs`.
 - Test functions use behavior-driven snake_case names:
-  - `task_type_serializes_as_snake_case` in `crates/ctxpack-core/src/contracts.rs`
-  - `inventory_respects_ignores_and_default_exclusions` in `crates/ctxpack-index/src/lib.rs`
-  - `prepare_context_plan_fuses_search_tests_and_history` in `crates/ctxpack-compiler/src/lib.rs`
-  - `prepare_task_call_returns_structured_context_plan` in `crates/ctxpack-mcp/src/lib.rs`
-  - `historical_eval_report_renders_source_free_metrics` in `crates/ctxpack/src/main.rs`
+  - `task_type_serializes_as_snake_case` in `crates/ctxhelm-core/src/contracts.rs`
+  - `inventory_respects_ignores_and_default_exclusions` in `crates/ctxhelm-index/src/lib.rs`
+  - `prepare_context_plan_fuses_search_tests_and_history` in `crates/ctxhelm-compiler/src/lib.rs`
+  - `prepare_task_call_returns_structured_context_plan` in `crates/ctxhelm-mcp/src/lib.rs`
+  - `historical_eval_report_renders_source_free_metrics` in `crates/ctxhelm/src/main.rs`
 
 **Structure:**
 ```text
-crates/ctxpack-core/src/contracts.rs       # Contract serialization tests
-crates/ctxpack-core/src/repo.rs            # Repo root discovery tests
-crates/ctxpack-core/src/init.rs            # Init adapter and writer tests
-crates/ctxpack-index/src/lib.rs            # Inventory, search, symbols, git, diff, test-map tests
-crates/ctxpack-compiler/src/lib.rs         # Context-plan, pack, eval, card rendering tests
-crates/ctxpack-mcp/src/lib.rs              # JSON-RPC/MCP protocol tests
-crates/ctxpack/src/main.rs                 # CLI report rendering tests
+crates/ctxhelm-core/src/contracts.rs       # Contract serialization tests
+crates/ctxhelm-core/src/repo.rs            # Repo root discovery tests
+crates/ctxhelm-core/src/init.rs            # Init adapter and writer tests
+crates/ctxhelm-index/src/lib.rs            # Inventory, search, symbols, git, diff, test-map tests
+crates/ctxhelm-compiler/src/lib.rs         # Context-plan, pack, eval, card rendering tests
+crates/ctxhelm-mcp/src/lib.rs              # JSON-RPC/MCP protocol tests
+crates/ctxhelm/src/main.rs                 # CLI report rendering tests
 ```
 
 **Detected Test Count:**
 - 102 `#[test]` functions.
 - Distribution by file:
-  - `crates/ctxpack-mcp/src/lib.rs`: 30
-  - `crates/ctxpack-index/src/lib.rs`: 26
-  - `crates/ctxpack-core/src/init.rs`: 20
-  - `crates/ctxpack-compiler/src/lib.rs`: 17
-  - `crates/ctxpack-core/src/contracts.rs`: 4
-  - `crates/ctxpack/src/main.rs`: 3
-  - `crates/ctxpack-core/src/repo.rs`: 2
+  - `crates/ctxhelm-mcp/src/lib.rs`: 30
+  - `crates/ctxhelm-index/src/lib.rs`: 26
+  - `crates/ctxhelm-core/src/init.rs`: 20
+  - `crates/ctxhelm-compiler/src/lib.rs`: 17
+  - `crates/ctxhelm-core/src/contracts.rs`: 4
+  - `crates/ctxhelm/src/main.rs`: 3
+  - `crates/ctxhelm-core/src/repo.rs`: 2
 
 ## Test Structure
 
@@ -89,7 +89,7 @@ mod tests {
             recommended_commands: vec![],
             pack_options: vec![PackOption {
                 budget: PackBudget::Brief,
-                resource_uri: "ctxpack://packs/brief".to_string(),
+                resource_uri: "ctxhelm://packs/brief".to_string(),
             }],
             missing_info_questions: vec![],
             risk_flags: vec![],
@@ -104,15 +104,15 @@ mod tests {
 }
 ```
 
-This pattern is from `crates/ctxpack-core/src/contracts.rs`.
+This pattern is from `crates/ctxhelm-core/src/contracts.rs`.
 
 **Patterns:**
 - Build complete fixtures inside each test with `tempfile::tempdir()` and `std::fs`.
 - Use real files and real git repositories for behavior involving inventory, history, current diff, and co-change logic.
 - Use direct function calls for library behavior: `prepare_context_plan`, `write_inventory`, `lexical_search`, `related_tests`, and `handle_line`.
-- Assert both positive behavior and privacy exclusions. Tests in `crates/ctxpack-index/src/lib.rs` assert that `.env`, `private.key`, `dist/app.min.js`, ignored files, and generated fixtures are excluded by default.
-- Assert serialized contract field names explicitly. `crates/ctxpack-core/src/contracts.rs`, `crates/ctxpack-core/src/init.rs`, and `crates/ctxpack-mcp/src/lib.rs` check camelCase, snake_case, and source-free fields.
-- Use `#[cfg(unix)]` for symlink and permission tests in `crates/ctxpack-core/src/init.rs` and `crates/ctxpack-index/src/lib.rs`.
+- Assert both positive behavior and privacy exclusions. Tests in `crates/ctxhelm-index/src/lib.rs` assert that `.env`, `private.key`, `dist/app.min.js`, ignored files, and generated fixtures are excluded by default.
+- Assert serialized contract field names explicitly. `crates/ctxhelm-core/src/contracts.rs`, `crates/ctxhelm-core/src/init.rs`, and `crates/ctxhelm-mcp/src/lib.rs` check camelCase, snake_case, and source-free fields.
+- Use `#[cfg(unix)]` for symlink and permission tests in `crates/ctxhelm-core/src/init.rs` and `crates/ctxhelm-index/src/lib.rs`.
 
 ## Mocking
 
@@ -130,23 +130,23 @@ fn prepare_context_plan_fuses_search_tests_and_history() {
     let _guard = env_lock();
     let temp = tempfile::tempdir().unwrap();
     let repo = temp.path().join("repo");
-    let home = temp.path().join("ctxpack-home");
+    let home = temp.path().join("ctxhelm-home");
     fs::create_dir_all(repo.join("src/auth")).unwrap();
-    std::env::set_var("CTXPACK_HOME", &home);
+    std::env::set_var("CTXHELM_HOME", &home);
 
     let plan = prepare_context_plan(&repo, "fix requireSession bug", TaskType::BugFix).unwrap();
 
     assert_eq!(plan.target_files[0].path, "src/auth/session.ts");
-    std::env::remove_var("CTXPACK_HOME");
+    std::env::remove_var("CTXHELM_HOME");
 }
 ```
 
-This environment-lock pattern appears in `crates/ctxpack-compiler/src/lib.rs`, `crates/ctxpack-index/src/lib.rs`, and `crates/ctxpack-mcp/src/lib.rs`.
+This environment-lock pattern appears in `crates/ctxhelm-compiler/src/lib.rs`, `crates/ctxhelm-index/src/lib.rs`, and `crates/ctxhelm-mcp/src/lib.rs`.
 
 **What to Mock:**
 - Prefer fixture repositories over mocks for filesystem, inventory, git, and MCP behavior.
-- Use synthetic JSON-RPC strings rather than a network client for MCP request tests in `crates/ctxpack-mcp/src/lib.rs`.
-- Use constructed structs for pure renderer tests in `crates/ctxpack/src/main.rs`.
+- Use synthetic JSON-RPC strings rather than a network client for MCP request tests in `crates/ctxhelm-mcp/src/lib.rs`.
+- Use constructed structs for pure renderer tests in `crates/ctxhelm/src/main.rs`.
 
 **What NOT to Mock:**
 - Do not mock git behavior when validating co-change, current-diff, or historical-eval behavior. Existing tests create real repositories with `git init`, `git add`, and `git commit`.
@@ -166,23 +166,23 @@ struct FixtureRepo {
 fn fixture_repo() -> FixtureRepo {
     let temp = tempfile::tempdir().unwrap();
     let repo = temp.path().join("repo");
-    let home = temp.path().join("ctxpack-home");
+    let home = temp.path().join("ctxhelm-home");
     fs::create_dir_all(repo.join("src/auth")).unwrap();
     fs::create_dir_all(repo.join("tests/auth")).unwrap();
     run_git(&repo, &["init"]);
-    run_git(&repo, &["config", "user.email", "ctxpack@example.com"]);
-    run_git(&repo, &["config", "user.name", "ctxpack"]);
+    run_git(&repo, &["config", "user.email", "ctxhelm@example.com"]);
+    run_git(&repo, &["config", "user.name", "ctxhelm"]);
     FixtureRepo { _temp: temp, repo, home }
 }
 ```
 
-This fixture shape is used in `crates/ctxpack-mcp/src/lib.rs`.
+This fixture shape is used in `crates/ctxhelm-mcp/src/lib.rs`.
 
 **Location:**
 - Fixtures live inside each test module, not in shared fixture files.
 - Test repositories and test home directories are created under `tempfile::TempDir`.
-- Fixture file names intentionally mimic supported target projects: `src/auth/session.ts`, `tests/auth/session.test.ts`, `package.json`, `pnpm-lock.yaml`, `.ctxpackignore`, `.env`, `dist/generated.min.js`, `src/session.ts`, and `src/service.py`.
-- Environment-dependent tests set `CTXPACK_HOME` to a temp directory and remove it before finishing.
+- Fixture file names intentionally mimic supported target projects: `src/auth/session.ts`, `tests/auth/session.test.ts`, `package.json`, `pnpm-lock.yaml`, `.ctxhelmignore`, `.env`, `dist/generated.min.js`, `src/session.ts`, and `src/service.py`.
+- Environment-dependent tests set `CTXHELM_HOME` to a temp directory and remove it before finishing.
 
 ## Coverage
 
@@ -194,35 +194,35 @@ This fixture shape is used in `crates/ctxpack-mcp/src/lib.rs`.
 ```
 
 **Coverage Emphasis:**
-- Context selection and ranking behavior in `crates/ctxpack-compiler/src/lib.rs`.
-- Privacy filtering for sensitive/generated/current-diff paths in `crates/ctxpack-index/src/lib.rs`.
-- Generated agent instructions and safe repo-local writes in `crates/ctxpack-core/src/init.rs`.
-- MCP tool/resource/prompt contracts in `crates/ctxpack-mcp/src/lib.rs`.
-- CLI Markdown report rendering in `crates/ctxpack/src/main.rs`.
+- Context selection and ranking behavior in `crates/ctxhelm-compiler/src/lib.rs`.
+- Privacy filtering for sensitive/generated/current-diff paths in `crates/ctxhelm-index/src/lib.rs`.
+- Generated agent instructions and safe repo-local writes in `crates/ctxhelm-core/src/init.rs`.
+- MCP tool/resource/prompt contracts in `crates/ctxhelm-mcp/src/lib.rs`.
+- CLI Markdown report rendering in `crates/ctxhelm/src/main.rs`.
 
 ## Test Types
 
 **Unit Tests:**
 - Pure contract and renderer tests assert serialization and text output directly.
 - Examples:
-  - `crates/ctxpack-core/src/contracts.rs` tests `TaskType`, `ContextPlan`, `ContextPack`, and `EvalTrace` serialization.
-  - `crates/ctxpack/src/main.rs` tests eval checklist, historical eval, and context card report rendering.
+  - `crates/ctxhelm-core/src/contracts.rs` tests `TaskType`, `ContextPlan`, `ContextPack`, and `EvalTrace` serialization.
+  - `crates/ctxhelm/src/main.rs` tests eval checklist, historical eval, and context card report rendering.
 
 **Integration Tests:**
 - Integration-style tests are inline and use real temp repositories, git commands, and filesystem state.
 - Examples:
-  - `crates/ctxpack-index/src/lib.rs` tests inventory, lexical search, symbol extraction, related tests, dependency edges, current diff, eval traces, and historical commit samples.
-  - `crates/ctxpack-compiler/src/lib.rs` tests context-plan fusion across search, tests, dependency graph, and git history.
-  - `crates/ctxpack-mcp/src/lib.rs` tests JSON-RPC request handling through `handle_line` and `run_server`.
+  - `crates/ctxhelm-index/src/lib.rs` tests inventory, lexical search, symbol extraction, related tests, dependency edges, current diff, eval traces, and historical commit samples.
+  - `crates/ctxhelm-compiler/src/lib.rs` tests context-plan fusion across search, tests, dependency graph, and git history.
+  - `crates/ctxhelm-mcp/src/lib.rs` tests JSON-RPC request handling through `handle_line` and `run_server`.
 
 **E2E Tests:**
 - No external E2E test harness is detected.
-- MCP and CLI-adjacent behavior is covered with in-process tests in `crates/ctxpack-mcp/src/lib.rs` and renderer tests in `crates/ctxpack/src/main.rs`.
+- MCP and CLI-adjacent behavior is covered with in-process tests in `crates/ctxhelm-mcp/src/lib.rs` and renderer tests in `crates/ctxhelm/src/main.rs`.
 - README smoke commands in `README.md` and validation guidance in `AGENTS.md` cover manual end-to-end checks:
 ```bash
 cargo test --workspace
-cargo run -p ctxpack -- --help
-cargo run -p ctxpack -- serve-mcp
+cargo run -p ctxhelm -- --help
+cargo run -p ctxhelm -- serve-mcp
 ```
 
 ## Common Patterns
@@ -259,7 +259,7 @@ fn prepare_task_requires_task_argument() {
 }
 ```
 
-This pattern is used in `crates/ctxpack-mcp/src/lib.rs`.
+This pattern is used in `crates/ctxhelm-mcp/src/lib.rs`.
 
 **Filesystem Safety Testing:**
 ```rust
@@ -282,13 +282,13 @@ fn init_rejects_symlinked_agents_file_without_modifying_target() {
 }
 ```
 
-This pattern is used in `crates/ctxpack-core/src/init.rs`.
+This pattern is used in `crates/ctxhelm-core/src/init.rs`.
 
 **Privacy Testing:**
 - Create sensitive and generated fixture paths directly.
 - Assert excluded paths are absent from results.
 - Assert source text is not logged or returned where the contract promises metadata-only results.
-- Examples live in `crates/ctxpack-index/src/lib.rs`, `crates/ctxpack-compiler/src/lib.rs`, `crates/ctxpack-mcp/src/lib.rs`, and `crates/ctxpack/src/main.rs`.
+- Examples live in `crates/ctxhelm-index/src/lib.rs`, `crates/ctxhelm-compiler/src/lib.rs`, `crates/ctxhelm-mcp/src/lib.rs`, and `crates/ctxhelm/src/main.rs`.
 
 ---
 

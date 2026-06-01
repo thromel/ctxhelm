@@ -45,6 +45,6 @@ Out of scope:
 The milestone is only a win if reports can say one of these clearly:
 
 - "local semantic/precision improves fixed-corpus retrieval enough to recommend it for this repo class"
-- "semantic remains neutral/regressive, so ctxpack keeps lexical/graph/history defaults and preserves the backend as opt-in"
+- "semantic remains neutral/regressive, so ctxhelm keeps lexical/graph/history defaults and preserves the backend as opt-in"
 
 Both outcomes are acceptable. Quietly enabling a neutral semantic path is not.

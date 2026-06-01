@@ -12,7 +12,7 @@ Passed.
 
 - `bash scripts/smoke-storage.sh`
 - `bash scripts/check-release-docs.sh`
-- `cargo run -p ctxpack -- --help`
+- `cargo run -p ctxhelm -- --help`
 
 ## Requirements
 

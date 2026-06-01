@@ -29,11 +29,11 @@ Phase 56 shipped:
 
 Existing related surfaces:
 
-- `crates/ctxpack-index/src/semantic.rs` builds safe vector records from file metadata.
-- `crates/ctxpack-index/src/dependencies.rs` imports `.ctxpack/precision-edges.json` as safe overlay edges.
-- `crates/ctxpack-index/src/symbols.rs` extracts safe symbol names, signatures, kinds, paths, and line ranges.
-- `crates/ctxpack-compiler/src/planning.rs` currently consumes raw `SemanticSearchResult` values directly.
-- `crates/ctxpack-core/src/contracts.rs` has retrieval signal and evaluation contracts, but no typed semantic document contract.
+- `crates/ctxhelm-index/src/semantic.rs` builds safe vector records from file metadata.
+- `crates/ctxhelm-index/src/dependencies.rs` imports `.ctxhelm/precision-edges.json` as safe overlay edges.
+- `crates/ctxhelm-index/src/symbols.rs` extracts safe symbol names, signatures, kinds, paths, and line ranges.
+- `crates/ctxhelm-compiler/src/planning.rs` currently consumes raw `SemanticSearchResult` values directly.
+- `crates/ctxhelm-core/src/contracts.rs` has retrieval signal and evaluation contracts, but no typed semantic document contract.
 
 ## Problem
 
@@ -62,7 +62,7 @@ This document becomes the join point between lexical, graph, precision, semantic
 
 ### Precision evidence must be additive and degradable
 
-The system already supports precision edges through `.ctxpack/precision-edges.json`. Phase 57 should not require SCIP/LSP to be installed. The correct behavior is:
+The system already supports precision edges through `.ctxhelm/precision-edges.json`. Phase 57 should not require SCIP/LSP to be installed. The correct behavior is:
 
 - No precision file: semantic documents still build with `precision_status=unavailable`.
 - Stale or invalid precision file: documents still build, diagnostics explain degradation.
@@ -70,7 +70,7 @@ The system already supports precision edges through `.ctxpack/precision-edges.js
 
 ### Semantic enrichment should not bypass privacy policy
 
-Embedding text must remain source-safe by default. Safe text can contain names, signatures, dependency labels, test paths, and docs/card summaries already generated under ctxpack policy. It must not embed full source bodies by default.
+Embedding text must remain source-safe by default. Safe text can contain names, signatures, dependency labels, test paths, and docs/card summaries already generated under ctxhelm policy. It must not embed full source bodies by default.
 
 ### Compiler integration should preserve selective retrieval
 
@@ -80,7 +80,7 @@ The compiler should not automatically inflate packs because richer semantic docu
 
 Add a typed semantic document builder in the index crate and consume it from compiler planning:
 
-- `SemanticDocument` contract in `ctxpack-core`.
+- `SemanticDocument` contract in `ctxhelm-core`.
 - `SemanticDocumentFacet` or equivalent typed evidence records.
 - `PrecisionStatusReport` contract.
 - Index-side builder that joins inventory, symbols, related tests, docs/cards, and dependency/precision edges.

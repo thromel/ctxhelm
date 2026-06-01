@@ -20,6 +20,6 @@ Validate Phase 10 metrics with focused unit and CLI tests, then keep real-repo v
 
 ## Verification
 
-- `cargo test -p ctxpack-compiler -- --nocapture`
-- `cargo test -p ctxpack --test cli_compat search_related_tests_dependencies_and_eval_history_emit_json_shapes -- --nocapture`
-- `cargo test -p ctxpack --test cli_compat eval_benchmark_runs_named_suite_source_free -- --nocapture`
+- `cargo test -p ctxhelm-compiler -- --nocapture`
+- `cargo test -p ctxhelm --test cli_compat search_related_tests_dependencies_and_eval_history_emit_json_shapes -- --nocapture`
+- `cargo test -p ctxhelm --test cli_compat eval_benchmark_runs_named_suite_source_free -- --nocapture`

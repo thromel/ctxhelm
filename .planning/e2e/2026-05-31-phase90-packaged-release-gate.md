@@ -3,25 +3,25 @@
 ## Goal
 
 Prove that the production release path passes from a clean checkout using the
-packaged `ctxpack` binary, not only the local development binary.
+packaged `ctxhelm` binary, not only the local development binary.
 
 The active checkout contained unrelated untracked duplicate planning drafts, so
 the release gate correctly refused to package from it. To avoid deleting user
-files or weakening the gate with `CTXPACK_ALLOW_DIRTY=1`, the proof ran in a
+files or weakening the gate with `CTXHELM_ALLOW_DIRTY=1`, the proof ran in a
 temporary clean worktree at commit `0c36316`.
 
 ## Command
 
 ```bash
-git worktree add --detach /tmp/ctxpack-release-gate.MLfSJC/worktree HEAD
+git worktree add --detach /tmp/ctxhelm-release-gate.MLfSJC/worktree HEAD
 
-CTXPACK_SKIP_REAL_CLIENT=1 \
-CTXPACK_BENCHMARK_CONFIG=/tmp/ctxpack-release-gate.MLfSJC/broader-fixed-corpus-absolute.json \
+CTXHELM_SKIP_REAL_CLIENT=1 \
+CTXHELM_BENCHMARK_CONFIG=/tmp/ctxhelm-release-gate.MLfSJC/broader-fixed-corpus-absolute.json \
 bash scripts/release-gate.sh
 ```
 
 The benchmark config was the pinned broader fixed-corpus fixture with absolute
-paths for the local RefactoringMiner, ctxpack, ReAgent, and VeriSchema
+paths for the local RefactoringMiner, ctxhelm, ReAgent, and VeriSchema
 checkouts.
 
 ## Passed Gates
@@ -30,7 +30,7 @@ checkouts.
 - Release docs consistency.
 - Release package and artifact audit.
 - Clean archive extraction verification.
-- Extracted binary identity: `ctxpack 1.1.0`.
+- Extracted binary identity: `ctxhelm 1.1.0`.
 - First-pack, storage, memory, feedback, workspace, shared-artifact,
   inspector, retrieval-health, graph, policy/embedding, agent-preview,
   semantic, precision, v2.3 eval, and v2.4 semantic/precision smokes.
@@ -38,12 +38,12 @@ checkouts.
 - Cursor and OpenCode setup/protocol evidence.
 - Optional broad benchmark product proof through the packaged binary.
 - Codex and Claude deterministic protocol gates, with real-client tool-call
-  evidence intentionally skipped via `CTXPACK_SKIP_REAL_CLIENT=1`.
+  evidence intentionally skipped via `CTXHELM_SKIP_REAL_CLIENT=1`.
 
 Final gate output:
 
 ```text
-release gate passed: binary=/private/var/folders/6y/_t27xsmd06vbgzrmmj0gz9v00000gn/T/tmp.V6Hmmqsc63/extracted/ctxpack-v1.1.0-aarch64-apple-darwin/ctxpack archive=/var/folders/6y/_t27xsmd06vbgzrmmj0gz9v00000gn/T/tmp.V6Hmmqsc63/dist/ctxpack-v1.1.0-aarch64-apple-darwin.tar.gz proof=/var/folders/6y/_t27xsmd06vbgzrmmj0gz9v00000gn/T/tmp.V6Hmmqsc63/proof-bundle/release-proof-summary.json
+release gate passed: binary=/private/var/folders/6y/_t27xsmd06vbgzrmmj0gz9v00000gn/T/tmp.V6Hmmqsc63/extracted/ctxhelm-v1.1.0-aarch64-apple-darwin/ctxhelm archive=/var/folders/6y/_t27xsmd06vbgzrmmj0gz9v00000gn/T/tmp.V6Hmmqsc63/dist/ctxhelm-v1.1.0-aarch64-apple-darwin.tar.gz proof=/var/folders/6y/_t27xsmd06vbgzrmmj0gz9v00000gn/T/tmp.V6Hmmqsc63/proof-bundle/release-proof-summary.json
 ```
 
 ## Rejected Attempts

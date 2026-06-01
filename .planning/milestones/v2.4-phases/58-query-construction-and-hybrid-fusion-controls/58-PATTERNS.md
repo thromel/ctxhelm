@@ -11,15 +11,15 @@ status: patterns
 
 - `prepare_context_plan_with_paths_history_and_semantic` already centralizes planner inputs and should remain the main orchestration surface.
 - `RankingInput` and candidate feature rows are the right place to add query facet provenance without inventing a parallel ranking path.
-- Eval options in `crates/ctxpack-compiler/src/eval.rs` already support semantic toggles and should be extended rather than replaced.
+- Eval options in `crates/ctxhelm-compiler/src/eval.rs` already support semantic toggles and should be extended rather than replaced.
 - CLI JSON reports should remain backward compatible by adding optional fields.
 
 ## Closest Code Analogs
 
-- `crates/ctxpack-compiler/src/planning.rs`: task parsing and retrieval orchestration.
-- `crates/ctxpack-compiler/src/ranking.rs`: fusion features, signal kinds, and candidate evidence.
-- `crates/ctxpack-compiler/src/eval.rs`: historical eval and benchmark variants.
-- `crates/ctxpack-core/src/contracts.rs`: shared report contracts and feature rows.
+- `crates/ctxhelm-compiler/src/planning.rs`: task parsing and retrieval orchestration.
+- `crates/ctxhelm-compiler/src/ranking.rs`: fusion features, signal kinds, and candidate evidence.
+- `crates/ctxhelm-compiler/src/eval.rs`: historical eval and benchmark variants.
+- `crates/ctxhelm-core/src/contracts.rs`: shared report contracts and feature rows.
 
 ## Implementation Notes
 

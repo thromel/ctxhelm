@@ -2,29 +2,29 @@
 
 ## Question
 
-How do the v2.1 features integrate with the current ctxpack architecture?
+How do the v2.1 features integrate with the current ctxhelm architecture?
 
 ## Proposed Architecture
 
 ```text
-ctxpack-core
+ctxhelm-core
   typed inspector, graph policy, and provider contracts
 
-ctxpack-index
+ctxhelm-index
   graph community metadata
   semantic provider metadata
   source-free graph/embedding status
 
-ctxpack-compiler
+ctxhelm-compiler
   graph-aware retrieval policy experiments
   signal contribution summaries
   inspector view-model compilation
 
-ctxpack-mcp
+ctxhelm-mcp
   optional resources for inspector-ready pack/report metadata
   no new broad tool surface by default
 
-ctxpack / ctxpack-inspector
+ctxhelm / ctxhelm-inspector
   CLI commands for local inspector server/export
   static local web UI or later Tauri wrapper
 ```
@@ -50,7 +50,7 @@ Use the GraphRAG idea, not the generic document implementation:
   community, then refining into concrete files/tests.
 - Basic vector search remains a baseline signal for comparison.
 
-This should reuse ctxpack's existing graph, memory, benchmark, and feedback
+This should reuse ctxhelm's existing graph, memory, benchmark, and feedback
 systems rather than adding a separate graph database or LLM-built knowledge
 graph.
 

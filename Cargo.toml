@@ -1,10 +1,10 @@
 [workspace]
 members = [
-  "crates/ctxpack",
-  "crates/ctxpack-core",
-  "crates/ctxpack-index",
-  "crates/ctxpack-compiler",
-  "crates/ctxpack-mcp",
+  "crates/ctxhelm",
+  "crates/ctxhelm-core",
+  "crates/ctxhelm-index",
+  "crates/ctxhelm-compiler",
+  "crates/ctxhelm-mcp",
 ]
 resolver = "2"
 
@@ -12,9 +12,9 @@ resolver = "2"
 version = "1.1.7"
 edition = "2021"
 license = "MIT"
-repository = "https://github.com/thromel/ctxpack"
+repository = "https://github.com/thromel/ctxhelm"
 readme = "README.md"
-description = "RepoWinnow CLI: local-first context broker that prepares safe repository context packs for coding agents"
+description = "ctxhelm CLI: local-first context broker that prepares safe repository context packs for coding agents"
 rust-version = "1.87"
 
 [workspace.dependencies]

@@ -18,7 +18,7 @@ misses.
 - Extended `scripts/check-product-proof.py` to inspect embedded benchmark
   `report.retrievalGapSummaries`.
 - For each gap with `targetStatus = currentReachable`, the checker now requires:
-  - `contextAreaResourceUri` beginning with `ctxpack://repo/context-area/`
+  - `contextAreaResourceUri` beginning with `ctxhelm://repo/context-area/`
   - non-empty `nextReadPaths`
   - non-blank string entries in `nextReadPaths`
 - Added a release-packaging regression test that proves promoted product proofs
@@ -28,8 +28,8 @@ misses.
 ## Validation
 
 ```bash
-cargo test -p ctxpack product_proof_checker_accepts_promote_and_rejects_block -- --nocapture
-python3 scripts/check-product-proof.py .ctxpack/e2e/phase100-resource-backed-gap-summaries-proof.json
+cargo test -p ctxhelm product_proof_checker_accepts_promote_and_rejects_block -- --nocapture
+python3 scripts/check-product-proof.py .ctxhelm/e2e/phase100-resource-backed-gap-summaries-proof.json
 ```
 
 ## Result

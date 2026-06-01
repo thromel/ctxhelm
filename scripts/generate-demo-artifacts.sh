@@ -3,16 +3,16 @@ set -euo pipefail
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 repo_root="$(cd "$script_dir/.." && pwd -P)"
-out_dir="${CTXPACK_DEMO_DIR:-"$repo_root/docs/demo-artifacts"}"
+out_dir="${CTXHELM_DEMO_DIR:-"$repo_root/docs/demo-artifacts"}"
 
 rm -rf "$out_dir"
 mkdir -p "$out_dir"
 
 cat >"$out_dir/README.md" <<'EOF'
-# ctxpack Demo Artifacts
+# ctxhelm Demo Artifacts
 
 These artifacts are static, source-free examples for public adoption docs. They
-show the shape of ctxpack outputs without copying repository source code,
+show the shape of ctxhelm outputs without copying repository source code,
 prompts, terminal logs, secrets, or machine-local paths.
 
 Artifacts:
@@ -72,7 +72,7 @@ cat >"$out_dir/pack-inspector.html" <<'EOF'
 <!doctype html>
 <html lang="en">
 <meta charset="utf-8">
-<title>ctxpack Demo Pack Inspector</title>
+<title>ctxhelm Demo Pack Inspector</title>
 <style>
 body{font-family:system-ui,-apple-system,sans-serif;margin:2rem;line-height:1.45;color:#1f2933;background:#fbfbfa}
 main{max-width:860px;margin:auto}
@@ -82,7 +82,7 @@ code{background:#eef2f6;padding:.1rem .25rem;border-radius:4px}
 .ok{color:#0f766e;font-weight:700}
 </style>
 <main>
-<h1>ctxpack Demo Pack Inspector</h1>
+<h1>ctxhelm Demo Pack Inspector</h1>
 <p class="ok">Source-free demo: no raw source text, prompts, logs, or secrets.</p>
 <table>
 <tr><th>Path</th><th>Reason</th><th>Confidence</th></tr>
@@ -205,17 +205,17 @@ cat >"$out_dir/agent-preview.json" <<'EOF'
     {"agent": "cursor", "tools": ["prepare_task", "get_pack"], "ownsEdits": true},
     {"agent": "opencode", "tools": ["prepare_task", "get_pack"], "ownsEdits": true}
   ],
-  "ctxpackBoundary": "ctxpack recommends context; agents read, edit, and run commands."
+  "ctxhelmBoundary": "ctxhelm recommends context; agents read, edit, and run commands."
 }
 EOF
 
 cat >"$out_dir/agent-preview.md" <<'EOF'
 # Demo Agent Preview
 
-ctxpack exposes `prepare_task` and `get_pack` to Codex, Claude Code, Cursor,
+ctxhelm exposes `prepare_task` and `get_pack` to Codex, Claude Code, Cursor,
 OpenCode, and generic MCP clients.
 
-Boundary: ctxpack recommends files, tests, packs, and constraints. The coding
+Boundary: ctxhelm recommends files, tests, packs, and constraints. The coding
 agent owns file reads, edits, shell commands, and approvals.
 EOF
 

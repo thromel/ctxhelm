@@ -10,7 +10,7 @@ expose memory additively through MCP.
 - Score fresh approved/deterministic cards by task overlap and selected source links.
 - Add `selectedMemory` to plans.
 - Add a capped `Selected memory` pack section.
-- Add `ctxpack://repo/memory` without growing the MCP tool surface.
+- Add `ctxhelm://repo/memory` without growing the MCP tool surface.
 
 ## Verification
 

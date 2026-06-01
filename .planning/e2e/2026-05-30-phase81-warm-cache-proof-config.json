@@ -1,5 +1,5 @@
 {
-  "manifestVersion": "ctxpack-benchmark-corpus-v2.5",
+  "manifestVersion": "ctxhelm-benchmark-corpus-v2.5",
   "name": "phase81-warm-cache-proof",
   "corpusId": "phase81-warm-cache-proof-2026-05-30",
   "privacyLabel": "source_free_local",
@@ -25,9 +25,9 @@
       "privacyLabel": "source_free_local"
     },
     {
-      "name": "ctxpack",
+      "name": "ctxhelm",
       "path": "../..",
-      "revisionRangeId": "phase81-ctxpack-head-history-limit-5",
+      "revisionRangeId": "phase81-ctxhelm-head-history-limit-5",
       "head": "7f439fa1b1f2784aed6425b695d7c35944ea7955",
       "privacyLabel": "source_free_local"
     },

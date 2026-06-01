@@ -36,8 +36,8 @@ Add explicit provider and reranker policy gates so semantic quality backends can
 
 <task id="59.1" name="Add provider and reranker policy contracts">
 <read_first>
-- `crates/ctxpack-core/src/contracts.rs`
-- `crates/ctxpack-compiler/src/policy.rs`
+- `crates/ctxhelm-core/src/contracts.rs`
+- `crates/ctxhelm-compiler/src/policy.rs`
 - `docs/policy-embedding.md`
 </read_first>
 <action>
@@ -45,7 +45,7 @@ Add contracts for provider policy, data class permissions, reranker policy, prov
 </action>
 <verify>
 - Add serialization/default tests.
-- Run `cargo test -p ctxpack-core policy`.
+- Run `cargo test -p ctxhelm-core policy`.
 </verify>
 <acceptance_criteria>
 - Default policy is explicit and source-safe.
@@ -55,16 +55,16 @@ Add contracts for provider policy, data class permissions, reranker policy, prov
 
 <task id="59.2" name="Implement policy loading and enforcement">
 <read_first>
-- `crates/ctxpack-compiler/src/policy.rs`
-- `crates/ctxpack-index/src/semantic.rs`
-- `crates/ctxpack-compiler/src/planning.rs`
+- `crates/ctxhelm-compiler/src/policy.rs`
+- `crates/ctxhelm-index/src/semantic.rs`
+- `crates/ctxhelm-compiler/src/planning.rs`
 </read_first>
 <action>
 Load policy from existing repo config surfaces when available and apply safe defaults when absent. Enforce decisions before semantic provider execution, precision/reranker use, and any provider-dependent eval variant.
 </action>
 <verify>
 - Add tests for absent config, allowed local provider, denied cloud provider, denied source-transfer, and disabled reranker.
-- Run `cargo test -p ctxpack-compiler policy`.
+- Run `cargo test -p ctxhelm-compiler policy`.
 </verify>
 <acceptance_criteria>
 - No absent config path permits cloud or source transfer.
@@ -74,9 +74,9 @@ Load policy from existing repo config surfaces when available and apply safe def
 
 <task id="59.3" name="Add reranker abstraction behind policy gates">
 <read_first>
-- `crates/ctxpack-compiler/src/ranking.rs`
-- `crates/ctxpack-compiler/src/planning.rs`
-- `crates/ctxpack-compiler/src/eval.rs`
+- `crates/ctxhelm-compiler/src/ranking.rs`
+- `crates/ctxhelm-compiler/src/planning.rs`
+- `crates/ctxhelm-compiler/src/eval.rs`
 </read_first>
 <action>
 Add a reranker abstraction that can run a deterministic local fixture reranker for tests and report disabled/blocked status otherwise. Reranker inputs must use source-free candidate summaries by default.
@@ -84,7 +84,7 @@ Add a reranker abstraction that can run a deterministic local fixture reranker f
 <verify>
 - Add tests proving reranker does not run under default policy.
 - Add tests proving deterministic local reranker changes ordering only when explicitly enabled.
-- Run `cargo test -p ctxpack-compiler rerank`.
+- Run `cargo test -p ctxhelm-compiler rerank`.
 </verify>
 <acceptance_criteria>
 - Default runtime produces `reranker=disabled` or equivalent.
@@ -95,17 +95,17 @@ Add a reranker abstraction that can run a deterministic local fixture reranker f
 
 <task id="59.4" name="Propagate policy decisions through CLI, MCP-ready reports, and eval">
 <read_first>
-- `crates/ctxpack-cli/src/main.rs`
-- `crates/ctxpack-compiler/src/planning.rs`
-- `crates/ctxpack-compiler/src/eval.rs`
-- `crates/ctxpack-mcp/src/*`
+- `crates/ctxhelm-cli/src/main.rs`
+- `crates/ctxhelm-compiler/src/planning.rs`
+- `crates/ctxhelm-compiler/src/eval.rs`
+- `crates/ctxhelm-mcp/src/*`
 </read_first>
 <action>
 Attach policy decisions and concise warnings to existing CLI JSON, prepare-task reports, context packs, and eval/product proof reports without adding new MCP tools.
 </action>
 <verify>
 - Add integration tests or snapshots for default blocked policy output.
-- Run `cargo run -p ctxpack -- --help`.
+- Run `cargo run -p ctxhelm -- --help`.
 - Run relevant smoke scripts that exercise semantic and eval outputs.
 </verify>
 <acceptance_criteria>
@@ -126,7 +126,7 @@ Document provider/reranker defaults, opt-in policy shape, and privacy implicatio
 </action>
 <verify>
 - Run `cargo test --workspace`.
-- Run `cargo run -p ctxpack -- --help`.
+- Run `cargo run -p ctxhelm -- --help`.
 - Run `git diff --check`.
 </verify>
 <acceptance_criteria>
@@ -138,11 +138,11 @@ Document provider/reranker defaults, opt-in policy shape, and privacy implicatio
 </tasks>
 
 <verification>
-- `cargo test -p ctxpack-core policy`
-- `cargo test -p ctxpack-compiler policy`
-- `cargo test -p ctxpack-compiler rerank`
+- `cargo test -p ctxhelm-core policy`
+- `cargo test -p ctxhelm-compiler policy`
+- `cargo test -p ctxhelm-compiler rerank`
 - `cargo test --workspace`
-- `cargo run -p ctxpack -- --help`
+- `cargo run -p ctxhelm -- --help`
 </verification>
 
 <success_criteria>

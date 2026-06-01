@@ -16,7 +16,7 @@ tech-stack:
   patterns: [grep-based docs gate, validation-only empty task commit]
 key-files:
   created: []
-  modified: [docs/release.md, scripts/check-release-docs.sh, crates/ctxpack/tests/release_packaging.rs]
+  modified: [docs/release.md, scripts/check-release-docs.sh, crates/ctxhelm/tests/release_packaging.rs]
 key-decisions:
   - "Keep docs consistency as a narrow grep-based checker rather than adding a Markdown parser."
   - "Represent final release-gate validation with an empty task commit because Plan 01 already wired the optional hooks."
@@ -45,7 +45,7 @@ completed: 2026-05-13
 - Documented `bash scripts/release-gate.sh` as the local pre-publication blocker.
 - Documented selected-binary mode, extracted-binary fallback, required deterministic checks, optional Codex/Claude evidence, and no publish/tag/upload behavior.
 - Extended `scripts/check-release-docs.sh` to require the final release gate strings and reject unsupported proof claims.
-- Re-ran the final selected-binary release gate with `CTXPACK_SKIP_REAL_CLIENT=1`.
+- Re-ran the final selected-binary release gate with `CTXHELM_SKIP_REAL_CLIENT=1`.
 
 ## Task Commits
 
@@ -57,7 +57,7 @@ completed: 2026-05-13
 
 - `docs/release.md` - Adds release gate instructions, required/optional checks, and no-publish boundaries.
 - `scripts/check-release-docs.sh` - Requires release gate docs and rejects unsupported publication/client-proof claims.
-- `crates/ctxpack/tests/release_packaging.rs` - Adds release docs checker contract expectations.
+- `crates/ctxhelm/tests/release_packaging.rs` - Adds release docs checker contract expectations.
 
 ## Decisions Made
 
@@ -79,9 +79,9 @@ completed: 2026-05-13
 **2. [Rule 3 - Blocking] Used an empty validation commit for a task with no remaining file changes**
 - **Found during:** Task 3
 - **Issue:** Plan 01 already wired optional real-client hooks into `scripts/release-gate.sh`, so Task 3 required verification but no new code.
-- **Fix:** Ran the full selected-binary gate with `CTXPACK_SKIP_REAL_CLIENT=1` and recorded the validation task with an empty commit.
+- **Fix:** Ran the full selected-binary gate with `CTXHELM_SKIP_REAL_CLIENT=1` and recorded the validation task with an empty commit.
 - **Files modified:** None
-- **Verification:** `CTXPACK_BIN="$(pwd)/target/debug/ctxpack" CTXPACK_SKIP_REAL_CLIENT=1 bash scripts/release-gate.sh`
+- **Verification:** `CTXHELM_BIN="$(pwd)/target/debug/ctxhelm" CTXHELM_SKIP_REAL_CLIENT=1 bash scripts/release-gate.sh`
 - **Committed in:** `6c8f9de`
 
 **Total deviations:** 2 auto-fixed (Rule 1: 1, Rule 3: 1)

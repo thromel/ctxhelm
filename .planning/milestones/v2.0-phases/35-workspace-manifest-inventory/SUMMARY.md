@@ -13,16 +13,16 @@ Completed on 2026-05-17.
   - `WorkspaceRepoStatus`
   - `WorkspaceRepoDiagnostic`
   - `WorkspaceRepoPrivacyStatus`
-- Added `crates/ctxpack-index/src/workspace.rs` for:
-  - default `.ctxpack/workspace.json` resolution
+- Added `crates/ctxhelm-index/src/workspace.rs` for:
+  - default `.ctxhelm/workspace.json` resolution
   - manifest read/write
   - local path resolution
   - duplicate ID/label diagnostics
   - missing, inaccessible, non-git, sensitive-looking, generated-looking, and invalid-entry diagnostics
   - source-free inventory/status aggregation across local repos
 - Added CLI surface:
-  - `ctxpack workspace init --repo <path> [--member <path>] [--label <label>]`
-  - `ctxpack workspace status --repo <path> [--manifest <path>] [--format json|markdown]`
+  - `ctxhelm workspace init --repo <path> [--member <path>] [--label <label>]`
+  - `ctxhelm workspace status --repo <path> [--manifest <path>] [--format json|markdown]`
 - Added docs and diagrams:
   - `docs/workspace.md`
   - `docs/architecture.md`

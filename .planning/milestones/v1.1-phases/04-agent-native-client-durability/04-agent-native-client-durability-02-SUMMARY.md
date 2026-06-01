@@ -2,7 +2,7 @@
 phase: 04-agent-native-client-durability
 plan: 02
 subsystem: agent-adapters
-tags: [ctxpack, agents-md, mcp, adapters, init]
+tags: [ctxhelm, agents-md, mcp, adapters, init]
 requires:
   - phase: 03-measured-retrieval-lift-eval-gates
     provides: measured attributed prepare_task and get_pack context surfaces
@@ -18,7 +18,7 @@ key-files:
   created:
     - .planning/phases/04-agent-native-client-durability/deferred-items.md
   modified:
-    - crates/ctxpack-core/src/init.rs
+    - crates/ctxhelm-core/src/init.rs
 key-decisions:
   - "Keep generated adapter text as concise runtime guidance rather than static repository context."
   - "Tell agents to call prepare_task first with explicit repo, then request get_pack progressively only when direct file reads or brief context are insufficient."
@@ -58,7 +58,7 @@ _TDD tasks intentionally produced test then fix commits._
 
 ## Files Created/Modified
 
-- `crates/ctxpack-core/src/init.rs` - Added adapter guidance tests and refreshed generated AGENTS/Cursor/Claude/OpenCode/Codex wording.
+- `crates/ctxhelm-core/src/init.rs` - Added adapter guidance tests and refreshed generated AGENTS/Cursor/Claude/OpenCode/Codex wording.
 - `.planning/phases/04-agent-native-client-durability/deferred-items.md` - Recorded out-of-scope failures found during broad verification.
 
 ## Decisions Made
@@ -69,19 +69,19 @@ _TDD tasks intentionally produced test then fix commits._
 
 ## Deviations from Plan
 
-None - plan implementation stayed within `crates/ctxpack-core/src/init.rs` and planning docs. No runtime MCP behavior or dependency changes were made.
+None - plan implementation stayed within `crates/ctxhelm-core/src/init.rs` and planning docs. No runtime MCP behavior or dependency changes were made.
 
 ## Issues Encountered
 
-- `cargo test --workspace` failed in `crates/ctxpack/tests/cli_compat.rs` on `mcp_protocol_uses_explicit_repo_from_wrong_cwd`. This file is outside Plan 02 ownership and was already modified by parallel Plan 01 work, so it was documented in `deferred-items.md` instead of fixed here.
+- `cargo test --workspace` failed in `crates/ctxhelm/tests/cli_compat.rs` on `mcp_protocol_uses_explicit_repo_from_wrong_cwd`. This file is outside Plan 02 ownership and was already modified by parallel Plan 01 work, so it was documented in `deferred-items.md` instead of fixed here.
 - `cargo fmt --all --check` reported formatting diffs in out-of-scope files. These were also documented in `deferred-items.md` and left untouched.
 
 ## Verification
 
-- `cargo test -p ctxpack-core adapter -- --nocapture` - passed
-- `cargo test -p ctxpack-core init -- --nocapture` - passed
-- `cargo test --workspace` - failed out of scope in `crates/ctxpack/tests/cli_compat.rs`
-- `cargo fmt --all --check` - failed out of scope in `crates/ctxpack/tests/cli_compat.rs` and `crates/ctxpack-mcp/src/lib.rs`
+- `cargo test -p ctxhelm-core adapter -- --nocapture` - passed
+- `cargo test -p ctxhelm-core init -- --nocapture` - passed
+- `cargo test --workspace` - failed out of scope in `crates/ctxhelm/tests/cli_compat.rs`
+- `cargo fmt --all --check` - failed out of scope in `crates/ctxhelm/tests/cli_compat.rs` and `crates/ctxhelm-mcp/src/lib.rs`
 
 ## Known Stubs
 
@@ -89,7 +89,7 @@ None. Stub-pattern scan found only quoted diagnostic text in `deferred-items.md`
 
 ## Self-Check: PASSED
 
-- Created/modified files exist: `crates/ctxpack-core/src/init.rs`, `deferred-items.md`, and this summary.
+- Created/modified files exist: `crates/ctxhelm-core/src/init.rs`, `deferred-items.md`, and this summary.
 - Task commits exist: `8cf7edd`, `4628c82`, `2860e44`, `0ef62cf`.
 - Forbidden static-dump and prepare_task-only phrases appear only inside regression-test assertions, not generated adapter content.
 

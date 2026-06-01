@@ -3,11 +3,11 @@
 Verified in this development pass:
 
 ```bash
-CARGO_TARGET_DIR=/tmp/ctxpack-target cargo test -p ctxpack-mcp resources -- --nocapture
-CARGO_TARGET_DIR=/tmp/ctxpack-target cargo test -p ctxpack script_contract --test release_packaging -- --nocapture
+CARGO_TARGET_DIR=/tmp/ctxhelm-target cargo test -p ctxhelm-mcp resources -- --nocapture
+CARGO_TARGET_DIR=/tmp/ctxhelm-target cargo test -p ctxhelm script_contract --test release_packaging -- --nocapture
 cargo fmt --all --check
 bash scripts/check-release-docs.sh
-CTXPACK_BIN=/tmp/ctxpack-target/debug/ctxpack bash scripts/smoke-shared-artifacts.sh
+CTXHELM_BIN=/tmp/ctxhelm-target/debug/ctxhelm bash scripts/smoke-shared-artifacts.sh
 ```
 
 Status: passed.

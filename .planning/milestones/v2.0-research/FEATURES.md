@@ -8,11 +8,11 @@ v2.0 Workspace & Team Layer
 
 ### Multi-repo workspace inventory
 
-Users can define a workspace made of multiple local repositories. ctxpack can inspect each repo independently, report freshness and privacy status, and return a source-free workspace summary.
+Users can define a workspace made of multiple local repositories. ctxhelm can inspect each repo independently, report freshness and privacy status, and return a source-free workspace summary.
 
 ### Cross-repo task context planning
 
-For tasks that mention a package, service, repo, or cross-repo behavior, ctxpack can route retrieval to the right repository or repositories and return evidence-labeled targets without flattening the workspace into one source blob.
+For tasks that mention a package, service, repo, or cross-repo behavior, ctxhelm can route retrieval to the right repository or repositories and return evidence-labeled targets without flattening the workspace into one source blob.
 
 ### Source-free shared artifacts
 
@@ -24,7 +24,7 @@ Maintainers can define default local policies for what may be indexed, exported,
 
 ### Agent-native workspace guidance
 
-Codex, Claude Code, Cursor, OpenCode, and other MCP-aware agents should continue using ctxpack through existing agent-native surfaces. Workspace support should improve `prepare_task`, `get_pack`, and resources without making a separate daily UI mandatory.
+Codex, Claude Code, Cursor, OpenCode, and other MCP-aware agents should continue using ctxhelm through existing agent-native surfaces. Workspace support should improve `prepare_task`, `get_pack`, and resources without making a separate daily UI mandatory.
 
 ## Differentiators
 
@@ -38,7 +38,7 @@ Teams can share lessons and policy choices safely when all artifacts are derived
 
 ### Policy-first collaboration
 
-Before teams share anything, ctxpack should show whether the artifact is local-only, source-free, redacted, generated, stale, or policy-blocked.
+Before teams share anything, ctxhelm should show whether the artifact is local-only, source-free, redacted, generated, stale, or policy-blocked.
 
 ## Anti-Features
 

@@ -33,7 +33,7 @@
     },
     {
       "repository": "RefactoringMiner-clean",
-      "metric": "ctxpackLiftAt10",
+      "metric": "ctxhelmLiftAt10",
       "baseValue": 0.017857194,
       "headValue": 0.017857194,
       "delta": 0.0

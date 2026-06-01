@@ -16,7 +16,7 @@ Implement GRAPH-01, GRAPH-02, and GRAPH-04:
 1. Add graph node/edge/community contracts.
 2. Add compiler graph report builder using existing dependency/test/memory and
    feedback APIs.
-3. Add `ctxpack graph neighborhood`.
+3. Add `ctxhelm graph neighborhood`.
 4. Add docs and smoke coverage.
 5. Run formatting, smokes, CLI help, and workspace tests.
 
@@ -25,7 +25,7 @@ Implement GRAPH-01, GRAPH-02, and GRAPH-04:
 - `cargo fmt --all`
 - `bash scripts/smoke-graph.sh`
 - `bash scripts/check-release-docs.sh`
-- `cargo run -p ctxpack -- graph neighborhood --help`
+- `cargo run -p ctxhelm -- graph neighborhood --help`
 - `cargo test --workspace`
 
 ## Non-goals

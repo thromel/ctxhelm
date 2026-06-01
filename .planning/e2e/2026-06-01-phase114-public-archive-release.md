@@ -14,19 +14,19 @@ The full release gate was run from clean checkout
 
 ```bash
 CARGO_NET_OFFLINE=true \
-CARGO_TARGET_DIR=/tmp/ctxpack-phase114-release-target \
-CTXPACK_DIST_DIR=/tmp/ctxpack-v1.1.0-release-dist \
-CTXPACK_PROOF_DIR=/tmp/ctxpack-phase114-release-proof \
-CTXPACK_REQUIRE_CLEAN_FIXTURE_PROOF=1 \
+CARGO_TARGET_DIR=/tmp/ctxhelm-phase114-release-target \
+CTXHELM_DIST_DIR=/tmp/ctxhelm-v1.1.0-release-dist \
+CTXHELM_PROOF_DIR=/tmp/ctxhelm-phase114-release-proof \
+CTXHELM_REQUIRE_CLEAN_FIXTURE_PROOF=1 \
 bash scripts/release-gate.sh
 ```
 
 Result:
 
 - release gate: `passed`
-- version: `ctxpack 1.1.0`
+- version: `ctxhelm 1.1.0`
 - binary source: `archive`
-- archive: `ctxpack-v1.1.0-aarch64-apple-darwin.tar.gz`
+- archive: `ctxhelm-v1.1.0-aarch64-apple-darwin.tar.gz`
 - archive SHA-256: `81f5ecd6d944d13ec70141b55a110cc808f584fc0e7b64a0ba087eda5e18f664`
 - binary SHA-256: `92700827037f34b72e24fde627dd8b9f6506037cd0bf2a6e11dc66b3ac9887ee`
 - clean cold fixture proof: `passed`
@@ -38,7 +38,7 @@ Result:
 Published release:
 
 ```text
-https://github.com/thromel/ctxpack/releases/tag/v1.1.0
+https://github.com/thromel/ctxhelm/releases/tag/v1.1.0
 ```
 
 The release tag targets:
@@ -49,10 +49,10 @@ The release tag targets:
 
 Uploaded assets:
 
-- `ctxpack-v1.1.0-aarch64-apple-darwin.tar.gz`
-- `ctxpack-v1.1.0-aarch64-apple-darwin.manifest.json`
-- `ctxpack-v1.1.0-aarch64-apple-darwin.audit.json`
-- `ctxpack-v1.1.0-aarch64-apple-darwin.tar.gz.sha256`
+- `ctxhelm-v1.1.0-aarch64-apple-darwin.tar.gz`
+- `ctxhelm-v1.1.0-aarch64-apple-darwin.manifest.json`
+- `ctxhelm-v1.1.0-aarch64-apple-darwin.audit.json`
+- `ctxhelm-v1.1.0-aarch64-apple-darwin.tar.gz.sha256`
 - `sha256sums.txt`
 
 ## Verification
@@ -64,21 +64,21 @@ asset SHA-256 digests with:
 bash scripts/verify-github-release.sh \
   --tag v1.1.0 \
   --target 68383cbfc2fff00c4f53fbd2b7bf90527ac4bd7e \
-  --assets-dir /tmp/ctxpack-v1.1.0-release-dist \
-  --release-json .ctxpack/e2e/phase114-github-release.json
+  --assets-dir /tmp/ctxhelm-v1.1.0-release-dist \
+  --release-json .ctxhelm/e2e/phase114-github-release.json
 ```
 
 Verifier output:
 
 ```json
-{"assetCount": 5, "sourceFree": true, "tag": "v1.1.0", "target": "68383cbfc2fff00c4f53fbd2b7bf90527ac4bd7e", "url": "https://github.com/thromel/ctxpack/releases/tag/v1.1.0"}
+{"assetCount": 5, "sourceFree": true, "tag": "v1.1.0", "target": "68383cbfc2fff00c4f53fbd2b7bf90527ac4bd7e", "url": "https://github.com/thromel/ctxhelm/releases/tag/v1.1.0"}
 ```
 
 Durable source-free evidence:
 
-- `.ctxpack/e2e/phase114-release-proof-summary.json`
-- `.ctxpack/e2e/phase114-release-candidate-status.json`
-- `.ctxpack/e2e/phase114-github-release.json`
+- `.ctxhelm/e2e/phase114-release-proof-summary.json`
+- `.ctxhelm/e2e/phase114-release-candidate-status.json`
+- `.ctxhelm/e2e/phase114-github-release.json`
 
 ## Boundary
 

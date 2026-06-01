@@ -7,7 +7,7 @@
 <domain>
 ## Phase Boundary
 
-This phase makes large-history historical evals faster and more inspectable without changing ctxpack's source-free privacy boundary. It builds on Phase 50's fixed benchmark corpus manifests.
+This phase makes large-history historical evals faster and more inspectable without changing ctxhelm's source-free privacy boundary. It builds on Phase 50's fixed benchmark corpus manifests.
 
 </domain>
 
@@ -27,9 +27,9 @@ This phase makes large-history historical evals faster and more inspectable with
 ## Existing Code Insights
 
 ### Reusable Assets
-- `crates/ctxpack-compiler/src/eval.rs` owns historical eval execution, benchmark suite configs, and report contracts.
-- `crates/ctxpack/src/main.rs` owns `ctxpack eval history`, `ctxpack eval health`, and Markdown report rendering.
-- `.ctxpack/benchmarks/refactoringminer-v23.json` is the first fixed v2.3 large-history suite.
+- `crates/ctxhelm-compiler/src/eval.rs` owns historical eval execution, benchmark suite configs, and report contracts.
+- `crates/ctxhelm/src/main.rs` owns `ctxhelm eval history`, `ctxhelm eval health`, and Markdown report rendering.
+- `.ctxhelm/benchmarks/refactoringminer-v23.json` is the first fixed v2.3 large-history suite.
 - `docs/benchmarking.md` documents source-free benchmark contracts and privacy boundaries.
 
 ### Established Patterns
@@ -38,8 +38,8 @@ This phase makes large-history historical evals faster and more inspectable with
 - New manifest fields should be defaulted so older suite files remain valid.
 
 ### Integration Points
-- `ctxpack eval history --cache --parallelism N`
-- `ctxpack eval history --cache --force --parallelism N`
+- `ctxhelm eval history --cache --parallelism N`
+- `ctxhelm eval history --cache --force --parallelism N`
 - Benchmark manifest fields: `cacheEnabled`, `forceRefresh`, `parallelism`
 
 </code_context>
@@ -47,7 +47,7 @@ This phase makes large-history historical evals faster and more inspectable with
 <specifics>
 ## Specific Ideas
 
-- Store cached historical eval reports under the local ctxpack home by `repo_id` and `eval_range_id`.
+- Store cached historical eval reports under the local ctxhelm home by `repo_id` and `eval_range_id`.
 - Return cached reports before inventory loading and git sampling when inputs match.
 - Add runtime fields for cache hits/misses, effective parallelism, git sample time, ranking time, pack/compiler time, and slow commits.
 - Add a regression test that proves cache hits do not store source text or commit prompt text.

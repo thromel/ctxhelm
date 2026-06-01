@@ -35,10 +35,10 @@ Role filters are part of the suite contract and source-free metadata now. Deeper
 <code_context>
 ## Existing Code Insights
 
-- `crates/ctxpack-compiler/src/eval.rs` owns `HistoricalEvalOptions`, `HistoricalEvalReport`, `evaluate_historical_commits`, lexical baseline comparison, signal ablations, and retrieval gap summaries.
-- `crates/ctxpack/src/main.rs` owns `ctxpack eval history`, Markdown rendering, and CLI JSON output.
-- `crates/ctxpack-index/src/git.rs` owns historical commit sampling and safe changed-path labels.
-- `crates/ctxpack/tests/cli_compat.rs` is the right location for binary-level CLI compatibility checks.
+- `crates/ctxhelm-compiler/src/eval.rs` owns `HistoricalEvalOptions`, `HistoricalEvalReport`, `evaluate_historical_commits`, lexical baseline comparison, signal ablations, and retrieval gap summaries.
+- `crates/ctxhelm/src/main.rs` owns `ctxhelm eval history`, Markdown rendering, and CLI JSON output.
+- `crates/ctxhelm-index/src/git.rs` owns historical commit sampling and safe changed-path labels.
+- `crates/ctxhelm/tests/cli_compat.rs` is the right location for binary-level CLI compatibility checks.
 - `docs/` already contains install, release, quickstart, troubleshooting, and agent setup docs.
 
 </code_context>
@@ -47,7 +47,7 @@ Role filters are part of the suite contract and source-free metadata now. Deeper
 ## Specific Ideas
 
 - Add `BenchmarkSuiteConfig`, `BenchmarkRepoConfig`, `BenchmarkSuiteReport`, and `BenchmarkRepoReport`.
-- Add `ctxpack eval benchmark --config <file> --format markdown|json`.
+- Add `ctxhelm eval benchmark --config <file> --format markdown|json`.
 - Resolve relative repo paths against the suite file location.
 - Preserve source-free privacy in JSON and Markdown output.
 - Add documentation for RefactoringMiner-style local benchmark setup.

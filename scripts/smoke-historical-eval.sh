@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-smoke_repo="${CTXPACK_SMOKE_REPO:-$PWD}"
-smoke_limit="${CTXPACK_SMOKE_LIMIT:-3}"
-smoke_budget="${CTXPACK_SMOKE_BUDGET:-10}"
+smoke_repo="${CTXHELM_SMOKE_REPO:-$PWD}"
+smoke_limit="${CTXHELM_SMOKE_LIMIT:-3}"
+smoke_budget="${CTXHELM_SMOKE_BUDGET:-10}"
 
 run_smoke() {
   local label="$1"
@@ -11,8 +11,8 @@ run_smoke() {
   local report
   report="$(mktemp)"
 
-  echo "ctxpack smoke: ${label} repo=${repo} limit=${smoke_limit} budget=${smoke_budget}"
-  cargo run -p ctxpack -- eval history \
+  echo "ctxhelm smoke: ${label} repo=${repo} limit=${smoke_limit} budget=${smoke_budget}"
+  cargo run -p ctxhelm -- eval history \
     --repo "$repo" \
     --limit "$smoke_limit" \
     --budget "$smoke_budget" \
@@ -47,14 +47,14 @@ filters = report["effectiveFilters"]
 if filters.get("rankingBudget") != expected_budget:
     raise SystemExit(
         f"{label}: effectiveFilters.rankingBudget={filters.get('rankingBudget')} "
-        f"does not match CTXPACK_SMOKE_BUDGET={expected_budget}"
+        f"does not match CTXHELM_SMOKE_BUDGET={expected_budget}"
     )
 
 ranking = report["rankingComparison"]
 if ranking.get("k") != expected_budget:
     raise SystemExit(
         f"{label}: rankingComparison.k={ranking.get('k')} "
-        f"does not match CTXPACK_SMOKE_BUDGET={expected_budget}"
+        f"does not match CTXHELM_SMOKE_BUDGET={expected_budget}"
     )
 for group in ("combined", "lexicalBaseline"):
     metrics = ranking.get(group, {})
@@ -98,7 +98,7 @@ def walk(value, trail="$"):
 
 walk(report)
 print(
-    f"ctxpack smoke ok: {label} commits={report['evaluatedCommits']} "
+    f"ctxhelm smoke ok: {label} commits={report['evaluatedCommits']} "
     f"budget={filters['rankingBudget']} range={report['evalRangeId']}"
 )
 PY
@@ -107,18 +107,18 @@ PY
 }
 
 if [[ ! -d "$smoke_repo" ]]; then
-  echo "CTXPACK_SMOKE_REPO does not exist: $smoke_repo" >&2
+  echo "CTXHELM_SMOKE_REPO does not exist: $smoke_repo" >&2
   exit 1
 fi
 
 run_smoke "primary" "$smoke_repo"
 
-if [[ -n "${CTXPACK_REFACTORINGMINER_REPO:-}" ]]; then
-  if [[ -d "$CTXPACK_REFACTORINGMINER_REPO" ]]; then
-    run_smoke "refactoringminer" "$CTXPACK_REFACTORINGMINER_REPO"
+if [[ -n "${CTXHELM_REFACTORINGMINER_REPO:-}" ]]; then
+  if [[ -d "$CTXHELM_REFACTORINGMINER_REPO" ]]; then
+    run_smoke "refactoringminer" "$CTXHELM_REFACTORINGMINER_REPO"
   else
-    echo "ctxpack smoke: skipping RefactoringMiner; CTXPACK_REFACTORINGMINER_REPO does not exist: $CTXPACK_REFACTORINGMINER_REPO"
+    echo "ctxhelm smoke: skipping RefactoringMiner; CTXHELM_REFACTORINGMINER_REPO does not exist: $CTXHELM_REFACTORINGMINER_REPO"
   fi
 else
-  echo "ctxpack smoke: skipping RefactoringMiner; CTXPACK_REFACTORINGMINER_REPO is not set"
+  echo "ctxhelm smoke: skipping RefactoringMiner; CTXHELM_REFACTORINGMINER_REPO is not set"
 fi

@@ -5,7 +5,7 @@
 
 ## Goal
 
-Users can install, upgrade, verify, and troubleshoot ctxpack without hidden
+Users can install, upgrade, verify, and troubleshoot ctxhelm without hidden
 global mutation.
 
 ## Requirements
@@ -13,7 +13,7 @@ global mutation.
 - INSTALL-01: Install docs cover source build and release archive install with
   checksum verification and absolute binary-path guidance.
 - INSTALL-02: Upgrade docs verify active binary version, binary location,
-  release manifest, and compatibility with existing local `.ctxpack` state.
+  release manifest, and compatibility with existing local `.ctxhelm` state.
 - INSTALL-03: Agent setup docs cover Codex CLI, Claude Code, Cursor, OpenCode,
   and generic MCP clients while preserving manual config review.
 - INSTALL-04: Troubleshooting flow covers PATH, MCP startup, stale binary,
@@ -21,7 +21,7 @@ global mutation.
 
 ## Decisions
 
-- Add `ctxpack doctor` as the read-only install/upgrade verification command.
+- Add `ctxhelm doctor` as the read-only install/upgrade verification command.
 - Keep `setup-check` scoped to generated repo-local guidance artifacts.
 - Use `doctor` for binary-path, manifest, and local-state compatibility checks.
 - Do not mutate global agent config from any install or troubleshooting path.

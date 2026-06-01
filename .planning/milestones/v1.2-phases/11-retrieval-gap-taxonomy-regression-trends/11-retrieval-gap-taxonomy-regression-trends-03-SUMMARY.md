@@ -7,4 +7,4 @@ completed: 2026-05-14
 
 # Summary 3: Benchmark Comparison
 
-Added `ctxpack eval compare` plus typed comparison contracts for metric deltas, gap family deltas, and regression threshold checks.
+Added `ctxhelm eval compare` plus typed comparison contracts for metric deltas, gap family deltas, and regression threshold checks.

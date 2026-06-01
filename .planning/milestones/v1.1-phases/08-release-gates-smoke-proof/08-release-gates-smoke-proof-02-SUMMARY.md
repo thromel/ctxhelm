@@ -17,13 +17,13 @@ tech-stack:
   patterns: [selected-binary MCP server wrappers, JSON evidence files gated by env]
 key-files:
   created: []
-  modified: [scripts/smoke-codex-mcp.sh, scripts/smoke-claude-mcp.sh, crates/ctxpack/tests/cli_compat.rs]
+  modified: [scripts/smoke-codex-mcp.sh, scripts/smoke-claude-mcp.sh, crates/ctxhelm/tests/cli_compat.rs]
 key-decisions:
-  - "Real-client execution is env-gated by CTXPACK_RUN_REAL_CLIENT=1 or CTXPACK_REQUIRE_REAL_CLIENT=1; CTXPACK_SKIP_REAL_CLIENT=1 still forces a deterministic-only pass."
-  - "Evidence JSON includes client, clientVersion, ctxpackVersion, repo, prepareTask, getPack, and required without source snippets or prompt text."
+  - "Real-client execution is env-gated by CTXHELM_RUN_REAL_CLIENT=1 or CTXHELM_REQUIRE_REAL_CLIENT=1; CTXHELM_SKIP_REAL_CLIENT=1 still forces a deterministic-only pass."
+  - "Evidence JSON includes client, clientVersion, ctxhelmVersion, repo, prepareTask, getPack, and required without source snippets or prompt text."
 patterns-established:
   - "Optional client wrappers always run deterministic protocol proof before considering real clients."
-  - "Selected CTXPACK_BIN is used for protocol smoke, version capture, and stdio serve-mcp wrappers."
+  - "Selected CTXHELM_BIN is used for protocol smoke, version capture, and stdio serve-mcp wrappers."
 requirements-completed: [SMOKE-03]
 duration: 3min
 completed: 2026-05-13
@@ -43,9 +43,9 @@ completed: 2026-05-13
 
 ## Accomplishments
 
-- Hardened Codex and Claude smoke wrappers to resolve and validate selected `CTXPACK_BIN`.
-- Captured exact client version and selected ctxpack version before real-client execution.
-- Added stable source-free evidence output through `CTXPACK_REAL_CLIENT_EVIDENCE_DIR`.
+- Hardened Codex and Claude smoke wrappers to resolve and validate selected `CTXHELM_BIN`.
+- Captured exact client version and selected ctxhelm version before real-client execution.
+- Added stable source-free evidence output through `CTXHELM_REAL_CLIENT_EVIDENCE_DIR`.
 - Verified deterministic skip mode for both wrappers without requiring auth.
 
 ## Task Commits
@@ -57,12 +57,12 @@ completed: 2026-05-13
 
 - `scripts/smoke-codex-mcp.sh` - Uses selected binary for protocol and MCP server execution, records Codex evidence when opted in.
 - `scripts/smoke-claude-mcp.sh` - Uses selected binary for protocol and MCP server execution, records Claude evidence when opted in.
-- `crates/ctxpack/tests/cli_compat.rs` - Adds real-client smoke wrapper contract checks.
+- `crates/ctxhelm/tests/cli_compat.rs` - Adds real-client smoke wrapper contract checks.
 
 ## Decisions Made
 
-- Added `CTXPACK_RUN_REAL_CLIENT=1` as a non-required opt-in path, while preserving `CTXPACK_REQUIRE_REAL_CLIENT=1` as the required evidence gate.
-- Real-client wrappers keep temporary logs private unless `CTXPACK_REAL_CLIENT_EVIDENCE_DIR` is set for stable evidence output.
+- Added `CTXHELM_RUN_REAL_CLIENT=1` as a non-required opt-in path, while preserving `CTXHELM_REQUIRE_REAL_CLIENT=1` as the required evidence gate.
+- Real-client wrappers keep temporary logs private unless `CTXHELM_REAL_CLIENT_EVIDENCE_DIR` is set for stable evidence output.
 
 ## Deviations from Plan
 
@@ -71,9 +71,9 @@ completed: 2026-05-13
 **1. [Rule 2 - Missing Critical] Made real-client execution opt-in instead of opportunistic**
 - **Found during:** Task 2
 - **Issue:** The prior wrappers attempted real clients whenever `codex` or `claude` existed, which could force auth/model behavior on default release checks.
-- **Fix:** Real-client execution now requires `CTXPACK_RUN_REAL_CLIENT=1` or `CTXPACK_REQUIRE_REAL_CLIENT=1`; deterministic protocol proof still runs first.
+- **Fix:** Real-client execution now requires `CTXHELM_RUN_REAL_CLIENT=1` or `CTXHELM_REQUIRE_REAL_CLIENT=1`; deterministic protocol proof still runs first.
 - **Files modified:** `scripts/smoke-codex-mcp.sh`, `scripts/smoke-claude-mcp.sh`
-- **Verification:** `CTXPACK_BIN="$(pwd)/target/debug/ctxpack" CTXPACK_SKIP_REAL_CLIENT=1 bash scripts/smoke-codex-mcp.sh` and Claude equivalent.
+- **Verification:** `CTXHELM_BIN="$(pwd)/target/debug/ctxhelm" CTXHELM_SKIP_REAL_CLIENT=1 bash scripts/smoke-codex-mcp.sh` and Claude equivalent.
 - **Committed in:** `73bfba8`
 
 **Total deviations:** 1 auto-fixed (Rule 2: 1)
@@ -85,7 +85,7 @@ None beyond the opt-in real-client boundary adjustment.
 
 ## User Setup Required
 
-None - Codex/Claude auth is not required by default. Maintainers can opt in with `CTXPACK_RUN_REAL_CLIENT=1` or require proof with `CTXPACK_REQUIRE_REAL_CLIENT=1`.
+None - Codex/Claude auth is not required by default. Maintainers can opt in with `CTXHELM_RUN_REAL_CLIENT=1` or require proof with `CTXHELM_REQUIRE_REAL_CLIENT=1`.
 
 ## Next Phase Readiness
 
@@ -95,7 +95,7 @@ Plan 03 can document the release gate and extend docs checks to cover the final 
 
 - Found `scripts/smoke-codex-mcp.sh`
 - Found `scripts/smoke-claude-mcp.sh`
-- Found `crates/ctxpack/tests/cli_compat.rs`
+- Found `crates/ctxhelm/tests/cli_compat.rs`
 - Found commits `ba98357` and `73bfba8`
 
 ---

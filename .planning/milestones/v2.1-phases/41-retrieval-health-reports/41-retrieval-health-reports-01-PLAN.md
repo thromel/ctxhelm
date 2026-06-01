@@ -13,10 +13,10 @@ Implement HEALTH-01 through HEALTH-04:
 
 ## Steps
 
-1. Add `RetrievalHealthReport` contracts in `ctxpack-core`.
+1. Add `RetrievalHealthReport` contracts in `ctxhelm-core`.
 2. Add compiler aggregation from `HistoricalEvalReport` and
    `PolicyQualityReport`.
-3. Add `ctxpack eval health`.
+3. Add `ctxhelm eval health`.
 4. Add Markdown renderer, docs, and smoke script.
 5. Run focused tests, smoke, docs checks, CLI help, and workspace tests.
 
@@ -26,7 +26,7 @@ Implement HEALTH-01 through HEALTH-04:
 - Focused retrieval health tests
 - `bash scripts/smoke-retrieval-health.sh`
 - `bash scripts/check-release-docs.sh`
-- `cargo run -p ctxpack -- eval health --help`
+- `cargo run -p ctxhelm -- eval health --help`
 - `cargo test --workspace`
 
 ## Non-goals

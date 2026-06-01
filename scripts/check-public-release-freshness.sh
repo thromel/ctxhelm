@@ -7,14 +7,14 @@ usage: check-public-release-freshness.sh --tag TAG [--repo OWNER/REPO] [--curren
 
 Checks whether the public GitHub release tag points at the current commit and
 writes source-free freshness metadata. Commits that only update proof artifacts
-under .ctxpack/e2e/ or planning notes under .planning/ are reported separately
+under .ctxhelm/e2e/ or planning notes under .planning/ are reported separately
 from product-impacting commits. The script reads release metadata through gh
 unless --release-json is provided. It does not publish, tag, upload, install, or
 mutate repository state.
 EOF
 }
 
-repo="thromel/ctxpack"
+repo="thromel/ctxhelm"
 tag=""
 current_commit=""
 release_json=""
@@ -107,7 +107,7 @@ PY
 )"
 product_commits_ahead=""
 proof_only_commits_ahead=""
-ignored_freshness_paths_json='[".ctxpack/e2e/", ".planning/"]'
+ignored_freshness_paths_json='[".ctxhelm/e2e/", ".planning/"]'
 if git cat-file -e "${current_commit}^{commit}" >/dev/null 2>&1 \
   && git cat-file -e "${release_target}^{commit}" >/dev/null 2>&1; then
   if [[ "$release_target" == "$current_commit" ]]; then
@@ -126,7 +126,7 @@ if git cat-file -e "${current_commit}^{commit}" >/dev/null 2>&1 \
       while IFS= read -r changed_path; do
         [[ -z "$changed_path" ]] && continue
         case "$changed_path" in
-          .ctxpack/e2e/*|.planning/*)
+          .ctxhelm/e2e/*|.planning/*)
             ;;
           *)
             has_product_path=1

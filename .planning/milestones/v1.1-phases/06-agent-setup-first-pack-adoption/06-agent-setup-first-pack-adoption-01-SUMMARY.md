@@ -16,7 +16,7 @@ tech-stack:
   patterns: [typed init report contracts, compact CLI setup report rendering]
 key-files:
   created: [.planning/phases/06-agent-setup-first-pack-adoption/06-agent-setup-first-pack-adoption-01-SUMMARY.md]
-  modified: [crates/ctxpack-core/src/init.rs, crates/ctxpack/src/main.rs, crates/ctxpack/tests/cli_compat.rs]
+  modified: [crates/ctxhelm-core/src/init.rs, crates/ctxhelm/src/main.rs, crates/ctxhelm/tests/cli_compat.rs]
 key-decisions:
   - "Represent unrequested optional adapter artifacts as skipped report entries instead of omitting them."
   - "Keep init next steps as typed report data, with CLI rendering as a boundary concern."
@@ -30,7 +30,7 @@ completed: 2026-05-13
 
 # Phase 06 Plan 01: Actionable Init Report Summary
 
-**Structured `ctxpack init` reporting with skipped adapter files and a first-pack next-step ladder**
+**Structured `ctxhelm init` reporting with skipped adapter files and a first-pack next-step ladder**
 
 ## Performance
 
@@ -43,7 +43,7 @@ completed: 2026-05-13
 ## Accomplishments
 
 - Added `InitAction::Skipped` and structured `InitNextStep` entries to `InitReport`.
-- Updated `ctxpack init` output to show created, updated, unchanged, and skipped files.
+- Updated `ctxhelm init` output to show created, updated, unchanged, and skipped files.
 - Added binary-level CLI tests for adapter reporting, rerun idempotence, and next-step guidance.
 
 ## Task Commits
@@ -53,9 +53,9 @@ completed: 2026-05-13
 
 ## Files Created/Modified
 
-- `crates/ctxpack-core/src/init.rs` - Adds skipped init actions, typed next steps, and init contract tests.
-- `crates/ctxpack/src/main.rs` - Renders skipped file actions and next-step guidance.
-- `crates/ctxpack/tests/cli_compat.rs` - Covers first-run and adapter-enabled init output.
+- `crates/ctxhelm-core/src/init.rs` - Adds skipped init actions, typed next steps, and init contract tests.
+- `crates/ctxhelm/src/main.rs` - Renders skipped file actions and next-step guidance.
+- `crates/ctxhelm/tests/cli_compat.rs` - Covers first-run and adapter-enabled init output.
 
 ## Decisions Made
 
@@ -70,8 +70,8 @@ completed: 2026-05-13
 - **Found during:** Plan 01 verification
 - **Issue:** Existing `init_is_idempotent` expected every second-run entry to be `unchanged`, which no longer holds for unrequested optional adapter files.
 - **Fix:** Assert written files are `unchanged` and unrequested Claude adapter files are `skipped`.
-- **Files modified:** `crates/ctxpack-core/src/init.rs`
-- **Verification:** `cargo test -p ctxpack-core init -- --nocapture`, `cargo test --workspace`
+- **Files modified:** `crates/ctxhelm-core/src/init.rs`
+- **Verification:** `cargo test -p ctxhelm-core init -- --nocapture`, `cargo test --workspace`
 - **Committed in:** `1cd86cc`
 
 ---
@@ -93,11 +93,11 @@ None - no external service configuration required.
 
 ## Verification
 
-- `cargo test -p ctxpack-core init -- --nocapture` - passed
-- `cargo test -p ctxpack --test cli_compat init -- --nocapture` - passed
-- `cargo run -p ctxpack -- init --repo "$repo" --cursor --claude --opencode` - passed
+- `cargo test -p ctxhelm-core init -- --nocapture` - passed
+- `cargo test -p ctxhelm --test cli_compat init -- --nocapture` - passed
+- `cargo run -p ctxhelm -- init --repo "$repo" --cursor --claude --opencode` - passed
 - `cargo test --workspace` - passed
-- `cargo run -p ctxpack -- --help` - passed
+- `cargo run -p ctxhelm -- --help` - passed
 
 ## Self-Check: PASSED
 

@@ -1,6 +1,6 @@
 # Public Demo Artifacts
 
-ctxpack's public demo artifacts are static, source-free examples that show what
+ctxhelm's public demo artifacts are static, source-free examples that show what
 the product gives an existing coding agent: target files, related tests,
 validation commands, retrieval-health metadata, graph neighborhoods, policy and
 embedding status, and agent-specific preview guidance.
@@ -18,7 +18,7 @@ bash scripts/smoke-demo-artifacts.sh
 ```
 
 The generator writes to `docs/demo-artifacts/` by default. Set
-`CTXPACK_DEMO_DIR=/absolute/path` to write elsewhere.
+`CTXHELM_DEMO_DIR=/absolute/path` to write elsewhere.
 
 ## What The Demo Shows
 
@@ -31,7 +31,7 @@ The generator writes to `docs/demo-artifacts/` by default. Set
 - `policy-embedding.json` and `policy-embedding.md`: local semantic provider
   status and cloud-disabled policy posture.
 - `agent-preview.json` and `agent-preview.md`: how Codex, Claude Code, Cursor,
-  OpenCode, and generic MCP clients should consume ctxpack.
+  OpenCode, and generic MCP clients should consume ctxhelm.
 
 ## Privacy Contract
 
@@ -41,6 +41,6 @@ metadata shape, not a copied repository pack.
 
 ## Product Wedge
 
-ctxpack is not another code editor or autonomous coding agent. It is a local,
+ctxhelm is not another code editor or autonomous coding agent. It is a local,
 read-only context compiler that helps the agents developers already use choose
 better files, tests, examples, constraints, and validation commands.

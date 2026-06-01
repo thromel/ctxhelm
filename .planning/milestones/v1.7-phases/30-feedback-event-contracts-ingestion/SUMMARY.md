@@ -2,9 +2,9 @@
 
 ## Delivered
 
-- Added source-free feedback event contracts in `ctxpack-core`.
-- Added local feedback JSONL ingestion/listing/summary helpers in `ctxpack-index`.
-- Added `ctxpack eval feedback record`, `ctxpack eval feedback list`, and `ctxpack eval feedback summary`.
+- Added source-free feedback event contracts in `ctxhelm-core`.
+- Added local feedback JSONL ingestion/listing/summary helpers in `ctxhelm-index`.
+- Added `ctxhelm eval feedback record`, `ctxhelm eval feedback list`, and `ctxhelm eval feedback summary`.
 - Added source-free validation for feedback paths, commands, and tags.
 - Added focused tests covering public JSON shape, local append/list/summary, unsafe feedback rejection, and CLI record/list/summary behavior.
 

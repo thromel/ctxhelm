@@ -5,7 +5,7 @@
 - Added additive policy-profile metadata for schema version, training corpus,
   training sources, metric summary, baseline thresholds, and default
   eligibility.
-- Added `ctxpack eval policy learn` for source-free offline learned profile
+- Added `ctxhelm eval policy learn` for source-free offline learned profile
   proposals.
 - The learner consumes local feature exports, feature labels, feedback quality
   reports, and outcome comparison reports.

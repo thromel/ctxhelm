@@ -8,7 +8,7 @@ future distribution channels part of the current release contract.
 ## Inputs
 
 - Phase 45 emits archive, manifest, audit report, and checksum artifacts.
-- Phase 46 adds `ctxpack doctor` for selected binary and manifest validation.
+- Phase 46 adds `ctxhelm doctor` for selected binary and manifest validation.
 - Phase 47 adds public source-free docs and demo artifact gates.
 
 ## Constraints

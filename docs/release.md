@@ -1,13 +1,13 @@
-# RepoWinnow `ctxpack` v1.1.7 Release Guide
+# ctxhelm `ctxhelm` v1.1.7 Release Guide
 
-This document describes the local binary release path for RepoWinnow's
-`ctxpack` CLI v1.1.7. The primary user path is a prebuilt archive plus SHA-256
+This document describes the local binary release path for ctxhelm's
+`ctxhelm` CLI v1.1.7. The primary user path is a prebuilt archive plus SHA-256
 checksums; source builds are fallback paths.
 
 Current public archive release:
 
 ```text
-https://github.com/thromel/ctxpack/releases/tag/v1.1.7
+https://github.com/thromel/ctxhelm/releases/tag/v1.1.7
 ```
 
 ## User Install
@@ -16,15 +16,15 @@ On Apple Silicon macOS, install from the public Homebrew tap:
 
 ```bash
 brew tap thromel/tap
-brew install ctxpack
-ctxpack --version
-ctxpack --help
+brew install ctxhelm
+ctxhelm --version
+ctxhelm --help
 ```
 
 Download the archive for your platform from the release artifacts. Archive names follow this shape:
 
 ```text
-ctxpack-v1.1.7-{target}.tar.gz
+ctxhelm-v1.1.7-{target}.tar.gz
 sha256sums.txt
 ```
 
@@ -38,17 +38,17 @@ sha256sum -c sha256sums.txt
 Extract and install the binary on `PATH`:
 
 ```bash
-tar -xzf ctxpack-v1.1.7-aarch64-apple-darwin.tar.gz
-install -m 0755 ctxpack-v1.1.7-aarch64-apple-darwin/ctxpack ~/.local/bin/ctxpack
-ctxpack --version
-ctxpack --help
-ctxpack doctor --binary "$(command -v ctxpack)" --release-manifest ctxpack-v1.1.7-aarch64-apple-darwin.manifest.json
+tar -xzf ctxhelm-v1.1.7-aarch64-apple-darwin.tar.gz
+install -m 0755 ctxhelm-v1.1.7-aarch64-apple-darwin/ctxhelm ~/.local/bin/ctxhelm
+ctxhelm --version
+ctxhelm --help
+ctxhelm doctor --binary "$(command -v ctxhelm)" --release-manifest ctxhelm-v1.1.7-aarch64-apple-darwin.manifest.json
 ```
 
 The expected diagnostic is:
 
 ```text
-ctxpack 1.1.7
+ctxhelm 1.1.7
 ```
 
 ## Source Build Fallbacks
@@ -56,18 +56,18 @@ ctxpack 1.1.7
 Build from the tagged repository with locked dependencies:
 
 ```bash
-cargo install --git https://github.com/thromel/ctxpack --tag v1.1.7 ctxpack --locked
-ctxpack --version
-ctxpack --help
+cargo install --git https://github.com/thromel/ctxhelm --tag v1.1.7 ctxhelm --locked
+ctxhelm --version
+ctxhelm --help
 ```
 
 Build from a local checkout:
 
 ```bash
-cargo install --path crates/ctxpack --locked
-cargo build -p ctxpack --release --locked
-target/release/ctxpack --version
-target/release/ctxpack --help
+cargo install --path crates/ctxhelm --locked
+cargo build -p ctxhelm --release --locked
+target/release/ctxhelm --version
+target/release/ctxhelm --help
 ```
 
 ## Maintainer Packaging
@@ -81,24 +81,24 @@ bash scripts/release-package.sh
 The script builds with:
 
 ```bash
-cargo build -p ctxpack --release --locked
+cargo build -p ctxhelm --release --locked
 ```
 
-It writes release artifacts under `dist/` by default, or under `CTXPACK_DIST_DIR` when that environment variable is set:
+It writes release artifacts under `dist/` by default, or under `CTXHELM_DIST_DIR` when that environment variable is set:
 
 ```text
-dist/ctxpack-v1.1.7-{target}.tar.gz
-dist/ctxpack-v1.1.7-{target}.manifest.json
-dist/ctxpack-v1.1.7-{target}.audit.json
-dist/ctxpack-v1.1.7-{target}.tar.gz.sha256
+dist/ctxhelm-v1.1.7-{target}.tar.gz
+dist/ctxhelm-v1.1.7-{target}.manifest.json
+dist/ctxhelm-v1.1.7-{target}.audit.json
+dist/ctxhelm-v1.1.7-{target}.tar.gz.sha256
 dist/sha256sums.txt
 ```
 
-The package script stages only the `ctxpack` binary, `README.md`, `LICENSE`, and `VERSION`, then extracts the archive in a temporary directory and verifies:
+The package script stages only the `ctxhelm` binary, `README.md`, `LICENSE`, and `VERSION`, then extracts the archive in a temporary directory and verifies:
 
 ```bash
-ctxpack --version
-ctxpack --help
+ctxhelm --version
+ctxhelm --help
 ```
 
 The release manifest records the version, target label, archive checksum, binary checksum, included files, local-only privacy status, unsupported publish actions, and the matching artifact audit report. `sha256sums.txt` covers the archive, manifest, and audit report.
@@ -109,8 +109,8 @@ Maintainers can verify a built archive from a clean extraction directory:
 
 ```bash
 bash scripts/verify-release-archive.sh \
-  --archive dist/ctxpack-v1.1.7-aarch64-apple-darwin.tar.gz \
-  --manifest dist/ctxpack-v1.1.7-aarch64-apple-darwin.manifest.json \
+  --archive dist/ctxhelm-v1.1.7-aarch64-apple-darwin.tar.gz \
+  --manifest dist/ctxhelm-v1.1.7-aarch64-apple-darwin.manifest.json \
   --checksums dist/sha256sums.txt
 ```
 
@@ -119,16 +119,16 @@ installing globally:
 
 ```bash
 bash scripts/verify-public-archive-install.sh \
-  --repo thromel/ctxpack \
+  --repo thromel/ctxhelm \
   --tag v1.1.7 \
   --target-label aarch64-apple-darwin \
-  --expected-version "ctxpack 1.1.7"
+  --expected-version "ctxhelm 1.1.7"
 ```
 
 The public install verifier downloads the release archive, manifest, audit
 report, and checksum files from GitHub, verifies checksums, extracts the archive,
-installs `ctxpack` into a temporary bin directory, and runs `ctxpack --version`,
-`ctxpack --help`, `ctxpack doctor`, and the first-pack smoke against that
+installs `ctxhelm` into a temporary bin directory, and runs `ctxhelm --version`,
+`ctxhelm --help`, `ctxhelm doctor`, and the first-pack smoke against that
 temporary binary.
 
 Maintainers can also verify optional real-client behavior against the public
@@ -136,41 +136,41 @@ archive binary:
 
 ```bash
 bash scripts/smoke-public-real-clients.sh \
-  --repo thromel/ctxpack \
+  --repo thromel/ctxhelm \
   --tag v1.1.7 \
   --target-label aarch64-apple-darwin \
-  --expected-version "ctxpack 1.1.7" \
-  --output .ctxpack/e2e/phase130-public-real-client-smoke.json
+  --expected-version "ctxhelm 1.1.7" \
+  --output .ctxhelm/e2e/phase130-public-real-client-smoke.json
 ```
 
 This check downloads and verifies the same public release assets, then runs the
 Codex and Claude Code real-client wrappers with the extracted binary. Passing
 clients write source-free `prepare_task`/`get_pack` request evidence. Skipped or
 unavailable clients write source-free skip evidence instead unless
-`CTXPACK_REQUIRE_REAL_CLIENT=1` makes them required.
+`CTXHELM_REQUIRE_REAL_CLIENT=1` makes them required.
 
 Maintainers can verify the published Homebrew tap path on Apple Silicon macOS:
 
 ```bash
 bash scripts/verify-homebrew-tap.sh \
   --tap thromel/tap \
-  --formula ctxpack \
-  --expected-version "ctxpack 1.1.7" \
-  --expected-url https://github.com/thromel/ctxpack/releases/download/v1.1.7/ctxpack-v1.1.7-aarch64-apple-darwin.tar.gz \
+  --formula ctxhelm \
+  --expected-version "ctxhelm 1.1.7" \
+  --expected-url https://github.com/thromel/ctxhelm/releases/download/v1.1.7/ctxhelm-v1.1.7-aarch64-apple-darwin.tar.gz \
   --expected-sha256 <sha256-from-release-asset>
 ```
 
-This check taps `thromel/tap`, audits the formula, installs `ctxpack` through
-Homebrew, runs `brew test`, and verifies `ctxpack --version`.
+This check taps `thromel/tap`, audits the formula, installs `ctxhelm` through
+Homebrew, runs `brew test`, and verifies `ctxhelm --version`.
 
 For public archives whose released MCP protocol predates current resource-scope
 assertions, the script can run the protocol smoke in
-release-compatible mode by setting `CTXPACK_REQUIRE_RESOURCE_SCOPE=0`. Current
-source-tree and release-candidate gates keep `CTXPACK_REQUIRE_RESOURCE_SCOPE=1`
+release-compatible mode by setting `CTXHELM_REQUIRE_RESOURCE_SCOPE=0`. Current
+source-tree and release-candidate gates keep `CTXHELM_REQUIRE_RESOURCE_SCOPE=1`
 by default, so newer `resourceScope` MCP assertions remain enforced for current
 builds while older public archives stay verifiable.
 
-During multi-plan local work, maintainers can set `CTXPACK_ALLOW_DIRTY=1` for verification, but release artifacts should be produced from a clean checkout.
+During multi-plan local work, maintainers can set `CTXHELM_ALLOW_DIRTY=1` for verification, but release artifacts should be produced from a clean checkout.
 
 ## Release Gate
 
@@ -189,15 +189,15 @@ workspace tests, CLI help, release-doc consistency, and the local release gate
 with external fixture and real-client checks explicitly skipped unless a
 maintainer runs the full local gate with those optional proofs enabled.
 
-This is the pre-publication blocker for v1.1.7. When `CTXPACK_BIN` is not set, the gate runs `scripts/release-package.sh`, audits the archive, extracts the generated artifact, and uses the extracted `ctxpack` binary for installed-binary proof.
+This is the pre-publication blocker for v1.1.7. When `CTXHELM_BIN` is not set, the gate runs `scripts/release-package.sh`, audits the archive, extracts the generated artifact, and uses the extracted `ctxhelm` binary for installed-binary proof.
 
 To prove a selected installed or previously extracted binary, pass an absolute path:
 
 ```bash
-CTXPACK_BIN=/absolute/path/to/ctxpack bash scripts/release-gate.sh
+CTXHELM_BIN=/absolute/path/to/ctxhelm bash scripts/release-gate.sh
 ```
 
-The release gate preserves the packaging script's clean-checkout guard by default. During multi-plan local verification, set `CTXPACK_ALLOW_DIRTY=1` explicitly; release artifacts intended for publication should be built from a clean checkout.
+The release gate preserves the packaging script's clean-checkout guard by default. During multi-plan local verification, set `CTXHELM_ALLOW_DIRTY=1` explicitly; release artifacts intended for publication should be built from a clean checkout.
 
 The release gate runs these required checks:
 
@@ -205,8 +205,8 @@ The release gate runs these required checks:
 - `scripts/check-release-docs.sh`
 - `scripts/release-package.sh`, including `scripts/audit-release-artifact.sh`
 - `scripts/verify-release-archive.sh` clean extraction verification
-- selected or extracted binary `ctxpack --version`
-- selected or extracted binary `ctxpack --help`
+- selected or extracted binary `ctxhelm --version`
+- selected or extracted binary `ctxhelm --help`
 - `scripts/smoke-first-pack.sh`
 - `scripts/smoke-storage.sh`
 - `scripts/smoke-memory.sh`
@@ -226,7 +226,7 @@ The release gate runs these required checks:
 - `scripts/smoke-precision.sh`
 - `scripts/smoke-v23-eval.sh`
 - `scripts/smoke-mcp-protocol.sh` from a wrong cwd with an explicit `--repo`/MCP `repo` argument
-- optional `ctxpack eval proof` benchmark product proof when `CTXPACK_BENCHMARK_CONFIG` is set
+- optional `ctxhelm eval proof` benchmark product proof when `CTXHELM_BENCHMARK_CONFIG` is set
 - clean cold fixture product proof when the Phase 110 detached fixtures are present
 
 For broad workflow/eval/lint tasks, `prepare-task` and generated packs include
@@ -241,13 +241,13 @@ context-area guidance. Those tasks do not automatically spend target-file budget
 on broad source floors unless they also match the stricter implementation/eval
 floor gate.
 
-After all required checks pass, the gate writes a source-free proof bundle summary. By default it lives in the gate's temporary workspace; pass `CTXPACK_PROOF_DIR=/absolute/path/to/proof` to persist it:
+After all required checks pass, the gate writes a source-free proof bundle summary. By default it lives in the gate's temporary workspace; pass `CTXHELM_PROOF_DIR=/absolute/path/to/proof` to persist it:
 
 ```bash
-CTXPACK_PROOF_DIR=/absolute/path/to/proof bash scripts/release-gate.sh
+CTXHELM_PROOF_DIR=/absolute/path/to/proof bash scripts/release-gate.sh
 ```
 
-The proof summary records the checked `ctxpack` version, binary SHA-256, archive SHA-256, manifest name, audit report name, required check outcomes, optional benchmark/client proof status, resource-backed gap-summary contract status, and privacy status. It records file names and checksums instead of machine-local binary or repository paths.
+The proof summary records the checked `ctxhelm` version, binary SHA-256, archive SHA-256, manifest name, audit report name, required check outcomes, optional benchmark/client proof status, resource-backed gap-summary contract status, and privacy status. It records file names and checksums instead of machine-local binary or repository paths.
 
 The clean cold fixture proof is the production retrieval-quality release check
 for the four-repo corpus. Prepare the detached fixtures once:
@@ -258,13 +258,13 @@ bash scripts/prepare-proof-fixtures.sh
 
 Then run the release gate normally. The gate uses
 `.planning/e2e/2026-05-31-phase110-clean-cold-fixture-config.json` by default,
-writes `phase110-clean-fixture-product-proof.json` into `CTXPACK_PROOF_DIR`,
+writes `phase110-clean-fixture-product-proof.json` into `CTXHELM_PROOF_DIR`,
 and validates it with `scripts/check-product-proof.py`. If the fixtures are not
 available, the gate records `cleanColdFixtureProductProof:
-skipped_missing_fixtures`; set `CTXPACK_REQUIRE_CLEAN_FIXTURE_PROOF=1` to make
+skipped_missing_fixtures`; set `CTXHELM_REQUIRE_CLEAN_FIXTURE_PROOF=1` to make
 missing fixtures fail the gate. Maintainers may override the config with
-`CTXPACK_CLEAN_FIXTURE_CONFIG=/absolute/path/to/config.json` or skip the check
-explicitly with `CTXPACK_SKIP_CLEAN_FIXTURE_PROOF=1` for non-release local
+`CTXHELM_CLEAN_FIXTURE_CONFIG=/absolute/path/to/config.json` or skip the check
+explicitly with `CTXHELM_SKIP_CLEAN_FIXTURE_PROOF=1` for non-release local
 diagnostics.
 
 The optional real-client evidence wrappers are:
@@ -279,8 +279,8 @@ It wraps the Claude smoke, then writes a source-free workflow report with
 request-log hashes, sanitized observed tool calls, explicit-repo call counts,
 and privacy flags. The report stores no raw prompt, raw MCP traffic, source
 text, or user-project command output. In the release gate this is optional by
-default; set `CTXPACK_RUN_CLAUDE_WORKFLOW_EVAL=1` to record it, or
-`CTXPACK_REQUIRE_CLAUDE_WORKFLOW_EVAL=1` to make a missing/passing real Claude
+default; set `CTXHELM_RUN_CLAUDE_WORKFLOW_EVAL=1` to record it, or
+`CTXHELM_REQUIRE_CLAUDE_WORKFLOW_EVAL=1` to make a missing/passing real Claude
 workflow eval block the release gate.
 
 Cursor and OpenCode have deterministic setup/protocol proof wrappers:
@@ -316,7 +316,7 @@ The feedback smoke proves source-free feedback ingestion, policy report generati
 
 The workspace smoke proves local multi-repo manifest initialization, source-free workspace status JSON, workspace prepare-task routing, repo-boundary-aware workspace packs, missing source sentinel leakage, and single-repo command compatibility without an explicit workspace manifest.
 
-The shared-artifacts smoke proves source-free team policy templates, shared artifact export, schema/privacy inspection, compatible manifest import, MCP workspace resources for status and shared artifacts, and absence of sensitive sentinel leakage in outputs and local ctxpack state.
+The shared-artifacts smoke proves source-free team policy templates, shared artifact export, schema/privacy inspection, compatible manifest import, MCP workspace resources for status and shared artifacts, and absence of sensitive sentinel leakage in outputs and local ctxhelm state.
 
 The inspector smoke proves source-free JSON and static HTML inspector exports, local filter UI hooks, source-bearing section labels, and absence of source sentinel leakage in inspector artifacts.
 
@@ -330,7 +330,7 @@ The agent-preview smoke proves Codex, Claude Code, Cursor, OpenCode, and generic
 
 The demo and distribution metadata smokes prove public source-free examples,
 package-manager preparation templates, Homebrew formula renderability from the
-exact archive digest when `CTXPACK_DIST_DIR` is available, crates package boundary checks,
+exact archive digest when `CTXHELM_DIST_DIR` is available, crates package boundary checks,
 update metadata, clean extraction verification syntax, explicit signing and notarization gaps,
 and package-manager publication boundaries. They do not publish package-manager artifacts
 and are not a self-update implementation.
@@ -340,65 +340,65 @@ ready/deferred/blocked lifecycle states, deterministic protocol proof language,
 optional real-client proof boundaries, Cursor/OpenCode non-claims, and rollback
 safety for marked local candidate directories.
 
-The gate passes the same selected or extracted `CTXPACK_BIN` into the first-pack, storage, memory, feedback, workspace, shared-artifact, inspector, retrieval-health, graph, policy/embedding, agent-preview, semantic, precision, v2.3 eval, v2.4 semantic/precision gate, MCP protocol, Cursor/OpenCode setup-proof wrappers, and optional real-client smokes. It also passes `CTXPACK_DIST_DIR` to the distribution metadata smoke so Homebrew formula renderability is checked against the exact packaged archive digest. Demo, distribution metadata, and release governance smokes are source-free metadata checks and do not need the binary. Real-client proof is not required by default. Use these environment variables when needed:
+The gate passes the same selected or extracted `CTXHELM_BIN` into the first-pack, storage, memory, feedback, workspace, shared-artifact, inspector, retrieval-health, graph, policy/embedding, agent-preview, semantic, precision, v2.3 eval, v2.4 semantic/precision gate, MCP protocol, Cursor/OpenCode setup-proof wrappers, and optional real-client smokes. It also passes `CTXHELM_DIST_DIR` to the distribution metadata smoke so Homebrew formula renderability is checked against the exact packaged archive digest. Demo, distribution metadata, and release governance smokes are source-free metadata checks and do not need the binary. Real-client proof is not required by default. Use these environment variables when needed:
 
-- `CTXPACK_SKIP_REAL_CLIENT=1` keeps Codex and Claude checks deterministic-only after the protocol proof.
-- `CTXPACK_REQUIRE_REAL_CLIENT=1` makes missing Codex or Claude tool-call evidence fail the gate.
-- `CTXPACK_REAL_CLIENT_EVIDENCE_DIR=/absolute/path/to/evidence` writes stable JSON evidence files with client version, ctxpack version, repo path, `prepare_task`, and `get_pack` proof when real-client checks run. These files also include a source-free request-log hash, request line count, explicit repo tool-call count, sanitized observed tool-call metadata, and a separate sanitized request-summary JSON. If a real client is skipped or fails in optional mode, the wrapper writes `status: skipped` plus a source-free skip reason. Raw request logs, prompts, task text, and source snippets are not persisted by the wrapper.
-- `CTXPACK_BENCHMARK_CONFIG=/absolute/path/to/suite.json` runs `ctxpack eval proof --config ... --format json` and fails on report-generation, local-only privacy regressions, missing embedded repository reports, history-unavailable insufficient-evidence reports, missing v2.3 product proof summary, missing paired baseline verdict contract, feature-export privacy regressions, learned-policy status regressions, missing proof-boundary language, missing resource-backed current-reachable gap summaries, pinned broad fixed-corpus regressions, or a non-promote `releaseGate.decision`. Neutral, mixed, unsafe, or too-expensive default retrieval proof blocks publication.
+- `CTXHELM_SKIP_REAL_CLIENT=1` keeps Codex and Claude checks deterministic-only after the protocol proof.
+- `CTXHELM_REQUIRE_REAL_CLIENT=1` makes missing Codex or Claude tool-call evidence fail the gate.
+- `CTXHELM_REAL_CLIENT_EVIDENCE_DIR=/absolute/path/to/evidence` writes stable JSON evidence files with client version, ctxhelm version, repo path, `prepare_task`, and `get_pack` proof when real-client checks run. These files also include a source-free request-log hash, request line count, explicit repo tool-call count, sanitized observed tool-call metadata, and a separate sanitized request-summary JSON. If a real client is skipped or fails in optional mode, the wrapper writes `status: skipped` plus a source-free skip reason. Raw request logs, prompts, task text, and source snippets are not persisted by the wrapper.
+- `CTXHELM_BENCHMARK_CONFIG=/absolute/path/to/suite.json` runs `ctxhelm eval proof --config ... --format json` and fails on report-generation, local-only privacy regressions, missing embedded repository reports, history-unavailable insufficient-evidence reports, missing v2.3 product proof summary, missing paired baseline verdict contract, feature-export privacy regressions, learned-policy status regressions, missing proof-boundary language, missing resource-backed current-reachable gap summaries, pinned broad fixed-corpus regressions, or a non-promote `releaseGate.decision`. Neutral, mixed, unsafe, or too-expensive default retrieval proof blocks publication.
 
 Current v2.5 proof status: the fixed two-repo production-retrieval proof
 promotes default local retrieval under the channel-aware release gate. The gate
 compares non-test context recall against lexical retrieval and validates tests
 through the dedicated `recommended_tests` channel. The current source-free proof
-is `.ctxpack/e2e/phase77-validation-command-coverage-proof.json`, where
+is `.ctxhelm/e2e/phase77-validation-command-coverage-proof.json`, where
 `releaseGate.decision` is `promote`. RefactoringMiner context Recall@10 is
-`0.7778` vs lexical `0.7407`; ctxpack context Recall@10 is `0.4225` vs lexical
+`0.7778` vs lexical `0.7407`; ctxhelm context Recall@10 is `0.4225` vs lexical
 `0.3521`. RefactoringMiner Test Recall@10 and Effective Validation Recall@10
-are both `1.0`; the ctxpack required slice has no validation-test targets in
+are both `1.0`; the ctxhelm required slice has no validation-test targets in
 this refreshed proof. Phase 74 also separates
 overall protected-evidence miss-rate from protected retrieval-target miss-rate:
-RefactoringMiner target miss-rate@10 is `0.0588`, and ctxpack target
+RefactoringMiner target miss-rate@10 is `0.0588`, and ctxhelm target
 miss-rate@10 is `0.0833`. Phase 77 adds broad validation fallback commands and
 effective validation-command coverage for multi-area smoke/eval tasks. The
 latest optional four-repo release proof in
-`.ctxpack/e2e/phase89-fast-inventory-freshness-release-proof.json` promotes
+`.ctxhelm/e2e/phase89-fast-inventory-freshness-release-proof.json` promotes
 broader proof because RefactoringMiner is treated as a safe lexical-ceiling
-match: ctxpack and lexical both have context Recall@10 `1.0`, validation is
+match: ctxhelm and lexical both have context Recall@10 `1.0`, validation is
 covered, and protected retrieval-target miss-rate is `0.0`. VeriSchema also
 beats through Effective Validation Recall@10 `1.0` while raw Test Recall@10
 remains `0.7090`.
 For repeatable local investigation, use the pinned optional fixture at
 `.planning/e2e/2026-05-30-phase73-broader-fixed-corpus-config.json`; it is
 expected to report `releaseGate.decision = promote` under the ceiling-aware
-gate while still reporting protected target miss diagnostics for ctxpack and
+gate while still reporting protected target miss diagnostics for ctxhelm and
 VeriSchema. Phase 79 adds bounded protected target floors and archive deferral:
 the latest required proof is
-`.ctxpack/e2e/phase79-protected-target-floors-proof.json`, and the latest
+`.ctxhelm/e2e/phase79-protected-target-floors-proof.json`, and the latest
 broader proof is
-`.ctxpack/e2e/phase79-broader-protected-target-floors-proof.json`. Both
+`.ctxhelm/e2e/phase79-broader-protected-target-floors-proof.json`. Both
 promote. Required RefactoringMiner and broader VeriSchema protected
-retrieval-target miss-rates are `0.0`; ctxpack still reports one residual
+retrieval-target miss-rates are `0.0`; ctxhelm still reports one residual
 protected source-symbol miss in each proof.
 
 Phase 80 fixes symbol-floor duplicate accounting. The current latest required
-proof is `.ctxpack/e2e/phase80-unique-symbol-floor-proof.json`, and the current
+proof is `.ctxhelm/e2e/phase80-unique-symbol-floor-proof.json`, and the current
 latest broader proof is
-`.ctxpack/e2e/phase80-broader-unique-symbol-floor-proof.json`. Both promote
+`.ctxhelm/e2e/phase80-broader-unique-symbol-floor-proof.json`. Both promote
 with protected retrieval-target miss-rate `0.0` across measured corpora.
 
 Phase 81 fixes warm-cache runtime reporting. The current cold/warm cache proof
 uses `.planning/e2e/2026-05-30-phase81-warm-cache-proof-config.json` and
-produces `.ctxpack/e2e/phase81-warm-cache-cold-proof.json` plus
-`.ctxpack/e2e/phase81-warm-cache-warm-proof.json`. Both promote. The warm proof
+produces `.ctxhelm/e2e/phase81-warm-cache-cold-proof.json` plus
+`.ctxhelm/e2e/phase81-warm-cache-warm-proof.json`. Both promote. The warm proof
 records cache hits on every corpus, zero cache misses, zero commit-loop time,
 and zero slow-commit diagnostics.
 
 Phase 82 makes that warm-cache evidence enforceable. Product proofs now block
 cached reports that mix cache misses, retain stale cold-run timings, retain
 slow-commit diagnostics, or exceed `1000ms` warm lookup runtime. The latest
-proof artifacts are `.ctxpack/e2e/phase82-warm-cache-gate-cold-proof.json` and
-`.ctxpack/e2e/phase82-warm-cache-gate-warm-proof.json`; both promote.
+proof artifacts are `.ctxhelm/e2e/phase82-warm-cache-gate-cold-proof.json` and
+`.ctxhelm/e2e/phase82-warm-cache-gate-warm-proof.json`; both promote.
 
 Phase 83 makes context-vs-all-file divergence enforceable instead of prose-only.
 Corpus verdicts now include `contextVsAllFileDeltaAt10`,
@@ -406,7 +406,7 @@ Corpus verdicts now include `contextVsAllFileDeltaAt10`,
 release checker fails if those fields are missing or if raw all-file recall
 trails lexical without an explanation from non-regressed context recall plus
 covered validation targets. The latest broader proof artifact is
-`.ctxpack/e2e/phase83-context-divergence-proof.json`; it promotes with
+`.ctxhelm/e2e/phase83-context-divergence-proof.json`; it promotes with
 RefactoringMiner and ReAgent all-file lexical deficits marked as explained by
 the context/validation split.
 
@@ -416,16 +416,16 @@ per-commit `broadScopeTask`; prepare-task emits `multi_area_task` diagnostics
 for workflow/eval/lint prompts. Dependency source floors are enabled only for
 those broad-scope prompts so ordinary lexical/doc targets are not displaced.
 The latest broader proof artifact is
-`.ctxpack/e2e/phase84-broad-scope-dependency-proof.json`; it promotes and
+`.ctxhelm/e2e/phase84-broad-scope-dependency-proof.json`; it promotes and
 improves VeriSchema Source Recall@10 from `0.249` to `0.304` while preserving
-RefactoringMiner, ctxpack, and ReAgent metrics.
+RefactoringMiner, ctxhelm, and ReAgent metrics.
 
 Phase 85 adds source-free `contextAreas` to broad multi-area prepare-task plans
 and packs. This gives agents area-level inspection hints without changing the
 target-file, test, validation-command, or protected-evidence budgets. The
 latest evidence artifact is
 `.planning/e2e/2026-05-31-phase85-broad-context-areas.md`; the committed
-warm-cache proof is `.ctxpack/e2e/phase85-context-areas-warm-proof.json` and
+warm-cache proof is `.ctxhelm/e2e/phase85-context-areas-warm-proof.json` and
 promotes. Cold broad and required proofs kept quality metrics stable but still
 hit the existing local RefactoringMiner runtime threshold.
 
@@ -442,34 +442,34 @@ as validation-command coverage, and validation-covered tests are no longer
 reported as unresolved retrieval-gap summaries simply because they are absent
 from context-file top 10. The evidence artifact is
 `.planning/e2e/2026-05-31-phase87-validation-gap-accounting.md`; the committed
-proof is `.ctxpack/e2e/phase87-validation-gap-accounting-proof.json`.
+proof is `.ctxhelm/e2e/phase87-validation-gap-accounting-proof.json`.
 
 Phase 88 adds broad source-area candidates after graph/test seed selection.
 Broad multi-area tasks can now surface bounded same-root source-area inventory
 candidates without expanding dependency or related-test seeds. The evidence
 artifact is `.planning/e2e/2026-05-31-phase88-broad-source-area-candidates.md`;
 the committed proof is
-`.ctxpack/e2e/phase88-broad-source-area-candidates-proof.json`.
+`.ctxhelm/e2e/phase88-broad-source-area-candidates-proof.json`.
 
 Phase 89 reduces broad-proof runtime by making inventory cache-hit freshness
 metadata-only instead of re-hashing all source files on every hit. The evidence
 artifact is `.planning/e2e/2026-05-31-phase89-fast-inventory-freshness.md`;
 the committed release proof is
-`.ctxpack/e2e/phase89-fast-inventory-freshness-release-proof.json` and reports
+`.ctxhelm/e2e/phase89-fast-inventory-freshness-release-proof.json` and reports
 `releaseGate.decision = promote`.
 
 Phase 90 proves the packaged release path from a clean worktree with the broad
 benchmark enabled. The evidence artifact is
 `.planning/e2e/2026-05-31-phase90-packaged-release-gate.md`. The gate packaged
 and audited the archive, verified clean extraction, used the extracted
-`ctxpack 1.1.0` binary, passed required smokes and MCP protocol checks, and
+`ctxhelm 1.1.0` binary, passed required smokes and MCP protocol checks, and
 passed the broad product proof. Optional Codex and Claude real-client tool-call
-evidence was intentionally skipped with `CTXPACK_SKIP_REAL_CLIENT=1`.
+evidence was intentionally skipped with `CTXHELM_SKIP_REAL_CLIENT=1`.
 
 Phase 91 adds broad context-area eval evidence for tasks too wide for a
 top-10 file list. The evidence artifact is
 `.planning/e2e/2026-05-31-phase91-broad-context-area-eval.md`; the committed
-release proof is `.ctxpack/e2e/phase91-broad-context-area-release-proof.json`
+release proof is `.ctxhelm/e2e/phase91-broad-context-area-release-proof.json`
 and reports `releaseGate.decision = promote`. VeriSchema broad-scope commits
 now report `broadContextAreaRecall = 0.64708996` while existing file/source,
 validation, protected-target, and runtime gates stay stable.
@@ -480,25 +480,25 @@ recommendation area instead of false `no_candidate_signal` storage/candidate
 failures. The historical eval cache schema was bumped so cached reports cannot
 hide new broad-area or area-aware fields. The clean RefactoringMiner proof path
 now uses a detached fixture worktree at
-`/Users/romel/Documents/GitHub/RefactoringMiner-ctxpack-proof`; the original
+`/Users/romel/Documents/GitHub/RefactoringMiner-ctxhelm-proof`; the original
 interactive checkout was dirty and is not used for committed evidence. The
 evidence artifact is
 `.planning/e2e/2026-05-31-phase92-area-aware-gap-taxonomy.md`. The committed
 warm-cache proof is
-`.ctxpack/e2e/phase92-area-aware-gap-taxonomy-warm-proof.json` and reports
+`.ctxhelm/e2e/phase92-area-aware-gap-taxonomy-warm-proof.json` and reports
 `releaseGate.decision = promote` with VeriSchema
 `broadContextAreaRecall = 0.64708996`. The clean force-refresh proof is also
-kept as `.ctxpack/e2e/phase92-area-aware-gap-taxonomy-clean-force-proof.json`;
+kept as `.ctxhelm/e2e/phase92-area-aware-gap-taxonomy-clean-force-proof.json`;
 it preserves quality but documents that clean RefactoringMiner still exceeds
 the hard cold runtime ceiling without cached historical reports.
 
 Phase 93 adds source-free symbol extraction and dependency edge report caches
 for repeated planner work during historical eval. The caches are keyed by the
 inventory file path, hash, role, language, and cache-version marker, and are
-stored under the ctxpack cache path derived from the repo inventory rather than
+stored under the ctxhelm cache path derived from the repo inventory rather than
 the source tree. The evidence artifact is
 `.planning/e2e/2026-05-31-phase93-source-free-index-cache.md`; the committed
-proof is `.ctxpack/e2e/phase93-index-cache-cold-proof.json` and reports
+proof is `.ctxhelm/e2e/phase93-index-cache-cold-proof.json` and reports
 `releaseGate.decision = promote`. The clean detached RefactoringMiner
 force-refresh row now runs in `4517ms` with context Recall@10 `1.0`, Test
 Recall@10 `1.0`, Effective Validation Recall@10 `1.0`, and protected target
@@ -509,7 +509,7 @@ Phase 94 increases broad `contextAreas` from 12 to 16 after proof rejected a
 top-10 area-diverse selector that regressed VeriSchema file/source recall. The
 evidence artifact is
 `.planning/e2e/2026-05-31-phase94-broad-context-area-cap.md`; the committed
-proof is `.ctxpack/e2e/phase94-context-area-cap-proof.json` and reports
+proof is `.ctxhelm/e2e/phase94-context-area-cap-proof.json` and reports
 `releaseGate.decision = promote`. VeriSchema broad context-area recall improves
 from `0.64708996` to `0.71851856`, while File Recall@10 remains
 `0.18449473`, Source Recall@10 remains `0.31067252`, Test Recall@10 remains
@@ -521,17 +521,17 @@ section now explains that agents should use source-free area hints for native
 reads and lists `Zero-selected areas to inspect next` with representative
 paths. The evidence artifact is
 `.planning/e2e/2026-05-31-phase95-progressive-area-pack-guidance.md`; the
-committed proof is `.ctxpack/e2e/phase95-progressive-area-pack-proof.json` and
+committed proof is `.ctxhelm/e2e/phase95-progressive-area-pack-proof.json` and
 reports `releaseGate.decision = promote`. VeriSchema broad context-area recall
 remains `0.71851856`, and file/source/test/validation metrics remain stable.
 
 Phase 96 makes broad context-area guidance MCP-readable. Each surfaced
 `contextArea` now includes a source-free `resourceUri`, the static
-`ctxpack://repo/context-areas` resource lists safe area summaries, and dynamic
-`ctxpack://repo/context-area/{encoded-area}` resources return representative
+`ctxhelm://repo/context-areas` resource lists safe area summaries, and dynamic
+`ctxhelm://repo/context-area/{encoded-area}` resources return representative
 paths and role counts without source text. The evidence artifact is
 `.planning/e2e/2026-05-31-phase96-context-area-resources.md`; the committed
-proof is `.ctxpack/e2e/phase96-context-area-resources-proof.json` and reports
+proof is `.ctxhelm/e2e/phase96-context-area-resources-proof.json` and reports
 `releaseGate.decision = promote`. VeriSchema broad context-area recall remains
 `0.71851856`, File Recall@10 remains `0.18449473`, Source Recall@10 remains
 `0.31067252`, Test Recall@10 remains `0.7089947`, Effective Validation
@@ -543,8 +543,8 @@ commit tasks with wording such as "evaluate retrievable historical targets" and
 broad source-area signals. The evidence artifact is
 `.planning/e2e/2026-05-31-phase97-broad-governance-classification.md`; the
 committed proof is
-`.ctxpack/e2e/phase97-broad-governance-classification-proof.json` and reports
-`releaseGate.decision = promote`. ctxpack File Recall@10 improves from
+`.ctxhelm/e2e/phase97-broad-governance-classification-proof.json` and reports
+`releaseGate.decision = promote`. ctxhelm File Recall@10 improves from
 `0.44603175` to `0.47460318`, Source Recall@10 improves from `0.6333333` to
 `0.7166667`, and broad context-area recall improves from `0.0` to `1.0`.
 VeriSchema file/source/test/validation metrics remain stable.
@@ -555,18 +555,18 @@ do not spend target-file slots on broad source floors unless they match the
 stricter implementation/eval gate. The evidence artifact is
 `.planning/e2e/2026-05-31-phase98-progressive-broad-classification.md`; the
 committed proof is
-`.ctxpack/e2e/phase98-broader-broad-task-classification-proof.json` and reports
-`releaseGate.decision = promote`. ctxpack File Recall@10 remains
+`.ctxhelm/e2e/phase98-broader-broad-task-classification-proof.json` and reports
+`releaseGate.decision = promote`. ctxhelm File Recall@10 remains
 `0.47460318`, Source Recall@10 remains `0.7166667`, and broad context-area
 recall remains `1.0`.
 
 Phase 99 deepens dynamic context-area resources. The
-`ctxpack://repo/context-area/{encoded-area}` resource now returns source-free
+`ctxhelm://repo/context-area/{encoded-area}` resource now returns source-free
 `roleBuckets`, `pathFamilies`, and `nextReadBatches` so agents can choose
 primary, validation, and docs reads without loading source text through MCP. The
 evidence artifact is
 `.planning/e2e/2026-05-31-phase99-context-area-read-batches.md`; the committed
-proof is `.ctxpack/e2e/phase99-context-area-read-batches-proof.json` and
+proof is `.ctxhelm/e2e/phase99-context-area-read-batches-proof.json` and
 reports `releaseGate.decision = promote`. File/source/test/validation and broad
 context-area metrics are unchanged from Phase 98 across the four-repo proof.
 
@@ -576,20 +576,20 @@ groups now include source-free `contextArea`, `contextAreaResourceUri`, and
 misses into progressive read instructions. The evidence artifact is
 `.planning/e2e/2026-05-31-phase100-resource-backed-gap-summaries.md`; the
 committed proof is
-`.ctxpack/e2e/phase100-resource-backed-gap-summaries-proof.json` and reports
+`.ctxhelm/e2e/phase100-resource-backed-gap-summaries-proof.json` and reports
 `releaseGate.decision = promote`. File/source/test/validation and broad
 context-area metrics are unchanged from Phase 99 across the four-repo proof.
 
 Phase 101 makes the resource-backed gap shape part of the product-proof release
 contract. `scripts/check-product-proof.py` now rejects current reachable
-retrieval-gap summaries that lack a `ctxpack://repo/context-area/...` URI or
+retrieval-gap summaries that lack a `ctxhelm://repo/context-area/...` URI or
 bounded `nextReadPaths`, and the Phase 100 four-repo proof passes the stricter
 checker. The evidence artifact is
 `.planning/e2e/2026-05-31-phase101-release-gated-gap-summary-contract.md`.
 
 Phase 102 fixes explicit-repo MCP resource consumption. Repo-scoped resources
-such as `ctxpack://repo/context-areas` and
-`ctxpack://repo/context-area/{encoded-area}` now fall back to the last explicit
+such as `ctxhelm://repo/context-areas` and
+`ctxhelm://repo/context-area/{encoded-area}` now fall back to the last explicit
 repo used by `prepare_task`, `get_pack`, `search`, `related`, or
 `related_tests` when the MCP server cwd is not inside a repository. The
 deterministic MCP protocol smoke now reads both context-area resource shapes and
@@ -601,7 +601,7 @@ The evidence artifact is
 Phase 103 adds broad fixed-corpus floors to the product-proof checker. For the
 pinned `phase92-area-aware-gap-taxonomy-2026-05-31` four-repo corpus,
 `scripts/check-product-proof.py` now rejects reports that drop below recorded
-RefactoringMiner, ctxpack, ReAgent, or VeriSchema file/source/test,
+RefactoringMiner, ctxhelm, ReAgent, or VeriSchema file/source/test,
 effective-validation, or broad-context-area floors. This caught a rejected
 dependency-priority ranking experiment that still promoted overall but regressed
 VeriSchema File Recall@10 from `0.18449473` to `0.17936651`. The evidence
@@ -629,8 +629,8 @@ source-heavy, validation-heavy, and docs-only areas before loading files
 natively, without changing the top-10 target-file selection budget.
 
 Phase 118 clarifies the dynamic MCP resource boundary for context areas.
-`ctxpack://repo/context-areas` and
-`ctxpack://repo/context-area/{encoded-area}` now include
+`ctxhelm://repo/context-areas` and
+`ctxhelm://repo/context-area/{encoded-area}` now include
 `resourceScope.kind = safeInventoryArea`, `taskConditioned = false`,
 `countsSource = safeInventory`, and `pathSource = safeInventory`. These fields
 make it machine-checkable that MCP context-area resources are inventory-wide
@@ -650,13 +650,13 @@ context or changing target-file ranking.
 
 Phase 125 adds an explicit source-free `releaseGate.lexicalComparison` summary
 to product proof output. The summary separates all-file lexical comparison from
-non-test context-channel comparison, so release artifacts can say when ctxpack
+non-test context-channel comparison, so release artifacts can say when ctxhelm
 beats lexical on the production context claim without implying a universal
 all-file win.
 
 Phase 126 adds the source-free `agentEvidenceClaim` and
 `averageAgentEvidenceRecallAt10` fields to the same summary. Agent evidence
-counts the files and tests ctxpack actually gives the agent through selected
+counts the files and tests ctxhelm actually gives the agent through selected
 context files, related tests, and validation commands. The clean four-repo proof
 reported `agentEvidenceClaim = mixed` with zero trailing corpora and average
 agent-evidence delta `+0.18792826` against lexical.
@@ -686,10 +686,10 @@ proof/planning-only commits after a release do not look like product drift. Use
 current commit. Use `--require-product-current` before announcing that the
 public archive has no product-impacting commits ahead.
 
-Phase 119 removes an observed release-validation flake in `ctxpack-index`.
+Phase 119 removes an observed release-validation flake in `ctxhelm-index`.
 Tests in `lib.rs`, `freshness.rs`, and `storage.rs` now share one crate-wide
-test lock before mutating process-global `CTXPACK_HOME`. This prevents one
-parallel test from removing another test's temporary ctxpack home while
+test lock before mutating process-global `CTXHELM_HOME`. This prevents one
+parallel test from removing another test's temporary ctxhelm home while
 inventory, trace, freshness, or storage fallback artifacts are being written.
 
 Phase 105 keeps history-unavailable benchmark runs machine-checkable. If git
@@ -700,16 +700,16 @@ than emitting `report: null`. Degraded zero-commit reports are not cached, so a
 transient large-repo timeout cannot poison later hydrated proof runs. The
 evidence artifact is
 `.planning/e2e/2026-05-31-phase105-history-unavailable-report.md`; the CLI proof
-fixture is `.ctxpack/e2e/phase105-history-unavailable-proof.json`.
+fixture is `.ctxhelm/e2e/phase105-history-unavailable-proof.json`.
 
 Latest optional public-archive real-client proof: Claude Code `2.1.158` passed
-against the released `ctxpack 1.1.0` archive binary with server-side
+against the released `ctxhelm 1.1.0` archive binary with server-side
 `prepare_task` and `get_pack` evidence against an explicit repo path. Codex CLI
 `0.44.0` was installed but skipped in optional mode because the client exited
 before producing machine-checkable tool-call evidence; the skip is recorded as
 source-free evidence rather than treated as product proof. See
 `.planning/e2e/2026-06-01-phase116-public-real-client-smoke.md` and
-`.ctxpack/e2e/phase116-public-real-client-smoke.json`. Cursor and OpenCode
+`.ctxhelm/e2e/phase116-public-real-client-smoke.json`. Cursor and OpenCode
 real-client proof is still not claimed for v1.1.0.
 
 RefactoringMiner and multi-repo proof are optional external gates. They are
@@ -717,11 +717,11 @@ skipped by default because they require a separate local checkout and longer
 runtime. To reproduce the large-history gate, keep the repository local and run:
 
 ```bash
-CTXPACK_BENCHMARK_CONFIG="$(pwd)/.ctxpack/benchmarks/refactoringminer-v23.json" bash scripts/release-gate.sh
+CTXHELM_BENCHMARK_CONFIG="$(pwd)/.ctxhelm/benchmarks/refactoringminer-v23.json" bash scripts/release-gate.sh
 ```
 
 To run a broader corpus, add more local repositories to a suite JSON and pass
-that suite through `CTXPACK_BENCHMARK_CONFIG`. If the external repo is missing,
+that suite through `CTXHELM_BENCHMARK_CONFIG`. If the external repo is missing,
 record the skip reason as "external corpus unavailable" rather than treating it
 as a product regression. The mandatory gate remains `scripts/smoke-v23-eval.sh`,
 which proves the v2.3 contract without external repos.
@@ -730,18 +730,18 @@ The release gate does not publish, upload, or create GitHub releases, and does n
 
 ## Artifact Audit
 
-`scripts/release-package.sh` runs `scripts/audit-release-artifact.sh` immediately after archive creation and before checksum success output. It writes a machine-readable `ctxpack-v1.1.7-{target}.audit.json` report next to the archive.
+`scripts/release-package.sh` runs `scripts/audit-release-artifact.sh` immediately after archive creation and before checksum success output. It writes a machine-readable `ctxhelm-v1.1.7-{target}.audit.json` report next to the archive.
 
 The audit lists archive members and extracts the artifact to a temporary directory. It fails on local state, traces, request logs, cache or target debris, git internals, secret-looking filenames, absolute local paths, and text payloads with machine-specific or secret-looking values. It does not upload artifacts or call cloud scanning services.
 
 You can audit an existing archive directly:
 
 ```bash
-bash scripts/audit-release-artifact.sh dist/ctxpack-v1.1.7-aarch64-apple-darwin.tar.gz
+bash scripts/audit-release-artifact.sh dist/ctxhelm-v1.1.7-aarch64-apple-darwin.tar.gz
 ```
 
 ## Out of Scope for v1.1
 
 The v1.1.7 release includes a public Apple Silicon Homebrew tap. It does not require crates.io publishing, self-update support, signed installers, cloud telemetry, cloud indexing, cloud embeddings, hosted release services, or global agent config mutation.
 
-ctxpack remains local-first and read-only. Release scripts build and audit ctxpack artifacts only; they do not mutate user repositories, global Codex or Claude configuration, MCP client config, or package-manager registries.
+ctxhelm remains local-first and read-only. Release scripts build and audit ctxhelm artifacts only; they do not mutate user repositories, global Codex or Claude configuration, MCP client config, or package-manager registries.

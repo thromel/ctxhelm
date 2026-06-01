@@ -7,54 +7,54 @@ cleanup() {
 }
 trap cleanup EXIT
 
-ctxpack_bin="${CTXPACK_BIN:-}"
-if [[ -z "$ctxpack_bin" ]]; then
-  ctxpack_bin="$(pwd -P)/target/debug/ctxpack"
+ctxhelm_bin="${CTXHELM_BIN:-}"
+if [[ -z "$ctxhelm_bin" ]]; then
+  ctxhelm_bin="$(pwd -P)/target/debug/ctxhelm"
 fi
-if [[ ! -x "$ctxpack_bin" ]]; then
-  echo "shared artifacts smoke failed: CTXPACK_BIN is not executable: $ctxpack_bin" >&2
+if [[ ! -x "$ctxhelm_bin" ]]; then
+  echo "shared artifacts smoke failed: CTXHELM_BIN is not executable: $ctxhelm_bin" >&2
   exit 64
 fi
 
 repo="$work_dir/repo"
-home="$work_dir/ctxpack-home"
-sentinel="CTXPACK_SHARED_ARTIFACT_SOURCE_SENTINEL_DO_NOT_LEAK"
+home="$work_dir/ctxhelm-home"
+sentinel="CTXHELM_SHARED_ARTIFACT_SOURCE_SENTINEL_DO_NOT_LEAK"
 
-mkdir -p "$repo/src" "$repo/.ctxpack/cards" "$repo/dist"
+mkdir -p "$repo/src" "$repo/.ctxhelm/cards" "$repo/dist"
 printf 'export function authSummary() { return true; }\n' >"$repo/src/auth.ts"
-printf 'source-free auth card\n' >"$repo/.ctxpack/cards/auth.md"
-printf '{"sourceTextLogged":false,"eventCount":0}\n' >"$repo/.ctxpack/feedback-summary.json"
+printf 'source-free auth card\n' >"$repo/.ctxhelm/cards/auth.md"
+printf '{"sourceTextLogged":false,"eventCount":0}\n' >"$repo/.ctxhelm/feedback-summary.json"
 printf '%s\n' "$sentinel" >"$repo/.env"
 printf '%s\n' "$sentinel" >"$repo/dist/generated.min.js"
 
 git -C "$repo" init >/dev/null
-git -C "$repo" config user.email ctxpack@example.com
-git -C "$repo" config user.name ctxpack
+git -C "$repo" config user.email ctxhelm@example.com
+git -C "$repo" config user.name ctxhelm
 git -C "$repo" add .
 git -C "$repo" commit -m "fixture shared artifacts" >/dev/null
 
-export CTXPACK_HOME="$home"
+export CTXHELM_HOME="$home"
 
 policy_init_json="$work_dir/policy-init.json"
-"$ctxpack_bin" workspace policy init --repo "$repo" --format json >"$policy_init_json"
+"$ctxhelm_bin" workspace policy init --repo "$repo" --format json >"$policy_init_json"
 
 workspace_init_json="$work_dir/workspace-init.json"
-"$ctxpack_bin" workspace init --repo "$repo" --format json >"$workspace_init_json"
+"$ctxhelm_bin" workspace init --repo "$repo" --format json >"$workspace_init_json"
 
 policy_status_json="$work_dir/policy-status.json"
-"$ctxpack_bin" workspace policy status --repo "$repo" --format json >"$policy_status_json"
+"$ctxhelm_bin" workspace policy status --repo "$repo" --format json >"$policy_status_json"
 
 manifest_json="$work_dir/shared-artifacts.json"
-"$ctxpack_bin" workspace artifacts export --repo "$repo" --format json >"$manifest_json"
+"$ctxhelm_bin" workspace artifacts export --repo "$repo" --format json >"$manifest_json"
 
-manifest_path="$repo/.ctxpack/shared-artifacts.json"
+manifest_path="$repo/.ctxhelm/shared-artifacts.json"
 inspect_json="$work_dir/inspect.json"
-"$ctxpack_bin" workspace artifacts inspect "$manifest_path" --format json >"$inspect_json"
+"$ctxhelm_bin" workspace artifacts inspect "$manifest_path" --format json >"$inspect_json"
 
 import_json="$work_dir/import.json"
-"$ctxpack_bin" workspace artifacts import "$manifest_path" --repo "$repo" --format json >"$import_json"
+"$ctxhelm_bin" workspace artifacts import "$manifest_path" --repo "$repo" --format json >"$import_json"
 
-python3 - "$policy_init_json" "$policy_status_json" "$manifest_json" "$inspect_json" "$import_json" "$manifest_path" "$repo/.ctxpack/imported-shared-artifacts.json" "$sentinel" "$home" "$ctxpack_bin" "$repo" <<'PY'
+python3 - "$policy_init_json" "$policy_status_json" "$manifest_json" "$inspect_json" "$import_json" "$manifest_path" "$repo/.ctxhelm/imported-shared-artifacts.json" "$sentinel" "$home" "$ctxhelm_bin" "$repo" <<'PY'
 import json
 import pathlib
 import subprocess
@@ -69,7 +69,7 @@ manifest_path = pathlib.Path(sys.argv[6])
 imported_path = pathlib.Path(sys.argv[7])
 sentinel = sys.argv[8]
 home = pathlib.Path(sys.argv[9])
-ctxpack_bin = pathlib.Path(sys.argv[10])
+ctxhelm_bin = pathlib.Path(sys.argv[10])
 repo = pathlib.Path(sys.argv[11])
 
 def load_source_free(label, path):
@@ -120,7 +120,7 @@ for path in home.rglob("*"):
         raise SystemExit(f"shared artifacts smoke failed: source sentinel persisted in {path}")
 
 server = subprocess.Popen(
-    [str(ctxpack_bin), "serve-mcp"],
+    [str(ctxhelm_bin), "serve-mcp"],
     cwd=repo,
     stdin=subprocess.PIPE,
     stdout=subprocess.PIPE,
@@ -144,18 +144,18 @@ def request(method, params):
 
 try:
     initialize = request("initialize", {})
-    if initialize.get("serverInfo", {}).get("name") != "ctxpack":
+    if initialize.get("serverInfo", {}).get("name") != "ctxhelm":
         raise SystemExit("shared artifacts smoke failed: MCP initialize server name mismatch")
 
     resources = request("resources/list", {}).get("resources", [])
     uris = {resource.get("uri") for resource in resources}
-    for uri in ["ctxpack://workspace/status", "ctxpack://workspace/shared-artifacts"]:
+    for uri in ["ctxhelm://workspace/status", "ctxhelm://workspace/shared-artifacts"]:
         if uri not in uris:
             raise SystemExit(f"shared artifacts smoke failed: missing MCP resource {uri}")
 
     for label, uri in [
-        ("workspace status resource", "ctxpack://workspace/status"),
-        ("shared artifacts resource", "ctxpack://workspace/shared-artifacts"),
+        ("workspace status resource", "ctxhelm://workspace/status"),
+        ("shared artifacts resource", "ctxhelm://workspace/shared-artifacts"),
     ]:
         resource = request("resources/read", {"uri": uri})
         contents = resource.get("contents", [])

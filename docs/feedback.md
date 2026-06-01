@@ -1,13 +1,13 @@
 # Feedback And Policy Learning
 
-ctxpack feedback is a local, source-free event stream for comparing context
+ctxhelm feedback is a local, source-free event stream for comparing context
 recommendations with what agents actually read, edited, tested, and validated.
 It is the foundation for adaptive retrieval policy work.
 
 ## Record Feedback
 
 ```bash
-ctxpack eval feedback record --repo "$REPO" \
+ctxhelm eval feedback record --repo "$REPO" \
   --task-hash "<trace-or-pack-task-hash>" \
   --mode bug-fix \
   --target-agent codex \
@@ -27,17 +27,17 @@ terminal logs, source snippets, secrets, cloud payloads, or model transcripts.
 ## Inspect Feedback
 
 ```bash
-ctxpack eval feedback list --repo "$REPO"
-ctxpack eval feedback summary --repo "$REPO"
+ctxhelm eval feedback list --repo "$REPO"
+ctxhelm eval feedback summary --repo "$REPO"
 ```
 
-These commands read local `feedback.jsonl` metadata from `CTXPACK_HOME` and
+These commands read local `feedback.jsonl` metadata from `CTXHELM_HOME` and
 render Markdown or JSON. `sourceTextLogged` must stay `false`.
 
 ## Policy Reports
 
 ```bash
-ctxpack eval policy report --repo "$REPO"
+ctxhelm eval policy report --repo "$REPO"
 ```
 
 Policy reports compare recommended files and tests with read, edited, tested,
@@ -52,12 +52,12 @@ as proof that retrieval improved.
 ## Policy Profiles
 
 ```bash
-ctxpack eval policy tune --repo "$REPO"
-ctxpack eval policy learn --repo "$REPO"
-ctxpack eval policy list --repo "$REPO"
-ctxpack eval policy apply <profile-id> --repo "$REPO"
-ctxpack eval policy disable <profile-id> --repo "$REPO"
-ctxpack eval policy rollback --repo "$REPO"
+ctxhelm eval policy tune --repo "$REPO"
+ctxhelm eval policy learn --repo "$REPO"
+ctxhelm eval policy list --repo "$REPO"
+ctxhelm eval policy apply <profile-id> --repo "$REPO"
+ctxhelm eval policy disable <profile-id> --repo "$REPO"
+ctxhelm eval policy rollback --repo "$REPO"
 ```
 
 `tune` writes a candidate local retrieval-policy profile from source-free
@@ -77,7 +77,7 @@ from being demoted below conservative minimums.
 ## Outcome Comparison
 
 ```bash
-ctxpack eval outcome compare --repo "$REPO"
+ctxhelm eval outcome compare --repo "$REPO"
 ```
 
 Outcome comparison groups feedback by plan-only, brief, standard, and deep pack
@@ -94,25 +94,25 @@ Use the paired agent-run harness when you need real-client process evidence,
 not just feedback entered after a session:
 
 ```bash
-CTXPACK_RUN_REAL_CLIENT=1 bash scripts/e2e-agent-run.sh \
+CTXHELM_RUN_REAL_CLIENT=1 bash scripts/e2e-agent-run.sh \
   --repo "$REPO" \
   --task "Identify files relevant to improving the Claude workflow eval harness" \
   --target-file scripts/e2e-claude-workflow.sh \
   --target-file scripts/smoke-claude-mcp.sh \
-  --output .ctxpack/e2e/agent-run-claude.json
+  --output .ctxhelm/e2e/agent-run-claude.json
 
-ctxpack eval agent-run --report .ctxpack/e2e/agent-run-claude.json
+ctxhelm eval agent-run --report .ctxhelm/e2e/agent-run-claude.json
 ```
 
 The script runs three read-only Claude Code lanes: native baseline,
 `prepare_task`, and `prepare_task` plus a brief `get_pack`. It records
 source-free lane metrics such as target coverage, read-file count, irrelevant
-read count, tool-call count, and ctxpack tool-call count. It stores path labels,
+read count, tool-call count, and ctxhelm tool-call count. It stores path labels,
 hashes, and sanitized MCP request summaries only; it does not store raw prompts,
 raw model transcripts, raw MCP traffic, source snippets, terminal logs, or
 project test output.
 
-Without `CTXPACK_RUN_REAL_CLIENT=1`, the script writes a skipped report so CI
+Without `CTXHELM_RUN_REAL_CLIENT=1`, the script writes a skipped report so CI
 can verify the contract without pretending a real agent ran. Treat a passing
 agent-run report as process evidence for that task and client version, not as a
 general retrieval-quality proof.

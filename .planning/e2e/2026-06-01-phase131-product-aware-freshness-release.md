@@ -27,7 +27,7 @@ the released binary.
 ## Public Release
 
 ```text
-https://github.com/thromel/ctxpack/releases/tag/v1.1.2
+https://github.com/thromel/ctxhelm/releases/tag/v1.1.2
 ```
 
 Release target:
@@ -39,7 +39,7 @@ ac6dc97f04cd18b5f2c6c32f7a1eca49e3ef5587
 Archive:
 
 ```text
-ctxpack-v1.1.2-aarch64-apple-darwin.tar.gz
+ctxhelm-v1.1.2-aarch64-apple-darwin.tar.gz
 ```
 
 Archive SHA-256:
@@ -58,12 +58,12 @@ e22a436b9c6c7b445aeb9d81c49904723c70ee70cc15cfff23e1935bd6a9b1df
 
 Durable artifacts:
 
-- `.ctxpack/e2e/phase131-github-release.json`
-- `.ctxpack/e2e/phase131-github-release-verify.json`
-- `.ctxpack/e2e/phase131-public-release-freshness.json`
-- `.ctxpack/e2e/phase131-public-archive-install.json`
-- `.ctxpack/e2e/phase131-public-real-client-smoke.json`
-- `.ctxpack/e2e/phase131-public-real-client-smoke-evidence/`
+- `.ctxhelm/e2e/phase131-github-release.json`
+- `.ctxhelm/e2e/phase131-github-release-verify.json`
+- `.ctxhelm/e2e/phase131-public-release-freshness.json`
+- `.ctxhelm/e2e/phase131-public-archive-install.json`
+- `.ctxhelm/e2e/phase131-public-real-client-smoke.json`
+- `.ctxhelm/e2e/phase131-public-real-client-smoke-evidence/`
 
 Freshness result at release target:
 
@@ -82,7 +82,7 @@ proofOnlyCommitsAhead: 0
 Public archive install result:
 
 ```text
-version: ctxpack 1.1.2
+version: ctxhelm 1.1.2
 downloadedPublicAssets: true
 checksumsVerified: true
 archiveVerified: true
@@ -113,7 +113,7 @@ Codex CLI 0.44.0: skipped
 ## Boundary
 
 The public archive remains local-first and source-free. Verification did not
-globally install ctxpack, mutate agent configuration, run user project tests,
+globally install ctxhelm, mutate agent configuration, run user project tests,
 or upload source to remote embedding or reranking services.
 
 Homebrew, crates.io, signed installers, self-update, stronger Codex CLI

@@ -17,7 +17,7 @@ An unconditional one-third test reserve was rejected.
 Evidence:
 
 - RefactoringMiner file recall improved from `0.6` to `1.0`.
-- Release gate blocked because ctxpack and VeriSchema protected source evidence regressed.
+- Release gate blocked because ctxhelm and VeriSchema protected source evidence regressed.
 - VeriSchema protected-evidence target miss rate rose to `0.71428573`.
 
 ## Accepted Proof
@@ -25,14 +25,14 @@ Evidence:
 Command:
 
 ```bash
-cargo run -p ctxpack -- eval proof \
+cargo run -p ctxhelm -- eval proof \
   --config .planning/e2e/2026-05-31-phase110-clean-cold-fixture-config.json \
   --format json
 ```
 
 Artifact:
 
-- `.ctxpack/e2e/phase127-narrow-validation-test-reserve.json`
+- `.ctxhelm/e2e/phase127-narrow-validation-test-reserve.json`
 
 Result:
 
@@ -41,7 +41,7 @@ Result:
 - `allFileBeatCount = 3`
 - `allFileMatchCount = 1`
 - `allFileTrailCount = 0`
-- Average File Recall@10: ctxpack `0.5927659` vs lexical `0.45709258`
+- Average File Recall@10: ctxhelm `0.5927659` vs lexical `0.45709258`
 - Average file delta: `+0.13567334`
 - Agent-evidence delta remains `+0.18792826`
 - Context-channel delta remains `+0.23022664`
@@ -51,7 +51,7 @@ Corpus results:
 | Corpus | File Recall@10 | Lexical Recall@10 | Delta | Protected Target Miss Rate |
 | --- | ---: | ---: | ---: | ---: |
 | RefactoringMiner | 1.0 | 1.0 | 0.0 | 0.0 |
-| ctxpack | 0.3968254 | 0.30634922 | +0.090476185 | 0.083333336 |
+| ctxhelm | 0.3968254 | 0.30634922 | +0.090476185 | 0.083333336 |
 | ReAgent | 0.8 | 0.4 | +0.4 | 0.0 |
 | VeriSchema | 0.17423832 | 0.122021124 | +0.0522172 | 0.2857143 |
 
@@ -60,7 +60,7 @@ Corpus results:
 Focused tests:
 
 ```bash
-cargo test -p ctxpack-compiler context_ranking -- --nocapture
+cargo test -p ctxhelm-compiler context_ranking -- --nocapture
 ```
 
 Result:
@@ -70,4 +70,4 @@ Result:
 
 ## Interpretation
 
-The release proof now shows ctxpack is not trailing lexical search in any measured corpus for raw top-10 target-file recall, while preserving the stronger agent-evidence and context-channel advantages from Phase 126.
+The release proof now shows ctxhelm is not trailing lexical search in any measured corpus for raw top-10 target-file recall, while preserving the stronger agent-evidence and context-channel advantages from Phase 126.

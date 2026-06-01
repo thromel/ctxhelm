@@ -6,33 +6,33 @@ tags: [rust, cargo, cli, assert_cmd, compatibility]
 
 requires: []
 provides:
-  - Binary-level CLI compatibility tests for ctxpack core commands
-  - Real temp git repository and CTXPACK_HOME fixture helpers
+  - Binary-level CLI compatibility tests for ctxhelm core commands
+  - Real temp git repository and CTXHELM_HOME fixture helpers
   - Structured JSON shape assertions for CLI command outputs
 affects: [phase-01, cli, compatibility, module-boundaries]
 
 tech-stack:
   added: [assert_cmd, predicates]
   patterns:
-    - Cargo integration tests under crates/ctxpack/tests
-    - Command-local CTXPACK_HOME for binary test isolation
+    - Cargo integration tests under crates/ctxhelm/tests
+    - Command-local CTXHELM_HOME for binary test isolation
     - serde_json::Value shape assertions instead of full snapshots
 
 key-files:
   created:
-    - crates/ctxpack/tests/common/mod.rs
-    - crates/ctxpack/tests/cli_compat.rs
+    - crates/ctxhelm/tests/common/mod.rs
+    - crates/ctxhelm/tests/cli_compat.rs
   modified:
-    - crates/ctxpack/Cargo.toml
+    - crates/ctxhelm/Cargo.toml
     - Cargo.lock
 
 key-decisions:
-  - "Use assert_cmd::Command::cargo_bin for compiled ctxpack binary coverage."
+  - "Use assert_cmd::Command::cargo_bin for compiled ctxhelm binary coverage."
   - "Assert stable JSON fields and selected values instead of snapshotting dynamic output."
-  - "Use command-local CTXPACK_HOME and explicit --repo paths for isolation."
+  - "Use command-local CTXHELM_HOME and explicit --repo paths for isolation."
 
 patterns-established:
-  - "CLI integration tests create real committed repositories and avoid user-local ctxpack state."
+  - "CLI integration tests create real committed repositories and avoid user-local ctxhelm state."
   - "Compatibility tests parse JSON and check public camelCase keys without pinning UUIDs or hashes."
 
 requirements-completed: [CONT-01]
@@ -43,7 +43,7 @@ completed: 2026-05-13
 
 # Phase 01 Plan 01: CLI Compatibility Guardrails Summary
 
-**Binary-level ctxpack CLI guardrails using real temp git repos, isolated CTXPACK_HOME, and structured JSON compatibility assertions**
+**Binary-level ctxhelm CLI guardrails using real temp git repos, isolated CTXHELM_HOME, and structured JSON compatibility assertions**
 
 ## Performance
 
@@ -55,8 +55,8 @@ completed: 2026-05-13
 
 ## Accomplishments
 
-- Added `assert_cmd` and `predicates` test support for compiled `ctxpack` binary tests.
-- Added shared CLI integration-test fixtures that create real git repos, fixture source/test/config files, generated and sensitive exclusions, and isolated `CTXPACK_HOME`.
+- Added `assert_cmd` and `predicates` test support for compiled `ctxhelm` binary tests.
+- Added shared CLI integration-test fixtures that create real git repos, fixture source/test/config files, generated and sensitive exclusions, and isolated `CTXHELM_HOME`.
 - Added `cli_compat` coverage for `--help`, `index`, `prepare-task`, `get-pack`, `search`, `related-tests`, `dependencies`, `eval history`, and `serve-mcp`.
 - Verified command outputs through structured JSON shape checks, local write side effects, explicit `--repo` paths, and newline-delimited JSON-RPC responses.
 
@@ -71,14 +71,14 @@ Each task was committed atomically:
 
 ## Files Created/Modified
 
-- `crates/ctxpack/Cargo.toml` - Added CLI integration-test dev dependencies.
+- `crates/ctxhelm/Cargo.toml` - Added CLI integration-test dev dependencies.
 - `Cargo.lock` - Locked test-only dependencies required by `assert_cmd` and `predicates`.
-- `crates/ctxpack/tests/common/mod.rs` - Added temp git repo, isolated home, git runner, and JSON stdout helpers.
-- `crates/ctxpack/tests/cli_compat.rs` - Added binary-level compatibility tests for the core CLI command surface.
+- `crates/ctxhelm/tests/common/mod.rs` - Added temp git repo, isolated home, git runner, and JSON stdout helpers.
+- `crates/ctxhelm/tests/cli_compat.rs` - Added binary-level compatibility tests for the core CLI command surface.
 
 ## Decisions Made
 
-- Used `assert_cmd::Command::cargo_bin("ctxpack")` so tests exercise the compiled binary and Clap wiring.
+- Used `assert_cmd::Command::cargo_bin("ctxhelm")` so tests exercise the compiled binary and Clap wiring.
 - Used structured `serde_json::Value` assertions for JSON output shape and selected stable values.
 - Kept dynamic values such as repo IDs, task hashes, UUIDs, and ordering loosely asserted to avoid brittle snapshots.
 
@@ -86,20 +86,20 @@ Each task was committed atomically:
 
 ### Auto-fixed Issues
 
-**1. [Rule 3 - Blocking] Added tempfile as a ctxpack dev dependency**
+**1. [Rule 3 - Blocking] Added tempfile as a ctxhelm dev dependency**
 - **Found during:** Task 1 (Add CLI integration-test dependencies and fixture helpers)
-- **Issue:** The planned helper exposes `tempfile::TempDir`, but `tempfile` was only a workspace dependency and not available to the `ctxpack` integration-test crate.
-- **Fix:** Added `tempfile.workspace = true` under `crates/ctxpack` dev-dependencies.
-- **Files modified:** `crates/ctxpack/Cargo.toml`, `Cargo.lock`
-- **Verification:** `cargo test -p ctxpack --no-run`
+- **Issue:** The planned helper exposes `tempfile::TempDir`, but `tempfile` was only a workspace dependency and not available to the `ctxhelm` integration-test crate.
+- **Fix:** Added `tempfile.workspace = true` under `crates/ctxhelm` dev-dependencies.
+- **Files modified:** `crates/ctxhelm/Cargo.toml`, `Cargo.lock`
+- **Verification:** `cargo test -p ctxhelm --no-run`
 - **Committed in:** `2704f0d`
 
 **2. [Rule 3 - Blocking] Added a fixture dependency edge**
 - **Found during:** Task 2 (Cover core CLI commands through the compiled binary)
 - **Issue:** The base fixture needed a real local import for the `dependencies` command to assert `sourcePath`, `targetPath`, and `kind` on a non-empty result.
 - **Fix:** Added `src/auth/token.ts` and an import from `src/auth/session.ts` in the shared fixture.
-- **Files modified:** `crates/ctxpack/tests/common/mod.rs`
-- **Verification:** `cargo test -p ctxpack --test cli_compat`
+- **Files modified:** `crates/ctxhelm/tests/common/mod.rs`
+- **Verification:** `cargo test -p ctxhelm --test cli_compat`
 - **Committed in:** `cf7be80`
 
 ---
@@ -125,9 +125,9 @@ None - no external service configuration required.
 
 ## Verification
 
-- `cargo test -p ctxpack --no-run` passed.
-- `cargo test -p ctxpack --test cli_compat` passed.
-- `cargo run -p ctxpack -- --help` passed.
+- `cargo test -p ctxhelm --no-run` passed.
+- `cargo test -p ctxhelm --test cli_compat` passed.
+- `cargo run -p ctxhelm -- --help` passed.
 - `cargo test --workspace` passed.
 
 ## Next Phase Readiness

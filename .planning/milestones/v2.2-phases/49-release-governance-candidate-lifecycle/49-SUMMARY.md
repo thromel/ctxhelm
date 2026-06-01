@@ -19,5 +19,5 @@ Status: Complete
 
 - `bash scripts/smoke-release-governance.sh` passed.
 - `bash scripts/check-release-docs.sh` passed.
-- `CARGO_TARGET_DIR=/tmp/ctxpack-target-phase49 cargo test -p ctxpack --test release_packaging -- --nocapture` passed.
+- `CARGO_TARGET_DIR=/tmp/ctxhelm-target-phase49 cargo test -p ctxhelm --test release_packaging -- --nocapture` passed.
 

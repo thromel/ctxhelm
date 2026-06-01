@@ -10,5 +10,5 @@ Expose schema compatibility, row counts, database path, and diagnostics in CLI r
 
 ## Verification
 
-- `ctxpack storage status --format json`
+- `ctxhelm storage status --format json`
 

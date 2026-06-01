@@ -20,7 +20,7 @@ Phase 1 delivers compatibility guardrails and safe module-boundary work for the 
 
 ### CLI guardrails
 - **D-04:** Add binary-level CLI tests for representative core commands rather than only renderer/helper tests. The minimum command set should include `--help`, `index`, `prepare-task`, `get-pack`, `search`, `related-tests`, `dependencies`, `eval history`, and `serve-mcp` startup/protocol smoke where practical.
-- **D-05:** CLI tests should use real temporary repositories and temporary `CTXPACK_HOME`, matching the existing fixture style in `.planning/codebase/TESTING.md`.
+- **D-05:** CLI tests should use real temporary repositories and temporary `CTXHELM_HOME`, matching the existing fixture style in `.planning/codebase/TESTING.md`.
 - **D-06:** Exact test harness choice is flexible, but the default planning assumption should be `assert_cmd`-style binary tests or an equivalent Cargo-supported approach that exercises the compiled binary rather than only direct function calls.
 
 ### MCP guardrails
@@ -59,11 +59,11 @@ Phase 1 delivers compatibility guardrails and safe module-boundary work for the 
 
 ### Current public surfaces
 - `Cargo.toml` — Workspace members and dependency policy.
-- `crates/ctxpack/src/main.rs` — CLI command surface and report rendering.
-- `crates/ctxpack-core/src/contracts.rs` — Public serializable contracts.
-- `crates/ctxpack-index/src/lib.rs` — Current index/retrieval APIs that may be split behind stable facades.
-- `crates/ctxpack-compiler/src/lib.rs` — Current planning, pack, cards, and eval APIs that may be split behind stable facades.
-- `crates/ctxpack-mcp/src/lib.rs` — MCP JSON-RPC tools, resources, prompts, and session cache behavior.
+- `crates/ctxhelm/src/main.rs` — CLI command surface and report rendering.
+- `crates/ctxhelm-core/src/contracts.rs` — Public serializable contracts.
+- `crates/ctxhelm-index/src/lib.rs` — Current index/retrieval APIs that may be split behind stable facades.
+- `crates/ctxhelm-compiler/src/lib.rs` — Current planning, pack, cards, and eval APIs that may be split behind stable facades.
+- `crates/ctxhelm-mcp/src/lib.rs` — MCP JSON-RPC tools, resources, prompts, and session cache behavior.
 - `README.md` — User-facing documented behavior that tests should not accidentally invalidate.
 - `AGENTS.md` — Project working rules and required validation commands.
 
@@ -73,19 +73,19 @@ Phase 1 delivers compatibility guardrails and safe module-boundary work for the 
 ## Existing Code Insights
 
 ### Reusable Assets
-- Inline fixture helpers in `crates/ctxpack-mcp/src/lib.rs`, `crates/ctxpack-index/src/lib.rs`, and `crates/ctxpack-compiler/src/lib.rs` already create temp repos, set `CTXPACK_HOME`, and run real git commands. New CLI binary tests should reuse the same pattern conceptually.
-- Existing MCP tests in `crates/ctxpack-mcp/src/lib.rs` already exercise newline-delimited JSON-RPC requests through handler functions and should become compatibility references for any MCP module split.
-- Existing contract tests in `crates/ctxpack-core/src/contracts.rs` already assert camelCase and enum serialization. Phase 1 should extend this style rather than introduce broad schema generation first.
+- Inline fixture helpers in `crates/ctxhelm-mcp/src/lib.rs`, `crates/ctxhelm-index/src/lib.rs`, and `crates/ctxhelm-compiler/src/lib.rs` already create temp repos, set `CTXHELM_HOME`, and run real git commands. New CLI binary tests should reuse the same pattern conceptually.
+- Existing MCP tests in `crates/ctxhelm-mcp/src/lib.rs` already exercise newline-delimited JSON-RPC requests through handler functions and should become compatibility references for any MCP module split.
+- Existing contract tests in `crates/ctxhelm-core/src/contracts.rs` already assert camelCase and enum serialization. Phase 1 should extend this style rather than introduce broad schema generation first.
 
 ### Established Patterns
 - Library crates return typed errors and structs; CLI converts to `anyhow::Result`, while MCP converts to JSON-RPC errors. Module splits should preserve these boundaries.
 - Tests are co-located in `#[cfg(test)] mod tests`, use behavior-oriented snake_case names, and prefer real filesystem/git fixtures over mocks.
-- `crates/ctxpack-core` is already split into focused modules; `ctxpack-index`, `ctxpack-compiler`, and `ctxpack-mcp` are the large-module pressure points.
+- `crates/ctxhelm-core` is already split into focused modules; `ctxhelm-index`, `ctxhelm-compiler`, and `ctxhelm-mcp` are the large-module pressure points.
 
 ### Integration Points
-- CLI compatibility work connects at `crates/ctxpack/src/main.rs`.
-- Public JSON compatibility work connects at `crates/ctxpack-core/src/contracts.rs` and the report structs in `crates/ctxpack-compiler/src/lib.rs`.
-- MCP compatibility work connects at `crates/ctxpack-mcp/src/lib.rs`, especially tool lists, resource lists, prompt lists, handler dispatch, and response serialization.
+- CLI compatibility work connects at `crates/ctxhelm/src/main.rs`.
+- Public JSON compatibility work connects at `crates/ctxhelm-core/src/contracts.rs` and the report structs in `crates/ctxhelm-compiler/src/lib.rs`.
+- MCP compatibility work connects at `crates/ctxhelm-mcp/src/lib.rs`, especially tool lists, resource lists, prompt lists, handler dispatch, and response serialization.
 - Module-boundary work connects inside each owning crate and should preserve the crate root's public API where possible.
 
 </code_context>

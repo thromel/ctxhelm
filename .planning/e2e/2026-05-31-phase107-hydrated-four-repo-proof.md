@@ -13,7 +13,7 @@ The broad proof config in
 failed the production-readiness path in two different ways:
 
 - Parent snapshot hydration could wedge on unbounded full-tree `git ls-tree -r`
-  and `git archive` calls against older ctxpack revisions.
+  and `git archive` calls against older ctxhelm revisions.
 - RefactoringMiner commit collection could return zero usable commits because
   `git diff-tree -M` rename detection exceeded the per-commit timeout on the
   large historical repository.
@@ -32,7 +32,7 @@ instead of an explicit, measurable corpus verdict.
   piping a whole revision archive through `tar`.
 - Bad single parent-snapshot paths are skipped after recursive chunk splitting
   instead of blocking the whole repository proof.
-- Unrelated historical `.ctxpack/e2e`, `.planning/e2e`, and
+- Unrelated historical `.ctxhelm/e2e`, `.planning/e2e`, and
   `.planning/milestones` archive artifacts are filtered from parent snapshot
   hydration unless they are actual safe changed files for the sampled commit.
 
@@ -44,14 +44,14 @@ top-10 ranking workaround. The proof remains honest about cold runtime.
 Cold force proof:
 
 ```text
-artifact: .ctxpack/e2e/phase107-hydrated-four-repo-cold-proof.json
+artifact: .ctxhelm/e2e/phase107-hydrated-four-repo-cold-proof.json
 decision: block
-reason: Blocked because proof runtime exceeded 5000ms per commit for: ctxpack.
+reason: Blocked because proof runtime exceeded 5000ms per commit for: ctxhelm.
 evaluatedRepositoryCount: 4
 evaluatedCommitCount: 12
 
 RefactoringMiner: match, runtime 3936ms, context Recall@10 1.0 vs lexical 1.0
-ctxpack: beat, runtime 34867ms, File Recall@10 0.43650794 vs lexical 0.32539684
+ctxhelm: beat, runtime 34867ms, File Recall@10 0.43650794 vs lexical 0.32539684
 ReAgent: beat, runtime 5312ms, context Recall@10 1.0 vs lexical 0.5
 VeriSchema: beat, runtime 3532ms, File Recall@10 0.18449473 vs lexical 0.122021124
 ```
@@ -59,14 +59,14 @@ VeriSchema: beat, runtime 3532ms, File Recall@10 0.18449473 vs lexical 0.1220211
 Warm/cache proof:
 
 ```text
-artifact: .ctxpack/e2e/phase107-hydrated-four-repo-warm-proof.json
+artifact: .ctxhelm/e2e/phase107-hydrated-four-repo-warm-proof.json
 decision: promote
 reason: Promote: every evaluated corpus beat lexical or reached a perfect lexical ceiling on non-test context recall, while maintaining validation-test recall under local-only proof thresholds.
 evaluatedRepositoryCount: 4
 evaluatedCommitCount: 12
 
 RefactoringMiner: match, runtime 4ms, context Recall@10 1.0 vs lexical 1.0
-ctxpack: beat, runtime 3ms, File Recall@10 0.43650794 vs lexical 0.32539684
+ctxhelm: beat, runtime 3ms, File Recall@10 0.43650794 vs lexical 0.32539684
 ReAgent: beat, runtime 3ms, context Recall@10 1.0 vs lexical 0.5
 VeriSchema: beat, runtime 7ms, File Recall@10 0.18449473 vs lexical 0.122021124
 ```
@@ -77,18 +77,18 @@ Passed:
 
 ```bash
 cargo fmt --check
-CARGO_TARGET_DIR=/tmp/ctxpack-phase107-target cargo test -p ctxpack-index historical_commit_collection_falls_back_when_rename_diff_times_out -- --nocapture
-CARGO_TARGET_DIR=/tmp/ctxpack-phase107-target cargo test -p ctxpack-compiler parent_snapshot_command_helper_times_out_instead_of_hanging -- --nocapture
-CARGO_TARGET_DIR=/tmp/ctxpack-phase107-target cargo test -p ctxpack-compiler historical_eval_parent_snapshot_extracts_only_indexable_paths -- --nocapture
-CARGO_TARGET_DIR=/tmp/ctxpack-phase107-target cargo test -p ctxpack-compiler parent_snapshot_candidates_keep_changed_archives_but_drop_unrelated_archives -- --nocapture
-CARGO_TARGET_DIR=/tmp/ctxpack-phase107-target cargo run -p ctxpack -- eval proof --config .planning/e2e/2026-05-31-phase92-area-aware-gap-proof-config.json --format json
-CARGO_TARGET_DIR=/tmp/ctxpack-phase107-target cargo run -p ctxpack -- eval proof --config .planning/e2e/2026-05-31-phase92-area-aware-gap-warm-proof-config.json --format json
-CARGO_TARGET_DIR=/tmp/ctxpack-phase107-target cargo run -p ctxpack -- eval proof --config .planning/e2e/2026-05-31-phase92-area-aware-gap-warm-proof-config.json --format json
+CARGO_TARGET_DIR=/tmp/ctxhelm-phase107-target cargo test -p ctxhelm-index historical_commit_collection_falls_back_when_rename_diff_times_out -- --nocapture
+CARGO_TARGET_DIR=/tmp/ctxhelm-phase107-target cargo test -p ctxhelm-compiler parent_snapshot_command_helper_times_out_instead_of_hanging -- --nocapture
+CARGO_TARGET_DIR=/tmp/ctxhelm-phase107-target cargo test -p ctxhelm-compiler historical_eval_parent_snapshot_extracts_only_indexable_paths -- --nocapture
+CARGO_TARGET_DIR=/tmp/ctxhelm-phase107-target cargo test -p ctxhelm-compiler parent_snapshot_candidates_keep_changed_archives_but_drop_unrelated_archives -- --nocapture
+CARGO_TARGET_DIR=/tmp/ctxhelm-phase107-target cargo run -p ctxhelm -- eval proof --config .planning/e2e/2026-05-31-phase92-area-aware-gap-proof-config.json --format json
+CARGO_TARGET_DIR=/tmp/ctxhelm-phase107-target cargo run -p ctxhelm -- eval proof --config .planning/e2e/2026-05-31-phase92-area-aware-gap-warm-proof-config.json --format json
+CARGO_TARGET_DIR=/tmp/ctxhelm-phase107-target cargo run -p ctxhelm -- eval proof --config .planning/e2e/2026-05-31-phase92-area-aware-gap-warm-proof-config.json --format json
 ```
 
 Deferred full gate:
 
-- The cold four-repo proof still blocks on ctxpack runtime, but it now does so
+- The cold four-repo proof still blocks on ctxhelm runtime, but it now does so
   with all four repositories hydrated and verdicted. The remaining work is
   cold runtime reduction, not missing reports or large-repo proof hydration.
 - The first warm proof after the cache-schema bump rebuilt fresh reports and

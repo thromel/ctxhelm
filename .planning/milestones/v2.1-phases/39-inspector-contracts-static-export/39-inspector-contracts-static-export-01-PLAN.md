@@ -13,9 +13,9 @@ Implement INSP-01 through INSP-04:
 
 ## Steps
 
-1. Add inspector data contracts to `ctxpack-core`.
+1. Add inspector data contracts to `ctxhelm-core`.
 2. Add compiler helpers to build and render inspector views.
-3. Add `ctxpack inspector export` CLI command.
+3. Add `ctxhelm inspector export` CLI command.
 4. Add focused tests for serialization and source sentinel separation.
 5. Add docs and update release documentation checks.
 6. Run formatting, focused tests, CLI help, and workspace tests as feasible.
@@ -24,7 +24,7 @@ Implement INSP-01 through INSP-04:
 
 - `cargo fmt --all`
 - Focused compiler/core tests for inspector behavior
-- `cargo run -p ctxpack -- inspector export --help`
+- `cargo run -p ctxhelm -- inspector export --help`
 - `cargo test --workspace`
 
 ## Non-goals

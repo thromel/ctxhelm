@@ -2,14 +2,14 @@
 
 ## Goal
 
-Make the public entry point explain ctxpack's product wedge before the command
+Make the public entry point explain ctxhelm's product wedge before the command
 tour, and keep current agent-proof claims from drifting behind local evidence.
 
 ## Changes
 
 - Reframed the README as a local-first context compiler for existing coding
   agents.
-- Added a `Why ctxpack` section that distinguishes ctxpack from native agent
+- Added a `Why ctxhelm` section that distinguishes ctxhelm from native agent
   grep/search/read behavior.
 - Added a current proof snapshot covering public `v1.1.2` install proof,
   four-repo protected target miss-rate, agent-evidence lexical comparison, and
@@ -27,12 +27,12 @@ tour, and keep current agent-proof claims from drifting behind local evidence.
 Durable proof:
 
 ```text
-.ctxpack/e2e/phase133-product-readme-positioning.json
+.ctxhelm/e2e/phase133-product-readme-positioning.json
 ```
 
 Key facts:
 
-- README now contains `Why ctxpack`.
+- README now contains `Why ctxhelm`.
 - README now contains `Current proof snapshot`.
 - README and agent setup docs mention Claude Code `2.1.159`.
 - README and agent setup docs mention Codex CLI `0.44.0`.
@@ -46,9 +46,9 @@ Required validation:
 ```bash
 bash scripts/check-release-docs.sh
 cargo fmt --all -- --check
-cargo test -p ctxpack --test release_packaging release_docs_script_contract -- --nocapture
-cargo test -p ctxpack --test release_packaging release_docs_check_passes -- --nocapture
-cargo run -p ctxpack -- --help
+cargo test -p ctxhelm --test release_packaging release_docs_script_contract -- --nocapture
+cargo test -p ctxhelm --test release_packaging release_docs_check_passes -- --nocapture
+cargo run -p ctxhelm -- --help
 git diff --check
 ```
 

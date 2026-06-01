@@ -46,7 +46,7 @@ jobs:
         run: cargo test --workspace --locked --no-fail-fast
 
       - name: CLI help
-        run: cargo run -p ctxpack --locked -- --help
+        run: cargo run -p ctxhelm --locked -- --help
 
       - name: Release docs contract
         run: bash scripts/check-release-docs.sh
@@ -77,6 +77,6 @@ jobs:
 
       - name: Local release gate
         env:
-          CTXPACK_SKIP_CLEAN_FIXTURE_PROOF: "1"
-          CTXPACK_SKIP_REAL_CLIENT: "1"
+          CTXHELM_SKIP_CLEAN_FIXTURE_PROOF: "1"
+          CTXHELM_SKIP_REAL_CLIENT: "1"
         run: bash scripts/release-gate.sh

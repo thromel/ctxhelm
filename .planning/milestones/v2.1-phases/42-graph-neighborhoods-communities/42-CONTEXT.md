@@ -18,8 +18,8 @@ relationships, not pull raw source into another artifact.
 <decisions>
 ## Implementation Decisions
 
-1. Add graph contracts in `ctxpack-core`.
-2. Build graph neighborhoods in `ctxpack-compiler` from existing safe
+1. Add graph contracts in `ctxhelm-core`.
+2. Build graph neighborhoods in `ctxhelm-compiler` from existing safe
    dependency edges, related tests, memory cards, feedback events, and optional
    task planning.
 3. Add a CLI command for source-free JSON/Markdown graph reports.
@@ -42,7 +42,7 @@ relationships, not pull raw source into another artifact.
 
 - `GraphNeighborhoodReport` with nodes, edges, communities, diagnostics, and
   `sourceTextLogged: false`.
-- `ctxpack graph neighborhood "task" --path src/auth/session.ts`.
+- `ctxhelm graph neighborhood "task" --path src/auth/session.ts`.
 - Support task-derived anchors when no path is provided.
 - Community summaries by first path segment or role/package label.
 </specifics>

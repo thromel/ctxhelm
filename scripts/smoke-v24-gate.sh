@@ -5,16 +5,16 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 TMP_DIR="$(mktemp -d)"
 trap 'rm -rf "${TMP_DIR}"' EXIT
 
-ctxpack_bin="${CTXPACK_BIN:-${ROOT_DIR}/target/debug/ctxpack}"
-if [[ ! -x "$ctxpack_bin" ]]; then
-  (cd "$ROOT_DIR" && cargo build -q -p ctxpack)
+ctxhelm_bin="${CTXHELM_BIN:-${ROOT_DIR}/target/debug/ctxhelm}"
+if [[ ! -x "$ctxhelm_bin" ]]; then
+  (cd "$ROOT_DIR" && cargo build -q -p ctxhelm)
 fi
 
 repo="$TMP_DIR/repo"
 mkdir -p "$repo/src/auth" "$repo/tests/auth"
 git -C "$repo" init >/dev/null
-git -C "$repo" config user.email ctxpack@example.com
-git -C "$repo" config user.name ctxpack
+git -C "$repo" config user.email ctxhelm@example.com
+git -C "$repo" config user.name ctxhelm
 
 cat >"$repo/src/auth/session.ts" <<'TS'
 export function requireSession(user?: string) {
@@ -37,7 +37,7 @@ git -C "$repo" add .
 git -C "$repo" commit -m "add requireAdmin auth gate" >/dev/null
 
 gate_json="$TMP_DIR/v24-gate.json"
-"$ctxpack_bin" eval gate \
+"$ctxhelm_bin" eval gate \
   --repo "$repo" \
   --limit 2 \
   --budget 10 \
@@ -59,7 +59,7 @@ if report.get("sourceTextLogged"):
 variants = {variant.get("name"): variant for variant in report.get("variants", [])}
 for required in [
     "lexical_baseline",
-    "ctxpack_default",
+    "ctxhelm_default",
     "local_semantic",
     "precision_enriched_semantic",
     "semantic_precision_full_hybrid",

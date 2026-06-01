@@ -5,10 +5,10 @@ type: execute
 wave: 1
 depends_on: []
 files_modified:
-  - crates/ctxpack-core/src/contracts.rs
-  - crates/ctxpack-compiler/src/planning.rs
-  - crates/ctxpack-compiler/src/lib.rs
-  - crates/ctxpack/src/main.rs
+  - crates/ctxhelm-core/src/contracts.rs
+  - crates/ctxhelm-compiler/src/planning.rs
+  - crates/ctxhelm-compiler/src/lib.rs
+  - crates/ctxhelm/src/main.rs
 autonomous: true
 requirements: [RETR-01, RETR-03, PARS-01]
 must_haves:
@@ -18,15 +18,15 @@ must_haves:
     - "Typed retrieval candidate contracts explicitly cover file, test, symbol, doc, commit, and config candidates."
     - "Old plan JSON without attribution or retrievalCandidates still deserializes."
   artifacts:
-    - path: "crates/ctxpack-core/src/contracts.rs"
+    - path: "crates/ctxhelm-core/src/contracts.rs"
       provides: "Additive public candidate and attribution contracts"
-    - path: "crates/ctxpack-compiler/src/planning.rs"
+    - path: "crates/ctxhelm-compiler/src/planning.rs"
       provides: "Default empty attribution/candidate wiring for current plan construction"
-    - path: "crates/ctxpack/src/main.rs"
+    - path: "crates/ctxhelm/src/main.rs"
       provides: "Updated CLI renderer fixtures for additive contract fields"
   key_links:
-    - from: "crates/ctxpack-core/src/contracts.rs"
-      to: "crates/ctxpack-compiler/src/planning.rs"
+    - from: "crates/ctxhelm-core/src/contracts.rs"
+      to: "crates/ctxhelm-compiler/src/planning.rs"
       via: "TargetFile and RelatedTest constructors include attribution defaults"
       pattern: "attribution: Vec::new\\(\\)"
 ---
@@ -61,7 +61,7 @@ Output: Additive serde contracts for candidates, signal scores, and source-free 
 </decision_trace>
 
 <interfaces>
-Existing public contracts from crates/ctxpack-core/src/contracts.rs:
+Existing public contracts from crates/ctxhelm-core/src/contracts.rs:
 ```rust
 pub struct TargetFile {
     pub path: String,
@@ -93,7 +93,7 @@ pub struct ContextPlan {
 
 <task type="auto" tdd="true">
   <name>Task 1: Add source-free retrieval candidate and attribution contracts</name>
-  <files>crates/ctxpack-core/src/contracts.rs</files>
+  <files>crates/ctxhelm-core/src/contracts.rs</files>
   <behavior>
     - Test 1: ContextPlan serializes camelCase additive fields `retrievalCandidates`, `targetFiles[].attribution`, and `relatedTests[].attribution`.
     - Test 2: Old JSON without the new fields deserializes with empty default vectors.
@@ -102,21 +102,21 @@ pub struct ContextPlan {
   </behavior>
   <action>Add public serde contracts per D-01/D-03: `RetrievalCandidateKind`, `RetrievalSignalKind`, `RetrievalSignalScore`, `RetrievalEvidence`, and `RetrievalCandidate`. `RetrievalCandidateKind` must include at least `file`, `test`, `symbol`, `doc`, `commit`, and `config` variants so RETR-01 cannot be satisfied by file-only scoring. Add `#[serde(default)] attribution: Vec<RetrievalEvidence>` to `TargetFile` and `RelatedTest`, and `#[serde(default)] retrieval_candidates: Vec<RetrievalCandidate>` to `ContextPlan`. Use camelCase for structs and snake_case/lowercase enum values consistent with existing contracts. Do not remove or rename existing fields per D-02.</action>
   <verify>
-    <automated>cargo test -p ctxpack-core retrieval -- --nocapture</automated>
+    <automated>cargo test -p ctxhelm-core retrieval -- --nocapture</automated>
   </verify>
   <done>Core contract tests prove additive candidate/attribution fields exist for all required candidate kinds, remain source-free, and keep old JSON compatible.</done>
 </task>
 
 <task type="auto" tdd="true">
   <name>Task 2: Update constructors and compatibility fixtures for additive fields</name>
-  <files>crates/ctxpack-compiler/src/planning.rs, crates/ctxpack-compiler/src/lib.rs, crates/ctxpack/src/main.rs, crates/ctxpack-core/src/contracts.rs</files>
+  <files>crates/ctxhelm-compiler/src/planning.rs, crates/ctxhelm-compiler/src/lib.rs, crates/ctxhelm/src/main.rs, crates/ctxhelm-core/src/contracts.rs</files>
   <behavior>
     - Test 1: Existing compiler and CLI renderer fixtures compile with explicit empty attribution/retrievalCandidates defaults.
     - Test 2: Current public JSON shape tests still assert existing targetFiles, relatedTests, diagnostics, and privacyStatus keys.
   </behavior>
   <action>Update every `TargetFile`, `RelatedTest`, and `ContextPlan` literal touched by compiler/core/CLI tests to populate the new additive fields with empty vectors. Preserve the current behavior: Plan 01 only establishes contracts; it must not change ranking order, pack snippets, MCP tools, or eval behavior. Keep this compatible with future parser-backed adapters behind the typed contracts per D-10.</action>
   <verify>
-    <automated>cargo test -p ctxpack-core -p ctxpack-compiler -p ctxpack -- --nocapture</automated>
+    <automated>cargo test -p ctxhelm-core -p ctxhelm-compiler -p ctxhelm -- --nocapture</automated>
   </verify>
   <done>Workspace code compiles against the new contracts while existing plan/eval/render behavior remains unchanged.</done>
 </task>
@@ -124,8 +124,8 @@ pub struct ContextPlan {
 </tasks>
 
 <verification>
-- `cargo test -p ctxpack-core retrieval -- --nocapture`
-- `cargo test -p ctxpack-core -p ctxpack-compiler -p ctxpack -- --nocapture`
+- `cargo test -p ctxhelm-core retrieval -- --nocapture`
+- `cargo test -p ctxhelm-core -p ctxhelm-compiler -p ctxhelm -- --nocapture`
 </verification>
 
 <success_criteria>

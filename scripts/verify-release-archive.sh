@@ -5,7 +5,7 @@ usage() {
   cat >&2 <<'EOF'
 usage: verify-release-archive.sh --archive PATH --manifest PATH [--checksums PATH]
 
-Verifies a ctxpack release archive from a clean temporary extraction directory.
+Verifies a ctxhelm release archive from a clean temporary extraction directory.
 The script does not install binaries, publish artifacts, mutate global agent
 configuration, or run user project tests.
 EOF
@@ -100,7 +100,7 @@ archive = payload.get("archive", {})
 binary = payload.get("binary", {})
 if not archive.get("name") or not archive.get("sha256"):
     raise SystemExit("manifest archive name/sha256 is missing")
-if binary.get("name") != "ctxpack" or not binary.get("sha256"):
+if binary.get("name") != "ctxhelm" or not binary.get("sha256"):
     raise SystemExit("manifest binary name/sha256 is missing")
 print(archive["name"])
 PY
@@ -130,13 +130,13 @@ extract_dir="$work_dir/extracted"
 mkdir -p "$extract_dir"
 tar -xzf "$archive_path" -C "$extract_dir"
 
-ctxpack_bin="$(find "$extract_dir" -type f -name ctxpack -perm -111 | head -n 1)"
-if [[ -z "$ctxpack_bin" ]]; then
-  echo "no executable ctxpack binary found in archive" >&2
+ctxhelm_bin="$(find "$extract_dir" -type f -name ctxhelm -perm -111 | head -n 1)"
+if [[ -z "$ctxhelm_bin" ]]; then
+  echo "no executable ctxhelm binary found in archive" >&2
   exit 65
 fi
 
-binary_sha="$(sha256_file "$ctxpack_bin")"
+binary_sha="$(sha256_file "$ctxhelm_bin")"
 manifest_binary_sha="$(python3 - "$manifest_path" <<'PY'
 import json
 import pathlib
@@ -151,12 +151,12 @@ if [[ "$binary_sha" != "$manifest_binary_sha" ]]; then
   exit 65
 fi
 
-"$ctxpack_bin" --version >/dev/null
-"$ctxpack_bin" --help >/dev/null
+"$ctxhelm_bin" --version >/dev/null
+"$ctxhelm_bin" --help >/dev/null
 
 doctor_json="$work_dir/doctor.json"
-"$ctxpack_bin" doctor \
-  --binary "$ctxpack_bin" \
+"$ctxhelm_bin" doctor \
+  --binary "$ctxhelm_bin" \
   --release-manifest "$manifest_path" \
   --format json >"$doctor_json"
 

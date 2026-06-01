@@ -5,11 +5,11 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 TMP_DIR="$(mktemp -d)"
 trap 'rm -rf "${TMP_DIR}"' EXIT
 
-run_ctxpack() {
-  if [[ -n "${CTXPACK_BIN:-}" ]]; then
-    "${CTXPACK_BIN}" "$@"
+run_ctxhelm() {
+  if [[ -n "${CTXHELM_BIN:-}" ]]; then
+    "${CTXHELM_BIN}" "$@"
   else
-    cargo run -q -p ctxpack -- "$@"
+    cargo run -q -p ctxhelm -- "$@"
   fi
 }
 
@@ -34,8 +34,8 @@ reject_text() {
 REPO="${TMP_DIR}/repo"
 mkdir -p "${REPO}/src/auth" "${REPO}/tests/auth"
 git -C "${REPO}" init >/dev/null
-git -C "${REPO}" config user.email ctxpack@example.com
-git -C "${REPO}" config user.name ctxpack
+git -C "${REPO}" config user.email ctxhelm@example.com
+git -C "${REPO}" config user.name ctxhelm
 cat >"${REPO}/src/auth/session.ts" <<'EOF'
 export function requireSession() {
   return 'INSPECTOR_UI_SOURCE_SENTINEL';
@@ -53,12 +53,12 @@ HTML_OUT="${TMP_DIR}/inspector.html"
 
 (
   cd "${ROOT_DIR}"
-  run_ctxpack inspector export "fix requireSession sentinel" \
+  run_ctxhelm inspector export "fix requireSession sentinel" \
     --repo "${REPO}" \
     --mode bug-fix \
     --format json \
     --output "${JSON_OUT}"
-  run_ctxpack inspector export "fix requireSession sentinel" \
+  run_ctxhelm inspector export "fix requireSession sentinel" \
     --repo "${REPO}" \
     --mode bug-fix \
     --format html \

@@ -14,7 +14,7 @@ depends_on:
 # Phase 57 Plan: Precision-Enriched Semantic Documents
 
 <objective>
-Build a typed, source-free semantic document layer enriched with symbols, tests, docs/cards, dependency evidence, precision edges, and precision provider status. Wire it into retrieval evidence without changing ctxpack's read-only or local-first defaults.
+Build a typed, source-free semantic document layer enriched with symbols, tests, docs/cards, dependency evidence, precision edges, and precision provider status. Wire it into retrieval evidence without changing ctxhelm's read-only or local-first defaults.
 </objective>
 
 <threat_model>
@@ -25,7 +25,7 @@ Build a typed, source-free semantic document layer enriched with symbols, tests,
 </threat_model>
 
 <must_haves>
-- Semantic document contracts are shared through `ctxpack-core`.
+- Semantic document contracts are shared through `ctxhelm-core`.
 - Semantic documents are generated without reading or storing raw source bodies in output records.
 - Precision status has explicit unavailable, available, stale, invalid, and degraded paths.
 - Existing semantic provider status remains backward compatible.
@@ -37,16 +37,16 @@ Build a typed, source-free semantic document layer enriched with symbols, tests,
 
 <task id="57.1" name="Add semantic document and precision status contracts">
 <read_first>
-- `crates/ctxpack-core/src/contracts.rs`
-- `crates/ctxpack-index/src/semantic.rs`
-- `crates/ctxpack-index/src/dependencies.rs`
+- `crates/ctxhelm-core/src/contracts.rs`
+- `crates/ctxhelm-index/src/semantic.rs`
+- `crates/ctxhelm-index/src/dependencies.rs`
 </read_first>
 <action>
 Add serde contracts for semantic documents, semantic document facets, precision backend status, and document build reports. Keep existing semantic provider contracts compatible by adding optional fields rather than replacing current report shapes.
 </action>
 <verify>
 - Add or update core serialization tests for the new contracts.
-- Run `cargo test -p ctxpack-core`.
+- Run `cargo test -p ctxhelm-core`.
 </verify>
 <acceptance_criteria>
 - New contracts serialize in camelCase.
@@ -57,19 +57,19 @@ Add serde contracts for semantic documents, semantic document facets, precision 
 
 <task id="57.2" name="Build source-free semantic documents in the index layer">
 <read_first>
-- `crates/ctxpack-index/src/inventory.rs`
-- `crates/ctxpack-index/src/symbols.rs`
-- `crates/ctxpack-index/src/dependencies.rs`
-- `crates/ctxpack-index/src/tests.rs`
-- `crates/ctxpack-index/src/semantic.rs`
+- `crates/ctxhelm-index/src/inventory.rs`
+- `crates/ctxhelm-index/src/symbols.rs`
+- `crates/ctxhelm-index/src/dependencies.rs`
+- `crates/ctxhelm-index/src/tests.rs`
+- `crates/ctxhelm-index/src/semantic.rs`
 </read_first>
 <action>
 Implement a semantic document builder that joins inventory, safe symbols, dependency edges, related tests, docs/cards when available, and precision overlay edges. The builder should return a bounded report and deterministic document IDs.
 </action>
 <verify>
-- Add index tests using a fixture with source files, tests, symbols, imports, and a `.ctxpack/precision-edges.json` overlay.
+- Add index tests using a fixture with source files, tests, symbols, imports, and a `.ctxhelm/precision-edges.json` overlay.
 - Assert that source body literals from fixtures do not appear in document output.
-- Run `cargo test -p ctxpack-index semantic`.
+- Run `cargo test -p ctxhelm-index semantic`.
 </verify>
 <acceptance_criteria>
 - Documents exist for eligible source/test/doc/config files.
@@ -81,9 +81,9 @@ Implement a semantic document builder that joins inventory, safe symbols, depend
 
 <task id="57.3" name="Use semantic documents for vector records and retrieval evidence">
 <read_first>
-- `crates/ctxpack-index/src/semantic.rs`
-- `crates/ctxpack-compiler/src/planning.rs`
-- `crates/ctxpack-compiler/src/ranking.rs`
+- `crates/ctxhelm-index/src/semantic.rs`
+- `crates/ctxhelm-compiler/src/planning.rs`
+- `crates/ctxhelm-compiler/src/ranking.rs`
 </read_first>
 <action>
 Update semantic vector record construction to use source-free semantic document text/facets instead of thin file metadata when documents are available. Extend compiler semantic evidence to include document facet IDs, precision relation labels, and provider status warnings.
@@ -91,7 +91,7 @@ Update semantic vector record construction to use source-free semantic document 
 <verify>
 - Add compiler tests showing semantic candidates include facet-backed evidence.
 - Add regression tests proving explicit anchors outrank weak semantic-only matches.
-- Run `cargo test -p ctxpack-compiler semantic ranking`.
+- Run `cargo test -p ctxhelm-compiler semantic ranking`.
 </verify>
 <acceptance_criteria>
 - Semantic search remains optional and disabled unless requested by existing controls.
@@ -102,7 +102,7 @@ Update semantic vector record construction to use source-free semantic document 
 
 <task id="57.4" name="Expose document and precision status through existing CLI/report surfaces">
 <read_first>
-- `crates/ctxpack-cli/src/main.rs`
+- `crates/ctxhelm-cli/src/main.rs`
 - `docs/semantic.md`
 - `docs/precision.md`
 - `scripts/smoke-semantic.sh`
@@ -112,7 +112,7 @@ Update semantic vector record construction to use source-free semantic document 
 Add a bounded way to inspect semantic document reports and precision status through existing semantic/precision report surfaces. Update smoke scripts or add focused scripts to prove status and document generation.
 </action>
 <verify>
-- Run `cargo run -p ctxpack -- semantic status --repo . --format json` or the final equivalent command.
+- Run `cargo run -p ctxhelm -- semantic status --repo . --format json` or the final equivalent command.
 - Run `scripts/smoke-semantic.sh`.
 - Run `scripts/smoke-precision.sh`.
 </verify>
@@ -135,7 +135,7 @@ Document source-free semantic documents, precision status behavior, and degraded
 </action>
 <verify>
 - Run `cargo test --workspace`.
-- Run `cargo run -p ctxpack -- --help`.
+- Run `cargo run -p ctxhelm -- --help`.
 - Check `git diff --check`.
 </verify>
 <acceptance_criteria>
@@ -147,13 +147,13 @@ Document source-free semantic documents, precision status behavior, and degraded
 </tasks>
 
 <verification>
-- `cargo test -p ctxpack-core`
-- `cargo test -p ctxpack-index semantic`
-- `cargo test -p ctxpack-compiler semantic ranking`
+- `cargo test -p ctxhelm-core`
+- `cargo test -p ctxhelm-index semantic`
+- `cargo test -p ctxhelm-compiler semantic ranking`
 - `scripts/smoke-semantic.sh`
 - `scripts/smoke-precision.sh`
 - `cargo test --workspace`
-- `cargo run -p ctxpack -- --help`
+- `cargo run -p ctxhelm -- --help`
 </verification>
 
 <success_criteria>

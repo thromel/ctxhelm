@@ -26,21 +26,21 @@ never appeared as retrieval candidates.
 Focused tests:
 
 ```bash
-cargo test -p ctxpack-compiler broad_source_area_candidates -- --nocapture
+cargo test -p ctxhelm-compiler broad_source_area_candidates -- --nocapture
 ```
 
 Pinned broader proof:
 
 ```bash
-cargo run -p ctxpack -- eval proof \
+cargo run -p ctxhelm -- eval proof \
   --config .planning/e2e/2026-05-30-phase73-broader-fixed-corpus-config.json \
-  --format json > /tmp/ctxpack-phase88-broad-source-area-candidates-proof-v3.json
+  --format json > /tmp/ctxhelm-phase88-broad-source-area-candidates-proof-v3.json
 ```
 
 Committed artifact:
 
 ```text
-.ctxpack/e2e/phase88-broad-source-area-candidates-proof.json
+.ctxhelm/e2e/phase88-broad-source-area-candidates-proof.json
 ```
 
 ## Result
@@ -50,14 +50,14 @@ Quality movement versus Phase 87:
 | Corpus | File Recall@10 | Source Recall@10 | Test Recall@10 | Effective Validation Recall@10 | Protected Target Miss-Rate@10 |
 | --- | --- | --- | --- | --- | --- |
 | RefactoringMiner | `0.6 -> 0.6` | `1.0 -> 1.0` | `1.0 -> 1.0` | `1.0 -> 1.0` | `0.0 -> 0.0` |
-| ctxpack | `0.44603175 -> 0.44603175` | `0.6333333 -> 0.6333333` | `0.0 -> 0.0` | `0.0 -> 0.0` | `0.0 -> 0.0` |
+| ctxhelm | `0.44603175 -> 0.44603175` | `0.6333333 -> 0.6333333` | `0.0 -> 0.0` | `0.0 -> 0.0` | `0.0 -> 0.0` |
 | ReAgent | `0.5 -> 0.5` | `1.0 -> 1.0` | `1.0 -> 1.0` | `1.0 -> 1.0` | `0.0 -> 0.0` |
 | VeriSchema | `0.17936651 -> 0.18449473` | `0.30409357 -> 0.31067252` | `0.7089947 -> 0.7089947` | `1.0 -> 1.0` | `0.2857143 -> 0.2857143` |
 
 The proof still blocks on the known cold runtime threshold:
 
 ```text
-Blocked because proof runtime exceeded 5000ms per commit for: RefactoringMiner, ctxpack.
+Blocked because proof runtime exceeded 5000ms per commit for: RefactoringMiner, ctxhelm.
 ```
 
 That is the existing optional broad-proof runtime blocker. The retrieval change

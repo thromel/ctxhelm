@@ -1,0 +1,131 @@
+{
+  "phase": 126,
+  "name": "Agent Evidence Lexical Comparison",
+  "status": "passed",
+  "timestamp": "2026-06-01T01:43:20Z",
+  "rankingChanged": false,
+  "releaseGateDecisionChanged": false,
+  "sourceTextLogged": false,
+  "privacyStatus": {
+    "localOnly": true,
+    "remoteEmbeddingsUsed": false,
+    "remoteRerankingUsed": false
+  },
+  "proofCommand": "cargo run -p ctxhelm -- eval proof --config .planning/e2e/2026-05-31-phase110-clean-cold-fixture-config.json --format json",
+  "releaseGateDecision": "promote",
+  "lexicalComparison": {
+    "corpusCount": 4,
+    "allFileBeatCount": 3,
+    "allFileMatchCount": 0,
+    "allFileTrailCount": 1,
+    "agentEvidenceBeatCount": 3,
+    "agentEvidenceMatchCount": 1,
+    "agentEvidenceTrailCount": 0,
+    "contextBeatCount": 3,
+    "contextMatchCount": 1,
+    "contextTrailCount": 0,
+    "averageFileRecallAt10": 0.41776595,
+    "averageLexicalFileRecallAt10": 0.45709258,
+    "averageFileDeltaAt10": -0.039326638,
+    "averageAgentEvidenceRecallAt10": 0.64502084,
+    "averageAgentEvidenceDeltaAt10": 0.18792826,
+    "averageContextRecallAt10": 0.64859205,
+    "averageLexicalContextRecallAt10": 0.41836542,
+    "averageContextDeltaAt10": 0.23022664,
+    "allFileClaim": "trails_any_corpus",
+    "agentEvidenceClaim": "mixed",
+    "contextClaim": "mixed"
+  },
+  "verdicts": [
+    {
+      "repository": "RefactoringMiner",
+      "fileRecallAt10": 0.6,
+      "lexicalBaselineRecallAt10": 1.0,
+      "lexicalDeltaAt10": -0.39999998,
+      "agentEvidenceRecallAt10": 1.0,
+      "agentEvidenceDeltaAt10": 0.0,
+      "contextRecallAt10": 1.0,
+      "contextDeltaAt10": 0.0,
+      "testRecallAt10": 1.0,
+      "effectiveValidationRecallAt10": 1.0
+    },
+    {
+      "repository": "ctxhelm",
+      "fileRecallAt10": 0.3968254,
+      "lexicalBaselineRecallAt10": 0.30634922,
+      "lexicalDeltaAt10": 0.090476185,
+      "agentEvidenceRecallAt10": 0.3968254,
+      "agentEvidenceDeltaAt10": 0.090476185,
+      "contextRecallAt10": 0.3888889,
+      "contextDeltaAt10": 0.08333334,
+      "testRecallAt10": 0.0,
+      "effectiveValidationRecallAt10": 0.0
+    },
+    {
+      "repository": "ReAgent",
+      "fileRecallAt10": 0.5,
+      "lexicalBaselineRecallAt10": 0.4,
+      "lexicalDeltaAt10": 0.099999994,
+      "agentEvidenceRecallAt10": 0.8,
+      "agentEvidenceDeltaAt10": 0.4,
+      "contextRecallAt10": 1.0,
+      "contextDeltaAt10": 0.71428573,
+      "testRecallAt10": 1.0,
+      "effectiveValidationRecallAt10": 1.0
+    },
+    {
+      "repository": "VeriSchema",
+      "fileRecallAt10": 0.17423832,
+      "lexicalBaselineRecallAt10": 0.122021124,
+      "lexicalDeltaAt10": 0.0522172,
+      "agentEvidenceRecallAt10": 0.38325793,
+      "agentEvidenceDeltaAt10": 0.2612368,
+      "contextRecallAt10": 0.20547946,
+      "contextDeltaAt10": 0.12328768,
+      "testRecallAt10": 0.71957666,
+      "effectiveValidationRecallAt10": 1.0
+    }
+  ],
+  "validation": [
+    {
+      "command": "cargo fmt --all -- --check",
+      "status": "passed"
+    },
+    {
+      "command": "bash scripts/check-release-docs.sh",
+      "status": "passed"
+    },
+    {
+      "command": "cargo test -p ctxhelm-compiler product_proof_release_gate_explains_validation_separated_all_file_divergence -- --nocapture",
+      "status": "passed"
+    },
+    {
+      "command": "cargo test -p ctxhelm --test cli_compat eval_proof_generates_source_free_product_report -- --nocapture",
+      "status": "passed"
+    },
+    {
+      "command": "cargo run -p ctxhelm -- eval proof --config .planning/e2e/2026-05-31-phase110-clean-cold-fixture-config.json --format json",
+      "status": "passed"
+    },
+    {
+      "command": "cargo clippy --workspace --all-targets -- -D warnings",
+      "status": "passed"
+    },
+    {
+      "command": "cargo test --workspace",
+      "status": "passed"
+    },
+    {
+      "command": "cargo run -p ctxhelm -- --help",
+      "status": "passed"
+    },
+    {
+      "command": "git diff --check",
+      "status": "passed"
+    },
+    {
+      "command": "jq empty .ctxhelm/e2e/phase126-agent-evidence-lexical-comparison.json",
+      "status": "passed"
+    }
+  ]
+}

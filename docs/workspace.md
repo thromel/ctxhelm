@@ -9,13 +9,13 @@ to likely repositories, and compiles repo-boundary-aware packs.
 Create a local manifest:
 
 ```bash
-ctxpack workspace init --repo /path/to/main-repo --member /path/to/related-repo
+ctxhelm workspace init --repo /path/to/main-repo --member /path/to/related-repo
 ```
 
 The manifest is written to:
 
 ```text
-.ctxpack/workspace.json
+.ctxhelm/workspace.json
 ```
 
 Shape:
@@ -36,7 +36,7 @@ Shape:
 ```
 
 Repository paths may be absolute or relative to the workspace root. Repository
-IDs are optional; when omitted, ctxpack derives the same stable local repo ID it
+IDs are optional; when omitted, ctxhelm derives the same stable local repo ID it
 uses for single-repo inventory and storage.
 
 ## Status
@@ -44,7 +44,7 @@ uses for single-repo inventory and storage.
 Inspect source-free workspace status:
 
 ```bash
-ctxpack workspace status --repo /path/to/main-repo --format json
+ctxhelm workspace status --repo /path/to/main-repo --format json
 ```
 
 The report includes:
@@ -65,7 +65,7 @@ transcripts, snippets, or secrets.
 Route a task across the local workspace:
 
 ```bash
-ctxpack workspace prepare-task "fix login redirect" \
+ctxhelm workspace prepare-task "fix login redirect" \
   --repo /path/to/main-repo \
   --mode bug-fix \
   --format json
@@ -73,7 +73,7 @@ ctxpack workspace prepare-task "fix login redirect" \
 
 The command:
 
-1. loads `.ctxpack/workspace.json`,
+1. loads `.ctxhelm/workspace.json`,
 2. plans inside each available member repository,
 3. ranks repositories by plan confidence and evidence volume,
 4. returns the top repo-boundary-aware plans.
@@ -92,7 +92,7 @@ The returned `WorkspaceContextPlan` preserves:
 Compile a repo-boundary-aware workspace pack:
 
 ```bash
-ctxpack workspace get-pack "fix login redirect" \
+ctxhelm workspace get-pack "fix login redirect" \
   --repo /path/to/main-repo \
   --mode bug-fix \
   --budget brief \
@@ -101,13 +101,13 @@ ctxpack workspace get-pack "fix login redirect" \
 
 The returned `WorkspaceContextPack` contains `repoPacks`. Each repo pack keeps
 the repository ID, label, path label, reason, confidence, and nested
-single-repo `ContextPack`. ctxpack does not flatten snippets from different
+single-repo `ContextPack`. ctxhelm does not flatten snippets from different
 repositories into one undifferentiated section.
 
 Anchors can be absolute, workspace-relative, repo-prefixed, or repo-relative:
 
 ```bash
-ctxpack workspace prepare-task "fix auth" \
+ctxhelm workspace prepare-task "fix auth" \
   --repo /path/to/main-repo \
   --path web/src/auth/session.ts \
   --path /absolute/path/to/api/src/auth/session.ts
@@ -128,9 +128,9 @@ Workspace teams can exchange source-free artifact manifests without exchanging
 source files:
 
 ```bash
-ctxpack workspace artifacts export --repo /path/to/main-repo --format json
-ctxpack workspace artifacts inspect .ctxpack/shared-artifacts.json --format json
-ctxpack workspace artifacts import shared-artifacts.json --repo /path/to/main-repo
+ctxhelm workspace artifacts export --repo /path/to/main-repo --format json
+ctxhelm workspace artifacts inspect .ctxhelm/shared-artifacts.json --format json
+ctxhelm workspace artifacts import shared-artifacts.json --repo /path/to/main-repo
 ```
 
 The manifest tracks context cards, benchmark reports, policy profiles, feedback
@@ -140,8 +140,8 @@ label, status, size, hash, diagnostics, and privacy metadata.
 Team privacy policy templates are also local and source-free:
 
 ```bash
-ctxpack workspace policy init --repo /path/to/main-repo --format json
-ctxpack workspace policy status --repo /path/to/main-repo --format json
+ctxhelm workspace policy init --repo /path/to/main-repo --format json
+ctxhelm workspace policy status --repo /path/to/main-repo --format json
 ```
 
 See [shared artifacts](shared-artifacts.md) for the manifest and policy
@@ -151,7 +151,7 @@ boundary.
 
 Workspace support currently has no new MCP workspace resources and does not
 sync shared artifacts through a remote service. Artifact import stores only the
-manifest at `.ctxpack/imported-shared-artifacts.json`; it does not hydrate
+manifest at `.ctxhelm/imported-shared-artifacts.json`; it does not hydrate
 source code or overwrite local generated cards.
 
 ## Smoke
@@ -165,4 +165,4 @@ scripts/smoke-shared-artifacts.sh
 
 The smoke creates two temporary git repositories, writes a source sentinel,
 initializes a workspace manifest, runs JSON status, and verifies the sentinel is
-absent from workspace output and local ctxpack state.
+absent from workspace output and local ctxhelm state.

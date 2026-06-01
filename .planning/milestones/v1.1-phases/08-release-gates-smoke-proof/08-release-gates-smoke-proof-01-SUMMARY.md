@@ -16,16 +16,16 @@ provides:
 affects: [release, smoke-proof, docs]
 tech-stack:
   added: []
-  patterns: [bash orchestrator over existing release smoke scripts, selected-binary proof via CTXPACK_BIN]
+  patterns: [bash orchestrator over existing release smoke scripts, selected-binary proof via CTXHELM_BIN]
 key-files:
   created: [scripts/release-gate.sh]
-  modified: [crates/ctxpack/tests/release_packaging.rs]
+  modified: [crates/ctxhelm/tests/release_packaging.rs]
 key-decisions:
-  - "Run optional real-client wrappers from the release gate, but skip real-client auth by default unless CTXPACK_REQUIRE_REAL_CLIENT=1."
-  - "Use scripts/release-package.sh as the single source for package/audit behavior, then prove either the selected CTXPACK_BIN or the extracted archive binary."
+  - "Run optional real-client wrappers from the release gate, but skip real-client auth by default unless CTXHELM_REQUIRE_REAL_CLIENT=1."
+  - "Use scripts/release-package.sh as the single source for package/audit behavior, then prove either the selected CTXHELM_BIN or the extracted archive binary."
 patterns-established:
   - "Release gate steps are named and fail fast."
-  - "Binary-facing smoke scripts receive the same canonical CTXPACK_BIN."
+  - "Binary-facing smoke scripts receive the same canonical CTXHELM_BIN."
 requirements-completed: [SMOKE-01, SMOKE-02, SMOKE-04]
 duration: 4min
 completed: 2026-05-13
@@ -47,7 +47,7 @@ completed: 2026-05-13
 
 - Added `scripts/release-gate.sh` as the maintainer-facing local release gate.
 - Added contract coverage proving required component scripts, selected-binary propagation, extracted-binary fallback, and no publish/tag/upload behavior.
-- Verified the gate with `CTXPACK_BIN="$(pwd)/target/debug/ctxpack"`; real-client wrappers were skipped by default after deterministic protocol proof.
+- Verified the gate with `CTXHELM_BIN="$(pwd)/target/debug/ctxhelm"`; real-client wrappers were skipped by default after deterministic protocol proof.
 
 ## Task Commits
 
@@ -57,12 +57,12 @@ completed: 2026-05-13
 ## Files Created/Modified
 
 - `scripts/release-gate.sh` - Orchestrates workspace tests, docs consistency, release packaging/audit, binary identity checks, first-pack smoke, MCP protocol smoke, and optional real-client wrappers.
-- `crates/ctxpack/tests/release_packaging.rs` - Adds deterministic release-gate script contract coverage.
+- `crates/ctxhelm/tests/release_packaging.rs` - Adds deterministic release-gate script contract coverage.
 
 ## Decisions Made
 
 - Optional real-client wrappers are part of the final gate path, but default to skipped unless explicitly required. This keeps local release readiness deterministic on unprovisioned machines.
-- The gate runs `scripts/release-package.sh` even when `CTXPACK_BIN` is supplied so artifact audit stays in the release path; selected binary proof still uses the provided executable for runtime smoke checks.
+- The gate runs `scripts/release-package.sh` even when `CTXHELM_BIN` is supplied so artifact audit stays in the release path; selected binary proof still uses the provided executable for runtime smoke checks.
 
 ## Deviations from Plan
 
@@ -71,17 +71,17 @@ completed: 2026-05-13
 **1. [Rule 2 - Missing Critical] Defaulted real-client gate hooks to skipped unless required**
 - **Found during:** Task 2
 - **Issue:** Invoking optional Codex/Claude wrappers by default could require local auth/client state, contrary to the user constraint that real-client checks remain opt-in.
-- **Fix:** `scripts/release-gate.sh` now passes `CTXPACK_SKIP_REAL_CLIENT=1` by default unless `CTXPACK_REQUIRE_REAL_CLIENT=1`.
+- **Fix:** `scripts/release-gate.sh` now passes `CTXHELM_SKIP_REAL_CLIENT=1` by default unless `CTXHELM_REQUIRE_REAL_CLIENT=1`.
 - **Files modified:** `scripts/release-gate.sh`
-- **Verification:** `CTXPACK_BIN="$(pwd)/target/debug/ctxpack" bash scripts/release-gate.sh`
+- **Verification:** `CTXHELM_BIN="$(pwd)/target/debug/ctxhelm" bash scripts/release-gate.sh`
 - **Committed in:** `dd29dda`
 
 **2. [Rule 1 - Bug] Removed premature Plan 03 docs-checker assertions from Plan 01**
 - **Found during:** Task 2 full gate verification
 - **Issue:** Workspace tests failed because Plan 01 added release-doc checker expectations before Plan 03 updates the checker and docs.
 - **Fix:** Kept Plan 01 tests scoped to release-gate behavior; moved docs-checker expansion to Plan 03.
-- **Files modified:** `crates/ctxpack/tests/release_packaging.rs`
-- **Verification:** `cargo test -p ctxpack --test release_packaging release_gate -- --nocapture`
+- **Files modified:** `crates/ctxhelm/tests/release_packaging.rs`
+- **Verification:** `cargo test -p ctxhelm --test release_packaging release_gate -- --nocapture`
 - **Committed in:** `dd29dda`
 
 **Total deviations:** 2 auto-fixed (Rule 1: 1, Rule 2: 1)
@@ -102,7 +102,7 @@ Plan 02 can harden the optional Codex/Claude wrappers that the release gate now 
 ## Self-Check: PASSED
 
 - Found `scripts/release-gate.sh`
-- Found `crates/ctxpack/tests/release_packaging.rs`
+- Found `crates/ctxhelm/tests/release_packaging.rs`
 - Found commits `f8e114e` and `dd29dda`
 
 ---

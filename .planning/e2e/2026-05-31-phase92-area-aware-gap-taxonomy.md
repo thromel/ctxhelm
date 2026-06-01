@@ -19,8 +19,8 @@ generation failure.
 - Historical git sampling reuses the inventory paths already loaded by eval
   instead of rebuilding inventory during sample collection.
 - Historical parent snapshots are cached under the source repo's local
-  `.ctxpack/eval-worktrees` cache.
-- Immutable historical eval snapshots with `.ctxpack/eval-history.json` now
+  `.ctxhelm/eval-worktrees` cache.
+- Immutable historical eval snapshots with `.ctxhelm/eval-history.json` now
   trust cached inventory instead of rechecking freshness on every planner
   sub-call.
 - Lexical search now has a source-free query cache keyed by inventory
@@ -33,7 +33,7 @@ generation failure.
 Command:
 
 ```bash
-cargo run -p ctxpack -- eval history \
+cargo run -p ctxhelm -- eval history \
   --repo /Users/romel/Documents/GitHub/VeriSchema \
   --base b5cfb2a551d026514f505c45863db31277bcd1ad^ \
   --head b5cfb2a551d026514f505c45863db31277bcd1ad \
@@ -71,7 +71,7 @@ The interactive RefactoringMiner checkout at
 tracked files, so a clean detached fixture worktree was created at:
 
 ```text
-/Users/romel/Documents/GitHub/RefactoringMiner-ctxpack-proof
+/Users/romel/Documents/GitHub/RefactoringMiner-ctxhelm-proof
 ```
 
 Phase 92 proof configs point only RefactoringMiner at that clean fixture. The
@@ -88,7 +88,7 @@ Force-refresh config:
 Force-refresh proof artifact:
 
 ```text
-.ctxpack/e2e/phase92-area-aware-gap-taxonomy-clean-force-proof.json
+.ctxhelm/e2e/phase92-area-aware-gap-taxonomy-clean-force-proof.json
 ```
 
 The force-refresh proof preserves quality but still blocks on the hard cold
@@ -97,7 +97,7 @@ runtime ceiling for clean RefactoringMiner:
 | Corpus | Status | File Recall@10 | Context Recall@10 | Test Recall@10 | Effective Validation Recall@10 | Runtime |
 | --- | --- | ---: | ---: | ---: | ---: | ---: |
 | RefactoringMiner | match | `0.6` | `1.0` | `1.0` | `1.0` | `14265ms` |
-| ctxpack | beat | `0.44603175` | `0.44444445` | `0.0` | `0.0` | `8197ms` |
+| ctxhelm | beat | `0.44603175` | `0.44444445` | `0.0` | `0.0` | `8197ms` |
 | ReAgent | beat | `0.5` | `1.0` | `1.0` | `1.0` | `4774ms` |
 | VeriSchema | beat | `0.18449473` | `0.23287672` | `0.7089947` | `1.0` | `6088ms` |
 
@@ -115,7 +115,7 @@ Warm-cache config:
 Warm-cache proof artifact:
 
 ```text
-.ctxpack/e2e/phase92-area-aware-gap-taxonomy-warm-proof.json
+.ctxhelm/e2e/phase92-area-aware-gap-taxonomy-warm-proof.json
 ```
 
 Warm-cache result:
@@ -123,7 +123,7 @@ Warm-cache result:
 | Corpus | Status | File Recall@10 | Context Recall@10 | Test Recall@10 | Effective Validation Recall@10 | Runtime |
 | --- | --- | ---: | ---: | ---: | ---: | ---: |
 | RefactoringMiner | match | `0.6` | `1.0` | `1.0` | `1.0` | `1ms` |
-| ctxpack | beat | `0.44603175` | `0.44444445` | `0.0` | `0.0` | `0ms` |
+| ctxhelm | beat | `0.44603175` | `0.44444445` | `0.0` | `0.0` | `0ms` |
 | ReAgent | beat | `0.5` | `1.0` | `1.0` | `1.0` | `0ms` |
 | VeriSchema | beat | `0.18449473` | `0.23287672` | `0.7089947` | `1.0` | `0ms` |
 
@@ -133,7 +133,7 @@ The cached proof also preserves Phase 91/92 diagnostics:
 
 - VeriSchema `broadContextAreaRecall = 0.64708996`.
 - VeriSchema unresolved gaps include `area_context_only = 20`.
-- ctxpack unresolved gaps include `area_context_only = 2`.
+- ctxhelm unresolved gaps include `area_context_only = 2`.
 
 ## Result
 

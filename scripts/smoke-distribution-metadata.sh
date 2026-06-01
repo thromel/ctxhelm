@@ -5,7 +5,7 @@ script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 repo_root="$(cd "$script_dir/.." && pwd -P)"
 
 required_files=(
-  "$repo_root/packaging/homebrew/ctxpack.rb.template"
+  "$repo_root/packaging/homebrew/ctxhelm.rb.template"
   "$repo_root/packaging/crates/README.md"
   "$repo_root/packaging/release/update-metadata.schema.json"
   "$repo_root/packaging/release/update-metadata.example.json"
@@ -24,8 +24,8 @@ done
 bash -n "$repo_root/scripts/render-homebrew-formula.sh"
 bash -n "$repo_root/scripts/verify-release-archive.sh"
 
-metadata_path="$repo_root/.ctxpack/distribution-metadata-smoke.json"
-dist_dir="${CTXPACK_DIST_DIR:-"$repo_root/dist"}"
+metadata_path="$repo_root/.ctxhelm/distribution-metadata-smoke.json"
+dist_dir="${CTXHELM_DIST_DIR:-"$repo_root/dist"}"
 work_dir="$(mktemp -d)"
 cleanup() {
   rm -rf "$work_dir"
@@ -40,13 +40,13 @@ import pathlib
 import sys
 
 payload = json.loads(pathlib.Path(sys.argv[1]).read_text())
-print(next(package["version"] for package in payload["packages"] if package["name"] == "ctxpack"))
+print(next(package["version"] for package in payload["packages"] if package["name"] == "ctxhelm"))
 PY
 )"
 target_label="$(rustc -vV | awk '/^host:/ { print $2 }')"
-archive_name="ctxpack-v${version}-${target_label}.tar.gz"
+archive_name="ctxhelm-v${version}-${target_label}.tar.gz"
 archive_path="$dist_dir/$archive_name"
-rendered_formula="$work_dir/ctxpack.rb"
+rendered_formula="$work_dir/ctxhelm.rb"
 
 sha256_file() {
   if command -v shasum >/dev/null 2>&1; then
@@ -85,7 +85,7 @@ for file in "${required_files[@]}"; do
       continue
       ;;
   esac
-  for forbidden in "/Users/" "BEGIN PRIVATE KEY" "GITHUB_TOKEN" "API_KEY=" "cargo install ctxpack" "self-update is implemented" "signed installer is ready"; do
+  for forbidden in "/Users/" "BEGIN PRIVATE KEY" "GITHUB_TOKEN" "API_KEY=" "cargo install ctxhelm" "self-update is implemented" "signed installer is ready"; do
     if grep -F -- "$forbidden" "$file" >/dev/null; then
       echo "distribution metadata smoke failed: forbidden token '$forbidden' in ${file#"$repo_root"/}" >&2
       exit 1
@@ -93,8 +93,8 @@ for file in "${required_files[@]}"; do
   done
 done
 
-grep -F -- "class Ctxpack < Formula" "$repo_root/packaging/homebrew/ctxpack.rb.template" >/dev/null
-grep -F -- "depends_on arch: :arm64" "$repo_root/packaging/homebrew/ctxpack.rb.template" >/dev/null
+grep -F -- "class Ctxhelm < Formula" "$repo_root/packaging/homebrew/ctxhelm.rb.template" >/dev/null
+grep -F -- "depends_on arch: :arm64" "$repo_root/packaging/homebrew/ctxhelm.rb.template" >/dev/null
 grep -F -- "crates.io preparation" "$repo_root/packaging/crates/README.md" >/dev/null
 grep -F -- "render-homebrew-formula.sh" "$repo_root/docs/distribution.md" >/dev/null
 grep -F -- "scripts/verify-release-archive.sh" "$repo_root/docs/distribution.md" >/dev/null
@@ -103,7 +103,7 @@ grep -F -- "signing and notarization gaps" "$repo_root/docs/distribution.md" >/d
 
 if [[ -f "$archive_path" ]]; then
   archive_sha256="$(sha256_file "$archive_path")"
-  archive_url="https://github.com/thromel/ctxpack/releases/download/v${version}/${archive_name}"
+  archive_url="https://github.com/thromel/ctxhelm/releases/download/v${version}/${archive_name}"
   bash "$repo_root/scripts/render-homebrew-formula.sh" \
     --version "$version" \
     --url "$archive_url" \
@@ -119,11 +119,11 @@ else
 fi
 
 package_list="$work_dir/cargo-package-list.txt"
-cargo package --manifest-path "$repo_root/crates/ctxpack/Cargo.toml" --locked --allow-dirty --list >"$package_list"
+cargo package --manifest-path "$repo_root/crates/ctxhelm/Cargo.toml" --locked --allow-dirty --list >"$package_list"
 for required in Cargo.toml README.md src/main.rs tests/cli_compat.rs tests/release_packaging.rs; do
   grep -Fx -- "$required" "$package_list" >/dev/null
 done
-for forbidden in '.ctxpack/' '.planning/' 'target/' 'dist/' '.env' 'request-summary' 'traces.jsonl' '/Users/'; do
+for forbidden in '.ctxhelm/' '.planning/' 'target/' 'dist/' '.env' 'request-summary' 'traces.jsonl' '/Users/'; do
   if grep -F -- "$forbidden" "$package_list" >/dev/null; then
     echo "distribution metadata smoke failed: cargo package includes forbidden entry '$forbidden'" >&2
     exit 1
@@ -138,7 +138,7 @@ import sys
 
 metadata_path, version, target_label, formula_status, archive_name, archive_sha256 = sys.argv[1:]
 payload = {
-    "schemaVersion": "ctxpack-distribution-readiness-v1",
+    "schemaVersion": "ctxhelm-distribution-readiness-v1",
     "version": version,
     "targetLabel": target_label,
     "homebrewFormulaRender": {

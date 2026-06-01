@@ -6,7 +6,7 @@
 <domain>
 ## Phase Boundary
 
-This phase turns ctxpack retrieval from useful heuristics into a measured, attributed ranking system. It should rank typed evidence from graph, test, history, symbol, current-diff, docs, config, and lexical signals before projecting to the existing `ContextPlan`, then prove whether that ranking improves over lexical retrieval at fixed budgets.
+This phase turns ctxhelm retrieval from useful heuristics into a measured, attributed ranking system. It should rank typed evidence from graph, test, history, symbol, current-diff, docs, config, and lexical signals before projecting to the existing `ContextPlan`, then prove whether that ranking improves over lexical retrieval at fixed budgets.
 
 The phase must also make historical evals more decision-grade: frozen ranges, reproducible refs, role-aware labels, rename/delete handling, ranking metrics, signal ablations, source-free gap summaries, and large-repo smoke coverage such as RefactoringMiner when practical.
 
@@ -43,12 +43,12 @@ This phase does not own real client durability, MCP pack persistence, or cloud/v
 ## Existing Code Insights
 
 ### Reusable Assets
-- `crates/ctxpack-core/src/contracts.rs` already owns public contracts for context plans, packs, diagnostics, provenance, privacy status, eval traces, and related command output.
-- `crates/ctxpack-index/src/lib.rs` is the stable index facade. Phase 2 added freshness reports, source-read policy, diagnostic-aware search/symbol/test/dependency/git/current-diff paths, and safe source reads.
-- `crates/ctxpack-compiler/src/planning.rs` currently fuses search, symbols, related tests, co-change hints, dependencies, current diff, and diagnostics into `ContextPlan`.
-- `crates/ctxpack-compiler/src/eval.rs` owns historical retrieval eval behavior and lexical baseline comparison.
-- `crates/ctxpack/src/main.rs` renders CLI outputs and eval/checklist reports.
-- `crates/ctxpack-mcp/src/` exposes the small MCP tool/resource/prompt surface and should consume additive plan/pack fields without widening the tool list.
+- `crates/ctxhelm-core/src/contracts.rs` already owns public contracts for context plans, packs, diagnostics, provenance, privacy status, eval traces, and related command output.
+- `crates/ctxhelm-index/src/lib.rs` is the stable index facade. Phase 2 added freshness reports, source-read policy, diagnostic-aware search/symbol/test/dependency/git/current-diff paths, and safe source reads.
+- `crates/ctxhelm-compiler/src/planning.rs` currently fuses search, symbols, related tests, co-change hints, dependencies, current diff, and diagnostics into `ContextPlan`.
+- `crates/ctxhelm-compiler/src/eval.rs` owns historical retrieval eval behavior and lexical baseline comparison.
+- `crates/ctxhelm/src/main.rs` renders CLI outputs and eval/checklist reports.
+- `crates/ctxhelm-mcp/src/` exposes the small MCP tool/resource/prompt surface and should consume additive plan/pack fields without widening the tool list.
 
 ### Established Patterns
 - Add focused failing tests before behavior changes, especially when touching public JSON shape, privacy, diagnostics, retrieval ranking, and eval output.
@@ -59,7 +59,7 @@ This phase does not own real client durability, MCP pack persistence, or cloud/v
 
 ### Integration Points
 - Context planning output must still feed CLI `prepare-task`, MCP `prepare_task`, pack compilation, context cards, and eval traces.
-- Eval changes should work with existing `ctxpack eval history --repo . --limit <n> --mode <mode>` workflows.
+- Eval changes should work with existing `ctxhelm eval history --repo . --limit <n> --mode <mode>` workflows.
 - RefactoringMiner remains the preferred large-history smoke when practical, but deterministic local fixtures should catch core regressions.
 
 </code_context>

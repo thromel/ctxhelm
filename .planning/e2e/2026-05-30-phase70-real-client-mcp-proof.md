@@ -15,25 +15,25 @@ repo handling; it does not claim Cursor or OpenCode real-client tool-call proof.
 ## Environment
 
 - Repository: `/Users/romel/Documents/GitHub/Agent Memory`
-- ctxpack: `ctxpack 1.1.0`
+- ctxhelm: `ctxhelm 1.1.0`
 - Codex CLI: `codex-cli 0.130.0`
 - Claude Code: `2.1.158 (Claude Code)`
-- Evidence directory: `/tmp/ctxpack-real-client-evidence`
+- Evidence directory: `/tmp/ctxhelm-real-client-evidence`
 
 ## Commands
 
 ```bash
-rm -rf /tmp/ctxpack-real-client-evidence
-mkdir -p /tmp/ctxpack-real-client-evidence
+rm -rf /tmp/ctxhelm-real-client-evidence
+mkdir -p /tmp/ctxhelm-real-client-evidence
 
-CTXPACK_RUN_REAL_CLIENT=1 \
-CTXPACK_REAL_CLIENT_EVIDENCE_DIR=/tmp/ctxpack-real-client-evidence \
-CTXPACK_SMOKE_REPO="/Users/romel/Documents/GitHub/Agent Memory" \
+CTXHELM_RUN_REAL_CLIENT=1 \
+CTXHELM_REAL_CLIENT_EVIDENCE_DIR=/tmp/ctxhelm-real-client-evidence \
+CTXHELM_SMOKE_REPO="/Users/romel/Documents/GitHub/Agent Memory" \
 bash scripts/smoke-codex-mcp.sh
 
-CTXPACK_RUN_REAL_CLIENT=1 \
-CTXPACK_REAL_CLIENT_EVIDENCE_DIR=/tmp/ctxpack-real-client-evidence \
-CTXPACK_SMOKE_REPO="/Users/romel/Documents/GitHub/Agent Memory" \
+CTXHELM_RUN_REAL_CLIENT=1 \
+CTXHELM_REAL_CLIENT_EVIDENCE_DIR=/tmp/ctxhelm-real-client-evidence \
+CTXHELM_SMOKE_REPO="/Users/romel/Documents/GitHub/Agent Memory" \
 bash scripts/smoke-claude-mcp.sh
 ```
 
@@ -42,22 +42,22 @@ bash scripts/smoke-claude-mcp.sh
 Codex CLI:
 
 ```text
-ctxpack MCP protocol smoke ok: repo=/Users/romel/Documents/GitHub/Agent Memory anchor=crates/ctxpack-mcp/src/lib.rs
-ctxpack Codex MCP smoke passed: server-side instrumentation recorded prepare_task and get_pack with repo=/Users/romel/Documents/GitHub/Agent Memory
+ctxhelm MCP protocol smoke ok: repo=/Users/romel/Documents/GitHub/Agent Memory anchor=crates/ctxhelm-mcp/src/lib.rs
+ctxhelm Codex MCP smoke passed: server-side instrumentation recorded prepare_task and get_pack with repo=/Users/romel/Documents/GitHub/Agent Memory
 ```
 
 Claude Code:
 
 ```text
-ctxpack MCP protocol smoke ok: repo=/Users/romel/Documents/GitHub/Agent Memory anchor=crates/ctxpack-mcp/src/lib.rs
-ctxpack Claude MCP smoke passed: server-side instrumentation recorded prepare_task and get_pack with repo=/Users/romel/Documents/GitHub/Agent Memory
+ctxhelm MCP protocol smoke ok: repo=/Users/romel/Documents/GitHub/Agent Memory anchor=crates/ctxhelm-mcp/src/lib.rs
+ctxhelm Claude MCP smoke passed: server-side instrumentation recorded prepare_task and get_pack with repo=/Users/romel/Documents/GitHub/Agent Memory
 ```
 
 Machine-readable evidence:
 
 ```json
-{"client": "codex", "clientVersion": "codex-cli 0.130.0", "ctxpackVersion": "ctxpack 1.1.0", "getPack": true, "prepareTask": true, "repo": "/Users/romel/Documents/GitHub/Agent Memory", "required": false}
-{"client": "claude", "clientVersion": "2.1.158 (Claude Code)", "ctxpackVersion": "ctxpack 1.1.0", "getPack": true, "prepareTask": true, "repo": "/Users/romel/Documents/GitHub/Agent Memory", "required": false}
+{"client": "codex", "clientVersion": "codex-cli 0.130.0", "ctxhelmVersion": "ctxhelm 1.1.0", "getPack": true, "prepareTask": true, "repo": "/Users/romel/Documents/GitHub/Agent Memory", "required": false}
+{"client": "claude", "clientVersion": "2.1.158 (Claude Code)", "ctxhelmVersion": "ctxhelm 1.1.0", "getPack": true, "prepareTask": true, "repo": "/Users/romel/Documents/GitHub/Agent Memory", "required": false}
 ```
 
 ## Interpretation

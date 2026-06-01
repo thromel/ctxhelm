@@ -1,15 +1,15 @@
 # Repo Memory
 
-ctxpack memory is a local, source-free layer for durable repo lessons. It is
+ctxhelm memory is a local, source-free layer for durable repo lessons. It is
 selected per task and budget; it is not injected into every prompt.
 
 ## Generate Domain Memory
 
 ```bash
-ctxpack cards generate --repo "$REPO"
+ctxhelm cards generate --repo "$REPO"
 ```
 
-This writes `.ctxpack/cards/*.md` and stores matching source-free memory-card
+This writes `.ctxhelm/cards/*.md` and stores matching source-free memory-card
 metadata in local SQLite. Domain cards include IDs, titles, summaries, source
 links, input hashes, freshness, review status, confidence, and privacy status.
 They summarize safe inventory, tests, dependency edges, and path domains. They
@@ -18,11 +18,11 @@ do not store raw file contents, source snippets, secrets, or raw prompts.
 ## Generate Disconnected Fallback Cards
 
 ```bash
-ctxpack cards fallback --repo "$REPO" --target-agent codex
+ctxhelm cards fallback --repo "$REPO" --target-agent codex
 ```
 
 This regenerates source-free context cards and writes a guide under
-`.ctxpack/fallback/<agent>-context.md`. Use it for cloud, copied, or
+`.ctxhelm/fallback/<agent>-context.md`. Use it for cloud, copied, or
 disconnected agent contexts where local MCP is unavailable. The guide points
 agents to `AGENTS.md` and the source-free cards, but it still tells them to
 inspect current files with native tools before editing.
@@ -30,10 +30,10 @@ inspect current files with native tools before editing.
 ## Generate Experience Memory
 
 ```bash
-ctxpack memory generate-experience --repo "$REPO" --limit 20
-ctxpack memory list --repo "$REPO"
-ctxpack memory show experience:<task-hash> --repo "$REPO"
-ctxpack memory regenerate --repo "$REPO"
+ctxhelm memory generate-experience --repo "$REPO" --limit 20
+ctxhelm memory list --repo "$REPO"
+ctxhelm memory show experience:<task-hash> --repo "$REPO"
+ctxhelm memory regenerate --repo "$REPO"
 ```
 
 Experience cards are derived from local eval trace metadata only: task hashes,
@@ -47,9 +47,9 @@ stale, or degraded cards are blocked from pack inclusion by default.
 ## Review Controls
 
 ```bash
-ctxpack memory approve experience:<task-hash> --repo "$REPO"
-ctxpack memory reject experience:<task-hash> --repo "$REPO"
-ctxpack memory disable experience:<task-hash> --repo "$REPO"
+ctxhelm memory approve experience:<task-hash> --repo "$REPO"
+ctxhelm memory reject experience:<task-hash> --repo "$REPO"
+ctxhelm memory disable experience:<task-hash> --repo "$REPO"
 ```
 
 `approve` makes a fresh card eligible for task-conditioned selection. `reject`
@@ -66,7 +66,7 @@ MCP exposes the same data additively through existing plan/pack flows and the
 resource URI:
 
 ```text
-ctxpack://repo/memory
+ctxhelm://repo/memory
 ```
 
 ## Release Coverage

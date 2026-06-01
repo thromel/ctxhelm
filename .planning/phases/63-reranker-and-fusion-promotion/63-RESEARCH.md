@@ -14,7 +14,7 @@ requirements:
 
 ## Objective
 
-Make reranker and fusion variants measurable, source-safe, and promotion-gated so ctxpack can improve retrieval quality without weakening explicit evidence protections.
+Make reranker and fusion variants measurable, source-safe, and promotion-gated so ctxhelm can improve retrieval quality without weakening explicit evidence protections.
 
 ## Current State
 
@@ -23,7 +23,7 @@ v2.4 added provider and reranker policy gates. Phase 61 established a two-repo r
 Current measured state:
 
 - RefactoringMiner default Recall@10 is near lexical parity.
-- ctxpack default still trails lexical on its own repo.
+- ctxhelm default still trails lexical on its own repo.
 - `local_hash` is deterministic scaffold behavior.
 - `local_fastembed` is a real local provider, but remains opt-in because runtime increased without recall lift.
 
@@ -38,7 +38,7 @@ The product needs quality lift, not more retrieval surface area. Reranker and fu
 
 ## Design Direction
 
-Use the existing `ctxpack eval benchmark` surface and add promotion-grade comparison rather than a second evaluator.
+Use the existing `ctxhelm eval benchmark` surface and add promotion-grade comparison rather than a second evaluator.
 
 Track every variant with source-free metadata:
 

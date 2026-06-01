@@ -1,21 +1,21 @@
 # Storage
 
-ctxpack uses local SQLite storage for durable, source-free repository intelligence.
+ctxhelm uses local SQLite storage for durable, source-free repository intelligence.
 The store is an implementation cache for agent-native workflows; it is not a
-cloud sync layer and it does not make ctxpack an editing agent.
+cloud sync layer and it does not make ctxhelm an editing agent.
 
 ## Location
 
 By default, storage lives under:
 
 ```bash
-$CTXPACK_HOME/repos/<repo-id>/ctxpack.sqlite3
+$CTXHELM_HOME/repos/<repo-id>/ctxhelm.sqlite3
 ```
 
-If `CTXPACK_HOME` is unset, ctxpack uses:
+If `CTXHELM_HOME` is unset, ctxhelm uses:
 
 ```bash
-~/.ctxpack/repos/<repo-id>/ctxpack.sqlite3
+~/.ctxhelm/repos/<repo-id>/ctxhelm.sqlite3
 ```
 
 Some commands also accept an explicit storage path.
@@ -23,18 +23,18 @@ Some commands also accept an explicit storage path.
 ## Initialize And Inspect
 
 ```bash
-ctxpack storage init --repo "$REPO"
-ctxpack storage status --repo "$REPO"
+ctxhelm storage init --repo "$REPO"
+ctxhelm storage status --repo "$REPO"
 ```
 
-`storage init` creates the schema and records schema, ranking, compiler, ctxpack,
+`storage init` creates the schema and records schema, ranking, compiler, ctxhelm,
 and privacy metadata. `storage status` reports compatibility and source-free
 record counts.
 
 ## Incremental Index Sync
 
 ```bash
-ctxpack index --repo "$REPO" --store
+ctxhelm index --repo "$REPO" --store
 ```
 
 The first run creates file metadata records. Later runs compare safe path,
@@ -45,7 +45,7 @@ updated, deleted, skipped, generated, and sensitive paths.
 ## Semantic Vector Metadata
 
 ```bash
-ctxpack index --repo "$REPO" --semantic
+ctxhelm index --repo "$REPO" --semantic
 ```
 
 Semantic indexing is explicit and local-only. It stores provider name, model,
@@ -58,10 +58,10 @@ payloads.
 ## Pack And Eval Metadata
 
 ```bash
-ctxpack get-pack "fix auth redirect" --repo "$REPO" --store
-ctxpack eval history --repo "$REPO" --limit 10 --store
-ctxpack eval benchmark --config suite.json --store
-ctxpack eval proof --config suite.json --store
+ctxhelm get-pack "fix auth redirect" --repo "$REPO" --store
+ctxhelm eval history --repo "$REPO" --limit 10 --store
+ctxhelm eval benchmark --config suite.json --store
+ctxhelm eval proof --config suite.json --store
 ```
 
 These commands persist only source-free metadata: task hashes, pack IDs, budgets,
@@ -71,9 +71,9 @@ privacy status. They do not persist prompt text or source snippets by default.
 ## Memory Card Metadata
 
 ```bash
-ctxpack cards generate --repo "$REPO"
-ctxpack memory generate-experience --repo "$REPO"
-ctxpack memory list --repo "$REPO"
+ctxhelm cards generate --repo "$REPO"
+ctxhelm memory generate-experience --repo "$REPO"
+ctxhelm memory list --repo "$REPO"
 ```
 
 Repo memory records store card IDs, kinds, titles, summaries, source-link paths,
@@ -84,10 +84,10 @@ raw prompts, terminal logs, or model transcripts are persisted.
 ## Repair, Cleanup, And Reset
 
 ```bash
-ctxpack storage repair --repo "$REPO"
-ctxpack storage vacuum --repo "$REPO"
-ctxpack storage reset --repo "$REPO"
-ctxpack storage reset --repo "$REPO" --yes
+ctxhelm storage repair --repo "$REPO"
+ctxhelm storage vacuum --repo "$REPO"
+ctxhelm storage reset --repo "$REPO"
+ctxhelm storage reset --repo "$REPO" --yes
 ```
 
 `repair` is non-destructive and reinitializes missing schema metadata or tables
@@ -96,11 +96,11 @@ where possible. `vacuum` compacts the SQLite database. `reset` is a dry run unle
 
 ## Privacy Boundary
 
-The storage schema stores hashes, paths that passed ctxpack policy, roles,
+The storage schema stores hashes, paths that passed ctxhelm policy, roles,
 counts, metrics, IDs, and JSON metadata. It does not store raw file contents,
 source snippets, prompt text, secrets, or cloud embedding data by default.
 
 The release gate runs `scripts/smoke-storage.sh`, `scripts/smoke-memory.sh`, and
 `scripts/smoke-semantic.sh`, which check repeated indexing, source-free memory
 and vector metadata, and that source or secret sentinels are not persisted into
-`CTXPACK_HOME`.
+`CTXHELM_HOME`.

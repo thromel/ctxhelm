@@ -31,8 +31,8 @@
     }
   ],
   "v23EvalSummary": {
-    "manifestVersion": "ctxpack-benchmark-corpus-v2.3",
-    "fixedCorpusId": "ctxpack-v2.3-refactoringminer-20-commit-clean-e2e",
+    "manifestVersion": "ctxhelm-benchmark-corpus-v2.3",
+    "fixedCorpusId": "ctxhelm-v2.3-refactoringminer-20-commit-clean-e2e",
     "privacyLabel": "source_free_local",
     "pairedBaselineVerdicts": [
       {
@@ -56,7 +56,7 @@
       "defaultRequiresThresholds": true,
       "silentDefaultAllowed": false
     },
-    "proofBoundary": "ctxpack may be useful at lexical parity, but world-class claims require repeated lift on fixed corpora plus process-level context metrics."
+    "proofBoundary": "ctxhelm may be useful at lexical parity, but world-class claims require repeated lift on fixed corpora plus process-level context metrics."
   },
   "limitations": [
     "Historical commit subjects are only proxies for real developer prompts.",
@@ -80,10 +80,10 @@
     "v2.5: expand machine-checkable real-client agent outcome proof."
   ],
   "benchmarkReport": {
-    "manifestVersion": "ctxpack-benchmark-corpus-v2.3",
+    "manifestVersion": "ctxhelm-benchmark-corpus-v2.3",
     "suiteName": "v2.3-refactoringminer-regression-clean-e2e",
     "suiteId": "023f272bcbe0abfab7ad1cd08229517c9bd9f2ee225c0a910b01462c9e0d41c4",
-    "corpusId": "ctxpack-v2.3-refactoringminer-20-commit-clean-e2e",
+    "corpusId": "ctxhelm-v2.3-refactoringminer-20-commit-clean-e2e",
     "privacyLabel": "source_free_local",
     "description": "Clean worktree RefactoringMiner regression check for v2.3 E2E.",
     "generatedAtUnixSeconds": 1779172181,
@@ -684,8 +684,8 @@
           "fileRecallAt10": 0.518631,
           "lexicalBaselineRecallAt5": 0.45315474,
           "lexicalBaselineRecallAt10": 0.5007738,
-          "ctxpackLiftAt5": 0.0,
-          "ctxpackLiftAt10": 0.017857194,
+          "ctxhelmLiftAt5": 0.0,
+          "ctxhelmLiftAt10": 0.017857194,
           "sourceRecallAt5": 0.38888887,
           "sourceRecallAt10": 0.4611111,
           "testRecallAt5": 0.0,

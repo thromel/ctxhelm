@@ -27,23 +27,23 @@ with their native read tools.
 Focused test:
 
 ```bash
-cargo test -p ctxpack-compiler compile_context_pack_renders_context_areas -- --nocapture
+cargo test -p ctxhelm-compiler compile_context_pack_renders_context_areas -- --nocapture
 ```
 
 Broad proof:
 
 ```bash
-cargo run --release -p ctxpack -- eval proof \
+cargo run --release -p ctxhelm -- eval proof \
   --config .planning/e2e/2026-05-31-phase92-area-aware-gap-proof-config.json \
-  --format json > /tmp/ctxpack-phase95-progressive-area-pack-proof.json
+  --format json > /tmp/ctxhelm-phase95-progressive-area-pack-proof.json
 
 python3 scripts/check-product-proof.py \
-  .ctxpack/e2e/phase95-progressive-area-pack-proof.json
+  .ctxhelm/e2e/phase95-progressive-area-pack-proof.json
 ```
 
 Committed proof:
 
-- `.ctxpack/e2e/phase95-progressive-area-pack-proof.json`
+- `.ctxhelm/e2e/phase95-progressive-area-pack-proof.json`
 
 Result:
 

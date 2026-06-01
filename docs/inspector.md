@@ -3,7 +3,7 @@
 The pack inspector is a source-free diagnostic view of a generated context pack.
 It is for maintainers and product evaluation, not a separate daily coding UI.
 
-Use it when you need to see why ctxpack selected files, tests, commands,
+Use it when you need to see why ctxhelm selected files, tests, commands,
 warnings, memory cards, candidates, and pack sections without copying raw source
 snippets into a report artifact.
 
@@ -13,7 +13,7 @@ Generate an inspector artifact from the same planner/compiler path used by
 `get-pack`:
 
 ```bash
-ctxpack inspector export "fix requireSession bug" \
+ctxhelm inspector export "fix requireSession bug" \
   --repo /path/to/repo \
   --mode bug-fix \
   --budget brief \
@@ -24,9 +24,9 @@ ctxpack inspector export "fix requireSession bug" \
 Supported formats:
 
 ```bash
-ctxpack inspector export "fix requireSession bug" --repo /path/to/repo --format json
-ctxpack inspector export "fix requireSession bug" --repo /path/to/repo --format markdown
-ctxpack inspector export "fix requireSession bug" --repo /path/to/repo --format html --output pack.html
+ctxhelm inspector export "fix requireSession bug" --repo /path/to/repo --format json
+ctxhelm inspector export "fix requireSession bug" --repo /path/to/repo --format markdown
+ctxhelm inspector export "fix requireSession bug" --repo /path/to/repo --format html --output pack.html
 ```
 
 The command does not start a persistent server and does not require the local
@@ -39,8 +39,8 @@ candidates, selected memory, and section token estimates.
 
 ## Source Boundary
 
-`ctxpack get-pack` may include source-bearing sections such as target snippets
-and test snippets. `ctxpack inspector export` does not copy those section
+`ctxhelm get-pack` may include source-bearing sections such as target snippets
+and test snippets. `ctxhelm inspector export` does not copy those section
 contents.
 
 Instead, `PackInspectorView` records:
@@ -61,7 +61,7 @@ and future UI rendering without creating another source cache.
 ## Contract
 
 The public contract is `PackInspectorView` in
-`crates/ctxpack-core/src/contracts.rs`. It links back to:
+`crates/ctxhelm-core/src/contracts.rs`. It links back to:
 
 - `packId`
 - `taskId`

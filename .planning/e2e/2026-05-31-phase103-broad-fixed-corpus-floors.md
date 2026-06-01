@@ -26,7 +26,7 @@ weak as regression guards for selection and budget pressure.
 - Added pinned broad fixed-corpus floors to `scripts/check-product-proof.py`
   for corpus ID `phase92-area-aware-gap-taxonomy-2026-05-31`.
 - The checker now validates per-repository floors for the currently proven
-  RefactoringMiner, ctxpack, ReAgent, and VeriSchema file/source/test,
+  RefactoringMiner, ctxhelm, ReAgent, and VeriSchema file/source/test,
   effective-validation, and broad-context-area metrics.
 - Added release-packaging tests proving an at-floor proof passes and a
   VeriSchema `fileRecallAt10 = 0.17936651` regression fails with a broad
@@ -35,9 +35,9 @@ weak as regression guards for selection and budget pressure.
 ## Validation
 
 ```bash
-cargo test -p ctxpack --test release_packaging product_proof_checker_accepts_promote_and_rejects_block -- --nocapture
-python3 scripts/check-product-proof.py .ctxpack/e2e/phase100-resource-backed-gap-summaries-proof.json
-python3 scripts/check-product-proof.py .ctxpack/e2e/phase103-broad-dependency-priority-proof.json
+cargo test -p ctxhelm --test release_packaging product_proof_checker_accepts_promote_and_rejects_block -- --nocapture
+python3 scripts/check-product-proof.py .ctxhelm/e2e/phase100-resource-backed-gap-summaries-proof.json
+python3 scripts/check-product-proof.py .ctxhelm/e2e/phase103-broad-dependency-priority-proof.json
 ```
 
 The Phase 100 proof passes. The rejected Phase 103 ranking proof fails as

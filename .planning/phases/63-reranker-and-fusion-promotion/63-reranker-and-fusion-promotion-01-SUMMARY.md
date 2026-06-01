@@ -14,7 +14,7 @@ requirements_addressed:
 
 ## Outcome
 
-Phase 63 is complete. ctxpack can now evaluate an explicit local metadata
+Phase 63 is complete. ctxhelm can now evaluate an explicit local metadata
 reranker variant through existing eval/benchmark surfaces without adding MCP
 tools or exposing source text in reports.
 
@@ -37,7 +37,7 @@ See `.planning/e2e/2026-05-30-phase63-reranker-fusion-promotion.md`.
 The local metadata reranker:
 
 - improved RefactoringMiner Recall@10 from `0.1375` to `0.6642`;
-- regressed ctxpack Recall@10 from `0.2049` to `0.1927`;
+- regressed ctxhelm Recall@10 from `0.2049` to `0.1927`;
 - improved test recall on both repos;
 - introduced protected-evidence miss-rate lift on RefactoringMiner;
 - triggered `block` in the local gate because named regressions were detected.
@@ -50,8 +50,8 @@ move to Phase 64 gap-family retrieval fixes before attempting default promotion.
 ## Validation
 
 ```bash
-cargo test -p ctxpack-compiler gate_decision -- --nocapture
-cargo test -p ctxpack-compiler protected_evidence -- --nocapture
-cargo test -p ctxpack historical_eval_report_renders_source_free_metrics -- --nocapture
-cargo run -p ctxpack -- eval gate --limit 5 --budget 10 --format json
+cargo test -p ctxhelm-compiler gate_decision -- --nocapture
+cargo test -p ctxhelm-compiler protected_evidence -- --nocapture
+cargo test -p ctxhelm historical_eval_report_renders_source_free_metrics -- --nocapture
+cargo run -p ctxhelm -- eval gate --limit 5 --budget 10 --format json
 ```
