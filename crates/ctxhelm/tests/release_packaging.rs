@@ -511,7 +511,7 @@ fn release_artifacts_workflow_contract() {
         "tags:",
         "actions/checkout@v5",
         "actions/cache@v5",
-        "actions/upload-artifact@v5",
+        "actions/upload-artifact@v6",
         "ubuntu-latest",
         "macos-15-intel",
         "macos-14",

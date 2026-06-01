@@ -111,7 +111,7 @@ The public repository includes a non-publishing release-artifact workflow:
 .github/workflows/release-artifacts.yml
 ```
 
-It runs on manual dispatch and version-tag pushes, builds `x86_64-unknown-linux-gnu`, `x86_64-apple-darwin`, and `aarch64-apple-darwin`, verifies every archive with `scripts/verify-release-archive.sh`, and uses `actions/upload-artifact@v5` for workflow artifacts. It does not create GitHub releases, tags, Homebrew commits, crates.io packages, signed installers, or self-update metadata.
+It runs on manual dispatch and version-tag pushes, builds `x86_64-unknown-linux-gnu`, `x86_64-apple-darwin`, and `aarch64-apple-darwin`, verifies every archive with `scripts/verify-release-archive.sh`, and uses `actions/upload-artifact@v6` for workflow artifacts. It does not create GitHub releases, tags, Homebrew commits, crates.io packages, signed installers, or self-update metadata.
 
 Maintainers can verify a built archive from a clean extraction directory:
 
