@@ -1,0 +1,35 @@
+{
+  "archiveName": "ctxpack-v1.1.2-aarch64-apple-darwin.tar.gz",
+  "archiveSha256": "1227a3e06b508c70688ac4a879520dacf0a2016a4d2dc58affdf9fd2b6406255",
+  "binarySha256": "e22a436b9c6c7b445aeb9d81c49904723c70ee70cc15cfff23e1935bd6a9b1df",
+  "checks": {
+    "archiveVerified": true,
+    "checksumsVerified": true,
+    "doctorPassed": true,
+    "downloadedPublicAssets": true,
+    "firstPackSmokePassed": true,
+    "helpPassed": true,
+    "installedToTemporaryBin": true,
+    "versionPassed": true
+  },
+  "downloadBaseUrl": "https://github.com/thromel/ctxpack/releases/download/v1.1.2",
+  "privacyStatus": {
+    "localOnly": true,
+    "remoteEmbeddingsUsed": false,
+    "remoteRerankingUsed": false,
+    "sourceTextLogged": false
+  },
+  "releaseUrl": "https://github.com/thromel/ctxpack/releases/tag/v1.1.2",
+  "repo": "thromel/ctxpack",
+  "schemaVersion": 1,
+  "tag": "v1.1.2",
+  "targetLabel": "aarch64-apple-darwin",
+  "unsupportedActions": [
+    "global install",
+    "global agent config mutation",
+    "publishing",
+    "tag creation",
+    "user project test execution"
+  ],
+  "version": "ctxpack 1.1.2"
+}

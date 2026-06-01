@@ -1,0 +1,33 @@
+{
+  "commitsAhead": 0,
+  "currentCommit": "ac6dc97f04cd18b5f2c6c32f7a1eca49e3ef5587",
+  "gitRelation": "same",
+  "ignoredFreshnessPaths": [
+    ".ctxpack/e2e/",
+    ".planning/"
+  ],
+  "privacyStatus": {
+    "localOnly": true,
+    "remoteEmbeddingsUsed": false,
+    "remoteRerankingUsed": false,
+    "sourceTextLogged": false
+  },
+  "productCommitsAhead": 0,
+  "productStatus": "current",
+  "proofOnlyCommitsAhead": 0,
+  "publishedAt": "2026-06-01T07:18:18Z",
+  "releaseTargetCommit": "ac6dc97f04cd18b5f2c6c32f7a1eca49e3ef5587",
+  "releaseUrl": "https://github.com/thromel/ctxpack/releases/tag/v1.1.2",
+  "repo": "thromel/ctxpack",
+  "schemaVersion": 1,
+  "sourceFree": true,
+  "status": "current",
+  "tag": "v1.1.2",
+  "unsupportedActions": [
+    "publishing",
+    "tag creation",
+    "asset upload",
+    "global install",
+    "global agent config mutation"
+  ]
+}
