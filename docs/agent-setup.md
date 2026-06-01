@@ -6,7 +6,7 @@ ctxhelm is an agent-native, read-only context broker. It generates repo-local gu
 
 | Agent | Generated artifact/snippet | Default write scope | Mutates global config by default | setup-check coverage | deterministic protocol proof | Optional real-client proof status | Verified-version/evidence notes |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| Codex CLI | Managed `AGENTS.md` section plus printed MCP setup guidance | Repo-local guidance only; user copies any MCP config manually | No global config mutation | Verifies managed `AGENTS.md` and `.ctxhelm/ctxhelm.toml` | Supported through direct JSON-RPC/MCP smoke against `ctxhelm serve-mcp` | Optional Codex smoke can require server-side `prepare_task` and `get_pack` request-log evidence, but current public proof records a source-free skip | Local command available: Codex CLI `0.44.0`; latest public archive smoke did not produce machine-checkable tool-call evidence, so Codex remains optional evidence only |
+| Codex CLI | Managed `AGENTS.md` section plus printed MCP setup guidance | Repo-local guidance only; user copies any MCP config manually | No global config mutation | Verifies managed `AGENTS.md` and `.ctxhelm/ctxhelm.toml` | Supported through direct JSON-RPC/MCP smoke against `ctxhelm serve-mcp` | Optional Codex smoke can require server-side `prepare_task` and `get_pack` request-log evidence, but current public proof records a source-free skip with client failure diagnostics | Local command available: Codex CLI `0.44.0`; latest public archive smoke classified the client failure without raw stderr or MCP traffic, so Codex remains optional evidence only |
 | Claude Code | `.claude/commands/ctxhelm-bugfix.md` and `.ctxhelm/adapters/claude-mcp.json` | Repo/project-local command and mergeable MCP snippet | No global config mutation; user merges project MCP config when desired | Verifies Claude command and adapter snippet when `--claude` is requested | Supported through direct JSON-RPC/MCP smoke against `ctxhelm serve-mcp` | Optional Claude smoke and workflow eval can require server-side `prepare_task` and `get_pack` request-log evidence | Local command available: Claude Code `2.1.159`; latest workflow evidence used strict MCP config, explicit `repo`, `prepare_task`, and `get_pack` |
 | Cursor | `.cursor/rules/ctxhelm.mdc` | Repo-local rule file | No global config mutation | Verifies Cursor rule when `--cursor` is requested | Supported through direct JSON-RPC/MCP smoke against `ctxhelm serve-mcp` | Not claimed as machine-checkable tool-call evidence in v1.1 | Local command available: Cursor `3.3.30`; version presence is not tool-call proof |
 | OpenCode | `.ctxhelm/adapters/opencode.jsonc.snippet` | Repo-local snippet for manual merge | No global config mutation | Verifies OpenCode snippet when `--opencode` is requested | Supported through direct JSON-RPC/MCP smoke against `ctxhelm serve-mcp` | Not claimed as machine-checkable tool-call evidence in v1.1 | Local command available: OpenCode `1.14.25`; version presence is not tool-call proof |
@@ -58,6 +58,11 @@ to 2 and read-file count from 7 to 4; see
 `.planning/e2e/2026-06-01-phase143-agent-run-outcome-harness.md`. Codex CLI
 `0.44.0` remains optional evidence only because the latest public archive smoke
 recorded a source-free skip instead of machine-checkable tool-call evidence.
+Codex skip evidence includes `clientFailureKind`, `clientExitStatus`,
+`stderrSha256`, `stderrLineCount`, and MCP request `methodCounts` so maintainers
+can distinguish client stream-disconnects from ctxhelm protocol failures without
+persisting raw stderr, raw prompts, raw MCP traffic, task text, or source
+snippets.
 
 Cursor and OpenCode setup can be checked through generated artifacts plus deterministic protocol proof, including source-free context-area resource reads. v1.1 does not claim machine-checkable Cursor tool-call proof, and it does not claim machine-checkable OpenCode tool-call proof.
 

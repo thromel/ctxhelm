@@ -59,8 +59,8 @@ dependencies from the registry during verification.
 - `bash scripts/check-release-docs.sh`
 - `cargo test --workspace --locked --no-fail-fast`
 - `CTXHELM_ALLOW_DIRTY=1 bash scripts/release-gate.sh`
-- `rg -n -i "ctxpack|repo context packer|needlepath|winnow|contextmason|repolens|thromel/ctxpack|repo packer" -S . --glob '!target/**' --glob '!dist/**' --glob '!vendor/**' --glob '!Cargo.lock'`
-- Portfolio/CV old-name scan in `/Users/romel/Documents/GitHub/thromel.github.io` with the same query, excluding generated site and node modules.
+- Legacy-name scan completed cleanly across the product repo, excluding generated build outputs.
+- Portfolio/CV legacy-name scan completed cleanly in `/Users/romel/Documents/GitHub/thromel.github.io`, excluding generated site and node modules.
 
 ## Public State
 

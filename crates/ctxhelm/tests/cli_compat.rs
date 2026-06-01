@@ -2474,6 +2474,9 @@ fn real_client_smoke_scripts_have_contract_guards() {
             "serverSideRequestLog",
             "requestLogSha256",
             "requestLogLineCount",
+            "methodCounts",
+            "initializeRequested",
+            "toolsListRequested",
             "explicitRepoToolCallCount",
             "observedToolCalls",
             "requestSummaryFile",
@@ -2486,6 +2489,20 @@ fn real_client_smoke_scripts_have_contract_guards() {
             "failed",
         ] {
             assert!(content.contains(needle), "{script} missing {needle}");
+        }
+        if script.contains("codex") {
+            for needle in [
+                "clientExitStatus",
+                "clientFailureKind",
+                "stderrLineCount",
+                "stderrSha256",
+                "stream_disconnected",
+                "auth_or_model_refusal",
+                "rate_limited",
+                "tool_call_missing",
+            ] {
+                assert!(content.contains(needle), "{script} missing {needle}");
+            }
         }
         assert!(
             content.contains("CTXHELM_BIN=\"$ctxhelm_bin\""),

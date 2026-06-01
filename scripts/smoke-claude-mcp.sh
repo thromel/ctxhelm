@@ -87,6 +87,7 @@ def request_log_summary(log_path, expected_repo):
             raw = candidate.read_bytes()
     lines = raw.decode("utf-8", errors="replace").splitlines()
     observed = []
+    method_counts = {}
     explicit_repo_tool_call_count = 0
     for line in lines:
         if not line.strip():
@@ -95,6 +96,9 @@ def request_log_summary(log_path, expected_repo):
             payload = json.loads(line)
         except json.JSONDecodeError:
             continue
+        method = payload.get("method")
+        if method:
+            method_counts[method] = method_counts.get(method, 0) + 1
         if payload.get("method") != "tools/call":
             continue
         params = payload.get("params") or {}
@@ -123,6 +127,12 @@ def request_log_summary(log_path, expected_repo):
         "serverSideRequestLog": bool(raw),
         "requestLogSha256": hashlib.sha256(raw).hexdigest(),
         "requestLogLineCount": len(lines),
+        "methodCounts": method_counts,
+        "initializeRequested": method_counts.get("initialize", 0) > 0,
+        "initializedNotification": method_counts.get("notifications/initialized", 0) > 0,
+        "toolsListRequested": method_counts.get("tools/list", 0) > 0,
+        "resourcesListRequested": method_counts.get("resources/list", 0) > 0,
+        "promptsListRequested": method_counts.get("prompts/list", 0) > 0,
         "explicitRepoToolCallCount": explicit_repo_tool_call_count,
         "observedToolCalls": observed,
     }
@@ -198,6 +208,7 @@ def request_log_summary(log_path, expected_repo):
             raw = candidate.read_bytes()
     lines = raw.decode("utf-8", errors="replace").splitlines()
     observed = []
+    method_counts = {}
     explicit_repo_tool_call_count = 0
     for line in lines:
         if not line.strip():
@@ -206,6 +217,9 @@ def request_log_summary(log_path, expected_repo):
             payload = json.loads(line)
         except json.JSONDecodeError:
             continue
+        method = payload.get("method")
+        if method:
+            method_counts[method] = method_counts.get(method, 0) + 1
         if payload.get("method") != "tools/call":
             continue
         params = payload.get("params") or {}
@@ -234,6 +248,12 @@ def request_log_summary(log_path, expected_repo):
         "serverSideRequestLog": True,
         "requestLogSha256": hashlib.sha256(raw).hexdigest(),
         "requestLogLineCount": len(lines),
+        "methodCounts": method_counts,
+        "initializeRequested": method_counts.get("initialize", 0) > 0,
+        "initializedNotification": method_counts.get("notifications/initialized", 0) > 0,
+        "toolsListRequested": method_counts.get("tools/list", 0) > 0,
+        "resourcesListRequested": method_counts.get("resources/list", 0) > 0,
+        "promptsListRequested": method_counts.get("prompts/list", 0) > 0,
         "explicitRepoToolCallCount": explicit_repo_tool_call_count,
         "observedToolCalls": observed,
     }

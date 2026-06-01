@@ -33,7 +33,7 @@
 
 - `averageFileRecallAt10`: `0.5186` `ratio`
 - `averageLexicalBaselineRecallAt10`: `0.5008` `ratio`
-- `averageCtxpackLiftAt10`: `0.0179` `ratio`
+- `averageCtxhelmLiftAt10`: `0.0179` `ratio`
 - `averageTestRecallAt10`: `0.4722` `ratio`
 - `averageBriefTokenRoi`: `5.7500` `useful_targets_per_1k_tokens`
 - Fixed corpus ID: `ctxhelm-v2.3-refactoringminer-20-commit-clean-e2e`

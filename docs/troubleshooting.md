@@ -178,7 +178,12 @@ The deterministic protocol proof talks directly to `ctxhelm serve-mcp` and check
 When Codex or Claude real-client evidence is enabled with
 `CTXHELM_REAL_CLIENT_EVIDENCE_DIR`, inspect `*-mcp-evidence.json` first. The
 stable evidence includes `requestLogSha256`, `requestLogLineCount`,
-`explicitRepoToolCallCount`, `observedToolCalls`, and `requestSummaryFile`. The
-request summary sidecar is sanitized and source-free; it is intended to prove
-which ctxhelm tools were observed without preserving raw MCP traffic, task text,
-or source snippets.
+MCP request `methodCounts`, `explicitRepoToolCallCount`, `observedToolCalls`,
+and `requestSummaryFile`. Codex skip evidence also includes
+`clientFailureKind`, `clientExitStatus`, `stderrSha256`, and
+`stderrLineCount`; for example, `stream_disconnected` means the Codex client
+failed before producing machine-checkable tool calls, while the deterministic
+ctxhelm MCP protocol proof may still have passed. The request summary sidecar
+is sanitized and source-free; it is intended to prove which ctxhelm tools were
+observed without preserving raw MCP traffic, raw stderr, task text, or source
+snippets.

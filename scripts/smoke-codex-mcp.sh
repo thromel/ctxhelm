@@ -34,7 +34,9 @@ fail_or_skip() {
     write_skip_evidence \
       "${CTXHELM_REAL_CLIENT_EVIDENCE_DIR}/codex-mcp-evidence.json" \
       "$reason" \
-      "${request_log:-}"
+      "${request_log:-}" \
+      "${client_status:-}" \
+      "${stderr_log:-}"
   fi
   if [[ "$require_real" == "1" ]]; then
     echo "ctxhelm Codex MCP smoke failed: $reason" >&2
@@ -48,13 +50,55 @@ write_skip_evidence() {
   local evidence_file="$1"
   local reason="$2"
   local request_log_path="${3:-}"
-  python3 - "$evidence_file" "$repo" "${client_version:-unavailable}" "$ctxhelm_version" "$require_real" "$reason" "$request_log_path" <<'PY'
+  local client_exit_status="${4:-}"
+  local stderr_log_path="${5:-}"
+  python3 - "$evidence_file" "$repo" "${client_version:-unavailable}" "$ctxhelm_version" "$require_real" "$reason" "$request_log_path" "$client_exit_status" "$stderr_log_path" <<'PY'
 import hashlib
 import json
 import pathlib
 import sys
 
-path, repo, client_version, ctxhelm_version, required, reason, request_log_path = sys.argv[1:]
+path, repo, client_version, ctxhelm_version, required, reason, request_log_path, client_exit_status, stderr_log_path = sys.argv[1:]
+
+def parse_exit_status(value):
+    if not value:
+        return None
+    try:
+        return int(value)
+    except ValueError:
+        return None
+
+def stderr_diagnostics(log_path, reason):
+    raw = b""
+    if log_path:
+        candidate = pathlib.Path(log_path)
+        if candidate.exists():
+            raw = candidate.read_bytes()
+    text = raw.decode("utf-8", errors="replace")
+    lower = text.lower()
+    reason_lower = reason.lower()
+    if "stream disconnected" in lower:
+        kind = "stream_disconnected"
+    elif any(token in lower for token in ["api key", "unauthorized", "authentication", "not logged in", "login required"]):
+        kind = "auth_or_model_refusal"
+    elif "rate limit" in lower or "429" in lower:
+        kind = "rate_limited"
+    elif "timed out" in lower or "timeout" in lower:
+        kind = "timeout"
+    elif "not installed" in reason_lower:
+        kind = "missing_client"
+    elif "missing explicit-repo tool calls" in lower or "did not produce machine-checkable" in reason_lower:
+        kind = "tool_call_missing"
+    elif "skip_real_client" in reason_lower or "run_real_client" in reason_lower:
+        kind = "skipped_by_policy"
+    else:
+        kind = "unknown"
+    return {
+        "clientExitStatus": parse_exit_status(client_exit_status),
+        "clientFailureKind": kind,
+        "stderrLineCount": len(text.splitlines()),
+        "stderrSha256": hashlib.sha256(raw).hexdigest(),
+    }
 
 def request_log_summary(log_path, expected_repo):
     raw = b""
@@ -64,6 +108,7 @@ def request_log_summary(log_path, expected_repo):
             raw = candidate.read_bytes()
     lines = raw.decode("utf-8", errors="replace").splitlines()
     observed = []
+    method_counts = {}
     explicit_repo_tool_call_count = 0
     for line in lines:
         if not line.strip():
@@ -72,6 +117,9 @@ def request_log_summary(log_path, expected_repo):
             payload = json.loads(line)
         except json.JSONDecodeError:
             continue
+        method = payload.get("method")
+        if method:
+            method_counts[method] = method_counts.get(method, 0) + 1
         if payload.get("method") != "tools/call":
             continue
         params = payload.get("params") or {}
@@ -97,11 +145,18 @@ def request_log_summary(log_path, expected_repo):
         "serverSideRequestLog": bool(raw),
         "requestLogSha256": hashlib.sha256(raw).hexdigest(),
         "requestLogLineCount": len(lines),
+        "methodCounts": method_counts,
+        "initializeRequested": method_counts.get("initialize", 0) > 0,
+        "initializedNotification": method_counts.get("notifications/initialized", 0) > 0,
+        "toolsListRequested": method_counts.get("tools/list", 0) > 0,
+        "resourcesListRequested": method_counts.get("resources/list", 0) > 0,
+        "promptsListRequested": method_counts.get("prompts/list", 0) > 0,
         "explicitRepoToolCallCount": explicit_repo_tool_call_count,
         "observedToolCalls": observed,
     }
 
 summary = request_log_summary(request_log_path, repo)
+client_diagnostics = stderr_diagnostics(stderr_log_path, reason)
 evidence = {
     "client": "codex",
     "clientVersion": client_version,
@@ -116,6 +171,7 @@ evidence = {
     "required": required == "1",
 }
 evidence.update(summary)
+evidence.update(client_diagnostics)
 target = pathlib.Path(path)
 target.parent.mkdir(parents=True, exist_ok=True)
 summary_target = target.with_name(target.name.replace("-evidence", "-request-summary"))
@@ -146,6 +202,7 @@ def request_log_summary(log_path, expected_repo):
             raw = candidate.read_bytes()
     lines = raw.decode("utf-8", errors="replace").splitlines()
     observed = []
+    method_counts = {}
     explicit_repo_tool_call_count = 0
     for line in lines:
         if not line.strip():
@@ -154,6 +211,9 @@ def request_log_summary(log_path, expected_repo):
             payload = json.loads(line)
         except json.JSONDecodeError:
             continue
+        method = payload.get("method")
+        if method:
+            method_counts[method] = method_counts.get(method, 0) + 1
         if payload.get("method") != "tools/call":
             continue
         params = payload.get("params") or {}
@@ -179,6 +239,12 @@ def request_log_summary(log_path, expected_repo):
         "serverSideRequestLog": True,
         "requestLogSha256": hashlib.sha256(raw).hexdigest(),
         "requestLogLineCount": len(lines),
+        "methodCounts": method_counts,
+        "initializeRequested": method_counts.get("initialize", 0) > 0,
+        "initializedNotification": method_counts.get("notifications/initialized", 0) > 0,
+        "toolsListRequested": method_counts.get("tools/list", 0) > 0,
+        "resourcesListRequested": method_counts.get("resources/list", 0) > 0,
+        "promptsListRequested": method_counts.get("prompts/list", 0) > 0,
         "explicitRepoToolCallCount": explicit_repo_tool_call_count,
         "observedToolCalls": observed,
     }
@@ -195,6 +261,10 @@ evidence = {
     "prepareTask": True,
     "getPack": True,
     "required": required == "1",
+    "clientExitStatus": 0,
+    "clientFailureKind": "none",
+    "stderrLineCount": 0,
+    "stderrSha256": hashlib.sha256(b"").hexdigest(),
 }
 evidence.update(summary)
 payload = json.dumps(evidence, sort_keys=True)

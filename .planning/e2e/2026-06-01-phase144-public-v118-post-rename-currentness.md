@@ -2,7 +2,7 @@
 
 ## Goal
 
-Prove that the public post-rename `ctxhelm` release and package-manager path are current with the renamed repository, installable from public artifacts, and usable by a real agent client without relying on stale `ctxpack` or superseded brand surfaces.
+Prove that the public `ctxhelm` release and package-manager path are current with the renamed repository, installable from public artifacts, and usable by a real agent client without relying on stale pre-rename or superseded brand surfaces.
 
 ## Public Release
 
@@ -45,5 +45,4 @@ The fix keeps Git calls bounded but raises the default history metadata and diff
 - `cargo fmt --all -- --check`
 - `cargo test -p ctxhelm --test cli_compat eval_baselines_reports_paired_variants_source_free --locked -- --nocapture`
 - `cargo test -p ctxhelm --test release_packaging --locked`
-- `CTXHELM_PROOF_FIXTURE_ROOT=/Users/romel/Documents/GitHub/ctxpack-proof-fixtures CTXHELM_BIN="$PWD/target/release/ctxhelm" CTXHELM_REQUIRE_CLEAN_FIXTURE_PROOF=1 bash scripts/release-gate.sh`
-
+- `CTXHELM_PROOF_FIXTURE_ROOT=/Users/romel/Documents/GitHub/ctxhelm-proof-fixtures CTXHELM_BIN="$PWD/target/release/ctxhelm" CTXHELM_REQUIRE_CLEAN_FIXTURE_PROOF=1 bash scripts/release-gate.sh`
