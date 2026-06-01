@@ -97,6 +97,7 @@ v2.5 therefore focuses on measured retrieval quality, not more surface area. The
 - [x] **Phase 140: Public v1.1.6 Release Currentness** - The ContextMason-branded public archive and Homebrew tap both targeted the latest product commit and carried refreshed archive, tap, freshness, and real-client proof.
 - [x] **Phase 141: RepoWinnow Brand Identity** - Public product surfaces use RepoWinnow after availability review found ContextMason too close to an adjacent Mason MCP/code-context product.
 - [x] **Phase 142: Public v1.1.7 Release Currentness** - The RepoWinnow-branded public archive and Homebrew tap both target the latest product commit and carry refreshed archive, tap, freshness, and real-client proof.
+- [x] **Phase 143: Paired Agent-Run Outcome Harness** - Claude Code paired-run evidence compares native baseline, `prepare_task`, and brief-pack lanes; the brief-pack lane preserves target coverage while reducing irrelevant reads in a source-free report.
 
 ## Phase Details
 

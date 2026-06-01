@@ -83,6 +83,12 @@ Success gate:
   irrelevant reads or better target-file coverage than baseline without
   increasing privacy risk.
 
+Status: Phase 143 added this proof path. The first real Claude Code run over
+the ctxpack workflow-eval task preserved target-file coverage at `1.00` and
+reduced irrelevant reads from `5` to `2` in the `ctxpack-brief` lane while
+keeping raw prompts, transcripts, MCP traffic, and source text out of the
+persisted report.
+
 ### 2. Experience Memory Is Not Yet Proven By Reuse
 
 The memory layer exists, but the product proof does not yet show that prior

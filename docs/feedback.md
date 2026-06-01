@@ -88,6 +88,35 @@ estimated tokens.
 Changed-sample and low-information warnings are explicit. Do not claim lift
 from a small or shifting sample.
 
+## Paired Agent Runs
+
+Use the paired agent-run harness when you need real-client process evidence,
+not just feedback entered after a session:
+
+```bash
+CTXPACK_RUN_REAL_CLIENT=1 bash scripts/e2e-agent-run.sh \
+  --repo "$REPO" \
+  --task "Identify files relevant to improving the Claude workflow eval harness" \
+  --target-file scripts/e2e-claude-workflow.sh \
+  --target-file scripts/smoke-claude-mcp.sh \
+  --output .ctxpack/e2e/agent-run-claude.json
+
+ctxpack eval agent-run --report .ctxpack/e2e/agent-run-claude.json
+```
+
+The script runs three read-only Claude Code lanes: native baseline,
+`prepare_task`, and `prepare_task` plus a brief `get_pack`. It records
+source-free lane metrics such as target coverage, read-file count, irrelevant
+read count, tool-call count, and ctxpack tool-call count. It stores path labels,
+hashes, and sanitized MCP request summaries only; it does not store raw prompts,
+raw model transcripts, raw MCP traffic, source snippets, terminal logs, or
+project test output.
+
+Without `CTXPACK_RUN_REAL_CLIENT=1`, the script writes a skipped report so CI
+can verify the contract without pretending a real agent ran. Treat a passing
+agent-run report as process evidence for that task and client version, not as a
+general retrieval-quality proof.
+
 ## Release Coverage
 
 The release gate runs `scripts/smoke-feedback.sh`. The smoke proves source-free

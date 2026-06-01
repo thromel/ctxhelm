@@ -790,6 +790,7 @@ struct EvalArgs {
 enum EvalCommand {
     Traces(EvalTracesArgs),
     Checklist(EvalTracesArgs),
+    AgentRun(EvalAgentRunArgs),
     Feedback(EvalFeedbackArgs),
     Policy(EvalPolicyArgs),
     Features(EvalFeatureArgs),
@@ -809,6 +810,15 @@ struct EvalTracesArgs {
     repo: Option<PathBuf>,
     #[arg(long, default_value_t = 20)]
     limit: usize,
+}
+
+#[derive(Debug, Args)]
+#[command(about = "Render a source-free paired agent-run report.")]
+struct EvalAgentRunArgs {
+    #[arg(long, help = "Path to a source-free agent-run JSON report.")]
+    report: PathBuf,
+    #[arg(long, value_enum, default_value_t = PackFormat::Markdown)]
+    format: PackFormat,
 }
 
 #[derive(Debug, Args)]
@@ -1941,6 +1951,14 @@ fn main() -> Result<()> {
                     "{}",
                     render_eval_checklist_with_gaps(&traces, &retrieval_gap_summaries)
                 );
+            }
+            EvalCommand::AgentRun(args) => {
+                let raw = fs::read_to_string(&args.report)?;
+                let report: serde_json::Value = serde_json::from_str(&raw)?;
+                match args.format {
+                    PackFormat::Json => println!("{}", serde_json::to_string_pretty(&report)?),
+                    PackFormat::Markdown => println!("{}", render_agent_run_report(&report)),
+                }
             }
             EvalCommand::Feedback(args) => match args.command {
                 EvalFeedbackCommand::Record(args) => {
@@ -3784,6 +3802,100 @@ fn render_outcome_comparison_report(report: &AgentOutcomeComparisonReport) -> St
         ));
     }
     output
+}
+
+fn render_agent_run_report(report: &serde_json::Value) -> String {
+    let mut output = String::from("# ctxpack Agent Run Report\n\n");
+    let status = json_string(report, "status").unwrap_or("unknown");
+    let schema = json_string(report, "schemaVersion").unwrap_or("unknown");
+    let client = report
+        .get("client")
+        .and_then(|value| value.get("name"))
+        .and_then(serde_json::Value::as_str)
+        .unwrap_or("unknown");
+    let version = report
+        .get("client")
+        .and_then(|value| value.get("version"))
+        .and_then(serde_json::Value::as_str)
+        .unwrap_or("unknown");
+    output.push_str(&format!(
+        "- Schema: `{schema}`\n- Status: `{status}`\n- Client: `{client}` `{version}`\n"
+    ));
+    if let Some(repo) = report.get("repo") {
+        if let Some(label) = repo.get("label").and_then(serde_json::Value::as_str) {
+            output.push_str(&format!("- Repo label: `{label}`\n"));
+        }
+    }
+    if let Some(delta) = report.get("comparison") {
+        output.push_str(&format!(
+            "- Best lane: `{}`\n- Target coverage delta: `{}`\n- Irrelevant read delta: `{}`\n- Source text logged: `{}`\n",
+            delta.get("bestLane")
+                .and_then(serde_json::Value::as_str)
+                .unwrap_or("unknown"),
+            delta.get("targetCoverageDelta")
+                .and_then(serde_json::Value::as_f64)
+                .map(|value| format!("{value:.2}"))
+                .unwrap_or_else(|| "n/a".to_string()),
+            delta.get("irrelevantReadDelta")
+                .and_then(serde_json::Value::as_i64)
+                .map(|value| value.to_string())
+                .unwrap_or_else(|| "n/a".to_string()),
+            report
+                .get("privacyStatus")
+                .and_then(|value| value.get("sourceTextLogged"))
+                .and_then(serde_json::Value::as_bool)
+                .unwrap_or(true)
+        ));
+    }
+    output.push_str("\n## Lanes\n\n");
+    if let Some(lanes) = report.get("lanes").and_then(serde_json::Value::as_array) {
+        for lane in lanes {
+            let lane_id = lane
+                .get("lane")
+                .and_then(serde_json::Value::as_str)
+                .unwrap_or("unknown");
+            let lane_status = lane
+                .get("status")
+                .and_then(serde_json::Value::as_str)
+                .unwrap_or("unknown");
+            let metrics = lane.get("metrics").unwrap_or(&serde_json::Value::Null);
+            output.push_str(&format!(
+                "- `{lane_id}` status `{lane_status}` target coverage `{}` read files `{}` irrelevant reads `{}` tool calls `{}` ctxpack calls `{}`\n",
+                metrics
+                    .get("targetCoverage")
+                    .and_then(serde_json::Value::as_f64)
+                    .map(|value| format!("{value:.2}"))
+                    .unwrap_or_else(|| "n/a".to_string()),
+                metrics
+                    .get("readFileCount")
+                    .and_then(serde_json::Value::as_u64)
+                    .map(|value| value.to_string())
+                    .unwrap_or_else(|| "n/a".to_string()),
+                metrics
+                    .get("irrelevantReadCount")
+                    .and_then(serde_json::Value::as_u64)
+                    .map(|value| value.to_string())
+                    .unwrap_or_else(|| "n/a".to_string()),
+                metrics
+                    .get("toolCallCount")
+                    .and_then(serde_json::Value::as_u64)
+                    .map(|value| value.to_string())
+                    .unwrap_or_else(|| "n/a".to_string()),
+                metrics
+                    .get("ctxpackToolCallCount")
+                    .and_then(serde_json::Value::as_u64)
+                    .map(|value| value.to_string())
+                    .unwrap_or_else(|| "n/a".to_string()),
+            ));
+        }
+    } else {
+        output.push_str("_No lanes found._\n");
+    }
+    output
+}
+
+fn json_string<'a>(value: &'a serde_json::Value, key: &str) -> Option<&'a str> {
+    value.get(key).and_then(serde_json::Value::as_str)
 }
 
 fn render_retrieval_health_report(report: &RetrievalHealthReport) -> String {

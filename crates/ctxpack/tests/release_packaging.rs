@@ -1265,6 +1265,59 @@ fn public_real_client_smoke_script_contract() {
 }
 
 #[test]
+fn agent_run_e2e_script_contract() {
+    let repo_root = workspace_root();
+    let script = repo_root.join("scripts/e2e-agent-run.sh");
+    assert!(script.exists(), "agent-run e2e script is missing");
+
+    let syntax = Command::new("bash")
+        .arg("-n")
+        .arg(&script)
+        .current_dir(&repo_root)
+        .output()
+        .unwrap();
+    assert!(
+        syntax.status.success(),
+        "bash -n failed: {}",
+        String::from_utf8_lossy(&syntax.stderr)
+    );
+
+    let script_text = fs::read_to_string(&script).unwrap();
+    for required in [
+        "ctxpack-agent-run-eval-v1",
+        "baseline",
+        "ctxpack-plan",
+        "ctxpack-brief",
+        "CTXPACK_RUN_REAL_CLIENT",
+        "CTXPACK_REQUIRE_REAL_CLIENT",
+        "CTXPACK_AGENT_RUN_TIMEOUT_SECONDS",
+        "mcp__ctxpack__prepare_task",
+        "mcp__ctxpack__get_pack",
+        "prepare_task",
+        "get_pack",
+        "targetCoverage",
+        "irrelevantReadCount",
+        "ctxpackToolCallCount",
+        "ctxpack_improved",
+        "ctxpack_matched",
+        "rawPromptStored",
+        "rawTranscriptStored",
+        "rawMcpTrafficStored",
+        "sourceTextLogged",
+        "unsupportedActions",
+        "source edits",
+        "user project tests",
+        "global agent config mutation",
+        "cloud upload",
+    ] {
+        assert!(
+            script_text.contains(required),
+            "agent-run e2e script missing {required}"
+        );
+    }
+}
+
+#[test]
 fn release_docs_check_passes() {
     let repo_root = workspace_root();
     let output = Command::new(repo_root.join("scripts/check-release-docs.sh"))

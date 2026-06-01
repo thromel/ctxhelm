@@ -1630,6 +1630,118 @@ fn eval_policy_and_outcome_reports_are_source_free() {
 }
 
 #[test]
+fn eval_agent_run_renders_source_free_report() {
+    let fixture = fixture_repo();
+    let report_path = fixture.temp.path().join("agent-run.json");
+    fs::write(
+        &report_path,
+        json!({
+            "schemaVersion": "ctxpack-agent-run-eval-v1",
+            "status": "passed",
+            "client": {
+                "name": "claude",
+                "version": "Claude Code test"
+            },
+            "ctxpackVersion": "ctxpack 1.1.7",
+            "repo": {
+                "label": "fixture",
+                "pathSha256": "repo-hash"
+            },
+            "task": {
+                "taskSha256": "task-hash",
+                "rawTaskStored": false
+            },
+            "lanes": [
+                {
+                    "lane": "baseline",
+                    "status": "passed",
+                    "metrics": {
+                        "targetCoverage": 0.5,
+                        "readFileCount": 4,
+                        "irrelevantReadCount": 2,
+                        "toolCallCount": 6,
+                        "ctxpackToolCallCount": 0
+                    },
+                    "sourceTextLogged": false,
+                    "rawPromptStored": false,
+                    "rawTranscriptStored": false,
+                    "rawMcpTrafficStored": false
+                },
+                {
+                    "lane": "ctxpack-brief",
+                    "status": "passed",
+                    "metrics": {
+                        "targetCoverage": 1.0,
+                        "readFileCount": 2,
+                        "irrelevantReadCount": 0,
+                        "toolCallCount": 5,
+                        "ctxpackToolCallCount": 2
+                    },
+                    "sourceTextLogged": false,
+                    "rawPromptStored": false,
+                    "rawTranscriptStored": false,
+                    "rawMcpTrafficStored": false
+                }
+            ],
+            "comparison": {
+                "baselineLane": "baseline",
+                "bestLane": "ctxpack-brief",
+                "targetCoverageDelta": 0.5,
+                "irrelevantReadDelta": 2,
+                "ctxpackToolCallsObserved": true,
+                "outcomeClaim": "ctxpack_improved"
+            },
+            "privacyStatus": {
+                "localOnly": true,
+                "remoteEmbeddingsUsed": false,
+                "remoteRerankingUsed": false,
+                "sourceTextLogged": false,
+                "rawPromptStored": false,
+                "rawTranscriptStored": false,
+                "rawMcpTrafficStored": false
+            }
+        })
+        .to_string(),
+    )
+    .unwrap();
+
+    Command::cargo_bin("ctxpack")
+        .unwrap()
+        .args(["eval", "--help"])
+        .assert()
+        .success()
+        .stdout(contains("agent-run"));
+
+    Command::cargo_bin("ctxpack")
+        .unwrap()
+        .args(["eval", "agent-run", "--report"])
+        .arg(&report_path)
+        .assert()
+        .success()
+        .stdout(contains("# ctxpack Agent Run Report"))
+        .stdout(contains("ctxpack-agent-run-eval-v1"))
+        .stdout(contains("ctxpack-brief"))
+        .stdout(contains("target coverage `1.00`"))
+        .stdout(contains("ctxpack calls `2`"));
+
+    let rendered_json = json_stdout(
+        Command::cargo_bin("ctxpack")
+            .unwrap()
+            .args(["eval", "agent-run", "--report"])
+            .arg(&report_path)
+            .args(["--format", "json"])
+            .assert(),
+    );
+    assert_eq!(rendered_json["task"]["rawTaskStored"], false);
+    assert_eq!(rendered_json["privacyStatus"]["sourceTextLogged"], false);
+    assert_eq!(rendered_json["privacyStatus"]["rawTranscriptStored"], false);
+    assert_eq!(
+        rendered_json["comparison"]["outcomeClaim"],
+        "ctxpack_improved"
+    );
+}
+
+#[test]
 fn eval_benchmark_runs_named_suite_source_free() {
     let first = fixture_repo();
     let second = fixture_repo();

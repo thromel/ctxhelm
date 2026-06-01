@@ -30,10 +30,32 @@ expected explicit-repo `prepare_task` and `get_pack` calls through MCP. It keeps
 only hashes and sanitized request summaries, not raw prompts, raw MCP traffic,
 source text, or user-project command output.
 
+For process-level comparison against native Claude exploration, maintainers can
+run the paired agent-run eval:
+
+```bash
+CTXPACK_RUN_REAL_CLIENT=1 bash scripts/e2e-agent-run.sh \
+  --repo "$REPO" \
+  --task "Identify the files relevant to the requested change" \
+  --target-file path/to/expected/file \
+  --output .ctxpack/e2e/agent-run-claude.json
+ctxpack eval agent-run --report .ctxpack/e2e/agent-run-claude.json
+```
+
+That wrapper runs native baseline, `prepare_task`, and brief-pack Claude lanes.
+It reports target coverage, read-file count, irrelevant reads, tool-call count,
+and observed ctxpack tool calls while keeping raw prompts, raw stream output,
+raw MCP traffic, source text, and user-project command output out of the
+persisted report.
+
 Latest local real-client workflow refresh: 2026-06-01, Claude Code `2.1.159`
 passed `scripts/e2e-claude-workflow.sh` with source-free explicit-repo
 `prepare_task` and `get_pack` evidence. See
-`.planning/e2e/2026-06-01-phase132-claude-workflow-eval.md`. Codex CLI
+`.planning/e2e/2026-06-01-phase132-claude-workflow-eval.md`. The paired
+agent-run refresh on the same date showed Claude Code `2.1.159` preserved
+target coverage while the `ctxpack-brief` lane reduced irrelevant reads from 5
+to 2 and read-file count from 7 to 4; see
+`.planning/e2e/2026-06-01-phase143-agent-run-outcome-harness.md`. Codex CLI
 `0.44.0` remains optional evidence only because the latest public archive smoke
 recorded a source-free skip instead of machine-checkable tool-call evidence.
 
