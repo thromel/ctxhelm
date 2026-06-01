@@ -13,6 +13,9 @@ making those channels blockers for the current release.
 - `packaging/release/update-metadata.schema.json` and
   `packaging/release/update-metadata.example.json` define machine-readable
   release metadata for future update checks.
+- `scripts/render-homebrew-formula.sh` renders a local formula candidate from a
+  version, GitHub release archive URL, and SHA-256 digest. It is a readiness
+  helper only; it does not create a tap or call Homebrew.
 
 The metadata is local-only and source-free. It does not include raw source,
 prompts, secrets, terminal logs, or machine-local paths.
@@ -96,6 +99,15 @@ Run:
 bash scripts/smoke-distribution-metadata.sh
 ```
 
+When `CTXPACK_DIST_DIR` points at a built release archive, the smoke also renders
+a concrete Homebrew formula candidate from the exact archive digest and checks
+that no placeholders or machine-local paths remain. It also runs
+`cargo package --manifest-path crates/ctxpack/Cargo.toml --locked --allow-dirty --list` and
+fails if the future crates.io package boundary includes local `.ctxpack` state,
+planning proof artifacts, build output, secrets, request summaries, traces, or
+machine-local paths.
+
 The smoke verifies required templates, update metadata, clean-extraction
-verification script syntax, source-free posture, no unsupported install claims,
-and explicit signing/notarization caveats.
+verification script syntax, Homebrew renderability, crates package boundaries,
+source-free posture, no unsupported install claims, and explicit
+signing/notarization caveats.

@@ -291,6 +291,12 @@ fn release_gate_script_contract() {
         "release gate should let release-package enforce clean-checkout semantics unless CTXPACK_ALLOW_DIRTY is explicitly inherited"
     );
     assert!(
+        script_text.contains(
+            "CTXPACK_DIST_DIR=\"$dist_dir\" bash \"$smoke_distribution_metadata_script\""
+        ),
+        "release gate must pass packaged archive directory into distribution metadata smoke"
+    );
+    assert!(
         script_text.find("scripts/smoke-first-pack.sh").unwrap()
             < script_text.find("scripts/smoke-mcp-protocol.sh").unwrap(),
         "first-pack smoke should run before direct MCP protocol smoke"
@@ -315,6 +321,92 @@ fn release_gate_script_contract() {
         assert!(
             !script_text.contains(forbidden),
             "release gate must not contain publishing behavior: {forbidden}"
+        );
+    }
+}
+
+#[test]
+fn distribution_metadata_smoke_script_contract() {
+    let repo_root = workspace_root();
+    let smoke = repo_root.join("scripts/smoke-distribution-metadata.sh");
+    let renderer = repo_root.join("scripts/render-homebrew-formula.sh");
+    assert!(smoke.exists(), "distribution metadata smoke is missing");
+    assert!(renderer.exists(), "Homebrew renderer is missing");
+
+    for script in [&smoke, &renderer] {
+        let syntax = Command::new("bash")
+            .arg("-n")
+            .arg(script)
+            .current_dir(&repo_root)
+            .output()
+            .unwrap();
+        assert!(
+            syntax.status.success(),
+            "bash -n failed for {}: {}",
+            script.display(),
+            String::from_utf8_lossy(&syntax.stderr)
+        );
+    }
+
+    let smoke_text = fs::read_to_string(&smoke).unwrap();
+    for required in [
+        "scripts/render-homebrew-formula.sh",
+        "CTXPACK_DIST_DIR",
+        "ctxpack-v${version}-${target_label}.tar.gz",
+        "https://github.com/thromel/ctxpack/releases/download/v${version}/${archive_name}",
+        "cargo package --manifest-path \"$repo_root/crates/ctxpack/Cargo.toml\" --locked --allow-dirty --list",
+        "homebrewFormulaRender",
+        "cratesPackage",
+        "sourceFreeBoundaryChecked",
+        ".ctxpack/",
+        ".planning/",
+        "target/",
+        "dist/",
+        "traces.jsonl",
+        "/Users/",
+    ] {
+        assert!(
+            smoke_text.contains(required),
+            "distribution smoke missing {required}"
+        );
+    }
+    for forbidden in [
+        "brew tap publish",
+        "brew install ctxpack now",
+        "cargo publish --",
+        "gh release create ",
+    ] {
+        assert!(
+            !smoke_text.contains(forbidden),
+            "distribution smoke must not publish or install: {forbidden}"
+        );
+    }
+
+    let renderer_text = fs::read_to_string(&renderer).unwrap();
+    for required in [
+        "CTXPACK_VERSION",
+        "CTXPACK_URL",
+        "CTXPACK_SHA256",
+        "class Ctxpack < Formula",
+        "bin.install",
+        "shell_output",
+        "https://github[.]com/thromel/ctxpack/releases/download",
+        "package-manager state",
+    ] {
+        assert!(
+            renderer_text.contains(required),
+            "Homebrew renderer missing {required}"
+        );
+    }
+    for forbidden in [
+        "brew tap publish",
+        "brew install ctxpack now",
+        "git push",
+        "gh release create",
+    ] {
+        assert!(
+            !renderer_text.contains(forbidden),
+            "Homebrew renderer must not mutate package-manager or release state: {forbidden}"
         );
     }
 }

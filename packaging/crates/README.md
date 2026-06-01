@@ -9,6 +9,9 @@ Before any future registry publication:
   binary package boundaries.
 - Run `cargo package --manifest-path crates/ctxpack/Cargo.toml --locked` from a
   clean checkout.
+- Run `bash scripts/smoke-distribution-metadata.sh` from a checkout with the
+  current release archive available through `CTXPACK_DIST_DIR`; it checks the
+  `cargo package --list` boundary without publishing.
 - Verify package contents do not include local `.ctxpack` state, release proof
   bundles, target directories, secrets, demo output generated outside
   `docs/demo-artifacts/`, or machine-local paths.
@@ -16,4 +19,3 @@ Before any future registry publication:
   mutation out of the package contract.
 
 This note is intentionally preparatory. It does not publish to a registry.
-

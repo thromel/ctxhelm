@@ -195,6 +195,7 @@ The release gate runs these required checks:
 - `scripts/smoke-agent-preview.sh`
 - `scripts/smoke-demo-artifacts.sh`
 - `scripts/smoke-distribution-metadata.sh`
+- `scripts/render-homebrew-formula.sh`
 - `scripts/smoke-release-governance.sh`
 - `scripts/smoke-semantic.sh`
 - `scripts/smoke-precision.sh`
@@ -303,16 +304,18 @@ The policy/embedding smoke proves semantic provider status reporting, `determini
 The agent-preview smoke proves Codex, Claude Code, Cursor, OpenCode, and generic MCP preview metadata, including MCP tools/resources, guidance paths, read/edit boundary notes, source-free flags, and absence of source sentinel leakage.
 
 The demo and distribution metadata smokes prove public source-free examples,
-package-manager preparation templates, update metadata, clean extraction
-verification syntax, and explicit signing and notarization gaps. They do not
-publish package-manager artifacts and are not a self-update implementation.
+package-manager preparation templates, Homebrew formula renderability from the
+exact archive digest when `CTXPACK_DIST_DIR` is available, crates package boundary checks,
+update metadata, clean extraction verification syntax, explicit signing and notarization gaps,
+and package-manager publication boundaries. They do not publish package-manager artifacts
+and are not a self-update implementation.
 
 The release governance smoke proves source-free candidate status metadata,
 ready/deferred/blocked lifecycle states, deterministic protocol proof language,
 optional real-client proof boundaries, Cursor/OpenCode non-claims, and rollback
 safety for marked local candidate directories.
 
-The gate passes the same selected or extracted `CTXPACK_BIN` into the first-pack, storage, memory, feedback, workspace, shared-artifact, inspector, retrieval-health, graph, policy/embedding, agent-preview, semantic, precision, v2.3 eval, v2.4 semantic/precision gate, MCP protocol, Cursor/OpenCode setup-proof wrappers, and optional real-client smokes. Demo, distribution metadata, and release governance smokes are source-free metadata checks and do not need the binary. Real-client proof is not required by default. Use these environment variables when needed:
+The gate passes the same selected or extracted `CTXPACK_BIN` into the first-pack, storage, memory, feedback, workspace, shared-artifact, inspector, retrieval-health, graph, policy/embedding, agent-preview, semantic, precision, v2.3 eval, v2.4 semantic/precision gate, MCP protocol, Cursor/OpenCode setup-proof wrappers, and optional real-client smokes. It also passes `CTXPACK_DIST_DIR` to the distribution metadata smoke so Homebrew formula renderability is checked against the exact packaged archive digest. Demo, distribution metadata, and release governance smokes are source-free metadata checks and do not need the binary. Real-client proof is not required by default. Use these environment variables when needed:
 
 - `CTXPACK_SKIP_REAL_CLIENT=1` keeps Codex and Claude checks deterministic-only after the protocol proof.
 - `CTXPACK_REQUIRE_REAL_CLIENT=1` makes missing Codex or Claude tool-call evidence fail the gate.

@@ -209,7 +209,7 @@ log_step "public demo artifacts smoke"
 bash "$smoke_demo_artifacts_script"
 
 log_step "distribution metadata smoke"
-bash "$smoke_distribution_metadata_script"
+CTXPACK_DIST_DIR="$dist_dir" bash "$smoke_distribution_metadata_script"
 
 log_step "release governance smoke"
 bash "$smoke_release_governance_script"

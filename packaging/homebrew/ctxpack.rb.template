@@ -1,7 +1,7 @@
 # Homebrew formula template for ctxpack.
 #
 # This file is preparatory metadata. It is not a published tap formula.
-# Replace CTXPACK_VERSION, CTXPACK_URL, and CTXPACK_SHA256 during release prep.
+# Release prep renders version, URL, and SHA-256 values into this template.
 
 class Ctxpack < Formula
   desc "Local, read-only context compiler for AI coding agents"
@@ -20,4 +20,3 @@ class Ctxpack < Formula
     shell_output("#{bin}/ctxpack --help")
   end
 end
-
