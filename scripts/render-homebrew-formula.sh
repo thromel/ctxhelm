@@ -77,7 +77,6 @@ import sys
 
 template_path, output_path, version, url, sha256 = sys.argv[1:]
 text = pathlib.Path(template_path).read_text(encoding="utf-8")
-text = text.replace("CTXPACK_VERSION", version)
 text = text.replace("CTXPACK_URL", url)
 text = text.replace("CTXPACK_SHA256", sha256)
 if "CTXPACK_" in text:
@@ -86,9 +85,9 @@ pathlib.Path(output_path).write_text(text, encoding="utf-8")
 PY
 
 grep -F -- "class Ctxpack < Formula" "$output_path" >/dev/null
-grep -F -- "version \"$version\"" "$output_path" >/dev/null
 grep -F -- "url \"$url\"" "$output_path" >/dev/null
 grep -F -- "sha256 \"$sha256\"" "$output_path" >/dev/null
+grep -F -- "depends_on arch: :arm64" "$output_path" >/dev/null
 grep -F -- "bin.install \"ctxpack\"" "$output_path" >/dev/null
 grep -F -- "shell_output(\"#{bin}/ctxpack --version\")" "$output_path" >/dev/null
 if grep -F -- "CTXPACK_" "$output_path" >/dev/null; then

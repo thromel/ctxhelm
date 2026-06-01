@@ -384,10 +384,10 @@ fn distribution_metadata_smoke_script_contract() {
 
     let renderer_text = fs::read_to_string(&renderer).unwrap();
     for required in [
-        "CTXPACK_VERSION",
         "CTXPACK_URL",
         "CTXPACK_SHA256",
         "class Ctxpack < Formula",
+        "depends_on arch: :arm64",
         "bin.install",
         "shell_output",
         "https://github[.]com/thromel/ctxpack/releases/download",
@@ -407,6 +407,49 @@ fn distribution_metadata_smoke_script_contract() {
         assert!(
             !renderer_text.contains(forbidden),
             "Homebrew renderer must not mutate package-manager or release state: {forbidden}"
+        );
+    }
+}
+
+#[test]
+fn homebrew_tap_verifier_script_contract() {
+    let repo_root = workspace_root();
+    let script = repo_root.join("scripts/verify-homebrew-tap.sh");
+    assert!(script.exists(), "Homebrew tap verifier is missing");
+
+    let syntax = Command::new("bash")
+        .arg("-n")
+        .arg(&script)
+        .current_dir(&repo_root)
+        .output()
+        .unwrap();
+    assert!(
+        syntax.status.success(),
+        "bash -n failed for {}: {}",
+        script.display(),
+        String::from_utf8_lossy(&syntax.stderr)
+    );
+
+    let script_text = fs::read_to_string(&script).unwrap();
+    for required in [
+        "brew tap \"$tap\"",
+        "brew audit --strict --new \"$formula\"",
+        "brew install \"$tap/$formula\"",
+        "brew test \"$tap/$formula\"",
+        "depends_on arch: :arm64",
+        "ctxpack-homebrew-tap-proof-v1",
+        "sourceTextLogged",
+        "global agent config mutation",
+    ] {
+        assert!(
+            script_text.contains(required),
+            "Homebrew tap verifier missing {required}"
+        );
+    }
+    for forbidden in ["gh release create", "git push", "cargo publish --"] {
+        assert!(
+            !script_text.contains(forbidden),
+            "Homebrew tap verifier must not publish unrelated release state: {forbidden}"
         );
     }
 }
@@ -1151,7 +1194,7 @@ fn release_docs_script_contract() {
         "ready/deferred/blocked",
         "rollback",
         "local archive: ready",
-        "Homebrew formula: deferred",
+        "Homebrew formula: ready",
         "crates.io package: deferred",
         "signed installer: deferred",
         "roleCounts",

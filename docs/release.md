@@ -10,6 +10,15 @@ https://github.com/thromel/ctxpack/releases/tag/v1.1.4
 
 ## User Install
 
+On Apple Silicon macOS, install from the public Homebrew tap:
+
+```bash
+brew tap thromel/tap
+brew install ctxpack
+ctxpack --version
+ctxpack --help
+```
+
 Download the archive for your platform from the release artifacts. Archive names follow this shape:
 
 ```text
@@ -137,6 +146,20 @@ Codex and Claude Code real-client wrappers with the extracted binary. Passing
 clients write source-free `prepare_task`/`get_pack` request evidence. Skipped or
 unavailable clients write source-free skip evidence instead unless
 `CTXPACK_REQUIRE_REAL_CLIENT=1` makes them required.
+
+Maintainers can verify the published Homebrew tap path on Apple Silicon macOS:
+
+```bash
+bash scripts/verify-homebrew-tap.sh \
+  --tap thromel/tap \
+  --formula ctxpack \
+  --expected-version "ctxpack 1.1.4" \
+  --expected-url https://github.com/thromel/ctxpack/releases/download/v1.1.4/ctxpack-v1.1.4-aarch64-apple-darwin.tar.gz \
+  --expected-sha256 24101f411da3dae73dbd5ce7f24b0f99427ac4ab016885b72cca004ef1b619c9
+```
+
+This check taps `thromel/tap`, audits the formula, installs `ctxpack` through
+Homebrew, runs `brew test`, and verifies `ctxpack --version`.
 
 For public archives whose released MCP protocol predates current resource-scope
 assertions, the script can run the protocol smoke in
@@ -717,6 +740,6 @@ bash scripts/audit-release-artifact.sh dist/ctxpack-v1.1.4-aarch64-apple-darwin.
 
 ## Out of Scope for v1.1
 
-The v1.1.4 release does not require crates.io publishing, Homebrew taps, self-update support, signed installers, cloud telemetry, cloud indexing, cloud embeddings, hosted release services, or global agent config mutation.
+The v1.1.4 release includes a public Apple Silicon Homebrew tap. It does not require crates.io publishing, self-update support, signed installers, cloud telemetry, cloud indexing, cloud embeddings, hosted release services, or global agent config mutation.
 
 ctxpack remains local-first and read-only. Release scripts build and audit ctxpack artifacts only; they do not mutate user repositories, global Codex or Claude configuration, MCP client config, or package-manager registries.

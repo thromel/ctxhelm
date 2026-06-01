@@ -85,7 +85,7 @@ for file in "${required_files[@]}"; do
       continue
       ;;
   esac
-  for forbidden in "/Users/" "BEGIN PRIVATE KEY" "GITHUB_TOKEN" "API_KEY=" "brew install ctxpack" "cargo install ctxpack" "self-update is implemented" "signed installer is ready"; do
+  for forbidden in "/Users/" "BEGIN PRIVATE KEY" "GITHUB_TOKEN" "API_KEY=" "cargo install ctxpack" "self-update is implemented" "signed installer is ready"; do
     if grep -F -- "$forbidden" "$file" >/dev/null; then
       echo "distribution metadata smoke failed: forbidden token '$forbidden' in ${file#"$repo_root"/}" >&2
       exit 1
@@ -93,7 +93,8 @@ for file in "${required_files[@]}"; do
   done
 done
 
-grep -F -- "Homebrew formula template" "$repo_root/packaging/homebrew/ctxpack.rb.template" >/dev/null
+grep -F -- "class Ctxpack < Formula" "$repo_root/packaging/homebrew/ctxpack.rb.template" >/dev/null
+grep -F -- "depends_on arch: :arm64" "$repo_root/packaging/homebrew/ctxpack.rb.template" >/dev/null
 grep -F -- "crates.io preparation" "$repo_root/packaging/crates/README.md" >/dev/null
 grep -F -- "render-homebrew-formula.sh" "$repo_root/docs/distribution.md" >/dev/null
 grep -F -- "scripts/verify-release-archive.sh" "$repo_root/docs/distribution.md" >/dev/null
@@ -159,7 +160,7 @@ payload = {
         "remoteRerankingUsed": False,
     },
     "unsupportedActions": [
-        "brew tap publication",
+        "brew tap mutation by distribution metadata smoke",
         "crates.io publish",
         "global install",
         "signed installer",

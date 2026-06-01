@@ -47,7 +47,18 @@ state only.
 
 ## Install v1.1.4
 
-The v1.1.4 install path is a prebuilt GitHub Releases-style archive named like `ctxpack-v1.1.4-aarch64-apple-darwin.tar.gz` or `ctxpack-v1.1.4-x86_64-unknown-linux-gnu.tar.gz`.
+On Apple Silicon macOS, install from the public Homebrew tap:
+
+```bash
+brew tap thromel/tap
+brew install ctxpack
+ctxpack --version
+ctxpack --help
+```
+
+The archive install path remains available for manual verification and
+non-Homebrew workflows. The v1.1.4 archive is named like
+`ctxpack-v1.1.4-aarch64-apple-darwin.tar.gz`.
 
 Download the archive and checksum file for your platform, then verify the SHA-256 checksums:
 

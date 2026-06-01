@@ -39,8 +39,8 @@ Allowed statuses are `ready`, `deferred`, and `blocked`.
 - Use `blocked` when a required gate, source-free check, or privacy boundary
   fails.
 
-For v1.1.4, the local archive channel can be `ready`; Homebrew, crates.io,
-signed installers, and self-update stay deferred.
+For v1.1.4, the local archive and Apple Silicon Homebrew tap channels can be
+`ready`; crates.io, signed installers, and self-update stay deferred.
 
 ## Rollback
 
