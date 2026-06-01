@@ -541,6 +541,8 @@ pub struct ProductProofReleaseGate {
     pub default_promotion_allowed: bool,
     #[serde(default)]
     pub lexical_comparison: ProductProofLexicalComparison,
+    #[serde(default)]
+    pub lexical_backend_comparison: ProductProofLexicalBackendComparison,
     pub corpus_verdicts: Vec<ProductProofCorpusVerdict>,
 }
 
@@ -606,6 +608,52 @@ pub enum ProductProofLexicalClaim {
     MatchesAllCorpora,
     TrailsAnyCorpus,
     NoEvidence,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct ProductProofLexicalBackendComparison {
+    pub corpus_count: usize,
+    pub evaluated_commit_count: usize,
+    pub bm25_beat_count: usize,
+    pub bm25_match_count: usize,
+    pub bm25_trail_count: usize,
+    pub average_bm25_recall_at_10: f32,
+    pub average_legacy_recall_at_10: f32,
+    pub average_recall_delta_at_10: f32,
+    pub average_mrr_delta_at_10: f32,
+    pub average_overlap_at_k: f32,
+    pub average_top_path_changed_rate: f32,
+    pub bm25_wins_at_10: usize,
+    pub legacy_wins_at_10: usize,
+    pub ties_at_10: usize,
+    pub bm25_total_millis: u64,
+    pub legacy_total_millis: u64,
+    pub bm25_claim: ProductProofLexicalClaim,
+}
+
+impl Default for ProductProofLexicalBackendComparison {
+    fn default() -> Self {
+        Self {
+            corpus_count: 0,
+            evaluated_commit_count: 0,
+            bm25_beat_count: 0,
+            bm25_match_count: 0,
+            bm25_trail_count: 0,
+            average_bm25_recall_at_10: 0.0,
+            average_legacy_recall_at_10: 0.0,
+            average_recall_delta_at_10: 0.0,
+            average_mrr_delta_at_10: 0.0,
+            average_overlap_at_k: 0.0,
+            average_top_path_changed_rate: 0.0,
+            bm25_wins_at_10: 0,
+            legacy_wins_at_10: 0,
+            ties_at_10: 0,
+            bm25_total_millis: 0,
+            legacy_total_millis: 0,
+            bm25_claim: ProductProofLexicalClaim::NoEvidence,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -815,6 +863,8 @@ pub struct BenchmarkDefaults {
     pub parallelism: usize,
     #[serde(default)]
     pub role_filters: Vec<FileRole>,
+    #[serde(default)]
+    pub lexical_backend_comparison: bool,
 }
 
 impl Default for BenchmarkDefaults {
@@ -833,6 +883,7 @@ impl Default for BenchmarkDefaults {
             force_refresh: false,
             parallelism: default_benchmark_parallelism(),
             role_filters: Vec::new(),
+            lexical_backend_comparison: false,
         }
     }
 }
@@ -877,6 +928,8 @@ pub struct BenchmarkRepoConfig {
     #[serde(default)]
     pub role_filters: Vec<FileRole>,
     #[serde(default)]
+    pub lexical_backend_comparison: Option<bool>,
+    #[serde(default)]
     pub baseline: Option<BenchmarkRepoBaseline>,
 }
 
@@ -911,6 +964,10 @@ pub struct BenchmarkRepoReport {
     pub excluded_changed_file_count: usize,
     pub skipped_path_count: usize,
     pub report: Option<HistoricalEvalReport>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub lexical_backend_corpus: Option<LexicalBackendCorpusReport>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub lexical_backend_error: Option<String>,
     pub error: Option<String>,
     pub privacy_status: PrivacyStatus,
 }
@@ -981,6 +1038,8 @@ pub struct BenchmarkRepoEffectiveConfig {
     pub parallelism: usize,
     #[serde(default)]
     pub role_filters: Vec<FileRole>,
+    #[serde(default)]
+    pub lexical_backend_comparison: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -1284,7 +1343,113 @@ fn product_proof_release_gate(benchmark_report: &BenchmarkSuiteReport) -> Produc
         decision: decision.0,
         decision_reason: decision.1,
         lexical_comparison: product_proof_lexical_comparison(&corpus_verdicts),
+        lexical_backend_comparison: product_proof_lexical_backend_comparison(benchmark_report),
         corpus_verdicts,
+    }
+}
+
+fn product_proof_lexical_backend_comparison(
+    benchmark_report: &BenchmarkSuiteReport,
+) -> ProductProofLexicalBackendComparison {
+    let reports = benchmark_report
+        .repositories
+        .iter()
+        .filter_map(|repo| repo.lexical_backend_corpus.as_ref())
+        .filter(|report| report.evaluated_commits > 0)
+        .collect::<Vec<_>>();
+    if reports.is_empty() {
+        return ProductProofLexicalBackendComparison::default();
+    }
+
+    let corpus_count = reports.len();
+    let corpus_count_f32 = corpus_count as f32;
+    let bm25_beat_count = reports
+        .iter()
+        .filter(|report| report.comparison.recall_delta_at_10 > 0.03)
+        .count();
+    let bm25_trail_count = reports
+        .iter()
+        .filter(|report| report.comparison.recall_delta_at_10 < -0.03)
+        .count();
+    let bm25_match_count = corpus_count - bm25_beat_count - bm25_trail_count;
+    let evaluated_commit_count = reports
+        .iter()
+        .map(|report| report.evaluated_commits)
+        .sum::<usize>();
+    let average_bm25_recall_at_10 = reports
+        .iter()
+        .map(|report| report.bm25.recall_at_10)
+        .sum::<f32>()
+        / corpus_count_f32;
+    let average_legacy_recall_at_10 = reports
+        .iter()
+        .map(|report| report.legacy.recall_at_10)
+        .sum::<f32>()
+        / corpus_count_f32;
+    let average_recall_delta_at_10 = reports
+        .iter()
+        .map(|report| report.comparison.recall_delta_at_10)
+        .sum::<f32>()
+        / corpus_count_f32;
+    let average_mrr_delta_at_10 = reports
+        .iter()
+        .map(|report| report.comparison.mrr_delta_at_10)
+        .sum::<f32>()
+        / corpus_count_f32;
+    let average_overlap_at_k = reports
+        .iter()
+        .map(|report| report.comparison.average_overlap_at_k)
+        .sum::<f32>()
+        / corpus_count_f32;
+    let average_top_path_changed_rate = reports
+        .iter()
+        .map(|report| report.comparison.top_path_changed_rate)
+        .sum::<f32>()
+        / corpus_count_f32;
+    let bm25_wins_at_10 = reports
+        .iter()
+        .map(|report| report.comparison.bm25_wins_at_10)
+        .sum::<usize>();
+    let legacy_wins_at_10 = reports
+        .iter()
+        .map(|report| report.comparison.legacy_wins_at_10)
+        .sum::<usize>();
+    let ties_at_10 = reports
+        .iter()
+        .map(|report| report.comparison.ties_at_10)
+        .sum::<usize>();
+    let bm25_total_millis = reports
+        .iter()
+        .map(|report| report.runtime.bm25_total_millis)
+        .sum::<u64>();
+    let legacy_total_millis = reports
+        .iter()
+        .map(|report| report.runtime.legacy_total_millis)
+        .sum::<u64>();
+
+    ProductProofLexicalBackendComparison {
+        corpus_count,
+        evaluated_commit_count,
+        bm25_beat_count,
+        bm25_match_count,
+        bm25_trail_count,
+        average_bm25_recall_at_10,
+        average_legacy_recall_at_10,
+        average_recall_delta_at_10,
+        average_mrr_delta_at_10,
+        average_overlap_at_k,
+        average_top_path_changed_rate,
+        bm25_wins_at_10,
+        legacy_wins_at_10,
+        ties_at_10,
+        bm25_total_millis,
+        legacy_total_millis,
+        bm25_claim: lexical_claim(
+            corpus_count,
+            bm25_beat_count,
+            bm25_match_count,
+            bm25_trail_count,
+        ),
     }
 }
 
@@ -2828,6 +2993,9 @@ fn run_benchmark_repo(
         } else {
             repo_config.role_filters.clone()
         },
+        lexical_backend_comparison: repo_config
+            .lexical_backend_comparison
+            .unwrap_or(defaults.lexical_backend_comparison),
     };
     let semantic_provider = benchmark_semantic_provider(&effective_config);
     effective_config.semantic_provider = semantic_provider.provider.clone();
@@ -2853,6 +3021,23 @@ fn run_benchmark_repo(
 
     match evaluate_historical_commits(&repo_path, &options) {
         Ok(report) => {
+            let (lexical_backend_corpus, lexical_backend_error) =
+                if effective_config.lexical_backend_comparison {
+                    match compare_lexical_backends_on_corpus(
+                        &repo_path,
+                        &LexicalBackendCorpusOptions {
+                            limit: effective_config.limit,
+                            ranking_budget: effective_config.ranking_budget,
+                            base: effective_config.base.clone(),
+                            head: effective_config.head.clone(),
+                        },
+                    ) {
+                        Ok(report) => (Some(report), None),
+                        Err(error) => (None, Some(error.to_string())),
+                    }
+                } else {
+                    (None, None)
+                };
             let baseline_status = repo_config
                 .baseline
                 .as_ref()
@@ -2891,6 +3076,8 @@ fn run_benchmark_repo(
                 excluded_changed_file_count,
                 skipped_path_count,
                 report: Some(report),
+                lexical_backend_corpus,
+                lexical_backend_error,
                 error: report_error,
                 privacy_status: PrivacyStatus::local_only(),
             }
@@ -2911,6 +3098,8 @@ fn run_benchmark_repo(
                 excluded_changed_file_count: 0,
                 skipped_path_count: 0,
                 report: None,
+                lexical_backend_corpus: None,
+                lexical_backend_error: None,
                 error: Some(error),
                 privacy_status: PrivacyStatus::local_only(),
             }
@@ -6972,6 +7161,7 @@ mod tests {
                 force_refresh: Some(true),
                 parallelism: Some(1),
                 role_filters: Vec::new(),
+                lexical_backend_comparison: None,
                 baseline: None,
             }],
         };
@@ -7719,6 +7909,8 @@ mod tests {
                 excluded_changed_file_count: 0,
                 skipped_path_count: 0,
                 report: Some(report),
+                lexical_backend_corpus: None,
+                lexical_backend_error: None,
                 error: None,
                 privacy_status: PrivacyStatus::local_only(),
             })
@@ -7760,6 +7952,7 @@ mod tests {
             force_refresh: false,
             parallelism: 1,
             role_filters: Vec::new(),
+            lexical_backend_comparison: false,
         }
     }
 

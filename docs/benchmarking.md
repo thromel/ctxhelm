@@ -97,6 +97,7 @@ Benchmark suites are JSON files. Paths may be absolute or relative to the suite 
     "semanticProvider": "local_hash",
     "semanticModel": "ctxhelm-local-hash-v1",
     "semanticDimensions": 64,
+    "lexicalBackendComparison": false,
     "cacheEnabled": true,
     "forceRefresh": false,
     "parallelism": 4,
@@ -144,6 +145,7 @@ Fields:
 - `defaults.semanticProvider`: semantic provider used when semantic retrieval is enabled. Defaults to `local_hash`.
 - `defaults.semanticModel`: optional provider model override. Benchmark reports resolve provider defaults into effective metadata.
 - `defaults.semanticDimensions`: optional provider dimension override. Benchmark reports resolve provider defaults into effective metadata.
+- `defaults.lexicalBackendComparison`: optional source-free BM25-vs-legacy lexical backend corpus comparison. Defaults to `false` because it runs both lexical backends over the selected historical tasks.
 - `defaults.cacheEnabled`: reuse source-free stored historical eval reports when the repo/range/options/cache schema are unchanged.
 - `defaults.forceRefresh`: recompute and overwrite a cached historical eval report for the same source-free range.
 - `defaults.parallelism`: number of historical commit samples to evaluate concurrently. Output ordering remains deterministic.
@@ -153,7 +155,7 @@ Fields:
 - `repositories[*].revisionRangeId`: source-free stable label for the revision range.
 - `repositories[*].privacyLabel`: expected repo privacy class.
 - `repositories[*].base` / `head`: optional stable revision range.
-- `repositories[*].limit`, `rankingBudget`, `mode`, `targetAgent`, `semanticEnabled`, `semanticProvider`, `semanticModel`, `semanticDimensions`, `cacheEnabled`, `forceRefresh`, `parallelism`, `roleFilters`: per-repo overrides.
+- `repositories[*].limit`, `rankingBudget`, `mode`, `targetAgent`, `semanticEnabled`, `semanticProvider`, `semanticModel`, `semanticDimensions`, `lexicalBackendComparison`, `cacheEnabled`, `forceRefresh`, `parallelism`, `roleFilters`: per-repo overrides.
 - `repositories[*].baseline`: optional locked source-free baseline metadata for regression suites. Supported fields are `fileRecallAt10`, `lexicalBaselineRecallAt10`, `totalMillis`, `gapFamilies`, and `notes`.
 
 ## Run
@@ -170,7 +172,7 @@ ctxhelm eval compare --base-report previous.json --head-report current.json --th
 ctxhelm eval proof --config .ctxhelm/benchmarks/retrieval-quality.json
 ```
 
-The Markdown report is meant for local inspection. The JSON report is the stable contract for future release gates, portfolio tables, and regression comparison. `ctxhelm eval baselines` runs a paired source-free comparison for default ctxhelm, lexical, no-context, signal-only, and ablation variants on the same historical corpus. `ctxhelm eval compare` consumes two benchmark JSON reports and emits source-free metric deltas, retrieval-gap family deltas, and threshold pass/fail checks. `ctxhelm eval proof` runs the configured benchmark suite and emits the adoption-facing proof report with headline metrics, v2.3 fixed-corpus identity, paired baseline verdicts, runtime diagnostics, feature-export privacy, learned-policy status, limitations, when ctxhelm helps, when it does not, and future work from measured gaps.
+The Markdown report is meant for local inspection. The JSON report is the stable contract for future release gates, portfolio tables, and regression comparison. `ctxhelm eval baselines` runs a paired source-free comparison for default ctxhelm, lexical, no-context, signal-only, and ablation variants on the same historical corpus. `ctxhelm eval compare` consumes two benchmark JSON reports and emits source-free metric deltas, retrieval-gap family deltas, and threshold pass/fail checks. `ctxhelm eval proof` runs the configured benchmark suite and emits the adoption-facing proof report with headline metrics, v2.3 fixed-corpus identity, paired baseline verdicts, optional lexical backend comparison evidence, runtime diagnostics, feature-export privacy, learned-policy status, limitations, when ctxhelm helps, when it does not, and future work from measured gaps.
 
 ## Privacy Boundary
 

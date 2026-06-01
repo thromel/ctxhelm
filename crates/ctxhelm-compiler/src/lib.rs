@@ -33,13 +33,13 @@ pub use eval::{
     LexicalBackendCommitRow, LexicalBackendComparison, LexicalBackendCorpusOptions,
     LexicalBackendCorpusReport, LexicalBackendMetrics, LexicalBackendRuntimeSummary,
     PairedBaselineAnalysisReport, PairedBaselineFamily, PairedBaselineRow, PairedBaselineVerdict,
-    ProductProofCorpusStatus, ProductProofCorpusVerdict, ProductProofLexicalClaim,
-    ProductProofLexicalComparison, ProductProofMetric, ProductProofReleaseGate, ProductProofReport,
-    ProtectedEvidenceSignalSummary, ProtectedEvidenceSummary, RankingMetrics,
-    RetrievalGapRecommendationArea, RetrievalGapSummary, RetrievalGapTargetStatus,
-    RoleRecallMetric, SemanticPrecisionGateDecision, SemanticPrecisionGateReport,
-    SemanticPrecisionNamedCase, SemanticPrecisionVariant, SemanticPrecisionVariantStatus,
-    SignalAblationResult, SignalSaturationMetric, TokenRoiMetric,
+    ProductProofCorpusStatus, ProductProofCorpusVerdict, ProductProofLexicalBackendComparison,
+    ProductProofLexicalClaim, ProductProofLexicalComparison, ProductProofMetric,
+    ProductProofReleaseGate, ProductProofReport, ProtectedEvidenceSignalSummary,
+    ProtectedEvidenceSummary, RankingMetrics, RetrievalGapRecommendationArea, RetrievalGapSummary,
+    RetrievalGapTargetStatus, RoleRecallMetric, SemanticPrecisionGateDecision,
+    SemanticPrecisionGateReport, SemanticPrecisionNamedCase, SemanticPrecisionVariant,
+    SemanticPrecisionVariantStatus, SignalAblationResult, SignalSaturationMetric, TokenRoiMetric,
 };
 pub use graph::build_graph_neighborhood_report;
 pub use packs::{
@@ -2718,6 +2718,7 @@ mod tests {
                 force_refresh: false,
                 parallelism: 1,
                 role_filters: vec![FileRole::Source, FileRole::Test],
+                lexical_backend_comparison: false,
             },
             repositories: vec![
                 BenchmarkRepoConfig {
@@ -2740,6 +2741,7 @@ mod tests {
                     force_refresh: None,
                     parallelism: None,
                     role_filters: Vec::new(),
+                    lexical_backend_comparison: None,
                     baseline: Some(BenchmarkRepoBaseline {
                         file_recall_at_10: None,
                         lexical_baseline_recall_at_10: None,
@@ -2768,6 +2770,7 @@ mod tests {
                     force_refresh: Some(false),
                     parallelism: Some(1),
                     role_filters: vec![FileRole::Source],
+                    lexical_backend_comparison: None,
                     baseline: None,
                 },
             ],

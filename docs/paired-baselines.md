@@ -118,6 +118,33 @@ deltas, overlap@K, top-path churn, win/tie counts, and backend runtime. Per-row
 task text is replaced by `taskHash`; rows keep only commit SHA, target paths,
 backend candidate paths, hit lists, overlap, and timing.
 
+Benchmark suites and product proof can include this same corpus-level backend
+comparison by setting `lexicalBackendComparison` to `true` in suite defaults or
+on a specific repository entry:
+
+```json
+{
+  "defaults": {
+    "limit": 20,
+    "rankingBudget": 10,
+    "lexicalBackendComparison": true
+  }
+}
+```
+
+When enabled, benchmark JSON stores successful evidence under
+`repositories[*].lexicalBackendCorpus`. If setup fails, the repo records
+`lexicalBackendError` instead of raw source, raw task text, or terminal logs.
+Product-proof JSON aggregates successful reports under
+`releaseGate.lexicalBackendComparison` with average BM25 recall, legacy recall,
+recall/MRR deltas, overlap, top-path churn, win/tie counts, backend runtime, and
+a thresholded `bm25Claim`.
+
+Keep this evidence separate from ctxhelm-vs-lexical proof. Backend comparison
+answers whether the active BM25 lexical implementation improved over the old
+scanner. The release gate's existing lexical verdicts answer whether ctxhelm's
+full context compiler beats, matches, or trails lexical retrieval.
+
 ## Privacy Boundary
 
 The JSON output is intended for local eval storage, benchmark comparison, and

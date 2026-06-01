@@ -4,10 +4,10 @@ milestone: v2.5
 milestone_name: Production Retrieval Quality
 status: active
 last_updated: "2026-06-02T00:00:00Z"
-last_activity: 2026-06-02 -- Phase 155 added a corpus-level lexical backend comparison report for measuring BM25 versus the legacy scanner across historical tasks
+last_activity: 2026-06-02 -- Phase 156 integrated optional lexical backend corpus evidence into benchmark and product-proof reports
 progress:
-  total_phases: 85
-  completed_phases: 85
+  total_phases: 86
+  completed_phases: 86
   total_plans: 7
   completed_plans: 7
   percent: 100
@@ -17,10 +17,10 @@ progress:
 
 ## Current Position
 
-Phase: 155 - BM25 Corpus Comparison Report
-Plan: 155-bm25-corpus-comparison-report
+Phase: 156 - Lexical Backend Product Proof Integration
+Plan: 156-lexical-backend-proof-integration
 Status: Complete
-Last activity: 2026-06-02 -- Phase 155 added `ctxhelm eval lexical corpus` so maintainers can compare active Tantivy/BM25 lexical ranking against the pre-BM25 heuristic scanner over historical commit tasks and parent snapshots without storing task text or source text.
+Last activity: 2026-06-02 -- Phase 156 lets benchmark suites opt into the BM25-vs-legacy lexical corpus comparison and carries the source-free aggregate into `releaseGate.lexicalBackendComparison` without changing the default proof cost.
 
 ## Project Reference
 
@@ -132,6 +132,7 @@ Planned phases:
 - Phase 153: BM25 Symbol Lexical Index (complete follow-up)
 - Phase 154: BM25 Legacy Comparison Report (complete follow-up)
 - Phase 155: BM25 Corpus Comparison Report (complete follow-up)
+- Phase 156: Lexical Backend Product Proof Integration (complete follow-up)
 
 ## Last Completed Milestone
 

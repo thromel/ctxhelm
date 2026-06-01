@@ -5119,7 +5119,7 @@ fn render_benchmark_suite_report(report: &BenchmarkSuiteReport) -> String {
     for repo in &report.repositories {
         output.push_str(&format!("### `{}`\n\n", repo.name));
         output.push_str(&format!(
-            "- Repo ID: `{}`\n- Revision range ID: `{}`\n- Privacy label: `{}`\n- Evaluated commits: `{}`\n- Excluded changed files: `{}`\n- Skipped path labels: `{}`\n- Limit: `{}`\n- Ranking budget K: `{}`\n- Cache enabled: `{}`\n- Force refresh: `{}`\n- Parallelism: `{}`\n- Mode: `{:?}`\n- Target agent: `{}`\n- Base: `{}`\n- Head: `{}`\n- Role filters: `{}`\n- Privacy: local-only `{}`\n",
+            "- Repo ID: `{}`\n- Revision range ID: `{}`\n- Privacy label: `{}`\n- Evaluated commits: `{}`\n- Excluded changed files: `{}`\n- Skipped path labels: `{}`\n- Limit: `{}`\n- Ranking budget K: `{}`\n- Cache enabled: `{}`\n- Force refresh: `{}`\n- Parallelism: `{}`\n- Lexical backend comparison: `{}`\n- Mode: `{:?}`\n- Target agent: `{}`\n- Base: `{}`\n- Head: `{}`\n- Role filters: `{}`\n- Privacy: local-only `{}`\n",
             repo.repo_id.as_deref().unwrap_or("unavailable"),
             repo.effective_config
                 .revision_range_id
@@ -5137,6 +5137,7 @@ fn render_benchmark_suite_report(report: &BenchmarkSuiteReport) -> String {
             repo.effective_config.cache_enabled,
             repo.effective_config.force_refresh,
             repo.effective_config.parallelism,
+            repo.effective_config.lexical_backend_comparison,
             repo.effective_config.mode,
             repo.effective_config.target_agent,
             repo.effective_config.base.as_deref().unwrap_or("HEAD history"),
@@ -5190,6 +5191,28 @@ fn render_benchmark_suite_report(report: &BenchmarkSuiteReport) -> String {
             eval.protected_evidence.candidate_count,
             eval.protected_evidence.miss_rate_at_10
         ));
+
+        if let Some(lexical_backend) = &repo.lexical_backend_corpus {
+            output.push_str("#### Lexical Backend Comparison\n\n");
+            output.push_str(&format!(
+                "- BM25 Recall@10: `{:.3}`\n- Legacy Recall@10: `{:.3}`\n- Recall delta@10: `{:+.3}`\n- MRR delta@10: `{:+.3}`\n- Average overlap@K: `{:.2}`\n- Top-path changed rate: `{:.2}`\n- BM25 wins / legacy wins / ties: `{}` / `{}` / `{}`\n- BM25/legacy runtime ms: `{}` / `{}`\n\n",
+                lexical_backend.bm25.recall_at_10,
+                lexical_backend.legacy.recall_at_10,
+                lexical_backend.comparison.recall_delta_at_10,
+                lexical_backend.comparison.mrr_delta_at_10,
+                lexical_backend.comparison.average_overlap_at_k,
+                lexical_backend.comparison.top_path_changed_rate,
+                lexical_backend.comparison.bm25_wins_at_10,
+                lexical_backend.comparison.legacy_wins_at_10,
+                lexical_backend.comparison.ties_at_10,
+                lexical_backend.runtime.bm25_total_millis,
+                lexical_backend.runtime.legacy_total_millis
+            ));
+        } else if let Some(error) = &repo.lexical_backend_error {
+            output.push_str(&format!(
+                "#### Lexical Backend Comparison\n\n- Error: `{error}`\n\n"
+            ));
+        }
 
         if let Some(status) = &repo.baseline_status {
             output.push_str("#### Locked Baseline Comparison\n\n");
@@ -5413,6 +5436,28 @@ fn render_product_proof_report(report: &ProductProofReport) -> String {
         comparison.average_context_recall_at_10,
         comparison.average_lexical_context_recall_at_10,
         comparison.average_context_delta_at_10,
+    ));
+    let backend = &report.release_gate.lexical_backend_comparison;
+    output.push_str("### Lexical Backend Comparison Summary\n\n");
+    output.push_str(&format!(
+        "- BM25 claim: `{}` (beat `{}`, match `{}`, trail `{}` of `{}` corpora)\n- Evaluated commits: `{}`\n- Average BM25 recall@10: `{:.3}`\n- Average legacy recall@10: `{:.3}`\n- Average recall delta@10: `{:+.3}`\n- Average MRR delta@10: `{:+.3}`\n- Average overlap@K: `{:.2}`\n- Average top-path changed rate: `{:.2}`\n- BM25 wins / legacy wins / ties: `{}` / `{}` / `{}`\n- BM25/legacy runtime ms: `{}` / `{}`\n\n",
+        lexical_claim_label(&backend.bm25_claim),
+        backend.bm25_beat_count,
+        backend.bm25_match_count,
+        backend.bm25_trail_count,
+        backend.corpus_count,
+        backend.evaluated_commit_count,
+        backend.average_bm25_recall_at_10,
+        backend.average_legacy_recall_at_10,
+        backend.average_recall_delta_at_10,
+        backend.average_mrr_delta_at_10,
+        backend.average_overlap_at_k,
+        backend.average_top_path_changed_rate,
+        backend.bm25_wins_at_10,
+        backend.legacy_wins_at_10,
+        backend.ties_at_10,
+        backend.bm25_total_millis,
+        backend.legacy_total_millis
     ));
     output.push_str("### Corpus Verdicts\n\n");
     if report.release_gate.corpus_verdicts.is_empty() {

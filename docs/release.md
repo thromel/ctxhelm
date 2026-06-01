@@ -683,6 +683,15 @@ protected target misses on all four corpora with average File Recall@10
 `0.5986343`, average file delta `+0.14154172`, average agent-evidence delta
 `+0.19379663`, and average context delta `+0.23717105`.
 
+Phase 156 makes BM25-vs-legacy lexical backend proof available inside benchmark
+suites and product-proof output. Suites opt in with
+`lexicalBackendComparison = true`; benchmark JSON then records
+`lexicalBackendCorpus` or a source-free `lexicalBackendError` per repository,
+and product proof aggregates successful reports under
+`releaseGate.lexicalBackendComparison`. This evidence answers whether the
+active BM25 lexical backend improves over the old scanner. It does not replace
+the existing ctxhelm-vs-lexical release verdicts for the full context compiler.
+
 Phase 129 adds a public release freshness check for the already-published
 archive channel. `scripts/check-public-release-freshness.sh` compares the
 public `v1.1.0` release target with the current commit and writes source-free

@@ -2172,7 +2172,8 @@ fn eval_compare_reports_source_free_metric_and_gap_deltas() {
                 "limit": 1,
                 "rankingBudget": 4,
                 "mode": "bug_fix",
-                "targetAgent": "codex"
+                "targetAgent": "codex",
+                "lexicalBackendComparison": true
             },
             "repositories": [
                 {
@@ -2246,6 +2247,25 @@ fn eval_compare_reports_source_free_metric_and_gap_deltas() {
 #[test]
 fn eval_proof_generates_source_free_product_report() {
     let fixture = fixture_repo();
+    fs::write(
+        fixture.repo.join("src/auth/session.ts"),
+        r#"import { issueToken } from "./token";
+
+export function requireSession(user?: { id: string }) {
+  if (!user) {
+    throw new Error("auth required");
+  }
+  issueToken(user.id);
+  return `session:${user.id}`;
+}
+"#,
+    )
+    .unwrap();
+    run_git(&fixture.repo, &["add", "src/auth/session.ts"]);
+    run_git(
+        &fixture.repo,
+        &["commit", "-m", "requireSession regression"],
+    );
     let suite_path = fixture.temp.path().join("ctxhelm-proof.json");
     fs::write(
         &suite_path,
@@ -2258,7 +2278,8 @@ fn eval_proof_generates_source_free_product_report() {
                 "limit": 1,
                 "rankingBudget": 4,
                 "mode": "bug_fix",
-                "targetAgent": "codex"
+                "targetAgent": "codex",
+                "lexicalBackendComparison": true
             },
             "repositories": [
                 {
@@ -2331,8 +2352,8 @@ fn eval_proof_generates_source_free_product_report() {
         .unwrap()
         .iter()
         .any(|metric| metric["label"] == "averageCtxhelmLiftAt10"));
-    assert_eq!(value["releaseGate"]["decision"], "block");
-    assert_eq!(value["releaseGate"]["defaultPromotionAllowed"], false);
+    assert_eq!(value["releaseGate"]["decision"], "promote");
+    assert_eq!(value["releaseGate"]["defaultPromotionAllowed"], true);
     assert!(value["releaseGate"]["lexicalComparison"].is_object());
     assert!(value["releaseGate"]["lexicalComparison"]["allFileClaim"].is_string());
     assert!(value["releaseGate"]["lexicalComparison"]["agentEvidenceClaim"].is_string());
@@ -2340,12 +2361,20 @@ fn eval_proof_generates_source_free_product_report() {
     assert!(
         value["releaseGate"]["lexicalComparison"]["averageAgentEvidenceRecallAt10"].is_number()
     );
+    assert!(value["releaseGate"]["lexicalBackendComparison"].is_object());
+    assert!(value["releaseGate"]["lexicalBackendComparison"]["averageRecallDeltaAt10"].is_number());
+    assert!(value["releaseGate"]["lexicalBackendComparison"]["bm25Claim"].is_string());
     assert!(value["releaseGate"]["corpusVerdicts"].is_array());
     assert!(value["limitations"].is_array());
     assert!(value["helpsWhen"].is_array());
     assert!(value["doesNotHelpWhen"].is_array());
     assert!(value["futureWork"].is_array());
     assert!(value["benchmarkReport"]["repositories"].is_array());
+    assert!(
+        value["benchmarkReport"]["repositories"][0]["lexicalBackendCorpus"]["comparison"]
+            ["recallDeltaAt10"]
+            .is_number()
+    );
     assert_no_source_or_prompt_text(&value);
 
     Command::cargo_bin("ctxhelm")
@@ -2363,6 +2392,7 @@ fn eval_proof_generates_source_free_product_report() {
         .stdout(contains("Paired Baseline Verdicts"))
         .stdout(contains("Proof Boundary"))
         .stdout(contains("Release Gate Decision"))
+        .stdout(contains("Lexical Backend Comparison Summary"))
         .stdout(contains("Corpus Verdicts"))
         .stdout(contains("When It Helps"))
         .stdout(contains("When It Does Not Help"))
