@@ -154,11 +154,16 @@ run_smoke() {
   local stdout_log="$work_dir/${client}.stdout"
   local stderr_log="$work_dir/${client}.stderr"
   set +e
+  local require_resource_scope="${CTXPACK_REQUIRE_RESOURCE_SCOPE:-1}"
+  if [[ "$expected_version" == "ctxpack 1.1.0" ]]; then
+    require_resource_scope="${CTXPACK_PUBLIC_SMOKE_REQUIRE_RESOURCE_SCOPE:-0}"
+  fi
   CTXPACK_BIN="$ctxpack_bin" \
     CTXPACK_SMOKE_REPO="$smoke_repo" \
     CTXPACK_RUN_REAL_CLIENT="${CTXPACK_RUN_REAL_CLIENT:-1}" \
     CTXPACK_REQUIRE_REAL_CLIENT="${CTXPACK_REQUIRE_REAL_CLIENT:-0}" \
     CTXPACK_SKIP_REAL_CLIENT="${CTXPACK_SKIP_REAL_CLIENT:-0}" \
+    CTXPACK_REQUIRE_RESOURCE_SCOPE="$require_resource_scope" \
     CTXPACK_REAL_CLIENT_EVIDENCE_DIR="$evidence_dir" \
     bash "$script" >"$stdout_log" 2>"$stderr_log"
   local status=$?

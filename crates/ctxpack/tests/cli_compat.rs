@@ -2481,6 +2481,14 @@ fn mcp_protocol_smoke_script_supports_selected_binary() {
     assert!(content.contains("ctxpack://repo/context-areas"));
     assert!(content.contains("ctxpack://repo/context-area/"));
     assert!(content.contains("nextReadBatches"));
+    assert!(
+        content.contains("CTXPACK_REQUIRE_RESOURCE_SCOPE"),
+        "MCP smoke should keep post-release resourceScope assertions explicit"
+    );
+    assert!(
+        content.contains("require_resource_scope"),
+        "MCP smoke should allow release-compatible protocol expectations only when explicitly requested"
+    );
 }
 
 #[test]

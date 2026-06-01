@@ -6,6 +6,7 @@ CTXPACK_SMOKE_REPO="${CTXPACK_SMOKE_REPO:-$PWD}"
 CTXPACK_SMOKE_TASK="${CTXPACK_SMOKE_TASK:-fix requireSession auth bug}"
 CTXPACK_SMOKE_PATH="${CTXPACK_SMOKE_PATH:-crates/ctxpack-mcp/src/tools.rs}"
 CTXPACK_SMOKE_QUERY="${CTXPACK_SMOKE_QUERY:-prepare_task}"
+CTXPACK_REQUIRE_RESOURCE_SCOPE="${CTXPACK_REQUIRE_RESOURCE_SCOPE:-1}"
 
 if [[ ! -d "$CTXPACK_ROOT" ]]; then
   echo "CTXPACK_ROOT does not exist: $CTXPACK_ROOT" >&2
@@ -47,7 +48,7 @@ mkdir -p "$(dirname "$smoke_diff_file")"
 printf 'pub fn ctxpack_smoke_current_diff() {}\n' >"$smoke_diff_file"
 export CTXPACK_HOME
 
-python3 - "$CTXPACK_ROOT" "$CTXPACK_SMOKE_REPO" "$CTXPACK_SMOKE_TASK" "$CTXPACK_SMOKE_PATH" "$CTXPACK_SMOKE_QUERY" "$server_cwd" "$diff_repo" "$smoke_diff_path" "${CTXPACK_BIN:-}" <<'PY'
+python3 - "$CTXPACK_ROOT" "$CTXPACK_SMOKE_REPO" "$CTXPACK_SMOKE_TASK" "$CTXPACK_SMOKE_PATH" "$CTXPACK_SMOKE_QUERY" "$server_cwd" "$diff_repo" "$smoke_diff_path" "$CTXPACK_REQUIRE_RESOURCE_SCOPE" "${CTXPACK_BIN:-}" <<'PY'
 import json
 import os
 import subprocess
@@ -55,7 +56,8 @@ import sys
 from pathlib import Path
 from urllib.parse import quote
 
-root, repo, task, anchor_path, query, server_cwd, diff_repo, smoke_diff_path, ctxpack_bin = sys.argv[1:]
+root, repo, task, anchor_path, query, server_cwd, diff_repo, smoke_diff_path, require_resource_scope, ctxpack_bin = sys.argv[1:]
+require_resource_scope = require_resource_scope == "1"
 repo_path = Path(repo).resolve()
 diff_repo_path = Path(diff_repo).resolve()
 anchor = repo_path / anchor_path
@@ -181,19 +183,21 @@ try:
     if context_areas.get("sourceTextLogged") is not False:
         raise SystemExit("resources/read.contextAreas: sourceTextLogged was not false")
     context_areas_scope = context_areas.get("resourceScope", {})
-    if context_areas_scope.get("kind") != "safeInventoryArea":
-        raise SystemExit("resources/read.contextAreas: missing safeInventoryArea resourceScope")
-    if context_areas_scope.get("taskConditioned") is not False:
-        raise SystemExit("resources/read.contextAreas: resourceScope must be taskConditioned=false")
-    if context_areas_scope.get("countsSource") != "safeInventory":
-        raise SystemExit("resources/read.contextAreas: resourceScope countsSource must be safeInventory")
+    if require_resource_scope:
+        if context_areas_scope.get("kind") != "safeInventoryArea":
+            raise SystemExit("resources/read.contextAreas: missing safeInventoryArea resourceScope")
+        if context_areas_scope.get("taskConditioned") is not False:
+            raise SystemExit("resources/read.contextAreas: resourceScope must be taskConditioned=false")
+        if context_areas_scope.get("countsSource") != "safeInventory":
+            raise SystemExit("resources/read.contextAreas: resourceScope countsSource must be safeInventory")
     if not isinstance(context_areas.get("areas"), list):
         raise SystemExit("resources/read.contextAreas: missing areas array")
     if not context_areas["areas"]:
         raise SystemExit("resources/read.contextAreas: empty areas array")
     first_area_scope = context_areas["areas"][0].get("resourceScope", {})
-    if first_area_scope.get("kind") != "safeInventoryArea":
-        raise SystemExit("resources/read.contextAreas.areas[0]: missing safeInventoryArea resourceScope")
+    if require_resource_scope:
+        if first_area_scope.get("kind") != "safeInventoryArea":
+            raise SystemExit("resources/read.contextAreas.areas[0]: missing safeInventoryArea resourceScope")
     context_area = context_area_for_path(anchor_path)
     context_area_uri = "ctxpack://repo/context-area/" + quote(context_area, safe="")
     context_area_resource = resource_json(
@@ -204,12 +208,13 @@ try:
     if context_area_resource.get("sourceTextLogged") is not False:
         raise SystemExit("resources/read.contextArea: sourceTextLogged was not false")
     context_area_scope = context_area_resource.get("resourceScope", {})
-    if context_area_scope.get("kind") != "safeInventoryArea":
-        raise SystemExit("resources/read.contextArea: missing safeInventoryArea resourceScope")
-    if context_area_scope.get("taskConditioned") is not False:
-        raise SystemExit("resources/read.contextArea: resourceScope must be taskConditioned=false")
-    if context_area_scope.get("pathSource") != "safeInventory":
-        raise SystemExit("resources/read.contextArea: resourceScope pathSource must be safeInventory")
+    if require_resource_scope:
+        if context_area_scope.get("kind") != "safeInventoryArea":
+            raise SystemExit("resources/read.contextArea: missing safeInventoryArea resourceScope")
+        if context_area_scope.get("taskConditioned") is not False:
+            raise SystemExit("resources/read.contextArea: resourceScope must be taskConditioned=false")
+        if context_area_scope.get("pathSource") != "safeInventory":
+            raise SystemExit("resources/read.contextArea: resourceScope pathSource must be safeInventory")
     if context_area_resource.get("pathCount", 0) <= 0:
         raise SystemExit("resources/read.contextArea: expected paths for anchor area")
     next_read_batches = require_list(

@@ -138,6 +138,12 @@ clients write source-free `prepare_task`/`get_pack` request evidence. Skipped or
 unavailable clients write source-free skip evidence instead unless
 `CTXPACK_REQUIRE_REAL_CLIENT=1` makes them required.
 
+For the published `ctxpack 1.1.0` archive, the script runs the protocol smoke in
+release-compatible mode by setting `CTXPACK_REQUIRE_RESOURCE_SCOPE=0`. Current
+source-tree and release-candidate gates keep `CTXPACK_REQUIRE_RESOURCE_SCOPE=1`
+by default, so newer `resourceScope` MCP assertions remain enforced for current
+builds while old public archives stay verifiable.
+
 During multi-plan local work, maintainers can set `CTXPACK_ALLOW_DIRTY=1` for verification, but release artifacts should be produced from a clean checkout.
 
 ## Release Gate

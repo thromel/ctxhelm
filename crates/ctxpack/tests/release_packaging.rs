@@ -785,6 +785,8 @@ fn public_real_client_smoke_script_contract() {
         "CTXPACK_REQUIRE_REAL_CLIENT",
         "CTXPACK_SKIP_REAL_CLIENT",
         "CTXPACK_REAL_CLIENT_EVIDENCE_DIR",
+        "CTXPACK_REQUIRE_RESOURCE_SCOPE",
+        "CTXPACK_PUBLIC_SMOKE_REQUIRE_RESOURCE_SCOPE",
         "downloadedPublicAssets",
         "checksumsVerified",
         "archiveVerified",

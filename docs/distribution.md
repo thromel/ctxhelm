@@ -73,7 +73,10 @@ Optional Codex CLI and Claude Code behavior against the public archive binary
 can be checked with `scripts/smoke-public-real-clients.sh`. That script reuses
 the public GitHub release assets, runs the existing real-client wrappers with the
 extracted binary, and records source-free pass or skip evidence without global
-installation or agent-config mutation.
+installation or agent-config mutation. Public `ctxpack 1.1.0` archive checks use
+`CTXPACK_REQUIRE_RESOURCE_SCOPE=0` for protocol compatibility with that released
+binary; current build and release-candidate protocol checks keep the stricter
+resource-scope assertions enabled by default.
 
 ## Verification
 

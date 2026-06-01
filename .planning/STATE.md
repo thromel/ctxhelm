@@ -3,11 +3,11 @@ gsd_state_version: 1.0
 milestone: v2.5
 milestone_name: Production Retrieval Quality
 status: active
-last_updated: "2026-06-01T00:09:00Z"
-last_activity: 2026-06-01 -- Phase 121 moved public CI JavaScript actions to Node 24
+last_updated: "2026-06-01T00:23:00Z"
+last_activity: 2026-06-01 -- Phase 122 fixed public real-client archive protocol compatibility
 progress:
-  total_phases: 53
-  completed_phases: 53
+  total_phases: 54
+  completed_phases: 54
   total_plans: 7
   completed_plans: 7
   percent: 100
@@ -17,10 +17,10 @@ progress:
 
 ## Current Position
 
-Phase: 121 - CI Node 24 Runtime Guard
-Plan: 121-ci-node24-runtime-guard
+Phase: 122 - Public Real-Client Protocol Compatibility
+Plan: 122-public-real-client-protocol-compatibility
 Status: Complete
-Last activity: 2026-06-01 -- Phase 121 upgraded public CI to `actions/checkout@v5` and `actions/cache@v5`, kept `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true`, and verified public CI passed without Node 20 warning text.
+Last activity: 2026-06-01 -- Phase 122 made public `v1.1.0` real-client smoke protocol-compatible with the archived binary while keeping current protocol resource-scope checks strict by default.
 
 ## Project Reference
 
@@ -98,6 +98,7 @@ Planned phases:
 - Phase 119: Index Test Environment Lock (complete follow-up)
 - Phase 120: Public CI Release Gate (complete follow-up)
 - Phase 121: CI Node 24 Runtime Guard (complete follow-up)
+- Phase 122: Public Real-Client Protocol Compatibility (complete follow-up)
 
 ## Last Completed Milestone
 
@@ -115,7 +116,7 @@ Planned phases:
 
 ## Next Step
 
-Continue production-readiness work from remaining measured gaps: continue broad source-free area/ranking improvements and refresh real-client proof evidence when client versions change. Broad evals now distinguish files covered only by surfaced context areas from files with no candidate signal, clean cold full-fixture proof promotes across RefactoringMiner, ctxpack, ReAgent, and VeriSchema, the full packaged release gate passes from a clean checkout with the clean fixture proof required, release-candidate metadata marks the local archive channel ready while deferring Homebrew/crates.io/signed installers/self-update, the public `v1.1.0` GitHub archive release is published and source-free asset digests are verified, the public archive install path passes checksum/archive/temp-install/doctor/first-pack proof, optional public-archive real-client proof records Claude Code tool-call evidence and Codex CLI skip evidence, broad context-area guidance covers more wide-task implementation areas, packs tell agents concrete source/docs paths to inspect next, plan-level context areas expose source-free role signals, MCP context-area resources explicitly label their counts/read batches as safe-inventory scope, ctxpack-index release-validation tests now share one process-environment lock for `CTXPACK_HOME`, public CI now enforces formatting, clippy, locked tests, CLI help, release-doc consistency, and release-gate smoke on pushes/PRs using Node 24 action majors without Node 20 warning text, gap summaries point to area resources and bounded next-read paths, the product-proof checker gates those gap summaries and fails cleanly on missing embedded repo reports, history-unavailable repos now produce embedded insufficient-evidence reports instead of `null` reports, repo-scoped resources work after explicit-repo MCP tools even from a wrong server cwd, broad fixed-corpus metric floors block silent selection regressions, governance/proof tasks classify broad historical/eval language reliably, archive/docs broad tasks now receive context-area guidance without perturbing target-file source floors, real-client smoke artifacts now carry source-free request metadata instead of boolean-only claims, and the full four-repo proof now hydrates all configured repositories instead of hanging or returning missing reports.
+Continue production-readiness work from remaining measured gaps: continue broad source-free area/ranking improvements and refresh real-client proof evidence when client versions change. Broad evals now distinguish files covered only by surfaced context areas from files with no candidate signal, clean cold full-fixture proof promotes across RefactoringMiner, ctxpack, ReAgent, and VeriSchema, the full packaged release gate passes from a clean checkout with the clean fixture proof required, release-candidate metadata marks the local archive channel ready while deferring Homebrew/crates.io/signed installers/self-update, the public `v1.1.0` GitHub archive release is published and source-free asset digests are verified, the public archive install path passes checksum/archive/temp-install/doctor/first-pack proof, optional public-archive real-client proof records Claude Code tool-call evidence and Codex CLI source-free skip evidence without missing-evidence regressions, broad context-area guidance covers more wide-task implementation areas, packs tell agents concrete source/docs paths to inspect next, plan-level context areas expose source-free role signals, MCP context-area resources explicitly label their counts/read batches as safe-inventory scope, ctxpack-index release-validation tests now share one process-environment lock for `CTXPACK_HOME`, public CI now enforces formatting, clippy, locked tests, CLI help, release-doc consistency, and release-gate smoke on pushes/PRs using Node 24 action majors without Node 20 warning text, gap summaries point to area resources and bounded next-read paths, the product-proof checker gates those gap summaries and fails cleanly on missing embedded repo reports, history-unavailable repos now produce embedded insufficient-evidence reports instead of `null` reports, repo-scoped resources work after explicit-repo MCP tools even from a wrong server cwd, broad fixed-corpus metric floors block silent selection regressions, governance/proof tasks classify broad historical/eval language reliably, archive/docs broad tasks now receive context-area guidance without perturbing target-file source floors, real-client smoke artifacts now carry source-free request metadata instead of boolean-only claims, and the full four-repo proof now hydrates all configured repositories instead of hanging or returning missing reports.
 
 ## Operator Next Steps
 
