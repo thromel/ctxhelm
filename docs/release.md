@@ -603,6 +603,12 @@ validation-heavy, docs-only, or mixed, and exposes `recommendedFirstBatch` so
 agents can choose between `primary`, `validation`, and `docs` next-read batches
 without reading source text or changing target-file ranking.
 
+Phase 124 adds source-free `inspectionStrategy` metadata to the same context
+area resources. The strategy turns the coverage profile into an explicit
+progressive-read order, a small path budget, and a stop rule so agents can
+inspect broad areas through native file reads without loading unnecessary
+context or changing target-file ranking.
+
 Phase 119 removes an observed release-validation flake in `ctxpack-index`.
 Tests in `lib.rs`, `freshness.rs`, and `storage.rs` now share one crate-wide
 test lock before mutating process-global `CTXPACK_HOME`. This prevents one

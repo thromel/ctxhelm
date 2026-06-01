@@ -3,11 +3,11 @@ gsd_state_version: 1.0
 milestone: v2.5
 milestone_name: Production Retrieval Quality
 status: active
-last_updated: "2026-06-01T00:55:00Z"
-last_activity: 2026-06-01 -- Phase 123 added source-free context-area coverage profiles
+last_updated: "2026-06-01T01:07:04Z"
+last_activity: 2026-06-01 -- Phase 124 added source-free context-area inspection strategies
 progress:
-  total_phases: 55
-  completed_phases: 55
+  total_phases: 56
+  completed_phases: 56
   total_plans: 7
   completed_plans: 7
   percent: 100
@@ -17,10 +17,10 @@ progress:
 
 ## Current Position
 
-Phase: 123 - Context Area Coverage Profile
-Plan: 123-context-area-coverage-profile
+Phase: 124 - Context Area Inspection Strategy
+Plan: 124-context-area-inspection-strategy
 Status: Complete
-Last activity: 2026-06-01 -- Phase 123 added source-free `coverageProfile` metadata to context-area MCP resources so agents can choose primary, validation, or docs read batches without loading source text or changing target-file ranking.
+Last activity: 2026-06-01 -- Phase 124 added source-free `inspectionStrategy` metadata to context-area MCP resources so agents get a progressive read order, small path budget, and stop rule without loading source text or changing target-file ranking.
 
 ## Project Reference
 
@@ -100,6 +100,7 @@ Planned phases:
 - Phase 121: CI Node 24 Runtime Guard (complete follow-up)
 - Phase 122: Public Real-Client Protocol Compatibility (complete follow-up)
 - Phase 123: Context Area Coverage Profile (complete follow-up)
+- Phase 124: Context Area Inspection Strategy (complete follow-up)
 
 ## Last Completed Milestone
 
@@ -117,7 +118,7 @@ Planned phases:
 
 ## Next Step
 
-Continue production-readiness work from remaining measured gaps: continue broad source-free area/ranking improvements and refresh real-client proof evidence when client versions change. Broad evals now distinguish files covered only by surfaced context areas from files with no candidate signal, clean cold full-fixture proof promotes across RefactoringMiner, ctxpack, ReAgent, and VeriSchema, the full packaged release gate passes from a clean checkout with the clean fixture proof required, release-candidate metadata marks the local archive channel ready while deferring Homebrew/crates.io/signed installers/self-update, the public `v1.1.0` GitHub archive release is published and source-free asset digests are verified, the public archive install path passes checksum/archive/temp-install/doctor/first-pack proof, optional public-archive real-client proof records Claude Code tool-call evidence and Codex CLI source-free skip evidence without missing-evidence regressions, broad context-area guidance covers more wide-task implementation areas, packs tell agents concrete source/docs paths to inspect next, plan-level context areas expose source-free role signals, MCP context-area resources explicitly label their counts/read batches as safe-inventory scope and now expose source-free coverage profiles with a recommended first read batch, ctxpack-index release-validation tests now share one process-environment lock for `CTXPACK_HOME`, public CI now enforces formatting, clippy, locked tests, CLI help, release-doc consistency, and release-gate smoke on pushes/PRs using Node 24 action majors without Node 20 warning text, gap summaries point to area resources and bounded next-read paths, the product-proof checker gates those gap summaries and fails cleanly on missing embedded repo reports, history-unavailable repos now produce embedded insufficient-evidence reports instead of `null` reports, repo-scoped resources work after explicit-repo MCP tools even from a wrong server cwd, broad fixed-corpus metric floors block silent selection regressions, governance/proof tasks classify broad historical/eval language reliably, archive/docs broad tasks now receive context-area guidance without perturbing target-file source floors, real-client smoke artifacts now carry source-free request metadata instead of boolean-only claims, and the full four-repo proof now hydrates all configured repositories instead of hanging or returning missing reports.
+Continue production-readiness work from remaining measured gaps: continue broad source-free area/ranking improvements and refresh real-client proof evidence when client versions change. Broad evals now distinguish files covered only by surfaced context areas from files with no candidate signal, clean cold full-fixture proof promotes across RefactoringMiner, ctxpack, ReAgent, and VeriSchema, the full packaged release gate passes from a clean checkout with the clean fixture proof required, release-candidate metadata marks the local archive channel ready while deferring Homebrew/crates.io/signed installers/self-update, the public `v1.1.0` GitHub archive release is published and source-free asset digests are verified, the public archive install path passes checksum/archive/temp-install/doctor/first-pack proof, optional public-archive real-client proof records Claude Code tool-call evidence and Codex CLI source-free skip evidence without missing-evidence regressions, broad context-area guidance covers more wide-task implementation areas, packs tell agents concrete source/docs paths to inspect next, plan-level context areas expose source-free role signals, MCP context-area resources explicitly label their counts/read batches as safe-inventory scope and now expose source-free coverage profiles plus inspection strategies with progressive read order, path budget, and stop rules, ctxpack-index release-validation tests now share one process-environment lock for `CTXPACK_HOME`, public CI now enforces formatting, clippy, locked tests, CLI help, release-doc consistency, and release-gate smoke on pushes/PRs using Node 24 action majors without Node 20 warning text, gap summaries point to area resources and bounded next-read paths, the product-proof checker gates those gap summaries and fails cleanly on missing embedded repo reports, history-unavailable repos now produce embedded insufficient-evidence reports instead of `null` reports, repo-scoped resources work after explicit-repo MCP tools even from a wrong server cwd, broad fixed-corpus metric floors block silent selection regressions, governance/proof tasks classify broad historical/eval language reliably, archive/docs broad tasks now receive context-area guidance without perturbing target-file source floors, real-client smoke artifacts now carry source-free request metadata instead of boolean-only claims, and the full four-repo proof now hydrates all configured repositories instead of hanging or returning missing reports.
 
 ## Operator Next Steps
 
@@ -205,4 +206,5 @@ Continue production-readiness work from remaining measured gaps: continue broad 
 - Phase 118 adds explicit source-free scope metadata to context-area MCP resources. Latest proof notes: `.planning/e2e/2026-06-01-phase118-context-area-resource-scope.md`; durable source-free summary: `.ctxpack/e2e/phase118-context-area-resource-scope.json`; `ctxpack://repo/context-areas` and `ctxpack://repo/context-area/{encoded-area}` now report `resourceScope.kind = safeInventoryArea`, `taskConditioned = false`, `countsSource = safeInventory`, and `pathSource = safeInventory`.
 - Phase 119 removes an observed `ctxpack-index` release-validation flake by using one crate-wide test lock for all tests that mutate `CTXPACK_HOME`. Latest proof notes: `.planning/e2e/2026-06-01-phase119-index-env-lock-flake.md`; durable source-free summary: `.ctxpack/e2e/phase119-index-env-lock-proof.json`; three consecutive parallel `ctxpack-index --lib` test runs passed after the change.
 - Phase 123 adds source-free coverage profiles to context-area MCP resources. Latest proof notes: `.planning/e2e/2026-06-01-phase123-context-area-coverage-profile.md`; durable source-free summary: `.ctxpack/e2e/phase123-context-area-coverage-profile.json`; resources now expose `coverageProfile.profile`, `dominantRole`, `recommendedFirstBatch`, and source-free role-family counts.
-- Next work should continue ranking experiments from the promoted baseline, or refresh optional real-client proof again when client versions change.
+- Phase 124 adds source-free inspection strategies to context-area MCP resources. Latest proof notes: `.planning/e2e/2026-06-01-phase124-context-area-inspection-strategy.md`; durable source-free summary: `.ctxpack/e2e/phase124-context-area-inspection-strategy.json`; resources now expose `inspectionStrategy.initialBatch`, `preferredOrder`, `pathBudget`, and `stopRule` without changing ranking.
+- Next work should continue ranking experiments from the promoted baseline only when the pinned proof does not regress, or refresh optional real-client proof again when client versions change.

@@ -379,6 +379,10 @@ mod tests {
             context_areas_json["areas"][0]["coverageProfile"]["sourceTextLogged"],
             false
         );
+        assert_eq!(
+            context_areas_json["areas"][0]["inspectionStrategy"]["sourceTextLogged"],
+            false
+        );
         assert!(context_area["result"]["contents"][0]["text"]
             .as_str()
             .unwrap()
@@ -404,6 +408,20 @@ mod tests {
         assert_eq!(
             context_area_json["coverageProfile"]["recommendedFirstBatch"],
             "primary"
+        );
+        assert_eq!(
+            context_area_json["inspectionStrategy"]["initialBatch"],
+            "primary"
+        );
+        assert_eq!(
+            context_area_json["inspectionStrategy"]["preferredOrder"][0],
+            "primary"
+        );
+        assert!(
+            context_area_json["inspectionStrategy"]["pathBudget"]
+                .as_u64()
+                .unwrap()
+                > 0
         );
         assert_eq!(
             context_area_json["roleBuckets"]["source"]

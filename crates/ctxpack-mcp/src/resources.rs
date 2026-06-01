@@ -315,6 +315,7 @@ fn repo_context_areas(repo: &Path) -> Result<Value, RpcError> {
                 "resourceScope": context_area_resource_scope_json(),
                 "pathCount": accumulator.path_count,
                 "coverageProfile": accumulator.coverage_profile_json(),
+                "inspectionStrategy": accumulator.inspection_strategy_json(),
                 "roleCounts": accumulator.role_counts,
                 "pathFamilies": accumulator.path_families_json(8),
                 "representativePaths": accumulator.representative_paths,
@@ -376,6 +377,7 @@ fn repo_context_area(repo: &Path, uri: &str) -> Result<Value, RpcError> {
         "resourceScope": context_area_resource_scope_json(),
         "pathCount": accumulator.path_count,
         "coverageProfile": accumulator.coverage_profile_json(),
+        "inspectionStrategy": accumulator.inspection_strategy_json(),
         "roleCounts": accumulator.role_counts,
         "pathFamilies": accumulator.path_families_json(16),
         "representativePaths": accumulator.representative_paths,
@@ -499,6 +501,46 @@ impl AreaResourceAccumulator {
             })
         })
         .collect()
+    }
+
+    fn inspection_strategy_json(&self) -> Value {
+        let source_like_count = self.role_count(["source", "config", "schema"]);
+        let validation_count = self.role_count(["test"]);
+        let docs_count = self.role_count(["docs"]);
+        let mut order = Vec::new();
+        if source_like_count > 0 {
+            order.push("primary");
+        }
+        if validation_count > 0 {
+            order.push("validation");
+        }
+        if docs_count > 0 {
+            order.push("docs");
+        }
+        let initial_batch = order.first().copied().unwrap_or("none");
+        let path_budget = if source_like_count > 0 && validation_count > 0 {
+            8
+        } else if source_like_count > 0 || validation_count > 0 {
+            6
+        } else if docs_count > 0 {
+            4
+        } else {
+            0
+        };
+        let stop_rule = match (source_like_count > 0, validation_count > 0, docs_count > 0) {
+            (true, true, _) => "Stop after the primary batch identifies likely edit targets and the validation batch identifies a runnable check.",
+            (true, false, _) => "Stop after the primary batch identifies likely edit targets; load docs only if constraints remain unclear.",
+            (false, true, _) => "Stop after the validation batch identifies the failing or relevant tests.",
+            (false, false, true) => "Stop after the docs batch identifies the architecture or policy constraint.",
+            (false, false, false) => "No safe inventory paths are available for this area.",
+        };
+        json!({
+            "initialBatch": initial_batch,
+            "preferredOrder": order,
+            "pathBudget": path_budget,
+            "stopRule": stop_rule,
+            "sourceTextLogged": false
+        })
     }
 
     fn coverage_profile_json(&self) -> Value {
