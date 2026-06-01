@@ -19,6 +19,17 @@ ctxpack is an agent-native, read-only context broker. It generates repo-local gu
 
 **real-client proof** means an actual agent client starts ctxpack as an MCP server and produces request-log evidence for tool calls. For v1.1, this optional proof path is maintained for Codex CLI and Claude Code because the smoke scripts can inspect server-side requests for explicit-repo `prepare_task` and `get_pack` calls tied to exact client versions.
 
+For Claude Code, maintainers can run the deeper workflow eval:
+
+```bash
+CTXPACK_RUN_REAL_CLIENT=1 bash scripts/e2e-claude-workflow.sh
+```
+
+That wrapper records a source-free workflow report proving Claude made the
+expected explicit-repo `prepare_task` and `get_pack` calls through MCP. It keeps
+only hashes and sanitized request summaries, not raw prompts, raw MCP traffic,
+source text, or user-project command output.
+
 Latest local real-client refresh: 2026-05-30, Codex CLI `0.130.0` and Claude
 Code `2.1.158` both passed the optional smoke wrappers with server-side
 `prepare_task` and `get_pack` evidence against an explicit repo path. See

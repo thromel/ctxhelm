@@ -27,6 +27,7 @@ smoke_v24_gate_script="$repo_root/scripts/smoke-v24-gate.sh"
 smoke_mcp_protocol_script="$repo_root/scripts/smoke-mcp-protocol.sh"
 smoke_codex_mcp_script="$repo_root/scripts/smoke-codex-mcp.sh"
 smoke_claude_mcp_script="$repo_root/scripts/smoke-claude-mcp.sh"
+claude_workflow_eval_script="$repo_root/scripts/e2e-claude-workflow.sh"
 smoke_cursor_mcp_script="$repo_root/scripts/smoke-cursor-mcp.sh"
 smoke_opencode_mcp_script="$repo_root/scripts/smoke-opencode-mcp.sh"
 clean_fixture_config_default="$repo_root/.planning/e2e/2026-05-31-phase110-clean-cold-fixture-config.json"
@@ -311,8 +312,39 @@ if [[ "$real_client_skip" != "1" && ( "$real_client_required" == "1" || "${CTXPA
   claude_status="passed"
 fi
 
+log_step "optional Claude workflow eval"
+claude_workflow_status="skipped"
+claude_workflow_required="${CTXPACK_REQUIRE_CLAUDE_WORKFLOW_EVAL:-0}"
+if [[ "${CTXPACK_RUN_CLAUDE_WORKFLOW_EVAL:-0}" == "1" || "$claude_workflow_required" == "1" ]]; then
+  claude_workflow_report="$proof_dir/claude-workflow-eval.json"
+  CTXPACK_BIN="$ctxpack_bin" \
+    CTXPACK_ROOT="$repo_root" \
+    CTXPACK_SMOKE_REPO="$repo_root" \
+    CTXPACK_SMOKE_TASK="verify Claude Code can use ctxpack prepare_task and get_pack as a context workflow" \
+    CTXPACK_SMOKE_PATH="crates/ctxpack-mcp/src/lib.rs" \
+    CTXPACK_SMOKE_QUERY="prepare_task" \
+    CTXPACK_RUN_REAL_CLIENT="1" \
+    CTXPACK_REQUIRE_REAL_CLIENT="$claude_workflow_required" \
+    CTXPACK_CLAUDE_WORKFLOW_REPORT="$claude_workflow_report" \
+    bash "$claude_workflow_eval_script"
+  claude_workflow_status="$(python3 - "$claude_workflow_report" <<'PY'
+import json
+import sys
+
+with open(sys.argv[1], encoding="utf-8") as handle:
+    print(json.load(handle).get("status", "unknown"))
+PY
+)"
+  if [[ "$claude_workflow_required" == "1" && "$claude_workflow_status" != "passed" ]]; then
+    echo "required Claude workflow eval did not pass: $claude_workflow_status" >&2
+    exit 67
+  fi
+else
+  echo "Claude workflow eval skipped: set CTXPACK_RUN_CLAUDE_WORKFLOW_EVAL=1 or CTXPACK_REQUIRE_CLAUDE_WORKFLOW_EVAL=1"
+fi
+
 log_step "release proof bundle"
-python3 - "$proof_summary_path" "$ctxpack_version" "$(basename "$ctxpack_bin")" "$binary_source" "$binary_sha256" "$(basename "$archive_path")" "$archive_sha256" "$(basename "$manifest_path")" "$(basename "$audit_report_path")" "$benchmark_status" "$clean_fixture_status" "$clean_fixture_required" "$codex_status" "$claude_status" "$real_client_required" <<'PY'
+python3 - "$proof_summary_path" "$ctxpack_version" "$(basename "$ctxpack_bin")" "$binary_source" "$binary_sha256" "$(basename "$archive_path")" "$archive_sha256" "$(basename "$manifest_path")" "$(basename "$audit_report_path")" "$benchmark_status" "$clean_fixture_status" "$clean_fixture_required" "$codex_status" "$claude_status" "$claude_workflow_status" "$claude_workflow_required" "$real_client_required" <<'PY'
 import json
 import sys
 
@@ -331,6 +363,8 @@ import sys
     clean_fixture_required,
     codex_status,
     claude_status,
+    claude_workflow_status,
+    claude_workflow_required,
     real_client_required,
 ) = sys.argv[1:]
 
@@ -392,6 +426,8 @@ payload = {
         ),
         "codexRealClientProof": codex_status,
         "claudeRealClientProof": claude_status,
+        "claudeWorkflowEval": claude_workflow_status,
+        "claudeWorkflowEvalRequired": claude_workflow_required == "1",
         "realClientRequired": real_client_required == "1",
         "cursorRealClientProof": "not_claimed",
         "opencodeRealClientProof": "not_claimed",

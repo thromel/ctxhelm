@@ -243,9 +243,12 @@ fn release_gate_script_contract() {
         "scripts/smoke-mcp-protocol.sh",
         "scripts/smoke-codex-mcp.sh",
         "scripts/smoke-claude-mcp.sh",
+        "scripts/e2e-claude-workflow.sh",
         "CTXPACK_BIN",
         "CTXPACK_SKIP_REAL_CLIENT",
         "CTXPACK_REQUIRE_REAL_CLIENT",
+        "CTXPACK_RUN_CLAUDE_WORKFLOW_EVAL",
+        "CTXPACK_REQUIRE_CLAUDE_WORKFLOW_EVAL",
         "CTXPACK_CLEAN_FIXTURE_CONFIG",
         "CTXPACK_REQUIRE_CLEAN_FIXTURE_PROOF",
         "CTXPACK_SKIP_CLEAN_FIXTURE_PROOF",
@@ -261,6 +264,7 @@ fn release_gate_script_contract() {
         "optionalProofs",
         "cleanColdFixtureProductProof",
         "cleanColdFixtureRequired",
+        "claudeWorkflowEval",
         "resourceBackedGapSummaryContract",
         "archive_sha256",
         "--version",
@@ -605,6 +609,63 @@ fn public_release_freshness_distinguishes_proof_only_commits() {
         !required_current.status.success(),
         "exact currentness should still fail for proof-only commits"
     );
+}
+
+#[test]
+fn claude_workflow_eval_script_contract() {
+    let repo_root = workspace_root();
+    let script = repo_root.join("scripts/e2e-claude-workflow.sh");
+    assert!(script.exists(), "Claude workflow eval script is missing");
+
+    let syntax = Command::new("bash")
+        .arg("-n")
+        .arg(&script)
+        .current_dir(&repo_root)
+        .output()
+        .unwrap();
+    assert!(
+        syntax.status.success(),
+        "bash -n failed: {}",
+        String::from_utf8_lossy(&syntax.stderr)
+    );
+
+    let script_text = fs::read_to_string(&script).unwrap();
+    for required in [
+        "scripts/smoke-claude-mcp.sh",
+        "CTXPACK_CLAUDE_WORKFLOW_REPORT",
+        "CTXPACK_CLAUDE_WORKFLOW_EVIDENCE_DIR",
+        "CTXPACK_RUN_REAL_CLIENT",
+        "CTXPACK_REQUIRE_REAL_CLIENT",
+        "ctxpack-claude-workflow-eval-v1",
+        "claude-code-mcp-context-workflow",
+        "explicitRepoToolCallCountAtLeastTwo",
+        "prepareTaskToolCall",
+        "getPackToolCall",
+        "requestLogSha256",
+        "rawRequestLogStored",
+        "rawPromptStored",
+        "sourceTextLogged",
+        "userProjectCommandsRun",
+        "localOnly",
+        "remoteEmbeddingsUsed",
+        "remoteRerankingUsed",
+    ] {
+        assert!(
+            script_text.contains(required),
+            "Claude workflow eval script must mention {required}"
+        );
+    }
+
+    for forbidden in [
+        "cat \"$request_log\"",
+        "cp \"$request_log\"",
+        "rawMcpTrafficStored\": True",
+    ] {
+        assert!(
+            !script_text.contains(forbidden),
+            "Claude workflow eval must not persist raw request traffic: {forbidden}"
+        );
+    }
 }
 
 #[test]
@@ -957,6 +1018,7 @@ fn release_docs_script_contract() {
         "scripts/verify-github-release.sh",
         "scripts/verify-public-archive-install.sh",
         "scripts/smoke-public-real-clients.sh",
+        "scripts/e2e-claude-workflow.sh",
         "scripts/smoke-semantic.sh",
         "scripts/smoke-precision.sh",
         "scripts/smoke-v23-eval.sh",
@@ -967,6 +1029,8 @@ fn release_docs_script_contract() {
         "CTXPACK_REQUIRE_REAL_CLIENT",
         "CTXPACK_SKIP_REAL_CLIENT",
         "CTXPACK_REAL_CLIENT_EVIDENCE_DIR",
+        "CTXPACK_RUN_CLAUDE_WORKFLOW_EVAL",
+        "CTXPACK_REQUIRE_CLAUDE_WORKFLOW_EVAL",
         "CTXPACK_PROOF_DIR",
         "CTXPACK_CLEAN_FIXTURE_CONFIG",
         "CTXPACK_REQUIRE_CLEAN_FIXTURE_PROOF",

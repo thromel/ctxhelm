@@ -246,6 +246,16 @@ The optional real-client evidence wrappers are:
 - `scripts/smoke-codex-mcp.sh`
 - `scripts/smoke-claude-mcp.sh`
 - `scripts/smoke-public-real-clients.sh`
+- `scripts/e2e-claude-workflow.sh`
+
+`scripts/e2e-claude-workflow.sh` is the deeper Claude Code integration eval.
+It wraps the Claude smoke, then writes a source-free workflow report with
+request-log hashes, sanitized observed tool calls, explicit-repo call counts,
+and privacy flags. The report stores no raw prompt, raw MCP traffic, source
+text, or user-project command output. In the release gate this is optional by
+default; set `CTXPACK_RUN_CLAUDE_WORKFLOW_EVAL=1` to record it, or
+`CTXPACK_REQUIRE_CLAUDE_WORKFLOW_EVAL=1` to make a missing/passing real Claude
+workflow eval block the release gate.
 
 Cursor and OpenCode have deterministic setup/protocol proof wrappers:
 
