@@ -15,9 +15,9 @@ EOF
 }
 
 repo="thromel/ctxhelm"
-tag="v1.1.7"
+tag="v1.1.8"
 target_label="$(rustc -vV 2>/dev/null | awk '/^host:/ { print $2 }')"
-expected_version="ctxhelm 1.1.7"
+expected_version="ctxhelm 1.1.8"
 output_path=""
 
 while [[ $# -gt 0 ]]; do
