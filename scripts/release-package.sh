@@ -27,7 +27,8 @@ with open(sys.argv[1], encoding="utf-8") as handle:
 print(next(package["version"] for package in data["packages"] if package["name"] == "ctxhelm"))
 PY
 )"
-TARGET_LABEL="${CTXHELM_TARGET_LABEL:-$(rustc -vV | awk '/^host:/ { print $2 }')}"
+BUILD_TARGET="${CTXHELM_BUILD_TARGET:-$(rustc -vV | awk '/^host:/ { print $2 }')}"
+TARGET_LABEL="${CTXHELM_TARGET_LABEL:-${BUILD_TARGET}}"
 ARCHIVE_NAME="ctxhelm-v${VERSION}-${TARGET_LABEL}.tar.gz"
 ARCHIVE_PATH="${DIST_DIR}/${ARCHIVE_NAME}"
 MANIFEST_NAME="ctxhelm-v${VERSION}-${TARGET_LABEL}.manifest.json"
@@ -44,11 +45,16 @@ if [[ "${CTXHELM_ALLOW_DIRTY:-0}" != "1" ]]; then
 fi
 
 mkdir -p "${DIST_DIR}"
-cargo build -p ctxhelm --release --locked
+cargo build -p ctxhelm --release --locked --target "${BUILD_TARGET}"
 
 STAGING_DIR="${STAGING_PARENT}/ctxhelm-v${VERSION}-${TARGET_LABEL}"
 mkdir -p "${STAGING_DIR}"
-cp "${CARGO_BUILD_TARGET_DIR}/release/ctxhelm" "${STAGING_DIR}/ctxhelm"
+BUILT_BINARY="${CARGO_BUILD_TARGET_DIR}/${BUILD_TARGET}/release/ctxhelm"
+if [[ ! -x "${BUILT_BINARY}" ]]; then
+  echo "built ctxhelm binary was not executable: ${BUILT_BINARY}" >&2
+  exit 65
+fi
+cp "${BUILT_BINARY}" "${STAGING_DIR}/ctxhelm"
 cp "${REPO_ROOT}/README.md" "${STAGING_DIR}/README.md"
 cp "${REPO_ROOT}/LICENSE" "${STAGING_DIR}/LICENSE"
 printf 'ctxhelm %s\n' "${VERSION}" > "${STAGING_DIR}/VERSION"
@@ -67,13 +73,14 @@ CTXHELM_AUDIT_REPORT="${AUDIT_REPORT_PATH}" "${SCRIPT_DIR}/audit-release-artifac
 
 ARCHIVE_SHA256="$(sha256_file "${ARCHIVE_PATH}")"
 BINARY_SHA256="$(sha256_file "${STAGING_DIR}/ctxhelm")"
-python3 - "${MANIFEST_PATH}" "${VERSION}" "${TARGET_LABEL}" "${ARCHIVE_NAME}" "${ARCHIVE_SHA256}" "${BINARY_SHA256}" "${AUDIT_REPORT_NAME}" <<'PY'
+python3 - "${MANIFEST_PATH}" "${VERSION}" "${BUILD_TARGET}" "${TARGET_LABEL}" "${ARCHIVE_NAME}" "${ARCHIVE_SHA256}" "${BINARY_SHA256}" "${AUDIT_REPORT_NAME}" <<'PY'
 import json
 import sys
 
 (
     manifest_path,
     version,
+    build_target,
     target_label,
     archive_name,
     archive_sha256,
@@ -84,6 +91,7 @@ manifest = {
     "schemaVersion": 1,
     "package": "ctxhelm",
     "version": version,
+    "buildTarget": build_target,
     "targetLabel": target_label,
     "archive": {
         "name": archive_name,

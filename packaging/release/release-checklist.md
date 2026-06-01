@@ -8,6 +8,7 @@ Use this checklist before marking a candidate `ready`.
 - [ ] `bash scripts/check-release-docs.sh`
 - [ ] `bash scripts/release-package.sh`
 - [ ] `bash scripts/verify-release-archive.sh --archive ... --manifest ... --checksums ...`
+- [ ] manual or tag-triggered `.github/workflows/release-artifacts.yml` run when additional platform archives are part of the candidate
 - [ ] `bash scripts/smoke-demo-artifacts.sh`
 - [ ] `bash scripts/smoke-distribution-metadata.sh`
 - [ ] `bash scripts/smoke-release-governance.sh`
@@ -39,8 +40,10 @@ Allowed statuses are `ready`, `deferred`, and `blocked`.
 - Use `blocked` when a required gate, source-free check, or privacy boundary
   fails.
 
-For v1.1.11, the local archive and Apple Silicon Homebrew tap channels can be
-`ready`; crates.io, signed installers, and self-update stay deferred.
+For v1.1.11, the local archive, non-publishing multi-platform archive workflow,
+and Apple Silicon Homebrew tap channels can be `ready`; published additional
+platform release assets, crates.io, signed installers, and self-update stay
+deferred.
 
 ## Rollback
 

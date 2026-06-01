@@ -37,6 +37,20 @@ The verifier checks checksum consistency, extracts the archive into a temporary
 directory, runs `ctxhelm --version`, runs `ctxhelm --help`, and runs
 `ctxhelm doctor` against the extracted binary and release manifest. It does not install binaries, mutate global agent configuration, publish artifacts, or run user project tests.
 
+## Multi-Platform Archive Workflow
+
+The repository now has a non-publishing archive workflow at
+`.github/workflows/release-artifacts.yml`. It builds and verifies archives for:
+
+- `x86_64-unknown-linux-gnu`
+- `x86_64-apple-darwin`
+- `aarch64-apple-darwin`
+
+This closes the packaging gap between a local Apple Silicon archive and a
+production release pipeline. The workflow uploads GitHub Actions artifacts only.
+It does not create release assets, tags, package-manager commits, crates.io
+packages, signed installers, or self-update metadata.
+
 ## Update Metadata Boundary
 
 The release update metadata is not a self-update implementation. It only gives
@@ -76,7 +90,9 @@ The v1.1.11 production candidate has these distribution states:
 
 - local archive: ready after the release gate passes with the archive binary
   and required clean fixture proof
+- multi-platform archive workflow: ready as a non-publishing artifact builder
 - Homebrew formula: ready through `thromel/tap`
+- published additional platform release assets: deferred
 - crates.io package: deferred
 - signed installer: deferred
 - self-update: not implemented

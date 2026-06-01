@@ -148,11 +148,13 @@ payload = {
     "distributionDecision": {
         "primaryChannel": "local_archive",
         "localArchive": "ready" if status == "ready" else "deferred",
+        "multiPlatformArchiveWorkflow": "ready" if status == "ready" else "deferred",
+        "publishedAdditionalPlatformArchives": "deferred",
         "homebrewFormula": "ready" if status == "ready" else "deferred",
         "cratesIo": "deferred",
         "signedInstaller": "deferred",
         "selfUpdate": "not_implemented",
-        "reason": "v1.1.11 production candidate supports local archives and the Apple Silicon Homebrew tap; crates.io publication, signed installers, and self-update remain future work.",
+        "reason": "v1.1.11 production candidate supports local archives, the Apple Silicon Homebrew tap, and a non-publishing multi-platform archive workflow; publishing additional platform archives, crates.io publication, signed installers, and self-update remain future work.",
     },
     "knownLimitations": [
         "Cursor and OpenCode real-client proof is not claimed for v1.1.11.",
@@ -217,6 +219,10 @@ if payload.get("status") == "ready":
 distribution = payload.get("distributionDecision", {})
 if distribution.get("primaryChannel") != "local_archive":
     raise SystemExit("primaryChannel must be local_archive")
+if distribution.get("multiPlatformArchiveWorkflow") not in {"ready", "deferred"}:
+    raise SystemExit("multiPlatformArchiveWorkflow must be ready or deferred")
+if distribution.get("publishedAdditionalPlatformArchives") != "deferred":
+    raise SystemExit("publishedAdditionalPlatformArchives must be deferred for v1.1.11")
 expected_homebrew = "ready" if payload.get("status") == "ready" else "deferred"
 if distribution.get("homebrewFormula") != expected_homebrew:
     raise SystemExit(f"homebrewFormula must be {expected_homebrew} for v1.1.11")

@@ -22,10 +22,12 @@ fn release_package_script_contract() {
     );
 
     let script_text = fs::read_to_string(&script).unwrap();
-    assert!(script_text.contains("cargo build -p ctxhelm --release --locked"));
+    assert!(script_text.contains("cargo build -p ctxhelm --release --locked --target"));
     assert!(script_text.contains("CARGO_TARGET_DIR"));
     assert!(script_text.contains("CARGO_BUILD_TARGET_DIR"));
+    assert!(script_text.contains("CTXHELM_BUILD_TARGET"));
     assert!(script_text.contains("CTXHELM_DIST_DIR"));
+    assert!(script_text.contains("BUILT_BINARY"));
     assert!(script_text.contains("dist"));
     assert!(script_text.contains("CTXHELM_ALLOW_DIRTY"));
     assert!(
@@ -495,6 +497,52 @@ fn ci_workflow_contract() {
             && !workflow_text.contains("cargo publish"),
         "CI workflow must not publish artifacts or mutate release state"
     );
+}
+
+#[test]
+fn release_artifacts_workflow_contract() {
+    let repo_root = workspace_root();
+    let workflow = repo_root.join(".github/workflows/release-artifacts.yml");
+    assert!(workflow.exists(), "release artifacts workflow is missing");
+
+    let workflow_text = fs::read_to_string(&workflow).unwrap();
+    for required in [
+        "workflow_dispatch:",
+        "tags:",
+        "actions/checkout@v5",
+        "actions/cache@v5",
+        "actions/upload-artifact@v5",
+        "ubuntu-latest",
+        "macos-15-intel",
+        "macos-14",
+        "x86_64-unknown-linux-gnu",
+        "x86_64-apple-darwin",
+        "aarch64-apple-darwin",
+        "rustup toolchain install stable --profile minimal --target",
+        "CTXHELM_BUILD_TARGET",
+        "CTXHELM_TARGET_LABEL",
+        "scripts/release-package.sh",
+        "scripts/verify-release-archive.sh",
+        "if-no-files-found: error",
+    ] {
+        assert!(
+            workflow_text.contains(required),
+            "release artifacts workflow missing {required}"
+        );
+    }
+
+    for forbidden in [
+        "gh release create",
+        "git tag",
+        "git push",
+        "cargo publish",
+        "brew install",
+    ] {
+        assert!(
+            !workflow_text.contains(forbidden),
+            "release artifacts workflow must not publish or mutate package-manager state: {forbidden}"
+        );
+    }
 }
 
 #[test]

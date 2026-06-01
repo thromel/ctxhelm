@@ -78,10 +78,10 @@ From a clean checkout at the v1.1.11 tag, run:
 bash scripts/release-package.sh
 ```
 
-The script builds with:
+The script builds the host target by default with:
 
 ```bash
-cargo build -p ctxhelm --release --locked
+cargo build -p ctxhelm --release --locked --target "$(rustc -vV | awk '/^host:/ { print $2 }')"
 ```
 
 It writes release artifacts under `dist/` by default, or under `CTXHELM_DIST_DIR` when that environment variable is set:
@@ -103,7 +103,15 @@ ctxhelm --help
 
 The release manifest records the version, target label, archive checksum, binary checksum, included files, local-only privacy status, unsupported publish actions, and the matching artifact audit report. `sha256sums.txt` covers the archive, manifest, and audit report.
 
-Maintainers can set `CARGO_TARGET_DIR=/absolute/path/to/target` when they need a clean build cache for packaging or release-gate verification.
+Maintainers can set `CARGO_TARGET_DIR=/absolute/path/to/target` when they need a clean build cache for packaging or release-gate verification. They can also set `CTXHELM_BUILD_TARGET=<rust-target-triple>` and, when needed, `CTXHELM_TARGET_LABEL=<archive-label>` to build and package an explicit target. The packaged binary is copied from `target/<target>/release/ctxhelm`, so a target label is no longer a cosmetic archive-name override.
+
+The public repository includes a non-publishing release-artifact workflow:
+
+```text
+.github/workflows/release-artifacts.yml
+```
+
+It runs on manual dispatch and version-tag pushes, builds `x86_64-unknown-linux-gnu`, `x86_64-apple-darwin`, and `aarch64-apple-darwin`, verifies every archive with `scripts/verify-release-archive.sh`, and uses `actions/upload-artifact@v5` for workflow artifacts. It does not create GitHub releases, tags, Homebrew commits, crates.io packages, signed installers, or self-update metadata.
 
 Maintainers can verify a built archive from a clean extraction directory:
 

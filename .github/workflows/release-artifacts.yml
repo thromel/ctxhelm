@@ -1,0 +1,76 @@
+name: Release Artifacts
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+env:
+  CARGO_INCREMENTAL: "0"
+  CARGO_TERM_COLOR: always
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
+jobs:
+  package:
+    name: Package ${{ matrix.target }}
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+          - runner: macos-15-intel
+            target: x86_64-apple-darwin
+          - runner: macos-14
+            target: aarch64-apple-darwin
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Install Rust
+        run: |
+          rustup toolchain install stable --profile minimal --target "${{ matrix.target }}"
+          rustup default stable
+
+      - name: Cache cargo
+        uses: actions/cache@v5
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-${{ matrix.target }}-release-cargo-${{ hashFiles('Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ matrix.target }}-release-cargo-
+            ${{ runner.os }}-release-cargo-
+            ${{ runner.os }}-cargo-
+
+      - name: Package archive
+        env:
+          CTXHELM_BUILD_TARGET: ${{ matrix.target }}
+          CTXHELM_TARGET_LABEL: ${{ matrix.target }}
+          CTXHELM_DIST_DIR: dist/${{ matrix.target }}
+        run: bash scripts/release-package.sh
+
+      - name: Verify archive
+        run: |
+          archive="$(ls dist/${{ matrix.target }}/ctxhelm-v*-${{ matrix.target }}.tar.gz)"
+          manifest="${archive%.tar.gz}.manifest.json"
+          bash scripts/verify-release-archive.sh \
+            --archive "$archive" \
+            --manifest "$manifest" \
+            --checksums dist/${{ matrix.target }}/sha256sums.txt
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v5
+        with:
+          name: ctxhelm-${{ matrix.target }}
+          path: |
+            dist/${{ matrix.target }}/ctxhelm-v*-${{ matrix.target }}.tar.gz
+            dist/${{ matrix.target }}/ctxhelm-v*-${{ matrix.target }}.manifest.json
+            dist/${{ matrix.target }}/ctxhelm-v*-${{ matrix.target }}.audit.json
+            dist/${{ matrix.target }}/ctxhelm-v*-${{ matrix.target }}.tar.gz.sha256
+            dist/${{ matrix.target }}/sha256sums.txt
+          if-no-files-found: error

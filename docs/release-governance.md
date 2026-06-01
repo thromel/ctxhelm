@@ -54,8 +54,12 @@ Allowed candidate statuses:
   privacy/source-free boundary regressed.
 
 For v1.1.11, `ready` means the local archive channel is ready and the Apple
-Silicon Homebrew tap is ready. crates.io, signed installers, and self-update
-remain explicitly deferred in the candidate status metadata.
+Silicon Homebrew tap is ready. It also means the non-publishing
+multi-platform archive workflow at `.github/workflows/release-artifacts.yml` is
+ready to build and verify Linux x64, macOS Intel, and macOS Apple Silicon
+workflow artifacts. published additional platform release assets, crates.io,
+signed installers, and self-update remain explicitly deferred in the candidate
+status metadata.
 
 Validate metadata:
 
@@ -158,5 +162,5 @@ bash scripts/smoke-release-governance.sh
 
 The smoke covers ready, deferred, and blocked candidate status metadata,
 deterministic protocol proof language, optional real-client proof language,
-Cursor/OpenCode non-claims, public release freshness metadata, and rollback
-safety.
+Cursor/OpenCode non-claims, public release freshness metadata, multi-platform
+archive workflow governance, and rollback safety.

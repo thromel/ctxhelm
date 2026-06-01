@@ -152,4 +152,15 @@ do
   done
 done
 
+for required in \
+  "multi-platform archive workflow" \
+  "published additional platform release assets" \
+  ".github/workflows/release-artifacts.yml"
+do
+  grep -F -- "$required" "$repo_root/packaging/release/release-checklist.md" "$repo_root/docs/distribution.md" >/dev/null || {
+    echo "release governance smoke failed: missing '$required' in release governance docs" >&2
+    exit 1
+  }
+done
+
 echo "release governance smoke passed"
