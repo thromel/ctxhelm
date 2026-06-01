@@ -3486,7 +3486,12 @@ fn evaluate_historical_commit_sample(
     let recommended_context_files = if options.local_metadata_reranker {
         local_metadata_reranked_context_files(&plan, ranking_budget)
     } else {
-        context_file_ranking(&recommended_files, &recommended_tests, ranking_budget)
+        context_file_ranking(
+            &recommended_files,
+            &recommended_tests,
+            ranking_budget,
+            plan.context_areas.is_empty(),
+        )
     };
     let lexical_baseline_files = lexical_baseline_context_files(eval_root, &task, ranking_budget)?;
     let retrieval_target_files = retrieval_target_files(eval_root, &sample.safe_changed_files);
@@ -4543,15 +4548,56 @@ fn context_file_ranking(
     recommended_files: &[String],
     recommended_tests: &[String],
     ranking_budget: usize,
+    reserve_validation_tests: bool,
 ) -> Vec<String> {
     let mut seen = BTreeSet::new();
     let ranking_budget = ranking_budget.max(1);
-    recommended_files
+    let test_reserve = if reserve_validation_tests {
+        validation_test_reserve(recommended_files, recommended_tests, ranking_budget)
+    } else {
+        0
+    };
+    let file_budget = ranking_budget.saturating_sub(test_reserve).max(1);
+    let mut ranking = recommended_files
         .iter()
-        .chain(recommended_tests.iter())
         .filter_map(|path| seen.insert(path.clone()).then_some(path.clone()))
-        .take(ranking_budget)
-        .collect()
+        .take(file_budget)
+        .collect::<Vec<_>>();
+    ranking.extend(
+        recommended_tests
+            .iter()
+            .filter_map(|path| seen.insert(path.clone()).then_some(path.clone()))
+            .take(test_reserve),
+    );
+    ranking.extend(
+        recommended_files
+            .iter()
+            .filter_map(|path| seen.insert(path.clone()).then_some(path.clone()))
+            .take(ranking_budget.saturating_sub(ranking.len())),
+    );
+    ranking.extend(
+        recommended_tests
+            .iter()
+            .filter_map(|path| seen.insert(path.clone()).then_some(path.clone()))
+            .take(ranking_budget.saturating_sub(ranking.len())),
+    );
+    ranking.truncate(ranking_budget);
+    ranking
+}
+
+fn validation_test_reserve(
+    recommended_files: &[String],
+    recommended_tests: &[String],
+    ranking_budget: usize,
+) -> usize {
+    if recommended_tests.is_empty()
+        || recommended_files.len() + recommended_tests.len() <= ranking_budget
+        || ranking_budget < 8
+    {
+        return 0;
+    }
+    let max_reserve = (ranking_budget / 3).max(1);
+    recommended_tests.len().min(max_reserve)
 }
 
 fn retrieval_target_files(eval_root: &Path, safe_changed_files: &[String]) -> Vec<String> {
@@ -6197,7 +6243,7 @@ mod tests {
             "src/file-1.ts".to_string(),
         ];
 
-        let ranking = context_file_ranking(&files, &tests, 10);
+        let ranking = context_file_ranking(&files, &tests, 10, true);
 
         assert_eq!(ranking.len(), 10);
         assert!(ranking.contains(&"tests/file-0.test.ts".to_string()));
@@ -6209,6 +6255,22 @@ mod tests {
                 .count(),
             1
         );
+    }
+
+    #[test]
+    fn context_ranking_keeps_broad_plans_file_first() {
+        let files = (0..10)
+            .map(|index| format!("src/file-{index}.ts"))
+            .collect::<Vec<_>>();
+        let tests = vec![
+            "tests/file-0.test.ts".to_string(),
+            "tests/file-1.test.ts".to_string(),
+            "tests/file-2.test.ts".to_string(),
+        ];
+
+        let ranking = context_file_ranking(&files, &tests, 10, false);
+
+        assert_eq!(ranking, files);
     }
 
     #[test]

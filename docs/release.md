@@ -619,9 +619,15 @@ Phase 126 adds the source-free `agentEvidenceClaim` and
 `averageAgentEvidenceRecallAt10` fields to the same summary. Agent evidence
 counts the files and tests ctxpack actually gives the agent through selected
 context files, related tests, and validation commands. The clean four-repo proof
-still reports `allFileClaim = trails_any_corpus`, but it now reports
-`agentEvidenceClaim = mixed` with zero trailing corpora and average
+reported `agentEvidenceClaim = mixed` with zero trailing corpora and average
 agent-evidence delta `+0.18792826` against lexical.
+
+Phase 127 adds a narrow-plan validation-test reserve to the context ranking.
+The clean four-repo proof now reports zero trailing corpora for raw target-file
+recall as well: `allFileClaim = mixed`, beat `3`, match `1`, trail `0`, average
+File Recall@10 `0.5927659` versus lexical `0.45709258`, and average file delta
+`+0.13567334`. Broad context-area plans stay file-first so validation tests do
+not displace broad source evidence.
 
 Phase 119 removes an observed release-validation flake in `ctxpack-index`.
 Tests in `lib.rs`, `freshness.rs`, and `storage.rs` now share one crate-wide

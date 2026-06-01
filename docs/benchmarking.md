@@ -39,6 +39,10 @@ reports the comparison after validation targets are removed from the context
 channel. The three claims prevent production notes from overclaiming
 repository-wide target-file wins when the measured claim is narrower: selected
 agent evidence plus separately reported target-file and context-channel scores.
+The current clean four-repo proof also reports zero trailing corpora for raw
+target-file recall after the narrow-plan validation-test reserve; broad
+context-area plans remain file-first and continue to use the validation channel
+for tests.
 
 v2.3 treats benchmark suites as fixed corpus manifests. Older suite files still work, but v2.3+ manifests should include a manifest version, corpus ID, privacy label, revision range ID, and optional locked baseline metadata so quality claims are reproducible.
 
