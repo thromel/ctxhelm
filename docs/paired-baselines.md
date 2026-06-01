@@ -104,6 +104,20 @@ Use this command for R&D slices that need to measure whether fielded BM25 and
 symbol facets changed candidate ordering before promoting broader retrieval
 claims.
 
+For historical corpora, use `ctxhelm eval lexical corpus`:
+
+```bash
+ctxhelm eval lexical corpus --repo /path/to/repo --limit 20 --budget 10
+ctxhelm eval lexical corpus --repo /path/to/repo --limit 20 --budget 10 --format json
+ctxhelm eval lexical corpus --repo /path/to/repo --base main~50 --head main --budget 10
+```
+
+This runs both lexical backends against the same historical commit tasks and
+parent snapshots. The report records backend Recall@5/10, MRR@10, recall/MRR
+deltas, overlap@K, top-path churn, win/tie counts, and backend runtime. Per-row
+task text is replaced by `taskHash`; rows keep only commit SHA, target paths,
+backend candidate paths, hit lists, overlap, and timing.
+
 ## Privacy Boundary
 
 The JSON output is intended for local eval storage, benchmark comparison, and

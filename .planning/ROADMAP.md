@@ -107,6 +107,7 @@ v2.5 therefore focuses on measured retrieval quality, not more surface area. The
 - [x] **Phase 152: Native-Agent Outcome Suite** - The paired Claude Code agent-run harness now accepts source-free task suites, aggregates native baseline versus ctxhelm-assisted lane metrics, and renders suite reports through `ctxhelm eval agent-run`.
 - [x] **Phase 153: BM25 Symbol Lexical Index** - Lexical search now uses a query-time Tantivy/BM25 fielded index with symbol facets and exact-match bonuses while keeping source-derived inverted index data in memory.
 - [x] **Phase 154: BM25 Legacy Comparison Report** - `ctxhelm eval lexical compare` now produces a source-free report comparing active BM25 lexical ranking against the legacy heuristic scanner, including overlap, top-path changes, backend-only paths, and privacy metadata.
+- [x] **Phase 155: BM25 Corpus Comparison Report** - `ctxhelm eval lexical corpus` now compares active BM25 and legacy lexical ranking across historical commit tasks and parent snapshots, reporting recall, MRR, overlap, top-path churn, win/tie counts, and backend runtime.
 
 ## Phase Details
 

@@ -15,11 +15,12 @@ use ctxhelm_core::{
     RetrievalHealthSignalContribution, RetrievalHealthTokenRoi, RetrievalSignalKind, TaskType,
 };
 use ctxhelm_index::{
-    historical_commit_samples_with_safe_paths, inventory_path, lexical_search,
-    load_or_build_inventory, repo_id_for_path, semantic_document_report, task_hash,
-    write_eval_history_sidecar, HistoricalChangedPath, HistoricalCommitOptions,
-    HistoricalCommitSample, InventoryError, InventoryOptions, LabelScope, SearchOptions,
-    SemanticDocumentOptions, SemanticProviderConfig, LEARNED_POLICY_PROFILE_SCHEMA_VERSION,
+    historical_commit_samples_with_safe_paths, inventory_path, legacy_lexical_search_report,
+    lexical_search, lexical_search_report, load_or_build_inventory, repo_id_for_path,
+    semantic_document_report, task_hash, write_eval_history_sidecar, HistoricalChangedPath,
+    HistoricalCommitOptions, HistoricalCommitSample, InventoryError, InventoryOptions, LabelScope,
+    SearchOptions, SemanticDocumentOptions, SemanticProviderConfig,
+    LEARNED_POLICY_PROFILE_SCHEMA_VERSION,
 };
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet};
@@ -32,6 +33,7 @@ use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 use uuid::Uuid;
 
 const HISTORICAL_EVAL_CACHE_SCHEMA_VERSION: &str = "historical-eval-cache-v2.3.5";
+const LEXICAL_BACKEND_CORPUS_SCHEMA_VERSION: &str = "lexical-backend-corpus-v1";
 const PARENT_SNAPSHOT_BATCH_READ_TIMEOUT: Duration = Duration::from_millis(500);
 const PARENT_SNAPSHOT_SCHEMA_VERSION: &str = "historical-eval-parent-snapshot-v2";
 const PARENT_SNAPSHOT_MANIFEST: &str = ".ctxhelm/parent-snapshot.json";
@@ -87,6 +89,86 @@ pub struct HistoricalEvalOptions {
     pub force_refresh: bool,
     #[serde(default)]
     pub parallelism: usize,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct LexicalBackendCorpusOptions {
+    pub limit: usize,
+    pub ranking_budget: usize,
+    pub base: Option<String>,
+    pub head: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct LexicalBackendCorpusReport {
+    pub schema_version: String,
+    pub eval_range_id: String,
+    pub repo_id: String,
+    pub refs: HistoricalEvalRefs,
+    pub evaluated_commits: usize,
+    pub ranking_budget: usize,
+    pub bm25: LexicalBackendMetrics,
+    pub legacy: LexicalBackendMetrics,
+    pub comparison: LexicalBackendComparison,
+    pub rows: Vec<LexicalBackendCommitRow>,
+    pub runtime: LexicalBackendRuntimeSummary,
+    pub privacy_status: PrivacyStatus,
+    pub source_text_logged: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct LexicalBackendMetrics {
+    pub backend: String,
+    pub recall_at_5: f32,
+    pub recall_at_10: f32,
+    pub mrr_at_10: f32,
+    pub average_result_count: f32,
+    pub total_millis: u64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct LexicalBackendComparison {
+    pub recall_delta_at_5: f32,
+    pub recall_delta_at_10: f32,
+    pub mrr_delta_at_10: f32,
+    pub average_overlap_at_k: f32,
+    pub top_path_changed_rate: f32,
+    pub bm25_wins_at_10: usize,
+    pub legacy_wins_at_10: usize,
+    pub ties_at_10: usize,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct LexicalBackendRuntimeSummary {
+    pub total_millis: u64,
+    pub git_sample_millis: u64,
+    pub bm25_total_millis: u64,
+    pub legacy_total_millis: u64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct LexicalBackendCommitRow {
+    pub sha: String,
+    pub task_hash: String,
+    pub retrieval_target_files: Vec<String>,
+    pub bm25_files: Vec<String>,
+    pub legacy_files: Vec<String>,
+    pub bm25_hits_at_5: Vec<String>,
+    pub bm25_hits_at_10: Vec<String>,
+    pub legacy_hits_at_5: Vec<String>,
+    pub legacy_hits_at_10: Vec<String>,
+    pub bm25_recall_at_10: f32,
+    pub legacy_recall_at_10: f32,
+    pub overlap_at_k: usize,
+    pub top_path_changed: bool,
+    pub bm25_millis: u64,
+    pub legacy_millis: u64,
 }
 
 pub type HistoricalChangedPathLabel = HistoricalChangedPath;
@@ -3346,6 +3428,147 @@ pub fn evaluate_historical_commits(
     Ok(report)
 }
 
+pub fn compare_lexical_backends_on_corpus(
+    repo_root: impl AsRef<Path>,
+    options: &LexicalBackendCorpusOptions,
+) -> Result<LexicalBackendCorpusReport, InventoryError> {
+    let eval_started = Instant::now();
+    let repo_root = repo_root.as_ref();
+    let ranking_budget = options.ranking_budget.max(1);
+    let repo_id = pack_repo_id(repo_root);
+    let refs = HistoricalEvalRefs {
+        base: options.base.clone(),
+        head: options.head.clone(),
+    };
+    let eval_range_id = lexical_backend_corpus_range_id(&repo_id, options, &refs);
+    let inventory = load_or_build_inventory(repo_root, &InventoryOptions::default())?;
+    let snapshot_paths = inventory
+        .files
+        .iter()
+        .map(|file| file.path.clone())
+        .collect::<Vec<_>>();
+    let safe_paths = snapshot_paths.iter().cloned().collect::<BTreeSet<_>>();
+    let git_sample_started = Instant::now();
+    let samples = historical_commit_samples_with_safe_paths(
+        repo_root,
+        &HistoricalCommitOptions {
+            limit: options.limit,
+            base: options.base.clone(),
+            head: options.head.clone(),
+        },
+        &safe_paths,
+    )?;
+    let git_sample_millis = elapsed_millis(git_sample_started);
+    let mut rows = Vec::new();
+    let mut bm25_total_millis = 0u64;
+    let mut legacy_total_millis = 0u64;
+
+    for sample in samples {
+        let task = if sample.title.trim().is_empty() {
+            format!("change {}", sample.sha)
+        } else {
+            sample.title.clone()
+        };
+        let parent_snapshot_paths =
+            parent_snapshot_candidate_paths(&snapshot_paths, &sample.safe_changed_files);
+        let eval_repo = HistoricalEvalWorktree::for_parent(
+            repo_root,
+            sample.parent_sha.as_deref(),
+            &parent_snapshot_paths,
+        )?;
+        let eval_root = eval_repo.path();
+        let retrieval_target_files = retrieval_target_files(eval_root, &sample.safe_changed_files);
+
+        let bm25_started = Instant::now();
+        let bm25_files = search_report_paths(lexical_search_report(
+            eval_root,
+            &task,
+            &SearchOptions {
+                limit: ranking_budget,
+            },
+        )?);
+        let bm25_millis = elapsed_millis(bm25_started);
+        bm25_total_millis += bm25_millis;
+
+        let legacy_started = Instant::now();
+        let legacy_files = search_report_paths(legacy_lexical_search_report(
+            eval_root,
+            &task,
+            &SearchOptions {
+                limit: ranking_budget,
+            },
+        )?);
+        let legacy_millis = elapsed_millis(legacy_started);
+        legacy_total_millis += legacy_millis;
+
+        let bm25_hits_at_5 = changed_file_hits(&retrieval_target_files, &bm25_files, 5);
+        let bm25_hits_at_10 = changed_file_hits(&retrieval_target_files, &bm25_files, 10);
+        let legacy_hits_at_5 = changed_file_hits(&retrieval_target_files, &legacy_files, 5);
+        let legacy_hits_at_10 = changed_file_hits(&retrieval_target_files, &legacy_files, 10);
+        let overlap_at_k = overlap_at_limit(&bm25_files, &legacy_files, ranking_budget);
+        let top_path_changed = bm25_files.first() != legacy_files.first();
+        let bm25_recall_at_10 = recall_for_hits(&retrieval_target_files, &bm25_hits_at_10);
+        let legacy_recall_at_10 = recall_for_hits(&retrieval_target_files, &legacy_hits_at_10);
+
+        rows.push(LexicalBackendCommitRow {
+            sha: sample.sha,
+            task_hash: task_hash(&task),
+            retrieval_target_files,
+            bm25_files,
+            legacy_files,
+            bm25_hits_at_5,
+            bm25_hits_at_10,
+            legacy_hits_at_5,
+            legacy_hits_at_10,
+            bm25_recall_at_10,
+            legacy_recall_at_10,
+            overlap_at_k,
+            top_path_changed,
+            bm25_millis,
+            legacy_millis,
+        });
+    }
+
+    let bm25 = lexical_backend_metrics(
+        "tantivy_bm25_fielded_v1",
+        &rows,
+        |row| &row.bm25_files,
+        |row| &row.bm25_hits_at_5,
+        |row| &row.bm25_hits_at_10,
+        |row| row.bm25_millis,
+    );
+    let legacy = lexical_backend_metrics(
+        "legacy_heuristic_scanner_v1",
+        &rows,
+        |row| &row.legacy_files,
+        |row| &row.legacy_hits_at_5,
+        |row| &row.legacy_hits_at_10,
+        |row| row.legacy_millis,
+    );
+    let comparison = lexical_backend_comparison(&rows, &bm25, &legacy, ranking_budget);
+
+    Ok(LexicalBackendCorpusReport {
+        schema_version: LEXICAL_BACKEND_CORPUS_SCHEMA_VERSION.to_string(),
+        eval_range_id,
+        repo_id,
+        refs,
+        evaluated_commits: rows.len(),
+        ranking_budget,
+        bm25,
+        legacy,
+        comparison,
+        rows,
+        runtime: LexicalBackendRuntimeSummary {
+            total_millis: elapsed_millis(eval_started),
+            git_sample_millis,
+            bm25_total_millis,
+            legacy_total_millis,
+        },
+        privacy_status: PrivacyStatus::local_only(),
+        source_text_logged: false,
+    })
+}
+
 pub(crate) struct HistoricalEvalWorktree<'a> {
     path: PathBuf,
     _source_repo: &'a Path,
@@ -4659,6 +4882,152 @@ fn lexical_baseline_context_files(
         .into_iter()
         .map(|result| result.path)
         .collect::<Vec<_>>())
+}
+
+fn search_report_paths(report: ctxhelm_index::SearchReport) -> Vec<String> {
+    report
+        .results
+        .into_iter()
+        .map(|result| result.path)
+        .collect()
+}
+
+fn lexical_backend_metrics(
+    backend: &str,
+    rows: &[LexicalBackendCommitRow],
+    files: impl Fn(&LexicalBackendCommitRow) -> &Vec<String>,
+    hits_at_5: impl Fn(&LexicalBackendCommitRow) -> &Vec<String>,
+    hits_at_10: impl Fn(&LexicalBackendCommitRow) -> &Vec<String>,
+    millis: impl Fn(&LexicalBackendCommitRow) -> u64,
+) -> LexicalBackendMetrics {
+    if rows.is_empty() {
+        return LexicalBackendMetrics {
+            backend: backend.to_string(),
+            recall_at_5: 0.0,
+            recall_at_10: 0.0,
+            mrr_at_10: 0.0,
+            average_result_count: 0.0,
+            total_millis: 0,
+        };
+    }
+
+    let recall_at_5 = rows
+        .iter()
+        .map(|row| recall_for_hits(&row.retrieval_target_files, hits_at_5(row)))
+        .sum::<f32>()
+        / rows.len() as f32;
+    let recall_at_10 = rows
+        .iter()
+        .map(|row| recall_for_hits(&row.retrieval_target_files, hits_at_10(row)))
+        .sum::<f32>()
+        / rows.len() as f32;
+    let mrr_at_10 = rows
+        .iter()
+        .map(|row| lexical_backend_reciprocal_rank(&row.retrieval_target_files, files(row), 10))
+        .sum::<f32>()
+        / rows.len() as f32;
+    let average_result_count =
+        rows.iter().map(|row| files(row).len()).sum::<usize>() as f32 / rows.len() as f32;
+    let total_millis = rows.iter().map(millis).sum::<u64>();
+
+    LexicalBackendMetrics {
+        backend: backend.to_string(),
+        recall_at_5,
+        recall_at_10,
+        mrr_at_10,
+        average_result_count,
+        total_millis,
+    }
+}
+
+fn lexical_backend_comparison(
+    rows: &[LexicalBackendCommitRow],
+    bm25: &LexicalBackendMetrics,
+    legacy: &LexicalBackendMetrics,
+    ranking_budget: usize,
+) -> LexicalBackendComparison {
+    if rows.is_empty() {
+        return LexicalBackendComparison {
+            recall_delta_at_5: 0.0,
+            recall_delta_at_10: 0.0,
+            mrr_delta_at_10: 0.0,
+            average_overlap_at_k: 0.0,
+            top_path_changed_rate: 0.0,
+            bm25_wins_at_10: 0,
+            legacy_wins_at_10: 0,
+            ties_at_10: 0,
+        };
+    }
+
+    let average_overlap_at_k =
+        rows.iter().map(|row| row.overlap_at_k).sum::<usize>() as f32 / rows.len() as f32;
+    let top_path_changed_rate =
+        rows.iter().filter(|row| row.top_path_changed).count() as f32 / rows.len() as f32;
+    let mut bm25_wins_at_10 = 0usize;
+    let mut legacy_wins_at_10 = 0usize;
+    let mut ties_at_10 = 0usize;
+    for row in rows {
+        match row.bm25_recall_at_10.total_cmp(&row.legacy_recall_at_10) {
+            std::cmp::Ordering::Greater => bm25_wins_at_10 += 1,
+            std::cmp::Ordering::Less => legacy_wins_at_10 += 1,
+            std::cmp::Ordering::Equal => ties_at_10 += 1,
+        }
+    }
+
+    LexicalBackendComparison {
+        recall_delta_at_5: bm25.recall_at_5 - legacy.recall_at_5,
+        recall_delta_at_10: bm25.recall_at_10 - legacy.recall_at_10,
+        mrr_delta_at_10: bm25.mrr_at_10 - legacy.mrr_at_10,
+        average_overlap_at_k: average_overlap_at_k.min(ranking_budget as f32),
+        top_path_changed_rate,
+        bm25_wins_at_10,
+        legacy_wins_at_10,
+        ties_at_10,
+    }
+}
+
+fn recall_for_hits(targets: &[String], hits: &[String]) -> f32 {
+    if targets.is_empty() {
+        0.0
+    } else {
+        hits.len() as f32 / targets.len() as f32
+    }
+}
+
+fn lexical_backend_reciprocal_rank(targets: &[String], files: &[String], limit: usize) -> f32 {
+    if targets.is_empty() {
+        return 0.0;
+    }
+    let targets = targets.iter().collect::<BTreeSet<_>>();
+    for (index, file) in files.iter().take(limit).enumerate() {
+        if targets.contains(file) {
+            return 1.0 / (index + 1) as f32;
+        }
+    }
+    0.0
+}
+
+fn overlap_at_limit(left: &[String], right: &[String], limit: usize) -> usize {
+    let left = left.iter().take(limit).collect::<BTreeSet<_>>();
+    right
+        .iter()
+        .take(limit)
+        .filter(|path| left.contains(path))
+        .count()
+}
+
+fn lexical_backend_corpus_range_id(
+    repo_id: &str,
+    options: &LexicalBackendCorpusOptions,
+    refs: &HistoricalEvalRefs,
+) -> String {
+    task_hash(&format!(
+        "version={LEXICAL_BACKEND_CORPUS_SCHEMA_VERSION}\nrepo={repo_id}\nlimit={}\nrankingBudget={}\nbase={}\nhead={}",
+        options.limit,
+        options.ranking_budget.max(1),
+        refs.base.as_deref().unwrap_or(""),
+        refs.head.as_deref().unwrap_or("")
+    ))
 }
 
 fn changed_file_hits(

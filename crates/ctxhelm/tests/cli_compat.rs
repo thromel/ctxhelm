@@ -2089,6 +2089,78 @@ fn eval_lexical_compare_reports_source_free_bm25_vs_legacy() {
 }
 
 #[test]
+fn eval_lexical_corpus_reports_source_free_backend_metrics() {
+    let fixture = fixture_repo();
+    fs::write(
+        fixture.repo.join("src/auth/session.ts"),
+        r#"import { issueToken } from "./token";
+
+export function requireSession(user?: { id: string }) {
+  if (!user) {
+    throw new Error("auth required");
+  }
+  issueToken(user.id);
+  return `session:${user.id}`;
+}
+"#,
+    )
+    .unwrap();
+    run_git(&fixture.repo, &["add", "src/auth/session.ts"]);
+    run_git(
+        &fixture.repo,
+        &["commit", "-m", "requireSession regression"],
+    );
+
+    let value = json_stdout(
+        Command::cargo_bin("ctxhelm")
+            .unwrap()
+            .env(CTXHELM_HOME_ENV, &fixture.home)
+            .args(["eval", "lexical", "corpus", "--repo"])
+            .arg(&fixture.repo)
+            .args(["--limit", "1", "--budget", "5", "--format", "json"])
+            .assert(),
+    );
+
+    assert_eq!(value["schemaVersion"], "lexical-backend-corpus-v1");
+    assert_eq!(value["evaluatedCommits"], 1);
+    assert_eq!(value["rankingBudget"], 5);
+    assert_eq!(value["privacyStatus"]["localOnly"], true);
+    assert_eq!(value["sourceTextLogged"], false);
+    assert_eq!(value["bm25"]["backend"], "tantivy_bm25_fielded_v1");
+    assert_eq!(value["legacy"]["backend"], "legacy_heuristic_scanner_v1");
+    assert!(value["comparison"]["recallDeltaAt10"].as_f64().is_some());
+    assert!(value["comparison"]["averageOverlapAtK"].as_f64().is_some());
+    assert!(value["rows"][0].get("taskHash").is_some());
+    assert!(value["rows"][0].get("task").is_none());
+    assert!(value["rows"][0]["bm25Files"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .any(|path| path == "src/auth/session.ts"));
+    assert!(value["rows"][0]["legacyFiles"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .any(|path| path == "src/auth/session.ts"));
+
+    Command::cargo_bin("ctxhelm")
+        .unwrap()
+        .env(
+            CTXHELM_HOME_ENV,
+            fixture.temp.path().join("ctxhelm-home-lexical-corpus-md"),
+        )
+        .args(["eval", "lexical", "corpus", "--repo"])
+        .arg(&fixture.repo)
+        .args(["--limit", "1", "--budget", "5"])
+        .assert()
+        .success()
+        .stdout(contains("# ctxhelm Lexical Backend Corpus Comparison"))
+        .stdout(contains("Recall delta@5/10"))
+        .stdout(contains("Wins at 10"))
+        .stdout(contains("Source text logged: `false`"));
+}
+
+#[test]
 fn eval_compare_reports_source_free_metric_and_gap_deltas() {
     let fixture = fixture_repo();
     let suite_path = fixture.temp.path().join("ctxhelm-benchmark.json");

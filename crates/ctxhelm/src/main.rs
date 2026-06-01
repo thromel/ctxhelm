@@ -3,7 +3,7 @@ use clap::{Args, Parser, Subcommand, ValueEnum};
 use ctxhelm_compiler::{
     build_agent_preview_report_with_provider, build_graph_neighborhood_report,
     build_product_proof_report, build_retrieval_health_report, compare_benchmark_suite_reports,
-    compare_candidate_feature_exports,
+    compare_candidate_feature_exports, compare_lexical_backends_on_corpus,
     compile_context_pack_with_plan_and_paths_for_agent_and_semantic_provider,
     compile_pack_inspector_view, compile_workspace_context_pack, delete_candidate_feature_export,
     eval_trace_for_pack, eval_trace_for_plan, evaluate_historical_commits,
@@ -17,8 +17,9 @@ use ctxhelm_compiler::{
     BenchmarkComparisonReport, BenchmarkRegressionThreshold, BenchmarkSuiteReport,
     CandidateFeatureComparisonReport, ContextCardsOptions, ContextCardsReport,
     ExperienceCardsOptions, ExperienceCardsReport, FallbackCardsOptions, FallbackCardsReport,
-    HistoricalEvalOptions, HistoricalEvalReport, PairedBaselineAnalysisReport,
-    ProductProofLexicalClaim, ProductProofReport, SemanticPrecisionGateReport,
+    HistoricalEvalOptions, HistoricalEvalReport, LexicalBackendCorpusOptions,
+    LexicalBackendCorpusReport, PairedBaselineAnalysisReport, ProductProofLexicalClaim,
+    ProductProofReport, SemanticPrecisionGateReport,
 };
 use ctxhelm_core::{
     run_init, run_setup_check, AgentAdapter, AgentOutcomeComparisonReport, AgentPreviewReport,
@@ -1090,6 +1091,8 @@ struct EvalLexicalArgs {
 enum EvalLexicalCommand {
     #[command(about = "Compare BM25 lexical search against the legacy heuristic scanner.")]
     Compare(EvalLexicalCompareArgs),
+    #[command(about = "Compare BM25 and legacy lexical search across historical tasks.")]
+    Corpus(EvalLexicalCorpusArgs),
 }
 
 #[derive(Debug, Args)]
@@ -1100,6 +1103,26 @@ struct EvalLexicalCompareArgs {
     query: String,
     #[arg(long, default_value_t = 10)]
     limit: usize,
+    #[arg(long, value_enum, default_value_t = PackFormat::Markdown)]
+    format: PackFormat,
+}
+
+#[derive(Debug, Args)]
+struct EvalLexicalCorpusArgs {
+    #[arg(long)]
+    repo: Option<PathBuf>,
+    #[arg(long, default_value_t = 20)]
+    limit: usize,
+    #[arg(
+        long,
+        default_value_t = 10,
+        help = "Fixed candidate ranking budget used for both lexical backends."
+    )]
+    budget: usize,
+    #[arg(long, help = "Start revision for a stable historical eval range.")]
+    base: Option<String>,
+    #[arg(long, help = "End revision for a stable historical eval range.")]
+    head: Option<String>,
     #[arg(long, value_enum, default_value_t = PackFormat::Markdown)]
     format: PackFormat,
 }
@@ -2268,6 +2291,25 @@ fn main() -> Result<()> {
                     match args.format {
                         PackFormat::Markdown => {
                             println!("{}", render_lexical_comparison_report(&report))
+                        }
+                        PackFormat::Json => println!("{}", serde_json::to_string_pretty(&report)?),
+                    }
+                }
+                EvalLexicalCommand::Corpus(args) => {
+                    let start = args.repo.clone().unwrap_or(std::env::current_dir()?);
+                    let repo = RepoRoot::discover_from(&start)?;
+                    let report = compare_lexical_backends_on_corpus(
+                        &repo.path,
+                        &LexicalBackendCorpusOptions {
+                            limit: args.limit,
+                            ranking_budget: args.budget,
+                            base: args.base,
+                            head: args.head,
+                        },
+                    )?;
+                    match args.format {
+                        PackFormat::Markdown => {
+                            println!("{}", render_lexical_backend_corpus_report(&report))
                         }
                         PackFormat::Json => println!("{}", serde_json::to_string_pretty(&report)?),
                     }
@@ -4481,6 +4523,56 @@ fn render_lexical_comparison_report(report: &serde_json::Value) -> String {
             if let Some(path) = path.as_str() {
                 output.push_str(&format!("  - Legacy-only `{path}`\n"));
             }
+        }
+    }
+    output
+}
+
+fn render_lexical_backend_corpus_report(report: &LexicalBackendCorpusReport) -> String {
+    let mut output = String::from("# ctxhelm Lexical Backend Corpus Comparison\n\n");
+    output.push_str("This source-free report compares the active Tantivy/BM25 lexical backend against the legacy heuristic scanner across historical commit tasks.\n\n");
+    output.push_str(&format!(
+        "- Schema: `{}`\n- Eval range ID: `{}`\n- Repo ID: `{}`\n- Evaluated commits: `{}`\n- Ranking budget K: `{}`\n- BM25 Recall@5/10: `{:.3}` / `{:.3}`\n- Legacy Recall@5/10: `{:.3}` / `{:.3}`\n- Recall delta@5/10: `{:+.3}` / `{:+.3}`\n- MRR delta@10: `{:+.3}`\n- Average overlap@K: `{:.2}`\n- Top-path changed rate: `{:.2}`\n- Wins at 10: BM25 `{}`, legacy `{}`, ties `{}`\n- Runtime total ms: `{}`\n- BM25/legacy backend ms: `{}` / `{}`\n- Source text logged: `{}`\n- Privacy: local-only `{}`\n\n",
+        report.schema_version,
+        report.eval_range_id,
+        report.repo_id,
+        report.evaluated_commits,
+        report.ranking_budget,
+        report.bm25.recall_at_5,
+        report.bm25.recall_at_10,
+        report.legacy.recall_at_5,
+        report.legacy.recall_at_10,
+        report.comparison.recall_delta_at_5,
+        report.comparison.recall_delta_at_10,
+        report.comparison.mrr_delta_at_10,
+        report.comparison.average_overlap_at_k,
+        report.comparison.top_path_changed_rate,
+        report.comparison.bm25_wins_at_10,
+        report.comparison.legacy_wins_at_10,
+        report.comparison.ties_at_10,
+        report.runtime.total_millis,
+        report.runtime.bm25_total_millis,
+        report.runtime.legacy_total_millis,
+        report.source_text_logged,
+        report.privacy_status.local_only
+    ));
+    output.push_str("## Rows\n\n");
+    if report.rows.is_empty() {
+        output.push_str("- No historical rows were available.\n");
+    } else {
+        for row in &report.rows {
+            output.push_str(&format!(
+                "- `{}` task `{}` targets `{}` BM25 hits@10 `{}` legacy hits@10 `{}` overlap `{}` top changed `{}` BM25/legacy ms `{}`/`{}`\n",
+                row.sha,
+                row.task_hash,
+                row.retrieval_target_files.len(),
+                row.bm25_hits_at_10.len(),
+                row.legacy_hits_at_10.len(),
+                row.overlap_at_k,
+                row.top_path_changed,
+                row.bm25_millis,
+                row.legacy_millis
+            ));
         }
     }
     output

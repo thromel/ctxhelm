@@ -4,7 +4,7 @@ milestone: v2.5
 milestone_name: Production Retrieval Quality
 status: active
 last_updated: "2026-06-02T00:00:00Z"
-last_activity: 2026-06-02 -- Phase 154 added a source-free lexical backend comparison report for measuring active BM25 ranking against the legacy heuristic scanner
+last_activity: 2026-06-02 -- Phase 155 added a corpus-level lexical backend comparison report for measuring BM25 versus the legacy scanner across historical tasks
 progress:
   total_phases: 85
   completed_phases: 85
@@ -17,10 +17,10 @@ progress:
 
 ## Current Position
 
-Phase: 154 - BM25 Legacy Comparison Report
-Plan: 154-bm25-legacy-comparison-report
+Phase: 155 - BM25 Corpus Comparison Report
+Plan: 155-bm25-corpus-comparison-report
 Status: Complete
-Last activity: 2026-06-02 -- Phase 154 added `ctxhelm eval lexical compare` so maintainers can compare active Tantivy/BM25 lexical ranking against the pre-BM25 heuristic scanner without storing raw query text, raw source, or result reasons in the report.
+Last activity: 2026-06-02 -- Phase 155 added `ctxhelm eval lexical corpus` so maintainers can compare active Tantivy/BM25 lexical ranking against the pre-BM25 heuristic scanner over historical commit tasks and parent snapshots without storing task text or source text.
 
 ## Project Reference
 
@@ -131,6 +131,7 @@ Planned phases:
 - Phase 152: Native-Agent Outcome Suite (complete follow-up)
 - Phase 153: BM25 Symbol Lexical Index (complete follow-up)
 - Phase 154: BM25 Legacy Comparison Report (complete follow-up)
+- Phase 155: BM25 Corpus Comparison Report (complete follow-up)
 
 ## Last Completed Milestone
 

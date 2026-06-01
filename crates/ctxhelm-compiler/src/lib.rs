@@ -16,8 +16,9 @@ pub use cards::{
 };
 pub use eval::{
     build_product_proof_report, build_retrieval_health_report, compare_benchmark_suite_reports,
-    compare_candidate_feature_exports, delete_candidate_feature_export, eval_trace_for_pack,
-    eval_trace_for_plan, evaluate_historical_commits, export_candidate_features_for_task,
+    compare_candidate_feature_exports, compare_lexical_backends_on_corpus,
+    delete_candidate_feature_export, eval_trace_for_pack, eval_trace_for_plan,
+    evaluate_historical_commits, export_candidate_features_for_task,
     list_candidate_feature_exports, load_benchmark_suite_config, load_benchmark_suite_report,
     load_candidate_feature_export, paired_baseline_analysis_report, run_benchmark_suite,
     run_benchmark_suite_config, semantic_precision_gate_report, write_candidate_feature_export,
@@ -29,6 +30,8 @@ pub use eval::{
     HistoricalEvalEffectiveFilters, HistoricalEvalOptions, HistoricalEvalRefs,
     HistoricalEvalReport, HistoricalEvalRuntimeSummary, HistoricalMissingFileSummary,
     HistoricalProtectedEvidenceFile, HistoricalSignalRanking, HistoricalSlowCommitSummary,
+    LexicalBackendCommitRow, LexicalBackendComparison, LexicalBackendCorpusOptions,
+    LexicalBackendCorpusReport, LexicalBackendMetrics, LexicalBackendRuntimeSummary,
     PairedBaselineAnalysisReport, PairedBaselineFamily, PairedBaselineRow, PairedBaselineVerdict,
     ProductProofCorpusStatus, ProductProofCorpusVerdict, ProductProofLexicalClaim,
     ProductProofLexicalComparison, ProductProofMetric, ProductProofReleaseGate, ProductProofReport,
