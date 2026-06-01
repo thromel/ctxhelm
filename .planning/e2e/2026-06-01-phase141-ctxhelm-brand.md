@@ -2,8 +2,8 @@
 
 ## Goal
 
-Replace the short-lived ctxhelm product name with a cleaner public brand
-after availability review found the name too close to an adjacent Mason
+Replace the short-lived interim product name with a cleaner public brand
+after availability review rejected the interim name as too close to an adjacent Mason
 MCP/code-context product.
 
 ## Decision
