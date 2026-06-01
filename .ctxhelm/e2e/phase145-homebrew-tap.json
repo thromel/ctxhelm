@@ -1,0 +1,34 @@
+{
+  "checks": {
+    "arm64ConstraintPresent": true,
+    "auditPassed": true,
+    "installPassed": true,
+    "rubySyntaxPassed": true,
+    "sha256Matched": true,
+    "stylePassed": true,
+    "tapSucceeded": true,
+    "testPassed": true,
+    "urlMatched": true,
+    "versionPassed": true
+  },
+  "expectedSha256": "d9f4b0a4b38fcdfd1702873994b8f3ed4c63af6e88e0cd33b3635f104beb3c7d",
+  "expectedUrl": "https://github.com/thromel/ctxhelm/releases/download/v1.1.9/ctxhelm-v1.1.9-aarch64-apple-darwin.tar.gz",
+  "expectedVersion": "ctxhelm 1.1.9",
+  "formula": "ctxhelm",
+  "formulaPath": "/opt/homebrew/Library/Taps/thromel/homebrew-tap/Formula/ctxhelm.rb",
+  "installedVersion": "ctxhelm 1.1.9",
+  "privacyStatus": {
+    "localOnly": true,
+    "remoteEmbeddingsUsed": false,
+    "remoteRerankingUsed": false,
+    "sourceTextLogged": false
+  },
+  "schemaVersion": "ctxhelm-homebrew-tap-proof-v1",
+  "tap": "thromel/tap",
+  "unsupportedActions": [
+    "crates.io publish",
+    "signed installer",
+    "self-update",
+    "global agent config mutation"
+  ]
+}

@@ -1,0 +1,33 @@
+{
+  "commitsAhead": 0,
+  "currentCommit": "b4783964535ceacf56304c5090500ba0fd16516e",
+  "gitRelation": "same",
+  "ignoredFreshnessPaths": [
+    ".ctxhelm/e2e/",
+    ".planning/"
+  ],
+  "privacyStatus": {
+    "localOnly": true,
+    "remoteEmbeddingsUsed": false,
+    "remoteRerankingUsed": false,
+    "sourceTextLogged": false
+  },
+  "productCommitsAhead": 0,
+  "productStatus": "current",
+  "proofOnlyCommitsAhead": 0,
+  "publishedAt": "2026-06-01T15:30:16Z",
+  "releaseTargetCommit": "b4783964535ceacf56304c5090500ba0fd16516e",
+  "releaseUrl": "https://github.com/thromel/ctxhelm/releases/tag/v1.1.9",
+  "repo": "thromel/ctxhelm",
+  "schemaVersion": 1,
+  "sourceFree": true,
+  "status": "current",
+  "tag": "v1.1.9",
+  "unsupportedActions": [
+    "publishing",
+    "tag creation",
+    "asset upload",
+    "global install",
+    "global agent config mutation"
+  ]
+}
