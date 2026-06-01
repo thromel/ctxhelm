@@ -360,8 +360,10 @@ mod tests {
         let results = lexical_search(&repo, "requireSession", &SearchOptions { limit: 5 }).unwrap();
 
         assert_eq!(results[0].path, "src/auth/session.ts");
-        assert!(results[0].reason.contains("bm25 fielded score"));
-        assert!(results[0].reason.contains("exact symbol index available"));
+        assert!(results[0]
+            .reason
+            .contains("exact lexical identifier budget"));
+        assert!(!results[0].reason.contains("bm25 fielded score"));
         assert!(results[0]
             .reason
             .contains("content matched `requiresession`"));
@@ -396,7 +398,10 @@ mod tests {
 
         assert_eq!(bm25.results[0].path, "src/auth/session.ts");
         assert_eq!(legacy.results[0].path, "src/auth/session.ts");
-        assert!(bm25.results[0].reason.contains("bm25 fielded score"));
+        assert!(bm25.results[0]
+            .reason
+            .contains("exact lexical identifier budget"));
+        assert!(!bm25.results[0].reason.contains("bm25 fielded score"));
         assert!(!legacy.results[0].reason.contains("bm25 fielded score"));
         assert!(legacy.results[0]
             .reason
@@ -754,6 +759,41 @@ mod tests {
         assert!(results
             .iter()
             .all(|result| result.reason.contains("exact lexical saturated budget")));
+        assert!(results
+            .iter()
+            .all(|result| !result.reason.contains("bm25 fielded score")));
+
+        std::env::remove_var("CTXHELM_HOME");
+    }
+
+    #[test]
+    fn lexical_search_uses_exact_dominant_fast_path_before_bm25_indexing() {
+        let _guard = env_lock();
+        let temp = tempfile::tempdir().unwrap();
+        let repo = temp.path().join("repo");
+        let home = temp.path().join("ctxhelm-home");
+        fs::create_dir_all(repo.join(".git")).unwrap();
+        fs::create_dir_all(repo.join("src")).unwrap();
+        for index in 0..6 {
+            fs::write(
+                repo.join(format!("src/update_mapper_{index}.ts")),
+                "export const value = 'update mapper';\n",
+            )
+            .unwrap();
+        }
+        fs::write(
+            repo.join("src/unrelated.ts"),
+            "export const value = 'authentication middleware';\n",
+        )
+        .unwrap();
+        std::env::set_var("CTXHELM_HOME", &home);
+
+        let results = lexical_search(&repo, "update mapper", &SearchOptions { limit: 10 }).unwrap();
+
+        assert_eq!(results.len(), 6);
+        assert!(results
+            .iter()
+            .all(|result| result.reason.contains("exact lexical dominant budget")));
         assert!(results
             .iter()
             .all(|result| !result.reason.contains("bm25 fielded score")));

@@ -2055,7 +2055,7 @@ fn eval_lexical_compare_reports_source_free_bm25_vs_legacy() {
     assert_eq!(value["privacyStatus"]["resultReasonsOmitted"], true);
     assert!(value["query"].get("queryHash").is_some());
     assert!(value["query"].get("query").is_none());
-    assert_eq!(value["bm25"]["backend"], "tantivy_bm25_fielded_v5");
+    assert_eq!(value["bm25"]["backend"], "tantivy_bm25_fielded_v6");
     assert_eq!(value["legacy"]["backend"], "legacy_heuristic_scanner_v1");
     assert!(value["comparison"]["overlapAtLimit"].as_u64().is_some());
     assert!(value["bm25"]["results"]
@@ -2126,8 +2126,9 @@ export function requireSession(user?: { id: string }) {
     assert_eq!(value["rankingBudget"], 5);
     assert_eq!(value["privacyStatus"]["localOnly"], true);
     assert_eq!(value["sourceTextLogged"], false);
-    assert_eq!(value["bm25"]["backend"], "tantivy_bm25_fielded_v5");
+    assert_eq!(value["bm25"]["backend"], "tantivy_bm25_fielded_v6");
     assert_eq!(value["legacy"]["backend"], "legacy_heuristic_scanner_v1");
+    assert!(value["runtime"]["inventoryWarmupMillis"].as_u64().is_some());
     assert!(value["comparison"]["recallDeltaAt10"].as_f64().is_some());
     assert!(value["comparison"]["averageOverlapAtK"].as_f64().is_some());
     assert!(value["rows"][0].get("taskHash").is_some());
@@ -2157,6 +2158,7 @@ export function requireSession(user?: { id: string }) {
         .stdout(contains("# ctxhelm Lexical Backend Corpus Comparison"))
         .stdout(contains("Recall delta@5/10"))
         .stdout(contains("Wins at 10"))
+        .stdout(contains("Shared inventory warmup ms"))
         .stdout(contains("Source text logged: `false`"));
 }
 

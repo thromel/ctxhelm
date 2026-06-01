@@ -4,7 +4,7 @@ milestone: v2.5
 milestone_name: Production Retrieval Quality
 status: active
 last_updated: "2026-06-02T00:00:00Z"
-last_activity: 2026-06-02 -- Phase 158 fixed BM25 exact-candidate loss and proved RefactoringMiner lexical parity
+last_activity: 2026-06-02 -- Phase 159 closed the active lexical runtime gap on clean RefactoringMiner while preserving parity
 progress:
   total_phases: 86
   completed_phases: 86
@@ -17,10 +17,10 @@ progress:
 
 ## Current Position
 
-Phase: 158 - BM25 Exact-Saturated Fast Path
-Plan: 158-bm25-exact-saturated-fast-path
+Phase: 159 - Lexical Runtime Accounting And Exact-Primary Policy
+Plan: 159-lexical-runtime-accounting
 Status: Complete
-Last activity: 2026-06-02 -- Phase 158 makes exact lexical evidence primary inside the active BM25 backend and adds an exact-saturated fast path that skips query-time Tantivy indexing when exact candidates already fill the requested budget. On the clean upstream RefactoringMiner 20-commit proof, active backend `tantivy_bm25_fielded_v5` now matches legacy on Recall@5, Recall@10, and MRR@10 (`0.1`, `0.175`, `0.13916667`), with zero trailing rows and average overlap@K `9.7`. Cold backend time improves from Phase 157's `63691ms` to `9671ms`, but still trails legacy cold time (`1689ms`), so the next R&D bottleneck is persistent/reused fielded indexing rather than quality parity.
+Last activity: 2026-06-02 -- Phase 159 splits shared inventory warmup out of lexical backend timing, adds a source-safe inventory fingerprint for cache keys, reuses in-process fielded indexes, and expands the exact-primary fast path for exact-dominant and single-identifier queries. On the clean upstream RefactoringMiner 20-commit proof, active backend `tantivy_bm25_fielded_v6` matches legacy on Recall@5, Recall@10, and MRR@10 (`0.1`, `0.175`, `0.13916667`) with zero trailing rows. Active backend time is now `1688ms` versus legacy `1680ms`, down from Phase 158's `9671ms` and Phase 157's `63691ms`.
 
 ## Project Reference
 

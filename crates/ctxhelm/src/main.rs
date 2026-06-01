@@ -4422,7 +4422,7 @@ fn build_lexical_comparison_report(
         },
         "limit": options.limit,
         "bm25": {
-            "backend": "tantivy_bm25_fielded_v5",
+            "backend": "tantivy_bm25_fielded_v6",
             "results": summarize_search_results(&bm25),
             "cacheStatus": bm25.cache_status,
             "diagnostics": summarize_diagnostics(&bm25.diagnostics)
@@ -4532,7 +4532,7 @@ fn render_lexical_backend_corpus_report(report: &LexicalBackendCorpusReport) -> 
     let mut output = String::from("# ctxhelm Lexical Backend Corpus Comparison\n\n");
     output.push_str("This source-free report compares the active Tantivy/BM25 lexical backend against the legacy heuristic scanner across historical commit tasks.\n\n");
     output.push_str(&format!(
-        "- Schema: `{}`\n- Eval range ID: `{}`\n- Repo ID: `{}`\n- Evaluated commits: `{}`\n- Ranking budget K: `{}`\n- BM25 Recall@5/10: `{:.3}` / `{:.3}`\n- Legacy Recall@5/10: `{:.3}` / `{:.3}`\n- Recall delta@5/10: `{:+.3}` / `{:+.3}`\n- MRR delta@10: `{:+.3}`\n- Average overlap@K: `{:.2}`\n- Top-path changed rate: `{:.2}`\n- Wins at 10: BM25 `{}`, legacy `{}`, ties `{}`\n- Runtime total ms: `{}`\n- BM25/legacy backend ms: `{}` / `{}`\n- Source text logged: `{}`\n- Privacy: local-only `{}`\n\n",
+        "- Schema: `{}`\n- Eval range ID: `{}`\n- Repo ID: `{}`\n- Evaluated commits: `{}`\n- Ranking budget K: `{}`\n- BM25 Recall@5/10: `{:.3}` / `{:.3}`\n- Legacy Recall@5/10: `{:.3}` / `{:.3}`\n- Recall delta@5/10: `{:+.3}` / `{:+.3}`\n- MRR delta@10: `{:+.3}`\n- Average overlap@K: `{:.2}`\n- Top-path changed rate: `{:.2}`\n- Wins at 10: BM25 `{}`, legacy `{}`, ties `{}`\n- Runtime total ms: `{}`\n- Shared inventory warmup ms: `{}`\n- BM25/legacy backend ms: `{}` / `{}`\n- Source text logged: `{}`\n- Privacy: local-only `{}`\n\n",
         report.schema_version,
         report.eval_range_id,
         report.repo_id,
@@ -4551,6 +4551,7 @@ fn render_lexical_backend_corpus_report(report: &LexicalBackendCorpusReport) -> 
         report.comparison.legacy_wins_at_10,
         report.comparison.ties_at_10,
         report.runtime.total_millis,
+        report.runtime.inventory_warmup_millis,
         report.runtime.bm25_total_millis,
         report.runtime.legacy_total_millis,
         report.source_text_logged,

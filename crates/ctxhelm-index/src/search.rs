@@ -1,15 +1,16 @@
 use crate::freshness::load_or_refresh_inventory;
 use crate::inventory::{
-    canonicalize, inventory_path, FileInventoryEntry, InventoryError, InventoryOptions,
-    RepoInventory,
+    canonicalize, inventory_content_fingerprint, inventory_path, FileInventoryEntry,
+    InventoryError, InventoryOptions, RepoInventory,
 };
 use crate::policy::{read_safe_source, SourceReadStatus, SOURCE_READ_MAX_BYTES};
 use crate::symbols::extract_symbols_report;
 use ctxhelm_core::{CacheStatus, CacheStatusKind, Diagnostic, FileRole};
 use serde::{Deserialize, Serialize};
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::{BTreeMap, BTreeSet, VecDeque};
 use std::fs;
 use std::path::Path;
+use std::sync::{Arc, Mutex, OnceLock};
 use tantivy::collector::TopDocs;
 use tantivy::query::QueryParser;
 use tantivy::schema::{Schema, TantivyDocument, Value, STORED, STRING, TEXT};
@@ -198,21 +199,14 @@ fn lexical_search_cache_path(
     query_terms: &[String],
 ) -> std::path::PathBuf {
     let mut key = blake3::Hasher::new();
-    key.update(b"lexical-search-cache-v5");
+    key.update(b"lexical-search-cache-v6");
     key.update(query.trim().as_bytes());
     key.update(&limit.max(1).to_le_bytes());
     for term in query_terms {
         key.update(term.as_bytes());
         key.update(b"\0");
     }
-    for file in &inventory.files {
-        key.update(file.path.as_bytes());
-        key.update(b"\0");
-        key.update(file.hash.as_bytes());
-        key.update(b"\0");
-        key.update(format!("{:?}", file.role).as_bytes());
-        key.update(b"\0");
-    }
+    key.update(inventory_content_fingerprint(inventory).as_bytes());
     let repo_cache_dir = inventory_path(&inventory.repo_id)
         .parent()
         .map(Path::to_path_buf)
@@ -230,14 +224,13 @@ struct IndexedFileEvidence {
 }
 
 #[derive(Debug, Clone)]
-struct IndexedFileDocument {
+struct CachedIndexedDocument {
     file: FileInventoryEntry,
     filename: String,
     content: String,
-    exact_score: f32,
-    exact_reason: String,
 }
 
+#[derive(Debug, Clone, Copy)]
 struct LexicalFields {
     path: tantivy::schema::Field,
     filename: tantivy::schema::Field,
@@ -247,7 +240,22 @@ struct LexicalFields {
     content: tantivy::schema::Field,
 }
 
+struct CachedBm25Index {
+    index: Index,
+    fields: LexicalFields,
+    documents: Vec<CachedIndexedDocument>,
+    symbols_by_path: BTreeMap<String, Vec<String>>,
+    diagnostics: Vec<Diagnostic>,
+}
+
 const EXACT_LEXICAL_SCORE_MULTIPLIER: f32 = 100.0;
+const EXACT_LEXICAL_DOMINANT_MIN_RESULTS: usize = 5;
+const BM25_INDEX_CACHE_LIMIT: usize = 2;
+
+type Bm25IndexCacheEntry = (String, Arc<CachedBm25Index>);
+type Bm25IndexCache = Mutex<VecDeque<Bm25IndexCacheEntry>>;
+
+static BM25_INDEX_CACHE: OnceLock<Bm25IndexCache> = OnceLock::new();
 
 fn bm25_lexical_search(
     repo_root: &Path,
@@ -265,6 +273,15 @@ fn bm25_lexical_search(
         return Ok((Vec::new(), diagnostics));
     }
     let limit = options.limit.max(1);
+    let index_cache_key = format!(
+        "bm25-fielded-index-v1:{}",
+        inventory_content_fingerprint(inventory)
+    );
+    if let Some(cached) = get_cached_bm25_index(&index_cache_key) {
+        return search_cached_bm25_index(&cached, query_terms, &weighted_query_terms, limit)
+            .map(|results| (results, cached.diagnostics.clone()));
+    }
+
     let mut documents = Vec::new();
     for file in &inventory.files {
         if file.generated || file.role == FileRole::Sensitive || file.ignored {
@@ -277,55 +294,29 @@ fn bm25_lexical_search(
             continue;
         };
         let content = source.text.unwrap_or_default();
-        let (exact_score, exact_reason) = score_file(file, &content, query_terms)
-            .unwrap_or_else(|| (0.0, "no exact field match".to_string()));
         let filename = file
             .path
             .rsplit('/')
             .next()
             .unwrap_or(file.path.as_str())
             .to_string();
-        documents.push(IndexedFileDocument {
+        documents.push(CachedIndexedDocument {
             file: file.clone(),
             filename,
             content,
-            exact_score,
-            exact_reason,
         });
     }
 
-    let exact_candidate_count = documents
-        .iter()
-        .filter(|document| document.exact_score > 0.0)
-        .count();
-    if exact_candidate_count >= limit {
-        let mut results = documents
-            .iter()
-            .filter(|document| document.exact_score > 0.0)
-            .map(|document| {
-                let mut reasons = vec![
-                    "exact lexical saturated budget".to_string(),
-                    document.exact_reason.clone(),
-                ];
-                reasons.sort();
-                reasons.dedup();
-                SearchResult {
-                    path: document.file.path.clone(),
-                    role: document.file.role.clone(),
-                    language: document.file.language.clone(),
-                    score: document.exact_score * EXACT_LEXICAL_SCORE_MULTIPLIER,
-                    reason: reasons.join("; "),
-                }
-            })
-            .collect::<Vec<_>>();
-        results.sort_by(|left, right| {
-            right
-                .score
-                .total_cmp(&left.score)
-                .then_with(|| left.path.cmp(&right.path))
-        });
-        results.truncate(limit);
-        return Ok((results, diagnostics));
+    let exact_evidence_by_path = exact_evidence_by_path(&documents, query_terms);
+    if should_use_exact_primary_path(exact_evidence_by_path.len(), limit, &weighted_query_terms) {
+        return Ok((
+            exact_primary_results(
+                &exact_evidence_by_path,
+                limit,
+                exact_primary_reason(exact_evidence_by_path.len(), limit, &weighted_query_terms),
+            ),
+            diagnostics,
+        ));
     }
 
     let symbol_report = extract_symbols_report(repo_root)?;
@@ -352,9 +343,7 @@ fn bm25_lexical_search(
     let mut writer = index
         .writer(64_000_000)
         .map_err(|source| InventoryError::InvalidInput(format!("bm25 index writer: {source}")))?;
-    let mut evidence_by_path = BTreeMap::new();
-
-    for document in documents {
+    for document in &documents {
         let symbols = symbols_by_path
             .get(&document.file.path)
             .map(|names| names.join(" "))
@@ -366,30 +355,184 @@ fn bm25_lexical_search(
                 fields.role => format!("{:?}", document.file.role),
                 fields.language => document.file.language.clone().unwrap_or_default(),
                 fields.symbols => symbols,
-                fields.content => document.content,
+                fields.content => document.content.as_str(),
             ))
             .map_err(|source| {
                 InventoryError::InvalidInput(format!("bm25 add document: {source}"))
             })?;
-        evidence_by_path.insert(
-            document.file.path.clone(),
-            IndexedFileEvidence {
-                file: document.file,
-                exact_score: document.exact_score,
-                exact_reason: document.exact_reason,
-            },
-        );
     }
 
     writer
         .commit()
         .map_err(|source| InventoryError::InvalidInput(format!("bm25 commit: {source}")))?;
-    let reader = index
+    let cached = Arc::new(CachedBm25Index {
+        index,
+        fields,
+        documents,
+        symbols_by_path,
+        diagnostics: diagnostics.clone(),
+    });
+    remember_cached_bm25_index(index_cache_key, cached.clone());
+    search_cached_bm25_index(&cached, query_terms, &weighted_query_terms, limit)
+        .map(|results| (results, diagnostics))
+}
+
+fn get_cached_bm25_index(key: &str) -> Option<Arc<CachedBm25Index>> {
+    let cache = BM25_INDEX_CACHE.get_or_init(|| Mutex::new(VecDeque::new()));
+    let mut cache = cache.lock().ok()?;
+    let position = cache.iter().position(|(cached_key, _)| cached_key == key)?;
+    let entry = cache.remove(position)?;
+    let index = entry.1.clone();
+    cache.push_back(entry);
+    Some(index)
+}
+
+fn remember_cached_bm25_index(key: String, index: Arc<CachedBm25Index>) {
+    let cache = BM25_INDEX_CACHE.get_or_init(|| Mutex::new(VecDeque::new()));
+    let Ok(mut cache) = cache.lock() else {
+        return;
+    };
+    if let Some(position) = cache
+        .iter()
+        .position(|(cached_key, _)| cached_key == key.as_str())
+    {
+        cache.remove(position);
+    }
+    cache.push_back((key, index));
+    while cache.len() > BM25_INDEX_CACHE_LIMIT {
+        cache.pop_front();
+    }
+}
+
+fn exact_evidence_by_path(
+    documents: &[CachedIndexedDocument],
+    query_terms: &[String],
+) -> BTreeMap<String, IndexedFileEvidence> {
+    documents
+        .iter()
+        .filter_map(|document| {
+            let (exact_score, exact_reason) =
+                score_file(&document.file, &document.content, query_terms)?;
+            Some((
+                document.file.path.clone(),
+                IndexedFileEvidence {
+                    file: document.file.clone(),
+                    exact_score,
+                    exact_reason,
+                },
+            ))
+        })
+        .collect()
+}
+
+fn indexed_evidence_by_path(
+    documents: &[CachedIndexedDocument],
+    query_terms: &[String],
+) -> BTreeMap<String, IndexedFileEvidence> {
+    documents
+        .iter()
+        .map(|document| {
+            let (exact_score, exact_reason) =
+                score_file(&document.file, &document.content, query_terms)
+                    .unwrap_or_else(|| (0.0, "no exact field match".to_string()));
+            (
+                document.file.path.clone(),
+                IndexedFileEvidence {
+                    file: document.file.clone(),
+                    exact_score,
+                    exact_reason,
+                },
+            )
+        })
+        .collect()
+}
+
+fn should_use_exact_primary_path(
+    exact_count: usize,
+    limit: usize,
+    weighted_query_terms: &[String],
+) -> bool {
+    exact_count >= limit
+        || exact_count >= limit.min(EXACT_LEXICAL_DOMINANT_MIN_RESULTS)
+        || (exact_count > 0 && is_single_identifier_query(weighted_query_terms))
+}
+
+fn exact_primary_reason(
+    exact_count: usize,
+    limit: usize,
+    weighted_query_terms: &[String],
+) -> &'static str {
+    if exact_count >= limit {
+        "exact lexical saturated budget"
+    } else if is_single_identifier_query(weighted_query_terms) {
+        "exact lexical identifier budget"
+    } else {
+        "exact lexical dominant budget"
+    }
+}
+
+fn is_single_identifier_query(weighted_query_terms: &[String]) -> bool {
+    weighted_query_terms.len() == 1
+        && weighted_query_terms[0].len() >= 8
+        && weighted_query_terms[0]
+            .chars()
+            .any(|character| character.is_ascii_alphabetic())
+}
+
+fn exact_primary_results(
+    evidence_by_path: &BTreeMap<String, IndexedFileEvidence>,
+    limit: usize,
+    reason_label: &str,
+) -> Vec<SearchResult> {
+    let mut results = evidence_by_path
+        .values()
+        .map(|evidence| {
+            let mut reasons = vec![reason_label.to_string(), evidence.exact_reason.clone()];
+            reasons.sort();
+            reasons.dedup();
+            SearchResult {
+                path: evidence.file.path.clone(),
+                role: evidence.file.role.clone(),
+                language: evidence.file.language.clone(),
+                score: evidence.exact_score * EXACT_LEXICAL_SCORE_MULTIPLIER,
+                reason: reasons.join("; "),
+            }
+        })
+        .collect::<Vec<_>>();
+    results.sort_by(|left, right| {
+        right
+            .score
+            .total_cmp(&left.score)
+            .then_with(|| left.path.cmp(&right.path))
+    });
+    results.truncate(limit);
+    results
+}
+
+fn search_cached_bm25_index(
+    cached: &CachedBm25Index,
+    query_terms: &[String],
+    weighted_query_terms: &[String],
+    limit: usize,
+) -> Result<Vec<SearchResult>, InventoryError> {
+    let exact_evidence_by_path = exact_evidence_by_path(&cached.documents, query_terms);
+    if should_use_exact_primary_path(exact_evidence_by_path.len(), limit, weighted_query_terms) {
+        return Ok(exact_primary_results(
+            &exact_evidence_by_path,
+            limit,
+            exact_primary_reason(exact_evidence_by_path.len(), limit, weighted_query_terms),
+        ));
+    }
+
+    let evidence_by_path = indexed_evidence_by_path(&cached.documents, query_terms);
+    let reader = cached
+        .index
         .reader()
         .map_err(|source| InventoryError::InvalidInput(format!("bm25 reader: {source}")))?;
     let searcher = reader.searcher();
+    let fields = cached.fields;
     let mut parser = QueryParser::for_index(
-        &index,
+        &cached.index,
         vec![
             fields.path,
             fields.filename,
@@ -411,10 +554,7 @@ fn bm25_lexical_search(
         .parse_query(&query_text)
         .map_err(|source| InventoryError::InvalidInput(format!("bm25 query parse: {source}")))?;
     let top_docs = searcher
-        .search(
-            &query,
-            &TopDocs::with_limit(options.limit.max(1).saturating_mul(8)),
-        )
+        .search(&query, &TopDocs::with_limit(limit.saturating_mul(8)))
         .map_err(|source| InventoryError::InvalidInput(format!("bm25 search: {source}")))?;
 
     let mut results = Vec::new();
@@ -444,7 +584,7 @@ fn bm25_lexical_search(
         if evidence.exact_score > 0.0 {
             reasons.push(evidence.exact_reason.clone());
         }
-        if symbols_by_path.contains_key(&path) {
+        if cached.symbols_by_path.contains_key(&path) {
             reasons.push("exact symbol index available".to_string());
         }
         if is_archive_context_artifact(&path.to_ascii_lowercase()) {
@@ -472,7 +612,7 @@ fn bm25_lexical_search(
             "exact lexical reserve".to_string(),
             evidence.exact_reason.clone(),
         ];
-        if symbols_by_path.contains_key(path) {
+        if cached.symbols_by_path.contains_key(path) {
             reasons.push("exact symbol index available".to_string());
         }
         if is_archive_context_artifact(&path.to_ascii_lowercase()) {
@@ -489,7 +629,7 @@ fn bm25_lexical_search(
             reason: reasons.join("; "),
         });
     }
-    Ok((results, diagnostics))
+    Ok(results)
 }
 
 pub(crate) fn query_terms(query: &str) -> Vec<String> {
@@ -593,6 +733,10 @@ pub(crate) fn query_term_weight(term: &str) -> f32 {
             | "for"
             | "from"
             | "handle"
+            | "improve"
+            | "improved"
+            | "improvement"
+            | "improvements"
             | "in"
             | "is"
             | "of"

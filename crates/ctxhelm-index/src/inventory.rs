@@ -10,7 +10,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use thiserror::Error;
 use uuid::Uuid;
 
-pub const INVENTORY_SCHEMA_VERSION: u32 = 2;
+pub const INVENTORY_SCHEMA_VERSION: u32 = 3;
 
 #[derive(Debug, Error)]
 pub enum InventoryError {
@@ -82,6 +82,8 @@ pub struct InventoryMetadata {
     pub schema_version: u32,
     pub policy_version: String,
     pub options_fingerprint: String,
+    #[serde(default)]
+    pub inventory_fingerprint: String,
     pub repo_root: PathBuf,
     pub built_at_unix_seconds: u64,
     pub ignore_fingerprints: Vec<IgnoreFileFingerprint>,
@@ -94,6 +96,7 @@ impl Default for InventoryMetadata {
             schema_version: 0,
             policy_version: String::new(),
             options_fingerprint: String::new(),
+            inventory_fingerprint: String::new(),
             repo_root: PathBuf::new(),
             built_at_unix_seconds: 0,
             ignore_fingerprints: Vec::new(),
@@ -217,6 +220,7 @@ pub fn build_inventory(
 
     files.sort_by(|left, right| left.path.cmp(&right.path));
     manifest.sort_by(|left, right| left.path.cmp(&right.path));
+    let inventory_fingerprint = inventory_manifest_fingerprint(&manifest);
 
     Ok(RepoInventory {
         repo_id: repo_id_for_path(&repo_root),
@@ -224,6 +228,7 @@ pub fn build_inventory(
             schema_version: INVENTORY_SCHEMA_VERSION,
             policy_version: POLICY_VERSION.to_string(),
             options_fingerprint: options_fingerprint(options),
+            inventory_fingerprint,
             repo_root: repo_root.clone(),
             built_at_unix_seconds: current_unix_seconds(),
             ignore_fingerprints: ignore_fingerprints(&repo_root),
@@ -316,6 +321,7 @@ pub(crate) fn build_inventory_freshness_metadata(
         schema_version: INVENTORY_SCHEMA_VERSION,
         policy_version: POLICY_VERSION.to_string(),
         options_fingerprint: options_fingerprint(options),
+        inventory_fingerprint: inventory_manifest_fingerprint(&manifest),
         repo_root: repo_root.clone(),
         built_at_unix_seconds: current_unix_seconds(),
         ignore_fingerprints: ignore_fingerprints(&repo_root),
@@ -393,6 +399,44 @@ pub fn inventory_path(repo_id: &str) -> PathBuf {
 
 pub fn repo_id_for_path(repo_root: &Path) -> String {
     Uuid::new_v5(&Uuid::NAMESPACE_URL, repo_root.to_string_lossy().as_bytes()).to_string()
+}
+
+pub fn inventory_content_fingerprint(inventory: &RepoInventory) -> String {
+    if !inventory.metadata.inventory_fingerprint.is_empty() {
+        return inventory.metadata.inventory_fingerprint.clone();
+    }
+    let manifest = inventory
+        .files
+        .iter()
+        .map(|file| InventoryManifestEntry {
+            path: file.path.clone(),
+            hash: file.hash.clone(),
+            size_bytes: file.size_bytes,
+            modified_unix_nanos: 0,
+            role: file.role.clone(),
+            generated: file.generated,
+            ignored: file.ignored,
+        })
+        .collect::<Vec<_>>();
+    inventory_manifest_fingerprint(&manifest)
+}
+
+pub fn inventory_manifest_fingerprint(manifest: &[InventoryManifestEntry]) -> String {
+    let mut hasher = blake3::Hasher::new();
+    hasher.update(b"ctxhelm-inventory-fingerprint-v1");
+    for file in manifest {
+        hasher.update(file.path.as_bytes());
+        hasher.update(b"\0");
+        hasher.update(file.hash.as_bytes());
+        hasher.update(b"\0");
+        hasher.update(file.size_bytes.to_string().as_bytes());
+        hasher.update(b"\0");
+        hasher.update(format!("{:?}", file.role).as_bytes());
+        hasher.update(b"\0");
+        hasher.update(&[u8::from(file.generated), u8::from(file.ignored)]);
+        hasher.update(b"\0");
+    }
+    hasher.finalize().to_hex().to_string()
 }
 
 pub fn task_hash(task: &str) -> String {

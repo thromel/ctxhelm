@@ -147,6 +147,8 @@ pub struct LexicalBackendComparison {
 pub struct LexicalBackendRuntimeSummary {
     pub total_millis: u64,
     pub git_sample_millis: u64,
+    #[serde(default)]
+    pub inventory_warmup_millis: u64,
     pub bm25_total_millis: u64,
     pub legacy_total_millis: u64,
 }
@@ -3651,6 +3653,7 @@ pub fn compare_lexical_backends_on_corpus(
     let mut rows = Vec::new();
     let mut bm25_total_millis = 0u64;
     let mut legacy_total_millis = 0u64;
+    let mut inventory_warmup_millis = 0u64;
 
     for sample in samples {
         let task = if sample.title.trim().is_empty() {
@@ -3667,6 +3670,9 @@ pub fn compare_lexical_backends_on_corpus(
         )?;
         let eval_root = eval_repo.path();
         let retrieval_target_files = retrieval_target_files(eval_root, &sample.safe_changed_files);
+        let warmup_started = Instant::now();
+        let _ = load_or_build_inventory(eval_root, &InventoryOptions::default())?;
+        inventory_warmup_millis += elapsed_millis(warmup_started);
 
         let bm25_started = Instant::now();
         let bm25_files = search_report_paths(lexical_search_report(
@@ -3719,7 +3725,7 @@ pub fn compare_lexical_backends_on_corpus(
     }
 
     let bm25 = lexical_backend_metrics(
-        "tantivy_bm25_fielded_v5",
+        "tantivy_bm25_fielded_v6",
         &rows,
         |row| &row.bm25_files,
         |row| &row.bm25_hits_at_5,
@@ -3750,6 +3756,7 @@ pub fn compare_lexical_backends_on_corpus(
         runtime: LexicalBackendRuntimeSummary {
             total_millis: elapsed_millis(eval_started),
             git_sample_millis,
+            inventory_warmup_millis,
             bm25_total_millis,
             legacy_total_millis,
         },

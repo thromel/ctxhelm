@@ -580,6 +580,7 @@ mod tests {
 
         assert_eq!(paths(&inventory), vec!["src/lib.rs"]);
         assert_eq!(inventory.metadata.schema_version, INVENTORY_SCHEMA_VERSION);
+        assert_eq!(inventory.metadata.inventory_fingerprint.len(), 64);
         assert_eq!(inventory.metadata.manifest.len(), 1);
         assert_eq!(inventory.metadata.manifest[0].path, "src/lib.rs");
         assert_eq!(inventory.metadata.manifest[0].hash.len(), 64);
