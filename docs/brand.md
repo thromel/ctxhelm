@@ -32,10 +32,11 @@ matter for the current task.
 
 It also avoids the most crowded naming patterns in this category:
 
-- Do not use RepoLens as the product name. It already has direct public
-  collisions across web, package, and repository surfaces.
-- Do not use bare Winnow as the product name. Existing LLM-context and AI tools
-  use that word directly; the Repo prefix is part of the differentiator.
+- Do not use generic repo-search or context-search names as the product name.
+  They are crowded, weakly differentiating, and easy to confuse with adjacent
+  tools.
+- Do not reuse rejected candidate names in public copy, command examples,
+  package names, generated adapters, or documentation.
 - Avoid names that imply autonomous editing, hosted code indexing, or replacing
   the user's existing agent.
 - Avoid names that sound like generic code search, because the product is a

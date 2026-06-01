@@ -139,11 +139,18 @@ bash scripts/smoke-distribution-metadata.sh
 
 When `CTXHELM_DIST_DIR` points at a built release archive, the smoke also renders
 a concrete Homebrew formula candidate from the exact archive digest and checks
-that no placeholders or machine-local paths remain. It also runs
-`cargo package --manifest-path crates/ctxhelm/Cargo.toml --locked --allow-dirty --list` and
-fails if the future crates.io package boundary includes local `.ctxhelm` state,
-planning proof artifacts, build output, secrets, request summaries, traces, or
-machine-local paths.
+that no placeholders or machine-local paths remain. It runs
+`cargo package --manifest-path ... --list` for every workspace crate, performs a
+full non-publishing package dry-run for the leaf `ctxhelm-core` crate, and
+records the required internal publish order for dependent crates:
+`ctxhelm-core`, `ctxhelm-index`, `ctxhelm-compiler`, `ctxhelm-mcp`, then
+`ctxhelm`. The dependent crates remain blocked until the internal crates are
+published in that order, which is now recorded explicitly instead of hidden
+behind a vague deferred note.
+
+The package-boundary checks fail if any future crates.io package includes local
+`.ctxhelm` state, planning proof artifacts, build output, secrets, request
+summaries, traces, or machine-local paths.
 
 The smoke verifies required templates, update metadata, clean-extraction
 verification script syntax, Homebrew renderability, crates package boundaries,

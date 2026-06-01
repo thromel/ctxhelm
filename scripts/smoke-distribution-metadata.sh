@@ -118,17 +118,37 @@ else
   formula_status="skipped_no_archive"
 fi
 
-package_list="$work_dir/cargo-package-list.txt"
-cargo package --manifest-path "$repo_root/crates/ctxhelm/Cargo.toml" --locked --allow-dirty --list >"$package_list"
-for required in Cargo.toml README.md src/main.rs tests/cli_compat.rs tests/release_packaging.rs; do
-  grep -Fx -- "$required" "$package_list" >/dev/null
+package_list_dir="$work_dir/cargo-package-lists"
+mkdir -p "$package_list_dir"
+crate_names=(ctxhelm-core ctxhelm-index ctxhelm-compiler ctxhelm-mcp ctxhelm)
+
+for crate in "${crate_names[@]}"; do
+  package_list="$package_list_dir/$crate.txt"
+  cargo package --manifest-path "$repo_root/crates/$crate/Cargo.toml" --locked --allow-dirty --list >"$package_list"
+  grep -Fx -- "Cargo.toml" "$package_list" >/dev/null
+  case "$crate" in
+    ctxhelm)
+      grep -Fx -- "README.md" "$package_list" >/dev/null
+      grep -Fx -- "src/main.rs" "$package_list" >/dev/null
+      grep -Fx -- "tests/cli_compat.rs" "$package_list" >/dev/null
+      grep -Fx -- "tests/release_packaging.rs" "$package_list" >/dev/null
+      ;;
+    *)
+      grep -Fx -- "src/lib.rs" "$package_list" >/dev/null
+      ;;
+  esac
+  for forbidden in '.ctxhelm/' '.planning/' 'target/' 'dist/' '.env' 'request-summary' 'traces.jsonl' '/Users/'; do
+    if grep -F -- "$forbidden" "$package_list" >/dev/null; then
+      echo "distribution metadata smoke failed: cargo package for $crate includes forbidden entry '$forbidden'" >&2
+      exit 1
+    fi
+  done
 done
-for forbidden in '.ctxhelm/' '.planning/' 'target/' 'dist/' '.env' 'request-summary' 'traces.jsonl' '/Users/'; do
-  if grep -F -- "$forbidden" "$package_list" >/dev/null; then
-    echo "distribution metadata smoke failed: cargo package includes forbidden entry '$forbidden'" >&2
-    exit 1
-  fi
-done
+
+# Cargo cannot fully package crates that depend on unpublished internal crates
+# until those dependencies are published in order. Prove the leaf package now,
+# and keep the dependent packages at package-list/source-boundary readiness.
+cargo package --manifest-path "$repo_root/crates/ctxhelm-core/Cargo.toml" --locked --allow-dirty --no-verify >/dev/null
 
 mkdir -p "$(dirname "$metadata_path")"
 python3 - "$metadata_path" "$version" "$target_label" "$formula_status" "$archive_name" "$archive_sha256" <<'PY'
@@ -148,9 +168,27 @@ payload = {
         "published": False,
     },
     "cratesPackage": {
-        "status": "passed",
+        "status": "publish_order_ready",
         "published": False,
         "sourceFreeBoundaryChecked": True,
+        "packageListCheckedCrates": [
+            "ctxhelm-core",
+            "ctxhelm-index",
+            "ctxhelm-compiler",
+            "ctxhelm-mcp",
+            "ctxhelm",
+        ],
+        "leafDryRunCheckedCrates": [
+            "ctxhelm-core",
+        ],
+        "dependentDryRunStatus": "blocked_until_internal_crates_are_published_in_order",
+        "publishOrder": [
+            "ctxhelm-core",
+            "ctxhelm-index",
+            "ctxhelm-compiler",
+            "ctxhelm-mcp",
+            "ctxhelm",
+        ],
     },
     "privacyStatus": {
         "localOnly": True,

@@ -1,0 +1,48 @@
+{
+  "cratesPackage": {
+    "dependentDryRunStatus": "blocked_until_internal_crates_are_published_in_order",
+    "leafDryRunCheckedCrates": [
+      "ctxhelm-core"
+    ],
+    "packageListCheckedCrates": [
+      "ctxhelm-core",
+      "ctxhelm-index",
+      "ctxhelm-compiler",
+      "ctxhelm-mcp",
+      "ctxhelm"
+    ],
+    "publishOrder": [
+      "ctxhelm-core",
+      "ctxhelm-index",
+      "ctxhelm-compiler",
+      "ctxhelm-mcp",
+      "ctxhelm"
+    ],
+    "published": false,
+    "sourceFreeBoundaryChecked": true,
+    "status": "publish_order_ready"
+  },
+  "homebrewFormulaRender": {
+    "archiveName": "ctxhelm-v1.1.9-aarch64-apple-darwin.tar.gz",
+    "archiveSha256": "5c22ecc743ba2915635017420aa6ca9b4121298359e4c7c61734af94644d1ba2",
+    "published": false,
+    "status": "passed"
+  },
+  "privacyStatus": {
+    "localOnly": true,
+    "rawPromptStored": false,
+    "remoteEmbeddingsUsed": false,
+    "remoteRerankingUsed": false,
+    "sourceTextLogged": false
+  },
+  "schemaVersion": "ctxhelm-distribution-readiness-v1",
+  "targetLabel": "aarch64-apple-darwin",
+  "unsupportedActions": [
+    "brew tap mutation by distribution metadata smoke",
+    "crates.io publish",
+    "global install",
+    "signed installer",
+    "self-update"
+  ],
+  "version": "1.1.9"
+}
