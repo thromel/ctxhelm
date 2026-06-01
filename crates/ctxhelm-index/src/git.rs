@@ -12,6 +12,9 @@ use std::thread;
 use std::time::{Duration, Instant};
 
 const REV_LIST_TIMEOUT: Duration = Duration::from_secs(10);
+const HISTORY_METADATA_TIMEOUT: Duration = Duration::from_secs(1);
+const HISTORY_DIFF_TIMEOUT: Duration = Duration::from_secs(1);
+const MIN_HISTORY_DIFF_TIMEOUT: Duration = Duration::from_millis(250);
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
@@ -704,7 +707,7 @@ fn git_commit_file_sets_for_ref(
 
     for sha in shas.lines().map(str::trim).filter(|sha| !sha.is_empty()) {
         let Ok(output) =
-            git_diff_tree_name_status_z_without_renames(repo_root, sha, Duration::from_millis(250))
+            git_diff_tree_name_status_z_without_renames(repo_root, sha, HISTORY_DIFF_TIMEOUT)
         else {
             continue;
         };
@@ -750,8 +753,8 @@ fn git_commit_subject_file_sets(
         max_count,
         base,
         head,
-        Duration::from_millis(250),
-        Duration::from_millis(250),
+        HISTORY_METADATA_TIMEOUT,
+        HISTORY_DIFF_TIMEOUT,
     )
 }
 
@@ -784,7 +787,7 @@ pub(crate) fn git_commit_subject_file_sets_with_timeouts(
         let Ok(output) = git_diff_tree_name_status_z_without_renames(
             repo_root,
             sha,
-            diff_timeout.max(Duration::from_millis(250)),
+            diff_timeout.max(MIN_HISTORY_DIFF_TIMEOUT),
         ) else {
             continue;
         };
