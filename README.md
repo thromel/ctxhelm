@@ -1,14 +1,49 @@
 # Repo Context Packer
 
-Repo Context Packer is a local-first, read-only context broker for coding agents.
+Repo Context Packer is a local-first, read-only context compiler for coding
+agents.
 
-The MVP exposes compact task context through:
+It does not try to replace Codex, Claude Code, Cursor, OpenCode, Aider, or any
+other coding agent. It makes those agents better at deciding what to inspect
+first: target files, related tests, graph neighbors, history hints, constraints,
+and progressive context packs.
+
+## Why ctxpack
+
+Agents can grep, search, and read files on their own. ctxpack is useful when
+that is not enough:
+
+- It turns a task into a ranked context plan instead of a generic search result.
+- It combines exact lexical matches with symbols, dependency edges, related
+  tests, git co-change hints, local semantic metadata, memory cards, and current
+  diff anchors.
+- It returns source-free evidence, confidence, warnings, validation commands,
+  and MCP resource URIs so agents can read progressively instead of dumping the
+  repo into context.
+- It stays read-only: ctxpack does not edit code, run user project commands, or
+  mutate global agent configuration.
+
+Current proof snapshot:
+
+- Public `v1.1.2` archive install is current and verified through checksum,
+  archive, temporary install, version/help, doctor, and first-pack checks.
+- The four-repo product proof reports zero protected target misses across
+  RefactoringMiner, ctxpack, ReAgent, and VeriSchema.
+- The agent-evidence retrieval channel beats or matches lexical on every
+  measured corpus, with average Recall@10 delta `+0.19379663`.
+- Claude Code `2.1.159` produced real explicit-repo `prepare_task` and
+  `get_pack` MCP calls in the source-free workflow eval.
+
+## Product Surface
+
+ctxpack exposes compact task context through:
 
 - `AGENTS.md` for portable static instructions
 - MCP tools/resources/prompts for dynamic context
 - Thin native adapter files for Codex, Claude Code, Cursor, and OpenCode
 
-ctxpack does not edit source code, run your project tests, install dependencies, or mutate global agent configuration. It writes repo-local guidance, optional adapter snippets, and local ctxpack state.
+ctxpack writes repo-local guidance, optional adapter snippets, and local ctxpack
+state only.
 
 ## Install v1.1.2
 
@@ -143,8 +178,8 @@ Implemented MCP resources include `ctxpack://repo/summary`, package-aware `ctxpa
 Current local smoke status:
 
 - Deterministic protocol proof is the required release gate: direct JSON-RPC/MCP calls verify `prepare_task`, `get_pack`, `search`, `related`, `related_tests`, `current_diff`, and same-session pack-resource reads with an explicit `repo`.
-- Codex CLI `0.130.0`: optional real-client smoke support can require source-free server-side evidence for both `prepare_task` and `get_pack` with an isolated `CODEX_HOME`.
-- Claude Code `2.1.143`: optional real-client smoke support can require source-free server-side evidence for both `prepare_task` and `get_pack` with strict MCP config.
+- Codex CLI `0.44.0`: currently recorded as an optional source-free skip because the client did not produce machine-checkable `prepare_task` and `get_pack` tool-call evidence.
+- Claude Code `2.1.159`: optional real-client smoke and the deeper workflow eval produce source-free server-side evidence for explicit-repo `prepare_task` and `get_pack` calls with strict MCP config.
 
 When using ctxpack through MCP, pass the active repository path as `repo` whenever the client knows it. Some clients launch MCP servers from a different working directory than the project they expose.
 
