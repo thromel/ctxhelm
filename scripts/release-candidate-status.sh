@@ -217,8 +217,9 @@ if payload.get("status") == "ready":
 distribution = payload.get("distributionDecision", {})
 if distribution.get("primaryChannel") != "local_archive":
     raise SystemExit("primaryChannel must be local_archive")
-if distribution.get("homebrewFormula") != "ready":
-    raise SystemExit("homebrewFormula must be ready for v1.1.5")
+expected_homebrew = "ready" if payload.get("status") == "ready" else "deferred"
+if distribution.get("homebrewFormula") != expected_homebrew:
+    raise SystemExit(f"homebrewFormula must be {expected_homebrew} for v1.1.5")
 for deferred in ["cratesIo", "signedInstaller"]:
     if distribution.get(deferred) != "deferred":
         raise SystemExit(f"{deferred} must be deferred for v1.1.5")
