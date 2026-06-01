@@ -122,6 +122,25 @@ bash scripts/verify-release-archive.sh \
   --checksums dist/sha256sums.txt
 ```
 
+Before using a large-history repository in product-proof or benchmark evidence,
+prepare it as a clean detached fixture instead of relying on an ambient sibling
+checkout:
+
+```bash
+bash scripts/prepare-benchmark-corpus.sh \
+  --source https://github.com/tsantalis/RefactoringMiner.git \
+  --revision e319af8d6b51d821b61d2f735ad211631775adfb \
+  --worktree ../ctxhelm-proof-fixtures/RefactoringMiner-phase157-clean \
+  --min-commits 20 \
+  --output .ctxhelm/e2e/refactoringminer-corpus-health.json \
+  --refresh
+```
+
+The resulting report is source-free and records readiness, revision identity,
+commit count, dirty-file count, object-store connectivity, history usability,
+and privacy metadata. A `blocked` report must be treated as an environment or
+fixture problem, not as product-quality proof.
+
 Maintainers can verify the public archive install path end to end without
 installing globally:
 

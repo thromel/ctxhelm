@@ -109,6 +109,7 @@ v2.5 therefore focuses on measured retrieval quality, not more surface area. The
 - [x] **Phase 154: BM25 Legacy Comparison Report** - `ctxhelm eval lexical compare` now produces a source-free report comparing active BM25 lexical ranking against the legacy heuristic scanner, including overlap, top-path changes, backend-only paths, and privacy metadata.
 - [x] **Phase 155: BM25 Corpus Comparison Report** - `ctxhelm eval lexical corpus` now compares active BM25 and legacy lexical ranking across historical commit tasks and parent snapshots, reporting recall, MRR, overlap, top-path churn, win/tie counts, and backend runtime.
 - [x] **Phase 156: Lexical Backend Product Proof Integration** - Benchmark suites can opt into the BM25-vs-legacy corpus comparison, and product proof aggregates successful source-free backend reports under `releaseGate.lexicalBackendComparison`.
+- [x] **Phase 157: Benchmark Corpus Health Guard** - Large-history proof fixtures can be prepared as clean detached worktrees with source-free readiness reports; the fresh RefactoringMiner proof exposes that current query-time BM25 trails the legacy scanner on the 20-commit sample.
 
 ## Phase Details
 

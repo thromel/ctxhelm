@@ -4,7 +4,7 @@ milestone: v2.5
 milestone_name: Production Retrieval Quality
 status: active
 last_updated: "2026-06-02T00:00:00Z"
-last_activity: 2026-06-02 -- Phase 156 integrated optional lexical backend corpus evidence into benchmark and product-proof reports
+last_activity: 2026-06-02 -- Phase 157 added a source-free benchmark corpus health guard and real RefactoringMiner BM25-vs-legacy evidence
 progress:
   total_phases: 86
   completed_phases: 86
@@ -17,10 +17,10 @@ progress:
 
 ## Current Position
 
-Phase: 156 - Lexical Backend Product Proof Integration
-Plan: 156-lexical-backend-proof-integration
+Phase: 157 - Benchmark Corpus Health Guard
+Plan: 157-benchmark-corpus-health-guard
 Status: Complete
-Last activity: 2026-06-02 -- Phase 156 lets benchmark suites opt into the BM25-vs-legacy lexical corpus comparison and carries the source-free aggregate into `releaseGate.lexicalBackendComparison` without changing the default proof cost.
+Last activity: 2026-06-02 -- Phase 157 adds `scripts/prepare-benchmark-corpus.sh` so large-history benchmark fixtures are prepared as clean detached worktrees with source-free readiness reports before they are used as product-proof evidence. A fresh upstream RefactoringMiner fixture at `e319af8d6b51d821b61d2f735ad211631775adfb` is ready with 5,819 reachable commits, clean status, and object connectivity. The direct 20-commit lexical backend proof is honest negative evidence for the current BM25 implementation: BM25 trails legacy on RefactoringMiner (`Recall@10 0.1125` vs `0.175`, MRR `0.11333333` vs `0.13916667`) and is slower in this query-time-index path.
 
 ## Project Reference
 

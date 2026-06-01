@@ -174,6 +174,40 @@ ctxhelm eval proof --config .ctxhelm/benchmarks/retrieval-quality.json
 
 The Markdown report is meant for local inspection. The JSON report is the stable contract for future release gates, portfolio tables, and regression comparison. `ctxhelm eval baselines` runs a paired source-free comparison for default ctxhelm, lexical, no-context, signal-only, and ablation variants on the same historical corpus. `ctxhelm eval compare` consumes two benchmark JSON reports and emits source-free metric deltas, retrieval-gap family deltas, and threshold pass/fail checks. `ctxhelm eval proof` runs the configured benchmark suite and emits the adoption-facing proof report with headline metrics, v2.3 fixed-corpus identity, paired baseline verdicts, optional lexical backend comparison evidence, runtime diagnostics, feature-export privacy, learned-policy status, limitations, when ctxhelm helps, when it does not, and future work from measured gaps.
 
+## Real-Corpus Fixture Health
+
+Large-history proof runs should use a clean detached fixture instead of an
+ambient sibling checkout. Before measuring RefactoringMiner or another
+large-history repository, prepare and validate the corpus with:
+
+```bash
+bash scripts/prepare-benchmark-corpus.sh \
+  --source https://github.com/tsantalis/RefactoringMiner.git \
+  --revision e319af8d6b51d821b61d2f735ad211631775adfb \
+  --worktree ../ctxhelm-proof-fixtures/RefactoringMiner-phase157-clean \
+  --min-commits 20 \
+  --output .ctxhelm/e2e/refactoringminer-corpus-health.json \
+  --refresh
+```
+
+The report is intentionally source-free. It records revision identity, commit
+count, dirty-file count, object-store connectivity, history usability, refresh
+status, and privacy metadata while omitting source snippets, commit subjects,
+diffs, terminal logs, and prompts. A `ready` report means the fixture is clean
+enough for benchmark configs or direct commands such as:
+
+```bash
+ctxhelm eval lexical corpus \
+  --repo ../ctxhelm-proof-fixtures/RefactoringMiner-phase157-clean \
+  --limit 20 \
+  --budget 10 \
+  --format json
+```
+
+If the report is `blocked`, treat the proof as environment-blocked rather than
+as retrieval-quality evidence. Dirty, corrupt, missing-history, or wrong-revision
+fixtures are not acceptable product-proof inputs.
+
 ## Privacy Boundary
 
 Benchmark reports include:

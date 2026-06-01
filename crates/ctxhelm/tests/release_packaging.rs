@@ -328,6 +328,166 @@ fn release_gate_script_contract() {
 }
 
 #[test]
+fn prepare_benchmark_corpus_script_contract_and_dirty_guard() {
+    let repo_root = workspace_root();
+    let script = repo_root.join("scripts/prepare-benchmark-corpus.sh");
+    assert!(script.exists(), "benchmark corpus prep script is missing");
+
+    let syntax = Command::new("bash")
+        .arg("-n")
+        .arg(&script)
+        .current_dir(&repo_root)
+        .output()
+        .unwrap();
+    assert!(
+        syntax.status.success(),
+        "bash -n failed: {}",
+        String::from_utf8_lossy(&syntax.stderr)
+    );
+
+    let script_text = fs::read_to_string(&script).unwrap();
+    for required in [
+        "--refresh",
+        "--min-commits",
+        "sourceTextLogged",
+        "gitHistoryUsable",
+        "objectContentUsable",
+        "dirtyCount",
+        "commit subjects",
+        "terminal logs",
+        "fsck --no-progress",
+        "git clone",
+        "checkout --detach",
+        "reset --hard",
+        "clean -fdx",
+        "benchmark corpus worktree is dirty",
+    ] {
+        assert!(
+            script_text.contains(required),
+            "benchmark corpus script contract missing {required}"
+        );
+    }
+
+    let temp = TempDir::new().unwrap();
+    let source = temp.path().join("source");
+    let worktree = temp.path().join("worktree");
+    let ready_report = temp.path().join("ready.json");
+    let dirty_report = temp.path().join("dirty.json");
+    let refresh_report = temp.path().join("refresh.json");
+    fs::create_dir_all(source.join("src")).unwrap();
+    run_git(&source, &["init"]);
+    run_git(&source, &["config", "user.email", "ctxhelm@example.com"]);
+    run_git(&source, &["config", "user.name", "ctxhelm"]);
+    fs::write(
+        source.join("src/lib.rs"),
+        "pub fn sentinel() -> &'static str { \"CTXHELM_SOURCE_SENTINEL\" }\n",
+    )
+    .unwrap();
+    run_git(&source, &["add", "."]);
+    run_git(&source, &["commit", "-m", "seed source sentinel"]);
+    fs::write(
+        source.join("src/lib.rs"),
+        "pub fn sentinel() -> &'static str { \"CTXHELM_SOURCE_SENTINEL_2\" }\n",
+    )
+    .unwrap();
+    run_git(&source, &["add", "."]);
+    run_git(&source, &["commit", "-m", "update source sentinel"]);
+    let revision = git_stdout(&source, &["rev-parse", "HEAD"]);
+
+    let ready = Command::new("bash")
+        .arg(&script)
+        .args(["--name", "fixture"])
+        .arg("--source")
+        .arg(&source)
+        .args(["--revision", revision.trim()])
+        .arg("--worktree")
+        .arg(&worktree)
+        .args(["--min-commits", "2"])
+        .arg("--output")
+        .arg(&ready_report)
+        .current_dir(&repo_root)
+        .output()
+        .unwrap();
+    assert!(
+        ready.status.success(),
+        "prepare benchmark corpus failed:\nstdout:\n{}\nstderr:\n{}",
+        String::from_utf8_lossy(&ready.stdout),
+        String::from_utf8_lossy(&ready.stderr)
+    );
+    let ready_json: serde_json::Value =
+        serde_json::from_slice(&fs::read(&ready_report).unwrap()).unwrap();
+    assert_eq!(ready_json["status"], "ready");
+    assert_eq!(ready_json["privacyStatus"]["localOnly"], true);
+    assert_eq!(ready_json["privacyStatus"]["sourceTextLogged"], false);
+    assert_eq!(ready_json["checks"]["gitHistoryUsable"], true);
+    assert_eq!(ready_json["checks"]["objectContentUsable"], true);
+    assert_eq!(ready_json["checks"]["dirtyCount"], 0);
+    assert_eq!(ready_json["checks"]["commitCount"], 2);
+    let ready_text = fs::read_to_string(&ready_report).unwrap();
+    assert!(!ready_text.contains("CTXHELM_SOURCE_SENTINEL"));
+    assert!(!ready_text.contains("seed source sentinel"));
+
+    fs::write(worktree.join("untracked.txt"), "dirty proof fixture\n").unwrap();
+    let dirty = Command::new("bash")
+        .arg(&script)
+        .args(["--name", "fixture"])
+        .arg("--source")
+        .arg(&source)
+        .args(["--revision", revision.trim()])
+        .arg("--worktree")
+        .arg(&worktree)
+        .args(["--min-commits", "2"])
+        .arg("--output")
+        .arg(&dirty_report)
+        .current_dir(&repo_root)
+        .output()
+        .unwrap();
+    assert!(
+        !dirty.status.success(),
+        "dirty benchmark corpus unexpectedly passed"
+    );
+    let dirty_json: serde_json::Value =
+        serde_json::from_slice(&fs::read(&dirty_report).unwrap()).unwrap();
+    assert_eq!(dirty_json["status"], "blocked");
+    assert_eq!(dirty_json["checks"]["dirtyCount"], 1);
+    assert!(dirty_json["failureReason"]
+        .as_str()
+        .unwrap()
+        .contains("dirty"));
+
+    let refreshed = Command::new("bash")
+        .arg(&script)
+        .args(["--name", "fixture"])
+        .arg("--source")
+        .arg(&source)
+        .args(["--revision", revision.trim()])
+        .arg("--worktree")
+        .arg(&worktree)
+        .args(["--min-commits", "2"])
+        .arg("--output")
+        .arg(&refresh_report)
+        .arg("--refresh")
+        .current_dir(&repo_root)
+        .output()
+        .unwrap();
+    assert!(
+        refreshed.status.success(),
+        "refreshing dirty benchmark corpus failed:\nstdout:\n{}\nstderr:\n{}",
+        String::from_utf8_lossy(&refreshed.stdout),
+        String::from_utf8_lossy(&refreshed.stderr)
+    );
+    let refresh_json: serde_json::Value =
+        serde_json::from_slice(&fs::read(&refresh_report).unwrap()).unwrap();
+    assert_eq!(refresh_json["status"], "ready");
+    assert_eq!(refresh_json["checks"]["refreshRequested"], true);
+    assert_eq!(refresh_json["checks"]["dirtyCount"], 0);
+    assert!(
+        !worktree.join("untracked.txt").exists(),
+        "--refresh should clean untracked disposable fixture files"
+    );
+}
+
+#[test]
 fn distribution_metadata_smoke_script_contract() {
     let repo_root = workspace_root();
     let smoke = repo_root.join("scripts/smoke-distribution-metadata.sh");
@@ -1441,6 +1601,37 @@ fn workspace_root() -> PathBuf {
         .parent()
         .unwrap()
         .to_path_buf()
+}
+
+fn run_git(repo: &Path, args: &[&str]) {
+    let output = Command::new("git")
+        .current_dir(repo)
+        .args(args)
+        .output()
+        .unwrap();
+    assert!(
+        output.status.success(),
+        "git {:?} failed\nstdout:\n{}\nstderr:\n{}",
+        args,
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+}
+
+fn git_stdout(repo: &Path, args: &[&str]) -> String {
+    let output = Command::new("git")
+        .current_dir(repo)
+        .args(args)
+        .output()
+        .unwrap();
+    assert!(
+        output.status.success(),
+        "git {:?} failed\nstdout:\n{}\nstderr:\n{}",
+        args,
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+    String::from_utf8(output.stdout).unwrap()
 }
 
 fn archive_with_entries(entries: &[(&str, &str)]) -> PathBuf {
