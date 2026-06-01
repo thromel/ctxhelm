@@ -375,6 +375,10 @@ mod tests {
             context_areas_json["areas"][0]["resourceScope"]["countsSource"],
             "safeInventory"
         );
+        assert_eq!(
+            context_areas_json["areas"][0]["coverageProfile"]["sourceTextLogged"],
+            false
+        );
         assert!(context_area["result"]["contents"][0]["text"]
             .as_str()
             .unwrap()
@@ -392,6 +396,14 @@ mod tests {
         assert_eq!(
             context_area_json["resourceScope"]["countsSource"],
             "safeInventory"
+        );
+        assert_eq!(
+            context_area_json["coverageProfile"]["profile"],
+            "implementation"
+        );
+        assert_eq!(
+            context_area_json["coverageProfile"]["recommendedFirstBatch"],
+            "primary"
         );
         assert_eq!(
             context_area_json["roleBuckets"]["source"]

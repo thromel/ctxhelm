@@ -314,6 +314,7 @@ fn repo_context_areas(repo: &Path) -> Result<Value, RpcError> {
                 "resourceUri": context_area_resource_uri(&area),
                 "resourceScope": context_area_resource_scope_json(),
                 "pathCount": accumulator.path_count,
+                "coverageProfile": accumulator.coverage_profile_json(),
                 "roleCounts": accumulator.role_counts,
                 "pathFamilies": accumulator.path_families_json(8),
                 "representativePaths": accumulator.representative_paths,
@@ -374,6 +375,7 @@ fn repo_context_area(repo: &Path, uri: &str) -> Result<Value, RpcError> {
         "resourceUri": context_area_resource_uri(&area),
         "resourceScope": context_area_resource_scope_json(),
         "pathCount": accumulator.path_count,
+        "coverageProfile": accumulator.coverage_profile_json(),
         "roleCounts": accumulator.role_counts,
         "pathFamilies": accumulator.path_families_json(16),
         "representativePaths": accumulator.representative_paths,
@@ -497,6 +499,58 @@ impl AreaResourceAccumulator {
             })
         })
         .collect()
+    }
+
+    fn coverage_profile_json(&self) -> Value {
+        let source_like_count = self.role_count(["source", "config", "schema"]);
+        let validation_count = self.role_count(["test"]);
+        let docs_count = self.role_count(["docs"]);
+        let profile = match (source_like_count > 0, validation_count > 0, docs_count > 0) {
+            (true, true, true) => "implementation_validation_docs",
+            (true, true, false) => "implementation_with_validation",
+            (true, false, true) => "implementation_with_docs",
+            (true, false, false) => "implementation",
+            (false, true, true) => "validation_with_docs",
+            (false, true, false) => "validation",
+            (false, false, true) => "docs",
+            (false, false, false) => "empty",
+        };
+        let recommended_first_batch = if source_like_count > 0 {
+            "primary"
+        } else if validation_count > 0 {
+            "validation"
+        } else if docs_count > 0 {
+            "docs"
+        } else {
+            "none"
+        };
+        json!({
+            "profile": profile,
+            "dominantRole": self.dominant_role().unwrap_or("none"),
+            "recommendedFirstBatch": recommended_first_batch,
+            "sourceLikePathCount": source_like_count,
+            "validationPathCount": validation_count,
+            "docsPathCount": docs_count,
+            "sourceTextLogged": false
+        })
+    }
+
+    fn role_count<const N: usize>(&self, roles: [&str; N]) -> usize {
+        roles
+            .into_iter()
+            .filter_map(|role| self.role_counts.get(role))
+            .sum()
+    }
+
+    fn dominant_role(&self) -> Option<&str> {
+        self.role_counts
+            .iter()
+            .max_by(|(left_role, left_count), (right_role, right_count)| {
+                left_count
+                    .cmp(right_count)
+                    .then_with(|| right_role.cmp(left_role))
+            })
+            .map(|(role, _)| role.as_str())
     }
 
     fn paths_for_roles(&self, roles: &[&str], limit: usize) -> Vec<String> {

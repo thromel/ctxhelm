@@ -114,8 +114,9 @@ Design constraints:
 - expose `roleCounts` and `selectedRoleCounts` in plan-level context areas so
   agents can tell whether a broad area is source-heavy, validation-heavy, or
   docs-only before progressive reads
-- expose path counts, role buckets, path families, and next-read batches in
-  context-area resources so broad tasks can progress without extra tools
+- expose path counts, coverage profiles, role buckets, path families, and
+  next-read batches in context-area resources so broad tasks can progress
+  without extra tools
 - label context-area resources with `resourceScope.kind = safeInventoryArea`,
   `taskConditioned = false`, and `countsSource = safeInventory` so agents do
   not confuse inventory-wide resource counts with task-conditioned plan counts

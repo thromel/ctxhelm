@@ -597,6 +597,12 @@ Phase 118 clarifies the dynamic MCP resource boundary for context areas.
 make it machine-checkable that MCP context-area resources are inventory-wide
 progressive-read aids, not task-conditioned candidate or selected-file counts.
 
+Phase 123 adds source-free `coverageProfile` metadata to context-area MCP
+resources. The profile summarizes whether an area is implementation-heavy,
+validation-heavy, docs-only, or mixed, and exposes `recommendedFirstBatch` so
+agents can choose between `primary`, `validation`, and `docs` next-read batches
+without reading source text or changing target-file ranking.
+
 Phase 119 removes an observed release-validation flake in `ctxpack-index`.
 Tests in `lib.rs`, `freshness.rs`, and `storage.rs` now share one crate-wide
 test lock before mutating process-global `CTXPACK_HOME`. This prevents one

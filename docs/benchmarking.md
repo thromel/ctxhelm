@@ -525,6 +525,10 @@ Recommendation today:
 - Phase 118 adds source-free `resourceScope` metadata to context-area MCP
   resources so agents can distinguish safe-inventory resource counts from
   task-conditioned plan `roleCounts` and `selectedRoleCounts`.
+- Phase 123 adds source-free `coverageProfile` metadata to context-area MCP
+  resources. The profile classifies an area as implementation, validation,
+  docs, or a mixed shape, and names the recommended first read batch without
+  changing target-file ranking.
 - Phase 105 makes history-unavailable benchmark repositories machine-checkable.
   If git history sampling fails or times out, historical eval emits an embedded
   zero-commit report, benchmark output records a source-free history-unavailable

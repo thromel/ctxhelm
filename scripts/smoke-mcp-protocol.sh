@@ -198,6 +198,9 @@ try:
     if require_resource_scope:
         if first_area_scope.get("kind") != "safeInventoryArea":
             raise SystemExit("resources/read.contextAreas.areas[0]: missing safeInventoryArea resourceScope")
+    first_area_profile = context_areas["areas"][0].get("coverageProfile", {})
+    if first_area_profile.get("sourceTextLogged") is not False:
+        raise SystemExit("resources/read.contextAreas.areas[0]: missing source-free coverageProfile")
     context_area = context_area_for_path(anchor_path)
     context_area_uri = "ctxpack://repo/context-area/" + quote(context_area, safe="")
     context_area_resource = resource_json(
@@ -217,6 +220,11 @@ try:
             raise SystemExit("resources/read.contextArea: resourceScope pathSource must be safeInventory")
     if context_area_resource.get("pathCount", 0) <= 0:
         raise SystemExit("resources/read.contextArea: expected paths for anchor area")
+    coverage_profile = context_area_resource.get("coverageProfile", {})
+    if coverage_profile.get("recommendedFirstBatch") not in ("primary", "validation", "docs"):
+        raise SystemExit("resources/read.contextArea: invalid coverageProfile recommendedFirstBatch")
+    if coverage_profile.get("sourceTextLogged") is not False:
+        raise SystemExit("resources/read.contextArea: coverageProfile sourceTextLogged was not false")
     next_read_batches = require_list(
         context_area_resource.get("nextReadBatches"),
         "resources/read.contextArea.nextReadBatches",

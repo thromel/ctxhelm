@@ -1,0 +1,46 @@
+{
+  "phase": 123,
+  "resource": "contextAreaCoverageProfile",
+  "schemaVersion": 1,
+  "contextAreasCoverageProfile": {
+    "present": true,
+    "sourceTextLogged": false,
+    "scope": "safeInventoryArea"
+  },
+  "specificAreaCoverageProfile": {
+    "present": true,
+    "sourceTextLogged": false,
+    "recommendedFirstBatchValues": [
+      "primary",
+      "validation",
+      "docs",
+      "none"
+    ],
+    "profiles": [
+      "implementation",
+      "implementation_with_validation",
+      "implementation_with_docs",
+      "implementation_validation_docs",
+      "validation",
+      "validation_with_docs",
+      "docs",
+      "empty"
+    ]
+  },
+  "protocolSmoke": {
+    "script": "scripts/smoke-mcp-protocol.sh",
+    "coverageProfileChecked": true,
+    "result": "passed"
+  },
+  "privacyStatus": {
+    "localOnly": true,
+    "remoteEmbeddingsUsed": false,
+    "remoteRerankingUsed": false,
+    "sourceTextLogged": false
+  },
+  "boundary": {
+    "addsMcpTools": false,
+    "changesTargetRanking": false,
+    "storesSourceText": false
+  }
+}
