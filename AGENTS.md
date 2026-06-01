@@ -2,7 +2,8 @@
 
 ## Project Goal
 
-Build Repo Context Packer as a local-first, read-only context broker for coding agents.
+Build ContextMason, powered by the `ctxpack` CLI, as a local-first, read-only
+context broker for coding agents.
 
 ## Working Rules
 

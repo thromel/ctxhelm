@@ -37,7 +37,7 @@ for status in ready deferred blocked; do
     "resourceBackedGapSummaryContract": "checked"
   },
   "releaseArchive": {
-    "name": "ctxpack-v1.1.5-aarch64-apple-darwin.tar.gz",
+    "name": "ctxpack-v1.1.6-aarch64-apple-darwin.tar.gz",
     "sha256": "archive-sha256"
   },
   "requiredChecks": [
@@ -55,8 +55,8 @@ done
 
 assets_dir="$work_dir/assets"
 mkdir -p "$assets_dir"
-printf 'archive\n' >"$assets_dir/ctxpack-v1.1.5-test.tar.gz"
-printf 'manifest\n' >"$assets_dir/ctxpack-v1.1.5-test.manifest.json"
+printf 'archive\n' >"$assets_dir/ctxpack-v1.1.6-test.tar.gz"
+printf 'manifest\n' >"$assets_dir/ctxpack-v1.1.6-test.manifest.json"
 release_json="$work_dir/github-release.json"
 python3 - "$release_json" "$assets_dir" <<'PY'
 import hashlib
@@ -66,38 +66,38 @@ import sys
 
 out, assets_dir = sys.argv[1:]
 assets = pathlib.Path(assets_dir)
-archive_digest = hashlib.sha256((assets / "ctxpack-v1.1.5-test.tar.gz").read_bytes()).hexdigest()
-manifest_digest = hashlib.sha256((assets / "ctxpack-v1.1.5-test.manifest.json").read_bytes()).hexdigest()
+archive_digest = hashlib.sha256((assets / "ctxpack-v1.1.6-test.tar.gz").read_bytes()).hexdigest()
+manifest_digest = hashlib.sha256((assets / "ctxpack-v1.1.6-test.manifest.json").read_bytes()).hexdigest()
 payload = {
     "assets": [
         {
             "digest": f"sha256:{archive_digest}",
-            "name": "ctxpack-v1.1.5-test.tar.gz",
+            "name": "ctxpack-v1.1.6-test.tar.gz",
             "state": "uploaded",
         },
         {
             "digest": f"sha256:{manifest_digest}",
-            "name": "ctxpack-v1.1.5-test.manifest.json",
+            "name": "ctxpack-v1.1.6-test.manifest.json",
             "state": "uploaded",
         },
     ],
     "isDraft": False,
     "isPrerelease": False,
     "publishedAt": "2026-06-01T00:00:00Z",
-    "tagName": "v1.1.5",
+    "tagName": "v1.1.6",
     "targetCommitish": "abc123",
-    "url": "https://github.com/thromel/ctxpack/releases/tag/v1.1.5",
+    "url": "https://github.com/thromel/ctxpack/releases/tag/v1.1.6",
 }
 pathlib.Path(out).write_text(json.dumps(payload, sort_keys=True) + "\n")
 PY
 bash "$repo_root/scripts/verify-github-release.sh" \
-  --tag v1.1.5 \
+  --tag v1.1.6 \
   --target abc123 \
   --assets-dir "$assets_dir" \
   --release-json "$release_json" >/dev/null
 
 bash "$repo_root/scripts/check-public-release-freshness.sh" \
-  --tag v1.1.5 \
+  --tag v1.1.6 \
   --current-commit def456 \
   --release-json "$release_json" \
   --output "$work_dir/release-freshness.json" >/dev/null
@@ -116,7 +116,7 @@ PY
 candidate_dir="$work_dir/candidate"
 mkdir -p "$candidate_dir"
 touch "$candidate_dir/.ctxpack-release-candidate"
-printf 'artifact placeholder\n' >"$candidate_dir/ctxpack-v1.1.5-aarch64-apple-darwin.tar.gz"
+printf 'artifact placeholder\n' >"$candidate_dir/ctxpack-v1.1.6-aarch64-apple-darwin.tar.gz"
 metadata="$work_dir/release-metadata.json"
 previous="$work_dir/previous-release-metadata.json"
 printf '{"version":"candidate"}\n' >"$metadata"

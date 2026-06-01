@@ -1,9 +1,10 @@
 # ctxpack Architecture
 
-ctxpack is a local-first context broker for coding agents. It does not edit
-code, own the chat UI, or replace an agent. Its job is to compile small,
-evidence-labeled context plans and packs so existing agents inspect better
-files, tests, examples, and constraints.
+ContextMason is the product; `ctxpack` is the CLI, crate, and MCP namespace.
+Together, they form a local-first context broker for coding agents. The system
+does not edit code, own the chat UI, or replace an agent. Its job is to compile
+small, evidence-labeled context plans and packs so existing agents inspect
+better files, tests, examples, and constraints.
 
 ## System Shape
 

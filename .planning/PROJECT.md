@@ -1,8 +1,8 @@
-# Repo Context Packer
+# ContextMason
 
 ## What This Is
 
-Repo Context Packer is a local-first, read-only context broker that helps existing coding agents choose better repository context. It does not replace Codex, Claude Code, Cursor, OpenCode, Aider, or similar tools; it exposes task-conditioned file, test, graph, history, and pack guidance through agent-native surfaces such as MCP, AGENTS.md, and thin adapter files.
+ContextMason, powered by the `ctxpack` CLI, is a local-first, read-only context broker that helps existing coding agents choose better repository context. It does not replace Codex, Claude Code, Cursor, OpenCode, Aider, or similar tools; it exposes task-conditioned file, test, graph, history, and pack guidance through agent-native surfaces such as MCP, AGENTS.md, and thin adapter files.
 
 The current codebase is a Rust workspace with a CLI, MCP server, safe repository inventory, lexical, symbol, semantic, and precision-edge retrieval, related-test inference, dependency hints, current-diff anchors, context packs, generated context cards, local eval traces, historical retrieval evaluation, benchmark suites, source-free retrieval gap reporting, product proof generation, release hardening, and diagnostic inspector surfaces.
 

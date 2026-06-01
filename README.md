@@ -1,12 +1,17 @@
-# Repo Context Packer
+# ContextMason
 
-Repo Context Packer is a local-first, read-only context compiler for coding
-agents.
+ContextMason, powered by the `ctxpack` CLI, is a local-first, read-only context
+compiler for coding agents.
 
 It does not try to replace Codex, Claude Code, Cursor, OpenCode, Aider, or any
 other coding agent. It makes those agents better at deciding what to inspect
 first: target files, related tests, graph neighbors, history hints, constraints,
 and progressive context packs.
+
+The package, binary, MCP namespace, and install channel remain `ctxpack` for
+compatibility. The product name is ContextMason because the core job is not
+codebase chat or generic repo search; it is constructing the right context for
+agents before they edit.
 
 ## Why ctxpack
 
@@ -25,7 +30,7 @@ that is not enough:
 
 Current proof snapshot:
 
-- Public `v1.1.5` archive install is current and verified through checksum,
+- Public `v1.1.6` archive install is current and verified through checksum,
   archive, temporary install, version/help, doctor, and first-pack checks.
 - The four-repo product proof reports zero protected target misses across
   RefactoringMiner, ctxpack, ReAgent, and VeriSchema.
@@ -45,7 +50,7 @@ ctxpack exposes compact task context through:
 ctxpack writes repo-local guidance, optional adapter snippets, and local ctxpack
 state only.
 
-## Install v1.1.5
+## Install v1.1.6
 
 On Apple Silicon macOS, install from the public Homebrew tap:
 
@@ -57,8 +62,8 @@ ctxpack --help
 ```
 
 The archive install path remains available for manual verification and
-non-Homebrew workflows. The v1.1.5 archive is named like
-`ctxpack-v1.1.5-aarch64-apple-darwin.tar.gz`.
+non-Homebrew workflows. The v1.1.6 archive is named like
+`ctxpack-v1.1.6-aarch64-apple-darwin.tar.gz`.
 
 Download the archive and checksum file for your platform, then verify the SHA-256 checksums:
 
@@ -70,14 +75,14 @@ sha256sum -c sha256sums.txt
 Extract the archive and put the binary on your `PATH`:
 
 ```bash
-tar -xzf ctxpack-v1.1.5-aarch64-apple-darwin.tar.gz
-install -m 0755 ctxpack-v1.1.5-aarch64-apple-darwin/ctxpack ~/.local/bin/ctxpack
+tar -xzf ctxpack-v1.1.6-aarch64-apple-darwin.tar.gz
+install -m 0755 ctxpack-v1.1.6-aarch64-apple-darwin/ctxpack ~/.local/bin/ctxpack
 ctxpack --version
 ctxpack --help
-ctxpack doctor --binary "$(command -v ctxpack)" --release-manifest ctxpack-v1.1.5-aarch64-apple-darwin.manifest.json
+ctxpack doctor --binary "$(command -v ctxpack)" --release-manifest ctxpack-v1.1.6-aarch64-apple-darwin.manifest.json
 ```
 
-The expected version diagnostic is `ctxpack 1.1.5`. See [docs/release.md](docs/release.md) for release details, source-build fallbacks, and maintainer packaging checks.
+The expected version diagnostic is `ctxpack 1.1.6`. See [docs/release.md](docs/release.md) for release details, source-build fallbacks, and maintainer packaging checks.
 
 ## Install To First Pack
 
@@ -130,6 +135,7 @@ For the longer walkthrough, including setup validation, deterministic MCP proof 
 
 ## More Docs
 
+- [Brand and naming](docs/brand.md)
 - [First-pack quickstart](docs/quickstart.md)
 - [Release and install guide](docs/release.md)
 - [Agent setup matrix](docs/agent-setup.md)

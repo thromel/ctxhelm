@@ -1,9 +1,9 @@
 # Public Project Summary
 
-Repo Context Packer, `ctxpack`, is a local-first context broker for AI coding
-agents. Given a coding task, it compiles a small, task-conditioned evidence set:
-likely target files, related tests, validation commands, graph/history/memory
-signals, and agent-specific context guidance.
+ContextMason, powered by the `ctxpack` CLI, is a local-first context broker for
+AI coding agents. Given a coding task, it compiles a small, task-conditioned
+evidence set: likely target files, related tests, validation commands,
+graph/history/memory signals, and agent-specific context guidance.
 
 ## Current Capabilities
 
@@ -20,15 +20,15 @@ signals, and agent-specific context guidance.
 
 The public posture is source-free by default.
 
-- ctxpack does not edit source code.
-- ctxpack does not run user project tests automatically.
-- ctxpack does not require cloud embeddings or cloud reranking.
-- ctxpack does not mutate global agent configuration.
-- ctxpack does not provide hosted sync, enterprise admin, signed installers, or
+- ContextMason does not edit source code.
+- ContextMason does not run user project tests automatically.
+- ContextMason does not require cloud embeddings or cloud reranking.
+- ContextMason does not mutate global agent configuration.
+- ContextMason does not provide hosted sync, enterprise admin, signed installers, or
   self-update in the current release.
 
 ## One-sentence Portfolio Copy
 
-`ctxpack` is a local, read-only context compiler that makes Codex, Claude Code,
-Cursor, OpenCode, and other coding agents better at finding the right files,
-tests, and constraints before they edit.
+ContextMason is a local, read-only context compiler that makes Codex, Claude
+Code, Cursor, OpenCode, and other coding agents better at finding the right
+files, tests, and constraints before they edit.

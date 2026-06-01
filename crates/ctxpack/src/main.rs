@@ -57,7 +57,7 @@ use uuid::Uuid;
 
 #[derive(Debug, Parser)]
 #[command(name = "ctxpack")]
-#[command(about = "Agent-native context packs for coding agents")]
+#[command(about = "ContextMason: agent-native context packs for coding agents")]
 #[command(version)]
 struct Cli {
     #[command(subcommand)]
