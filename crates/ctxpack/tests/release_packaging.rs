@@ -106,11 +106,11 @@ fn release_artifact_audit_script_contract() {
 fn release_artifact_audit_rejects_local_state_archive() {
     let archive = archive_with_entries(&[
         (
-            "ctxpack-v1.1.6-test/ctxpack",
+            "ctxpack-v1.1.7-test/ctxpack",
             "#!/usr/bin/env bash\nexit 0\n",
         ),
         (
-            "ctxpack-v1.1.6-test/.ctxpack/repos/repo/traces.jsonl",
+            "ctxpack-v1.1.7-test/.ctxpack/repos/repo/traces.jsonl",
             "{\"sourceTextLogged\":false}\n",
         ),
     ]);
@@ -130,12 +130,12 @@ fn release_artifact_audit_rejects_local_state_archive() {
 fn release_artifact_audit_accepts_minimal_release_archive() {
     let archive = archive_with_entries(&[
         (
-            "ctxpack-v1.1.6-test/ctxpack",
+            "ctxpack-v1.1.7-test/ctxpack",
             "#!/usr/bin/env bash\nexit 0\n",
         ),
-        ("ctxpack-v1.1.6-test/README.md", "ctxpack release\n"),
-        ("ctxpack-v1.1.6-test/LICENSE", "MIT License\n"),
-        ("ctxpack-v1.1.6-test/VERSION", "ctxpack 1.1.6\n"),
+        ("ctxpack-v1.1.7-test/README.md", "ctxpack release\n"),
+        ("ctxpack-v1.1.7-test/LICENSE", "MIT License\n"),
+        ("ctxpack-v1.1.7-test/VERSION", "ctxpack 1.1.7\n"),
     ]);
 
     let output = Command::new(workspace_root().join("scripts/audit-release-artifact.sh"))
@@ -154,12 +154,12 @@ fn release_artifact_audit_accepts_minimal_release_archive() {
 fn release_artifact_audit_writes_source_free_report() {
     let archive = archive_with_entries(&[
         (
-            "ctxpack-v1.1.6-test/ctxpack",
+            "ctxpack-v1.1.7-test/ctxpack",
             "#!/usr/bin/env bash\nexit 0\n",
         ),
-        ("ctxpack-v1.1.6-test/README.md", "ctxpack release\n"),
-        ("ctxpack-v1.1.6-test/LICENSE", "MIT License\n"),
-        ("ctxpack-v1.1.6-test/VERSION", "ctxpack 1.1.6\n"),
+        ("ctxpack-v1.1.7-test/README.md", "ctxpack release\n"),
+        ("ctxpack-v1.1.7-test/LICENSE", "MIT License\n"),
+        ("ctxpack-v1.1.7-test/VERSION", "ctxpack 1.1.7\n"),
     ]);
     let report_dir = TempDir::new().unwrap();
     let report_path = report_dir.path().join("audit.json");
@@ -544,9 +544,9 @@ fn public_release_freshness_script_reports_outdated_without_mutation() {
   "isDraft": false,
   "isPrerelease": false,
   "publishedAt": "2026-06-01T00:00:00Z",
-  "tagName": "v1.1.6",
+  "tagName": "v1.1.7",
   "targetCommitish": "release-commit",
-  "url": "https://github.com/thromel/ctxpack/releases/tag/v1.1.6"
+  "url": "https://github.com/thromel/ctxpack/releases/tag/v1.1.7"
 }
 "#,
     )
@@ -554,7 +554,7 @@ fn public_release_freshness_script_reports_outdated_without_mutation() {
 
     let output = Command::new("bash")
         .arg(&script)
-        .args(["--tag", "v1.1.6"])
+        .args(["--tag", "v1.1.7"])
         .args(["--current-commit", "current-commit"])
         .arg("--release-json")
         .arg(&release_json)
@@ -578,7 +578,7 @@ fn public_release_freshness_script_reports_outdated_without_mutation() {
 
     let required_current = Command::new("bash")
         .arg(&script)
-        .args(["--tag", "v1.1.6"])
+        .args(["--tag", "v1.1.7"])
         .args(["--current-commit", "current-commit"])
         .arg("--release-json")
         .arg(&release_json)
@@ -694,9 +694,9 @@ fn public_release_freshness_distinguishes_proof_only_commits() {
   "isDraft": false,
   "isPrerelease": false,
   "publishedAt": "2026-06-01T00:00:00Z",
-  "tagName": "v1.1.6",
+  "tagName": "v1.1.7",
   "targetCommitish": "{release_commit}",
-  "url": "https://github.com/thromel/ctxpack/releases/tag/v1.1.6"
+  "url": "https://github.com/thromel/ctxpack/releases/tag/v1.1.7"
 }}
 "#
         ),
@@ -705,7 +705,7 @@ fn public_release_freshness_distinguishes_proof_only_commits() {
 
     let output = Command::new("bash")
         .arg(&script)
-        .args(["--tag", "v1.1.6"])
+        .args(["--tag", "v1.1.7"])
         .args(["--current-commit", &current_commit])
         .arg("--release-json")
         .arg(&release_json)
@@ -732,7 +732,7 @@ fn public_release_freshness_distinguishes_proof_only_commits() {
 
     let required_current = Command::new("bash")
         .arg(&script)
-        .args(["--tag", "v1.1.6"])
+        .args(["--tag", "v1.1.7"])
         .args(["--current-commit", &current_commit])
         .arg("--release-json")
         .arg(&release_json)
@@ -1110,7 +1110,7 @@ fn release_docs_script_contract() {
         "docs/release-governance.md",
         "ctxpack --version",
         "ctxpack --help",
-        "v1.1.6",
+        "v1.1.7",
         "sha256sums.txt",
         "Why ctxpack",
         "Current proof snapshot",
@@ -1136,7 +1136,7 @@ fn release_docs_script_contract() {
         "Cursor",
         "OpenCode",
         "cargo install --git",
-        "--tag v1.1.6",
+        "--tag v1.1.7",
         "--locked",
         "crates.io",
         "Homebrew",

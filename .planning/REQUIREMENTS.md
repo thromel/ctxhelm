@@ -1,4 +1,4 @@
-# Requirements: ContextMason v2.5 Production Retrieval Quality
+# Requirements: RepoWinnow v2.5 Production Retrieval Quality
 
 **Defined:** 2026-05-22
 **Milestone:** v2.5 Production Retrieval Quality

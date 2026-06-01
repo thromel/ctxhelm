@@ -1,13 +1,13 @@
-# ContextMason `ctxpack` v1.1.6 Release Guide
+# RepoWinnow `ctxpack` v1.1.7 Release Guide
 
-This document describes the local binary release path for ContextMason's
-`ctxpack` CLI v1.1.6. The primary user path is a prebuilt archive plus SHA-256
+This document describes the local binary release path for RepoWinnow's
+`ctxpack` CLI v1.1.7. The primary user path is a prebuilt archive plus SHA-256
 checksums; source builds are fallback paths.
 
 Current public archive release:
 
 ```text
-https://github.com/thromel/ctxpack/releases/tag/v1.1.6
+https://github.com/thromel/ctxpack/releases/tag/v1.1.7
 ```
 
 ## User Install
@@ -24,7 +24,7 @@ ctxpack --help
 Download the archive for your platform from the release artifacts. Archive names follow this shape:
 
 ```text
-ctxpack-v1.1.6-{target}.tar.gz
+ctxpack-v1.1.7-{target}.tar.gz
 sha256sums.txt
 ```
 
@@ -38,17 +38,17 @@ sha256sum -c sha256sums.txt
 Extract and install the binary on `PATH`:
 
 ```bash
-tar -xzf ctxpack-v1.1.6-aarch64-apple-darwin.tar.gz
-install -m 0755 ctxpack-v1.1.6-aarch64-apple-darwin/ctxpack ~/.local/bin/ctxpack
+tar -xzf ctxpack-v1.1.7-aarch64-apple-darwin.tar.gz
+install -m 0755 ctxpack-v1.1.7-aarch64-apple-darwin/ctxpack ~/.local/bin/ctxpack
 ctxpack --version
 ctxpack --help
-ctxpack doctor --binary "$(command -v ctxpack)" --release-manifest ctxpack-v1.1.6-aarch64-apple-darwin.manifest.json
+ctxpack doctor --binary "$(command -v ctxpack)" --release-manifest ctxpack-v1.1.7-aarch64-apple-darwin.manifest.json
 ```
 
 The expected diagnostic is:
 
 ```text
-ctxpack 1.1.6
+ctxpack 1.1.7
 ```
 
 ## Source Build Fallbacks
@@ -56,7 +56,7 @@ ctxpack 1.1.6
 Build from the tagged repository with locked dependencies:
 
 ```bash
-cargo install --git https://github.com/thromel/ctxpack --tag v1.1.6 ctxpack --locked
+cargo install --git https://github.com/thromel/ctxpack --tag v1.1.7 ctxpack --locked
 ctxpack --version
 ctxpack --help
 ```
@@ -72,7 +72,7 @@ target/release/ctxpack --help
 
 ## Maintainer Packaging
 
-From a clean checkout at the v1.1.6 tag, run:
+From a clean checkout at the v1.1.7 tag, run:
 
 ```bash
 bash scripts/release-package.sh
@@ -87,10 +87,10 @@ cargo build -p ctxpack --release --locked
 It writes release artifacts under `dist/` by default, or under `CTXPACK_DIST_DIR` when that environment variable is set:
 
 ```text
-dist/ctxpack-v1.1.6-{target}.tar.gz
-dist/ctxpack-v1.1.6-{target}.manifest.json
-dist/ctxpack-v1.1.6-{target}.audit.json
-dist/ctxpack-v1.1.6-{target}.tar.gz.sha256
+dist/ctxpack-v1.1.7-{target}.tar.gz
+dist/ctxpack-v1.1.7-{target}.manifest.json
+dist/ctxpack-v1.1.7-{target}.audit.json
+dist/ctxpack-v1.1.7-{target}.tar.gz.sha256
 dist/sha256sums.txt
 ```
 
@@ -109,8 +109,8 @@ Maintainers can verify a built archive from a clean extraction directory:
 
 ```bash
 bash scripts/verify-release-archive.sh \
-  --archive dist/ctxpack-v1.1.6-aarch64-apple-darwin.tar.gz \
-  --manifest dist/ctxpack-v1.1.6-aarch64-apple-darwin.manifest.json \
+  --archive dist/ctxpack-v1.1.7-aarch64-apple-darwin.tar.gz \
+  --manifest dist/ctxpack-v1.1.7-aarch64-apple-darwin.manifest.json \
   --checksums dist/sha256sums.txt
 ```
 
@@ -120,9 +120,9 @@ installing globally:
 ```bash
 bash scripts/verify-public-archive-install.sh \
   --repo thromel/ctxpack \
-  --tag v1.1.6 \
+  --tag v1.1.7 \
   --target-label aarch64-apple-darwin \
-  --expected-version "ctxpack 1.1.6"
+  --expected-version "ctxpack 1.1.7"
 ```
 
 The public install verifier downloads the release archive, manifest, audit
@@ -137,9 +137,9 @@ archive binary:
 ```bash
 bash scripts/smoke-public-real-clients.sh \
   --repo thromel/ctxpack \
-  --tag v1.1.6 \
+  --tag v1.1.7 \
   --target-label aarch64-apple-darwin \
-  --expected-version "ctxpack 1.1.6" \
+  --expected-version "ctxpack 1.1.7" \
   --output .ctxpack/e2e/phase130-public-real-client-smoke.json
 ```
 
@@ -155,8 +155,8 @@ Maintainers can verify the published Homebrew tap path on Apple Silicon macOS:
 bash scripts/verify-homebrew-tap.sh \
   --tap thromel/tap \
   --formula ctxpack \
-  --expected-version "ctxpack 1.1.6" \
-  --expected-url https://github.com/thromel/ctxpack/releases/download/v1.1.6/ctxpack-v1.1.6-aarch64-apple-darwin.tar.gz \
+  --expected-version "ctxpack 1.1.7" \
+  --expected-url https://github.com/thromel/ctxpack/releases/download/v1.1.7/ctxpack-v1.1.7-aarch64-apple-darwin.tar.gz \
   --expected-sha256 <sha256-from-release-asset>
 ```
 
@@ -189,7 +189,7 @@ workspace tests, CLI help, release-doc consistency, and the local release gate
 with external fixture and real-client checks explicitly skipped unless a
 maintainer runs the full local gate with those optional proofs enabled.
 
-This is the pre-publication blocker for v1.1.6. When `CTXPACK_BIN` is not set, the gate runs `scripts/release-package.sh`, audits the archive, extracts the generated artifact, and uses the extracted `ctxpack` binary for installed-binary proof.
+This is the pre-publication blocker for v1.1.7. When `CTXPACK_BIN` is not set, the gate runs `scripts/release-package.sh`, audits the archive, extracts the generated artifact, and uses the extracted `ctxpack` binary for installed-binary proof.
 
 To prove a selected installed or previously extracted binary, pass an absolute path:
 
@@ -726,22 +726,22 @@ record the skip reason as "external corpus unavailable" rather than treating it
 as a product regression. The mandatory gate remains `scripts/smoke-v23-eval.sh`,
 which proves the v2.3 contract without external repos.
 
-The release gate does not publish, upload, or create GitHub releases, and does not create tags. It does not mutate global agent config and does not run user project tests. Cursor and OpenCode real-client proof is not claimed for v1.1.6.
+The release gate does not publish, upload, or create GitHub releases, and does not create tags. It does not mutate global agent config and does not run user project tests. Cursor and OpenCode real-client proof is not claimed for v1.1.7.
 
 ## Artifact Audit
 
-`scripts/release-package.sh` runs `scripts/audit-release-artifact.sh` immediately after archive creation and before checksum success output. It writes a machine-readable `ctxpack-v1.1.6-{target}.audit.json` report next to the archive.
+`scripts/release-package.sh` runs `scripts/audit-release-artifact.sh` immediately after archive creation and before checksum success output. It writes a machine-readable `ctxpack-v1.1.7-{target}.audit.json` report next to the archive.
 
 The audit lists archive members and extracts the artifact to a temporary directory. It fails on local state, traces, request logs, cache or target debris, git internals, secret-looking filenames, absolute local paths, and text payloads with machine-specific or secret-looking values. It does not upload artifacts or call cloud scanning services.
 
 You can audit an existing archive directly:
 
 ```bash
-bash scripts/audit-release-artifact.sh dist/ctxpack-v1.1.6-aarch64-apple-darwin.tar.gz
+bash scripts/audit-release-artifact.sh dist/ctxpack-v1.1.7-aarch64-apple-darwin.tar.gz
 ```
 
 ## Out of Scope for v1.1
 
-The v1.1.6 release includes a public Apple Silicon Homebrew tap. It does not require crates.io publishing, self-update support, signed installers, cloud telemetry, cloud indexing, cloud embeddings, hosted release services, or global agent config mutation.
+The v1.1.7 release includes a public Apple Silicon Homebrew tap. It does not require crates.io publishing, self-update support, signed installers, cloud telemetry, cloud indexing, cloud embeddings, hosted release services, or global agent config mutation.
 
 ctxpack remains local-first and read-only. Release scripts build and audit ctxpack artifacts only; they do not mutate user repositories, global Codex or Claude configuration, MCP client config, or package-manager registries.

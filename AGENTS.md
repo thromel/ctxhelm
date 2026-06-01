@@ -2,7 +2,7 @@
 
 ## Project Goal
 
-Build ContextMason, powered by the `ctxpack` CLI, as a local-first, read-only
+Build RepoWinnow, powered by the `ctxpack` CLI, as a local-first, read-only
 context broker for coding agents.
 
 ## Working Rules

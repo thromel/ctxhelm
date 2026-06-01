@@ -1,6 +1,6 @@
 # Public Project Summary
 
-ContextMason, powered by the `ctxpack` CLI, is a local-first context broker for
+RepoWinnow, powered by the `ctxpack` CLI, is a local-first context broker for
 AI coding agents. Given a coding task, it compiles a small, task-conditioned
 evidence set: likely target files, related tests, validation commands,
 graph/history/memory signals, and agent-specific context guidance.
@@ -20,15 +20,15 @@ graph/history/memory signals, and agent-specific context guidance.
 
 The public posture is source-free by default.
 
-- ContextMason does not edit source code.
-- ContextMason does not run user project tests automatically.
-- ContextMason does not require cloud embeddings or cloud reranking.
-- ContextMason does not mutate global agent configuration.
-- ContextMason does not provide hosted sync, enterprise admin, signed installers, or
+- RepoWinnow does not edit source code.
+- RepoWinnow does not run user project tests automatically.
+- RepoWinnow does not require cloud embeddings or cloud reranking.
+- RepoWinnow does not mutate global agent configuration.
+- RepoWinnow does not provide hosted sync, enterprise admin, signed installers, or
   self-update in the current release.
 
 ## One-sentence Portfolio Copy
 
-ContextMason is a local, read-only context compiler that makes Codex, Claude
+RepoWinnow is a local, read-only context compiler that makes Codex, Claude
 Code, Cursor, OpenCode, and other coding agents better at finding the right
 files, tests, and constraints before they edit.
