@@ -89,7 +89,7 @@ ctxpack --version
 ctxpack doctor \
   --repo /path/to/repo \
   --binary "$(command -v ctxpack)" \
-  --release-manifest /path/to/ctxpack-v1.1.3-aarch64-apple-darwin.manifest.json
+  --release-manifest /path/to/ctxpack-v1.1.4-aarch64-apple-darwin.manifest.json
 ```
 
 If `doctor` reports a manifest version mismatch, update the binary path used by

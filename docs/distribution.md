@@ -1,6 +1,6 @@
 # Distribution Metadata
 
-ctxpack v1.1.3 ships through local release archives. This document records the
+ctxpack v1.1.4 ships through local release archives. This document records the
 preparatory distribution metadata for future package-manager channels without
 making those channels blockers for the current release.
 
@@ -26,8 +26,8 @@ Verify an already-built archive from a clean temporary extraction directory:
 
 ```bash
 bash scripts/verify-release-archive.sh \
-  --archive dist/ctxpack-v1.1.3-aarch64-apple-darwin.tar.gz \
-  --manifest dist/ctxpack-v1.1.3-aarch64-apple-darwin.manifest.json \
+  --archive dist/ctxpack-v1.1.4-aarch64-apple-darwin.tar.gz \
+  --manifest dist/ctxpack-v1.1.4-aarch64-apple-darwin.manifest.json \
   --checksums dist/sha256sums.txt
 ```
 
@@ -43,13 +43,13 @@ archive checksums, manifest names, and privacy posture.
 
 ## Signing And Notarization
 
-Current v1.1.3 archives are checksum-audited but not signed installers. Future
+Current v1.1.4 archives are checksum-audited but not signed installers. Future
 distribution work should add signing and notarization gaps to the release
 checklist before claiming signed macOS installers or package-manager formulas.
 
 ## Candidate Decision
 
-The v1.1.3 production candidate is archive-first:
+The v1.1.4 production candidate is archive-first:
 
 - local archive: ready after the release gate passes with the archive binary
   and required clean fixture proof
