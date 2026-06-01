@@ -1,0 +1,26 @@
+{
+  "commitsAhead": 0,
+  "currentCommit": "6c93100fa0e4f5a5444fb7fd967c721cca49a401",
+  "gitRelation": "same",
+  "privacyStatus": {
+    "localOnly": true,
+    "remoteEmbeddingsUsed": false,
+    "remoteRerankingUsed": false,
+    "sourceTextLogged": false
+  },
+  "publishedAt": "2026-06-01T05:41:10Z",
+  "releaseTargetCommit": "6c93100fa0e4f5a5444fb7fd967c721cca49a401",
+  "releaseUrl": "https://github.com/thromel/ctxpack/releases/tag/v1.1.1",
+  "repo": "thromel/ctxpack",
+  "schemaVersion": 1,
+  "sourceFree": true,
+  "status": "current",
+  "tag": "v1.1.1",
+  "unsupportedActions": [
+    "publishing",
+    "tag creation",
+    "asset upload",
+    "global install",
+    "global agent config mutation"
+  ]
+}
