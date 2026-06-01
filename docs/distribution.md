@@ -1,6 +1,6 @@
 # Distribution Metadata
 
-ctxpack v1.1.4 ships through public release archives and a public Apple Silicon
+ctxpack v1.1.5 ships through public release archives and a public Apple Silicon
 Homebrew tap. This document records the distribution metadata and the boundaries
 for channels that remain deferred.
 
@@ -28,8 +28,8 @@ Verify an already-built archive from a clean temporary extraction directory:
 
 ```bash
 bash scripts/verify-release-archive.sh \
-  --archive dist/ctxpack-v1.1.4-aarch64-apple-darwin.tar.gz \
-  --manifest dist/ctxpack-v1.1.4-aarch64-apple-darwin.manifest.json \
+  --archive dist/ctxpack-v1.1.5-aarch64-apple-darwin.tar.gz \
+  --manifest dist/ctxpack-v1.1.5-aarch64-apple-darwin.manifest.json \
   --checksums dist/sha256sums.txt
 ```
 
@@ -45,7 +45,7 @@ archive checksums, manifest names, and privacy posture.
 
 ## Signing And Notarization
 
-Current v1.1.4 archives are checksum-audited but not signed installers. Future
+Current v1.1.5 archives are checksum-audited but not signed installers. Future
 distribution work should add signing and notarization gaps to the release
 checklist before claiming signed macOS installers or package-manager formulas.
 
@@ -59,20 +59,20 @@ brew install ctxpack
 ctxpack --version
 ```
 
-The v1.1.4 tap proof verifies:
+The v1.1.5 tap proof verifies:
 
 - `brew tap thromel/tap`
 - `brew audit --strict --new ctxpack`
 - `brew install thromel/tap/ctxpack`
 - `brew test thromel/tap/ctxpack`
-- installed binary output `ctxpack 1.1.4`
+- installed binary output `ctxpack 1.1.5`
 
 The formula is currently constrained to `arch: :arm64` because the published
 archive asset is `aarch64-apple-darwin`.
 
 ## Candidate Decision
 
-The v1.1.4 production candidate has these distribution states:
+The v1.1.5 production candidate has these distribution states:
 
 - local archive: ready after the release gate passes with the archive binary
   and required clean fixture proof
@@ -120,9 +120,9 @@ The public Homebrew tap can be verified with:
 bash scripts/verify-homebrew-tap.sh \
   --tap thromel/tap \
   --formula ctxpack \
-  --expected-version "ctxpack 1.1.4" \
-  --expected-url https://github.com/thromel/ctxpack/releases/download/v1.1.4/ctxpack-v1.1.4-aarch64-apple-darwin.tar.gz \
-  --expected-sha256 24101f411da3dae73dbd5ce7f24b0f99427ac4ab016885b72cca004ef1b619c9
+  --expected-version "ctxpack 1.1.5" \
+  --expected-url https://github.com/thromel/ctxpack/releases/download/v1.1.5/ctxpack-v1.1.5-aarch64-apple-darwin.tar.gz \
+  --expected-sha256 <sha256-from-release-asset>
 ```
 
 This check mutates local Homebrew state by installing the formula. It does not

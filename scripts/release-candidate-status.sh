@@ -127,7 +127,7 @@ if proof_summary_path:
 payload = {
     "schemaVersion": 1,
     "package": "ctxpack",
-    "version": "1.1.4",
+    "version": "1.1.5",
     "status": status,
     "createdAt": dt.datetime.now(dt.timezone.utc).replace(microsecond=0).isoformat(),
     "proofLevel": proof_level,
@@ -148,15 +148,15 @@ payload = {
     "distributionDecision": {
         "primaryChannel": "local_archive",
         "localArchive": "ready" if status == "ready" else "deferred",
-        "homebrewFormula": "deferred",
+        "homebrewFormula": "ready" if status == "ready" else "deferred",
         "cratesIo": "deferred",
         "signedInstaller": "deferred",
         "selfUpdate": "not_implemented",
-        "reason": "v1.1.4 production candidate is archive-first; package-manager publication, signed installers, and self-update remain future work.",
+        "reason": "v1.1.5 production candidate supports local archives and the Apple Silicon Homebrew tap; crates.io publication, signed installers, and self-update remain future work.",
     },
     "knownLimitations": [
-        "Cursor and OpenCode real-client proof is not claimed for v1.1.4.",
-        "Package-manager publication, signed installers, self-update, and hosted sync are future work.",
+        "Cursor and OpenCode real-client proof is not claimed for v1.1.5.",
+        "crates.io publication, signed installers, self-update, and hosted sync are future work.",
     ],
     "privacyStatus": {
         "localOnly": True,
@@ -217,9 +217,11 @@ if payload.get("status") == "ready":
 distribution = payload.get("distributionDecision", {})
 if distribution.get("primaryChannel") != "local_archive":
     raise SystemExit("primaryChannel must be local_archive")
-for deferred in ["homebrewFormula", "cratesIo", "signedInstaller"]:
+if distribution.get("homebrewFormula") != "ready":
+    raise SystemExit("homebrewFormula must be ready for v1.1.5")
+for deferred in ["cratesIo", "signedInstaller"]:
     if distribution.get(deferred) != "deferred":
-        raise SystemExit(f"{deferred} must be deferred for v1.1.4")
+        raise SystemExit(f"{deferred} must be deferred for v1.1.5")
 if distribution.get("selfUpdate") != "not_implemented":
     raise SystemExit("selfUpdate must be not_implemented")
 privacy = payload.get("privacyStatus", {})

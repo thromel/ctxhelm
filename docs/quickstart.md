@@ -18,7 +18,7 @@ ctxpack --help
 ctxpack doctor --repo "$REPO"
 ```
 
-For v1.1.4, `ctxpack --version` should print `ctxpack 1.1.4`. If the command is not found, fix your shell or agent `PATH`, or use an absolute binary path in the MCP configuration.
+For v1.1.5, `ctxpack --version` should print `ctxpack 1.1.5`. If the command is not found, fix your shell or agent `PATH`, or use an absolute binary path in the MCP configuration.
 
 When installing from a release archive, keep the release manifest beside the
 archive and verify it against the active binary:
@@ -27,7 +27,7 @@ archive and verify it against the active binary:
 ctxpack doctor \
   --repo "$REPO" \
   --binary "$(command -v ctxpack)" \
-  --release-manifest /path/to/ctxpack-v1.1.4-aarch64-apple-darwin.manifest.json
+  --release-manifest /path/to/ctxpack-v1.1.5-aarch64-apple-darwin.manifest.json
 ```
 
 `doctor` is read-only. It checks the binary path, `--version`, `--help`, release

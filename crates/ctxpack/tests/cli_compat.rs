@@ -37,7 +37,7 @@ fn workspace_packages_have_release_identity() {
             .iter()
             .find(|package| package["name"] == name)
             .unwrap_or_else(|| panic!("missing package metadata for {name}"));
-        assert_eq!(package["version"], "1.1.4", "{name} version");
+        assert_eq!(package["version"], "1.1.5", "{name} version");
         assert_eq!(package["license"], "MIT", "{name} license");
         assert!(
             package["repository"]
@@ -92,7 +92,7 @@ fn version_reports_release_identity() {
         .arg("--version")
         .assert()
         .success()
-        .stdout(contains("ctxpack 1.1.4"));
+        .stdout(contains("ctxpack 1.1.5"));
 }
 
 #[test]
@@ -103,16 +103,16 @@ fn doctor_verifies_binary_manifest_and_local_state_source_free() {
     fs::write(
         &manifest_path,
         json!({
-            "version": "1.1.4",
+            "version": "1.1.5",
             "archive": {
-                "name": "ctxpack-v1.1.4-test.tar.gz",
+                "name": "ctxpack-v1.1.5-test.tar.gz",
                 "sha256": "archive-sha"
             },
             "binary": {
                 "name": "ctxpack",
                 "sha256": "binary-sha"
             },
-            "auditReport": "ctxpack-v1.1.4-test.audit.json",
+            "auditReport": "ctxpack-v1.1.5-test.audit.json",
             "privacyStatus": {
                 "localOnly": true,
                 "sourceTextLogged": false
@@ -137,8 +137,8 @@ fn doctor_verifies_binary_manifest_and_local_state_source_free() {
     );
 
     assert_eq!(value["passed"], true);
-    assert_eq!(value["binary"]["version"], "ctxpack 1.1.4");
-    assert_eq!(value["releaseManifest"]["version"], "1.1.4");
+    assert_eq!(value["binary"]["version"], "ctxpack 1.1.5");
+    assert_eq!(value["releaseManifest"]["version"], "1.1.5");
     assert_eq!(value["privacyStatus"]["localOnly"], true);
     assert_eq!(value["mutatesGlobalAgentConfig"], false);
     assert!(value["checks"]

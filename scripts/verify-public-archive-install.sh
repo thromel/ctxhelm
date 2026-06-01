@@ -15,9 +15,9 @@ EOF
 }
 
 repo="thromel/ctxpack"
-tag="v1.1.4"
+tag="v1.1.5"
 target_label="$(rustc -vV 2>/dev/null | awk '/^host:/ { print $2 }')"
-expected_version="ctxpack 1.1.4"
+expected_version="ctxpack 1.1.5"
 output_path=""
 
 while [[ $# -gt 0 ]]; do
