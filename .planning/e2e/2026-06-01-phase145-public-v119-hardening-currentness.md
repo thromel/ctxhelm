@@ -8,7 +8,7 @@ Publish and verify a current public release after the bounded Git-history timeou
 
 - Repository: `thromel/ctxhelm`
 - Tag: `v1.1.9`
-- Target commit: `b4783964535ceacf56304c5090500ba0fd16516e`
+- Target commit: `74bafb141096478e0ad4110fe32a43e1cb4c80d0`
 - Release URL: `https://github.com/thromel/ctxhelm/releases/tag/v1.1.9`
 - Archive: `ctxhelm-v1.1.9-aarch64-apple-darwin.tar.gz`
 - Archive SHA-256: `d9f4b0a4b38fcdfd1702873994b8f3ed4c63af6e88e0cd33b3635f104beb3c7d`
@@ -48,8 +48,7 @@ Publish and verify a current public release after the bounded Git-history timeou
 - `cargo run -p ctxhelm --locked -- --version`
 - `cargo test -p ctxhelm --test release_packaging --locked`
 - `CTXHELM_CLEAN_FIXTURE_CONFIG=/tmp/ctxhelm-phase144-fixture-config.XXXXXX.json CTXHELM_BIN="$PWD/target/release/ctxhelm" CTXHELM_REQUIRE_CLEAN_FIXTURE_PROOF=1 bash scripts/release-gate.sh`
-- `bash scripts/verify-github-release.sh --repo thromel/ctxhelm --tag v1.1.9 --target b4783964535ceacf56304c5090500ba0fd16516e --assets-dir /tmp/ctxhelm-v119-assets-NO7TKq`
+- `bash scripts/verify-github-release.sh --repo thromel/ctxhelm --tag v1.1.9 --target 74bafb141096478e0ad4110fe32a43e1cb4c80d0 --assets-dir /tmp/ctxhelm-v119-assets-NO7TKq`
 - `bash scripts/verify-public-archive-install.sh --repo thromel/ctxhelm --tag v1.1.9 --target-label aarch64-apple-darwin --expected-version "ctxhelm 1.1.9"`
 - `bash scripts/verify-homebrew-tap.sh --tap thromel/tap --formula ctxhelm --expected-version "ctxhelm 1.1.9"`
 - `bash scripts/smoke-public-real-clients.sh --repo thromel/ctxhelm --tag v1.1.9 --target-label aarch64-apple-darwin --expected-version "ctxhelm 1.1.9"`
-
