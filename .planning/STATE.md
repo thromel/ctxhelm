@@ -4,10 +4,10 @@ milestone: v2.5
 milestone_name: Production Retrieval Quality
 status: active
 last_updated: "2026-06-02T00:00:00Z"
-last_activity: 2026-06-02 -- Phase 152 added native-agent outcome suite support for source-free multi-task Claude baseline versus ctxhelm-assisted comparison
+last_activity: 2026-06-02 -- Phase 153 replaced lexical search's hot path with a query-time Tantivy/BM25 fielded index plus symbol facets while keeping source-derived index data in memory
 progress:
-  total_phases: 84
-  completed_phases: 84
+  total_phases: 85
+  completed_phases: 85
   total_plans: 7
   completed_plans: 7
   percent: 100
@@ -17,10 +17,10 @@ progress:
 
 ## Current Position
 
-Phase: 152 - Native-Agent Outcome Suite
-Plan: 152-native-agent-outcome-suite
+Phase: 153 - BM25 Symbol Lexical Index
+Plan: 153-bm25-symbol-lexical-index
 Status: Complete
-Last activity: 2026-06-02 -- Phase 152 made the paired agent-run harness suite-aware, added aggregate native-vs-ctxhelm lane metrics, rendered suite reports through `ctxhelm eval agent-run`, and documented the source-free benchmark workflow.
+Last activity: 2026-06-02 -- Phase 153 added Tantivy-backed query-time BM25 lexical retrieval over path, filename, role, language, symbols, and safe content, filtered zero-weight task verbs before BM25 parsing, and preserved source-free outputs by not persisting source-derived inverted indexes.
 
 ## Project Reference
 
@@ -129,6 +129,7 @@ Planned phases:
 - Phase 150: Multi-Platform Artifact Workflow (complete follow-up)
 - Phase 151: Public v1.1.12 Multi-Platform Currentness (complete follow-up)
 - Phase 152: Native-Agent Outcome Suite (complete follow-up)
+- Phase 153: BM25 Symbol Lexical Index (complete follow-up)
 
 ## Last Completed Milestone
 

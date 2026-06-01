@@ -4,10 +4,16 @@ use crate::inventory::{
     RepoInventory,
 };
 use crate::policy::{read_safe_source, SourceReadStatus, SOURCE_READ_MAX_BYTES};
+use crate::symbols::extract_symbols_report;
 use ctxhelm_core::{CacheStatus, CacheStatusKind, Diagnostic, FileRole};
 use serde::{Deserialize, Serialize};
+use std::collections::BTreeMap;
 use std::fs;
 use std::path::Path;
+use tantivy::collector::TopDocs;
+use tantivy::query::QueryParser;
+use tantivy::schema::{Schema, TantivyDocument, Value, STORED, STRING, TEXT};
+use tantivy::{doc, Index};
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
@@ -83,37 +89,13 @@ pub fn lexical_search_report(
         }
     }
 
-    let mut results = Vec::new();
-
-    for file in &inventory_report.inventory.files {
-        if file.generated || file.role == FileRole::Sensitive || file.ignored {
-            continue;
-        }
-
-        let source = read_safe_source(
-            &repo_root,
-            &inventory_report.inventory,
-            &file.path,
-            SOURCE_READ_MAX_BYTES,
-        )?;
-        diagnostics.extend(source.diagnostics);
-        let SourceReadStatus::Read = source.status else {
-            continue;
-        };
-        let content = source.text.unwrap_or_default();
-        let Some((score, reason)) = score_file(file, &content, &query_terms) else {
-            continue;
-        };
-
-        results.push(SearchResult {
-            path: file.path.clone(),
-            role: file.role.clone(),
-            language: file.language.clone(),
-            score,
-            reason,
-        });
-    }
-
+    let (mut results, bm25_diagnostics) = bm25_lexical_search(
+        &repo_root,
+        &inventory_report.inventory,
+        &query_terms,
+        options,
+    )?;
+    diagnostics.extend(bm25_diagnostics);
     results.sort_by(|left, right| {
         right
             .score
@@ -175,6 +157,186 @@ fn lexical_search_cache_path(
     repo_cache_dir
         .join("lexical-search")
         .join(format!("{}.json", key.finalize().to_hex()))
+}
+
+#[derive(Debug, Clone)]
+struct IndexedFileEvidence {
+    file: FileInventoryEntry,
+    exact_score: f32,
+    exact_reason: String,
+}
+
+struct LexicalFields {
+    path: tantivy::schema::Field,
+    filename: tantivy::schema::Field,
+    role: tantivy::schema::Field,
+    language: tantivy::schema::Field,
+    symbols: tantivy::schema::Field,
+    content: tantivy::schema::Field,
+}
+
+fn bm25_lexical_search(
+    repo_root: &Path,
+    inventory: &RepoInventory,
+    query_terms: &[String],
+    options: &SearchOptions,
+) -> Result<(Vec<SearchResult>, Vec<Diagnostic>), InventoryError> {
+    let mut diagnostics = Vec::new();
+    let weighted_query_terms = query_terms
+        .iter()
+        .filter(|term| query_term_weight(term) > 0.0)
+        .cloned()
+        .collect::<Vec<_>>();
+    if weighted_query_terms.is_empty() {
+        return Ok((Vec::new(), diagnostics));
+    }
+    let symbol_report = extract_symbols_report(repo_root)?;
+    diagnostics.extend(symbol_report.diagnostics);
+    let mut symbols_by_path: BTreeMap<String, Vec<String>> = BTreeMap::new();
+    for symbol in symbol_report.symbols {
+        symbols_by_path
+            .entry(symbol.path)
+            .or_default()
+            .push(symbol.name);
+    }
+
+    let mut schema_builder = Schema::builder();
+    let fields = LexicalFields {
+        path: schema_builder.add_text_field("path", TEXT | STORED),
+        filename: schema_builder.add_text_field("filename", TEXT),
+        role: schema_builder.add_text_field("role", STRING | STORED),
+        language: schema_builder.add_text_field("language", STRING | STORED),
+        symbols: schema_builder.add_text_field("symbols", TEXT),
+        content: schema_builder.add_text_field("content", TEXT),
+    };
+    let schema = schema_builder.build();
+    let index = Index::create_in_ram(schema);
+    let mut writer = index
+        .writer(64_000_000)
+        .map_err(|source| InventoryError::InvalidInput(format!("bm25 index writer: {source}")))?;
+    let mut evidence_by_path = BTreeMap::new();
+
+    for file in &inventory.files {
+        if file.generated || file.role == FileRole::Sensitive || file.ignored {
+            continue;
+        }
+
+        let source = read_safe_source(repo_root, inventory, &file.path, SOURCE_READ_MAX_BYTES)?;
+        diagnostics.extend(source.diagnostics);
+        let SourceReadStatus::Read = source.status else {
+            continue;
+        };
+        let content = source.text.unwrap_or_default();
+        let (exact_score, exact_reason) = score_file(file, &content, query_terms)
+            .unwrap_or_else(|| (0.0, "no exact field match".to_string()));
+        let filename = file
+            .path
+            .rsplit('/')
+            .next()
+            .unwrap_or(file.path.as_str())
+            .to_string();
+        let symbols = symbols_by_path
+            .get(&file.path)
+            .map(|names| names.join(" "))
+            .unwrap_or_default();
+        writer
+            .add_document(doc!(
+                fields.path => file.path.as_str(),
+                fields.filename => filename.as_str(),
+                fields.role => format!("{:?}", file.role),
+                fields.language => file.language.clone().unwrap_or_default(),
+                fields.symbols => symbols,
+                fields.content => content,
+            ))
+            .map_err(|source| {
+                InventoryError::InvalidInput(format!("bm25 add document: {source}"))
+            })?;
+        evidence_by_path.insert(
+            file.path.clone(),
+            IndexedFileEvidence {
+                file: file.clone(),
+                exact_score,
+                exact_reason,
+            },
+        );
+    }
+
+    writer
+        .commit()
+        .map_err(|source| InventoryError::InvalidInput(format!("bm25 commit: {source}")))?;
+    let reader = index
+        .reader()
+        .map_err(|source| InventoryError::InvalidInput(format!("bm25 reader: {source}")))?;
+    let searcher = reader.searcher();
+    let mut parser = QueryParser::for_index(
+        &index,
+        vec![
+            fields.path,
+            fields.filename,
+            fields.symbols,
+            fields.content,
+            fields.role,
+            fields.language,
+        ],
+    );
+    parser.set_field_boost(fields.path, 3.5);
+    parser.set_field_boost(fields.filename, 4.0);
+    parser.set_field_boost(fields.symbols, 6.0);
+    parser.set_field_boost(fields.content, 1.0);
+    parser.set_field_boost(fields.role, 0.4);
+    parser.set_field_boost(fields.language, 0.3);
+
+    let query_text = weighted_query_terms.join(" ");
+    let query = parser
+        .parse_query(&query_text)
+        .map_err(|source| InventoryError::InvalidInput(format!("bm25 query parse: {source}")))?;
+    let top_docs = searcher
+        .search(
+            &query,
+            &TopDocs::with_limit(options.limit.max(1).saturating_mul(8)),
+        )
+        .map_err(|source| InventoryError::InvalidInput(format!("bm25 search: {source}")))?;
+
+    let mut results = Vec::new();
+    for (bm25_score, doc_address) in top_docs {
+        let document = searcher
+            .doc::<TantivyDocument>(doc_address)
+            .map_err(|source| {
+                InventoryError::InvalidInput(format!("bm25 document read: {source}"))
+            })?;
+        let Some(path) = document
+            .get_first(fields.path)
+            .and_then(|value| value.as_str())
+            .map(str::to_string)
+        else {
+            continue;
+        };
+        let Some(evidence) = evidence_by_path.get(&path) else {
+            continue;
+        };
+        let mut score = bm25_score + evidence.exact_score;
+        let mut reasons = vec![format!("bm25 fielded score {bm25_score:.3}")];
+        if evidence.exact_score > 0.0 {
+            reasons.push(evidence.exact_reason.clone());
+        }
+        if symbols_by_path.contains_key(&path) {
+            reasons.push("exact symbol index available".to_string());
+        }
+        if is_archive_context_artifact(&path.to_ascii_lowercase()) {
+            score *= 0.35;
+            reasons.push("archive context artifact dampened".to_string());
+        }
+        reasons.sort();
+        reasons.dedup();
+        results.push(SearchResult {
+            path,
+            role: evidence.file.role.clone(),
+            language: evidence.file.language.clone(),
+            score,
+            reason: reasons.join("; "),
+        });
+    }
+    Ok((results, diagnostics))
 }
 
 pub(crate) fn query_terms(query: &str) -> Vec<String> {

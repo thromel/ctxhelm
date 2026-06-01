@@ -359,6 +359,8 @@ mod tests {
         let results = lexical_search(&repo, "requireSession", &SearchOptions { limit: 5 }).unwrap();
 
         assert_eq!(results[0].path, "src/auth/session.ts");
+        assert!(results[0].reason.contains("bm25 fielded score"));
+        assert!(results[0].reason.contains("exact symbol index available"));
         assert!(results[0]
             .reason
             .contains("content matched `requiresession`"));

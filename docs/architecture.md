@@ -19,7 +19,7 @@ flowchart TD
   Compiler --> Index["Repository intelligence"]
   Index --> Inventory["File inventory"]
   Index --> Symbols["Tree-sitter symbols"]
-  Index --> Lexical["Lexical search"]
+  Index --> Lexical["Tantivy/BM25 lexical search"]
   Index --> Graph["Dependency and related-test graph"]
   Index --> History["Git history"]
   Index --> Storage["Source-free SQLite storage"]
@@ -111,8 +111,10 @@ flowchart TD
 ```
 
 The design is hybrid by intent. Exact identifiers, paths, and stack traces often
-beat embeddings for code. Semantic retrieval helps conceptual tasks, but it is
-optional and local by default.
+beat embeddings for code. Lexical retrieval uses query-time Tantivy/BM25 fielded
+search with exact symbol and path/content bonuses, while keeping the source-
+derived inverted index in memory for the current privacy posture. Semantic
+retrieval helps conceptual tasks, but it is optional and local by default.
 
 ## Storage And Memory
 

@@ -49,7 +49,8 @@ Primary responsibilities:
 
 - safe file inventory and ignore handling
 - source-read policy and sensitive/generated classification
-- lexical search
+- query-time Tantivy/BM25 lexical search over path, filename, role, language,
+  symbols, and safe file content
 - symbol extraction
 - dependency edges
 - related-test mapping
@@ -62,6 +63,8 @@ Primary responsibilities:
 Design constraints:
 
 - default-deny sensitive and generated source-bearing reads
+- keep BM25 source-derived inverted indexes in memory unless a future explicit
+  privacy policy enables persistent source-derived indexes
 - keep output source-free unless a caller explicitly asks for safe snippets
 - prefer diagnostics over panics when repository state is stale, missing, or
   partially inaccessible
