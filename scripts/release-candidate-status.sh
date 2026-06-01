@@ -127,7 +127,7 @@ if proof_summary_path:
 payload = {
     "schemaVersion": 1,
     "package": "ctxhelm",
-    "version": "1.1.10",
+    "version": "1.1.11",
     "status": status,
     "createdAt": dt.datetime.now(dt.timezone.utc).replace(microsecond=0).isoformat(),
     "proofLevel": proof_level,
@@ -152,10 +152,10 @@ payload = {
         "cratesIo": "deferred",
         "signedInstaller": "deferred",
         "selfUpdate": "not_implemented",
-        "reason": "v1.1.10 production candidate supports local archives and the Apple Silicon Homebrew tap; crates.io publication, signed installers, and self-update remain future work.",
+        "reason": "v1.1.11 production candidate supports local archives and the Apple Silicon Homebrew tap; crates.io publication, signed installers, and self-update remain future work.",
     },
     "knownLimitations": [
-        "Cursor and OpenCode real-client proof is not claimed for v1.1.10.",
+        "Cursor and OpenCode real-client proof is not claimed for v1.1.11.",
         "crates.io publication, signed installers, self-update, and hosted sync are future work.",
     ],
     "privacyStatus": {
@@ -219,10 +219,10 @@ if distribution.get("primaryChannel") != "local_archive":
     raise SystemExit("primaryChannel must be local_archive")
 expected_homebrew = "ready" if payload.get("status") == "ready" else "deferred"
 if distribution.get("homebrewFormula") != expected_homebrew:
-    raise SystemExit(f"homebrewFormula must be {expected_homebrew} for v1.1.10")
+    raise SystemExit(f"homebrewFormula must be {expected_homebrew} for v1.1.11")
 for deferred in ["cratesIo", "signedInstaller"]:
     if distribution.get(deferred) != "deferred":
-        raise SystemExit(f"{deferred} must be deferred for v1.1.10")
+        raise SystemExit(f"{deferred} must be deferred for v1.1.11")
 if distribution.get("selfUpdate") != "not_implemented":
     raise SystemExit("selfUpdate must be not_implemented")
 privacy = payload.get("privacyStatus", {})
