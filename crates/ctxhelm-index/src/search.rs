@@ -7,7 +7,7 @@ use crate::policy::{read_safe_source, SourceReadStatus, SOURCE_READ_MAX_BYTES};
 use crate::symbols::extract_symbols_report;
 use ctxhelm_core::{CacheStatus, CacheStatusKind, Diagnostic, FileRole};
 use serde::{Deserialize, Serialize};
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
 use std::path::Path;
 use tantivy::collector::TopDocs;
@@ -198,7 +198,7 @@ fn lexical_search_cache_path(
     query_terms: &[String],
 ) -> std::path::PathBuf {
     let mut key = blake3::Hasher::new();
-    key.update(b"lexical-search-cache-v1");
+    key.update(b"lexical-search-cache-v5");
     key.update(query.trim().as_bytes());
     key.update(&limit.max(1).to_le_bytes());
     for term in query_terms {
@@ -229,6 +229,15 @@ struct IndexedFileEvidence {
     exact_reason: String,
 }
 
+#[derive(Debug, Clone)]
+struct IndexedFileDocument {
+    file: FileInventoryEntry,
+    filename: String,
+    content: String,
+    exact_score: f32,
+    exact_reason: String,
+}
+
 struct LexicalFields {
     path: tantivy::schema::Field,
     filename: tantivy::schema::Field,
@@ -237,6 +246,8 @@ struct LexicalFields {
     symbols: tantivy::schema::Field,
     content: tantivy::schema::Field,
 }
+
+const EXACT_LEXICAL_SCORE_MULTIPLIER: f32 = 100.0;
 
 fn bm25_lexical_search(
     repo_root: &Path,
@@ -253,6 +264,70 @@ fn bm25_lexical_search(
     if weighted_query_terms.is_empty() {
         return Ok((Vec::new(), diagnostics));
     }
+    let limit = options.limit.max(1);
+    let mut documents = Vec::new();
+    for file in &inventory.files {
+        if file.generated || file.role == FileRole::Sensitive || file.ignored {
+            continue;
+        }
+
+        let source = read_safe_source(repo_root, inventory, &file.path, SOURCE_READ_MAX_BYTES)?;
+        diagnostics.extend(source.diagnostics);
+        let SourceReadStatus::Read = source.status else {
+            continue;
+        };
+        let content = source.text.unwrap_or_default();
+        let (exact_score, exact_reason) = score_file(file, &content, query_terms)
+            .unwrap_or_else(|| (0.0, "no exact field match".to_string()));
+        let filename = file
+            .path
+            .rsplit('/')
+            .next()
+            .unwrap_or(file.path.as_str())
+            .to_string();
+        documents.push(IndexedFileDocument {
+            file: file.clone(),
+            filename,
+            content,
+            exact_score,
+            exact_reason,
+        });
+    }
+
+    let exact_candidate_count = documents
+        .iter()
+        .filter(|document| document.exact_score > 0.0)
+        .count();
+    if exact_candidate_count >= limit {
+        let mut results = documents
+            .iter()
+            .filter(|document| document.exact_score > 0.0)
+            .map(|document| {
+                let mut reasons = vec![
+                    "exact lexical saturated budget".to_string(),
+                    document.exact_reason.clone(),
+                ];
+                reasons.sort();
+                reasons.dedup();
+                SearchResult {
+                    path: document.file.path.clone(),
+                    role: document.file.role.clone(),
+                    language: document.file.language.clone(),
+                    score: document.exact_score * EXACT_LEXICAL_SCORE_MULTIPLIER,
+                    reason: reasons.join("; "),
+                }
+            })
+            .collect::<Vec<_>>();
+        results.sort_by(|left, right| {
+            right
+                .score
+                .total_cmp(&left.score)
+                .then_with(|| left.path.cmp(&right.path))
+        });
+        results.truncate(limit);
+        return Ok((results, diagnostics));
+    }
+
     let symbol_report = extract_symbols_report(repo_root)?;
     diagnostics.extend(symbol_report.diagnostics);
     let mut symbols_by_path: BTreeMap<String, Vec<String>> = BTreeMap::new();
@@ -279,47 +354,29 @@ fn bm25_lexical_search(
         .map_err(|source| InventoryError::InvalidInput(format!("bm25 index writer: {source}")))?;
     let mut evidence_by_path = BTreeMap::new();
 
-    for file in &inventory.files {
-        if file.generated || file.role == FileRole::Sensitive || file.ignored {
-            continue;
-        }
-
-        let source = read_safe_source(repo_root, inventory, &file.path, SOURCE_READ_MAX_BYTES)?;
-        diagnostics.extend(source.diagnostics);
-        let SourceReadStatus::Read = source.status else {
-            continue;
-        };
-        let content = source.text.unwrap_or_default();
-        let (exact_score, exact_reason) = score_file(file, &content, query_terms)
-            .unwrap_or_else(|| (0.0, "no exact field match".to_string()));
-        let filename = file
-            .path
-            .rsplit('/')
-            .next()
-            .unwrap_or(file.path.as_str())
-            .to_string();
+    for document in documents {
         let symbols = symbols_by_path
-            .get(&file.path)
+            .get(&document.file.path)
             .map(|names| names.join(" "))
             .unwrap_or_default();
         writer
             .add_document(doc!(
-                fields.path => file.path.as_str(),
-                fields.filename => filename.as_str(),
-                fields.role => format!("{:?}", file.role),
-                fields.language => file.language.clone().unwrap_or_default(),
+                fields.path => document.file.path.as_str(),
+                fields.filename => document.filename.as_str(),
+                fields.role => format!("{:?}", document.file.role),
+                fields.language => document.file.language.clone().unwrap_or_default(),
                 fields.symbols => symbols,
-                fields.content => content,
+                fields.content => document.content,
             ))
             .map_err(|source| {
                 InventoryError::InvalidInput(format!("bm25 add document: {source}"))
             })?;
         evidence_by_path.insert(
-            file.path.clone(),
+            document.file.path.clone(),
             IndexedFileEvidence {
-                file: file.clone(),
-                exact_score,
-                exact_reason,
+                file: document.file,
+                exact_score: document.exact_score,
+                exact_reason: document.exact_reason,
             },
         );
     }
@@ -361,6 +418,7 @@ fn bm25_lexical_search(
         .map_err(|source| InventoryError::InvalidInput(format!("bm25 search: {source}")))?;
 
     let mut results = Vec::new();
+    let mut seen_paths = BTreeSet::new();
     for (bm25_score, doc_address) in top_docs {
         let document = searcher
             .doc::<TantivyDocument>(doc_address)
@@ -377,7 +435,11 @@ fn bm25_lexical_search(
         let Some(evidence) = evidence_by_path.get(&path) else {
             continue;
         };
-        let mut score = bm25_score + evidence.exact_score;
+        let mut score = if evidence.exact_score > 0.0 {
+            evidence.exact_score * EXACT_LEXICAL_SCORE_MULTIPLIER
+        } else {
+            bm25_score
+        };
         let mut reasons = vec![format!("bm25 fielded score {bm25_score:.3}")];
         if evidence.exact_score > 0.0 {
             reasons.push(evidence.exact_reason.clone());
@@ -392,7 +454,35 @@ fn bm25_lexical_search(
         reasons.sort();
         reasons.dedup();
         results.push(SearchResult {
-            path,
+            path: path.clone(),
+            role: evidence.file.role.clone(),
+            language: evidence.file.language.clone(),
+            score,
+            reason: reasons.join("; "),
+        });
+        seen_paths.insert(path);
+    }
+
+    for (path, evidence) in &evidence_by_path {
+        if seen_paths.contains(path) || evidence.exact_score <= 0.0 {
+            continue;
+        }
+        let mut score = evidence.exact_score * EXACT_LEXICAL_SCORE_MULTIPLIER;
+        let mut reasons = vec![
+            "exact lexical reserve".to_string(),
+            evidence.exact_reason.clone(),
+        ];
+        if symbols_by_path.contains_key(path) {
+            reasons.push("exact symbol index available".to_string());
+        }
+        if is_archive_context_artifact(&path.to_ascii_lowercase()) {
+            score *= 0.35;
+            reasons.push("archive context artifact dampened".to_string());
+        }
+        reasons.sort();
+        reasons.dedup();
+        results.push(SearchResult {
+            path: path.clone(),
             role: evidence.file.role.clone(),
             language: evidence.file.language.clone(),
             score,

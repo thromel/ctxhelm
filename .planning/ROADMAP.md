@@ -110,6 +110,7 @@ v2.5 therefore focuses on measured retrieval quality, not more surface area. The
 - [x] **Phase 155: BM25 Corpus Comparison Report** - `ctxhelm eval lexical corpus` now compares active BM25 and legacy lexical ranking across historical commit tasks and parent snapshots, reporting recall, MRR, overlap, top-path churn, win/tie counts, and backend runtime.
 - [x] **Phase 156: Lexical Backend Product Proof Integration** - Benchmark suites can opt into the BM25-vs-legacy corpus comparison, and product proof aggregates successful source-free backend reports under `releaseGate.lexicalBackendComparison`.
 - [x] **Phase 157: Benchmark Corpus Health Guard** - Large-history proof fixtures can be prepared as clean detached worktrees with source-free readiness reports; the fresh RefactoringMiner proof exposes that current query-time BM25 trails the legacy scanner on the 20-commit sample.
+- [x] **Phase 158: BM25 Exact-Saturated Fast Path** - Active lexical ranking keeps exact evidence primary, skips fielded BM25 indexing when exact candidates fill the budget, and reaches RefactoringMiner parity with legacy while reducing cold backend time versus Phase 157.
 
 ## Phase Details
 

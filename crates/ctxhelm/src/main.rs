@@ -4422,7 +4422,7 @@ fn build_lexical_comparison_report(
         },
         "limit": options.limit,
         "bm25": {
-            "backend": "tantivy_bm25_fielded_v1",
+            "backend": "tantivy_bm25_fielded_v5",
             "results": summarize_search_results(&bm25),
             "cacheStatus": bm25.cache_status,
             "diagnostics": summarize_diagnostics(&bm25.diagnostics)

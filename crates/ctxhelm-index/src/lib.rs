@@ -728,6 +728,40 @@ mod tests {
     }
 
     #[test]
+    fn lexical_search_uses_exact_saturated_fast_path_before_bm25_indexing() {
+        let _guard = env_lock();
+        let temp = tempfile::tempdir().unwrap();
+        let repo = temp.path().join("repo");
+        let home = temp.path().join("ctxhelm-home");
+        fs::create_dir_all(repo.join(".git")).unwrap();
+        fs::create_dir_all(repo.join("src")).unwrap();
+        fs::write(
+            repo.join("src/update_stats.ts"),
+            "export const value = 'update tests update tests';\n",
+        )
+        .unwrap();
+        fs::write(
+            repo.join("src/update_mapper.ts"),
+            "export const value = 'update tests';\n",
+        )
+        .unwrap();
+        fs::write(repo.join("src/other.ts"), "export const value = 'tests';\n").unwrap();
+        std::env::set_var("CTXHELM_HOME", &home);
+
+        let results = lexical_search(&repo, "update tests", &SearchOptions { limit: 2 }).unwrap();
+
+        assert_eq!(results.len(), 2);
+        assert!(results
+            .iter()
+            .all(|result| result.reason.contains("exact lexical saturated budget")));
+        assert!(results
+            .iter()
+            .all(|result| !result.reason.contains("bm25 fielded score")));
+
+        std::env::remove_var("CTXHELM_HOME");
+    }
+
+    #[test]
     fn lexical_search_ignores_common_task_verbs() {
         let _guard = env_lock();
         let temp = tempfile::tempdir().unwrap();

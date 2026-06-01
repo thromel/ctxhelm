@@ -3719,7 +3719,7 @@ pub fn compare_lexical_backends_on_corpus(
     }
 
     let bm25 = lexical_backend_metrics(
-        "tantivy_bm25_fielded_v1",
+        "tantivy_bm25_fielded_v5",
         &rows,
         |row| &row.bm25_files,
         |row| &row.bm25_hits_at_5,

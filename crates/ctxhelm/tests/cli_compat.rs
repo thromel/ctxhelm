@@ -2055,7 +2055,7 @@ fn eval_lexical_compare_reports_source_free_bm25_vs_legacy() {
     assert_eq!(value["privacyStatus"]["resultReasonsOmitted"], true);
     assert!(value["query"].get("queryHash").is_some());
     assert!(value["query"].get("query").is_none());
-    assert_eq!(value["bm25"]["backend"], "tantivy_bm25_fielded_v1");
+    assert_eq!(value["bm25"]["backend"], "tantivy_bm25_fielded_v5");
     assert_eq!(value["legacy"]["backend"], "legacy_heuristic_scanner_v1");
     assert!(value["comparison"]["overlapAtLimit"].as_u64().is_some());
     assert!(value["bm25"]["results"]
@@ -2126,7 +2126,7 @@ export function requireSession(user?: { id: string }) {
     assert_eq!(value["rankingBudget"], 5);
     assert_eq!(value["privacyStatus"]["localOnly"], true);
     assert_eq!(value["sourceTextLogged"], false);
-    assert_eq!(value["bm25"]["backend"], "tantivy_bm25_fielded_v1");
+    assert_eq!(value["bm25"]["backend"], "tantivy_bm25_fielded_v5");
     assert_eq!(value["legacy"]["backend"], "legacy_heuristic_scanner_v1");
     assert!(value["comparison"]["recallDeltaAt10"].as_f64().is_some());
     assert!(value["comparison"]["averageOverlapAtK"].as_f64().is_some());
