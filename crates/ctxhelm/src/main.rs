@@ -12,12 +12,12 @@ use ctxhelm_compiler::{
     load_benchmark_suite_report, load_candidate_feature_export, paired_baseline_analysis_report,
     prepare_context_plan_with_paths_and_semantic_provider, prepare_workspace_context_plan,
     render_pack_inspector_html, render_pack_inspector_markdown, render_pack_markdown,
-    retrieval_policy_experiment_report, run_benchmark_suite, semantic_precision_gate_report,
-    semantic_provider_status_report_with_provider, write_candidate_feature_export,
-    BenchmarkComparisonReport, BenchmarkRegressionThreshold, BenchmarkSuiteReport,
-    CandidateFeatureComparisonReport, ContextCardsOptions, ContextCardsReport,
-    ExperienceCardsOptions, ExperienceCardsReport, FallbackCardsOptions, FallbackCardsReport,
-    HistoricalEvalOptions, HistoricalEvalReport, LexicalBackendCorpusOptions,
+    retrieval_policy_experiment_report, run_benchmark_suite,
+    semantic_precision_gate_report_with_provider, semantic_provider_status_report_with_provider,
+    write_candidate_feature_export, BenchmarkComparisonReport, BenchmarkRegressionThreshold,
+    BenchmarkSuiteReport, CandidateFeatureComparisonReport, ContextCardsOptions,
+    ContextCardsReport, ExperienceCardsOptions, ExperienceCardsReport, FallbackCardsOptions,
+    FallbackCardsReport, HistoricalEvalOptions, HistoricalEvalReport, LexicalBackendCorpusOptions,
     LexicalBackendCorpusReport, PairedBaselineAnalysisReport, ProductProofLexicalClaim,
     ProductProofReport, SemanticPrecisionGateReport,
 };
@@ -942,6 +942,8 @@ struct EvalGateArgs {
     budget: usize,
     #[arg(long, value_enum, default_value_t = Mode::BugFix)]
     mode: Mode,
+    #[command(flatten)]
+    semantic_provider: SemanticProviderArgs,
     #[arg(long, value_enum, default_value_t = PackFormat::Markdown)]
     format: PackFormat,
 }
@@ -2413,11 +2415,12 @@ fn main() -> Result<()> {
             EvalCommand::Gate(args) => {
                 let start = args.repo.clone().unwrap_or(std::env::current_dir()?);
                 let repo = RepoRoot::discover_from(&start)?;
-                let report = semantic_precision_gate_report(
+                let report = semantic_precision_gate_report_with_provider(
                     &repo.path,
                     args.limit,
                     args.budget,
                     args.mode.into(),
+                    semantic_provider_config(&args.semantic_provider),
                 )?;
                 match args.format {
                     PackFormat::Markdown => {
@@ -4724,6 +4727,25 @@ fn render_semantic_precision_gate_report(report: &SemanticPrecisionGateReport) -
             variant.note
         ));
     }
+    output.push_str("\n## Semantic Contribution\n\n");
+    output.push_str(&format!(
+        "- Commits with semantic-selected files: `{}` / `{}`\n- Semantic-selected files: `{}`\n- Semantic target hits: `{}`\n- Semantic-only target hits: `{}`\n- Semantic/lexical overlap: `{}`\n- Semantic missed targets: `{}`\n- Average semantic-selected files: `{:.2}`\n- Semantic target hit rate: `{:.3}`\n- Semantic-only target hit rate: `{:.3}`\n",
+        report.semantic_contribution.commits_with_semantic_selection,
+        report.semantic_contribution.evaluated_commits,
+        report.semantic_contribution.semantic_selected_file_count,
+        report.semantic_contribution.semantic_target_hit_count,
+        report.semantic_contribution.semantic_only_target_hit_count,
+        report.semantic_contribution.semantic_lexical_overlap_count,
+        report.semantic_contribution.semantic_missed_target_count,
+        report.semantic_contribution.average_semantic_selected_files,
+        report.semantic_contribution.semantic_target_hit_rate,
+        report.semantic_contribution.semantic_only_target_hit_rate
+    ));
+    render_named_gate_cases(
+        &mut output,
+        "Semantic-only target hits",
+        &report.semantic_contribution.semantic_only_hits,
+    );
     render_named_gate_cases(&mut output, "Named wins", &report.named_wins);
     render_named_gate_cases(&mut output, "Named regressions", &report.named_regressions);
     render_named_gate_cases(&mut output, "Named misses", &report.named_misses);

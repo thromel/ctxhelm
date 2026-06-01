@@ -4,10 +4,10 @@ milestone: v2.5
 milestone_name: Production Retrieval Quality
 status: active
 last_updated: "2026-06-02T00:00:00Z"
-last_activity: 2026-06-02 -- Phase 160 bounded semantic status/search on clean RefactoringMiner and fixed exact-path semantic ranking
+last_activity: 2026-06-02 -- Phase 161 added provider-aware semantic gate contribution diagnostics
 progress:
-  total_phases: 87
-  completed_phases: 87
+  total_phases: 88
+  completed_phases: 88
   total_plans: 7
   completed_plans: 7
   percent: 100
@@ -17,10 +17,10 @@ progress:
 
 ## Current Position
 
-Phase: 160 - Bounded Semantic Status And Search
-Plan: 160-bounded-semantic-status-search
+Phase: 161 - Semantic Gate Contribution Diagnostics
+Plan: 161-semantic-gate-contribution-diagnostics
 Status: Complete
-Last activity: 2026-06-02 -- Phase 160 makes direct semantic status/search bounded and useful on clean upstream RefactoringMiner. Query status now samples bounded semantic search instead of running a full `prepare_task` path or eager vector materialization (`semanticDocumentCount = 10`, `localVectorCount = 0`, about `6.9s` on the large fixture). Provider-only status avoids symbol/dependency/test enrichment and eager vectors (about `6.8s`). Direct semantic search for `Improvement in TypeScriptVisitor` now ranks `src/main/java/gr/uom/java/xmi/decomposition/TypeScriptVisitor.java` first through source-free path metadata and an exact metadata boost. The broader default `prepare-task` latency remains a separate planner bottleneck.
+Last activity: 2026-06-02 -- Phase 161 makes `ctxhelm eval gate` provider-aware and adds source-free semantic contribution diagnostics. The gate now reports semantic-selected files, target hits, semantic-only target hits, semantic/lexical overlap, missed targets, hit rates, and named semantic-only hits. On the clean RefactoringMiner limit-1 proof, `local_hash` selected two semantic files, hit the target, but had zero semantic-only target hits and full lexical overlap, so the decision stayed `hold`. The gate now accepts `--semantic-provider local_fastembed`, and `cargo check -p ctxhelm-index --features local-embeddings --locked` proves the production-local embedding path still compiles.
 
 ## Project Reference
 
@@ -137,6 +137,7 @@ Planned phases:
 - Phase 158: BM25 Exact-Saturated Fast Path (complete follow-up)
 - Phase 159: Lexical Runtime Accounting And Exact-Primary Policy (complete follow-up)
 - Phase 160: Bounded Semantic Status And Search (complete follow-up)
+- Phase 161: Semantic Gate Contribution Diagnostics (complete follow-up)
 
 ## Last Completed Milestone
 

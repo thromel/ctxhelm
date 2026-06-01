@@ -21,7 +21,8 @@ pub use eval::{
     evaluate_historical_commits, export_candidate_features_for_task,
     list_candidate_feature_exports, load_benchmark_suite_config, load_benchmark_suite_report,
     load_candidate_feature_export, paired_baseline_analysis_report, run_benchmark_suite,
-    run_benchmark_suite_config, semantic_precision_gate_report, write_candidate_feature_export,
+    run_benchmark_suite_config, semantic_precision_gate_report,
+    semantic_precision_gate_report_with_provider, write_candidate_feature_export,
     BenchmarkComparisonReport, BenchmarkDefaults, BenchmarkGapFamilyDelta, BenchmarkMetricDelta,
     BenchmarkRegressionThreshold, BenchmarkRepoBaseline, BenchmarkRepoBaselineStatus,
     BenchmarkRepoConfig, BenchmarkRepoEffectiveConfig, BenchmarkRepoReport, BenchmarkSuiteConfig,
@@ -37,9 +38,10 @@ pub use eval::{
     ProductProofLexicalClaim, ProductProofLexicalComparison, ProductProofMetric,
     ProductProofReleaseGate, ProductProofReport, ProtectedEvidenceSignalSummary,
     ProtectedEvidenceSummary, RankingMetrics, RetrievalGapRecommendationArea, RetrievalGapSummary,
-    RetrievalGapTargetStatus, RoleRecallMetric, SemanticPrecisionGateDecision,
-    SemanticPrecisionGateReport, SemanticPrecisionNamedCase, SemanticPrecisionVariant,
-    SemanticPrecisionVariantStatus, SignalAblationResult, SignalSaturationMetric, TokenRoiMetric,
+    RetrievalGapTargetStatus, RoleRecallMetric, SemanticContributionSummary,
+    SemanticPrecisionGateDecision, SemanticPrecisionGateReport, SemanticPrecisionNamedCase,
+    SemanticPrecisionVariant, SemanticPrecisionVariantStatus, SignalAblationResult,
+    SignalSaturationMetric, TokenRoiMetric,
 };
 pub use graph::build_graph_neighborhood_report;
 pub use packs::{

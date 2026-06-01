@@ -4,7 +4,7 @@ use crate::planning::{
     prepare_context_plan_with_paths_history_and_semantic,
     prepare_context_plan_with_paths_history_mode_and_semantic, HistoryMode,
 };
-use crate::policy::{provider_policy_report, reranker_decision};
+use crate::policy::{provider_policy_report, reranker_decision, semantic_provider_decision};
 use ctxhelm_core::{
     context_area_for_path, context_area_resource_uri, CandidateFeatureExport,
     CandidateFeatureLabel, CandidateFeatureRow, CandidateFeatureSource, ContextArea, ContextPack,
@@ -331,6 +331,8 @@ pub struct SemanticPrecisionGateReport {
     pub named_wins: Vec<SemanticPrecisionNamedCase>,
     pub named_regressions: Vec<SemanticPrecisionNamedCase>,
     pub named_misses: Vec<SemanticPrecisionNamedCase>,
+    #[serde(default)]
+    pub semantic_contribution: SemanticContributionSummary,
     pub provider_policy: ProviderPolicyReport,
     pub precision_status: PrecisionStatusReport,
     #[serde(default)]
@@ -368,6 +370,23 @@ pub struct SemanticPrecisionNamedCase {
     pub variant: String,
     pub reason: String,
     pub paths: Vec<String>,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct SemanticContributionSummary {
+    pub evaluated_commits: usize,
+    pub commits_with_semantic_selection: usize,
+    pub semantic_selected_file_count: usize,
+    pub semantic_target_hit_count: usize,
+    pub semantic_only_target_hit_count: usize,
+    pub semantic_lexical_overlap_count: usize,
+    pub semantic_missed_target_count: usize,
+    pub average_semantic_selected_files: f32,
+    pub semantic_target_hit_rate: f32,
+    pub semantic_only_target_hit_rate: f32,
+    #[serde(default)]
+    pub semantic_only_hits: Vec<SemanticPrecisionNamedCase>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -2336,8 +2355,29 @@ pub fn semantic_precision_gate_report(
     ranking_budget: usize,
     task_type: TaskType,
 ) -> Result<SemanticPrecisionGateReport, InventoryError> {
+    semantic_precision_gate_report_with_provider(
+        repo_root,
+        limit,
+        ranking_budget,
+        task_type,
+        SemanticProviderConfig::default(),
+    )
+}
+
+pub fn semantic_precision_gate_report_with_provider(
+    repo_root: impl AsRef<Path>,
+    limit: usize,
+    ranking_budget: usize,
+    task_type: TaskType,
+    semantic_provider: SemanticProviderConfig,
+) -> Result<SemanticPrecisionGateReport, InventoryError> {
     let repo_root = repo_root.as_ref();
-    let provider_policy = provider_policy_report(repo_root)?;
+    let mut provider_policy = provider_policy_report(repo_root)?;
+    provider_policy.decisions.push(semantic_provider_decision(
+        &provider_policy,
+        &semantic_provider,
+        true,
+    ));
     let precision = semantic_document_report(
         repo_root,
         &SemanticDocumentOptions {
@@ -2359,7 +2399,7 @@ pub fn semantic_precision_gate_report(
             base: None,
             head: None,
             semantic_enabled: false,
-            semantic_provider: SemanticProviderConfig::default(),
+            semantic_provider: semantic_provider.clone(),
             local_metadata_reranker: false,
             cache_enabled: false,
             force_refresh: false,
@@ -2378,7 +2418,7 @@ pub fn semantic_precision_gate_report(
                 base: None,
                 head: None,
                 semantic_enabled: false,
-                semantic_provider: SemanticProviderConfig::default(),
+                semantic_provider: semantic_provider.clone(),
                 local_metadata_reranker: false,
                 cache_enabled: false,
                 force_refresh: false,
@@ -2396,7 +2436,7 @@ pub fn semantic_precision_gate_report(
             base: None,
             head: None,
             semantic_enabled: false,
-            semantic_provider: SemanticProviderConfig::default(),
+            semantic_provider: semantic_provider.clone(),
             local_metadata_reranker: true,
             cache_enabled: false,
             force_refresh: false,
@@ -2405,6 +2445,11 @@ pub fn semantic_precision_gate_report(
     )?;
     let reranker = reranker_decision(&provider_policy);
     let precision_available = precision.edge_count > 0 && !precision.degraded && !precision.stale;
+    let semantic_provider_status = semantic
+        .effective_filters
+        .semantic_provider
+        .as_deref()
+        .unwrap_or("local_hash");
     let mut variants = vec![
         gate_variant(
             "lexical_baseline",
@@ -2447,7 +2492,7 @@ pub fn semantic_precision_gate_report(
             false,
             Some(semantic.ranking_comparison.combined.clone()),
             &semantic,
-            "evaluated",
+            semantic_provider_status,
             "Explicit local semantic retrieval using source-free semantic documents.",
         ),
     ];
@@ -2464,7 +2509,7 @@ pub fn semantic_precision_gate_report(
         precision_available.then(|| semantic.ranking_comparison.combined.clone()),
         &semantic,
         if precision_available {
-            "evaluated"
+            semantic_provider_status
         } else {
             "skipped"
         },
@@ -2487,7 +2532,7 @@ pub fn semantic_precision_gate_report(
         precision_available.then(|| semantic.ranking_comparison.combined.clone()),
         &semantic,
         if precision_available {
-            "evaluated"
+            semantic_provider_status
         } else {
             "skipped"
         },
@@ -2534,6 +2579,7 @@ pub fn semantic_precision_gate_report(
         "local_metadata_reranked",
     ));
     let named_misses = named_cases(&default, &semantic, "local_semantic", NamedCaseKind::Miss);
+    let semantic_contribution = semantic_contribution_summary(&semantic);
     let (decision, decision_reason) =
         gate_decision_from_variants(&variants, &named_regressions, &provider_policy);
     let mut diagnostics = provider_policy.diagnostics.clone();
@@ -2562,6 +2608,7 @@ pub fn semantic_precision_gate_report(
         named_wins,
         named_regressions,
         named_misses,
+        semantic_contribution,
         provider_policy,
         precision_status: precision,
         diagnostics,
@@ -2717,6 +2764,81 @@ fn protected_evidence_regressions(
 
     cases.truncate(10);
     cases
+}
+
+fn semantic_contribution_summary(report: &HistoricalEvalReport) -> SemanticContributionSummary {
+    let mut summary = SemanticContributionSummary {
+        evaluated_commits: report.commits.len(),
+        ..SemanticContributionSummary::default()
+    };
+    let mut semantic_only_hits = Vec::new();
+
+    for commit in &report.commits {
+        let semantic_files = commit
+            .signal_baseline_files
+            .iter()
+            .find(|ranking| ranking.signal == RetrievalSignalKind::Semantic)
+            .map(|ranking| ranking.files.iter().cloned().collect::<BTreeSet<_>>())
+            .unwrap_or_default();
+        if !semantic_files.is_empty() {
+            summary.commits_with_semantic_selection += 1;
+        }
+        summary.semantic_selected_file_count += semantic_files.len();
+
+        let lexical_files = commit
+            .lexical_baseline_files
+            .iter()
+            .cloned()
+            .collect::<BTreeSet<_>>();
+        let target_files = commit
+            .retrieval_target_files
+            .iter()
+            .cloned()
+            .collect::<BTreeSet<_>>();
+        let semantic_target_hits = semantic_files
+            .intersection(&target_files)
+            .cloned()
+            .collect::<BTreeSet<_>>();
+        let semantic_only_target_hits = semantic_target_hits
+            .difference(&lexical_files)
+            .cloned()
+            .collect::<Vec<_>>();
+
+        summary.semantic_target_hit_count += semantic_target_hits.len();
+        summary.semantic_only_target_hit_count += semantic_only_target_hits.len();
+        summary.semantic_lexical_overlap_count +=
+            semantic_files.intersection(&lexical_files).count();
+        summary.semantic_missed_target_count +=
+            target_files.difference(&semantic_target_hits).count();
+
+        if !semantic_only_target_hits.is_empty() {
+            let mut paths = semantic_only_target_hits;
+            paths.sort();
+            paths.truncate(5);
+            semantic_only_hits.push(SemanticPrecisionNamedCase {
+                sha: short_sha(&commit.sha),
+                variant: "local_semantic".to_string(),
+                reason: "Semantic selected retrieval-target path(s) absent from the lexical baseline top K.".to_string(),
+                paths,
+            });
+        }
+    }
+
+    if summary.evaluated_commits > 0 {
+        summary.average_semantic_selected_files =
+            summary.semantic_selected_file_count as f32 / summary.evaluated_commits as f32;
+    }
+    let target_opportunity =
+        summary.semantic_target_hit_count + summary.semantic_missed_target_count;
+    if target_opportunity > 0 {
+        summary.semantic_target_hit_rate =
+            summary.semantic_target_hit_count as f32 / target_opportunity as f32;
+        summary.semantic_only_target_hit_rate =
+            summary.semantic_only_target_hit_count as f32 / target_opportunity as f32;
+    }
+    semantic_only_hits.truncate(10);
+    summary.semantic_only_hits = semantic_only_hits;
+    summary
 }
 
 fn protected_evidence_miss_rate_delta(
@@ -6961,6 +7083,46 @@ mod tests {
         assert_eq!(regressions.len(), 1);
         assert_eq!(regressions[0].paths, vec!["src/exact.ts".to_string()]);
         assert!(regressions[0].reason.contains("demoted"));
+    }
+
+    #[test]
+    fn semantic_contribution_summary_counts_semantic_only_target_hits() {
+        let mut report = empty_historical_eval_report("semantic");
+        report.commits[0].retrieval_target_files = vec![
+            "src/semantic_only.ts".to_string(),
+            "src/shared.ts".to_string(),
+            "src/missed.ts".to_string(),
+        ];
+        report.commits[0].lexical_baseline_files = vec![
+            "src/shared.ts".to_string(),
+            "src/lexical_only.ts".to_string(),
+        ];
+        report.commits[0].signal_baseline_files = vec![HistoricalSignalRanking {
+            signal: RetrievalSignalKind::Semantic,
+            files: vec![
+                "src/semantic_only.ts".to_string(),
+                "src/shared.ts".to_string(),
+                "src/noise.ts".to_string(),
+            ],
+        }];
+
+        let summary = semantic_contribution_summary(&report);
+
+        assert_eq!(summary.evaluated_commits, 1);
+        assert_eq!(summary.commits_with_semantic_selection, 1);
+        assert_eq!(summary.semantic_selected_file_count, 3);
+        assert_eq!(summary.semantic_target_hit_count, 2);
+        assert_eq!(summary.semantic_only_target_hit_count, 1);
+        assert_eq!(summary.semantic_lexical_overlap_count, 1);
+        assert_eq!(summary.semantic_missed_target_count, 1);
+        assert_eq!(summary.average_semantic_selected_files, 3.0);
+        assert!((summary.semantic_target_hit_rate - 2.0 / 3.0).abs() < f32::EPSILON);
+        assert!((summary.semantic_only_target_hit_rate - 1.0 / 3.0).abs() < f32::EPSILON);
+        assert_eq!(summary.semantic_only_hits.len(), 1);
+        assert_eq!(
+            summary.semantic_only_hits[0].paths,
+            vec!["src/semantic_only.ts".to_string()]
+        );
     }
 
     #[test]

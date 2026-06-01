@@ -352,6 +352,18 @@ variants:
 ctxhelm eval gate --repo /path/to/repo --limit 20 --budget 10 --format json
 ```
 
+Use `--semantic-provider` to evaluate a specific local semantic backend in the
+gate:
+
+```bash
+ctxhelm eval gate --repo /path/to/repo --limit 20 --budget 10 \
+  --semantic-provider local_fastembed --format json
+```
+
+`local_hash` remains the deterministic scaffold. `local_fastembed` is the
+production-local backend and requires a build compiled with the
+`local-embeddings` feature.
+
 The gate emits deterministic variant rows for `lexical_baseline`,
 `ctxhelm_default`, `local_metadata_reranked`, `local_semantic`,
 `precision_enriched_semantic`, `semantic_precision_full_hybrid`, and
@@ -360,8 +372,8 @@ not omitted.
 
 The report includes Recall@K, precision proxy, MRR where available, Test
 Recall@10, runtime/cache fields, token efficiency, provider policy, precision
-status, protected-evidence miss rate, named wins, named regressions, and named
-misses.
+status, protected-evidence miss rate, semantic contribution summary, named wins,
+named regressions, and named misses.
 
 Protected evidence is source-free metadata for budgeted paths that carry
 explicit anchor, current-diff, lexical, or symbol signals. The protected set is
