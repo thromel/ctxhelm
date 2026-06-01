@@ -23,8 +23,8 @@
     "status": "publish_order_ready"
   },
   "homebrewFormulaRender": {
-    "archiveName": "ctxhelm-v1.1.10-aarch64-apple-darwin.tar.gz",
-    "archiveSha256": "d8741fef030783c63332e86fec36d86bbbe89b0b40138398ec6532ea89766a40",
+    "archiveName": "ctxhelm-v1.1.12-aarch64-apple-darwin.tar.gz",
+    "archiveSha256": "fdb6950714b00d581471a36ae52242c365d7f57d729887177a3b5dd27f0abd50",
     "published": false,
     "status": "passed"
   },
@@ -44,5 +44,5 @@
     "signed installer",
     "self-update"
   ],
-  "version": "1.1.10"
+  "version": "1.1.12"
 }

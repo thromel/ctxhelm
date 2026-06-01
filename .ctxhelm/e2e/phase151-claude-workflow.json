@@ -1,0 +1,67 @@
+{
+  "client": "claude",
+  "clientVersion": "2.1.159 (Claude Code)",
+  "ctxhelmVersion": "ctxhelm 1.1.12",
+  "evidenceFiles": {
+    "smokeStderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "smokeStdoutSha256": "8dbe5b590650f78e2ee104e1999514fb03c7eb50f5ca43a14f4cb7f2f63e3621"
+  },
+  "privacyStatus": {
+    "localOnly": true,
+    "rawMcpTrafficStored": false,
+    "rawPromptStored": false,
+    "remoteEmbeddingsUsed": false,
+    "remoteRerankingUsed": false,
+    "sourceTextLogged": false
+  },
+  "realClientPolicy": {
+    "requested": true,
+    "required": true
+  },
+  "repo": {
+    "label": "ctxhelm",
+    "pathSha256": "823da75306f1c50f536e28905ec7405c88ec43b87fbf3f2afb37d7bf17d143a2"
+  },
+  "requestEvidence": {
+    "explicitRepoToolCallCount": 2,
+    "observedToolCalls": [
+      {
+        "hasTask": true,
+        "name": "prepare_task",
+        "repoMatched": true
+      },
+      {
+        "budget": "brief",
+        "format": "json",
+        "hasTask": true,
+        "name": "get_pack",
+        "recordTraceFalse": true,
+        "repoMatched": true
+      }
+    ],
+    "requestLogLineCount": 7,
+    "requestLogSha256": "8479bbd13c38cc47b36403ac8373459c7c323c447b3b9d67d0f1477ca9812978",
+    "schemaVersion": "ctxhelm-real-client-evidence-v2"
+  },
+  "schemaVersion": "ctxhelm-claude-workflow-eval-v1",
+  "smokeExitStatus": 0,
+  "status": "passed",
+  "task": {
+    "rawTaskStored": false,
+    "taskSha256": "8b19c7ba966a0c8ee32f476e8493de4c2ba344ace832efc916c78b7260c576af"
+  },
+  "workflowAssertions": {
+    "deterministicProtocol": true,
+    "explicitRepoToolCallCountAtLeastTwo": true,
+    "getPackToolCall": true,
+    "prepareTaskToolCall": true,
+    "rawPromptStored": false,
+    "rawRequestLogStored": false,
+    "realClientToolCalls": true,
+    "requestLogHashOnly": true,
+    "requestSummarySidecar": true,
+    "sourceTextLogged": false,
+    "userProjectCommandsRun": false
+  },
+  "workflowKind": "claude-code-mcp-context-workflow"
+}

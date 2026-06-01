@@ -13,7 +13,7 @@ depending on a particular interactive agent client.
 Optional real-client proof can be added for Codex CLI and Claude Code by setting
 the release-gate real-client environment variables documented in
 `docs/release.md`. Cursor and OpenCode real-client proof is not claimed for
-v1.1.11; their public support remains config/rules plus deterministic MCP
+v1.1.12; their public support remains config/rules plus deterministic MCP
 compatibility.
 
 When `CTXHELM_REAL_CLIENT_EVIDENCE_DIR` is set, the real-client wrappers write
@@ -53,13 +53,14 @@ Allowed candidate statuses:
 - `blocked`: release must not be announced because a required gate failed or a
   privacy/source-free boundary regressed.
 
-For v1.1.11, `ready` means the local archive channel is ready and the Apple
-Silicon Homebrew tap is ready. It also means the non-publishing
-multi-platform archive workflow at `.github/workflows/release-artifacts.yml` is
-ready to build and verify Linux x64, macOS Intel, and macOS Apple Silicon
-workflow artifacts. published additional platform release assets, crates.io,
-signed installers, and self-update remain explicitly deferred in the candidate
-status metadata.
+For v1.1.12, `ready` means the local archive channel is ready and the Apple
+Silicon Homebrew tap is ready. It also means the multi-platform archive workflow
+at `.github/workflows/release-artifacts.yml` is ready to build and verify Linux
+x64, macOS Intel, and macOS Apple Silicon artifacts, and to upload those
+verified target assets to the matching GitHub release on version-tag pushes.
+In the v1.1.12 candidate metadata, published additional platform release assets
+are ready after the tag workflow succeeds. Crates.io, signed installers, and
+self-update remain explicitly deferred in the candidate status metadata.
 
 Validate metadata:
 
@@ -75,7 +76,7 @@ against the local artifacts without uploading or mutating anything:
 
 ```bash
 bash scripts/verify-github-release.sh \
-  --tag v1.1.11 \
+  --tag v1.1.12 \
   --target "$(git rev-parse HEAD)" \
   --assets-dir dist
 ```
@@ -89,9 +90,9 @@ Then verify the public user install path:
 ```bash
 bash scripts/verify-public-archive-install.sh \
   --repo thromel/ctxhelm \
-  --tag v1.1.11 \
+  --tag v1.1.12 \
   --target-label aarch64-apple-darwin \
-  --expected-version "ctxhelm 1.1.11" \
+  --expected-version "ctxhelm 1.1.12" \
   --output .ctxhelm/e2e/phase130-public-archive-install.json
 ```
 
@@ -105,9 +106,9 @@ archive binary, run:
 ```bash
 bash scripts/smoke-public-real-clients.sh \
   --repo thromel/ctxhelm \
-  --tag v1.1.11 \
+  --tag v1.1.12 \
   --target-label aarch64-apple-darwin \
-  --expected-version "ctxhelm 1.1.11" \
+  --expected-version "ctxhelm 1.1.12" \
   --output .ctxhelm/e2e/phase130-public-real-client-smoke.json
 ```
 
@@ -122,7 +123,7 @@ the current branch tip:
 ```bash
 bash scripts/check-public-release-freshness.sh \
   --repo thromel/ctxhelm \
-  --tag v1.1.11 \
+  --tag v1.1.12 \
   --output .ctxhelm/e2e/phase130-public-release-freshness.json
 ```
 

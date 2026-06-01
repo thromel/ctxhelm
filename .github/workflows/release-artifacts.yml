@@ -11,9 +11,35 @@ env:
   CARGO_TERM_COLOR: always
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
 
+permissions:
+  contents: write
+
 jobs:
+  release:
+    name: Prepare release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create release for tag
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view "${GITHUB_REF_NAME}" >/dev/null 2>&1; then
+            gh release edit "${GITHUB_REF_NAME}" \
+              --target "${GITHUB_SHA}" \
+              --title "${GITHUB_REF_NAME}" \
+              --latest
+          else
+            gh release create "${GITHUB_REF_NAME}" \
+              --target "${GITHUB_SHA}" \
+              --title "${GITHUB_REF_NAME}" \
+              --notes "Verified ctxhelm release artifacts for ${GITHUB_REF_NAME}." \
+              --latest
+          fi
+
   package:
     name: Package ${{ matrix.target }}
+    needs: release
     runs-on: ${{ matrix.runner }}
     strategy:
       fail-fast: false
@@ -74,3 +100,19 @@ jobs:
             dist/${{ matrix.target }}/ctxhelm-v*-${{ matrix.target }}.tar.gz.sha256
             dist/${{ matrix.target }}/sha256sums.txt
           if-no-files-found: error
+
+      - name: Upload release assets
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          archive="$(ls dist/${{ matrix.target }}/ctxhelm-v*-${{ matrix.target }}.tar.gz)"
+          manifest="${archive%.tar.gz}.manifest.json"
+          audit="${archive%.tar.gz}.audit.json"
+          archive_sha="${archive}.sha256"
+          gh release upload "${GITHUB_REF_NAME}" \
+            "$archive" \
+            "$manifest" \
+            "$audit" \
+            "$archive_sha" \
+            --clobber

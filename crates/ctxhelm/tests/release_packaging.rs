@@ -108,11 +108,11 @@ fn release_artifact_audit_script_contract() {
 fn release_artifact_audit_rejects_local_state_archive() {
     let archive = archive_with_entries(&[
         (
-            "ctxhelm-v1.1.11-test/ctxhelm",
+            "ctxhelm-v1.1.12-test/ctxhelm",
             "#!/usr/bin/env bash\nexit 0\n",
         ),
         (
-            "ctxhelm-v1.1.11-test/.ctxhelm/repos/repo/traces.jsonl",
+            "ctxhelm-v1.1.12-test/.ctxhelm/repos/repo/traces.jsonl",
             "{\"sourceTextLogged\":false}\n",
         ),
     ]);
@@ -132,12 +132,12 @@ fn release_artifact_audit_rejects_local_state_archive() {
 fn release_artifact_audit_accepts_minimal_release_archive() {
     let archive = archive_with_entries(&[
         (
-            "ctxhelm-v1.1.11-test/ctxhelm",
+            "ctxhelm-v1.1.12-test/ctxhelm",
             "#!/usr/bin/env bash\nexit 0\n",
         ),
-        ("ctxhelm-v1.1.11-test/README.md", "ctxhelm release\n"),
-        ("ctxhelm-v1.1.11-test/LICENSE", "MIT License\n"),
-        ("ctxhelm-v1.1.11-test/VERSION", "ctxhelm 1.1.11\n"),
+        ("ctxhelm-v1.1.12-test/README.md", "ctxhelm release\n"),
+        ("ctxhelm-v1.1.12-test/LICENSE", "MIT License\n"),
+        ("ctxhelm-v1.1.12-test/VERSION", "ctxhelm 1.1.12\n"),
     ]);
 
     let output = Command::new(workspace_root().join("scripts/audit-release-artifact.sh"))
@@ -156,12 +156,12 @@ fn release_artifact_audit_accepts_minimal_release_archive() {
 fn release_artifact_audit_writes_source_free_report() {
     let archive = archive_with_entries(&[
         (
-            "ctxhelm-v1.1.11-test/ctxhelm",
+            "ctxhelm-v1.1.12-test/ctxhelm",
             "#!/usr/bin/env bash\nexit 0\n",
         ),
-        ("ctxhelm-v1.1.11-test/README.md", "ctxhelm release\n"),
-        ("ctxhelm-v1.1.11-test/LICENSE", "MIT License\n"),
-        ("ctxhelm-v1.1.11-test/VERSION", "ctxhelm 1.1.11\n"),
+        ("ctxhelm-v1.1.12-test/README.md", "ctxhelm release\n"),
+        ("ctxhelm-v1.1.12-test/LICENSE", "MIT License\n"),
+        ("ctxhelm-v1.1.12-test/VERSION", "ctxhelm 1.1.12\n"),
     ]);
     let report_dir = TempDir::new().unwrap();
     let report_path = report_dir.path().join("audit.json");
@@ -509,6 +509,11 @@ fn release_artifacts_workflow_contract() {
     for required in [
         "workflow_dispatch:",
         "tags:",
+        "permissions:",
+        "contents: write",
+        "gh release create",
+        "gh release upload",
+        "startsWith(github.ref, 'refs/tags/')",
         "actions/checkout@v5",
         "actions/cache@v5",
         "actions/upload-artifact@v6",
@@ -524,6 +529,7 @@ fn release_artifacts_workflow_contract() {
         "scripts/release-package.sh",
         "scripts/verify-release-archive.sh",
         "if-no-files-found: error",
+        "--clobber",
     ] {
         assert!(
             workflow_text.contains(required),
@@ -531,16 +537,10 @@ fn release_artifacts_workflow_contract() {
         );
     }
 
-    for forbidden in [
-        "gh release create",
-        "git tag",
-        "git push",
-        "cargo publish",
-        "brew install",
-    ] {
+    for forbidden in ["git tag", "git push", "cargo publish", "brew install"] {
         assert!(
             !workflow_text.contains(forbidden),
-            "release artifacts workflow must not publish or mutate package-manager state: {forbidden}"
+            "release artifacts workflow must not create tags or mutate package-manager state: {forbidden}"
         );
     }
 }
@@ -597,9 +597,9 @@ fn public_release_freshness_script_reports_outdated_without_mutation() {
   "isDraft": false,
   "isPrerelease": false,
   "publishedAt": "2026-06-01T00:00:00Z",
-  "tagName": "v1.1.11",
+  "tagName": "v1.1.12",
   "targetCommitish": "release-commit",
-  "url": "https://github.com/thromel/ctxhelm/releases/tag/v1.1.11"
+  "url": "https://github.com/thromel/ctxhelm/releases/tag/v1.1.12"
 }
 "#,
     )
@@ -607,7 +607,7 @@ fn public_release_freshness_script_reports_outdated_without_mutation() {
 
     let output = Command::new("bash")
         .arg(&script)
-        .args(["--tag", "v1.1.11"])
+        .args(["--tag", "v1.1.12"])
         .args(["--current-commit", "current-commit"])
         .arg("--release-json")
         .arg(&release_json)
@@ -631,7 +631,7 @@ fn public_release_freshness_script_reports_outdated_without_mutation() {
 
     let required_current = Command::new("bash")
         .arg(&script)
-        .args(["--tag", "v1.1.11"])
+        .args(["--tag", "v1.1.12"])
         .args(["--current-commit", "current-commit"])
         .arg("--release-json")
         .arg(&release_json)
@@ -747,9 +747,9 @@ fn public_release_freshness_distinguishes_proof_only_commits() {
   "isDraft": false,
   "isPrerelease": false,
   "publishedAt": "2026-06-01T00:00:00Z",
-  "tagName": "v1.1.11",
+  "tagName": "v1.1.12",
   "targetCommitish": "{release_commit}",
-  "url": "https://github.com/thromel/ctxhelm/releases/tag/v1.1.11"
+  "url": "https://github.com/thromel/ctxhelm/releases/tag/v1.1.12"
 }}
 "#
         ),
@@ -758,7 +758,7 @@ fn public_release_freshness_distinguishes_proof_only_commits() {
 
     let output = Command::new("bash")
         .arg(&script)
-        .args(["--tag", "v1.1.11"])
+        .args(["--tag", "v1.1.12"])
         .args(["--current-commit", &current_commit])
         .arg("--release-json")
         .arg(&release_json)
@@ -785,7 +785,7 @@ fn public_release_freshness_distinguishes_proof_only_commits() {
 
     let required_current = Command::new("bash")
         .arg(&script)
-        .args(["--tag", "v1.1.11"])
+        .args(["--tag", "v1.1.12"])
         .args(["--current-commit", &current_commit])
         .arg("--release-json")
         .arg(&release_json)
@@ -1163,7 +1163,7 @@ fn release_docs_script_contract() {
         "docs/release-governance.md",
         "ctxhelm --version",
         "ctxhelm --help",
-        "v1.1.11",
+        "v1.1.12",
         "sha256sums.txt",
         "Why ctxhelm",
         "Current proof snapshot",
@@ -1189,7 +1189,7 @@ fn release_docs_script_contract() {
         "Cursor",
         "OpenCode",
         "cargo install --git",
-        "--tag v1.1.11",
+        "--tag v1.1.12",
         "--locked",
         "crates.io",
         "Homebrew",

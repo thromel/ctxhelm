@@ -1,6 +1,6 @@
 # Distribution Metadata
 
-ctxhelm v1.1.11 ships through public release archives and a public Apple Silicon
+ctxhelm v1.1.12 ships through public release archives and a public Apple Silicon
 Homebrew tap. This document records the distribution metadata and the boundaries
 for channels that remain deferred.
 
@@ -28,8 +28,8 @@ Verify an already-built archive from a clean temporary extraction directory:
 
 ```bash
 bash scripts/verify-release-archive.sh \
-  --archive dist/ctxhelm-v1.1.11-aarch64-apple-darwin.tar.gz \
-  --manifest dist/ctxhelm-v1.1.11-aarch64-apple-darwin.manifest.json \
+  --archive dist/ctxhelm-v1.1.12-aarch64-apple-darwin.tar.gz \
+  --manifest dist/ctxhelm-v1.1.12-aarch64-apple-darwin.manifest.json \
   --checksums dist/sha256sums.txt
 ```
 
@@ -39,7 +39,7 @@ directory, runs `ctxhelm --version`, runs `ctxhelm --help`, and runs
 
 ## Multi-Platform Archive Workflow
 
-The repository now has a non-publishing archive workflow at
+The repository now has a multi-platform archive workflow at
 `.github/workflows/release-artifacts.yml`. It builds and verifies archives for:
 
 - `x86_64-unknown-linux-gnu`
@@ -47,8 +47,10 @@ The repository now has a non-publishing archive workflow at
 - `aarch64-apple-darwin`
 
 This closes the packaging gap between a local Apple Silicon archive and a
-production release pipeline. The workflow uploads GitHub Actions artifacts only.
-It does not create release assets, tags, package-manager commits, crates.io
+production release pipeline. Manual runs upload GitHub Actions artifacts only.
+Version-tag pushes also create or update the matching GitHub release and upload
+the verified archive, manifest, audit report, and per-archive checksum for each
+target. The workflow does not create tags, package-manager commits, crates.io
 packages, signed installers, or self-update metadata.
 
 ## Update Metadata Boundary
@@ -59,7 +61,7 @@ archive checksums, manifest names, and privacy posture.
 
 ## Signing And Notarization
 
-Current v1.1.11 archives are checksum-audited but not signed installers. Future
+Current v1.1.12 archives are checksum-audited but not signed installers. Future
 distribution work should add signing and notarization gaps to the release
 checklist before claiming signed macOS installers or package-manager formulas.
 
@@ -73,26 +75,28 @@ brew install ctxhelm
 ctxhelm --version
 ```
 
-The v1.1.11 tap proof verifies:
+The v1.1.12 tap proof verifies:
 
 - `brew tap thromel/tap`
 - `brew audit --strict --new ctxhelm`
 - `brew install thromel/tap/ctxhelm`
 - `brew test thromel/tap/ctxhelm`
-- installed binary output `ctxhelm 1.1.11`
+- installed binary output `ctxhelm 1.1.12`
 
 The formula is currently constrained to `arch: :arm64` because the published
 archive asset is `aarch64-apple-darwin`.
 
 ## Candidate Decision
 
-The v1.1.11 production candidate has these distribution states:
+The v1.1.12 production candidate has these distribution states:
 
 - local archive: ready after the release gate passes with the archive binary
   and required clean fixture proof
-- multi-platform archive workflow: ready as a non-publishing artifact builder
+- multi-platform archive workflow: ready as an artifact builder and tag-publish
+  release uploader
 - Homebrew formula: ready through `thromel/tap`
-- published additional platform release assets: deferred
+- published additional platform release assets: ready after a successful
+  version-tag release workflow
 - crates.io package: deferred
 - signed installer: deferred
 - self-update: not implemented
@@ -136,8 +140,8 @@ The public Homebrew tap can be verified with:
 bash scripts/verify-homebrew-tap.sh \
   --tap thromel/tap \
   --formula ctxhelm \
-  --expected-version "ctxhelm 1.1.11" \
-  --expected-url https://github.com/thromel/ctxhelm/releases/download/v1.1.11/ctxhelm-v1.1.11-aarch64-apple-darwin.tar.gz \
+  --expected-version "ctxhelm 1.1.12" \
+  --expected-url https://github.com/thromel/ctxhelm/releases/download/v1.1.12/ctxhelm-v1.1.12-aarch64-apple-darwin.tar.gz \
   --expected-sha256 <sha256-from-release-asset>
 ```
 

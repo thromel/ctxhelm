@@ -127,7 +127,7 @@ if proof_summary_path:
 payload = {
     "schemaVersion": 1,
     "package": "ctxhelm",
-    "version": "1.1.11",
+    "version": "1.1.12",
     "status": status,
     "createdAt": dt.datetime.now(dt.timezone.utc).replace(microsecond=0).isoformat(),
     "proofLevel": proof_level,
@@ -149,15 +149,15 @@ payload = {
         "primaryChannel": "local_archive",
         "localArchive": "ready" if status == "ready" else "deferred",
         "multiPlatformArchiveWorkflow": "ready" if status == "ready" else "deferred",
-        "publishedAdditionalPlatformArchives": "deferred",
+        "publishedAdditionalPlatformArchives": "ready" if status == "ready" else "deferred",
         "homebrewFormula": "ready" if status == "ready" else "deferred",
         "cratesIo": "deferred",
         "signedInstaller": "deferred",
         "selfUpdate": "not_implemented",
-        "reason": "v1.1.11 production candidate supports local archives, the Apple Silicon Homebrew tap, and a non-publishing multi-platform archive workflow; publishing additional platform archives, crates.io publication, signed installers, and self-update remain future work.",
+        "reason": "v1.1.12 production candidate supports local archives, the Apple Silicon Homebrew tap, and a tag-publishing multi-platform archive workflow; crates.io publication, signed installers, and self-update remain future work.",
     },
     "knownLimitations": [
-        "Cursor and OpenCode real-client proof is not claimed for v1.1.11.",
+        "Cursor and OpenCode real-client proof is not claimed for v1.1.12.",
         "crates.io publication, signed installers, self-update, and hosted sync are future work.",
     ],
     "privacyStatus": {
@@ -221,14 +221,17 @@ if distribution.get("primaryChannel") != "local_archive":
     raise SystemExit("primaryChannel must be local_archive")
 if distribution.get("multiPlatformArchiveWorkflow") not in {"ready", "deferred"}:
     raise SystemExit("multiPlatformArchiveWorkflow must be ready or deferred")
-if distribution.get("publishedAdditionalPlatformArchives") != "deferred":
-    raise SystemExit("publishedAdditionalPlatformArchives must be deferred for v1.1.11")
+expected_platform_assets = "ready" if payload.get("status") == "ready" else "deferred"
+if distribution.get("publishedAdditionalPlatformArchives") != expected_platform_assets:
+    raise SystemExit(
+        f"publishedAdditionalPlatformArchives must be {expected_platform_assets} for v1.1.12"
+    )
 expected_homebrew = "ready" if payload.get("status") == "ready" else "deferred"
 if distribution.get("homebrewFormula") != expected_homebrew:
-    raise SystemExit(f"homebrewFormula must be {expected_homebrew} for v1.1.11")
+    raise SystemExit(f"homebrewFormula must be {expected_homebrew} for v1.1.12")
 for deferred in ["cratesIo", "signedInstaller"]:
     if distribution.get(deferred) != "deferred":
-        raise SystemExit(f"{deferred} must be deferred for v1.1.11")
+        raise SystemExit(f"{deferred} must be deferred for v1.1.12")
 if distribution.get("selfUpdate") != "not_implemented":
     raise SystemExit("selfUpdate must be not_implemented")
 privacy = payload.get("privacyStatus", {})

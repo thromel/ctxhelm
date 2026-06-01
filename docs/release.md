@@ -1,13 +1,13 @@
-# ctxhelm `ctxhelm` v1.1.11 Release Guide
+# ctxhelm `ctxhelm` v1.1.12 Release Guide
 
 This document describes the local binary release path for ctxhelm's
-`ctxhelm` CLI v1.1.11. The primary user path is a prebuilt archive plus SHA-256
+`ctxhelm` CLI v1.1.12. The primary user path is a prebuilt archive plus SHA-256
 checksums; source builds are fallback paths.
 
 Current public archive release:
 
 ```text
-https://github.com/thromel/ctxhelm/releases/tag/v1.1.11
+https://github.com/thromel/ctxhelm/releases/tag/v1.1.12
 ```
 
 ## User Install
@@ -24,7 +24,7 @@ ctxhelm --help
 Download the archive for your platform from the release artifacts. Archive names follow this shape:
 
 ```text
-ctxhelm-v1.1.11-{target}.tar.gz
+ctxhelm-v1.1.12-{target}.tar.gz
 sha256sums.txt
 ```
 
@@ -38,17 +38,17 @@ sha256sum -c sha256sums.txt
 Extract and install the binary on `PATH`:
 
 ```bash
-tar -xzf ctxhelm-v1.1.11-aarch64-apple-darwin.tar.gz
-install -m 0755 ctxhelm-v1.1.11-aarch64-apple-darwin/ctxhelm ~/.local/bin/ctxhelm
+tar -xzf ctxhelm-v1.1.12-aarch64-apple-darwin.tar.gz
+install -m 0755 ctxhelm-v1.1.12-aarch64-apple-darwin/ctxhelm ~/.local/bin/ctxhelm
 ctxhelm --version
 ctxhelm --help
-ctxhelm doctor --binary "$(command -v ctxhelm)" --release-manifest ctxhelm-v1.1.11-aarch64-apple-darwin.manifest.json
+ctxhelm doctor --binary "$(command -v ctxhelm)" --release-manifest ctxhelm-v1.1.12-aarch64-apple-darwin.manifest.json
 ```
 
 The expected diagnostic is:
 
 ```text
-ctxhelm 1.1.11
+ctxhelm 1.1.12
 ```
 
 ## Source Build Fallbacks
@@ -56,7 +56,7 @@ ctxhelm 1.1.11
 Build from the tagged repository with locked dependencies:
 
 ```bash
-cargo install --git https://github.com/thromel/ctxhelm --tag v1.1.11 ctxhelm --locked
+cargo install --git https://github.com/thromel/ctxhelm --tag v1.1.12 ctxhelm --locked
 ctxhelm --version
 ctxhelm --help
 ```
@@ -72,7 +72,7 @@ target/release/ctxhelm --help
 
 ## Maintainer Packaging
 
-From a clean checkout at the v1.1.11 tag, run:
+From a clean checkout at the v1.1.12 tag, run:
 
 ```bash
 bash scripts/release-package.sh
@@ -87,10 +87,10 @@ cargo build -p ctxhelm --release --locked --target "$(rustc -vV | awk '/^host:/ 
 It writes release artifacts under `dist/` by default, or under `CTXHELM_DIST_DIR` when that environment variable is set:
 
 ```text
-dist/ctxhelm-v1.1.11-{target}.tar.gz
-dist/ctxhelm-v1.1.11-{target}.manifest.json
-dist/ctxhelm-v1.1.11-{target}.audit.json
-dist/ctxhelm-v1.1.11-{target}.tar.gz.sha256
+dist/ctxhelm-v1.1.12-{target}.tar.gz
+dist/ctxhelm-v1.1.12-{target}.manifest.json
+dist/ctxhelm-v1.1.12-{target}.audit.json
+dist/ctxhelm-v1.1.12-{target}.tar.gz.sha256
 dist/sha256sums.txt
 ```
 
@@ -105,20 +105,20 @@ The release manifest records the version, target label, archive checksum, binary
 
 Maintainers can set `CARGO_TARGET_DIR=/absolute/path/to/target` when they need a clean build cache for packaging or release-gate verification. They can also set `CTXHELM_BUILD_TARGET=<rust-target-triple>` and, when needed, `CTXHELM_TARGET_LABEL=<archive-label>` to build and package an explicit target. The packaged binary is copied from `target/<target>/release/ctxhelm`, so a target label is no longer a cosmetic archive-name override.
 
-The public repository includes a non-publishing release-artifact workflow:
+The public repository includes a release-artifact workflow:
 
 ```text
 .github/workflows/release-artifacts.yml
 ```
 
-It runs on manual dispatch and version-tag pushes, builds `x86_64-unknown-linux-gnu`, `x86_64-apple-darwin`, and `aarch64-apple-darwin`, verifies every archive with `scripts/verify-release-archive.sh`, and uses `actions/upload-artifact@v6` for workflow artifacts. It does not create GitHub releases, tags, Homebrew commits, crates.io packages, signed installers, or self-update metadata.
+It runs on manual dispatch and version-tag pushes, builds `x86_64-unknown-linux-gnu`, `x86_64-apple-darwin`, and `aarch64-apple-darwin`, verifies every archive with `scripts/verify-release-archive.sh`, and uses `actions/upload-artifact@v6` for workflow artifacts. On version-tag pushes it also creates or updates the matching GitHub release and uploads the verified archive, manifest, audit report, and per-archive checksum for each target. It does not create tags, Homebrew commits, crates.io packages, signed installers, or self-update metadata.
 
 Maintainers can verify a built archive from a clean extraction directory:
 
 ```bash
 bash scripts/verify-release-archive.sh \
-  --archive dist/ctxhelm-v1.1.11-aarch64-apple-darwin.tar.gz \
-  --manifest dist/ctxhelm-v1.1.11-aarch64-apple-darwin.manifest.json \
+  --archive dist/ctxhelm-v1.1.12-aarch64-apple-darwin.tar.gz \
+  --manifest dist/ctxhelm-v1.1.12-aarch64-apple-darwin.manifest.json \
   --checksums dist/sha256sums.txt
 ```
 
@@ -128,9 +128,9 @@ installing globally:
 ```bash
 bash scripts/verify-public-archive-install.sh \
   --repo thromel/ctxhelm \
-  --tag v1.1.11 \
+  --tag v1.1.12 \
   --target-label aarch64-apple-darwin \
-  --expected-version "ctxhelm 1.1.11"
+  --expected-version "ctxhelm 1.1.12"
 ```
 
 The public install verifier downloads the release archive, manifest, audit
@@ -145,9 +145,9 @@ archive binary:
 ```bash
 bash scripts/smoke-public-real-clients.sh \
   --repo thromel/ctxhelm \
-  --tag v1.1.11 \
+  --tag v1.1.12 \
   --target-label aarch64-apple-darwin \
-  --expected-version "ctxhelm 1.1.11" \
+  --expected-version "ctxhelm 1.1.12" \
   --output .ctxhelm/e2e/phase130-public-real-client-smoke.json
 ```
 
@@ -163,8 +163,8 @@ Maintainers can verify the published Homebrew tap path on Apple Silicon macOS:
 bash scripts/verify-homebrew-tap.sh \
   --tap thromel/tap \
   --formula ctxhelm \
-  --expected-version "ctxhelm 1.1.11" \
-  --expected-url https://github.com/thromel/ctxhelm/releases/download/v1.1.11/ctxhelm-v1.1.11-aarch64-apple-darwin.tar.gz \
+  --expected-version "ctxhelm 1.1.12" \
+  --expected-url https://github.com/thromel/ctxhelm/releases/download/v1.1.12/ctxhelm-v1.1.12-aarch64-apple-darwin.tar.gz \
   --expected-sha256 <sha256-from-release-asset>
 ```
 
@@ -197,7 +197,7 @@ workspace tests, CLI help, release-doc consistency, and the local release gate
 with external fixture and real-client checks explicitly skipped unless a
 maintainer runs the full local gate with those optional proofs enabled.
 
-This is the pre-publication blocker for v1.1.11. When `CTXHELM_BIN` is not set, the gate runs `scripts/release-package.sh`, audits the archive, extracts the generated artifact, and uses the extracted `ctxhelm` binary for installed-binary proof.
+This is the pre-publication blocker for v1.1.12. When `CTXHELM_BIN` is not set, the gate runs `scripts/release-package.sh`, audits the archive, extracts the generated artifact, and uses the extracted `ctxhelm` binary for installed-binary proof.
 
 To prove a selected installed or previously extracted binary, pass an absolute path:
 
@@ -734,22 +734,22 @@ record the skip reason as "external corpus unavailable" rather than treating it
 as a product regression. The mandatory gate remains `scripts/smoke-v23-eval.sh`,
 which proves the v2.3 contract without external repos.
 
-The release gate does not publish, upload, or create GitHub releases, and does not create tags. It does not mutate global agent config and does not run user project tests. Cursor and OpenCode real-client proof is not claimed for v1.1.11.
+The release gate does not publish, upload, or create GitHub releases, and does not create tags. It does not mutate global agent config and does not run user project tests. Cursor and OpenCode real-client proof is not claimed for v1.1.12.
 
 ## Artifact Audit
 
-`scripts/release-package.sh` runs `scripts/audit-release-artifact.sh` immediately after archive creation and before checksum success output. It writes a machine-readable `ctxhelm-v1.1.11-{target}.audit.json` report next to the archive.
+`scripts/release-package.sh` runs `scripts/audit-release-artifact.sh` immediately after archive creation and before checksum success output. It writes a machine-readable `ctxhelm-v1.1.12-{target}.audit.json` report next to the archive.
 
 The audit lists archive members and extracts the artifact to a temporary directory. It fails on local state, traces, request logs, cache or target debris, git internals, secret-looking filenames, absolute local paths, and text payloads with machine-specific or secret-looking values. It does not upload artifacts or call cloud scanning services.
 
 You can audit an existing archive directly:
 
 ```bash
-bash scripts/audit-release-artifact.sh dist/ctxhelm-v1.1.11-aarch64-apple-darwin.tar.gz
+bash scripts/audit-release-artifact.sh dist/ctxhelm-v1.1.12-aarch64-apple-darwin.tar.gz
 ```
 
 ## Out of Scope for v1.1
 
-The v1.1.11 release includes a public Apple Silicon Homebrew tap. It does not require crates.io publishing, self-update support, signed installers, cloud telemetry, cloud indexing, cloud embeddings, hosted release services, or global agent config mutation.
+The v1.1.12 release includes a public Apple Silicon Homebrew tap. It does not require crates.io publishing, self-update support, signed installers, cloud telemetry, cloud indexing, cloud embeddings, hosted release services, or global agent config mutation.
 
 ctxhelm remains local-first and read-only. Release scripts build and audit ctxhelm artifacts only; they do not mutate user repositories, global Codex or Claude configuration, MCP client config, or package-manager registries.
