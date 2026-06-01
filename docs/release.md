@@ -629,6 +629,13 @@ File Recall@10 `0.5927659` versus lexical `0.45709258`, and average file delta
 `+0.13567334`. Broad context-area plans stay file-first so validation tests do
 not displace broad source evidence.
 
+Phase 128 adds broad operational floors for root governance docs, exact config
+matches, and workflow lifecycle scripts before lower-priority expansion. The
+clean four-repo proof still promotes, keeps zero trailing corpora, and clears
+protected target misses on all four corpora with average File Recall@10
+`0.5986343`, average file delta `+0.14154172`, average agent-evidence delta
+`+0.19379663`, and average context delta `+0.23717105`.
+
 Phase 119 removes an observed release-validation flake in `ctxpack-index`.
 Tests in `lib.rs`, `freshness.rs`, and `storage.rs` now share one crate-wide
 test lock before mutating process-global `CTXPACK_HOME`. This prevents one

@@ -433,6 +433,26 @@ fn select_target_files(
         {
             push_target(candidate, &mut selected, &mut selected_paths, file_budget);
         }
+        if broad_scope {
+            for (_, candidate) in governance_doc_floor(candidates)
+                .into_iter()
+                .take(governance_doc_floor_limit(file_budget))
+            {
+                push_target(candidate, &mut selected, &mut selected_paths, file_budget);
+            }
+            for (_, candidate) in config_lexical_floor(candidates)
+                .into_iter()
+                .take(config_lexical_floor_limit(file_budget))
+            {
+                push_target(candidate, &mut selected, &mut selected_paths, file_budget);
+            }
+            for (_, candidate) in workflow_script_lexical_floor(candidates)
+                .into_iter()
+                .take(workflow_script_lexical_floor_limit(file_budget))
+            {
+                push_target(candidate, &mut selected, &mut selected_paths, file_budget);
+            }
+        }
         let mut source_symbol_floor_selected = 0usize;
         for (_, candidate) in source_symbol_floor(candidates) {
             if source_symbol_floor_selected >= source_symbol_floor_limit(file_budget) {
@@ -457,17 +477,19 @@ fn select_target_files(
                 }
             }
         }
-        for (_, candidate) in governance_doc_floor(candidates)
-            .into_iter()
-            .take(governance_doc_floor_limit(file_budget))
-        {
-            push_target(candidate, &mut selected, &mut selected_paths, file_budget);
-        }
-        for (_, candidate) in config_lexical_floor(candidates)
-            .into_iter()
-            .take(config_lexical_floor_limit(file_budget))
-        {
-            push_target(candidate, &mut selected, &mut selected_paths, file_budget);
+        if !broad_scope {
+            for (_, candidate) in governance_doc_floor(candidates)
+                .into_iter()
+                .take(governance_doc_floor_limit(file_budget))
+            {
+                push_target(candidate, &mut selected, &mut selected_paths, file_budget);
+            }
+            for (_, candidate) in config_lexical_floor(candidates)
+                .into_iter()
+                .take(config_lexical_floor_limit(file_budget))
+            {
+                push_target(candidate, &mut selected, &mut selected_paths, file_budget);
+            }
         }
     }
 
@@ -756,6 +778,73 @@ fn config_lexical_floor(candidates: &[RankedCandidate]) -> Vec<(f32, &RankedCand
 
 fn config_lexical_floor_limit(file_budget: usize) -> usize {
     (file_budget / 8).clamp(1, 2)
+}
+
+fn workflow_script_lexical_floor(candidates: &[RankedCandidate]) -> Vec<(f32, &RankedCandidate)> {
+    let mut script_floor = candidates
+        .iter()
+        .filter(|candidate| candidate.target_file.is_some())
+        .filter(|candidate| {
+            candidate
+                .candidate
+                .path
+                .as_deref()
+                .is_some_and(is_workflow_script_path)
+        })
+        .filter_map(|candidate| {
+            let lexical_score = lexical_signal_score(&candidate.candidate)?;
+            if lexical_score < 0.30 {
+                return None;
+            }
+            Some((lexical_score, candidate))
+        })
+        .collect::<Vec<_>>();
+    script_floor.sort_by(|(left_score, left), (right_score, right)| {
+        workflow_script_priority(left)
+            .cmp(&workflow_script_priority(right))
+            .then_with(|| right_score.total_cmp(left_score))
+            .then_with(|| left.lexical_rank.cmp(&right.lexical_rank))
+            .then_with(|| right.rank_score.total_cmp(&left.rank_score))
+            .then_with(|| left.candidate.path.cmp(&right.candidate.path))
+    });
+    script_floor
+}
+
+fn workflow_script_priority(candidate: &RankedCandidate) -> u8 {
+    let Some(path) = candidate.candidate.path.as_deref() else {
+        return 2;
+    };
+    let lower = path.to_ascii_lowercase();
+    if lower.contains("deploy")
+        || lower.contains("release")
+        || lower.contains("publish")
+        || lower.contains("ship")
+    {
+        1
+    } else if lower.contains("bootstrap")
+        || lower.contains("start")
+        || lower.contains("run")
+        || lower.contains("smoke")
+        || lower.contains("check")
+        || lower.contains("test")
+    {
+        0
+    } else {
+        2
+    }
+}
+
+fn workflow_script_lexical_floor_limit(file_budget: usize) -> usize {
+    file_budget.div_ceil(4).clamp(1, 3)
+}
+
+fn is_workflow_script_path(path: &str) -> bool {
+    let lower = path.to_ascii_lowercase();
+    lower.ends_with(".sh")
+        || lower.ends_with(".bash")
+        || lower.ends_with(".zsh")
+        || lower.ends_with("/makefile")
+        || lower == "makefile"
 }
 
 fn governance_doc_floor(candidates: &[RankedCandidate]) -> Vec<(f32, &RankedCandidate)> {
@@ -1999,6 +2088,172 @@ mod tests {
             .collect::<Vec<_>>();
 
         assert!(paths.contains(&"experiments/pvldb_eval/manifest.yaml"));
+    }
+
+    #[test]
+    fn broad_selection_reserves_workflow_scripts_before_symbol_expansion() {
+        let candidates = rank_candidates(RankingInput {
+            lexical_results: vec![
+                lexical("src/eval.rs", 30.0),
+                lexical("src/workflow.rs", 29.0),
+                lexical("src/state.rs", 28.0),
+                lexical("src/nodes.rs", 27.0),
+                lexical("src/agents.rs", 26.0),
+                SearchResult {
+                    path: "experiments/pvldb_eval/bootstrap_qwen35_host.sh".to_string(),
+                    role: FileRole::Unknown,
+                    language: Some("shell".to_string()),
+                    score: 25.0,
+                    reason: "workflow script match".to_string(),
+                },
+                SearchResult {
+                    path: "experiments/pvldb_eval/deploy_qwen35_runpod.sh".to_string(),
+                    role: FileRole::Unknown,
+                    language: Some("shell".to_string()),
+                    score: 24.5,
+                    reason: "deployment script match".to_string(),
+                },
+                SearchResult {
+                    path: "experiments/pvldb_eval/run_qwen35_phase1.sh".to_string(),
+                    role: FileRole::Unknown,
+                    language: Some("shell".to_string()),
+                    score: 24.0,
+                    reason: "workflow script match".to_string(),
+                },
+                SearchResult {
+                    path: "experiments/pvldb_eval/start_qwen35_vllm.sh".to_string(),
+                    role: FileRole::Unknown,
+                    language: Some("shell".to_string()),
+                    score: 23.0,
+                    reason: "workflow script match".to_string(),
+                },
+            ],
+            symbol_results: (0..5)
+                .map(|index| SymbolSearchResult {
+                    symbol: CodeSymbol {
+                        name: format!("ExtraSymbol{index}"),
+                        kind: SymbolKind::Function,
+                        path: format!("src/symbol-{index}.rs"),
+                        language: Some("rust".to_string()),
+                        start_line: 1,
+                        end_line: 2,
+                        signature: format!("fn extra_symbol_{index}()"),
+                        exported: false,
+                    },
+                    score: 50.0 - index as f32,
+                    reason: "symbol expansion".to_string(),
+                })
+                .collect(),
+            roles: roles([
+                ("src/eval.rs", FileRole::Source),
+                ("src/workflow.rs", FileRole::Source),
+                ("src/state.rs", FileRole::Source),
+                ("src/nodes.rs", FileRole::Source),
+                ("src/agents.rs", FileRole::Source),
+                (
+                    "experiments/pvldb_eval/bootstrap_qwen35_host.sh",
+                    FileRole::Unknown,
+                ),
+                (
+                    "experiments/pvldb_eval/deploy_qwen35_runpod.sh",
+                    FileRole::Unknown,
+                ),
+                (
+                    "experiments/pvldb_eval/run_qwen35_phase1.sh",
+                    FileRole::Unknown,
+                ),
+                (
+                    "experiments/pvldb_eval/start_qwen35_vllm.sh",
+                    FileRole::Unknown,
+                ),
+                ("src/symbol-0.rs", FileRole::Source),
+                ("src/symbol-1.rs", FileRole::Source),
+                ("src/symbol-2.rs", FileRole::Source),
+                ("src/symbol-3.rs", FileRole::Source),
+                ("src/symbol-4.rs", FileRole::Source),
+            ]),
+            ..RankingInput::default()
+        });
+
+        let selection = select_ranked_candidates_for_scope(&candidates, 10, 0, true);
+        let paths = selection
+            .target_files
+            .iter()
+            .map(|target| target.path.as_str())
+            .collect::<Vec<_>>();
+
+        assert!(paths.contains(&"experiments/pvldb_eval/bootstrap_qwen35_host.sh"));
+        assert!(paths.contains(&"experiments/pvldb_eval/run_qwen35_phase1.sh"));
+        assert!(paths.contains(&"experiments/pvldb_eval/start_qwen35_vllm.sh"));
+        assert!(!paths.contains(&"experiments/pvldb_eval/deploy_qwen35_runpod.sh"));
+    }
+
+    #[test]
+    fn broad_selection_reserves_root_governance_docs_before_symbol_expansion() {
+        let candidates = rank_candidates(RankingInput {
+            lexical_results: vec![
+                lexical("src/eval.rs", 30.0),
+                lexical("src/git.rs", 29.0),
+                lexical("src/main.rs", 28.0),
+                lexical("src/planning.rs", 27.0),
+                lexical("src/ranking.rs", 26.0),
+                SearchResult {
+                    path: ".planning/PROJECT.md".to_string(),
+                    role: FileRole::Docs,
+                    language: Some("markdown".to_string()),
+                    score: 25.0,
+                    reason: "project governance".to_string(),
+                },
+                SearchResult {
+                    path: ".planning/MILESTONES.md".to_string(),
+                    role: FileRole::Docs,
+                    language: Some("markdown".to_string()),
+                    score: 24.0,
+                    reason: "milestone governance".to_string(),
+                },
+            ],
+            symbol_results: (0..5)
+                .map(|index| SymbolSearchResult {
+                    symbol: CodeSymbol {
+                        name: format!("Protected{index}"),
+                        kind: SymbolKind::Function,
+                        path: format!("src/protected-{index}.rs"),
+                        language: Some("rust".to_string()),
+                        start_line: 1,
+                        end_line: 2,
+                        signature: format!("fn protected_{index}()"),
+                        exported: false,
+                    },
+                    score: 50.0 - index as f32,
+                    reason: "symbol expansion".to_string(),
+                })
+                .collect(),
+            roles: roles([
+                ("src/eval.rs", FileRole::Source),
+                ("src/git.rs", FileRole::Source),
+                ("src/main.rs", FileRole::Source),
+                ("src/planning.rs", FileRole::Source),
+                ("src/ranking.rs", FileRole::Source),
+                (".planning/PROJECT.md", FileRole::Docs),
+                (".planning/MILESTONES.md", FileRole::Docs),
+                ("src/protected-0.rs", FileRole::Source),
+                ("src/protected-1.rs", FileRole::Source),
+                ("src/protected-2.rs", FileRole::Source),
+                ("src/protected-3.rs", FileRole::Source),
+                ("src/protected-4.rs", FileRole::Source),
+            ]),
+            ..RankingInput::default()
+        });
+
+        let selection = select_ranked_candidates_for_scope(&candidates, 7, 0, true);
+        let paths = selection
+            .target_files
+            .iter()
+            .map(|target| target.path.as_str())
+            .collect::<Vec<_>>();
+
+        assert!(paths.contains(&".planning/PROJECT.md"));
+        assert!(paths.contains(&".planning/MILESTONES.md"));
     }
 
     #[test]

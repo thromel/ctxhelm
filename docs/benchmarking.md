@@ -44,6 +44,13 @@ target-file recall after the narrow-plan validation-test reserve; broad
 context-area plans remain file-first and continue to use the validation channel
 for tests.
 
+The latest clean four-repo proof also reports zero protected target misses
+after broad operational floors for root governance docs, exact config matches,
+and workflow lifecycle scripts. The current summary is `allFileClaim = mixed`
+with beat `3`, match `1`, trail `0`, average File Recall@10 `0.5986343` versus
+lexical `0.45709258`, average file delta `+0.14154172`, average agent-evidence
+delta `+0.19379663`, and average context delta `+0.23717105`.
+
 v2.3 treats benchmark suites as fixed corpus manifests. Older suite files still work, but v2.3+ manifests should include a manifest version, corpus ID, privacy label, revision range ID, and optional locked baseline metadata so quality claims are reproducible.
 
 Phase 58 adds source-free query construction traces to prepare-task and historical eval commit rows. These traces record extracted paths, stack frames, symbols, error terms, domain terms, commit clues, retriever query sets, and fusion controls. They intentionally store task hashes and bounded facets instead of raw prompts or source snippets.

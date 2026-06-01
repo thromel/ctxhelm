@@ -3,11 +3,11 @@ gsd_state_version: 1.0
 milestone: v2.5
 milestone_name: Production Retrieval Quality
 status: active
-last_updated: "2026-06-01T02:06:08Z"
-last_activity: 2026-06-01 -- Phase 127 added narrow validation-test reserve for target-file lexical parity
+last_updated: "2026-06-01T05:01:04Z"
+last_activity: 2026-06-01 -- Phase 128 added broad operational floors for governance docs and workflow scripts
 progress:
-  total_phases: 59
-  completed_phases: 59
+  total_phases: 60
+  completed_phases: 60
   total_plans: 7
   completed_plans: 7
   percent: 100
@@ -17,10 +17,10 @@ progress:
 
 ## Current Position
 
-Phase: 127 - Narrow Validation-Test Reserve
-Plan: 127-narrow-validation-test-reserve
+Phase: 128 - Broad Operational Floors
+Plan: 128-broad-operational-floors
 Status: Complete
-Last activity: 2026-06-01 -- Phase 127 added a narrow-plan validation-test reserve so changed tests that are correctly recommended through the validation channel can enter the top-10 context-file ranking for narrow tasks without perturbing broad context-area plans.
+Last activity: 2026-06-01 -- Phase 128 added bounded broad-task reserves for root governance docs, exact config evidence, and workflow lifecycle scripts before later symbol/dependency expansion, clearing remaining protected target misses in the clean four-repo proof.
 
 ## Project Reference
 
@@ -104,6 +104,7 @@ Planned phases:
 - Phase 125: Lexical Comparison Proof Boundary (complete follow-up)
 - Phase 126: Agent Evidence Lexical Comparison (complete follow-up)
 - Phase 127: Narrow Validation-Test Reserve (complete follow-up)
+- Phase 128: Broad Operational Floors (complete follow-up)
 
 ## Last Completed Milestone
 
@@ -121,7 +122,7 @@ Planned phases:
 
 ## Next Step
 
-Continue production-readiness work from remaining measured gaps: continue broad source-free ranking improvements and refresh real-client proof evidence when client versions change. Broad evals now distinguish files covered only by surfaced context areas from files with no candidate signal, clean cold full-fixture proof promotes across RefactoringMiner, ctxpack, ReAgent, and VeriSchema, and product proof now explicitly reports `releaseGate.lexicalComparison`: current all-file claim `mixed` with zero trailing corpora, current agent-evidence claim `mixed` with zero trailing corpora, current context-channel claim `mixed`, all-file average delta `+0.13567334`, agent-evidence average delta `+0.18792826`, and context average delta `+0.23022664`. The full packaged release gate passes from a clean checkout with the clean fixture proof required, release-candidate metadata marks the local archive channel ready while deferring Homebrew/crates.io/signed installers/self-update, the public `v1.1.0` GitHub archive release is published and source-free asset digests are verified, the public archive install path passes checksum/archive/temp-install/doctor/first-pack proof, optional public-archive real-client proof records Claude Code tool-call evidence and Codex CLI source-free skip evidence without missing-evidence regressions, broad context-area guidance covers more wide-task implementation areas, packs tell agents concrete source/docs paths to inspect next, plan-level context areas expose source-free role signals, MCP context-area resources explicitly label their counts/read batches as safe-inventory scope and now expose source-free coverage profiles plus inspection strategies with progressive read order, path budget, and stop rules, ctxpack-index release-validation tests now share one process-environment lock for `CTXPACK_HOME`, public CI now enforces formatting, clippy, locked tests, CLI help, release-doc consistency, and release-gate smoke on pushes/PRs using Node 24 action majors without Node 20 warning text, gap summaries point to area resources and bounded next-read paths, the product-proof checker gates those gap summaries and fails cleanly on missing embedded repo reports, history-unavailable repos now produce embedded insufficient-evidence reports instead of `null` reports, repo-scoped resources work after explicit-repo MCP tools even from a wrong server cwd, broad fixed-corpus metric floors block silent selection regressions, governance/proof tasks classify broad historical/eval language reliably, archive/docs broad tasks now receive context-area guidance without perturbing target-file source floors, real-client smoke artifacts now carry source-free request metadata instead of boolean-only claims, and the full four-repo proof now hydrates all configured repositories instead of hanging or returning missing reports.
+Continue production-readiness work from remaining measured gaps: refresh optional real-client proof evidence when client versions change and continue hardening broad source-free ranking only when proof shows a concrete gap. Broad evals now distinguish files covered only by surfaced context areas from files with no candidate signal, clean cold full-fixture proof promotes across RefactoringMiner, ctxpack, ReAgent, and VeriSchema, and product proof now explicitly reports `releaseGate.lexicalComparison`: current all-file claim `mixed` with zero trailing corpora, current agent-evidence claim `mixed` with zero trailing corpora, current context-channel claim `mixed`, all-file average delta `+0.14154172`, agent-evidence average delta `+0.19379663`, context average delta `+0.23717105`, and protected target miss-rate `0.0` on all four corpora. The full packaged release gate passes from a clean checkout with the clean fixture proof required, release-candidate metadata marks the local archive channel ready while deferring Homebrew/crates.io/signed installers/self-update, the public `v1.1.0` GitHub archive release is published and source-free asset digests are verified, the public archive install path passes checksum/archive/temp-install/doctor/first-pack proof, optional public-archive real-client proof records Claude Code tool-call evidence and Codex CLI source-free skip evidence without missing-evidence regressions, broad context-area guidance covers more wide-task implementation areas, packs tell agents concrete source/docs paths to inspect next, plan-level context areas expose source-free role signals, MCP context-area resources explicitly label their counts/read batches as safe-inventory scope and now expose source-free coverage profiles plus inspection strategies with progressive read order, path budget, and stop rules, ctxpack-index release-validation tests now share one process-environment lock for `CTXPACK_HOME`, public CI now enforces formatting, clippy, locked tests, CLI help, release-doc consistency, and release-gate smoke on pushes/PRs using Node 24 action majors without Node 20 warning text, gap summaries point to area resources and bounded next-read paths, the product-proof checker gates those gap summaries and fails cleanly on missing embedded repo reports, history-unavailable repos now produce embedded insufficient-evidence reports instead of `null` reports, repo-scoped resources work after explicit-repo MCP tools even from a wrong server cwd, broad fixed-corpus metric floors block silent selection regressions, governance/proof tasks classify broad historical/eval language reliably, archive/docs broad tasks now receive context-area guidance without perturbing target-file source floors, broad operational tasks reserve governance/config/workflow evidence before lower-priority expansion, real-client smoke artifacts now carry source-free request metadata instead of boolean-only claims, and the full four-repo proof now hydrates all configured repositories instead of hanging or returning missing reports.
 
 ## Operator Next Steps
 
@@ -213,4 +214,5 @@ Continue production-readiness work from remaining measured gaps: continue broad 
 - Phase 125 adds source-free lexical comparison summaries to product proof. Latest proof notes: `.planning/e2e/2026-06-01-phase125-lexical-comparison-proof.md`; durable source-free summary: `.ctxpack/e2e/phase125-lexical-comparison-proof.json`; `releaseGate.lexicalComparison` now makes all-file and context-channel lexical claims explicit.
 - Phase 126 adds source-free agent-evidence lexical comparison. Latest proof notes: `.planning/e2e/2026-06-01-phase126-agent-evidence-lexical-comparison.md`; durable source-free summary: `.ctxpack/e2e/phase126-agent-evidence-lexical-comparison.json`; `agentEvidenceClaim = mixed` with beat `3`, match `1`, trail `0`, and average agent-evidence delta `+0.18792826`.
 - Phase 127 adds narrow-plan validation-test reservation in context ranking. Latest proof notes: `.planning/e2e/2026-06-01-phase127-narrow-validation-test-reserve.md`; durable source-free summary: `.ctxpack/e2e/phase127-narrow-validation-test-reserve.json`; `allFileClaim = mixed` with beat `3`, match `1`, trail `0`, and average file delta `+0.13567334`.
-- Next work should use broad protected target miss rates and optional real-client evidence freshness as the production-readiness scoreboard.
+- Phase 128 adds broad operational floors for root governance docs, exact config evidence, and workflow lifecycle scripts. Latest proof notes: `.planning/e2e/2026-06-01-phase128-broad-operational-floor.md`; durable source-free summary: `.ctxpack/e2e/phase128-broad-operational-floor.json`; all four corpora have protected target miss-rate `0.0`, average file delta improves to `+0.14154172`, and average context delta improves to `+0.23717105`.
+- Next work should use optional real-client evidence freshness and any new proof-backed broad protected miss rates as the production-readiness scoreboard.
