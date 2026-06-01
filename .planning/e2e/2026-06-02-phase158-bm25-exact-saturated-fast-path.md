@@ -78,6 +78,10 @@ persistent or reusable fielded indexing for queries that are not exact-saturated
 ## Validation
 
 - `cargo fmt --check`
+- `bash scripts/check-release-docs.sh`
+- `cargo run -p ctxhelm --locked -- --help`
 - `cargo test -p ctxhelm-index lexical_search --locked`
 - `cargo test -p ctxhelm --test cli_compat eval_lexical --locked`
+- `cargo test --workspace --locked --no-fail-fast`
+- `cargo clippy --workspace --locked --all-targets -- -D warnings`
 - RefactoringMiner corpus proof above
