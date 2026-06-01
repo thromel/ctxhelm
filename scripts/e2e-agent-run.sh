@@ -4,11 +4,17 @@ set -euo pipefail
 usage() {
   cat >&2 <<'EOF'
 usage: e2e-agent-run.sh --target-file PATH [--target-file PATH ...] [--repo PATH] [--task TASK] [--output PATH]
+       e2e-agent-run.sh --suite SUITE.json [--repo PATH] [--output PATH]
 
 Runs a source-free paired Claude Code agent-run evaluation:
   1. baseline native repository exploration
   2. ctxhelm prepare_task-assisted exploration
   3. ctxhelm prepare_task + get_pack-assisted exploration
+
+With --suite, the script runs the same paired evaluation for each task in a
+source-free benchmark suite and writes aggregate native-vs-ctxhelm metrics.
+Suite files may be either an array of task objects or an object with a "tasks"
+array. Each task needs "task" or "prompt" plus "targetFiles" or "target_files".
 
 Real Claude Code execution is optional. Set CTXHELM_RUN_REAL_CLIENT=1 to run the
 client. Without it, the script writes a skipped source-free report that preserves
@@ -28,6 +34,7 @@ output_path="${CTXHELM_AGENT_RUN_REPORT:-}"
 run_real="${CTXHELM_RUN_REAL_CLIENT:-0}"
 require_real="${CTXHELM_REQUIRE_REAL_CLIENT:-0}"
 client_timeout_seconds="${CTXHELM_AGENT_RUN_TIMEOUT_SECONDS:-90}"
+suite_path=""
 target_files=()
 
 while [[ $# -gt 0 ]]; do
@@ -48,6 +55,10 @@ while [[ $# -gt 0 ]]; do
       output_path="${2:-}"
       shift 2
       ;;
+    --suite)
+      suite_path="${2:-}"
+      shift 2
+      ;;
     -h|--help)
       usage
       exit 0
@@ -59,7 +70,11 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-if [[ "${#target_files[@]}" -eq 0 ]]; then
+if [[ -n "$suite_path" && "${#target_files[@]}" -gt 0 ]]; then
+  echo "--suite cannot be combined with --target-file" >&2
+  exit 64
+fi
+if [[ -z "$suite_path" && "${#target_files[@]}" -eq 0 ]]; then
   usage
   exit 64
 fi
@@ -97,6 +112,220 @@ ctxhelm_version="$("$ctxhelm_bin" --version)"
 client_version="unavailable"
 if command -v claude >/dev/null 2>&1; then
   client_version="$(claude --version 2>&1 | head -n 1)"
+fi
+
+if [[ -n "$suite_path" ]]; then
+  if [[ ! -f "$suite_path" ]]; then
+    echo "suite not found: $suite_path" >&2
+    exit 66
+  fi
+  suite_tasks_jsonl="$work_dir/suite-tasks.jsonl"
+  suite_reports_jsonl="$work_dir/suite-reports.jsonl"
+  python3 - "$suite_path" "$suite_tasks_jsonl" <<'PY'
+import json
+import pathlib
+import sys
+
+suite_path = pathlib.Path(sys.argv[1])
+out = pathlib.Path(sys.argv[2])
+payload = json.loads(suite_path.read_text(encoding="utf-8"))
+tasks = payload.get("tasks") if isinstance(payload, dict) else payload
+if not isinstance(tasks, list) or not tasks:
+    raise SystemExit("suite must contain a non-empty tasks array")
+
+rows = []
+for index, task in enumerate(tasks, start=1):
+    if not isinstance(task, dict):
+        raise SystemExit(f"suite task {index} must be an object")
+    task_text = task.get("task") or task.get("prompt")
+    targets = task.get("targetFiles") or task.get("target_files")
+    if not isinstance(task_text, str) or not task_text.strip():
+        raise SystemExit(f"suite task {index} must include task or prompt")
+    if not isinstance(targets, list) or not targets:
+        raise SystemExit(f"suite task {index} must include targetFiles")
+    target_strings = []
+    for target in targets:
+        if not isinstance(target, str) or not target.strip():
+            raise SystemExit(f"suite task {index} has an invalid target file")
+        target_strings.append(target)
+    task_id = task.get("id") or task.get("name") or f"task-{index}"
+    rows.append({
+        "id": str(task_id),
+        "task": task_text,
+        "targetFiles": target_strings,
+    })
+
+out.write_text(
+    "".join(json.dumps(row, sort_keys=True) + "\n" for row in rows),
+    encoding="utf-8",
+)
+PY
+
+  task_index=0
+  while IFS= read -r suite_task; do
+    task_index=$((task_index + 1))
+    task_id="$(python3 -c 'import json,sys; print(json.loads(sys.argv[1])["id"])' "$suite_task")"
+    task_text="$(python3 -c 'import json,sys; print(json.loads(sys.argv[1])["task"])' "$suite_task")"
+    suite_targets=()
+    while IFS= read -r suite_target; do
+      suite_targets+=("$suite_target")
+    done < <(python3 -c 'import json,sys; print("\n".join(json.loads(sys.argv[1])["targetFiles"]))' "$suite_task")
+    task_report="$work_dir/suite-task-${task_index}.json"
+    task_args=(--repo "$repo" --task "$task_text" --output "$task_report")
+    for target in "${suite_targets[@]}"; do
+      task_args+=(--target-file "$target")
+    done
+    CTXHELM_BIN="$ctxhelm_bin" "$script_dir/e2e-agent-run.sh" "${task_args[@]}" >/dev/null
+    python3 - "$task_id" "$task_report" "$suite_reports_jsonl" <<'PY'
+import json
+import pathlib
+import sys
+
+task_id, report_path, manifest_path = sys.argv[1:]
+entry = {"taskId": task_id, "reportPath": report_path}
+with pathlib.Path(manifest_path).open("a", encoding="utf-8") as handle:
+    handle.write(json.dumps(entry, sort_keys=True) + "\n")
+PY
+  done <"$suite_tasks_jsonl"
+
+  python3 - "$suite_path" "$suite_reports_jsonl" "$repo" "$ctxhelm_version" "$client_version" "$output_path" <<'PY'
+import hashlib
+import json
+import pathlib
+import sys
+from collections import defaultdict
+
+suite_path, manifest_path, repo, ctxhelm_version, client_version, output_path = sys.argv[1:]
+entries = [
+    json.loads(line)
+    for line in pathlib.Path(manifest_path).read_text(encoding="utf-8").splitlines()
+    if line.strip()
+]
+tasks = []
+lane_totals = defaultdict(lambda: {
+    "taskCount": 0,
+    "passedCount": 0,
+    "targetCoverageSum": 0.0,
+    "readFileCount": 0,
+    "irrelevantReadCount": 0,
+    "toolCallCount": 0,
+    "ctxhelmToolCallCount": 0,
+})
+comparison = {
+    "ctxhelmToolCallsObserved": False,
+    "targetCoverageDeltaSum": 0.0,
+    "irrelevantReadDeltaSum": 0,
+}
+privacy = {
+    "localOnly": True,
+    "remoteEmbeddingsUsed": False,
+    "remoteRerankingUsed": False,
+    "sourceTextLogged": False,
+    "rawPromptStored": False,
+    "rawTranscriptStored": False,
+    "rawMcpTrafficStored": False,
+}
+
+for entry in entries:
+    report = json.loads(pathlib.Path(entry["reportPath"]).read_text(encoding="utf-8"))
+    tasks.append({
+        "taskId": entry["taskId"],
+        "status": report.get("status", "unknown"),
+        "taskSha256": report.get("task", {}).get("taskSha256"),
+        "targetFiles": report.get("targetFiles", []),
+        "comparison": report.get("comparison", {}),
+        "lanes": report.get("lanes", []),
+        "privacyStatus": report.get("privacyStatus", {}),
+    })
+    task_privacy = report.get("privacyStatus", {})
+    for key in ["remoteEmbeddingsUsed", "remoteRerankingUsed", "sourceTextLogged", "rawPromptStored", "rawTranscriptStored", "rawMcpTrafficStored"]:
+        privacy[key] = privacy[key] or bool(task_privacy.get(key, False))
+    privacy["localOnly"] = privacy["localOnly"] and bool(task_privacy.get("localOnly", True))
+    task_comparison = report.get("comparison", {})
+    comparison["ctxhelmToolCallsObserved"] = (
+        comparison["ctxhelmToolCallsObserved"]
+        or bool(task_comparison.get("ctxhelmToolCallsObserved", False))
+    )
+    comparison["targetCoverageDeltaSum"] += float(task_comparison.get("targetCoverageDelta", 0.0) or 0.0)
+    comparison["irrelevantReadDeltaSum"] += int(task_comparison.get("irrelevantReadDelta", 0) or 0)
+    for lane in report.get("lanes", []):
+        lane_id = lane.get("lane", "unknown")
+        metrics = lane.get("metrics", {})
+        bucket = lane_totals[lane_id]
+        bucket["taskCount"] += 1
+        bucket["passedCount"] += 1 if lane.get("status") == "passed" else 0
+        bucket["targetCoverageSum"] += float(metrics.get("targetCoverage", 0.0) or 0.0)
+        bucket["readFileCount"] += int(metrics.get("readFileCount", 0) or 0)
+        bucket["irrelevantReadCount"] += int(metrics.get("irrelevantReadCount", 0) or 0)
+        bucket["toolCallCount"] += int(metrics.get("toolCallCount", 0) or 0)
+        bucket["ctxhelmToolCallCount"] += int(metrics.get("ctxhelmToolCallCount", 0) or 0)
+
+lane_summaries = []
+for lane_id, bucket in sorted(lane_totals.items()):
+    task_count = bucket["taskCount"]
+    lane_summaries.append({
+        "lane": lane_id,
+        "taskCount": task_count,
+        "passedCount": bucket["passedCount"],
+        "averageTargetCoverage": bucket["targetCoverageSum"] / task_count if task_count else 0.0,
+        "readFileCount": bucket["readFileCount"],
+        "irrelevantReadCount": bucket["irrelevantReadCount"],
+        "toolCallCount": bucket["toolCallCount"],
+        "ctxhelmToolCallCount": bucket["ctxhelmToolCallCount"],
+    })
+
+task_count = len(tasks)
+target_delta_avg = comparison["targetCoverageDeltaSum"] / task_count if task_count else 0.0
+irrelevant_delta_sum = comparison["irrelevantReadDeltaSum"]
+if comparison["ctxhelmToolCallsObserved"] and (target_delta_avg > 0 or irrelevant_delta_sum > 0):
+    outcome_claim = "ctxhelm_improved"
+elif comparison["ctxhelmToolCallsObserved"] and target_delta_avg == 0 and irrelevant_delta_sum == 0:
+    outcome_claim = "ctxhelm_matched"
+else:
+    outcome_claim = "no_measured_lift"
+
+payload = {
+    "schemaVersion": "ctxhelm-agent-run-eval-v1",
+    "status": "passed" if any(task.get("status") == "passed" for task in tasks) else "skipped",
+    "workflowKind": "paired-agent-context-suite",
+    "client": {"name": "claude", "version": client_version},
+    "ctxhelmVersion": ctxhelm_version,
+    "repo": {
+        "label": pathlib.Path(repo).name,
+        "pathSha256": hashlib.sha256(repo.encode("utf-8")).hexdigest(),
+    },
+    "suite": {
+        "suiteSha256": hashlib.sha256(pathlib.Path(suite_path).read_bytes()).hexdigest(),
+        "rawTasksStored": False,
+        "taskCount": task_count,
+    },
+    "tasks": tasks,
+    "aggregate": {
+        "taskCount": task_count,
+        "laneSummaries": lane_summaries,
+        "targetCoverageDeltaAverage": target_delta_avg,
+        "irrelevantReadDeltaSum": irrelevant_delta_sum,
+        "ctxhelmToolCallsObserved": comparison["ctxhelmToolCallsObserved"],
+        "outcomeClaim": outcome_claim,
+    },
+    "privacyStatus": privacy,
+    "unsupportedActions": [
+        "source edits",
+        "user project tests",
+        "global agent config mutation",
+        "cloud upload",
+    ],
+}
+text = json.dumps(payload, indent=2, sort_keys=True) + "\n"
+if output_path:
+    path = pathlib.Path(output_path).resolve()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(text, encoding="utf-8")
+else:
+    print(text, end="")
+PY
+  echo "agent-run suite eval wrote ${output_path:-stdout}"
+  exit 0
 fi
 
 target_json="$work_dir/targets.json"

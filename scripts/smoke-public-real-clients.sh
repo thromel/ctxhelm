@@ -105,7 +105,6 @@ archive_name="${prefix}.tar.gz"
 manifest_name="${prefix}.manifest.json"
 audit_name="${prefix}.audit.json"
 archive_checksum_name="${archive_name}.sha256"
-checksums_name="sha256sums.txt"
 base_url="https://github.com/${repo}/releases/download/${tag}"
 
 download_asset() {
@@ -117,15 +116,12 @@ download_asset "$archive_name"
 download_asset "$manifest_name"
 download_asset "$audit_name"
 download_asset "$archive_checksum_name"
-download_asset "$checksums_name"
 
 (
   cd "$download_dir"
   if command -v shasum >/dev/null 2>&1; then
-    shasum -a 256 -c "$checksums_name" >/dev/null
     shasum -a 256 -c "$archive_checksum_name" >/dev/null
   else
-    sha256sum -c "$checksums_name" >/dev/null
     sha256sum -c "$archive_checksum_name" >/dev/null
   fi
 )
@@ -133,7 +129,7 @@ download_asset "$checksums_name"
 bash "$verify_release_archive_script" \
   --archive "$download_dir/$archive_name" \
   --manifest "$download_dir/$manifest_name" \
-  --checksums "$download_dir/$checksums_name" >/dev/null
+  --checksums "$download_dir/$archive_checksum_name" >/dev/null
 
 tar -xzf "$download_dir/$archive_name" -C "$extract_dir"
 ctxhelm_bin="$extract_dir/$prefix/ctxhelm"

@@ -3847,6 +3847,79 @@ fn render_agent_run_report(report: &serde_json::Value) -> String {
                 .unwrap_or(true)
         ));
     }
+    if let Some(aggregate) = report.get("aggregate") {
+        output.push_str("\n## Suite Aggregate\n\n");
+        output.push_str(&format!(
+            "- Tasks: `{}`\n- Target coverage delta average: `{}`\n- Irrelevant read delta sum: `{}`\n- Outcome claim: `{}`\n- ctxhelm calls observed: `{}`\n",
+            aggregate
+                .get("taskCount")
+                .and_then(serde_json::Value::as_u64)
+                .map(|value| value.to_string())
+                .unwrap_or_else(|| "n/a".to_string()),
+            aggregate
+                .get("targetCoverageDeltaAverage")
+                .and_then(serde_json::Value::as_f64)
+                .map(|value| format!("{value:.2}"))
+                .unwrap_or_else(|| "n/a".to_string()),
+            aggregate
+                .get("irrelevantReadDeltaSum")
+                .and_then(serde_json::Value::as_i64)
+                .map(|value| value.to_string())
+                .unwrap_or_else(|| "n/a".to_string()),
+            aggregate
+                .get("outcomeClaim")
+                .and_then(serde_json::Value::as_str)
+                .unwrap_or("unknown"),
+            aggregate
+                .get("ctxhelmToolCallsObserved")
+                .and_then(serde_json::Value::as_bool)
+                .map(|value| value.to_string())
+                .unwrap_or_else(|| "n/a".to_string()),
+        ));
+        if let Some(lanes) = aggregate
+            .get("laneSummaries")
+            .and_then(serde_json::Value::as_array)
+        {
+            output.push_str("\n## Suite Lanes\n\n");
+            for lane in lanes {
+                let lane_id = lane
+                    .get("lane")
+                    .and_then(serde_json::Value::as_str)
+                    .unwrap_or("unknown");
+                output.push_str(&format!(
+                    "- `{lane_id}` tasks `{}` passed `{}` avg target coverage `{}` read files `{}` irrelevant reads `{}` tool calls `{}` ctxhelm calls `{}`\n",
+                    lane.get("taskCount")
+                        .and_then(serde_json::Value::as_u64)
+                        .map(|value| value.to_string())
+                        .unwrap_or_else(|| "n/a".to_string()),
+                    lane.get("passedCount")
+                        .and_then(serde_json::Value::as_u64)
+                        .map(|value| value.to_string())
+                        .unwrap_or_else(|| "n/a".to_string()),
+                    lane.get("averageTargetCoverage")
+                        .and_then(serde_json::Value::as_f64)
+                        .map(|value| format!("{value:.2}"))
+                        .unwrap_or_else(|| "n/a".to_string()),
+                    lane.get("readFileCount")
+                        .and_then(serde_json::Value::as_u64)
+                        .map(|value| value.to_string())
+                        .unwrap_or_else(|| "n/a".to_string()),
+                    lane.get("irrelevantReadCount")
+                        .and_then(serde_json::Value::as_u64)
+                        .map(|value| value.to_string())
+                        .unwrap_or_else(|| "n/a".to_string()),
+                    lane.get("toolCallCount")
+                        .and_then(serde_json::Value::as_u64)
+                        .map(|value| value.to_string())
+                        .unwrap_or_else(|| "n/a".to_string()),
+                    lane.get("ctxhelmToolCallCount")
+                        .and_then(serde_json::Value::as_u64)
+                        .map(|value| value.to_string())
+                        .unwrap_or_else(|| "n/a".to_string()),
+                ));
+            }
+        }
+    }
     output.push_str("\n## Lanes\n\n");
     if let Some(lanes) = report.get("lanes").and_then(serde_json::Value::as_array) {
         for lane in lanes {

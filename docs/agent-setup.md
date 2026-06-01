@@ -48,6 +48,22 @@ and observed ctxhelm tool calls while keeping raw prompts, raw stream output,
 raw MCP traffic, source text, and user-project command output out of the
 persisted report.
 
+For repeatable native-agent outcome benchmarks, use the same script with a
+suite file:
+
+```bash
+CTXHELM_RUN_REAL_CLIENT=1 bash scripts/e2e-agent-run.sh \
+  --repo "$REPO" \
+  --suite .ctxhelm/outcomes/tasks.json \
+  --output .ctxhelm/e2e/agent-run-suite-claude.json
+ctxhelm eval agent-run --report .ctxhelm/e2e/agent-run-suite-claude.json
+```
+
+Suite reports aggregate the native baseline, `prepare_task`, and brief-pack
+lanes across tasks. They are still source-free: raw tasks are hashed, raw
+prompts/transcripts/MCP traffic are not persisted, and the report stores only
+target path labels, lane metrics, privacy flags, and sanitized request evidence.
+
 Latest local real-client workflow refresh: 2026-06-01, Claude Code `2.1.159`
 passed `scripts/e2e-claude-workflow.sh` with source-free explicit-repo
 `prepare_task` and `get_pack` evidence. See

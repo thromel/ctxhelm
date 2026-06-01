@@ -3,11 +3,11 @@ gsd_state_version: 1.0
 milestone: v2.5
 milestone_name: Production Retrieval Quality
 status: active
-last_updated: "2026-06-01T19:40:00Z"
-last_activity: 2026-06-02 -- Phase 151 prepared v1.1.12 release currentness with tag-published multi-platform assets and refreshed Claude Code workflow proof
+last_updated: "2026-06-02T00:00:00Z"
+last_activity: 2026-06-02 -- Phase 152 added native-agent outcome suite support for source-free multi-task Claude baseline versus ctxhelm-assisted comparison
 progress:
-  total_phases: 83
-  completed_phases: 83
+  total_phases: 84
+  completed_phases: 84
   total_plans: 7
   completed_plans: 7
   percent: 100
@@ -17,10 +17,10 @@ progress:
 
 ## Current Position
 
-Phase: 151 - Public v1.1.12 Multi-Platform Currentness
-Plan: 151-public-v112-multi-platform-currentness
+Phase: 152 - Native-Agent Outcome Suite
+Plan: 152-native-agent-outcome-suite
 Status: Complete
-Last activity: 2026-06-02 -- Phase 151 bumped the release identity to `v1.1.12`, upgraded the release-artifact workflow so version-tag pushes create/update the GitHub release and upload verified Linux x64, macOS Intel, and macOS Apple Silicon assets, and refreshed required Claude Code workflow proof for explicit-repo `prepare_task` and `get_pack`.
+Last activity: 2026-06-02 -- Phase 152 made the paired agent-run harness suite-aware, added aggregate native-vs-ctxhelm lane metrics, rendered suite reports through `ctxhelm eval agent-run`, and documented the source-free benchmark workflow.
 
 ## Project Reference
 
@@ -128,6 +128,7 @@ Planned phases:
 - Phase 149: Public v1.1.11 Currentness (complete follow-up)
 - Phase 150: Multi-Platform Artifact Workflow (complete follow-up)
 - Phase 151: Public v1.1.12 Multi-Platform Currentness (complete follow-up)
+- Phase 152: Native-Agent Outcome Suite (complete follow-up)
 
 ## Last Completed Milestone
 

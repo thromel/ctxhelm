@@ -1742,6 +1742,118 @@ fn eval_agent_run_renders_source_free_report() {
 }
 
 #[test]
+fn eval_agent_run_renders_source_free_suite_report() {
+    let fixture = fixture_repo();
+    let report_path = fixture.temp.path().join("agent-run-suite.json");
+    fs::write(
+        &report_path,
+        json!({
+            "schemaVersion": "ctxhelm-agent-run-eval-v1",
+            "status": "passed",
+            "workflowKind": "paired-agent-context-suite",
+            "client": {
+                "name": "claude",
+                "version": "Claude Code test"
+            },
+            "ctxhelmVersion": "ctxhelm 1.1.12",
+            "repo": {
+                "label": "fixture",
+                "pathSha256": "repo-hash"
+            },
+            "suite": {
+                "suiteSha256": "suite-hash",
+                "rawTasksStored": false,
+                "taskCount": 2
+            },
+            "tasks": [
+                {
+                    "taskId": "task-1",
+                    "status": "passed",
+                    "taskSha256": "task-hash-1",
+                    "targetFiles": ["src/lib.rs"],
+                    "comparison": {
+                        "targetCoverageDelta": 0.5,
+                        "irrelevantReadDelta": 1,
+                        "ctxhelmToolCallsObserved": true
+                    },
+                    "lanes": [],
+                    "privacyStatus": {
+                        "sourceTextLogged": false
+                    }
+                }
+            ],
+            "aggregate": {
+                "taskCount": 2,
+                "targetCoverageDeltaAverage": 0.25,
+                "irrelevantReadDeltaSum": 3,
+                "ctxhelmToolCallsObserved": true,
+                "outcomeClaim": "ctxhelm_improved",
+                "laneSummaries": [
+                    {
+                        "lane": "baseline",
+                        "taskCount": 2,
+                        "passedCount": 2,
+                        "averageTargetCoverage": 0.5,
+                        "readFileCount": 8,
+                        "irrelevantReadCount": 4,
+                        "toolCallCount": 12,
+                        "ctxhelmToolCallCount": 0
+                    },
+                    {
+                        "lane": "ctxhelm-brief",
+                        "taskCount": 2,
+                        "passedCount": 2,
+                        "averageTargetCoverage": 0.75,
+                        "readFileCount": 5,
+                        "irrelevantReadCount": 1,
+                        "toolCallCount": 10,
+                        "ctxhelmToolCallCount": 4
+                    }
+                ]
+            },
+            "privacyStatus": {
+                "localOnly": true,
+                "remoteEmbeddingsUsed": false,
+                "remoteRerankingUsed": false,
+                "sourceTextLogged": false,
+                "rawPromptStored": false,
+                "rawTranscriptStored": false,
+                "rawMcpTrafficStored": false
+            }
+        })
+        .to_string(),
+    )
+    .unwrap();
+
+    Command::cargo_bin("ctxhelm")
+        .unwrap()
+        .args(["eval", "agent-run", "--report"])
+        .arg(&report_path)
+        .assert()
+        .success()
+        .stdout(contains("## Suite Aggregate"))
+        .stdout(contains("Target coverage delta average: `0.25`"))
+        .stdout(contains("Irrelevant read delta sum: `3`"))
+        .stdout(contains("## Suite Lanes"))
+        .stdout(contains("ctxhelm-brief"));
+
+    let rendered_json = json_stdout(
+        Command::cargo_bin("ctxhelm")
+            .unwrap()
+            .args(["eval", "agent-run", "--report"])
+            .arg(&report_path)
+            .args(["--format", "json"])
+            .assert(),
+    );
+    assert_eq!(rendered_json["suite"]["rawTasksStored"], false);
+    assert_eq!(rendered_json["privacyStatus"]["sourceTextLogged"], false);
+    assert_eq!(
+        rendered_json["aggregate"]["outcomeClaim"],
+        "ctxhelm_improved"
+    );
+}
+
+#[test]
 fn eval_benchmark_runs_named_suite_source_free() {
     let first = fixture_repo();
     let second = fixture_repo();

@@ -117,6 +117,36 @@ can verify the contract without pretending a real agent ran. Treat a passing
 agent-run report as process evidence for that task and client version, not as a
 general retrieval-quality proof.
 
+For benchmark-style evidence, run the same harness against a suite:
+
+```json
+{
+  "schemaVersion": "ctxhelm-native-agent-suite-v1",
+  "tasks": [
+    {
+      "id": "release-docs",
+      "task": "Identify files relevant to release-proof documentation drift",
+      "targetFiles": ["README.md", "docs/release.md"]
+    }
+  ]
+}
+```
+
+```bash
+CTXHELM_RUN_REAL_CLIENT=1 bash scripts/e2e-agent-run.sh \
+  --repo "$REPO" \
+  --suite .ctxhelm/outcomes/tasks.json \
+  --output .ctxhelm/e2e/agent-run-suite-claude.json
+
+ctxhelm eval agent-run --report .ctxhelm/e2e/agent-run-suite-claude.json
+```
+
+Suite reports keep the same source-free contract and add aggregate lane
+summaries: task count, average target-coverage delta, total irrelevant-read
+delta, per-lane read/tool counts, and the aggregate outcome claim. This is the
+preferred path for comparing native agent search against ctxhelm-assisted
+exploration across repeated tasks.
+
 ## Release Coverage
 
 The release gate runs `scripts/smoke-feedback.sh`. The smoke proves source-free
