@@ -2235,6 +2235,10 @@ mod tests {
                 path_family: "src/auth/*.ts".to_string(),
                 context_area: "src/auth".to_string(),
                 context_area_resource_uri: "ctxhelm://repo/context-area/src%2Fauth".to_string(),
+                context_area_signal_counts: BTreeMap::from([("lexical".to_string(), 2)]),
+                context_area_role_counts: BTreeMap::from([("source".to_string(), 3)]),
+                context_area_selected_role_counts: BTreeMap::from([("source".to_string(), 1)]),
+                context_area_unselected_count: 2,
                 target_status: RetrievalGapTargetStatus::CurrentReachable,
                 recommendation_area: RetrievalGapRecommendationArea::LexicalRanking,
                 missed_count: 2,
@@ -2303,6 +2307,22 @@ mod tests {
         assert_eq!(
             value["retrievalGapSummaries"][0]["contextAreaResourceUri"],
             "ctxhelm://repo/context-area/src%2Fauth"
+        );
+        assert_eq!(
+            value["retrievalGapSummaries"][0]["contextAreaSignalCounts"]["lexical"],
+            2
+        );
+        assert_eq!(
+            value["retrievalGapSummaries"][0]["contextAreaRoleCounts"]["source"],
+            3
+        );
+        assert_eq!(
+            value["retrievalGapSummaries"][0]["contextAreaSelectedRoleCounts"]["source"],
+            1
+        );
+        assert_eq!(
+            value["retrievalGapSummaries"][0]["contextAreaUnselectedCount"],
+            2
         );
         assert_eq!(
             value["retrievalGapSummaries"][0]["nextReadPaths"][0],

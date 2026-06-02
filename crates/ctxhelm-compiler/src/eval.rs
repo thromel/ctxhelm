@@ -444,6 +444,14 @@ pub struct RetrievalGapSummary {
     pub context_area: String,
     #[serde(default, skip_serializing_if = "String::is_empty")]
     pub context_area_resource_uri: String,
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub context_area_signal_counts: BTreeMap<String, usize>,
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub context_area_role_counts: BTreeMap<String, usize>,
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub context_area_selected_role_counts: BTreeMap<String, usize>,
+    #[serde(default, skip_serializing_if = "is_zero")]
+    pub context_area_unselected_count: usize,
     pub target_status: RetrievalGapTargetStatus,
     pub recommendation_area: RetrievalGapRecommendationArea,
     pub missed_count: usize,
@@ -7192,6 +7200,9 @@ fn retrieval_gap_summaries(
                 .unwrap_or_else(|| "no_candidate_signal".to_string());
             let package = package_family(path);
             let path_family = path_family(path);
+            let context_area = context_area_for_path(path);
+            let context_area_resource_uri = context_area_resource_uri(&context_area);
+            let context_area_profile = context_area_profile_for_gap(commit, &context_area);
             let target_status = labels_by_path
                 .get(path)
                 .map(gap_target_status)
@@ -7212,9 +7223,9 @@ fn retrieval_gap_summaries(
                 if summary.next_read_paths.len() < 8 && !summary.next_read_paths.contains(path) {
                     summary.next_read_paths.push(path.clone());
                 }
+                merge_context_area_profile(summary, context_area_profile);
             } else {
-                let context_area = context_area_for_path(path);
-                let context_area_resource_uri = context_area_resource_uri(&context_area);
+                let context_area_profile = context_area_profile_fields(context_area_profile);
                 summaries.push(RetrievalGapSummary {
                     role,
                     signal_gap,
@@ -7222,6 +7233,10 @@ fn retrieval_gap_summaries(
                     path_family,
                     context_area,
                     context_area_resource_uri,
+                    context_area_signal_counts: context_area_profile.signal_counts,
+                    context_area_role_counts: context_area_profile.role_counts,
+                    context_area_selected_role_counts: context_area_profile.selected_role_counts,
+                    context_area_unselected_count: context_area_profile.unselected_count,
                     target_status,
                     recommendation_area,
                     missed_count: 1,
@@ -7243,6 +7258,61 @@ fn retrieval_gap_summaries(
     });
     summaries.truncate(limit.max(1));
     summaries
+}
+
+fn context_area_profile_for_gap<'a>(
+    commit: &'a HistoricalCommitEval,
+    context_area: &str,
+) -> Option<&'a ContextArea> {
+    commit
+        .context_areas
+        .iter()
+        .find(|area| area.area == context_area)
+}
+
+#[derive(Default)]
+struct ContextAreaProfileFields {
+    signal_counts: BTreeMap<String, usize>,
+    role_counts: BTreeMap<String, usize>,
+    selected_role_counts: BTreeMap<String, usize>,
+    unselected_count: usize,
+}
+
+fn context_area_profile_fields(profile: Option<&ContextArea>) -> ContextAreaProfileFields {
+    profile
+        .map(|area| ContextAreaProfileFields {
+            signal_counts: area.signal_counts.clone(),
+            role_counts: area.role_counts.clone(),
+            selected_role_counts: area.selected_role_counts.clone(),
+            unselected_count: area.unselected_count,
+        })
+        .unwrap_or_default()
+}
+
+fn merge_context_area_profile(summary: &mut RetrievalGapSummary, profile: Option<&ContextArea>) {
+    let Some(profile) = profile else {
+        return;
+    };
+    merge_count_maps(
+        &mut summary.context_area_signal_counts,
+        &profile.signal_counts,
+    );
+    merge_count_maps(&mut summary.context_area_role_counts, &profile.role_counts);
+    merge_count_maps(
+        &mut summary.context_area_selected_role_counts,
+        &profile.selected_role_counts,
+    );
+    summary.context_area_unselected_count += profile.unselected_count;
+}
+
+fn merge_count_maps(target: &mut BTreeMap<String, usize>, source: &BTreeMap<String, usize>) {
+    for (key, value) in source {
+        *target.entry(key.clone()).or_default() += value;
+    }
+}
+
+fn is_zero(value: &usize) -> bool {
+    *value == 0
 }
 
 fn historical_eval_runtime_summary(
@@ -9084,7 +9154,22 @@ mod tests {
             broad_scope_task: false,
             changed_context_areas: Vec::new(),
             context_area_hits: Vec::new(),
-            context_areas: Vec::new(),
+            context_areas: vec![ContextArea {
+                area: "src/auth".to_string(),
+                reason: "source area surfaced by lexical and dependency evidence".to_string(),
+                resource_uri: "ctxhelm://repo/context-area/src%2Fauth".to_string(),
+                representative_paths: vec!["src/auth/session.ts".to_string()],
+                next_read_paths: vec!["src/auth/session.ts".to_string()],
+                signal_counts: BTreeMap::from([
+                    ("dependency".to_string(), 1),
+                    ("lexical".to_string(), 2),
+                ]),
+                role_counts: BTreeMap::from([("source".to_string(), 3)]),
+                selected_role_counts: BTreeMap::from([("source".to_string(), 1)]),
+                candidate_count: 3,
+                selected_count: 1,
+                unselected_count: 2,
+            }],
             confidence: 0.5,
             query_trace: None,
             elapsed_millis: 0,
@@ -9121,6 +9206,23 @@ mod tests {
             summaries[0].context_area_resource_uri,
             "ctxhelm://repo/context-area/src%2Fauth"
         );
+        assert_eq!(
+            summaries[0].context_area_signal_counts.get("lexical"),
+            Some(&2)
+        );
+        assert_eq!(
+            summaries[0].context_area_signal_counts.get("dependency"),
+            Some(&1)
+        );
+        assert_eq!(
+            summaries[0].context_area_role_counts.get("source"),
+            Some(&3)
+        );
+        assert_eq!(
+            summaries[0].context_area_selected_role_counts.get("source"),
+            Some(&1)
+        );
+        assert_eq!(summaries[0].context_area_unselected_count, 2);
         assert_eq!(summaries[0].next_read_paths, vec!["src/auth/session.ts"]);
     }
 

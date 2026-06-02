@@ -109,6 +109,13 @@ family. They are deduplicated per candidate and can include `lexical`,
 `memory`. The counts explain why an area was surfaced without storing source
 text or changing the recall denominator.
 
+Retrieval gap summaries reuse the same source-free area profile when a missed
+target belongs to a task-conditioned context area. Profiled gap summaries expose
+`contextAreaSignalCounts`, `contextAreaRoleCounts`,
+`contextAreaSelectedRoleCounts`, and `contextAreaUnselectedCount`. These fields
+make proof gaps actionable without storing source text or requiring a manual
+join against individual commit `contextAreas`.
+
 Dynamic MCP context-area resources expose a separate inventory-wide scope.
 `resourceScope.kind = safeInventoryArea`, `taskConditioned = false`,
 `countsSource = safeInventory`, and `pathSource = safeInventory` distinguish

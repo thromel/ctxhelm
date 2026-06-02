@@ -324,6 +324,12 @@ current-diff, or memory signals before deciding which native file reads to do
 next. The accepted change followed a rejected dependency-reserve widening
 experiment that produced no recall lift in the clean four-repo proof.
 
+Phase 185 carries those source-free area profiles into retrieval-gap summaries.
+When a missed target belongs to a surfaced task-conditioned area, the gap now
+reports the area's signal counts, role counts, selected-role counts, and
+unselected count. This keeps product proof diagnostics actionable while leaving
+ranking, budgets, and release thresholds unchanged.
+
 The optional real-client evidence wrappers are:
 
 - `scripts/smoke-codex-mcp.sh`
