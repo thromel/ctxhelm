@@ -4,10 +4,10 @@ milestone: v2.5
 milestone_name: Production Retrieval Quality
 status: active
 last_updated: "2026-06-02T00:00:00Z"
-last_activity: 2026-06-02 -- Phase 167 pruned generated inventory trees before walking, reducing RefactoringMiner semantic seed to 5.18s and steady-state fresh-process semantic search to 0.11s
+last_activity: 2026-06-02 -- Phase 168 added source-free semantic identifier aliases and semantic-only non-target diagnostics; RefactoringMiner still holds semantic opt-in with zero semantic-only target hits
 progress:
-  total_phases: 89
-  completed_phases: 89
+  total_phases: 90
+  completed_phases: 90
   total_plans: 7
   completed_plans: 7
   percent: 100
@@ -17,10 +17,10 @@ progress:
 
 ## Current Position
 
-Phase: 167 - Pruned Generated Inventory Walk
-Plan: 167-pruned-generated-inventory-walk
+Phase: 168 - Semantic Alias And Noise Diagnostics
+Plan: 168-semantic-alias-noise-diagnostics
 Status: Complete
-Last activity: 2026-06-02 -- Phase 167 bumped inventory schema to v4 and pruned `.git`, generated fixture/cache/build directories, and sensitive directories at the walker level when excluded by policy. RefactoringMiner proof showed generated exclusions drop from 38,242 walked files to 25 counted generated files, lexical fresh setup drops to `3.70s` and cache-hit search to `0.08s`, semantic status drops to `0.10s`, the bounded AllMini semantic seed drops from Phase 166 `55.65s` to `5.18s`, and the second fresh-process semantic search drops from `12.08s` to `0.11s` while preserving `TypeScriptVisitor.java` as top result.
+Last activity: 2026-06-02 -- Phase 168 added source-free identifier aliases to semantic document/query text, versioned semantic render hashes so stale vectors are not reused after text changes, and added semantic-only non-target counts plus diagnostics. The clean RefactoringMiner 3-commit `local_fastembed` gate still holds semantic opt-in: File Recall@10 stayed `0.72222227` for semantic and lexical/default, semantic-only target hits remained `0`, and the only semantic-only file was a non-target `TypeScriptDiffTest.java`; warmed gate wall time was `21.20s`.
 
 ## Project Reference
 
@@ -144,6 +144,7 @@ Planned phases:
 - Phase 165: Fastembed Default And Loud Index Errors (complete follow-up)
 - Phase 166: Semantic Query Vector Reuse (complete follow-up)
 - Phase 167: Pruned Generated Inventory Walk (complete follow-up)
+- Phase 168: Semantic Alias And Noise Diagnostics (complete follow-up)
 
 ## Last Completed Milestone
 

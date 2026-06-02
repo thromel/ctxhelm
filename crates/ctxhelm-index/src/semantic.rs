@@ -36,6 +36,8 @@ const JINA_CODE_FASTEMBED_MODEL: &str = "JinaEmbeddingsV2BaseCode";
 #[cfg(feature = "local-embeddings")]
 const LOCAL_FASTEMBED_VECTOR_CACHE_LIMIT: usize = 10_000;
 const DEFAULT_LOCAL_FASTEMBED_DOCUMENT_PREFILTER_LIMIT: usize = 128;
+const SEMANTIC_DOCUMENT_TEXT_VERSION: &str = "sem-doc-v2";
+const SEMANTIC_QUERY_TEXT_VERSION: &str = "sem-query-v2";
 
 type SemanticCandidateVectors = (Vec<SemanticDocument>, BTreeMap<String, Vec<f32>>);
 
@@ -224,7 +226,7 @@ pub fn semantic_document_report(
         .collect::<Vec<_>>();
     semantic_files.sort_by(|left, right| left.path.cmp(&right.path));
     if let Some(query) = options.query.as_deref() {
-        let terms = query_terms(query);
+        let terms = semantic_query_terms(query);
         semantic_files.sort_by(|left, right| {
             semantic_file_prefilter_score(right, &terms, &symbols_by_path, &edges_by_path)
                 .total_cmp(&semantic_file_prefilter_score(
@@ -257,6 +259,17 @@ pub fn semantic_document_report(
             line_range: None,
             weight: 0.9,
         });
+        let path_aliases = identifier_aliases(&file.path);
+        if !path_aliases.is_empty() {
+            facets.push(SemanticDocumentFacet {
+                kind: SemanticDocumentFacetKind::Metadata,
+                label: "path_aliases".to_string(),
+                value: path_aliases.join(" "),
+                path: Some(file.path.clone()),
+                line_range: None,
+                weight: 0.8,
+            });
+        }
         if let Some(language) = &file.language {
             facets.push(SemanticDocumentFacet {
                 kind: SemanticDocumentFacetKind::Metadata,
@@ -286,6 +299,20 @@ pub fn semantic_document_report(
                 }),
                 weight: if symbol.exported { 1.0 } else { 0.8 },
             });
+            let symbol_aliases = identifier_aliases(&symbol.name);
+            if !symbol_aliases.is_empty() {
+                facets.push(SemanticDocumentFacet {
+                    kind: SemanticDocumentFacetKind::Symbol,
+                    label: "symbol_aliases".to_string(),
+                    value: symbol_aliases.join(" "),
+                    path: Some(symbol.path.clone()),
+                    line_range: Some(LineRange {
+                        start: symbol.start_line,
+                        end: symbol.end_line.max(symbol.start_line),
+                    }),
+                    weight: if symbol.exported { 0.9 } else { 0.7 },
+                });
+            }
         }
 
         for edge in edges_by_path.get(&file.path).into_iter().flatten().take(12) {
@@ -421,7 +448,7 @@ pub fn semantic_search_report(
         });
     }
 
-    if query_terms(query).is_empty() {
+    if semantic_query_terms(query).is_empty() {
         diagnostics.push(Diagnostic {
             code: "semantic_query_empty".to_string(),
             severity: DiagnosticSeverity::Warning,
@@ -474,7 +501,8 @@ pub fn semantic_search_report(
             count: original_document_count - candidate_documents.len(),
         });
     }
-    let query_hash = semantic_query_hash(query);
+    let query_text = render_semantic_query_text(query);
+    let query_hash = semantic_query_hash(&query_text);
     let stored_query_vector =
         load_stored_semantic_query_vector(&repo_root, &provider, &query_hash, &mut diagnostics);
     let (candidate_documents, stored_vectors) = extend_with_stored_semantic_candidates(
@@ -489,10 +517,7 @@ pub fn semantic_search_report(
         .iter()
         .map(|document| {
             stored_vectors
-                .get(&semantic_document_storage_key(
-                    &document.path,
-                    &document.safe_hash,
-                ))
+                .get(&semantic_document_vector_storage_key(document))
                 .cloned()
         })
         .collect::<Vec<_>>();
@@ -522,7 +547,7 @@ pub fn semantic_search_report(
         None
     } else {
         let slot = texts.len();
-        texts.push(query.to_string());
+        texts.push(query_text);
         Some(slot)
     };
     let mut missing_text_slots = Vec::new();
@@ -623,7 +648,7 @@ pub fn semantic_search_report(
     }
 
     let mut results = Vec::new();
-    let semantic_terms = query_terms(query);
+    let semantic_terms = semantic_query_terms(query);
     for (document, file_vector) in candidate_documents
         .into_iter()
         .zip(file_vectors.into_iter())
@@ -872,6 +897,16 @@ fn semantic_document_storage_key(path: &str, safe_hash: &str) -> String {
     format!("{path}\n{safe_hash}")
 }
 
+fn semantic_document_vector_hash(document: &SemanticDocument) -> String {
+    blake3::hash(format!("{SEMANTIC_DOCUMENT_TEXT_VERSION}:{}", document.safe_hash).as_bytes())
+        .to_hex()
+        .to_string()
+}
+
+fn semantic_document_vector_storage_key(document: &SemanticDocument) -> String {
+    semantic_document_storage_key(&document.path, &semantic_document_vector_hash(document))
+}
+
 fn stored_semantic_vectors_by_document(
     provider: &SemanticProviderConfig,
     documents: &[SemanticDocument],
@@ -879,7 +914,7 @@ fn stored_semantic_vectors_by_document(
 ) -> BTreeMap<String, Vec<f32>> {
     let needed = documents
         .iter()
-        .map(|document| semantic_document_storage_key(&document.path, &document.safe_hash))
+        .map(semantic_document_vector_storage_key)
         .collect::<BTreeSet<_>>();
     stored_records
         .iter()
@@ -921,13 +956,15 @@ fn load_stored_semantic_vector_records(
 }
 
 fn semantic_query_hash(query: &str) -> String {
-    let terms = query_terms(query);
+    let terms = semantic_query_terms(query);
     let canonical = if terms.is_empty() {
         query.trim().to_ascii_lowercase()
     } else {
         terms.join(" ")
     };
-    blake3::hash(canonical.as_bytes()).to_hex().to_string()
+    blake3::hash(format!("{SEMANTIC_QUERY_TEXT_VERSION}:{canonical}").as_bytes())
+        .to_hex()
+        .to_string()
 }
 
 fn load_stored_semantic_query_vector(
@@ -988,7 +1025,7 @@ fn extend_with_stored_semantic_candidates(
     }
     let mut candidate_keys = candidate_documents
         .iter()
-        .map(|document| semantic_document_storage_key(&document.path, &document.safe_hash))
+        .map(semantic_document_vector_storage_key)
         .collect::<BTreeSet<_>>();
     let stored_keys = stored_records
         .iter()
@@ -1018,7 +1055,7 @@ fn extend_with_stored_semantic_candidates(
         };
         let mut added = 0usize;
         for document in search_space {
-            let key = semantic_document_storage_key(&document.path, &document.safe_hash);
+            let key = semantic_document_vector_storage_key(&document);
             if missing_stored_keys.contains(&key) && candidate_keys.insert(key) {
                 candidate_documents.push(document);
                 added += 1;
@@ -1127,7 +1164,7 @@ fn persist_embedded_semantic_vectors(
             let document = candidate_documents.get(*index)?;
             Some(StorageSemanticVectorRecord {
                 path: document.path.clone(),
-                safe_hash: document.safe_hash.clone(),
+                safe_hash: semantic_document_vector_hash(document),
                 provider: provider.provider.clone(),
                 model: provider.model.clone(),
                 dimensions: provider.dimensions,
@@ -1191,8 +1228,21 @@ fn safe_symbol_signature(name: &str, signature: &str) -> String {
     value
 }
 
+fn render_semantic_query_text(query: &str) -> String {
+    let aliases = identifier_aliases(query);
+    if aliases.is_empty() {
+        format!("{SEMANTIC_QUERY_TEXT_VERSION}\nquery {query}")
+    } else {
+        format!(
+            "{SEMANTIC_QUERY_TEXT_VERSION}\nquery {query}\nquery_aliases {}",
+            aliases.join(" ")
+        )
+    }
+}
+
 fn render_semantic_document_text(document: &SemanticDocument) -> String {
     let mut lines = vec![
+        SEMANTIC_DOCUMENT_TEXT_VERSION.to_string(),
         format!("path {}", document.path),
         format!("role {:?}", document.role),
         document.summary.clone(),
@@ -1214,6 +1264,74 @@ fn render_semantic_document_text(document: &SemanticDocument) -> String {
     lines.join("\n")
 }
 
+fn semantic_query_terms(query: &str) -> Vec<String> {
+    let mut terms = query_terms(query);
+    for alias in identifier_aliases(query) {
+        if query_term_weight(&alias) > 0.0 && !terms.contains(&alias) {
+            terms.push(alias);
+        }
+    }
+    terms
+}
+
+fn identifier_aliases(text: &str) -> Vec<String> {
+    let mut aliases = Vec::new();
+    for token in text.split(|character: char| {
+        !(character.is_ascii_alphanumeric() || character == '_' || character == '-')
+    }) {
+        let token = token.trim_matches(|character: char| {
+            !(character.is_ascii_alphanumeric() || character == '_')
+        });
+        if token.len() < 3 {
+            continue;
+        }
+        for part in split_identifier_token(token) {
+            let part = part.to_ascii_lowercase();
+            if part.len() >= 3 && query_term_weight(&part) > 0.0 && !aliases.contains(&part) {
+                aliases.push(part);
+            }
+        }
+    }
+    aliases
+}
+
+fn split_identifier_token(token: &str) -> Vec<String> {
+    let normalized = token.replace(['_', '-'], " ");
+    let chars = normalized.chars().collect::<Vec<_>>();
+    let mut parts = Vec::new();
+    let mut start = 0usize;
+    for index in 1..chars.len() {
+        let previous = chars[index - 1];
+        let current = chars[index];
+        let next = chars.get(index + 1).copied();
+        let boundary = (previous.is_ascii_lowercase() && current.is_ascii_uppercase())
+            || (previous.is_ascii_alphabetic() && current.is_ascii_digit())
+            || (previous.is_ascii_digit() && current.is_ascii_alphabetic())
+            || (previous.is_ascii_uppercase()
+                && current.is_ascii_uppercase()
+                && next.is_some_and(|next| next.is_ascii_lowercase()));
+        if boundary {
+            let part = chars[start..index].iter().collect::<String>();
+            if !part.trim().is_empty() {
+                parts.push(part);
+            }
+            start = index;
+        }
+    }
+    let tail = chars[start..].iter().collect::<String>();
+    if !tail.trim().is_empty() {
+        parts.push(tail);
+    }
+    parts
+        .into_iter()
+        .flat_map(|part| {
+            part.split_whitespace()
+                .map(str::to_string)
+                .collect::<Vec<_>>()
+        })
+        .collect()
+}
+
 fn prefilter_semantic_documents(
     query: &str,
     mut documents: Vec<SemanticDocument>,
@@ -1224,7 +1342,7 @@ fn prefilter_semantic_documents(
     {
         return documents;
     }
-    let terms = query_terms(query);
+    let terms = semantic_query_terms(query);
     documents.sort_by(|left, right| {
         semantic_prefilter_score(right, &terms)
             .total_cmp(&semantic_prefilter_score(left, &terms))
@@ -1852,7 +1970,7 @@ mod tests {
             &config,
             &[StorageSemanticVectorRecord {
                 path: payment_document.path.clone(),
-                safe_hash: payment_document.safe_hash.clone(),
+                safe_hash: semantic_document_vector_hash(payment_document),
                 provider: DEFAULT_SEMANTIC_PROVIDER.to_string(),
                 model: DEFAULT_SEMANTIC_MODEL.to_string(),
                 dimensions: DEFAULT_SEMANTIC_DIMENSIONS,
@@ -1955,7 +2073,7 @@ mod tests {
             },
         )
         .unwrap();
-        let query_hash = semantic_query_hash("payment webhook");
+        let query_hash = semantic_query_hash(&render_semantic_query_text("payment webhook"));
         let stored_query = load_semantic_query_vector_record(
             &repo,
             &StoreConfig::default(),
@@ -2035,7 +2153,7 @@ mod tests {
             &config,
             &[StorageSemanticVectorRecord {
                 path: needle_document.path.clone(),
-                safe_hash: needle_document.safe_hash.clone(),
+                safe_hash: semantic_document_vector_hash(needle_document),
                 provider: DEFAULT_SEMANTIC_PROVIDER.to_string(),
                 model: DEFAULT_SEMANTIC_MODEL.to_string(),
                 dimensions: DEFAULT_SEMANTIC_DIMENSIONS,
@@ -2068,6 +2186,65 @@ mod tests {
         assert!(report.diagnostics.iter().any(|diagnostic| {
             diagnostic.code == "semantic_vector_storage_global_candidates" && diagnostic.count == 1
         }));
+    }
+
+    #[test]
+    fn semantic_query_terms_split_identifier_aliases() {
+        let terms = semantic_query_terms("Improvement in TypeScriptVisitor and UMLOperationDiff");
+
+        assert!(terms.contains(&"type".to_string()));
+        assert!(terms.contains(&"script".to_string()));
+        assert!(terms.contains(&"visitor".to_string()));
+        assert!(terms.contains(&"uml".to_string()));
+        assert!(terms.contains(&"operation".to_string()));
+        assert!(terms.contains(&"diff".to_string()));
+    }
+
+    #[test]
+    fn semantic_documents_include_source_free_identifier_alias_facets() {
+        let temp = tempfile::tempdir().unwrap();
+        let repo = temp.path();
+        fs::create_dir(repo.join(".git")).unwrap();
+        fs::create_dir_all(repo.join("src/main/java/gr/uom/java/xmi/diff")).unwrap();
+        fs::write(
+            repo.join("src/main/java/gr/uom/java/xmi/diff/UMLOperationDiff.java"),
+            "class UMLOperationDiff { void matchEmptyBody() { String leak = \"BODY_LITERAL_SHOULD_NOT_LEAK\"; } }\n",
+        )
+        .unwrap();
+
+        let report = semantic_document_report(
+            repo,
+            &SemanticDocumentOptions {
+                limit: 10,
+                query: Some("empty body operation".to_string()),
+                include_dependencies: false,
+                include_related_tests: false,
+                ..SemanticDocumentOptions::default()
+            },
+        )
+        .unwrap();
+        let document = report
+            .documents
+            .iter()
+            .find(|document| document.path.ends_with("UMLOperationDiff.java"))
+            .expect("semantic document");
+        let aliases = document
+            .facets
+            .iter()
+            .filter(|facet| facet.label.ends_with("aliases"))
+            .map(|facet| facet.value.clone())
+            .collect::<Vec<_>>()
+            .join(" ");
+
+        assert!(aliases.contains("uml"));
+        assert!(aliases.contains("operation"));
+        assert!(aliases.contains("diff"));
+        assert!(aliases.contains("match"));
+        assert!(aliases.contains("empty"));
+        assert!(aliases.contains("body"));
+        assert!(!serde_json::to_string(&report)
+            .unwrap()
+            .contains("BODY_LITERAL_SHOULD_NOT_LEAK"));
     }
 
     #[test]

@@ -383,6 +383,10 @@ The semantic contribution summary also emits source-free diagnostics:
   but none were unique beyond the lexical baseline top K.
 - `semantic_contribution_unique_target_hits`: semantic contributed target files
   absent from the lexical baseline top K.
+- `semantic_contribution_unique_non_targets`: semantic contributed files absent
+  from the lexical baseline top K, but those unique semantic files were not
+  retrieval targets. This is a noise/coupling diagnostic, not promotion
+  evidence.
 
 Protected evidence is source-free metadata for budgeted paths that carry
 explicit anchor, current-diff, lexical, or symbol signals. The protected set is
@@ -656,6 +660,14 @@ Recommendation today:
   result. Semantic still remains opt-in until quality gates show target-file
   recall lift, but latency is no longer blocked by generated fixture traversal
   on this proof repo.
+- Phase 168 adds source-free identifier aliases to semantic document/query text
+  and reports semantic-only non-targets. On the clean RefactoringMiner 3-commit
+  `local_fastembed` gate, semantic and lexical/default File Recall@10 both stayed
+  at `0.72222227`, semantic-only target hits stayed `0`, and the only
+  semantic-only file was the non-target
+  `src/test/java/org/refactoringminer/astDiff/tests/TypeScriptDiffTest.java`.
+  The warmed gate took `21.20s`; semantic remains opt-in and the next quality
+  work should target graph/history/fusion for coupled source misses.
 - Treat cloud embeddings/reranking as disabled unless an explicit repo policy
   allows them.
 

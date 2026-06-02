@@ -4760,22 +4760,29 @@ fn render_semantic_precision_gate_report(report: &SemanticPrecisionGateReport) -
     }
     output.push_str("\n## Semantic Contribution\n\n");
     output.push_str(&format!(
-        "- Commits with semantic-selected files: `{}` / `{}`\n- Semantic-selected files: `{}`\n- Semantic target hits: `{}`\n- Semantic-only target hits: `{}`\n- Semantic/lexical overlap: `{}`\n- Semantic missed targets: `{}`\n- Average semantic-selected files: `{:.2}`\n- Semantic target hit rate: `{:.3}`\n- Semantic-only target hit rate: `{:.3}`\n",
+        "- Commits with semantic-selected files: `{}` / `{}`\n- Semantic-selected files: `{}`\n- Semantic target hits: `{}`\n- Semantic-only target hits: `{}`\n- Semantic-only non-targets: `{}`\n- Semantic/lexical overlap: `{}`\n- Semantic missed targets: `{}`\n- Average semantic-selected files: `{:.2}`\n- Semantic target hit rate: `{:.3}`\n- Semantic-only target hit rate: `{:.3}`\n- Semantic-only non-target rate: `{:.3}`\n",
         report.semantic_contribution.commits_with_semantic_selection,
         report.semantic_contribution.evaluated_commits,
         report.semantic_contribution.semantic_selected_file_count,
         report.semantic_contribution.semantic_target_hit_count,
         report.semantic_contribution.semantic_only_target_hit_count,
+        report.semantic_contribution.semantic_only_non_target_count,
         report.semantic_contribution.semantic_lexical_overlap_count,
         report.semantic_contribution.semantic_missed_target_count,
         report.semantic_contribution.average_semantic_selected_files,
         report.semantic_contribution.semantic_target_hit_rate,
-        report.semantic_contribution.semantic_only_target_hit_rate
+        report.semantic_contribution.semantic_only_target_hit_rate,
+        report.semantic_contribution.semantic_only_non_target_rate
     ));
     render_named_gate_cases(
         &mut output,
         "Semantic-only target hits",
         &report.semantic_contribution.semantic_only_hits,
+    );
+    render_named_gate_cases(
+        &mut output,
+        "Semantic-only non-targets",
+        &report.semantic_contribution.semantic_only_non_targets,
     );
     render_named_gate_cases(&mut output, "Named wins", &report.named_wins);
     render_named_gate_cases(&mut output, "Named regressions", &report.named_regressions);

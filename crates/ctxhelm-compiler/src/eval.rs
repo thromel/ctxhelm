@@ -380,13 +380,19 @@ pub struct SemanticContributionSummary {
     pub semantic_selected_file_count: usize,
     pub semantic_target_hit_count: usize,
     pub semantic_only_target_hit_count: usize,
+    #[serde(default)]
+    pub semantic_only_non_target_count: usize,
     pub semantic_lexical_overlap_count: usize,
     pub semantic_missed_target_count: usize,
     pub average_semantic_selected_files: f32,
     pub semantic_target_hit_rate: f32,
     pub semantic_only_target_hit_rate: f32,
     #[serde(default)]
+    pub semantic_only_non_target_rate: f32,
+    #[serde(default)]
     pub semantic_only_hits: Vec<SemanticPrecisionNamedCase>,
+    #[serde(default)]
+    pub semantic_only_non_targets: Vec<SemanticPrecisionNamedCase>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -2776,6 +2782,7 @@ fn semantic_contribution_summary(report: &HistoricalEvalReport) -> SemanticContr
         ..SemanticContributionSummary::default()
     };
     let mut semantic_only_hits = Vec::new();
+    let mut semantic_only_non_target_cases = Vec::new();
 
     for commit in &report.commits {
         let semantic_files = commit
@@ -2807,9 +2814,18 @@ fn semantic_contribution_summary(report: &HistoricalEvalReport) -> SemanticContr
             .difference(&lexical_files)
             .cloned()
             .collect::<Vec<_>>();
+        let semantic_only_files = semantic_files
+            .difference(&lexical_files)
+            .cloned()
+            .collect::<BTreeSet<_>>();
+        let semantic_only_non_targets = semantic_only_files
+            .difference(&target_files)
+            .cloned()
+            .collect::<Vec<_>>();
 
         summary.semantic_target_hit_count += semantic_target_hits.len();
         summary.semantic_only_target_hit_count += semantic_only_target_hits.len();
+        summary.semantic_only_non_target_count += semantic_only_non_targets.len();
         summary.semantic_lexical_overlap_count +=
             semantic_files.intersection(&lexical_files).count();
         summary.semantic_missed_target_count +=
@@ -2823,6 +2839,19 @@ fn semantic_contribution_summary(report: &HistoricalEvalReport) -> SemanticContr
                 sha: short_sha(&commit.sha),
                 variant: "local_semantic".to_string(),
                 reason: "Semantic selected retrieval-target path(s) absent from the lexical baseline top K.".to_string(),
+                paths,
+            });
+        }
+        if !semantic_only_non_targets.is_empty() {
+            let mut paths = semantic_only_non_targets;
+            paths.sort();
+            paths.truncate(5);
+            semantic_only_non_target_cases.push(SemanticPrecisionNamedCase {
+                sha: short_sha(&commit.sha),
+                variant: "local_semantic".to_string(),
+                reason:
+                    "Semantic selected non-target path(s) absent from the lexical baseline top K."
+                        .to_string(),
                 paths,
             });
         }
@@ -2840,8 +2869,16 @@ fn semantic_contribution_summary(report: &HistoricalEvalReport) -> SemanticContr
         summary.semantic_only_target_hit_rate =
             summary.semantic_only_target_hit_count as f32 / target_opportunity as f32;
     }
+    let semantic_only_opportunity =
+        summary.semantic_only_target_hit_count + summary.semantic_only_non_target_count;
+    if semantic_only_opportunity > 0 {
+        summary.semantic_only_non_target_rate =
+            summary.semantic_only_non_target_count as f32 / semantic_only_opportunity as f32;
+    }
     semantic_only_hits.truncate(10);
     summary.semantic_only_hits = semantic_only_hits;
+    semantic_only_non_target_cases.truncate(10);
+    summary.semantic_only_non_targets = semantic_only_non_target_cases;
     summary
 }
 
@@ -2863,8 +2900,9 @@ fn semantic_contribution_diagnostics(
             count: summary.evaluated_commits,
         }];
     }
+    let mut diagnostics = Vec::new();
     if summary.semantic_target_hit_count > 0 && summary.semantic_only_target_hit_count == 0 {
-        return vec![Diagnostic {
+        diagnostics.push(Diagnostic {
             code: "semantic_contribution_no_unique_target_hits".to_string(),
             severity: DiagnosticSeverity::Info,
             message: format!(
@@ -2872,10 +2910,26 @@ fn semantic_contribution_diagnostics(
             ),
             paths: Vec::new(),
             count: summary.semantic_target_hit_count,
-        }];
+        });
+    }
+    if summary.semantic_only_non_target_count > 0 && summary.semantic_only_target_hit_count == 0 {
+        diagnostics.push(Diagnostic {
+            code: "semantic_contribution_unique_non_targets".to_string(),
+            severity: DiagnosticSeverity::Info,
+            message: format!(
+                "Semantic provider `{provider}` contributed files outside the lexical baseline, but those unique semantic files were not retrieval targets."
+            ),
+            paths: summary
+                .semantic_only_non_targets
+                .iter()
+                .flat_map(|case| case.paths.clone())
+                .take(10)
+                .collect(),
+            count: summary.semantic_only_non_target_count,
+        });
     }
     if summary.semantic_only_target_hit_count > 0 {
-        return vec![Diagnostic {
+        diagnostics.push(Diagnostic {
             code: "semantic_contribution_unique_target_hits".to_string(),
             severity: DiagnosticSeverity::Info,
             message: format!(
@@ -2887,9 +2941,9 @@ fn semantic_contribution_diagnostics(
                 .flat_map(|hit| hit.paths.clone())
                 .collect(),
             count: summary.semantic_only_target_hit_count,
-        }];
+        });
     }
-    Vec::new()
+    diagnostics
 }
 
 fn protected_evidence_miss_rate_delta(
@@ -7164,15 +7218,22 @@ mod tests {
         assert_eq!(summary.semantic_selected_file_count, 3);
         assert_eq!(summary.semantic_target_hit_count, 2);
         assert_eq!(summary.semantic_only_target_hit_count, 1);
+        assert_eq!(summary.semantic_only_non_target_count, 1);
         assert_eq!(summary.semantic_lexical_overlap_count, 1);
         assert_eq!(summary.semantic_missed_target_count, 1);
         assert_eq!(summary.average_semantic_selected_files, 3.0);
         assert!((summary.semantic_target_hit_rate - 2.0 / 3.0).abs() < f32::EPSILON);
         assert!((summary.semantic_only_target_hit_rate - 1.0 / 3.0).abs() < f32::EPSILON);
+        assert!((summary.semantic_only_non_target_rate - 0.5).abs() < f32::EPSILON);
         assert_eq!(summary.semantic_only_hits.len(), 1);
         assert_eq!(
             summary.semantic_only_hits[0].paths,
             vec!["src/semantic_only.ts".to_string()]
+        );
+        assert_eq!(summary.semantic_only_non_targets.len(), 1);
+        assert_eq!(
+            summary.semantic_only_non_targets[0].paths,
+            vec!["src/noise.ts".to_string()]
         );
     }
 
@@ -7184,20 +7245,33 @@ mod tests {
             semantic_selected_file_count: 2,
             semantic_target_hit_count: 1,
             semantic_only_target_hit_count: 0,
+            semantic_only_non_target_count: 1,
             semantic_lexical_overlap_count: 2,
             semantic_missed_target_count: 0,
             average_semantic_selected_files: 2.0,
             semantic_target_hit_rate: 1.0,
             semantic_only_target_hit_rate: 0.0,
+            semantic_only_non_target_rate: 1.0,
             semantic_only_hits: Vec::new(),
+            semantic_only_non_targets: vec![SemanticPrecisionNamedCase {
+                sha: "abc123".to_string(),
+                variant: "local_semantic".to_string(),
+                reason: "noise".to_string(),
+                paths: vec!["src/noise.ts".to_string()],
+            }],
         };
         let diagnostics = semantic_contribution_diagnostics(&no_unique, "local_fastembed");
-        assert_eq!(diagnostics.len(), 1);
+        assert_eq!(diagnostics.len(), 2);
         assert_eq!(
             diagnostics[0].code,
             "semantic_contribution_no_unique_target_hits"
         );
         assert_eq!(diagnostics[0].severity, DiagnosticSeverity::Info);
+        assert_eq!(
+            diagnostics[1].code,
+            "semantic_contribution_unique_non_targets"
+        );
+        assert_eq!(diagnostics[1].paths, vec!["src/noise.ts".to_string()]);
 
         let no_candidates = SemanticContributionSummary {
             evaluated_commits: 1,

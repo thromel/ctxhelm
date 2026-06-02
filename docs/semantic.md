@@ -124,6 +124,12 @@ path/provider/model identity and stale hashes are not reused. Provider or model
 failures during indexing are reported as errors; ctxhelm no longer treats a
 failed semantic vector build as a successful zero-vector index.
 
+Semantic document and query text include source-free identifier aliases, so
+camel-case and acronym-heavy code names such as `UMLOperationDiff` also expose
+tokens like `uml operation diff` to local embedding backends. The persisted
+vector hash includes the semantic document render version, so changed
+source-free render text does not reuse older vectors for the same file hash.
+
 Large generated fixture trees are pruned before inventory and freshness walks
 when generated files are excluded by policy. In the RefactoringMiner proof, that
 cut a bounded `local_fastembed` seed from Phase 166 `55.65s` to `5.18s` and a
@@ -131,6 +137,14 @@ second fresh-process semantic search from `12.08s` to `0.11s` while preserving
 the known `TypeScriptVisitor.java` top result. This is a latency improvement,
 not a semantic-quality promotion; semantic retrieval remains opt-in until fixed
 corpus gates show target-file recall lift over lexical.
+
+Phase 168 also made semantic contribution diagnostics stricter. Gates now report
+when semantic contributes files outside lexical that are not retrieval targets.
+On the clean RefactoringMiner 3-commit `local_fastembed` gate, the only
+semantic-only file was a non-target test, while target recall stayed flat against
+lexical/default. That result keeps semantic opt-in and points next R&D toward
+graph/history/fusion for coupled source files rather than broader semantic
+promotion.
 
 ## Agent And MCP Use
 
