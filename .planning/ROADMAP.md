@@ -16,6 +16,8 @@ Phase 177 makes those context-area resources more precise for JVM repositories b
 
 Phase 181 converts the measured graph edge-family diagnostics into bounded dependency-budget behavior: source dependency floors now prefer precise semantic edges and direct imports before lower-yield re-export edges, with focused tests and reproducible three-fixture/current-VeriSchema proof while documenting the missing old VeriSchema fixture object.
 
+Phase 182 makes that fixture-object problem release-safe: proof fixture preparation now writes source-free readiness reports and release-gate clean fixture proof verifies both revision availability and checked-out `HEAD` before using detached fixtures as quality evidence.
+
 ## v2.5 Production Retrieval Quality
 
 ## Phases
@@ -129,6 +131,7 @@ Phase 181 converts the measured graph edge-family diagnostics into bounded depen
 - [x] **Phase 176: Focused Context-Area Guidance** - Standard task plans now expose focused context-area resources when selected source-like files identify an area with unselected source-like next-read candidates, while eval ranking keeps validation-test reserve behavior tied to task broadness instead of context-area presence.
 - [x] **Phase 177: JVM Context-Area Granularity** - Context-area grouping recognizes `src/main|test/java|kotlin` roots and emits package-level areas, making RefactoringMiner gap resources narrow enough for progressive agent reads without changing top-10 recall.
 - [x] **Phase 181: Graph Edge Budget Allocation** - Source dependency floors allocate scarce graph budget by measured edge family, preferring `precision:*` and direct `imports` before lower-yield `python_reexport` evidence.
+- [x] **Phase 182: Proof Fixture Freshness Guard** - Clean proof fixtures emit source-free readiness reports and release-gate proof verifies requested revisions and checked-out heads before using detached fixtures.
 - [x] **Phase 162: Feature-Enabled Local Fastembed Gate Proof** - A feature-enabled `local_fastembed` gate run on clean RefactoringMiner now proves the production-local backend works end-to-end, but remains held because it adds no semantic-only target hits and is still slower than default; the gate emits a source-free diagnostic for that condition.
 - [x] **Phase 163: Persisted Semantic Vector Reuse** - Fresh CLI/MCP processes can reuse persisted source-free semantic document vectors instead of recomputing every candidate vector.
 - [x] **Phase 164: Global Semantic Vector Candidates And Write-Through** - Semantic search can include persisted vector candidates outside the lexical prefilter and write through newly embedded candidate misses.

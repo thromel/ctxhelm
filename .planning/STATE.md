@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v2.5
 milestone_name: Production Retrieval Quality
 status: active
-last_updated: "2026-06-02T19:15:54Z"
-last_activity: 2026-06-03 -- Phase 181 turns graph edge-family diagnostics into bounded dependency-budget ordering, prioritizing precision and direct imports before lower-yield re-export edges while preserving source-free proof reporting
+last_updated: "2026-06-02T19:27:12Z"
+last_activity: 2026-06-03 -- Phase 182 hardens clean proof fixture freshness by reporting unreachable pinned revisions source-free and making the release gate verify fixture HEADs before proof claims
 progress:
   total_phases: 94
   completed_phases: 94
@@ -17,10 +17,10 @@ progress:
 
 ## Current Position
 
-Phase: 181 - Graph Edge Budget Allocation
-Plan: 181-graph-edge-budget-allocation
+Phase: 182 - Proof Fixture Freshness Guard
+Plan: 182-proof-fixture-freshness-guard
 Status: Complete
-Last activity: 2026-06-03 -- Phase 181 uses Phase 179/180 graph diagnostics to order tight source-dependency budget by edge family: `precision:*`, `imports`, other dependency labels, then `python_reexport`. Focused dependency-budget tests pass. A warm three-fixture proof promotes with average File Recall@10 `0.75555557` vs lexical `0.5687831`; the original four-repo Phase 110 fixture is not fresh-clone reproducible because the pinned VeriSchema commit `b5cfb2a551d026514f505c45863db31277bcd1ad` is no longer reachable from the remote.
+Last activity: 2026-06-03 -- Phase 182 upgrades `scripts/prepare-proof-fixtures.sh` from checkout-only hydration to source-free fixture readiness reporting. The script now checks requested revisions before checkout, writes per-fixture JSON reports, and blocks early when a pinned revision is unavailable. `scripts/release-gate.sh` now verifies configured clean fixtures are present, contain the requested `head`, and have `HEAD` at that commit before running the clean cold fixture proof. The live report at `/tmp/ctxhelm-rd/phase182-fixture-reports/VeriSchema.fixture-status.json` records `revisionAvailable: false` for the old pinned VeriSchema SHA while RefactoringMiner, ctxhelm, and ReAgent are ready.
 
 ## Project Reference
 
@@ -266,6 +266,7 @@ Continue production-readiness work from remaining measured gaps: make Codex CLI 
 - Phase 179 adds source-free graph edge profiles to historical eval. Latest proof notes: `.planning/e2e/2026-06-02-phase179-graph-edge-profiles.md`; fresh source-free summary: `/tmp/ctxhelm-rd/phase179-graph-edge-profiles-warm-proof.json`; the warm proof promotes and VeriSchema now exposes `imports` target hits/misses as `6`/`22`, making graph edge-family ranking pressure measurable.
 - Phase 180 adds source-free graph edge ablations to historical eval. Latest proof notes: `.planning/e2e/2026-06-02-phase180-graph-edge-ablations.md`; fresh source-free summary: `/tmp/ctxhelm-rd/phase180-graph-edge-ablation-proof.json`; the four-repo proof promotes and VeriSchema exclusive `imports` ablation removes `1` target hit for Recall@K delta `-0.00512819`, while `python_reexport` has no exclusive top-10 target lift.
 - Phase 181 adds graph edge-family budget allocation for source dependency floors. Latest proof notes: `.planning/e2e/2026-06-03-phase181-graph-edge-budget-allocation.md`; fresh source-free summaries: `/tmp/ctxhelm-rd/phase181-graph-edge-budget-three-warm-proof.json` and `/tmp/ctxhelm-rd/phase181-current-verischema-proof.json`; focused tests pass, the warm three-fixture proof promotes, current reachable VeriSchema promotes, and the old pinned VeriSchema SHA is recorded as an unreproducible fixture freshness problem.
+- Phase 182 adds source-free proof fixture freshness reports and release-gate fixture HEAD validation. Latest proof notes: `.planning/e2e/2026-06-03-phase182-proof-fixture-freshness-guard.md`; fresh source-free reports: `/tmp/ctxhelm-rd/phase182-fixture-reports/*.fixture-status.json`; focused release-packaging tests pass and the live VeriSchema report blocks the old pinned SHA with `revisionAvailable: false`.
 - Phase 129 adds public release freshness proof. Latest proof notes: `.planning/e2e/2026-06-01-phase129-public-release-freshness.md`; durable source-free summary: `.ctxhelm/e2e/phase129-public-release-freshness.json`; public `v1.1.0` targets `68383cbfc2fff00c4f53fbd2b7bf90527ac4bd7e`, current main is `a07e6be31a0605af1810e79cb18b34245fa7def0`, `gitRelation = current_descends_from_release`, `commitsAhead = 19`, and `status = outdated`.
 - Phase 130 publishes and verifies the current public `v1.1.1` archive. Latest proof notes: `.planning/e2e/2026-06-01-phase130-public-v111-release.md`; durable source-free summaries: `.ctxhelm/e2e/phase130-github-release.json`, `.ctxhelm/e2e/phase130-public-release-freshness.json`, `.ctxhelm/e2e/phase130-public-archive-install.json`, and `.ctxhelm/e2e/phase130-public-real-client-smoke.json`; public `v1.1.1` targets `6c93100fa0e4f5a5444fb7fd967c721cca49a401`, `gitRelation = same`, `commitsAhead = 0`, temporary public archive install passes version/help/doctor/first-pack checks, Claude Code `2.1.158` passes explicit-repo `prepare_task` and `get_pack`, and Codex CLI `0.44.0` remains an optional source-free skip.
 - Phase 131 publishes and verifies the product-aware `v1.1.2` archive. Latest proof notes: `.planning/e2e/2026-06-01-phase131-product-aware-freshness-release.md`; durable source-free summaries: `.ctxhelm/e2e/phase131-github-release.json`, `.ctxhelm/e2e/phase131-github-release-verify.json`, `.ctxhelm/e2e/phase131-public-release-freshness.json`, `.ctxhelm/e2e/phase131-public-archive-install.json`, and `.ctxhelm/e2e/phase131-public-real-client-smoke.json`; public `v1.1.2` targets `ac6dc97f04cd18b5f2c6c32f7a1eca49e3ef5587`, `productStatus = current`, `productCommitsAhead = 0`, temporary public archive install passes version/help/doctor/first-pack checks, Claude Code `2.1.158` passes explicit-repo `prepare_task` and `get_pack`, and Codex CLI `0.44.0` remains an optional source-free skip.

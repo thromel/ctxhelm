@@ -283,15 +283,25 @@ for the four-repo corpus. Prepare the detached fixtures once:
 bash scripts/prepare-proof-fixtures.sh
 ```
 
+The fixture prep script writes one source-free readiness report per fixture,
+for example `VeriSchema.fixture-status.json`. Those reports record requested
+revision, checked-out head, revision availability, dirty count, and privacy
+status; they omit source snippets, commit subjects, diffs, terminal logs,
+prompts, and remote URLs. If a pinned revision is no longer reachable, fixture
+prep fails before checkout with `revisionAvailable: false`.
+
 Then run the release gate normally. The gate uses
 `.planning/e2e/2026-05-31-phase110-clean-cold-fixture-config.json` by default,
 writes `phase110-clean-fixture-product-proof.json` into `CTXHELM_PROOF_DIR`,
-and validates it with `scripts/check-product-proof.py`. If the fixtures are not
-available, the gate records `cleanColdFixtureProductProof:
+and validates it with `scripts/check-product-proof.py`. Before running the proof,
+the gate verifies every configured fixture exists, contains the requested commit,
+and has `HEAD` checked out at the configured `head`. Missing, stale, or
+unreachable fixtures are treated as unavailable proof evidence. If the fixtures
+are not available, the gate records `cleanColdFixtureProductProof:
 skipped_missing_fixtures`; set `CTXHELM_REQUIRE_CLEAN_FIXTURE_PROOF=1` to make
-missing fixtures fail the gate. Maintainers may override the config with
-`CTXHELM_CLEAN_FIXTURE_CONFIG=/absolute/path/to/config.json` or skip the check
-explicitly with `CTXHELM_SKIP_CLEAN_FIXTURE_PROOF=1` for non-release local
+missing or stale fixtures fail the gate. Maintainers may override the config
+with `CTXHELM_CLEAN_FIXTURE_CONFIG=/absolute/path/to/config.json` or skip the
+check explicitly with `CTXHELM_SKIP_CLEAN_FIXTURE_PROOF=1` for non-release local
 diagnostics.
 
 The optional real-client evidence wrappers are:

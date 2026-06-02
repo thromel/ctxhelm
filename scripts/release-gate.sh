@@ -72,6 +72,32 @@ for repo in config.get("repositories", []):
         missing.append(f"{repo.get('name', '<unnamed>')}={path}")
 if missing:
     raise SystemExit("missing clean proof fixtures; run scripts/prepare-proof-fixtures.sh: " + ", ".join(missing))
+stale = []
+for repo in config.get("repositories", []):
+    raw_path = pathlib.Path(repo.get("path", ""))
+    path = raw_path if raw_path.is_absolute() else config_dir / raw_path
+    expected = repo.get("head")
+    if not expected:
+        continue
+    import subprocess
+    available = subprocess.run(
+        ["git", "-C", str(path), "cat-file", "-e", f"{expected}^{{commit}}"],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
+    actual = subprocess.run(
+        ["git", "-C", str(path), "rev-parse", "HEAD"],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.DEVNULL,
+        text=True,
+    )
+    actual_head = actual.stdout.strip() if actual.returncode == 0 else "<unavailable>"
+    if available.returncode != 0:
+        stale.append(f"{repo.get('name', '<unnamed>')} requested revision unavailable: {expected}")
+    elif actual_head != expected:
+        stale.append(f"{repo.get('name', '<unnamed>')} expected {expected} got {actual_head}")
+if stale:
+    raise SystemExit("stale clean proof fixtures; run scripts/prepare-proof-fixtures.sh: " + ", ".join(stale))
 PY
 }
 

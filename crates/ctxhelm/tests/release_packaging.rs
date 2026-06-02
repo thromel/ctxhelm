@@ -266,6 +266,9 @@ fn release_gate_script_contract() {
         "optionalProofs",
         "cleanColdFixtureProductProof",
         "cleanColdFixtureRequired",
+        "stale clean proof fixtures",
+        "rev-parse",
+        "cat-file",
         "claudeWorkflowEval",
         "resourceBackedGapSummaryContract",
         "archive_sha256",
@@ -485,6 +488,112 @@ fn prepare_benchmark_corpus_script_contract_and_dirty_guard() {
         !worktree.join("untracked.txt").exists(),
         "--refresh should clean untracked disposable fixture files"
     );
+}
+
+#[test]
+fn prepare_proof_fixtures_reports_unavailable_revisions_source_free() {
+    let repo_root = workspace_root();
+    let script = repo_root.join("scripts/prepare-proof-fixtures.sh");
+    assert!(script.exists(), "proof fixture prep script is missing");
+
+    let syntax = Command::new("bash")
+        .arg("-n")
+        .arg(&script)
+        .current_dir(&repo_root)
+        .output()
+        .unwrap();
+    assert!(
+        syntax.status.success(),
+        "bash -n failed: {}",
+        String::from_utf8_lossy(&syntax.stderr)
+    );
+
+    let script_text = fs::read_to_string(&script).unwrap();
+    for required in [
+        "sourceTextLogged",
+        "requested proof fixture revision is unavailable",
+        "revisionAvailable",
+        "commit subjects",
+        "remote URLs",
+        "cat-file -e",
+        "CTXHELM_VERISCHEMA_REVISION",
+        "CTXHELM_PROOF_FIXTURE_REPORT_DIR",
+    ] {
+        assert!(
+            script_text.contains(required),
+            "proof fixture script contract missing {required}"
+        );
+    }
+
+    let temp = TempDir::new().unwrap();
+    let source = temp.path().join("source");
+    let fixture_root = temp.path().join("fixtures");
+    let report_dir = temp.path().join("reports");
+    fs::create_dir_all(source.join("src")).unwrap();
+    run_git(&source, &["init"]);
+    run_git(&source, &["config", "user.email", "ctxhelm@example.com"]);
+    run_git(&source, &["config", "user.name", "ctxhelm"]);
+    fs::write(
+        source.join("src/lib.rs"),
+        "pub fn sentinel() -> &'static str { \"CTXHELM_SOURCE_SENTINEL\" }\n",
+    )
+    .unwrap();
+    run_git(&source, &["add", "."]);
+    run_git(&source, &["commit", "-m", "seed source sentinel"]);
+    let revision = git_stdout(&source, &["rev-parse", "HEAD"]);
+    let missing_revision = "0123456789abcdef0123456789abcdef01234567";
+
+    let output = Command::new("bash")
+        .arg(&script)
+        .env("CTXHELM_PROOF_FIXTURE_ROOT", &fixture_root)
+        .env("CTXHELM_PROOF_FIXTURE_REPORT_DIR", &report_dir)
+        .env("CTXHELM_REFACTORINGMINER_SOURCE", &source)
+        .env("CTXHELM_REFACTORINGMINER_REVISION", revision.trim())
+        .env("CTXHELM_CTXHELM_SOURCE", &source)
+        .env("CTXHELM_CTXHELM_REVISION", revision.trim())
+        .env("CTXHELM_REAGENT_SOURCE", &source)
+        .env("CTXHELM_REAGENT_REVISION", revision.trim())
+        .env("CTXHELM_VERISCHEMA_SOURCE", &source)
+        .env("CTXHELM_VERISCHEMA_REVISION", missing_revision)
+        .current_dir(&repo_root)
+        .output()
+        .unwrap();
+
+    assert!(
+        !output.status.success(),
+        "unavailable proof fixture revision unexpectedly passed"
+    );
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(
+        stderr.contains("proof fixture blocked")
+            && stderr.contains("VeriSchema")
+            && stderr.contains(missing_revision),
+        "unexpected stderr: {stderr}"
+    );
+
+    let ready_json: serde_json::Value = serde_json::from_slice(
+        &fs::read(report_dir.join("RefactoringMiner.fixture-status.json")).unwrap(),
+    )
+    .unwrap();
+    assert_eq!(ready_json["status"], "ready");
+    assert_eq!(ready_json["privacyStatus"]["sourceTextLogged"], false);
+    assert_eq!(ready_json["checks"]["revisionAvailable"], true);
+
+    let blocked_json: serde_json::Value = serde_json::from_slice(
+        &fs::read(report_dir.join("VeriSchema.fixture-status.json")).unwrap(),
+    )
+    .unwrap();
+    assert_eq!(blocked_json["status"], "blocked");
+    assert_eq!(blocked_json["checks"]["revisionAvailable"], false);
+    assert!(blocked_json["failureReason"]
+        .as_str()
+        .unwrap()
+        .contains("unavailable"));
+
+    let blocked_text =
+        fs::read_to_string(report_dir.join("VeriSchema.fixture-status.json")).unwrap();
+    assert!(!blocked_text.contains("CTXHELM_SOURCE_SENTINEL"));
+    assert!(!blocked_text.contains("seed source sentinel"));
 }
 
 #[test]
