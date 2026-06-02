@@ -3,11 +3,11 @@ gsd_state_version: 1.0
 milestone: v2.5
 milestone_name: Production Retrieval Quality
 status: active
-last_updated: "2026-06-02T05:14:00Z"
-last_activity: 2026-06-02 -- Phase 174 made the source-recall proof schema a release-checker contract: stale product-proof JSON without source Recall@10 fields now fails, source recall regressions beyond tolerance fail, and a fresh RefactoringMiner-clone four-repo proof still promotes under the tightened checker
+last_updated: "2026-06-02T06:04:00Z"
+last_activity: 2026-06-02 -- Phase 175 added semantic-missed target gap families so semantic R&D can distinguish graph/fusion coupling misses from weak semantic text/index misses; a clean RefactoringMiner local_hash gate still holds, with the remaining semantic miss classified as area-context-only instead of a semantic promotion signal
 progress:
-  total_phases: 91
-  completed_phases: 91
+  total_phases: 92
+  completed_phases: 92
   total_plans: 7
   completed_plans: 7
   percent: 100
@@ -17,10 +17,10 @@ progress:
 
 ## Current Position
 
-Phase: 174 - Source Recall Release Proof Contract
-Plan: 174-source-recall-release-proof-contract
+Phase: 175 - Semantic Missed Target Gap Families
+Plan: 175-semantic-missed-target-gap-families
 Status: Complete
-Last activity: 2026-06-02 -- Phase 174 promoted Phase 173's source-recall fields from runtime output to release artifact freshness policy. `scripts/check-product-proof.py` now rejects corpus verdicts missing `sourceRecallAt10`, `lexicalSourceRecallAt10`, or `sourceDeltaAt10`, and blocks source recall regressions below `-0.03`. A four-repo proof using a fresh RefactoringMiner clone at the pinned corpus commits still promotes under the tightened checker: RefactoringMiner source delta `0.0`, ctxhelm `+0.08333331`, ReAgent `+0.3333333`, VeriSchema `+0.14473686`.
+Last activity: 2026-06-02 -- Phase 175 closes the Phase 168 diagnostic gap by adding `semanticContribution.semanticMissedTargetGapFamilies` and source-free diagnostics for semantic-missed targets with nonsemantic coupled signals versus no candidate signal. A clean RefactoringMiner 2-commit `local_hash` gate at `/tmp/ctxhelm-rd/phase175-semantic-missed-gap-gate.json` still holds with semantic recall delta `+0.000`; the only semantic missed-target family is `semantic_miss_area_context_only` for `UMLClassBaseDiff.java`, while semantic-only additions remain non-targets.
 
 ## Project Reference
 
@@ -139,6 +139,7 @@ Planned phases:
 - Phase 160: Bounded Semantic Status And Search (complete follow-up)
 - Phase 161: Semantic Gate Contribution Diagnostics (complete follow-up)
 - Phase 174: Source Recall Release Proof Contract (complete follow-up)
+- Phase 175: Semantic Missed Target Gap Families (complete follow-up)
 - Phase 162: Feature-Enabled Local Fastembed Gate Proof (complete follow-up)
 - Phase 163: Persisted Semantic Vector Reuse (complete follow-up)
 - Phase 164: Global Semantic Vector Candidates And Write-Through (complete follow-up)

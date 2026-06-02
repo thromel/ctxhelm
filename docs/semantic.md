@@ -146,6 +146,13 @@ lexical/default. That result keeps semantic opt-in and points next R&D toward
 graph/history/fusion for coupled source files rather than broader semantic
 promotion.
 
+Phase 175 adds semantic-missed target gap families to the same gate. The report
+now distinguishes semantic misses with nonsemantic graph/history/symbol signal
+from misses with no candidate signal at all. On the clean RefactoringMiner
+2-commit `local_hash` gate, semantic still held with recall delta `+0.000`; the
+remaining semantic miss was `semantic_miss_area_context_only` for
+`UMLClassBaseDiff.java`, while semantic-only additions were non-targets.
+
 ## Agent And MCP Use
 
 MCP `prepare_task`, `get_pack`, and `search` accept `semantic: true`. The field is optional and additive, so existing agents keep their lexical, symbol, graph, test, and history behavior unless they explicitly request semantic retrieval.

@@ -39,9 +39,9 @@ pub use eval::{
     ProductProofReleaseGate, ProductProofReport, ProtectedEvidenceSignalSummary,
     ProtectedEvidenceSummary, RankingMetrics, RetrievalGapRecommendationArea, RetrievalGapSummary,
     RetrievalGapTargetStatus, RoleRecallMetric, SemanticContributionSummary,
-    SemanticPrecisionGateDecision, SemanticPrecisionGateReport, SemanticPrecisionNamedCase,
-    SemanticPrecisionVariant, SemanticPrecisionVariantStatus, SignalAblationResult,
-    SignalSaturationMetric, TokenRoiMetric,
+    SemanticMissedTargetGapFamily, SemanticPrecisionGateDecision, SemanticPrecisionGateReport,
+    SemanticPrecisionNamedCase, SemanticPrecisionVariant, SemanticPrecisionVariantStatus,
+    SignalAblationResult, SignalSaturationMetric, TokenRoiMetric,
 };
 pub use graph::build_graph_neighborhood_report;
 pub use packs::{

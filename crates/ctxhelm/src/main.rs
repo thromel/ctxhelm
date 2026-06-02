@@ -4784,6 +4784,31 @@ fn render_semantic_precision_gate_report(report: &SemanticPrecisionGateReport) -
         "Semantic-only non-targets",
         &report.semantic_contribution.semantic_only_non_targets,
     );
+    output.push_str("\n## Semantic Missed Target Gap Families\n\n");
+    if report
+        .semantic_contribution
+        .semantic_missed_target_gap_families
+        .is_empty()
+    {
+        output.push_str("- None.\n");
+    } else {
+        for family in &report
+            .semantic_contribution
+            .semantic_missed_target_gap_families
+        {
+            output.push_str(&format!(
+                "- `{}`: `{}` missed target(s)",
+                family.signal_gap, family.missed_count
+            ));
+            if !family.example_paths.is_empty() {
+                output.push_str(&format!(
+                    "; examples: `{}`",
+                    family.example_paths.join("`, `")
+                ));
+            }
+            output.push('\n');
+        }
+    }
     render_named_gate_cases(&mut output, "Named wins", &report.named_wins);
     render_named_gate_cases(&mut output, "Named regressions", &report.named_regressions);
     render_named_gate_cases(&mut output, "Named misses", &report.named_misses);

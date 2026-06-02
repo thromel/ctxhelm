@@ -395,6 +395,18 @@ The semantic contribution summary also emits source-free diagnostics:
   from the lexical baseline top K, but those unique semantic files were not
   retrieval targets. This is a noise/coupling diagnostic, not promotion
   evidence.
+- `semantic_contribution_missed_targets_coupled`: semantic missed target files
+  that already had source-free graph, history, or symbol signal. Treat this as a
+  graph/fusion ordering problem before adding more embedding text.
+- `semantic_contribution_missed_targets_no_signal`: semantic missed target files
+  that also lacked lexical, graph, history, and area signal. Treat this as a
+  semantic document/query construction or index coverage problem.
+
+The `semanticContribution.semanticMissedTargetGapFamilies` JSON field groups
+semantic-missed retrieval targets into source-free families such as
+`semantic_miss_area_context_only`,
+`semantic_miss_nonsemantic_coupled_signal`, and
+`semantic_miss_no_candidate_signal`.
 
 Protected evidence is source-free metadata for budgeted paths that carry
 explicit anchor, current-diff, lexical, or symbol signals. The protected set is
