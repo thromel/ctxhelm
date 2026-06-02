@@ -39,6 +39,11 @@ source-code target selection.
 Product-proof JSON also includes `releaseGate.lexicalComparison`, a suite-level
 summary of the same boundary. `allFileClaim` reports whether ctxhelm beats,
 matches, or trails lexical when every safe changed file is counted together.
+The raw all-file counters remain visible, and the summary also splits raw
+trailing corpora into explained and unexplained trails. An explained all-file
+trail means the corpus lost only in the mixed file channel while context recall
+and validation coverage were non-regressed; it is counted as match-like for the
+headline `allFileClaim` but still exposed as a raw trail for auditability.
 `agentEvidenceClaim` reports the same comparison across the actual evidence set
 ctxhelm gives an agent: selected context files plus related tests and validation
 commands. This is the production adoption claim because coding agents consume
@@ -47,17 +52,14 @@ reports the comparison after validation targets are removed from the context
 channel. The three claims prevent production notes from overclaiming
 repository-wide target-file wins when the measured claim is narrower: selected
 agent evidence plus separately reported target-file and context-channel scores.
-The current clean four-repo proof also reports zero trailing corpora for raw
-target-file recall after the narrow-plan validation-test reserve; broad
-context-area plans remain file-first and continue to use the validation channel
-for tests.
 
 The latest clean four-repo proof also reports zero protected target misses
 after broad operational floors for root governance docs, exact config matches,
 and workflow lifecycle scripts. The current summary is `allFileClaim = mixed`
-with beat `3`, match `1`, trail `0`, average File Recall@10 `0.5986343` versus
-lexical `0.45709258`, average file delta `+0.14154172`, average agent-evidence
-delta `+0.19379663`, and average context delta `+0.23717105`.
+with beat `3`, raw match `0`, raw trail `1`, explained trail `1`, unexplained
+trail `0`, average File Recall@10 `0.61190045` versus lexical `0.45709258`,
+average file delta `+0.15480787`, average agent-evidence delta `+0.2570628`,
+and average context delta `+0.30652046`.
 
 v2.3 treats benchmark suites as fixed corpus manifests. Older suite files still work, but v2.3+ manifests should include a manifest version, corpus ID, privacy label, revision range ID, and optional locked baseline metadata so quality claims are reproducible.
 

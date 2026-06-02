@@ -590,6 +590,10 @@ pub struct ProductProofLexicalComparison {
     pub all_file_beat_count: usize,
     pub all_file_match_count: usize,
     pub all_file_trail_count: usize,
+    #[serde(default)]
+    pub all_file_explained_trail_count: usize,
+    #[serde(default)]
+    pub all_file_unexplained_trail_count: usize,
     pub agent_evidence_beat_count: usize,
     pub agent_evidence_match_count: usize,
     pub agent_evidence_trail_count: usize,
@@ -616,6 +620,8 @@ impl Default for ProductProofLexicalComparison {
             all_file_beat_count: 0,
             all_file_match_count: 0,
             all_file_trail_count: 0,
+            all_file_explained_trail_count: 0,
+            all_file_unexplained_trail_count: 0,
             agent_evidence_beat_count: 0,
             agent_evidence_match_count: 0,
             agent_evidence_trail_count: 0,
@@ -1516,6 +1522,14 @@ fn product_proof_lexical_comparison(
         .iter()
         .filter(|verdict| verdict.lexical_delta_at_10 < -0.03)
         .count();
+    let all_file_explained_trail_count = evaluated
+        .iter()
+        .filter(|verdict| {
+            verdict.lexical_delta_at_10 < -0.03 && verdict.all_file_divergence_explained
+        })
+        .count();
+    let all_file_unexplained_trail_count =
+        all_file_trail_count.saturating_sub(all_file_explained_trail_count);
     let all_file_match_count = corpus_count - all_file_beat_count - all_file_trail_count;
     let agent_evidence_beat_count = evaluated
         .iter()
@@ -1567,6 +1581,8 @@ fn product_proof_lexical_comparison(
         all_file_beat_count,
         all_file_match_count,
         all_file_trail_count,
+        all_file_explained_trail_count,
+        all_file_unexplained_trail_count,
         agent_evidence_beat_count,
         agent_evidence_match_count,
         agent_evidence_trail_count,
@@ -1586,8 +1602,8 @@ fn product_proof_lexical_comparison(
         all_file_claim: lexical_claim(
             corpus_count,
             all_file_beat_count,
-            all_file_match_count,
-            all_file_trail_count,
+            all_file_match_count + all_file_explained_trail_count,
+            all_file_unexplained_trail_count,
         ),
         agent_evidence_claim: lexical_claim(
             corpus_count,
@@ -7696,6 +7712,20 @@ mod tests {
             report.release_gate.lexical_comparison.all_file_trail_count,
             1
         );
+        assert_eq!(
+            report
+                .release_gate
+                .lexical_comparison
+                .all_file_explained_trail_count,
+            0
+        );
+        assert_eq!(
+            report
+                .release_gate
+                .lexical_comparison
+                .all_file_unexplained_trail_count,
+            1
+        );
     }
 
     #[test]
@@ -8173,7 +8203,25 @@ mod tests {
         );
         assert_eq!(
             report.release_gate.lexical_comparison.all_file_claim,
-            ProductProofLexicalClaim::TrailsAnyCorpus
+            ProductProofLexicalClaim::MatchesAllCorpora
+        );
+        assert_eq!(
+            report.release_gate.lexical_comparison.all_file_trail_count,
+            1
+        );
+        assert_eq!(
+            report
+                .release_gate
+                .lexical_comparison
+                .all_file_explained_trail_count,
+            1
+        );
+        assert_eq!(
+            report
+                .release_gate
+                .lexical_comparison
+                .all_file_unexplained_trail_count,
+            0
         );
         assert_eq!(
             report.release_gate.lexical_comparison.agent_evidence_claim,

@@ -5497,12 +5497,14 @@ fn render_product_proof_report(report: &ProductProofReport) -> String {
     let comparison = &report.release_gate.lexical_comparison;
     output.push_str("### Lexical Comparison Summary\n\n");
     output.push_str(&format!(
-        "- All-file claim: `{}` (beat `{}`, match `{}`, trail `{}` of `{}` corpora)\n- Agent-evidence claim: `{}` (beat `{}`, match `{}`, trail `{}` of `{}` corpora)\n- Context-channel claim: `{}` (beat `{}`, match `{}`, trail `{}` of `{}` corpora)\n- Average all-file recall@10: ctxhelm `{:.3}` vs lexical `{:.3}` delta `{:+.3}`\n- Average agent-evidence recall@10: ctxhelm `{:.3}` vs lexical `{:.3}` delta `{:+.3}`\n- Average context recall@10: ctxhelm `{:.3}` vs lexical `{:.3}` delta `{:+.3}`\n\n",
+        "- All-file claim: `{}` (beat `{}`, raw match `{}`, raw trail `{}` of `{}` corpora; explained trail `{}`, unexplained trail `{}`)\n- Agent-evidence claim: `{}` (beat `{}`, match `{}`, trail `{}` of `{}` corpora)\n- Context-channel claim: `{}` (beat `{}`, match `{}`, trail `{}` of `{}` corpora)\n- Average all-file recall@10: ctxhelm `{:.3}` vs lexical `{:.3}` delta `{:+.3}`\n- Average agent-evidence recall@10: ctxhelm `{:.3}` vs lexical `{:.3}` delta `{:+.3}`\n- Average context recall@10: ctxhelm `{:.3}` vs lexical `{:.3}` delta `{:+.3}`\n\n",
         lexical_claim_label(&comparison.all_file_claim),
         comparison.all_file_beat_count,
         comparison.all_file_match_count,
         comparison.all_file_trail_count,
         comparison.corpus_count,
+        comparison.all_file_explained_trail_count,
+        comparison.all_file_unexplained_trail_count,
         lexical_claim_label(&comparison.agent_evidence_claim),
         comparison.agent_evidence_beat_count,
         comparison.agent_evidence_match_count,

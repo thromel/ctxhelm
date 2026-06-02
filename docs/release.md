@@ -689,18 +689,28 @@ reported `agentEvidenceClaim = mixed` with zero trailing corpora and average
 agent-evidence delta `+0.18792826` against lexical.
 
 Phase 127 adds a narrow-plan validation-test reserve to the context ranking.
-The clean four-repo proof now reports zero trailing corpora for raw target-file
-recall as well: `allFileClaim = mixed`, beat `3`, match `1`, trail `0`, average
-File Recall@10 `0.5927659` versus lexical `0.45709258`, and average file delta
-`+0.13567334`. Broad context-area plans stay file-first so validation tests do
-not displace broad source evidence.
+The Phase 127 clean four-repo proof reported zero trailing corpora for raw
+target-file recall: `allFileClaim = mixed`, beat `3`, match `1`, trail `0`,
+average File Recall@10 `0.5927659` versus lexical `0.45709258`, and average file
+delta `+0.13567334`. Later broad-area hardening keeps raw all-file trails
+auditable and separates explained trails from unexplained regressions. Broad
+context-area plans stay file-first so validation tests do not displace broad
+source evidence.
 
 Phase 128 adds broad operational floors for root governance docs, exact config
 matches, and workflow lifecycle scripts before lower-priority expansion. The
-clean four-repo proof still promotes, keeps zero trailing corpora, and clears
+Phase 128 clean four-repo proof still promoted, kept zero trailing corpora, and cleared
 protected target misses on all four corpora with average File Recall@10
 `0.5986343`, average file delta `+0.14154172`, average agent-evidence delta
 `+0.19379663`, and average context delta `+0.23717105`.
+
+Phase 178 separates explained raw all-file trails from unexplained lexical
+regressions in `releaseGate.lexicalComparison`. The clean four-repo proof still
+promotes and reports `allFileClaim = mixed`, beat `3`, raw match `0`, raw trail
+`1`, explained trail `1`, unexplained trail `0`, average File Recall@10
+`0.61190045` versus lexical `0.45709258`, average file delta `+0.15480787`,
+average agent-evidence delta `+0.2570628`, and average context delta
+`+0.30652046`.
 
 Phase 156 makes BM25-vs-legacy lexical backend proof available inside benchmark
 suites and product-proof output. Suites opt in with
