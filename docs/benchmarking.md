@@ -419,6 +419,13 @@ validation-test reserves tied to task broadness, not to whether context-area
 guidance is present, so focused area hints do not silently displace tests from
 Recall@10 accounting.
 
+Phase 177 makes those area resources more precise for JVM repositories.
+`src/main|test/java|kotlin` paths group by source root plus package components
+instead of collapsing to `src/main` or `src/test`. The RefactoringMiner
+`UMLClassBaseDiff.java` area-only miss now points at
+`ctxhelm://repo/context-area/src%2Fmain%2Fjava%2Fgr%2Fuom%2Fjava%2Fxmi`,
+preserving Recall@10 while giving agents a narrower progressive read resource.
+
 Protected evidence is source-free metadata for budgeted paths that carry
 explicit anchor, current-diff, lexical, or symbol signals. The protected set is
 bounded by the eval context budget, so broader candidate generation can add

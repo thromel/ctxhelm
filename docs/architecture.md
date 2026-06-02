@@ -116,6 +116,14 @@ search with exact symbol and path/content bonuses, while keeping the source-
 derived inverted index in memory for the current privacy posture. Semantic
 retrieval helps conceptual tasks, but it is optional and local by default.
 
+Context areas are source-free path groups used for progressive native reads
+when the top-ranked target list is too narrow. Ordinary paths group by their
+first meaningful directory pair, such as `src/auth` or `crates/ctxhelm`.
+JVM source roots are more specific: `src/main|test/java|kotlin` paths group by
+source root plus package components, so a Java package area such as
+`src/main/java/gr/uom/java/xmi` can be exposed without dumping an entire
+`src/main` tree.
+
 ## Storage And Memory
 
 ```mermaid

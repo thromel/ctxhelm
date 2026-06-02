@@ -86,8 +86,30 @@ pub fn context_area_for_path(path: &str) -> String {
     if components.len() == 2 && components[1].contains('.') {
         return components[0].to_string();
     }
+    if let Some(area) = jvm_source_context_area(&components) {
+        return area;
+    }
     components.truncate(2);
     components.join("/")
+}
+
+fn jvm_source_context_area(components: &[&str]) -> Option<String> {
+    let root = components.get(0..3)?;
+    if !matches!(
+        root,
+        ["src", "main", "java"]
+            | ["src", "test", "java"]
+            | ["src", "main", "kotlin"]
+            | ["src", "test", "kotlin"]
+    ) {
+        return None;
+    }
+    let package_components = components.len().saturating_sub(4);
+    if package_components == 0 {
+        return Some(root.join("/"));
+    }
+    let area_len = 3 + package_components.min(4);
+    Some(components[..area_len].join("/"))
 }
 
 pub fn context_area_resource_uri(area: &str) -> String {
@@ -1572,6 +1594,18 @@ mod tests {
     #[test]
     fn context_area_resource_uri_round_trips_source_free_area_names() {
         assert_eq!(context_area_for_path("src/auth/session.ts"), "src/auth");
+        assert_eq!(
+            context_area_for_path("src/main/java/gr/uom/java/xmi/diff/UMLClassBaseDiff.java"),
+            "src/main/java/gr/uom/java/xmi"
+        );
+        assert_eq!(
+            context_area_for_path("src/test/java/org/refactoringminer/test/DatasetTest.java"),
+            "src/test/java/org/refactoringminer/test"
+        );
+        assert_eq!(
+            context_area_for_path("src/main/kotlin/com/acme/auth/Session.kt"),
+            "src/main/kotlin/com/acme/auth"
+        );
         assert_eq!(
             context_area_for_path(".github/workflows/ci.yml"),
             ".github/workflows"

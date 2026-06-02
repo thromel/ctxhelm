@@ -3,11 +3,11 @@ gsd_state_version: 1.0
 milestone: v2.5
 milestone_name: Production Retrieval Quality
 status: active
-last_updated: "2026-06-02T05:20:27Z"
-last_activity: 2026-06-02 -- Phase 176 added focused context-area guidance for standard tasks, so area-context-only misses now surface task-conditioned area resources without inflating Recall@10 or displacing validation-test reserves
+last_updated: "2026-06-02T05:31:10Z"
+last_activity: 2026-06-02 -- Phase 177 made context-area grouping JVM-root aware, narrowing RefactoringMiner progressive resources from `src/main` to package-level areas such as `src/main/java/gr/uom/java/xmi` while preserving Recall@10
 progress:
-  total_phases: 93
-  completed_phases: 93
+  total_phases: 94
+  completed_phases: 94
   total_plans: 7
   completed_plans: 7
   percent: 100
@@ -17,10 +17,10 @@ progress:
 
 ## Current Position
 
-Phase: 176 - Focused Context-Area Guidance
-Plan: 176-focused-context-area-guidance
+Phase: 177 - JVM Context-Area Granularity
+Plan: 177-jvm-context-area-granularity
 Status: Complete
-Last activity: 2026-06-02 -- Phase 176 addresses the remaining RefactoringMiner `area_context_only` miss by emitting focused context-area guidance for non-broad tasks when selected source-like files already identify an area with unselected source-like candidates. A fresh RefactoringMiner clone proof at `/tmp/ctxhelm-rd/phase176-refminer-focused-context-areas.json` keeps File Recall@10 at `0.75` versus lexical `0.5833334`, but now each evaluated commit exposes `ctxhelm://repo/context-area/src%2Fmain` as a source-free progressive read resource. Eval ranking now preserves validation-test reserves from the task broadness decision instead of coupling them to whether context areas are present.
+Last activity: 2026-06-02 -- Phase 177 improves the Phase 176 progressive guidance by making `context_area_for_path` recognize JVM source roots. Maven/Gradle Java and Kotlin paths now group by source root plus up to four package components, so the remaining RefactoringMiner `UMLClassBaseDiff.java` gap points to `ctxhelm://repo/context-area/src%2Fmain%2Fjava%2Fgr%2Fuom%2Fjava%2Fxmi` instead of broad `src/main`. A fresh RefactoringMiner proof at `/tmp/ctxhelm-rd/phase177-refminer-jvm-context-areas.json` preserves File Recall@10 `0.75`, Source Recall@10 `0.75`, lexical baseline `0.5833334`, and lift `+0.16666663`.
 
 ## Project Reference
 

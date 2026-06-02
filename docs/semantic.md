@@ -163,6 +163,12 @@ lexical baseline `0.5833334`, but each commit now surfaced
 `ctxhelm://repo/context-area/src%2Fmain` as an actionable progressive read
 resource for the `area_context_only` gap.
 
+Phase 177 narrows that resource for JVM repositories. Maven/Gradle Java and
+Kotlin paths now use package-level context areas, so the same RefactoringMiner
+gap surfaces
+`ctxhelm://repo/context-area/src%2Fmain%2Fjava%2Fgr%2Fuom%2Fjava%2Fxmi`
+instead of broad `src/main` while keeping Recall@10 flat.
+
 ## Agent And MCP Use
 
 MCP `prepare_task`, `get_pack`, and `search` accept `semantic: true`. The field is optional and additive, so existing agents keep their lexical, symbol, graph, test, and history behavior unless they explicitly request semantic retrieval.
