@@ -78,6 +78,13 @@ selected-at-10 count, retrieval-target count, target hits, and target misses.
 This keeps GraphRAG work measurable by edge family without changing the default
 ranking or adding source text to reports.
 
+Reports also include `graphEdgeAblations`. These are conservative diagnostic
+ablations: disabling an edge label removes a selected file only when that file's
+only evidence is the disabled dependency edge family. Files that also have
+lexical, symbol, test, history, co-change, or another graph edge label remain in
+the ranking. This measures edge-family lift without overstating impact from
+files that have independent retrieval support.
+
 Prepare-task plans now expose `contextAreas` for broad multi-area prompts. This
 is an additive, source-free channel that groups candidate paths by repository
 area, reports how many candidate and selected paths each area contributed, and

@@ -27,9 +27,9 @@ pub use eval::{
     BenchmarkRegressionThreshold, BenchmarkRepoBaseline, BenchmarkRepoBaselineStatus,
     BenchmarkRepoConfig, BenchmarkRepoEffectiveConfig, BenchmarkRepoReport, BenchmarkSuiteConfig,
     BenchmarkSuiteReport, BenchmarkThresholdCheck, CandidateFeatureComparisonReport,
-    CandidateFeatureKindDelta, EvalComparison, GraphEdgeProfile, HistoricalChangedPathLabel,
-    HistoricalCommitEval, HistoricalEvalEffectiveFilters, HistoricalEvalOptions,
-    HistoricalEvalRefs, HistoricalEvalReport, HistoricalEvalRuntimeSummary,
+    CandidateFeatureKindDelta, EvalComparison, GraphEdgeAblationResult, GraphEdgeProfile,
+    HistoricalChangedPathLabel, HistoricalCommitEval, HistoricalEvalEffectiveFilters,
+    HistoricalEvalOptions, HistoricalEvalRefs, HistoricalEvalReport, HistoricalEvalRuntimeSummary,
     HistoricalMissingFileSummary, HistoricalProtectedEvidenceFile, HistoricalSignalRanking,
     HistoricalSlowCommitSummary, LexicalBackendCommitRow, LexicalBackendComparison,
     LexicalBackendCorpusOptions, LexicalBackendCorpusReport, LexicalBackendMetrics,
@@ -1775,6 +1775,7 @@ mod tests {
                 mrr_lift_vs_no_context_at_k: 1.0,
             },
             signal_ablations: Vec::new(),
+            graph_edge_ablations: Vec::new(),
             token_roi: vec![
                 TokenRoiMetric {
                     budget: PackBudget::Brief,
@@ -2217,6 +2218,7 @@ mod tests {
                 },
                 recall_lift_vs_lexical_at_k: -1.0,
             }],
+            graph_edge_ablations: Vec::new(),
             token_roi: Vec::new(),
             retrieval_gap_summaries: vec![RetrievalGapSummary {
                 role: FileRole::Source,

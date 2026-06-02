@@ -5053,6 +5053,27 @@ fn render_historical_eval_report(report: &HistoricalEvalReport) -> String {
     }
     output.push('\n');
 
+    output.push_str("## Graph Edge Ablations\n\n");
+    if report.graph_edge_ablations.is_empty() {
+        output.push_str("- No graph edge ablation rows available.\n");
+    } else {
+        for ablation in &report.graph_edge_ablations {
+            output.push_str(&format!(
+                "- Disabled exclusive `{}` over range `{}` / `{}` commit(s): affected `{}`, removed selected@10 `{}`, removed target hits@10 `{}`, Recall@K `{:.2}`, delta vs default `{:+.2}`, lift vs lexical `{:+.2}`\n",
+                ablation.edge_label,
+                ablation.eval_range_id,
+                ablation.evaluated_commits,
+                ablation.affected_commit_count,
+                ablation.removed_selected_at_10_count,
+                ablation.removed_target_hit_at_10_count,
+                ablation.metrics.recall_at_k,
+                ablation.recall_delta_at_k,
+                ablation.recall_lift_vs_lexical_at_k
+            ));
+        }
+    }
+    output.push('\n');
+
     output.push_str("## Graph Edge Profiles\n\n");
     if report.graph_edge_profiles.is_empty() {
         output.push_str("- No graph edge profile rows available.\n");
@@ -5896,6 +5917,25 @@ mod tests {
                 mrr_lift_vs_no_context_at_k: 1.0,
             },
             signal_ablations: Vec::new(),
+            graph_edge_ablations: vec![ctxhelm_compiler::GraphEdgeAblationResult {
+                eval_range_id: "range-1".to_string(),
+                edge_label: "imports".to_string(),
+                evaluated_commits: 1,
+                affected_commit_count: 1,
+                removed_selected_at_10_count: 1,
+                removed_target_hit_at_10_count: 1,
+                metrics: ctxhelm_compiler::RankingMetrics {
+                    k: 10,
+                    recall_at_k: 0.0,
+                    precision_at_k: 0.0,
+                    mrr_at_k: 0.0,
+                    role_recall: Vec::new(),
+                    test_recommendation_rate: 0.0,
+                    average_recommended_context_files: 1.0,
+                },
+                recall_delta_at_k: -1.0,
+                recall_lift_vs_lexical_at_k: 0.0,
+            }],
             token_roi: vec![
                 ctxhelm_compiler::TokenRoiMetric {
                     budget: PackBudget::Brief,
@@ -6077,6 +6117,10 @@ mod tests {
         assert!(markdown.contains("Token ROI"));
         assert!(markdown.contains("`Brief`: cutoff `5`, estimated tokens `4000`"));
         assert!(markdown.contains("larger pack adds little value `true`"));
+        assert!(markdown.contains("Graph Edge Ablations"));
+        assert!(markdown.contains(
+            "Disabled exclusive `imports` over range `range-1` / `1` commit(s): affected `1`, removed selected@10 `1`, removed target hits@10 `1`"
+        ));
         assert!(markdown.contains("Graph Edge Profiles"));
         assert!(markdown.contains(
             "`imports`: candidates `2`, selected@10 `1`, retrieval targets `1`, target hits@10 `1`, target misses@10 `0`"

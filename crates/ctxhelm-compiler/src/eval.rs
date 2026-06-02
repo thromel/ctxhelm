@@ -243,6 +243,20 @@ pub struct SignalAblationResult {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
+pub struct GraphEdgeAblationResult {
+    pub eval_range_id: String,
+    pub edge_label: String,
+    pub evaluated_commits: usize,
+    pub affected_commit_count: usize,
+    pub removed_selected_at_10_count: usize,
+    pub removed_target_hit_at_10_count: usize,
+    pub metrics: RankingMetrics,
+    pub recall_delta_at_k: f32,
+    pub recall_lift_vs_lexical_at_k: f32,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
 pub struct PairedBaselineAnalysisReport {
     pub repo_id: String,
     pub eval_range_id: String,
@@ -804,6 +818,8 @@ pub struct HistoricalEvalReport {
     pub head: Option<String>,
     pub ranking_comparison: EvalComparison,
     pub signal_ablations: Vec<SignalAblationResult>,
+    #[serde(default)]
+    pub graph_edge_ablations: Vec<GraphEdgeAblationResult>,
     pub token_roi: Vec<TokenRoiMetric>,
     pub retrieval_gap_summaries: Vec<RetrievalGapSummary>,
     #[serde(default)]
@@ -3936,6 +3952,7 @@ pub fn evaluate_historical_commits(
     )?;
     let mut commits = Vec::new();
     let mut ablation_rankings = initial_ablation_rankings();
+    let mut graph_edge_ablation_rankings = BTreeMap::<String, GraphEdgeAblationRankings>::new();
     let mut gap_reasons_by_commit = Vec::new();
     let mut ranking_millis = 0u64;
     let mut pack_compiler_millis = 0u64;
@@ -3946,6 +3963,38 @@ pub fn evaluate_historical_commits(
                 .find(|entry| entry.disabled_signal == signal)
             {
                 rankings.rankings.push(ranking);
+            }
+        }
+        let graph_edge_labels_for_commit = result
+            .graph_edge_ablation_rankings
+            .iter()
+            .map(|ablation| ablation.edge_label.clone())
+            .collect::<BTreeSet<_>>();
+        for edge_ablation in &result.graph_edge_ablation_rankings {
+            let entry = graph_edge_ablation_rankings
+                .entry(edge_ablation.edge_label.clone())
+                .or_insert_with(|| GraphEdgeAblationRankings {
+                    edge_label: edge_ablation.edge_label.clone(),
+                    rankings: commits
+                        .iter()
+                        .map(|commit: &HistoricalCommitEval| {
+                            commit.recommended_context_files.clone()
+                        })
+                        .collect(),
+                    affected_commit_count: 0,
+                    removed_selected_at_10_count: 0,
+                    removed_target_hit_at_10_count: 0,
+                });
+            entry.rankings.push(edge_ablation.ranking.clone());
+            entry.affected_commit_count += usize::from(edge_ablation.affected_commit);
+            entry.removed_selected_at_10_count += edge_ablation.removed_selected_at_10_count;
+            entry.removed_target_hit_at_10_count += edge_ablation.removed_target_hit_at_10_count;
+        }
+        for (edge_label, entry) in graph_edge_ablation_rankings.iter_mut() {
+            if !graph_edge_labels_for_commit.contains(edge_label) {
+                entry
+                    .rankings
+                    .push(result.commit.recommended_context_files.clone());
             }
         }
         gap_reasons_by_commit.push(result.gap_reasons);
@@ -3965,6 +4014,14 @@ pub fn evaluate_historical_commits(
     let signal_ablations = signal_ablation_results(
         &commits,
         &ablation_rankings,
+        &ranking_comparison.lexical_baseline,
+        &eval_range_id,
+        ranking_budget,
+    );
+    let graph_edge_ablations = graph_edge_ablation_results(
+        &commits,
+        graph_edge_ablation_rankings.into_values().collect(),
+        &ranking_comparison.combined,
         &ranking_comparison.lexical_baseline,
         &eval_range_id,
         ranking_budget,
@@ -4000,6 +4057,7 @@ pub fn evaluate_historical_commits(
         head: options.head.clone(),
         ranking_comparison,
         signal_ablations,
+        graph_edge_ablations,
         token_roi,
         retrieval_gap_summaries,
         graph_edge_profiles,
@@ -4193,6 +4251,7 @@ pub(crate) struct HistoricalEvalWorktree<'a> {
 struct HistoricalCommitEvalResult {
     commit: HistoricalCommitEval,
     ablation_rankings: Vec<(RetrievalSignalKind, Vec<String>)>,
+    graph_edge_ablation_rankings: Vec<GraphEdgeAblationCommitRanking>,
     gap_reasons: BTreeMap<String, String>,
     ranking_millis: u64,
     pack_compiler_millis: u64,
@@ -4370,6 +4429,13 @@ fn evaluate_historical_commit_sample(
             (signal, ranking)
         })
         .collect::<Vec<_>>();
+    let graph_edge_ablation_rankings = graph_edge_ablation_rankings_for_commit(
+        &plan,
+        &recommended_context_files,
+        &signals_by_path,
+        &retrieval_target_paths,
+        10,
+    );
     let signal_baseline_files =
         signal_baseline_rankings(&recommended_context_files, &signals_by_path);
     let source_changed_files =
@@ -4452,6 +4518,7 @@ fn evaluate_historical_commit_sample(
             source_text_logged: false,
         },
         ablation_rankings,
+        graph_edge_ablation_rankings,
         gap_reasons,
         ranking_millis,
         pack_compiler_millis,
@@ -5958,6 +6025,24 @@ struct SignalAblationRankings {
     rankings: Vec<Vec<String>>,
 }
 
+#[derive(Debug, Clone)]
+struct GraphEdgeAblationCommitRanking {
+    edge_label: String,
+    ranking: Vec<String>,
+    affected_commit: bool,
+    removed_selected_at_10_count: usize,
+    removed_target_hit_at_10_count: usize,
+}
+
+#[derive(Debug, Clone)]
+struct GraphEdgeAblationRankings {
+    edge_label: String,
+    rankings: Vec<Vec<String>>,
+    affected_commit_count: usize,
+    removed_selected_at_10_count: usize,
+    removed_target_hit_at_10_count: usize,
+}
+
 fn initial_ablation_rankings() -> Vec<SignalAblationRankings> {
     ablation_signals()
         .into_iter()
@@ -6295,6 +6380,106 @@ fn graph_edge_profiles_for_commit(
         .collect()
 }
 
+fn graph_edge_labels_by_path(plan: &ContextPlan) -> BTreeMap<String, BTreeSet<String>> {
+    let mut paths_by_label = BTreeMap::<String, BTreeSet<String>>::new();
+    for candidate in &plan.retrieval_candidates {
+        let Some(path) = &candidate.path else {
+            continue;
+        };
+        for evidence in &candidate.evidence {
+            if evidence.signal != RetrievalSignalKind::Dependency {
+                continue;
+            }
+            let Some(label) = evidence
+                .edge_label
+                .as_deref()
+                .filter(|label| !label.trim().is_empty())
+            else {
+                continue;
+            };
+            paths_by_label
+                .entry(path.clone())
+                .or_default()
+                .insert(label.to_string());
+        }
+    }
+    paths_by_label
+}
+
+fn graph_edge_ablation_rankings_for_commit(
+    plan: &ContextPlan,
+    recommended_context_files: &[String],
+    signals_by_path: &BTreeMap<String, Vec<RetrievalSignalKind>>,
+    retrieval_target_paths: &BTreeSet<String>,
+    limit: usize,
+) -> Vec<GraphEdgeAblationCommitRanking> {
+    let edge_labels_by_path = graph_edge_labels_by_path(plan);
+    let edge_labels = edge_labels_by_path
+        .values()
+        .flat_map(|labels| labels.iter().cloned())
+        .collect::<BTreeSet<_>>();
+    let selected_at_limit = recommended_context_files
+        .iter()
+        .take(limit.max(1))
+        .cloned()
+        .collect::<BTreeSet<_>>();
+
+    edge_labels
+        .into_iter()
+        .map(|edge_label| {
+            let mut removed_selected_at_10_count = 0usize;
+            let mut removed_target_hit_at_10_count = 0usize;
+            let ranking = recommended_context_files
+                .iter()
+                .filter(|path| {
+                    let remove = graph_edge_label_is_exclusive_support(
+                        path,
+                        &edge_label,
+                        signals_by_path,
+                        &edge_labels_by_path,
+                    );
+                    if remove && selected_at_limit.contains(path.as_str()) {
+                        removed_selected_at_10_count += 1;
+                        if retrieval_target_paths.contains(path.as_str()) {
+                            removed_target_hit_at_10_count += 1;
+                        }
+                    }
+                    !remove
+                })
+                .cloned()
+                .collect::<Vec<_>>();
+            GraphEdgeAblationCommitRanking {
+                edge_label,
+                ranking,
+                affected_commit: removed_selected_at_10_count > 0,
+                removed_selected_at_10_count,
+                removed_target_hit_at_10_count,
+            }
+        })
+        .collect()
+}
+
+fn graph_edge_label_is_exclusive_support(
+    path: &str,
+    edge_label: &str,
+    signals_by_path: &BTreeMap<String, Vec<RetrievalSignalKind>>,
+    edge_labels_by_path: &BTreeMap<String, BTreeSet<String>>,
+) -> bool {
+    let Some(labels) = edge_labels_by_path.get(path) else {
+        return false;
+    };
+    if labels.is_empty() || labels.iter().any(|label| label != edge_label) {
+        return false;
+    }
+    let Some(signals) = signals_by_path.get(path) else {
+        return false;
+    };
+    !signals.is_empty()
+        && signals
+            .iter()
+            .all(|signal| signal == &RetrievalSignalKind::Dependency)
+}
+
 fn protected_evidence_signal_order() -> Vec<RetrievalSignalKind> {
     vec![
         RetrievalSignalKind::Anchor,
@@ -6369,6 +6554,41 @@ fn signal_ablation_results(
                 eval_range_id: eval_range_id.to_string(),
                 disabled_signal: ablation.disabled_signal.clone(),
                 evaluated_commits: commits.len(),
+                recall_lift_vs_lexical_at_k: metrics.recall_at_k - lexical_baseline.recall_at_k,
+                metrics,
+            }
+        })
+        .collect()
+}
+
+fn graph_edge_ablation_results(
+    commits: &[HistoricalCommitEval],
+    mut edge_ablations: Vec<GraphEdgeAblationRankings>,
+    combined_baseline: &RankingMetrics,
+    lexical_baseline: &RankingMetrics,
+    eval_range_id: &str,
+    k: usize,
+) -> Vec<GraphEdgeAblationResult> {
+    edge_ablations.sort_by(|left, right| left.edge_label.cmp(&right.edge_label));
+    edge_ablations
+        .into_iter()
+        .map(|ablation| {
+            let mut ablated_commits = commits.to_vec();
+            for (commit, ranking) in ablated_commits
+                .iter_mut()
+                .zip(ablation.rankings.iter().cloned())
+            {
+                commit.recommended_context_files = ranking;
+            }
+            let metrics = ranking_metrics(&ablated_commits, k, RankingFamily::Combined);
+            GraphEdgeAblationResult {
+                eval_range_id: eval_range_id.to_string(),
+                edge_label: ablation.edge_label,
+                evaluated_commits: commits.len(),
+                affected_commit_count: ablation.affected_commit_count,
+                removed_selected_at_10_count: ablation.removed_selected_at_10_count,
+                removed_target_hit_at_10_count: ablation.removed_target_hit_at_10_count,
+                recall_delta_at_k: metrics.recall_at_k - combined_baseline.recall_at_k,
                 recall_lift_vs_lexical_at_k: metrics.recall_at_k - lexical_baseline.recall_at_k,
                 metrics,
             }
@@ -7648,6 +7868,97 @@ mod tests {
     }
 
     #[test]
+    fn graph_edge_ablation_only_removes_exclusive_edge_supported_files() {
+        let mut plan = crate::planning::empty_plan_for_task(TaskType::BugFix);
+        plan.retrieval_candidates = vec![
+            RetrievalCandidate {
+                kind: RetrievalCandidateKind::File,
+                path: Some("src/import_only.rs".to_string()),
+                role: Some(FileRole::Source),
+                reason_code: "dependency_neighbor".to_string(),
+                confidence: 0.8,
+                signal_scores: vec![RetrievalSignalScore {
+                    signal: RetrievalSignalKind::Dependency,
+                    score: 0.8,
+                    weight: 0.75,
+                }],
+                evidence: vec![RetrievalEvidence {
+                    signal: RetrievalSignalKind::Dependency,
+                    score: 0.8,
+                    reason_code: "dependency_neighbor".to_string(),
+                    path: Some("src/import_only.rs".to_string()),
+                    role: Some(FileRole::Source),
+                    edge_label: Some("imports".to_string()),
+                    commit_ids: Vec::new(),
+                    commit_count: 0,
+                }],
+            },
+            RetrievalCandidate {
+                kind: RetrievalCandidateKind::File,
+                path: Some("src/lexical_and_import.rs".to_string()),
+                role: Some(FileRole::Source),
+                reason_code: "lexical_match".to_string(),
+                confidence: 0.9,
+                signal_scores: vec![
+                    RetrievalSignalScore {
+                        signal: RetrievalSignalKind::Lexical,
+                        score: 0.9,
+                        weight: 1.0,
+                    },
+                    RetrievalSignalScore {
+                        signal: RetrievalSignalKind::Dependency,
+                        score: 0.4,
+                        weight: 0.75,
+                    },
+                ],
+                evidence: vec![
+                    RetrievalEvidence {
+                        signal: RetrievalSignalKind::Lexical,
+                        score: 0.9,
+                        reason_code: "lexical_match".to_string(),
+                        path: Some("src/lexical_and_import.rs".to_string()),
+                        role: Some(FileRole::Source),
+                        edge_label: None,
+                        commit_ids: Vec::new(),
+                        commit_count: 0,
+                    },
+                    RetrievalEvidence {
+                        signal: RetrievalSignalKind::Dependency,
+                        score: 0.4,
+                        reason_code: "dependency_neighbor".to_string(),
+                        path: Some("src/lexical_and_import.rs".to_string()),
+                        role: Some(FileRole::Source),
+                        edge_label: Some("imports".to_string()),
+                        commit_ids: Vec::new(),
+                        commit_count: 0,
+                    },
+                ],
+            },
+        ];
+        let recommended = vec![
+            "src/import_only.rs".to_string(),
+            "src/lexical_and_import.rs".to_string(),
+        ];
+        let targets = recommended.iter().cloned().collect::<BTreeSet<_>>();
+        let signals = signals_by_path(&plan);
+
+        let ablations =
+            graph_edge_ablation_rankings_for_commit(&plan, &recommended, &signals, &targets, 10);
+        let imports = ablations
+            .iter()
+            .find(|ablation| ablation.edge_label == "imports")
+            .expect("imports ablation");
+
+        assert_eq!(
+            imports.ranking,
+            vec!["src/lexical_and_import.rs".to_string()]
+        );
+        assert!(imports.affected_commit);
+        assert_eq!(imports.removed_selected_at_10_count, 1);
+        assert_eq!(imports.removed_target_hit_at_10_count, 1);
+    }
+
+    #[test]
     fn semantic_contribution_diagnostics_explain_no_unique_hits_or_candidates() {
         let no_unique = SemanticContributionSummary {
             evaluated_commits: 1,
@@ -8910,6 +9221,7 @@ mod tests {
                 mrr_lift_vs_no_context_at_k: 0.0,
             },
             signal_ablations: Vec::new(),
+            graph_edge_ablations: Vec::new(),
             token_roi: Vec::new(),
             retrieval_gap_summaries: Vec::new(),
             graph_edge_profiles: Vec::new(),

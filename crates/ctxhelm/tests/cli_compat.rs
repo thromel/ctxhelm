@@ -1188,6 +1188,7 @@ fn search_related_tests_dependencies_and_eval_history_emit_json_shapes() {
             "refs",
             "rankingComparison",
             "signalAblations",
+            "graphEdgeAblations",
             "tokenRoi",
             "retrievalGapSummaries",
             "graphEdgeProfiles",
@@ -1209,6 +1210,7 @@ fn search_related_tests_dependencies_and_eval_history_emit_json_shapes() {
             >= 0.0
     );
     assert!(history["signalAblations"].is_array());
+    assert!(history["graphEdgeAblations"].is_array());
     assert!(history["tokenRoi"].is_array());
     assert_eq!(history["tokenRoi"][0]["budget"], "brief");
     assert!(history["retrievalGapSummaries"].is_array());
@@ -1268,6 +1270,7 @@ fn search_related_tests_dependencies_and_eval_history_emit_json_shapes() {
         .stdout(contains("Ranking budget K: `10`"))
         .stdout(contains("Recall@K:"))
         .stdout(contains("## Signal Ablations"))
+        .stdout(contains("## Graph Edge Ablations"))
         .stdout(contains("## Graph Edge Profiles"))
         .stdout(contains("## Runtime Diagnostics"))
         .stdout(contains("## Grouped Retrieval Failures"))
