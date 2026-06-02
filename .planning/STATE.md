@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v2.5
 milestone_name: Production Retrieval Quality
 status: active
-last_updated: "2026-06-02T07:35:00Z"
-last_activity: 2026-06-02 -- Phase 180 added conservative source-free graph edge ablations to historical eval, keeping the clean four-repo proof promoted while measuring edge-family top-10 lift for exclusive imports and Python re-export evidence
+last_updated: "2026-06-02T19:15:54Z"
+last_activity: 2026-06-03 -- Phase 181 turns graph edge-family diagnostics into bounded dependency-budget ordering, prioritizing precision and direct imports before lower-yield re-export edges while preserving source-free proof reporting
 progress:
   total_phases: 94
   completed_phases: 94
@@ -17,10 +17,10 @@ progress:
 
 ## Current Position
 
-Phase: 180 - Graph Edge Ablations
-Plan: 180-graph-edge-ablations
+Phase: 181 - Graph Edge Budget Allocation
+Plan: 181-graph-edge-budget-allocation
 Status: Complete
-Last activity: 2026-06-02 -- Phase 180 makes graph edge-family lift measurable through source-free `graphEdgeAblations` in historical eval reports. The clean four-repo proof at `/tmp/ctxhelm-rd/phase180-graph-edge-ablation-proof.json` promotes with average File Recall@10 `0.61190045` vs lexical `0.45709258`; disabling exclusive VeriSchema `imports` removes `2` selected paths and `1` target hit for Recall@K delta `-0.00512819`, while `python_reexport` has no exclusive top-10 lift on this fixture.
+Last activity: 2026-06-03 -- Phase 181 uses Phase 179/180 graph diagnostics to order tight source-dependency budget by edge family: `precision:*`, `imports`, other dependency labels, then `python_reexport`. Focused dependency-budget tests pass. A warm three-fixture proof promotes with average File Recall@10 `0.75555557` vs lexical `0.5687831`; the original four-repo Phase 110 fixture is not fresh-clone reproducible because the pinned VeriSchema commit `b5cfb2a551d026514f505c45863db31277bcd1ad` is no longer reachable from the remote.
 
 ## Project Reference
 
@@ -265,6 +265,7 @@ Continue production-readiness work from remaining measured gaps: make Codex CLI 
 - Phase 178 separates explained raw all-file trails from unexplained proof regressions. Latest proof notes: `.planning/e2e/2026-06-02-phase178-explained-all-file-trails.md`; fresh source-free summary: `/tmp/ctxhelm-rd/phase178-clean-fixture-explained-trails.json`; `allFileClaim = mixed`, beat `3`, raw match `0`, raw trail `1`, explained trail `1`, unexplained trail `0`, average file delta `+0.15480787`, agent-evidence delta `+0.2570628`, and context delta `+0.30652046`.
 - Phase 179 adds source-free graph edge profiles to historical eval. Latest proof notes: `.planning/e2e/2026-06-02-phase179-graph-edge-profiles.md`; fresh source-free summary: `/tmp/ctxhelm-rd/phase179-graph-edge-profiles-warm-proof.json`; the warm proof promotes and VeriSchema now exposes `imports` target hits/misses as `6`/`22`, making graph edge-family ranking pressure measurable.
 - Phase 180 adds source-free graph edge ablations to historical eval. Latest proof notes: `.planning/e2e/2026-06-02-phase180-graph-edge-ablations.md`; fresh source-free summary: `/tmp/ctxhelm-rd/phase180-graph-edge-ablation-proof.json`; the four-repo proof promotes and VeriSchema exclusive `imports` ablation removes `1` target hit for Recall@K delta `-0.00512819`, while `python_reexport` has no exclusive top-10 target lift.
+- Phase 181 adds graph edge-family budget allocation for source dependency floors. Latest proof notes: `.planning/e2e/2026-06-03-phase181-graph-edge-budget-allocation.md`; fresh source-free summaries: `/tmp/ctxhelm-rd/phase181-graph-edge-budget-three-warm-proof.json` and `/tmp/ctxhelm-rd/phase181-current-verischema-proof.json`; focused tests pass, the warm three-fixture proof promotes, current reachable VeriSchema promotes, and the old pinned VeriSchema SHA is recorded as an unreproducible fixture freshness problem.
 - Phase 129 adds public release freshness proof. Latest proof notes: `.planning/e2e/2026-06-01-phase129-public-release-freshness.md`; durable source-free summary: `.ctxhelm/e2e/phase129-public-release-freshness.json`; public `v1.1.0` targets `68383cbfc2fff00c4f53fbd2b7bf90527ac4bd7e`, current main is `a07e6be31a0605af1810e79cb18b34245fa7def0`, `gitRelation = current_descends_from_release`, `commitsAhead = 19`, and `status = outdated`.
 - Phase 130 publishes and verifies the current public `v1.1.1` archive. Latest proof notes: `.planning/e2e/2026-06-01-phase130-public-v111-release.md`; durable source-free summaries: `.ctxhelm/e2e/phase130-github-release.json`, `.ctxhelm/e2e/phase130-public-release-freshness.json`, `.ctxhelm/e2e/phase130-public-archive-install.json`, and `.ctxhelm/e2e/phase130-public-real-client-smoke.json`; public `v1.1.1` targets `6c93100fa0e4f5a5444fb7fd967c721cca49a401`, `gitRelation = same`, `commitsAhead = 0`, temporary public archive install passes version/help/doctor/first-pack checks, Claude Code `2.1.158` passes explicit-repo `prepare_task` and `get_pack`, and Codex CLI `0.44.0` remains an optional source-free skip.
 - Phase 131 publishes and verifies the product-aware `v1.1.2` archive. Latest proof notes: `.planning/e2e/2026-06-01-phase131-product-aware-freshness-release.md`; durable source-free summaries: `.ctxhelm/e2e/phase131-github-release.json`, `.ctxhelm/e2e/phase131-github-release-verify.json`, `.ctxhelm/e2e/phase131-public-release-freshness.json`, `.ctxhelm/e2e/phase131-public-archive-install.json`, and `.ctxhelm/e2e/phase131-public-real-client-smoke.json`; public `v1.1.2` targets `ac6dc97f04cd18b5f2c6c32f7a1eca49e3ef5587`, `productStatus = current`, `productCommitsAhead = 0`, temporary public archive install passes version/help/doctor/first-pack checks, Claude Code `2.1.158` passes explicit-repo `prepare_task` and `get_pack`, and Codex CLI `0.44.0` remains an optional source-free skip.

@@ -85,6 +85,13 @@ lexical, symbol, test, history, co-change, or another graph edge label remain in
 the ranking. This measures edge-family lift without overstating impact from
 files that have independent retrieval support.
 
+Source dependency floors use those diagnostics conservatively when budget is
+tight. Dependency edge labels are ordered by expected precision before raw edge
+confidence: `precision:*` edges first, then direct `imports`, then other
+dependency labels, then `python_reexport`. This does not expand graph depth or
+increase context budget; it only chooses which graph-supported source neighbor
+survives when the dependency reserve cannot include every candidate.
+
 Prepare-task plans now expose `contextAreas` for broad multi-area prompts. This
 is an additive, source-free channel that groups candidate paths by repository
 area, reports how many candidate and selected paths each area contributed, and

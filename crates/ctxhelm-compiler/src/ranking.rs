@@ -761,10 +761,18 @@ fn source_dependency_floor(candidates: &[RankedCandidate]) -> Vec<(f32, &RankedC
         })
         .collect::<Vec<_>>();
     source_dependency_floor.sort_by(|(left_score, left), (right_score, right)| {
-        right_score
-            .total_cmp(left_score)
-            .then_with(|| right.rank_score.total_cmp(&left.rank_score))
-            .then_with(|| left.candidate.path.cmp(&right.candidate.path))
+        source_floor_path_priority(left)
+            .cmp(&source_floor_path_priority(right))
+            .then_with(|| {
+                dependency_edge_family_priority(left)
+                    .cmp(&dependency_edge_family_priority(right))
+                    .then_with(|| {
+                        right_score
+                            .total_cmp(left_score)
+                            .then_with(|| right.rank_score.total_cmp(&left.rank_score))
+                            .then_with(|| left.candidate.path.cmp(&right.candidate.path))
+                    })
+            })
     });
     source_dependency_floor
 }
@@ -798,6 +806,30 @@ fn has_source_dependency_target_candidates(candidates: &[RankedCandidate]) -> bo
             && candidate.candidate.role == Some(FileRole::Source)
             && signal_score(&candidate.candidate, RetrievalSignalKind::Dependency).is_some()
     })
+}
+
+fn dependency_edge_family_priority(candidate: &RankedCandidate) -> u8 {
+    candidate
+        .candidate
+        .evidence
+        .iter()
+        .filter(|evidence| evidence.signal == RetrievalSignalKind::Dependency)
+        .filter_map(|evidence| evidence.edge_label.as_deref())
+        .map(dependency_edge_label_priority)
+        .min()
+        .unwrap_or(9)
+}
+
+fn dependency_edge_label_priority(label: &str) -> u8 {
+    if label.starts_with("precision:") {
+        0
+    } else {
+        match label {
+            "imports" => 1,
+            "python_reexport" => 3,
+            _ => 2,
+        }
+    }
 }
 
 fn is_archive_context_artifact_path(path: &str) -> bool {
@@ -2061,6 +2093,44 @@ mod tests {
 
         assert!(paths.contains(&"src/dependency-a.ts"));
         assert!(paths.contains(&"src/dependency-b.ts"));
+    }
+
+    #[test]
+    fn selection_allocates_dependency_budget_by_edge_family() {
+        let candidates = rank_candidates(RankingInput {
+            dependency_edges: vec![
+                DependencyEdge {
+                    source_path: "src/seed.py".to_string(),
+                    target_path: "src/reexported.py".to_string(),
+                    kind: "python_reexport".to_string(),
+                    confidence: 0.95,
+                    reason: "package re-export".to_string(),
+                },
+                DependencyEdge {
+                    source_path: "src/seed.py".to_string(),
+                    target_path: "src/imported.py".to_string(),
+                    kind: "imports".to_string(),
+                    confidence: 0.60,
+                    reason: "python import".to_string(),
+                },
+            ],
+            roles: roles([
+                ("src/seed.py", FileRole::Source),
+                ("src/reexported.py", FileRole::Source),
+                ("src/imported.py", FileRole::Source),
+            ]),
+            expansion_seeds: vec!["src/seed.py".to_string()],
+            ..RankingInput::default()
+        });
+
+        let selection = select_ranked_candidates_for_scope(&candidates, 1, 0, true);
+        let paths = selection
+            .target_files
+            .iter()
+            .map(|target| target.path.as_str())
+            .collect::<Vec<_>>();
+
+        assert_eq!(paths, vec!["src/imported.py"]);
     }
 
     #[test]
