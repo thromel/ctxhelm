@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v2.5
 milestone_name: Production Retrieval Quality
 status: active
-last_updated: "2026-06-02T03:52:31Z"
-last_activity: 2026-06-02 -- Phase 170 preserved the four-repo clean-cold promotion while demoting auxiliary example roots in source-floor ranking; average File Recall@10 improved from 0.54832906 to 0.5499957 and VeriSchema Source Recall@10 improved from 0.2624269 to 0.2763158 without validation regression
+last_updated: "2026-06-02T04:05:07Z"
+last_activity: 2026-06-02 -- Phase 171 preserved four-repo clean-cold promotion while prioritizing current root planning docs inside the governance-doc floor; average File Recall@10 improved from 0.5499957 to 0.59761477 and ctxhelm File Recall@10 improved from 0.41904765 to 0.60952383 without validation or other-corpus regression
 progress:
   total_phases: 90
   completed_phases: 90
@@ -17,10 +17,10 @@ progress:
 
 ## Current Position
 
-Phase: 170 - Auxiliary Source Priority
-Plan: 170-auxiliary-source-priority
+Phase: 171 - Governance Doc Priority
+Plan: 171-governance-doc-priority
 Status: Complete
-Last activity: 2026-06-02 -- Phase 170 followed the clean four-repo proof after Phase 169 and fixed a measured broad-source ranking pressure: high-scoring auxiliary example sources could consume constrained top-10 context slots ahead of implementation files. Source lexical and symbol floors now prefer implementation roots over auxiliary roots such as `examples/`, while preserving `scripts/` as normal source after proof showed it is product code for ReAgent. The four-repo clean-cold proof still promotes, average File Recall@10 improves from `0.54832906` to `0.5499957`, average lift vs lexical improves from `+0.09123646` to `+0.09290312`, VeriSchema Source Recall@10 improves from `0.2624269` to `0.2763158`, and Test Recall@10 remains `0.67989415`.
+Last activity: 2026-06-02 -- Phase 171 converted a repeated ctxhelm governance-doc gap into a measured ranking fix. Root planning docs in the governance-doc floor now use stable product-state priority (`STATE`, `ROADMAP`, `MILESTONES`, `REQUIREMENTS`, then `PROJECT`) before lexical score, so release/eval/history tasks preserve current project truth before older or generic docs. The four-repo clean-cold proof still promotes, average File Recall@10 improves from `0.5499957` to `0.59761477`, average lift vs lexical improves from `+0.09290312` to `+0.14052217`, ctxhelm File Recall@10 improves from `0.41904765` to `0.60952383`, ctxhelm Context Recall@10 improves from `0.41666666` to `0.6111111`, and Test Recall@10 remains `0.67989415`.
 
 ## Project Reference
 
@@ -147,6 +147,7 @@ Planned phases:
 - Phase 168: Semantic Alias And Noise Diagnostics (complete follow-up)
 - Phase 169: Graph Ordering And Context Balance (complete follow-up)
 - Phase 170: Auxiliary Source Priority (complete follow-up)
+- Phase 171: Governance Doc Priority (complete follow-up)
 
 ## Last Completed Milestone
 

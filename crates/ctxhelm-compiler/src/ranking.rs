@@ -997,8 +997,9 @@ fn governance_doc_floor(candidates: &[RankedCandidate]) -> Vec<(f32, &RankedCand
         })
         .collect::<Vec<_>>();
     governance_floor.sort_by(|(left_score, left), (right_score, right)| {
-        right_score
-            .total_cmp(left_score)
+        governance_doc_priority(left)
+            .cmp(&governance_doc_priority(right))
+            .then_with(|| right_score.total_cmp(left_score))
             .then_with(|| left.lexical_rank.cmp(&right.lexical_rank))
             .then_with(|| left.candidate.path.cmp(&right.candidate.path))
     });
@@ -1007,6 +1008,32 @@ fn governance_doc_floor(candidates: &[RankedCandidate]) -> Vec<(f32, &RankedCand
 
 fn governance_doc_floor_limit(file_budget: usize) -> usize {
     file_budget.div_ceil(3).clamp(1, 4)
+}
+
+fn governance_doc_priority(candidate: &RankedCandidate) -> u8 {
+    candidate
+        .candidate
+        .path
+        .as_deref()
+        .map(root_governance_doc_priority)
+        .unwrap_or(99)
+}
+
+fn root_governance_doc_priority(path: &str) -> u8 {
+    match path {
+        ".planning/STATE.md" => 0,
+        ".planning/ROADMAP.md" => 1,
+        ".planning/MILESTONES.md" => 2,
+        ".planning/REQUIREMENTS.md" => 3,
+        ".planning/PROJECT.md" => 4,
+        "AGENTS.md" => 5,
+        "docs/benchmarking.md" => 6,
+        "docs/release.md" => 7,
+        "docs/agent-setup.md" => 8,
+        "docs/semantic.md" => 9,
+        "README.md" => 10,
+        _ => 99,
+    }
 }
 
 fn is_root_governance_doc_path(path: &str) -> bool {
@@ -2677,6 +2704,66 @@ mod tests {
             .collect::<Vec<_>>();
 
         assert!(paths.contains(&"docs/agent-setup.md"));
+    }
+
+    #[test]
+    fn selection_prioritizes_current_root_planning_docs_in_governance_floor() {
+        let candidates = rank_candidates(RankingInput {
+            lexical_results: vec![
+                SearchResult {
+                    path: ".planning/PROJECT.md".to_string(),
+                    role: FileRole::Docs,
+                    language: Some("markdown".to_string()),
+                    score: 40.0,
+                    reason: "planning match".to_string(),
+                },
+                SearchResult {
+                    path: "README.md".to_string(),
+                    role: FileRole::Docs,
+                    language: Some("markdown".to_string()),
+                    score: 39.0,
+                    reason: "planning match".to_string(),
+                },
+                SearchResult {
+                    path: ".planning/STATE.md".to_string(),
+                    role: FileRole::Docs,
+                    language: Some("markdown".to_string()),
+                    score: 8.0,
+                    reason: "planning match".to_string(),
+                },
+                SearchResult {
+                    path: ".planning/ROADMAP.md".to_string(),
+                    role: FileRole::Docs,
+                    language: Some("markdown".to_string()),
+                    score: 7.0,
+                    reason: "planning match".to_string(),
+                },
+            ],
+            roles: roles([
+                (".planning/PROJECT.md", FileRole::Docs),
+                ("README.md", FileRole::Docs),
+                (".planning/STATE.md", FileRole::Docs),
+                (".planning/ROADMAP.md", FileRole::Docs),
+            ]),
+            ..RankingInput::default()
+        });
+
+        let selection = select_ranked_candidates_for_scope(&candidates, 4, 0, true);
+        let paths = selection
+            .target_files
+            .iter()
+            .map(|target| target.path.as_str())
+            .collect::<Vec<_>>();
+
+        assert_eq!(
+            paths,
+            vec![
+                ".planning/STATE.md",
+                ".planning/ROADMAP.md",
+                ".planning/PROJECT.md",
+                "README.md",
+            ]
+        );
     }
 
     #[test]
