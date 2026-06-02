@@ -4,7 +4,7 @@ milestone: v2.5
 milestone_name: Production Retrieval Quality
 status: active
 last_updated: "2026-06-02T00:00:00Z"
-last_activity: 2026-06-02 -- Phase 164 added global persisted semantic vector candidates, write-through source-free vector caching, and bounded foreground local_fastembed indexing
+last_activity: 2026-06-02 -- Phase 165 made local_fastembed vector indexing fail loudly, fixed documented fastembed model-id mapping, and switched the default production-local model to AllMiniLML6V2Q
 progress:
   total_phases: 89
   completed_phases: 89
@@ -17,10 +17,10 @@ progress:
 
 ## Current Position
 
-Phase: 164 - Global Semantic Vector Candidates And Write-Through
-Plan: 164-global-semantic-vector-candidates
+Phase: 165 - Fastembed Default And Loud Index Errors
+Plan: 165-fastembed-default-and-loud-index-errors
 Status: Complete
-Last activity: 2026-06-02 -- Phase 164 added persisted-vector candidates outside the lexical prefilter, source-free write-through caching for embedded candidate misses, and incremental vector upsert semantics so search does not prune indexed vectors. RefactoringMiner proof showed full synchronous local_fastembed indexing is not viable as a foreground default (>9 minutes stopped for 647 files; 128-vector default stopped after >4 minutes), so foreground local_fastembed indexing is bounded to 16 vectors unless `--semantic-limit` is explicit. Back-to-back fresh-process RefactoringMiner searches improved from `31.48s` to `20.86s` after write-through while preserving `TypeScriptVisitor.java` as the top result and growing stored vectors from 16 to 31 without pruning.
+Last activity: 2026-06-02 -- Phase 165 fixed silent zero-vector semantic indexes by making provider/model embedding failures hard errors, added explicit mapping for documented fastembed model ids, and changed `local_fastembed` default from Jina 768d to `AllMiniLML6V2Q` 384d. RefactoringMiner proof showed AllMini creates 16 vectors, preserves `TypeScriptVisitor.java` as the top result, and reduces the second fresh-process search from Phase 164 Jina `20.86s` to `16.92s` while keeping Jina available through explicit `--semantic-model JinaEmbeddingsV2BaseCode`.
 
 ## Project Reference
 
@@ -141,6 +141,7 @@ Planned phases:
 - Phase 162: Feature-Enabled Local Fastembed Gate Proof (complete follow-up)
 - Phase 163: Persisted Semantic Vector Reuse (complete follow-up)
 - Phase 164: Global Semantic Vector Candidates And Write-Through (complete follow-up)
+- Phase 165: Fastembed Default And Loud Index Errors (complete follow-up)
 
 ## Last Completed Milestone
 

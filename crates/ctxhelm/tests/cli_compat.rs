@@ -718,7 +718,7 @@ fn local_semantic_provider_selection_is_source_free_and_policy_visible() {
     );
 
     assert_eq!(status["providerKind"], "local_fastembed");
-    assert_eq!(status["modelId"], "JinaEmbeddingsV2BaseCode");
+    assert_eq!(status["modelId"], "AllMiniLML6V2Q");
     assert_eq!(status["providerRole"], "production_local");
     assert_eq!(status["qualityBackend"], true);
     assert_eq!(status["localOnly"], true);

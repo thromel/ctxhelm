@@ -27,9 +27,11 @@ pub const DEFAULT_SEMANTIC_MODEL: &str = "ctxhelm-local-hash-v1";
 pub const DEFAULT_SEMANTIC_DISTANCE: &str = "cosine";
 pub const LOCAL_HASH_PROVIDER_ROLE: &str = "deterministic_scaffold";
 pub const LOCAL_FASTEMBED_PROVIDER: &str = "local_fastembed";
-pub const LOCAL_FASTEMBED_MODEL: &str = "JinaEmbeddingsV2BaseCode";
-pub const LOCAL_FASTEMBED_DIMENSIONS: usize = 768;
+pub const LOCAL_FASTEMBED_MODEL: &str = "AllMiniLML6V2Q";
+pub const LOCAL_FASTEMBED_DIMENSIONS: usize = 384;
 pub const LOCAL_FASTEMBED_PROVIDER_ROLE: &str = "production_local";
+#[cfg(feature = "local-embeddings")]
+const JINA_CODE_FASTEMBED_MODEL: &str = "JinaEmbeddingsV2BaseCode";
 #[cfg(feature = "local-embeddings")]
 const LOCAL_FASTEMBED_VECTOR_CACHE_LIMIT: usize = 10_000;
 const DEFAULT_LOCAL_FASTEMBED_DOCUMENT_PREFILTER_LIMIT: usize = 128;
@@ -618,8 +620,14 @@ pub fn semantic_vector_records(
 ) -> Result<Vec<SemanticVectorRecord>, InventoryError> {
     let provider = normalized_provider(&options.provider);
     let repo_root = canonicalize(repo_root.as_ref())?;
-    if !options.enabled || !provider.available {
+    if !options.enabled {
         return Ok(Vec::new());
+    }
+    if !provider.available {
+        return Err(InventoryError::InvalidInput(format!(
+            "semantic vector indexing failed: provider {} with model {} is unavailable in this build",
+            provider.provider, provider.model
+        )));
     }
     let document_report = semantic_document_report(
         &repo_root,
@@ -636,7 +644,9 @@ pub fn semantic_vector_records(
         .iter()
         .map(render_semantic_document_text)
         .collect::<Vec<_>>();
-    let vectors = embed_texts(&inputs, &provider).unwrap_or_default();
+    let vectors = embed_texts(&inputs, &provider).map_err(|message| {
+        InventoryError::InvalidInput(format!("semantic vector indexing failed: {message}"))
+    })?;
     let mut records = Vec::new();
     for (document, vector) in document_report.documents.into_iter().zip(vectors) {
         records.push(SemanticVectorRecord {
@@ -1330,19 +1340,14 @@ fn local_fastembed_vectors(
     texts: &[String],
     provider: &SemanticProviderConfig,
 ) -> Result<Vec<Vec<f32>>, String> {
-    use fastembed::{EmbeddingModel, InitOptions, TextEmbedding};
-    use std::str::FromStr;
+    use fastembed::{InitOptions, TextEmbedding};
 
-    let embedding_model = if provider.model == LOCAL_FASTEMBED_MODEL {
-        EmbeddingModel::JinaEmbeddingsV2BaseCode
-    } else {
-        EmbeddingModel::from_str(&provider.model).map_err(|error| {
-            format!(
-                "Semantic provider {} could not parse model {}: {}",
-                provider.provider, provider.model, error
-            )
-        })?
-    };
+    let embedding_model = local_fastembed_embedding_model(&provider.model).map_err(|error| {
+        format!(
+            "Semantic provider {} could not parse model {}: {}",
+            provider.provider, provider.model, error
+        )
+    })?;
 
     let keys = texts
         .iter()
@@ -1438,6 +1443,21 @@ fn local_fastembed_vectors(
                 provider.provider
             )
         })
+}
+
+#[cfg(feature = "local-embeddings")]
+fn local_fastembed_embedding_model(model: &str) -> Result<fastembed::EmbeddingModel, String> {
+    use fastembed::EmbeddingModel;
+    use std::str::FromStr;
+
+    match model {
+        "AllMiniLML6V2" => Ok(EmbeddingModel::AllMiniLML6V2),
+        "AllMiniLML6V2Q" => Ok(EmbeddingModel::AllMiniLML6V2Q),
+        "AllMiniLML12V2" => Ok(EmbeddingModel::AllMiniLML12V2),
+        "AllMiniLML12V2Q" => Ok(EmbeddingModel::AllMiniLML12V2Q),
+        JINA_CODE_FASTEMBED_MODEL => Ok(EmbeddingModel::JinaEmbeddingsV2BaseCode),
+        _ => EmbeddingModel::from_str(model),
+    }
 }
 
 #[cfg(feature = "local-embeddings")]
@@ -1839,6 +1859,20 @@ mod tests {
         assert!(provider.local_only);
     }
 
+    #[cfg(feature = "local-embeddings")]
+    #[test]
+    fn local_fastembed_documented_model_ids_map_to_embedding_variants() {
+        assert!(matches!(
+            local_fastembed_embedding_model("AllMiniLML6V2Q").unwrap(),
+            fastembed::EmbeddingModel::AllMiniLML6V2Q
+        ));
+        assert!(matches!(
+            local_fastembed_embedding_model(JINA_CODE_FASTEMBED_MODEL).unwrap(),
+            fastembed::EmbeddingModel::JinaEmbeddingsV2BaseCode
+        ));
+        assert_eq!(LOCAL_FASTEMBED_MODEL, "AllMiniLML6V2Q");
+    }
+
     #[test]
     fn semantic_documents_are_source_free_and_precision_enriched() {
         let temp = tempfile::tempdir().unwrap();
@@ -1948,5 +1982,33 @@ mod tests {
             .any(|diagnostic| diagnostic.code == "semantic_provider_unavailable"));
         assert!(report.privacy_status.local_only);
         assert!(!report.privacy_status.remote_embeddings_used);
+    }
+
+    #[cfg(not(feature = "local-embeddings"))]
+    #[test]
+    fn semantic_vector_indexing_reports_provider_failure_without_feature() {
+        let temp = tempfile::tempdir().unwrap();
+        let repo = temp.path();
+        fs::create_dir(repo.join(".git")).unwrap();
+        fs::create_dir(repo.join("src")).unwrap();
+        fs::write(repo.join("src/lib.rs"), "pub fn semantic_backend() {}\n").unwrap();
+
+        let error = semantic_vector_records(
+            repo,
+            &SemanticOptions {
+                enabled: true,
+                limit: 5,
+                provider: SemanticProviderConfig {
+                    provider: LOCAL_FASTEMBED_PROVIDER.to_string(),
+                    ..SemanticProviderConfig::default()
+                },
+            },
+        )
+        .unwrap_err();
+
+        assert!(error
+            .to_string()
+            .contains("semantic vector indexing failed"));
+        assert!(error.to_string().contains("local_fastembed"));
     }
 }

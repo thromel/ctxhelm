@@ -57,8 +57,8 @@ Measured Phase 62 status:
 
 - `local_hash`: deterministic scaffold, model `ctxhelm-local-hash-v1`, 64 dimensions, not a quality backend.
 - `local_fastembed`: production-local backend, quality backend `true`, local-only, no cloud source transfer.
-- Jina code model status: available as `JinaEmbeddingsV2BaseCode` with 768 dimensions, but too slow for the full two-repo eval loop in this implementation.
-- Phase 62 benchmark model: `AllMiniLML6V2Q` with 384 dimensions.
+- Default production-local model: `AllMiniLML6V2Q` with 384 dimensions.
+- Jina code model status: still available explicitly as `JinaEmbeddingsV2BaseCode` with 768 dimensions, but too slow for the full two-repo eval loop in this implementation.
 - Model cache: defaults to repo `.ctxhelm/cache/fastembed` when run inside a git repo, otherwise `CTXHELM_HOME/cache/fastembed`; override with `CTXHELM_FASTEMBED_CACHE_DIR`.
 - Query-time vector cache: bounded in-process cache for repeated source-free document embeddings.
 - Expensive model prefilter: `local_fastembed` embeds at most 128 source-free candidate documents per query by default; override with `CTXHELM_FASTEMBED_DOCUMENT_LIMIT`.
@@ -118,6 +118,8 @@ embeds only the query and candidate misses. Embedded candidate misses are
 written through to the local source-free vector store, so repeated fresh CLI or
 MCP processes can reuse them. If the file hash changes, the stored row is
 updated under the path/provider/model identity and stale hashes are not reused.
+Provider or model failures during indexing are reported as errors; ctxhelm no
+longer treats a failed semantic vector build as a successful zero-vector index.
 
 ## Agent And MCP Use
 

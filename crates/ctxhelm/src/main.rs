@@ -187,7 +187,7 @@ struct SemanticProviderArgs {
     provider: String,
     #[arg(
         long = "semantic-model",
-        help = "Optional local semantic model id. For local_fastembed, defaults to JinaEmbeddingsV2BaseCode."
+        help = "Optional local semantic model id. For local_fastembed, defaults to AllMiniLML6V2Q."
     )]
     model: Option<String>,
     #[arg(

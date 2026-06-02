@@ -634,6 +634,12 @@ Recommendation today:
   took `31.48s`, persisted candidate misses, and the second fresh-process search
   took `20.86s`; both ranked `TypeScriptVisitor.java` first and storage grew
   from `16` to `31` vectors without pruning.
+- Phase 165 makes failed semantic vector indexing loud instead of reporting a
+  successful zero-vector store, fixes documented fastembed model-id mapping for
+  `AllMiniLML6V2Q`, and makes `AllMiniLML6V2Q` the default `local_fastembed`
+  model. On RefactoringMiner, the AllMini default created 16 vectors, ranked
+  `TypeScriptVisitor.java` first, and reduced the second fresh-process search
+  from the Jina proof's `20.86s` to `16.92s`.
 - Treat cloud embeddings/reranking as disabled unless an explicit repo policy
   allows them.
 
