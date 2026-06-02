@@ -1024,10 +1024,10 @@ fn root_governance_doc_priority(path: &str) -> u8 {
         ".planning/STATE.md" => 0,
         ".planning/ROADMAP.md" => 1,
         ".planning/MILESTONES.md" => 2,
-        ".planning/REQUIREMENTS.md" => 3,
-        ".planning/PROJECT.md" => 4,
-        "AGENTS.md" => 5,
-        "docs/benchmarking.md" => 6,
+        "docs/benchmarking.md" => 3,
+        ".planning/REQUIREMENTS.md" => 4,
+        ".planning/PROJECT.md" => 5,
+        "AGENTS.md" => 6,
         "docs/release.md" => 7,
         "docs/agent-setup.md" => 8,
         "docs/semantic.md" => 9,
@@ -2738,17 +2738,25 @@ mod tests {
                     score: 7.0,
                     reason: "planning match".to_string(),
                 },
+                SearchResult {
+                    path: "docs/benchmarking.md".to_string(),
+                    role: FileRole::Docs,
+                    language: Some("markdown".to_string()),
+                    score: 8.0,
+                    reason: "benchmarking match".to_string(),
+                },
             ],
             roles: roles([
                 (".planning/PROJECT.md", FileRole::Docs),
                 ("README.md", FileRole::Docs),
                 (".planning/STATE.md", FileRole::Docs),
                 (".planning/ROADMAP.md", FileRole::Docs),
+                ("docs/benchmarking.md", FileRole::Docs),
             ]),
             ..RankingInput::default()
         });
 
-        let selection = select_ranked_candidates_for_scope(&candidates, 4, 0, true);
+        let selection = select_ranked_candidates_for_scope(&candidates, 10, 0, true);
         let paths = selection
             .target_files
             .iter()
@@ -2760,6 +2768,7 @@ mod tests {
             vec![
                 ".planning/STATE.md",
                 ".planning/ROADMAP.md",
+                "docs/benchmarking.md",
                 ".planning/PROJECT.md",
                 "README.md",
             ]

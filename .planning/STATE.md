@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v2.5
 milestone_name: Production Retrieval Quality
 status: active
-last_updated: "2026-06-02T04:05:07Z"
-last_activity: 2026-06-02 -- Phase 171 preserved four-repo clean-cold promotion while prioritizing current root planning docs inside the governance-doc floor; average File Recall@10 improved from 0.5499957 to 0.59761477 and ctxhelm File Recall@10 improved from 0.41904765 to 0.60952383 without validation or other-corpus regression
+last_updated: "2026-06-02T04:19:07Z"
+last_activity: 2026-06-02 -- Phase 172 preserved four-repo clean-cold promotion while promoting docs/benchmarking.md inside the bounded governance-doc priority; average File Recall@10 improved from 0.59761477 to 0.61190045, ctxhelm File Recall@10 improved from 0.60952383 to 0.6666667, and source/test recall stayed unchanged
 progress:
   total_phases: 90
   completed_phases: 90
@@ -17,10 +17,10 @@ progress:
 
 ## Current Position
 
-Phase: 171 - Governance Doc Priority
-Plan: 171-governance-doc-priority
+Phase: 172 - Benchmarking Governance Doc Priority
+Plan: 172-benchmarking-governance-doc-priority
 Status: Complete
-Last activity: 2026-06-02 -- Phase 171 converted a repeated ctxhelm governance-doc gap into a measured ranking fix. Root planning docs in the governance-doc floor now use stable product-state priority (`STATE`, `ROADMAP`, `MILESTONES`, `REQUIREMENTS`, then `PROJECT`) before lexical score, so release/eval/history tasks preserve current project truth before older or generic docs. The four-repo clean-cold proof still promotes, average File Recall@10 improves from `0.5499957` to `0.59761477`, average lift vs lexical improves from `+0.09290312` to `+0.14052217`, ctxhelm File Recall@10 improves from `0.41904765` to `0.60952383`, ctxhelm Context Recall@10 improves from `0.41666666` to `0.6111111`, and Test Recall@10 remains `0.67989415`.
+Last activity: 2026-06-02 -- Phase 172 converted the remaining repeated `docs/benchmarking.md` ctxhelm gap into a bounded governance-doc priority fix without increasing the governance reserve. A rejected five-slot reserve improved all-file recall but regressed ctxhelm Source Recall@10; the accepted bounded variant only reorders the existing four-slot governance priority. The four-repo clean-cold proof still promotes, average File Recall@10 improves from `0.59761477` to `0.61190045`, average lift vs lexical improves from `+0.14052217` to `+0.15480788`, ctxhelm File Recall@10 improves from `0.60952383` to `0.6666667`, ctxhelm Context Recall@10 improves from `0.6111111` to `0.6666667`, ctxhelm protected target miss-rate drops from `0.25` to `0.16666667`, Source Recall@10 stays unchanged on every corpus, and Test Recall@10 remains `0.67989415`.
 
 ## Project Reference
 
@@ -148,6 +148,7 @@ Planned phases:
 - Phase 169: Graph Ordering And Context Balance (complete follow-up)
 - Phase 170: Auxiliary Source Priority (complete follow-up)
 - Phase 171: Governance Doc Priority (complete follow-up)
+- Phase 172: Benchmarking Governance Doc Priority (complete follow-up)
 
 ## Last Completed Milestone
 
