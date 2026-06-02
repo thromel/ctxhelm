@@ -169,7 +169,7 @@ pub(crate) fn rank_candidates(input: RankingInput) -> Vec<RankedCandidate> {
         });
     }
 
-    for edge in input.dependency_edges {
+    for (dependency_rank, edge) in input.dependency_edges.into_iter().enumerate() {
         let source_is_seed = seed_paths.contains(&edge.source_path);
         let target_is_seed = seed_paths.contains(&edge.target_path);
         if !source_is_seed && !target_is_seed {
@@ -181,12 +181,13 @@ pub(crate) fn rank_candidates(input: RankingInput) -> Vec<RankedCandidate> {
             edge.source_path
         };
         let role = role_for_path(&input.roles, &path);
+        let score = dependency_ranked_score(edge.confidence, dependency_rank);
         candidates.add_path_signal(PathSignal {
             kind: candidate_kind_for_role(&role),
             path,
             role,
             signal: RetrievalSignalKind::Dependency,
-            score: edge.confidence,
+            score,
             weight: signal_weight(&RetrievalSignalKind::Dependency),
             reason_code: "dependency_neighbor",
             edge_label: Some(edge.kind),
@@ -277,6 +278,10 @@ fn co_change_score_for_role(confidence: f32, role: &FileRole) -> f32 {
     } else {
         confidence
     }
+}
+
+fn dependency_ranked_score(confidence: f32, rank: usize) -> f32 {
+    (confidence - (rank.min(200) as f32 * 0.001)).clamp(0.05, confidence)
 }
 
 pub(crate) fn rerank_with_local_metadata(
@@ -547,13 +552,21 @@ fn select_target_files(
     } else {
         symbol_floor_reserve_limit(file_budget)
     };
+    let dependency_floor_reserve = if has_active_context
+        || broad_scope
+        || !has_source_dependency_target_candidates(candidates)
+    {
+        0
+    } else {
+        source_dependency_floor_limit(file_budget)
+    };
     let lexical_floor_limit = if has_active_context {
         7.min(file_budget)
-    } else if symbol_floor_reserve == 0 {
+    } else if symbol_floor_reserve == 0 && dependency_floor_reserve == 0 {
         file_budget
     } else {
         file_budget
-            .saturating_sub(symbol_floor_reserve + selected.len())
+            .saturating_sub(symbol_floor_reserve + dependency_floor_reserve + selected.len())
             .max(1)
     };
     let mut lexical_floor_selected = 0usize;
@@ -610,6 +623,19 @@ fn select_target_files(
             push_target(candidate, &mut selected, &mut selected_paths, file_budget);
             if selected.len() > before {
                 symbol_floor_selected += 1;
+            }
+        }
+    }
+    if !broad_scope && selected.len() < file_budget {
+        let mut source_dependency_floor_selected = 0usize;
+        for (_, candidate) in source_dependency_floor(candidates) {
+            if source_dependency_floor_selected >= source_dependency_floor_limit(file_budget) {
+                break;
+            }
+            let before = selected.len();
+            push_target(candidate, &mut selected, &mut selected_paths, file_budget);
+            if selected.len() > before {
+                source_dependency_floor_selected += 1;
             }
         }
     }
@@ -751,6 +777,14 @@ fn has_archive_lexical_target_candidates(candidates: &[RankedCandidate]) -> bool
                 .path
                 .as_deref()
                 .is_some_and(is_archive_context_artifact_path)
+    })
+}
+
+fn has_source_dependency_target_candidates(candidates: &[RankedCandidate]) -> bool {
+    candidates.iter().any(|candidate| {
+        candidate.target_file.is_some()
+            && candidate.candidate.role == Some(FileRole::Source)
+            && signal_score(&candidate.candidate, RetrievalSignalKind::Dependency).is_some()
     })
 }
 
@@ -1907,6 +1941,42 @@ mod tests {
 
         assert!(paths.contains(&"src/dependency-a.ts"));
         assert!(paths.contains(&"src/dependency-b.ts"));
+    }
+
+    #[test]
+    fn selection_reserves_dependency_source_neighbors_for_standard_scope() {
+        let candidates = rank_candidates(RankingInput {
+            lexical_results: vec![
+                lexical("src/seed.ts", 30.0),
+                lexical("src/lexical-a.ts", 29.0),
+                lexical("src/lexical-b.ts", 28.0),
+            ],
+            dependency_edges: vec![DependencyEdge {
+                source_path: "src/seed.ts".to_string(),
+                target_path: "src/direct-dependency.ts".to_string(),
+                kind: "imports".to_string(),
+                confidence: 0.9,
+                reason: "typescript import".to_string(),
+            }],
+            roles: roles([
+                ("src/seed.ts", FileRole::Source),
+                ("src/lexical-a.ts", FileRole::Source),
+                ("src/lexical-b.ts", FileRole::Source),
+                ("src/direct-dependency.ts", FileRole::Source),
+            ]),
+            expansion_seeds: vec!["src/seed.ts".to_string()],
+            ..RankingInput::default()
+        });
+
+        let selection = select_ranked_candidates_for_scope(&candidates, 4, 0, false);
+        let paths = selection
+            .target_files
+            .iter()
+            .map(|target| target.path.as_str())
+            .collect::<Vec<_>>();
+
+        assert_eq!(paths.len(), 4);
+        assert!(paths.contains(&"src/direct-dependency.ts"));
     }
 
     #[test]

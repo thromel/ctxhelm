@@ -5250,7 +5250,7 @@ fn validation_test_reserve(
     {
         return 0;
     }
-    let max_reserve = (ranking_budget / 3).max(1);
+    let max_reserve = (ranking_budget / 4).max(1);
     recommended_tests.len().min(max_reserve)
 }
 
@@ -7046,6 +7046,7 @@ mod tests {
         let ranking = context_file_ranking(&files, &tests, 10, true);
 
         assert_eq!(ranking.len(), 10);
+        assert!(ranking.contains(&"src/file-7.ts".to_string()));
         assert!(ranking.contains(&"tests/file-0.test.ts".to_string()));
         assert!(ranking.contains(&"tests/file-1.test.ts".to_string()));
         assert_eq!(

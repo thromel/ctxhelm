@@ -328,6 +328,9 @@ pub fn related_dependency_edges_report(
             .then_with(|| {
                 edge_anchor_order(left, &anchor_order).cmp(&edge_anchor_order(right, &anchor_order))
             })
+            .then_with(|| {
+                edge_name_affinity(right, &anchors).cmp(&edge_name_affinity(left, &anchors))
+            })
             .then_with(|| right.confidence.total_cmp(&left.confidence))
             .then_with(|| left.source_path.cmp(&right.source_path))
             .then_with(|| left.target_path.cmp(&right.target_path))
@@ -1052,8 +1055,8 @@ fn edge_anchor_rank(edge: &DependencyEdge, anchors: &BTreeSet<String>) -> u8 {
         anchors.contains(&edge.source_path),
         anchors.contains(&edge.target_path),
     ) {
-        (false, true) => 0,
-        (true, false) => 1,
+        (true, false) => 0,
+        (false, true) => 1,
         (true, true) => 2,
         (false, false) => 3,
     }
@@ -1069,4 +1072,54 @@ fn edge_anchor_order(edge: &DependencyEdge, anchor_order: &BTreeMap<String, usiz
     .copied()
     .min()
     .unwrap_or(usize::MAX)
+}
+
+fn edge_name_affinity(edge: &DependencyEdge, anchors: &BTreeSet<String>) -> usize {
+    let (anchor, neighbor) = if anchors.contains(&edge.source_path) {
+        (&edge.source_path, &edge.target_path)
+    } else if anchors.contains(&edge.target_path) {
+        (&edge.target_path, &edge.source_path)
+    } else {
+        return 0;
+    };
+    let anchor_tokens = path_stem_tokens(anchor);
+    let neighbor_tokens = path_stem_tokens(neighbor);
+    anchor_tokens.intersection(&neighbor_tokens).count()
+}
+
+fn path_stem_tokens(path: &str) -> BTreeSet<String> {
+    let stem = Path::new(path)
+        .file_stem()
+        .and_then(|stem| stem.to_str())
+        .unwrap_or(path);
+    identifier_tokens(stem)
+}
+
+fn identifier_tokens(value: &str) -> BTreeSet<String> {
+    let mut tokens = BTreeSet::new();
+    let mut current = String::new();
+    let mut previous_lowercase = false;
+    for character in value.chars() {
+        if !character.is_ascii_alphanumeric() {
+            push_identifier_token(&mut tokens, &mut current);
+            previous_lowercase = false;
+            continue;
+        }
+        let is_uppercase = character.is_ascii_uppercase();
+        if is_uppercase && previous_lowercase && !current.is_empty() {
+            push_identifier_token(&mut tokens, &mut current);
+        }
+        current.push(character.to_ascii_lowercase());
+        previous_lowercase = character.is_ascii_lowercase() || character.is_ascii_digit();
+    }
+    push_identifier_token(&mut tokens, &mut current);
+    tokens
+}
+
+fn push_identifier_token(tokens: &mut BTreeSet<String>, current: &mut String) {
+    if current.len() >= 3 {
+        tokens.insert(std::mem::take(current));
+    } else {
+        current.clear();
+    }
 }

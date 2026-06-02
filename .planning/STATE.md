@@ -4,7 +4,7 @@ milestone: v2.5
 milestone_name: Production Retrieval Quality
 status: active
 last_updated: "2026-06-02T00:00:00Z"
-last_activity: 2026-06-02 -- Phase 168 added source-free semantic identifier aliases and semantic-only non-target diagnostics; RefactoringMiner still holds semantic opt-in with zero semantic-only target hits
+last_activity: 2026-06-02 -- Phase 169 fixed a measured RefactoringMiner graph-ordering/context-balance miss; two-commit File Recall@10 improved from 0.5833334 to 0.75 and the ranked_below_budget_dependency gap disappeared
 progress:
   total_phases: 90
   completed_phases: 90
@@ -17,10 +17,10 @@ progress:
 
 ## Current Position
 
-Phase: 168 - Semantic Alias And Noise Diagnostics
-Plan: 168-semantic-alias-noise-diagnostics
+Phase: 169 - Graph Ordering And Context Balance
+Plan: 169-graph-ordering-and-context-balance
 Status: Complete
-Last activity: 2026-06-02 -- Phase 168 added source-free identifier aliases to semantic document/query text, versioned semantic render hashes so stale vectors are not reused after text changes, and added semantic-only non-target counts plus diagnostics. The clean RefactoringMiner 3-commit `local_fastembed` gate still holds semantic opt-in: File Recall@10 stayed `0.72222227` for semantic and lexical/default, semantic-only target hits remained `0`, and the only semantic-only file was a non-target `TypeScriptDiffTest.java`; warmed gate wall time was `21.20s`.
+Last activity: 2026-06-02 -- Phase 169 targeted the coupled-source misses left after semantic failed to lift RefactoringMiner. The `UMLClassBaseDiff.java` miss remains correctly classified as `area_context_only`, but the `UMLOperationDiff.java` miss had a direct graph edge from `UMLOperationBodyMapper.java`. Related dependency retrieval now prefers outgoing seed imports, uses source-free identifier-token affinity, preserves dependency retriever order during ranking, reserves bounded standard-scope dependency evidence, and balances validation-test reserve at one-quarter of a 10-item context pack. The exact two-commit RefactoringMiner proof improved File/Source Recall@10 from `0.5833334` to `0.75` versus lexical `0.5833334`.
 
 ## Project Reference
 
@@ -145,6 +145,7 @@ Planned phases:
 - Phase 166: Semantic Query Vector Reuse (complete follow-up)
 - Phase 167: Pruned Generated Inventory Walk (complete follow-up)
 - Phase 168: Semantic Alias And Noise Diagnostics (complete follow-up)
+- Phase 169: Graph Ordering And Context Balance (complete follow-up)
 
 ## Last Completed Milestone
 

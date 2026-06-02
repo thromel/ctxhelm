@@ -1343,7 +1343,7 @@ mod tests {
 
         assert!(pairs.contains(&("src/auth/session.ts", "src/auth/cookies.ts")));
         assert!(pairs.contains(&("src/app.ts", "src/auth/session.ts")));
-        assert_eq!(pairs[0], ("src/app.ts", "src/auth/session.ts"));
+        assert_eq!(pairs[0], ("src/auth/session.ts", "src/auth/cookies.ts"));
 
         std::env::remove_var("CTXHELM_HOME");
     }
@@ -1394,6 +1394,68 @@ mod tests {
 
         assert_eq!(pairs[0], ("src/admin.ts", "src/auth/admin.ts"));
         assert_eq!(pairs[1], ("src/app.ts", "src/auth/session.ts"));
+
+        std::env::remove_var("CTXHELM_HOME");
+    }
+
+    #[test]
+    fn related_dependency_edges_prioritize_name_affinity_for_direct_imports() {
+        let _guard = env_lock();
+        let temp = tempfile::tempdir().unwrap();
+        let repo = temp.path().join("repo");
+        let home = temp.path().join("ctxhelm-home");
+        fs::create_dir_all(repo.join(".git")).unwrap();
+        fs::create_dir_all(repo.join("src/main/java/gr/uom/java/xmi/decomposition")).unwrap();
+        fs::create_dir_all(repo.join("src/main/java/gr/uom/java/xmi/diff")).unwrap();
+        fs::create_dir_all(repo.join("src/main/java/gr/uom/java/xmi")).unwrap();
+        fs::write(
+            repo.join("src/main/java/gr/uom/java/xmi/decomposition/UMLOperationBodyMapper.java"),
+            "\
+package gr.uom.java.xmi.decomposition;\n\
+import gr.uom.java.xmi.Constants;\n\
+import gr.uom.java.xmi.LeafType;\n\
+import gr.uom.java.xmi.ListCompositeType;\n\
+import gr.uom.java.xmi.diff.UMLOperationDiff;\n\
+public class UMLOperationBodyMapper {}\n",
+        )
+        .unwrap();
+        fs::write(
+            repo.join("src/main/java/gr/uom/java/xmi/diff/UMLOperationDiff.java"),
+            "package gr.uom.java.xmi.diff; public class UMLOperationDiff {}\n",
+        )
+        .unwrap();
+        fs::write(
+            repo.join("src/main/java/gr/uom/java/xmi/Constants.java"),
+            "package gr.uom.java.xmi; public class Constants {}\n",
+        )
+        .unwrap();
+        fs::write(
+            repo.join("src/main/java/gr/uom/java/xmi/LeafType.java"),
+            "package gr.uom.java.xmi; public class LeafType {}\n",
+        )
+        .unwrap();
+        fs::write(
+            repo.join("src/main/java/gr/uom/java/xmi/ListCompositeType.java"),
+            "package gr.uom.java.xmi; public class ListCompositeType {}\n",
+        )
+        .unwrap();
+        std::env::set_var("CTXHELM_HOME", &home);
+
+        let edges = related_dependency_edges(
+            &repo,
+            &[
+                "src/main/java/gr/uom/java/xmi/decomposition/UMLOperationBodyMapper.java"
+                    .to_string(),
+            ],
+            &DependencyOptions { limit: 2 },
+        )
+        .unwrap();
+        let targets = edges
+            .iter()
+            .map(|edge| edge.target_path.as_str())
+            .collect::<Vec<_>>();
+
+        assert!(targets.contains(&"src/main/java/gr/uom/java/xmi/diff/UMLOperationDiff.java"));
 
         std::env::remove_var("CTXHELM_HOME");
     }
