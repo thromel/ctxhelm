@@ -1823,6 +1823,11 @@ fn main() -> Result<()> {
                         } else {
                             status.semantic_vector_records
                         },
+                        semantic_query_vector_records: if args.yes {
+                            0
+                        } else {
+                            status.semantic_query_vector_records
+                        },
                         memory_card_records: if args.yes {
                             0
                         } else {
@@ -3071,6 +3076,10 @@ fn print_storage_status_report(report: &StorageStatusReport) {
     println!(
         "- Semantic vector records: `{}`",
         report.semantic_vector_records
+    );
+    println!(
+        "- Semantic query vector records: `{}`",
+        report.semantic_query_vector_records
     );
     println!("- Memory card records: `{}`", report.memory_card_records);
     print_diagnostics(&report.diagnostics);

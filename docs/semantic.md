@@ -61,6 +61,7 @@ Measured Phase 62 status:
 - Jina code model status: still available explicitly as `JinaEmbeddingsV2BaseCode` with 768 dimensions, but too slow for the full two-repo eval loop in this implementation.
 - Model cache: defaults to repo `.ctxhelm/cache/fastembed` when run inside a git repo, otherwise `CTXHELM_HOME/cache/fastembed`; override with `CTXHELM_FASTEMBED_CACHE_DIR`.
 - Query-time vector cache: bounded in-process cache for repeated source-free document embeddings.
+- Persisted query-vector cache: source-free query hashes and vectors are stored in SQLite so repeated fresh CLI/MCP processes can reuse query embeddings without storing raw query text.
 - Expensive model prefilter: `local_fastembed` embeds at most 128 source-free candidate documents per query by default; override with `CTXHELM_FASTEMBED_DOCUMENT_LIMIT`.
 
 Phase 62 result:
@@ -112,14 +113,16 @@ ctxhelm storage status --repo /path/to/repo
 For `local_fastembed`, the foreground default is intentionally bounded to a
 small 16-document seed. Use `--semantic-limit` when you intentionally want a
 larger local vector job, and prefer doing that outside an interactive agent turn
-on large repositories. Semantic search reuses matching persisted vectors by
-exact path, safe hash, provider, model, dimensions, and distance metric, then
-embeds only the query and candidate misses. Embedded candidate misses are
-written through to the local source-free vector store, so repeated fresh CLI or
-MCP processes can reuse them. If the file hash changes, the stored row is
-updated under the path/provider/model identity and stale hashes are not reused.
-Provider or model failures during indexing are reported as errors; ctxhelm no
-longer treats a failed semantic vector build as a successful zero-vector index.
+on large repositories. Semantic search reuses matching persisted document
+vectors by exact path, safe hash, provider, model, dimensions, and distance
+metric, then embeds only a missing query vector and candidate misses. Embedded
+candidate misses are written through to the local source-free vector store, and
+embedded queries are stored by query hash rather than raw query text, so
+repeated fresh CLI or MCP processes can reuse both document vectors and query
+vectors. If the file hash changes, the stored row is updated under the
+path/provider/model identity and stale hashes are not reused. Provider or model
+failures during indexing are reported as errors; ctxhelm no longer treats a
+failed semantic vector build as a successful zero-vector index.
 
 ## Agent And MCP Use
 

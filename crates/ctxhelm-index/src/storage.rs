@@ -12,7 +12,7 @@ use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
 use thiserror::Error;
 
-pub const STORAGE_SCHEMA_VERSION: u32 = 3;
+pub const STORAGE_SCHEMA_VERSION: u32 = 4;
 pub const RANKING_STORAGE_VERSION: u32 = 1;
 pub const COMPILER_STORAGE_VERSION: u32 = 1;
 
@@ -22,6 +22,9 @@ const SEMANTIC_MIGRATION_NAME: &str = "local_semantic_vector_metadata";
 const SEMANTIC_MIGRATION_CHECKSUM: &str = "ctxhelm-storage-v2-local-semantic";
 const MEMORY_MIGRATION_NAME: &str = "repo_memory_cards";
 const MEMORY_MIGRATION_CHECKSUM: &str = "ctxhelm-storage-v3-source-free-memory";
+const SEMANTIC_QUERY_MIGRATION_NAME: &str = "source_free_semantic_query_vectors";
+const SEMANTIC_QUERY_MIGRATION_CHECKSUM: &str =
+    "ctxhelm-storage-v4-source-free-semantic-query-vectors";
 
 const REQUIRED_TABLES: &[&str] = &[
     "storage_metadata",
@@ -41,6 +44,7 @@ const REQUIRED_TABLES: &[&str] = &[
     "retrieval_gaps",
     "proof_reports",
     "semantic_vectors",
+    "semantic_query_vectors",
     "memory_cards",
 ];
 
@@ -184,6 +188,8 @@ pub struct StorageStatusReport {
     pub benchmark_run_records: usize,
     pub proof_report_records: usize,
     pub semantic_vector_records: usize,
+    #[serde(default)]
+    pub semantic_query_vector_records: usize,
     pub memory_card_records: usize,
     pub compatibility: StorageCompatibility,
     #[serde(default)]
@@ -205,6 +211,18 @@ pub struct StorageSemanticIndexReport {
     pub compatibility: StorageCompatibility,
     #[serde(default)]
     pub diagnostics: Vec<Diagnostic>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct StorageSemanticQueryVectorRecord {
+    pub query_hash: String,
+    pub provider: String,
+    pub model: String,
+    pub dimensions: usize,
+    pub distance_metric: String,
+    pub vector: Vec<f32>,
+    pub privacy_status: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -306,6 +324,7 @@ pub fn initialize_store(
     insert_initial_migration(&connection, &paths.database_path)?;
     insert_semantic_migration(&connection, &paths.database_path)?;
     insert_memory_migration(&connection, &paths.database_path)?;
+    insert_semantic_query_migration(&connection, &paths.database_path)?;
     let schema_report = inspect_connection_schema(&connection, &paths.database_path)?;
 
     Ok(StorageReport {
@@ -518,6 +537,7 @@ pub fn storage_status_for_path(
             benchmark_run_records: 0,
             proof_report_records: 0,
             semantic_vector_records: 0,
+            semantic_query_vector_records: 0,
             memory_card_records: 0,
             compatibility: schema.compatibility,
             diagnostics: schema.diagnostics,
@@ -537,6 +557,11 @@ pub fn storage_status_for_path(
         benchmark_run_records: count_rows(&connection, &database_path, "benchmark_runs")?,
         proof_report_records: count_rows(&connection, &database_path, "proof_reports")?,
         semantic_vector_records: count_rows(&connection, &database_path, "semantic_vectors")?,
+        semantic_query_vector_records: count_rows(
+            &connection,
+            &database_path,
+            "semantic_query_vectors",
+        )?,
         memory_card_records: count_rows(&connection, &database_path, "memory_cards")?,
         compatibility: schema.compatibility,
         diagnostics: schema.diagnostics,
@@ -756,6 +781,134 @@ ORDER BY path
         });
     }
     Ok(records)
+}
+
+pub fn upsert_semantic_query_vector_record(
+    repo_root: impl AsRef<Path>,
+    config: &StoreConfig,
+    record: &StorageSemanticQueryVectorRecord,
+) -> Result<StorageStatusReport, StorageError> {
+    let storage = initialize_store(repo_root, config)?;
+    let connection = open_connection(&storage.database_path)?;
+    enable_foreign_keys(&connection, &storage.database_path)?;
+    let query_vector_id = semantic_query_vector_id(&storage.repo_id, record);
+    let vector_json = json_string(&record.vector)?;
+    sqlite(
+        &storage.database_path,
+        connection.execute(
+            r#"
+INSERT INTO semantic_query_vectors (
+  query_vector_id, repo_id, query_hash, provider, model, dimensions,
+  distance_metric, vector_json, privacy_status, updated_at_unix_seconds
+)
+VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)
+ON CONFLICT(repo_id, query_hash, provider, model) DO UPDATE SET
+  query_vector_id = excluded.query_vector_id,
+  dimensions = excluded.dimensions,
+  distance_metric = excluded.distance_metric,
+  vector_json = excluded.vector_json,
+  privacy_status = excluded.privacy_status,
+  updated_at_unix_seconds = excluded.updated_at_unix_seconds
+"#,
+            params![
+                query_vector_id,
+                storage.repo_id,
+                record.query_hash,
+                record.provider,
+                record.model,
+                as_i64(record.dimensions as u64),
+                record.distance_metric,
+                vector_json,
+                record.privacy_status,
+                as_i64(current_unix_seconds()),
+            ],
+        ),
+    )?;
+    storage_status_for_path(&storage.database_path)
+}
+
+pub fn load_semantic_query_vector_record(
+    repo_root: impl AsRef<Path>,
+    config: &StoreConfig,
+    query_hash: &str,
+    provider: &str,
+    model: &str,
+    dimensions: usize,
+    distance_metric: &str,
+) -> Result<Option<StorageSemanticQueryVectorRecord>, StorageError> {
+    let repo_root =
+        fs::canonicalize(repo_root.as_ref()).map_err(|source| StorageError::Canonicalize {
+            path: repo_root.as_ref().to_path_buf(),
+            source,
+        })?;
+    let repo_id = repo_id_for_path(&repo_root);
+    let paths = store_paths_for_repo_id(&repo_id, config);
+    if !paths.database_path.exists() {
+        return Ok(None);
+    }
+    let connection = open_connection(&paths.database_path)?;
+    let row = sqlite(
+        &paths.database_path,
+        connection
+            .query_row(
+                r#"
+SELECT query_hash, provider, model, dimensions, distance_metric, vector_json, privacy_status
+FROM semantic_query_vectors
+WHERE repo_id = ?1
+  AND query_hash = ?2
+  AND provider = ?3
+  AND model = ?4
+  AND dimensions = ?5
+  AND distance_metric = ?6
+"#,
+                params![
+                    repo_id,
+                    query_hash,
+                    provider,
+                    model,
+                    as_i64(dimensions as u64),
+                    distance_metric
+                ],
+                |row| {
+                    Ok((
+                        row.get::<_, String>(0)?,
+                        row.get::<_, String>(1)?,
+                        row.get::<_, String>(2)?,
+                        as_u64(row.get::<_, i64>(3)?) as usize,
+                        row.get::<_, String>(4)?,
+                        row.get::<_, String>(5)?,
+                        row.get::<_, String>(6)?,
+                    ))
+                },
+            )
+            .optional(),
+    )?;
+    let Some((
+        query_hash,
+        provider,
+        model,
+        dimensions,
+        distance_metric,
+        vector_json,
+        privacy_status,
+    )) = row
+    else {
+        return Ok(None);
+    };
+    let vector =
+        serde_json::from_str::<Vec<f32>>(&vector_json).map_err(|source| StorageError::Sqlite {
+            path: paths.database_path.clone(),
+            source: rusqlite::Error::ToSqlConversionFailure(Box::new(source)),
+        })?;
+    Ok(Some(StorageSemanticQueryVectorRecord {
+        query_hash,
+        provider,
+        model,
+        dimensions,
+        distance_metric,
+        vector,
+        privacy_status,
+    }))
 }
 
 pub fn persist_memory_card_records(
@@ -1231,6 +1384,24 @@ fn semantic_vector_id(repo_id: &str, record: &StorageSemanticVectorRecord) -> St
     format!("semantic:{hash}")
 }
 
+fn semantic_query_vector_id(repo_id: &str, record: &StorageSemanticQueryVectorRecord) -> String {
+    let hash = blake3::hash(
+        format!(
+            "{}:{}:{}:{}:{}:{}",
+            repo_id,
+            record.query_hash,
+            record.provider,
+            record.model,
+            record.dimensions,
+            record.distance_metric
+        )
+        .as_bytes(),
+    )
+    .to_hex()
+    .to_string();
+    format!("semantic_query:{hash}")
+}
+
 fn memory_kind_label(kind: &MemoryCardKind) -> &'static str {
     match kind {
         MemoryCardKind::Domain => "domain",
@@ -1538,6 +1709,20 @@ CREATE TABLE IF NOT EXISTS semantic_vectors (
   UNIQUE(repo_id, path, provider, model)
 );
 
+CREATE TABLE IF NOT EXISTS semantic_query_vectors (
+  query_vector_id TEXT PRIMARY KEY,
+  repo_id TEXT NOT NULL REFERENCES repos(repo_id) ON DELETE CASCADE,
+  query_hash TEXT NOT NULL,
+  provider TEXT NOT NULL,
+  model TEXT NOT NULL,
+  dimensions INTEGER NOT NULL,
+  distance_metric TEXT NOT NULL,
+  vector_json TEXT NOT NULL,
+  privacy_status TEXT NOT NULL,
+  updated_at_unix_seconds INTEGER NOT NULL,
+  UNIQUE(repo_id, query_hash, provider, model)
+);
+
 CREATE TABLE IF NOT EXISTS memory_cards (
   card_id TEXT PRIMARY KEY,
   repo_id TEXT NOT NULL REFERENCES repos(repo_id) ON DELETE CASCADE,
@@ -1692,6 +1877,29 @@ ON CONFLICT(version) DO NOTHING
                 MEMORY_MIGRATION_NAME,
                 as_i64(current_unix_seconds()),
                 MEMORY_MIGRATION_CHECKSUM
+            ],
+        ),
+    )?;
+    Ok(())
+}
+
+fn insert_semantic_query_migration(
+    connection: &Connection,
+    path: &Path,
+) -> Result<(), StorageError> {
+    sqlite(
+        path,
+        connection.execute(
+            r#"
+INSERT INTO schema_migrations (version, name, applied_at_unix_seconds, checksum)
+VALUES (?1, ?2, ?3, ?4)
+ON CONFLICT(version) DO NOTHING
+"#,
+            params![
+                4_u32,
+                SEMANTIC_QUERY_MIGRATION_NAME,
+                as_i64(current_unix_seconds()),
+                SEMANTIC_QUERY_MIGRATION_CHECKSUM
             ],
         ),
     )?;
@@ -2030,9 +2238,17 @@ mod tests {
                 |row| row.get(0),
             )
             .unwrap();
+        let query_vector_migration: String = connection
+            .query_row(
+                "SELECT name FROM schema_migrations WHERE version = 4",
+                [],
+                |row| row.get(0),
+            )
+            .unwrap();
 
         assert_eq!(count, 1);
         assert_eq!(name, INITIAL_MIGRATION_NAME);
+        assert_eq!(query_vector_migration, SEMANTIC_QUERY_MIGRATION_NAME);
     }
 
     #[test]
@@ -2338,6 +2554,57 @@ mod tests {
         assert!(!database_text.contains("CTXHELM_SEMANTIC_SOURCE_SENTINEL"));
         assert!(database_text.contains("local_fastembed"));
         assert!(database_text.contains("JinaEmbeddingsV2BaseCode"));
+
+        drop(temp);
+    }
+
+    #[test]
+    fn persists_semantic_query_vectors_without_prompt_text() {
+        let temp = tempfile::tempdir().unwrap();
+        let repo = temp.path().join("repo");
+        let config = StoreConfig {
+            path_override: Some(temp.path().join("store.sqlite3")),
+        };
+        fs::create_dir_all(repo.join(".git")).unwrap();
+        fs::create_dir_all(repo.join("src")).unwrap();
+        fs::write(repo.join("src/lib.rs"), "pub fn semantic_query() {}\n").unwrap();
+
+        let raw_query = "CTXHELM_SEMANTIC_QUERY_SENTINEL payment webhook";
+        let query_hash = blake3::hash(raw_query.as_bytes()).to_hex().to_string();
+        let status = upsert_semantic_query_vector_record(
+            &repo,
+            &config,
+            &StorageSemanticQueryVectorRecord {
+                query_hash: query_hash.clone(),
+                provider: "local_fastembed".to_string(),
+                model: "AllMiniLML6V2Q".to_string(),
+                dimensions: 384,
+                distance_metric: "cosine".to_string(),
+                vector: vec![0.1, 0.2, 0.3],
+                privacy_status: "local_only".to_string(),
+            },
+        )
+        .unwrap();
+
+        assert_eq!(status.semantic_query_vector_records, 1);
+        let loaded = load_semantic_query_vector_record(
+            &repo,
+            &config,
+            &query_hash,
+            "local_fastembed",
+            "AllMiniLML6V2Q",
+            384,
+            "cosine",
+        )
+        .unwrap()
+        .expect("query vector");
+        assert_eq!(loaded.query_hash, query_hash);
+        assert_eq!(loaded.vector, vec![0.1, 0.2, 0.3]);
+
+        let bytes = fs::read(&status.database_path).unwrap();
+        let database_text = String::from_utf8_lossy(&bytes);
+        assert!(!database_text.contains("CTXHELM_SEMANTIC_QUERY_SENTINEL"));
+        assert!(database_text.contains("local_fastembed"));
 
         drop(temp);
     }

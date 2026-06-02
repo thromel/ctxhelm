@@ -91,6 +91,12 @@ candidate misses. This is an incremental upsert, not a full-index replacement,
 so interactive searches do not prune vectors created by `ctxhelm index
 --semantic`.
 
+Repeated semantic searches also persist source-free query vectors by query hash,
+provider, model, dimensions, and distance metric. The raw query text is not
+stored. `ctxhelm storage status` reports query-vector rows separately as
+`semantic query vector records` so maintainers can verify reuse without opening
+SQLite.
+
 ## Memory Card Metadata
 
 ```bash

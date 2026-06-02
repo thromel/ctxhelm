@@ -4,7 +4,7 @@ milestone: v2.5
 milestone_name: Production Retrieval Quality
 status: active
 last_updated: "2026-06-02T00:00:00Z"
-last_activity: 2026-06-02 -- Phase 165 made local_fastembed vector indexing fail loudly, fixed documented fastembed model-id mapping, and switched the default production-local model to AllMiniLML6V2Q
+last_activity: 2026-06-02 -- Phase 166 added source-free persisted query-vector reuse and single-pass local_fastembed stored-candidate expansion, reducing RefactoringMiner steady-state fresh-process semantic search to 12.08s
 progress:
   total_phases: 89
   completed_phases: 89
@@ -17,10 +17,10 @@ progress:
 
 ## Current Position
 
-Phase: 165 - Fastembed Default And Loud Index Errors
-Plan: 165-fastembed-default-and-loud-index-errors
+Phase: 166 - Semantic Query Vector Reuse
+Plan: 166-semantic-query-vector-reuse
 Status: Complete
-Last activity: 2026-06-02 -- Phase 165 fixed silent zero-vector semantic indexes by making provider/model embedding failures hard errors, added explicit mapping for documented fastembed model ids, and changed `local_fastembed` default from Jina 768d to `AllMiniLML6V2Q` 384d. RefactoringMiner proof showed AllMini creates 16 vectors, preserves `TypeScriptVisitor.java` as the top result, and reduces the second fresh-process search from Phase 164 Jina `20.86s` to `16.92s` while keeping Jina available through explicit `--semantic-model JinaEmbeddingsV2BaseCode`.
+Last activity: 2026-06-02 -- Phase 166 added storage schema v4 for source-free semantic query vectors, reused persisted query embeddings by query hash, and kept `local_fastembed` stored-candidate expansion to one semantic-document pass. RefactoringMiner proof showed a fresh bounded AllMini seed creates 16 vectors, the first query writes through to 31 document vectors plus 1 query vector, `TypeScriptVisitor.java` remains the top result, and the second fresh-process search drops from Phase 165 `16.92s` to `12.08s`. Semantic remains opt-in because large-fixture inventory/search setup still costs roughly 14-15s.
 
 ## Project Reference
 
@@ -142,6 +142,7 @@ Planned phases:
 - Phase 163: Persisted Semantic Vector Reuse (complete follow-up)
 - Phase 164: Global Semantic Vector Candidates And Write-Through (complete follow-up)
 - Phase 165: Fastembed Default And Loud Index Errors (complete follow-up)
+- Phase 166: Semantic Query Vector Reuse (complete follow-up)
 
 ## Last Completed Milestone
 

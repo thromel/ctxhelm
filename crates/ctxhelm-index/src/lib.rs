@@ -73,16 +73,18 @@ pub use semantic::{
     DEFAULT_SEMANTIC_MODEL, DEFAULT_SEMANTIC_PROVIDER,
 };
 pub use storage::{
-    initialize_store, inspect_store_schema, list_memory_cards, load_semantic_vector_records,
-    open_store_report, persist_benchmark_run_record, persist_context_pack_record,
-    persist_memory_card_records, persist_proof_report_record, persist_semantic_vector_records,
-    required_table_names, storage_status_for_path, storage_status_for_repo,
-    sync_inventory_to_store, update_memory_card_review_status, upsert_semantic_vector_records,
-    vacuum_store, StorageBenchmarkRunRecord, StorageCompatibility, StorageContextPackRecord,
-    StorageError, StorageGapRecord, StorageIndexReport, StorageMemoryCardRecord, StorageMetadata,
+    initialize_store, inspect_store_schema, list_memory_cards, load_semantic_query_vector_record,
+    load_semantic_vector_records, open_store_report, persist_benchmark_run_record,
+    persist_context_pack_record, persist_memory_card_records, persist_proof_report_record,
+    persist_semantic_vector_records, required_table_names, storage_status_for_path,
+    storage_status_for_repo, sync_inventory_to_store, update_memory_card_review_status,
+    upsert_semantic_query_vector_record, upsert_semantic_vector_records, vacuum_store,
+    StorageBenchmarkRunRecord, StorageCompatibility, StorageContextPackRecord, StorageError,
+    StorageGapRecord, StorageIndexReport, StorageMemoryCardRecord, StorageMetadata,
     StorageMetricRecord, StoragePrivacyMode, StorageProofReportRecord, StorageReport,
-    StorageSchemaReport, StorageSemanticIndexReport, StorageSemanticVectorRecord,
-    StorageStatusReport, StoreConfig, StorePaths, STORAGE_SCHEMA_VERSION,
+    StorageSchemaReport, StorageSemanticIndexReport, StorageSemanticQueryVectorRecord,
+    StorageSemanticVectorRecord, StorageStatusReport, StoreConfig, StorePaths,
+    STORAGE_SCHEMA_VERSION,
 };
 pub use symbols::{
     extract_symbols, extract_symbols_report, symbol_search, symbol_search_report, CodeSymbol,

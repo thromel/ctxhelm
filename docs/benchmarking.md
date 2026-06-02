@@ -640,6 +640,12 @@ Recommendation today:
   model. On RefactoringMiner, the AllMini default created 16 vectors, ranked
   `TypeScriptVisitor.java` first, and reduced the second fresh-process search
   from the Jina proof's `20.86s` to `16.92s`.
+- Phase 166 adds source-free persisted query-vector reuse and makes
+  `local_fastembed` global stored-candidate expansion single-pass. On the same
+  RefactoringMiner probe, the second fresh-process AllMini search dropped from
+  Phase 165 `16.92s` to `12.08s` while preserving `TypeScriptVisitor.java` as
+  the top result. Semantic remains opt-in because large-fixture inventory/search
+  setup still costs roughly 14-15s.
 - Treat cloud embeddings/reranking as disabled unless an explicit repo policy
   allows them.
 
