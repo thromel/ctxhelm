@@ -205,7 +205,10 @@ Fields:
   runtime ceiling override for a specific repository. Omit it to keep the
   default `5000ms` per-commit promotion gate; use it only when a detached
   large-history fixture has measured cold-start cost that should not weaken the
-  global release threshold.
+  global release threshold. Release promotion should be judged against the
+  selected release/archive binary path, because debug `cargo run` cold proofs
+  can overstate planner runtime for large fixtures without changing retrieval
+  quality verdicts.
 - `repositories[*].baseline`: optional locked source-free baseline metadata for regression suites. Supported fields are `fileRecallAt10`, `lexicalBaselineRecallAt10`, `totalMillis`, `gapFamilies`, and `notes`.
 
 ## Run

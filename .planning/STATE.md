@@ -4,10 +4,10 @@ milestone: v2.5
 milestone_name: Production Retrieval Quality
 status: active
 last_updated: "2026-06-02T21:11:51Z"
-last_activity: 2026-06-03 -- Phase 185 adds source-free context-area signal, role, selected-role, and unselected-count profiles to retrieval gap summaries so proof gaps can be debugged without hand-joining commit context areas
+last_activity: 2026-06-03 -- Phase 186 deduplicates grouped retrieval-gap area profile counts without hiding per-file missed targets
 progress:
-  total_phases: 97
-  completed_phases: 97
+  total_phases: 98
+  completed_phases: 98
   total_plans: 7
   completed_plans: 7
   percent: 100
@@ -17,10 +17,10 @@ progress:
 
 ## Current Position
 
-Phase: 185 - Gap Summary Area Profiles
-Plan: 185-gap-summary-area-profiles
+Phase: 186 - Gap Profile Deduplication
+Plan: 186-gap-profile-dedupe
 Status: Complete
-Last activity: 2026-06-03 -- Phase 185 adds source-free `contextAreaSignalCounts`, `contextAreaRoleCounts`, `contextAreaSelectedRoleCounts`, and `contextAreaUnselectedCount` to retrieval-gap summaries. Fresh proof promotes from `/tmp/ctxhelm-rd/phase185-gap-summary-profile-proof.json`; ctxhelm has `7/7` profiled gap summaries and VeriSchema has `9/10`, with the remaining VeriSchema docs gap unprofiled because its area was not surfaced in task-conditioned `contextAreas`.
+Last activity: 2026-06-03 -- Phase 186 deduplicates source-free context-area profile aggregation in grouped retrieval-gap summaries. Fresh release-binary proof promotes from `/tmp/ctxhelm-rd/phase186-gap-profile-dedupe-release-proof.json`; grouped misses still preserve per-file `missedCount`, `examplePaths`, and `nextReadPaths`, while `contextAreaSignalCounts`, `contextAreaRoleCounts`, `contextAreaSelectedRoleCounts`, and `contextAreaUnselectedCount` merge each matching area profile once per grouped gap.
 
 ## Project Reference
 
@@ -164,6 +164,7 @@ Planned phases:
 - Phase 183: Clean Fixture Refresh Runtime Ceiling (complete follow-up)
 - Phase 184: Context Area Signal Profiles (complete follow-up)
 - Phase 185: Gap Summary Area Profiles (complete follow-up)
+- Phase 186: Gap Profile Deduplication (complete follow-up)
 
 ## Last Completed Milestone
 
@@ -282,6 +283,7 @@ Continue production-readiness work from remaining measured gaps: make Codex CLI 
 - Phase 183 refreshes the clean four-repo fixture proof to the reachable VeriSchema revision and adds source-free per-repo proof runtime ceilings. Latest proof notes: `.planning/e2e/2026-06-03-phase183-clean-fixture-refresh-runtime-ceiling.md`; fresh source-free summaries: `/tmp/ctxhelm-rd/phase183-clean-fixture-refresh-proof-scoped.json` and `/tmp/ctxhelm-rd/phase183-clean-fixture-refresh-warm-proof-scoped.json`; the release gate now uses `.planning/e2e/2026-06-03-phase183-clean-fixture-refresh-config.json` by default.
 - Phase 184 adds source-free signal profiles to context-area guidance. Latest proof notes: `.planning/e2e/2026-06-03-phase184-context-area-signal-profiles.md`; fresh source-free summary: `/tmp/ctxhelm-rd/phase184-context-area-signal-proof.json`; the four-repo proof promotes and `143` historical context-area rows expose non-empty `signalCounts`.
 - Phase 185 adds source-free area profiles to retrieval-gap summaries. Latest proof notes: `.planning/e2e/2026-06-03-phase185-gap-summary-area-profiles.md`; fresh source-free summary: `/tmp/ctxhelm-rd/phase185-gap-summary-profile-proof.json`; the four-repo proof promotes, ctxhelm has `7/7` profiled gap summaries, and VeriSchema has `9/10`.
+- Phase 186 deduplicates grouped gap area profiles. Latest proof notes: `.planning/e2e/2026-06-03-phase186-gap-profile-dedupe.md`; fresh source-free summary: `/tmp/ctxhelm-rd/phase186-gap-profile-dedupe-release-proof.json`; the release-binary proof promotes, RefactoringMiner remains a context-channel lexical-ceiling `match`, and grouped source misses retain `missedCount = 2` without double-counting the same context-area profile.
 - Phase 129 adds public release freshness proof. Latest proof notes: `.planning/e2e/2026-06-01-phase129-public-release-freshness.md`; durable source-free summary: `.ctxhelm/e2e/phase129-public-release-freshness.json`; public `v1.1.0` targets `68383cbfc2fff00c4f53fbd2b7bf90527ac4bd7e`, current main is `a07e6be31a0605af1810e79cb18b34245fa7def0`, `gitRelation = current_descends_from_release`, `commitsAhead = 19`, and `status = outdated`.
 - Phase 130 publishes and verifies the current public `v1.1.1` archive. Latest proof notes: `.planning/e2e/2026-06-01-phase130-public-v111-release.md`; durable source-free summaries: `.ctxhelm/e2e/phase130-github-release.json`, `.ctxhelm/e2e/phase130-public-release-freshness.json`, `.ctxhelm/e2e/phase130-public-archive-install.json`, and `.ctxhelm/e2e/phase130-public-real-client-smoke.json`; public `v1.1.1` targets `6c93100fa0e4f5a5444fb7fd967c721cca49a401`, `gitRelation = same`, `commitsAhead = 0`, temporary public archive install passes version/help/doctor/first-pack checks, Claude Code `2.1.158` passes explicit-repo `prepare_task` and `get_pack`, and Codex CLI `0.44.0` remains an optional source-free skip.
 - Phase 131 publishes and verifies the product-aware `v1.1.2` archive. Latest proof notes: `.planning/e2e/2026-06-01-phase131-product-aware-freshness-release.md`; durable source-free summaries: `.ctxhelm/e2e/phase131-github-release.json`, `.ctxhelm/e2e/phase131-github-release-verify.json`, `.ctxhelm/e2e/phase131-public-release-freshness.json`, `.ctxhelm/e2e/phase131-public-archive-install.json`, and `.ctxhelm/e2e/phase131-public-real-client-smoke.json`; public `v1.1.2` targets `ac6dc97f04cd18b5f2c6c32f7a1eca49e3ef5587`, `productStatus = current`, `productCommitsAhead = 0`, temporary public archive install passes version/help/doctor/first-pack checks, Claude Code `2.1.158` passes explicit-repo `prepare_task` and `get_pack`, and Codex CLI `0.44.0` remains an optional source-free skip.

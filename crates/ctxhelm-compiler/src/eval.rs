@@ -7176,6 +7176,7 @@ fn retrieval_gap_summaries(
     limit: usize,
 ) -> Vec<RetrievalGapSummary> {
     let mut summaries = Vec::<RetrievalGapSummary>::new();
+    let mut merged_profile_keys = BTreeSet::<String>::new();
     for (commit, gap_reasons) in commits.iter().zip(gap_reasons_by_commit.iter()) {
         let validation_hit_paths = effective_validation_hit_paths(
             &filter_changed_labels_by_role(
@@ -7208,6 +7209,16 @@ fn retrieval_gap_summaries(
                 .map(gap_target_status)
                 .unwrap_or(RetrievalGapTargetStatus::Unknown);
             let recommendation_area = recommendation_area_for_gap(&signal_gap, role.clone());
+            let profile_key = gap_context_area_profile_merge_key(
+                commit,
+                &role,
+                &signal_gap,
+                &package,
+                &path_family,
+                &target_status,
+                &recommendation_area,
+                &context_area,
+            );
             if let Some(summary) = summaries.iter_mut().find(|summary| {
                 summary.role == role
                     && summary.signal_gap == signal_gap
@@ -7223,9 +7234,12 @@ fn retrieval_gap_summaries(
                 if summary.next_read_paths.len() < 8 && !summary.next_read_paths.contains(path) {
                     summary.next_read_paths.push(path.clone());
                 }
-                merge_context_area_profile(summary, context_area_profile);
+                if merged_profile_keys.insert(profile_key) {
+                    merge_context_area_profile(summary, context_area_profile);
+                }
             } else {
                 let context_area_profile = context_area_profile_fields(context_area_profile);
+                merged_profile_keys.insert(profile_key);
                 summaries.push(RetrievalGapSummary {
                     role,
                     signal_gap,
@@ -7258,6 +7272,30 @@ fn retrieval_gap_summaries(
     });
     summaries.truncate(limit.max(1));
     summaries
+}
+
+#[allow(clippy::too_many_arguments)]
+fn gap_context_area_profile_merge_key(
+    commit: &HistoricalCommitEval,
+    role: &FileRole,
+    signal_gap: &str,
+    package: &str,
+    path_family: &str,
+    target_status: &RetrievalGapTargetStatus,
+    recommendation_area: &RetrievalGapRecommendationArea,
+    context_area: &str,
+) -> String {
+    format!(
+        "{}|{:?}|{}|{}|{}|{:?}|{:?}|{}",
+        commit.sha,
+        role,
+        signal_gap,
+        package,
+        path_family,
+        target_status,
+        recommendation_area,
+        context_area
+    )
 }
 
 fn context_area_profile_for_gap<'a>(
@@ -9115,14 +9153,17 @@ mod tests {
             target_agent: "generic".to_string(),
             changed_path_labels: vec![
                 historical_changed_path_label("src/auth/session.ts", FileRole::Source),
+                historical_changed_path_label("src/auth/token.ts", FileRole::Source),
                 historical_changed_path_label("tests/auth/session.test.ts", FileRole::Test),
             ],
             safe_changed_files: vec![
                 "src/auth/session.ts".to_string(),
+                "src/auth/token.ts".to_string(),
                 "tests/auth/session.test.ts".to_string(),
             ],
             retrieval_target_files: vec![
                 "src/auth/session.ts".to_string(),
+                "src/auth/token.ts".to_string(),
                 "tests/auth/session.test.ts".to_string(),
             ],
             excluded_changed_file_count: 0,
@@ -9140,9 +9181,10 @@ mod tests {
             lexical_baseline_hits_at_10: Vec::new(),
             missing_files_at_10: vec![
                 "src/auth/session.ts".to_string(),
+                "src/auth/token.ts".to_string(),
                 "tests/auth/session.test.ts".to_string(),
             ],
-            source_files_changed: 1,
+            source_files_changed: 2,
             source_hits_at_5: 0,
             source_hits_at_10: 0,
             test_files_changed: 1,
@@ -9177,11 +9219,16 @@ mod tests {
         };
         let mut roles_by_path = BTreeMap::new();
         roles_by_path.insert("src/auth/session.ts".to_string(), FileRole::Source);
+        roles_by_path.insert("src/auth/token.ts".to_string(), FileRole::Source);
         roles_by_path.insert("tests/auth/session.test.ts".to_string(), FileRole::Test);
         let labels_by_path = labels_by_path_from_commits(std::slice::from_ref(&commit));
         let gap_reasons = BTreeMap::from([
             (
                 "src/auth/session.ts".to_string(),
+                "no_candidate_signal".to_string(),
+            ),
+            (
+                "src/auth/token.ts".to_string(),
                 "no_candidate_signal".to_string(),
             ),
             (
@@ -9200,7 +9247,11 @@ mod tests {
 
         assert_eq!(summaries.len(), 1);
         assert_eq!(summaries[0].role, FileRole::Source);
-        assert_eq!(summaries[0].example_paths, vec!["src/auth/session.ts"]);
+        assert_eq!(summaries[0].missed_count, 2);
+        assert_eq!(
+            summaries[0].example_paths,
+            vec!["src/auth/session.ts", "src/auth/token.ts"]
+        );
         assert_eq!(summaries[0].context_area, "src/auth");
         assert_eq!(
             summaries[0].context_area_resource_uri,
@@ -9223,7 +9274,10 @@ mod tests {
             Some(&1)
         );
         assert_eq!(summaries[0].context_area_unselected_count, 2);
-        assert_eq!(summaries[0].next_read_paths, vec!["src/auth/session.ts"]);
+        assert_eq!(
+            summaries[0].next_read_paths,
+            vec!["src/auth/session.ts", "src/auth/token.ts"]
+        );
     }
 
     fn gate_test_variant(name: &str, recall: f32, precision: f32) -> SemanticPrecisionVariant {

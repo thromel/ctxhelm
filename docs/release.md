@@ -330,6 +330,12 @@ reports the area's signal counts, role counts, selected-role counts, and
 unselected count. This keeps product proof diagnostics actionable while leaving
 ranking, budgets, and release thresholds unchanged.
 
+Phase 186 deduplicates those area-profile counts for grouped gap summaries:
+multiple missed files can still raise `missedCount`, `examplePaths`, and
+`nextReadPaths`, but the same task-conditioned context-area profile is merged
+only once. This keeps release proof diagnostics from overstating source-free
+area pressure when a grouped gap contains several files from the same area.
+
 The optional real-client evidence wrappers are:
 
 - `scripts/smoke-codex-mcp.sh`
