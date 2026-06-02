@@ -2,8 +2,8 @@ use crate::freshness::load_or_refresh_inventory;
 use crate::inventory::{canonicalize, FileInventoryEntry, InventoryError, InventoryOptions};
 use crate::search::{query_term_weight, query_terms};
 use crate::storage::{
-    persist_semantic_vector_records, sync_inventory_to_store, StorageError,
-    StorageSemanticIndexReport, StorageSemanticVectorRecord, StoreConfig,
+    load_semantic_vector_records, persist_semantic_vector_records, sync_inventory_to_store,
+    StorageError, StorageSemanticIndexReport, StorageSemanticVectorRecord, StoreConfig,
 };
 use crate::symbols::CodeSymbol;
 use crate::{
@@ -460,14 +460,46 @@ pub fn semantic_search_report(
             count: original_document_count - candidate_documents.len(),
         });
     }
-    let candidate_texts = candidate_documents
+    let stored_vectors = stored_semantic_vectors_by_document(
+        &repo_root,
+        &provider,
+        &candidate_documents,
+        &mut diagnostics,
+    );
+    let mut file_vectors = candidate_documents
         .iter()
-        .map(render_semantic_document_text)
+        .map(|document| {
+            stored_vectors
+                .get(&semantic_document_storage_key(
+                    &document.path,
+                    &document.safe_hash,
+                ))
+                .cloned()
+        })
         .collect::<Vec<_>>();
-
-    let mut texts = Vec::with_capacity(candidate_texts.len() + 1);
+    let reused_vector_count = file_vectors
+        .iter()
+        .filter(|vector| vector.is_some())
+        .count();
+    let mut missing_indices = Vec::new();
+    let mut texts = Vec::with_capacity(candidate_documents.len() - reused_vector_count + 1);
     texts.push(query.to_string());
-    texts.extend(candidate_texts);
+    for (index, (document, vector)) in candidate_documents
+        .iter()
+        .zip(file_vectors.iter())
+        .enumerate()
+    {
+        if vector.is_none() {
+            missing_indices.push(index);
+            texts.push(render_semantic_document_text(document));
+        }
+    }
+    if reused_vector_count > 0 {
+        diagnostics.push(semantic_vector_storage_reused_diagnostic(
+            reused_vector_count,
+            missing_indices.len(),
+        ));
+    }
     let vectors = match embed_texts(&texts, &provider) {
         Ok(vectors) => vectors,
         Err(message) => {
@@ -487,7 +519,7 @@ pub fn semantic_search_report(
             });
         }
     };
-    let Some((query_vector, file_vectors)) = vectors.split_first() else {
+    let Some((query_vector, embedded_file_vectors)) = vectors.split_first() else {
         return Ok(SemanticSearchReport {
             results: Vec::new(),
             diagnostics,
@@ -496,6 +528,14 @@ pub fn semantic_search_report(
             provider,
         });
     };
+    for (index, vector) in missing_indices
+        .into_iter()
+        .zip(embedded_file_vectors.iter())
+    {
+        if vector.len() == provider.dimensions {
+            file_vectors[index] = Some(vector.clone());
+        }
+    }
     if is_zero_vector(query_vector) {
         diagnostics.push(Diagnostic {
             code: "semantic_query_empty".to_string(),
@@ -515,9 +555,15 @@ pub fn semantic_search_report(
 
     let mut results = Vec::new();
     let semantic_terms = query_terms(query);
-    for (document, file_vector) in candidate_documents.into_iter().zip(file_vectors.iter()) {
+    for (document, file_vector) in candidate_documents
+        .into_iter()
+        .zip(file_vectors.into_iter())
+    {
+        let Some(file_vector) = file_vector else {
+            continue;
+        };
         let exact_boost = (semantic_prefilter_score(&document, &semantic_terms) * 0.05).min(0.5);
-        let score = cosine_similarity(query_vector, file_vector) + exact_boost;
+        let score = cosine_similarity(query_vector, &file_vector) + exact_boost;
         if score < 0.08 {
             continue;
         }
@@ -743,6 +789,65 @@ fn precision_status_from_dependencies(
 fn semantic_document_id(path: &str, safe_hash: &str) -> String {
     let digest = blake3::hash(format!("{path}:{safe_hash}").as_bytes());
     format!("sem_doc_{}", digest.to_hex())
+}
+
+fn semantic_document_storage_key(path: &str, safe_hash: &str) -> String {
+    format!("{path}\n{safe_hash}")
+}
+
+fn stored_semantic_vectors_by_document(
+    repo_root: &Path,
+    provider: &SemanticProviderConfig,
+    documents: &[SemanticDocument],
+    diagnostics: &mut Vec<Diagnostic>,
+) -> BTreeMap<String, Vec<f32>> {
+    if documents.is_empty() {
+        return BTreeMap::new();
+    }
+    let needed = documents
+        .iter()
+        .map(|document| semantic_document_storage_key(&document.path, &document.safe_hash))
+        .collect::<BTreeSet<_>>();
+    let records = match load_semantic_vector_records(
+        repo_root,
+        &StoreConfig::default(),
+        &provider.provider,
+        &provider.model,
+        provider.dimensions,
+        &provider.distance_metric,
+    ) {
+        Ok(records) => records,
+        Err(error) => {
+            diagnostics.push(Diagnostic {
+                code: "semantic_vector_storage_unavailable".to_string(),
+                severity: DiagnosticSeverity::Warning,
+                message: format!("Could not read persisted semantic vectors: {error}"),
+                paths: Vec::new(),
+                count: 0,
+            });
+            return BTreeMap::new();
+        }
+    };
+    records
+        .into_iter()
+        .filter(|record| record.vector.len() == provider.dimensions)
+        .filter_map(|record| {
+            let key = semantic_document_storage_key(&record.path, &record.safe_hash);
+            needed.contains(&key).then_some((key, record.vector))
+        })
+        .collect()
+}
+
+fn semantic_vector_storage_reused_diagnostic(reused: usize, embedded: usize) -> Diagnostic {
+    Diagnostic {
+        code: "semantic_vector_storage_reused".to_string(),
+        severity: DiagnosticSeverity::Info,
+        message: format!(
+            "Semantic search reused {reused} persisted source-free vector(s) and embedded {embedded} candidate document(s)."
+        ),
+        paths: Vec::new(),
+        count: reused,
+    }
 }
 
 fn semantic_document_summary(file: &FileInventoryEntry, facet_count: usize) -> String {
@@ -1376,6 +1481,81 @@ mod tests {
             .matched_facets
             .iter()
             .any(|facet| facet.label == "path"));
+    }
+
+    #[test]
+    fn semantic_search_reuses_persisted_source_free_vectors() {
+        let _guard = crate::test_env_lock();
+        let temp = tempfile::tempdir().unwrap();
+        let repo = temp.path().join("repo");
+        let previous_home = std::env::var_os("CTXHELM_HOME");
+        std::env::set_var("CTXHELM_HOME", temp.path());
+        let config = StoreConfig::default();
+        fs::create_dir_all(repo.join(".git")).unwrap();
+        fs::create_dir_all(repo.join("src")).unwrap();
+        fs::write(
+            repo.join("src/payments.ts"),
+            "export function handlePaymentWebhook() { return true; }\n",
+        )
+        .unwrap();
+        fs::write(
+            repo.join("src/auth.ts"),
+            "export function requireSession() { return true; }\n",
+        )
+        .unwrap();
+
+        sync_inventory_to_store(&repo, &InventoryOptions::default(), &config).unwrap();
+        let document_report = semantic_document_report(
+            &repo,
+            &SemanticDocumentOptions {
+                limit: 10,
+                query: Some("payment webhook".to_string()),
+                include_symbols: false,
+                include_dependencies: false,
+                include_related_tests: false,
+            },
+        )
+        .unwrap();
+        let payment_document = document_report
+            .documents
+            .iter()
+            .find(|document| document.path == "src/payments.ts")
+            .unwrap();
+        persist_semantic_vector_records(
+            &repo,
+            &config,
+            &[StorageSemanticVectorRecord {
+                path: payment_document.path.clone(),
+                safe_hash: payment_document.safe_hash.clone(),
+                provider: DEFAULT_SEMANTIC_PROVIDER.to_string(),
+                model: DEFAULT_SEMANTIC_MODEL.to_string(),
+                dimensions: DEFAULT_SEMANTIC_DIMENSIONS,
+                distance_metric: DEFAULT_SEMANTIC_DISTANCE.to_string(),
+                vector: vectorize_text("payment webhook", DEFAULT_SEMANTIC_DIMENSIONS),
+                privacy_status: "local_only".to_string(),
+            }],
+        )
+        .unwrap();
+
+        let report = semantic_search_report(
+            &repo,
+            "payment webhook",
+            &SemanticOptions {
+                enabled: true,
+                limit: 5,
+                provider: SemanticProviderConfig::default(),
+            },
+        )
+        .unwrap();
+        match previous_home {
+            Some(value) => std::env::set_var("CTXHELM_HOME", value),
+            None => std::env::remove_var("CTXHELM_HOME"),
+        }
+
+        assert_eq!(report.results[0].path, "src/payments.ts");
+        assert!(report.diagnostics.iter().any(|diagnostic| {
+            diagnostic.code == "semantic_vector_storage_reused" && diagnostic.count == 1
+        }));
     }
 
     #[test]

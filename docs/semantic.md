@@ -103,10 +103,19 @@ To persist source-free vector metadata in the local SQLite store:
 ```bash
 ctxhelm index --repo /path/to/repo --semantic
 ctxhelm index --repo /path/to/repo --semantic --semantic-provider local_fastembed
+ctxhelm index --repo /path/to/repo --semantic --semantic-provider local_fastembed --semantic-limit 128
 ctxhelm storage status --repo /path/to/repo
 ```
 
 `--semantic` implies a safe inventory storage sync. The store records provider, model, dimensions, distance metric, file path, safe hash, privacy label, source-free semantic document metadata, and numeric vector JSON for providers such as `local_hash` and `local_fastembed`. It does not store raw file contents, prompts, snippets, secrets, or cloud payloads.
+
+`--semantic-limit` bounds the number of source-free semantic vectors built during
+indexing. This is the preferred way to seed local `local_fastembed` vectors on
+large repositories before running agent integrations or evals. Semantic search
+reuses matching persisted vectors by exact path, safe hash, provider, model,
+dimensions, and distance metric, then embeds only the query and candidate misses.
+If the file hash changes, the stored row is updated under the path/provider/model
+identity and stale hashes are not reused.
 
 ## Agent And MCP Use
 

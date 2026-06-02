@@ -68,6 +68,20 @@ These commands persist only source-free metadata: task hashes, pack IDs, budgets
 target agents, confidence, benchmark metrics, gap families, proof headlines, and
 privacy status. They do not persist prompt text or source snippets by default.
 
+## Semantic Vector Metadata
+
+```bash
+ctxhelm index --repo "$REPO" --semantic --semantic-provider local_fastembed --semantic-limit 128
+ctxhelm semantic status --repo "$REPO" --semantic-provider local_fastembed --format json
+```
+
+Semantic vector storage is source-free. Rows contain path, safe hash, provider,
+model, dimensions, distance metric, privacy label, and numeric vector JSON, not
+raw source text. Search reuses only exact path/hash/provider/model/dimension
+matches and falls back to embedding candidate misses. The schema uniqueness key
+is `repo_id + path + provider + model`, so changed file hashes update the row
+instead of leaving duplicate stale vectors behind.
+
 ## Memory Card Metadata
 
 ```bash

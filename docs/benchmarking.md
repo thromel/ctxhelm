@@ -618,6 +618,14 @@ Recommendation today:
   evidence behavior clear the gate.
 - Keep `local_fastembed` opt-in for experiments and conceptual queries; it is
   local-only but not a default quality win.
+- Phase 163 reduces fresh-process `local_fastembed` document-embedding overhead
+  by reusing persisted source-free vectors. On the RefactoringMiner proof
+  fixture, a bounded 16-vector seed produced `storedVectorCount: 16`; the query
+  `Improvement in TypeScriptVisitor` ranked
+  `src/main/java/gr/uom/java/xmi/decomposition/TypeScriptVisitor.java` first and
+  improved direct semantic search from `10.56s` with an empty store to `6.03s`
+  with the seeded store. Query/model initialization still dominates the warm
+  path, so this is a runtime improvement, not yet a semantic-only recall win.
 - Treat cloud embeddings/reranking as disabled unless an explicit repo policy
   allows them.
 

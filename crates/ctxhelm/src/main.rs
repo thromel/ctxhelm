@@ -163,6 +163,11 @@ struct IndexArgs {
         help = "Also build local source-free semantic vector metadata in SQLite storage."
     )]
     semantic: bool,
+    #[arg(
+        long,
+        help = "Maximum source-free semantic vector records to build when --semantic is enabled."
+    )]
+    semantic_limit: Option<usize>,
     #[command(flatten)]
     semantic_provider: SemanticProviderArgs,
     #[arg(long, help = "Override the SQLite storage database path.")]
@@ -1450,7 +1455,11 @@ fn main() -> Result<()> {
             if args.semantic {
                 let storage = sync_semantic_index_to_store(
                     &repo.path,
-                    &semantic_options(true, usize::MAX, &args.semantic_provider),
+                    &semantic_options(
+                        true,
+                        args.semantic_limit.unwrap_or(usize::MAX),
+                        &args.semantic_provider,
+                    ),
                     &StoreConfig {
                         path_override: args.store_path.clone(),
                     },

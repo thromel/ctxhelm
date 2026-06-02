@@ -553,6 +553,10 @@ pub fn persist_semantic_vector_records(
     enable_foreign_keys(&connection, &storage.database_path)?;
     let existing =
         existing_semantic_records(&connection, &storage.database_path, &storage.repo_id)?;
+    let existing_by_unique_key = existing
+        .iter()
+        .map(|(vector_id, record)| (record.unique_key(), vector_id.clone()))
+        .collect::<BTreeMap<_, _>>();
     let mut retained_vector_ids = BTreeSet::new();
     let mut reused_records = 0;
     let mut created_records = 0;
@@ -562,14 +566,18 @@ pub fn persist_semantic_vector_records(
         let vector_id = semantic_vector_id(&storage.repo_id, record);
         retained_vector_ids.insert(vector_id.clone());
         let vector_json = json_string(&record.vector)?;
-        if existing
-            .get(&vector_id)
-            .is_some_and(|existing| existing.matches(record, &vector_json))
-        {
+        let existing_record = existing_by_unique_key
+            .get(&semantic_record_unique_key(
+                &record.path,
+                &record.provider,
+                &record.model,
+            ))
+            .and_then(|vector_id| existing.get(vector_id));
+        if existing_record.is_some_and(|existing| existing.matches(record, &vector_json)) {
             reused_records += 1;
             continue;
         }
-        if existing.contains_key(&vector_id) {
+        if existing_record.is_some() {
             updated_records += 1;
         } else {
             created_records += 1;
@@ -583,7 +591,9 @@ INSERT INTO semantic_vectors (
   distance_metric, vector_json, privacy_status, updated_at_unix_seconds
 )
 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12)
-ON CONFLICT(vector_id) DO UPDATE SET
+ON CONFLICT(repo_id, path, provider, model) DO UPDATE SET
+  vector_id = excluded.vector_id,
+  file_id = excluded.file_id,
   safe_hash = excluded.safe_hash,
   provider = excluded.provider,
   model = excluded.model,
@@ -637,6 +647,96 @@ ON CONFLICT(vector_id) DO UPDATE SET
         compatibility: status.compatibility,
         diagnostics: status.diagnostics,
     })
+}
+
+pub fn load_semantic_vector_records(
+    repo_root: impl AsRef<Path>,
+    config: &StoreConfig,
+    provider: &str,
+    model: &str,
+    dimensions: usize,
+    distance_metric: &str,
+) -> Result<Vec<StorageSemanticVectorRecord>, StorageError> {
+    let repo_root =
+        fs::canonicalize(repo_root.as_ref()).map_err(|source| StorageError::Canonicalize {
+            path: repo_root.as_ref().to_path_buf(),
+            source,
+        })?;
+    let repo_id = repo_id_for_path(&repo_root);
+    let paths = store_paths_for_repo_id(&repo_id, config);
+    if !paths.database_path.exists() {
+        return Ok(Vec::new());
+    }
+    let connection = open_connection(&paths.database_path)?;
+    let mut statement = sqlite(
+        &paths.database_path,
+        connection.prepare(
+            r#"
+SELECT path, safe_hash, provider, model, dimensions, distance_metric, vector_json, privacy_status
+FROM semantic_vectors
+WHERE repo_id = ?1
+  AND provider = ?2
+  AND model = ?3
+  AND dimensions = ?4
+  AND distance_metric = ?5
+ORDER BY path
+"#,
+        ),
+    )?;
+    let rows = sqlite(
+        &paths.database_path,
+        statement.query_map(
+            params![
+                repo_id,
+                provider,
+                model,
+                as_i64(dimensions as u64),
+                distance_metric
+            ],
+            |row| {
+                Ok((
+                    row.get::<_, String>(0)?,
+                    row.get::<_, String>(1)?,
+                    row.get::<_, String>(2)?,
+                    row.get::<_, String>(3)?,
+                    as_u64(row.get::<_, i64>(4)?) as usize,
+                    row.get::<_, String>(5)?,
+                    row.get::<_, String>(6)?,
+                    row.get::<_, String>(7)?,
+                ))
+            },
+        ),
+    )?;
+    let mut records = Vec::new();
+    for row in rows {
+        let (
+            path,
+            safe_hash,
+            provider,
+            model,
+            dimensions,
+            distance_metric,
+            vector_json,
+            privacy_status,
+        ) = sqlite(&paths.database_path, row)?;
+        let vector = serde_json::from_str::<Vec<f32>>(&vector_json).map_err(|source| {
+            StorageError::Sqlite {
+                path: paths.database_path.clone(),
+                source: rusqlite::Error::ToSqlConversionFailure(Box::new(source)),
+            }
+        })?;
+        records.push(StorageSemanticVectorRecord {
+            path,
+            safe_hash,
+            provider,
+            model,
+            dimensions,
+            distance_metric,
+            vector,
+            privacy_status,
+        });
+    }
+    Ok(records)
 }
 
 pub fn persist_memory_card_records(
@@ -1015,7 +1115,10 @@ FROM files WHERE repo_id = ?1
 
 #[derive(Debug, Clone)]
 struct StoredSemanticRecord {
+    path: String,
     safe_hash: String,
+    provider: String,
+    model: String,
     dimensions: usize,
     distance_metric: String,
     vector_json: String,
@@ -1030,6 +1133,10 @@ impl StoredSemanticRecord {
             && self.vector_json == vector_json
             && self.privacy_status == record.privacy_status
     }
+
+    fn unique_key(&self) -> String {
+        semantic_record_unique_key(&self.path, &self.provider, &self.model)
+    }
 }
 
 fn existing_semantic_records(
@@ -1041,7 +1148,7 @@ fn existing_semantic_records(
         path,
         connection.prepare(
             r#"
-SELECT vector_id, safe_hash, dimensions, distance_metric, vector_json, privacy_status
+SELECT vector_id, path, safe_hash, provider, model, dimensions, distance_metric, vector_json, privacy_status
 FROM semantic_vectors WHERE repo_id = ?1
 "#,
         ),
@@ -1052,11 +1159,14 @@ FROM semantic_vectors WHERE repo_id = ?1
             Ok((
                 row.get::<_, String>(0)?,
                 StoredSemanticRecord {
-                    safe_hash: row.get(1)?,
-                    dimensions: as_u64(row.get::<_, i64>(2)?) as usize,
-                    distance_metric: row.get(3)?,
-                    vector_json: row.get(4)?,
-                    privacy_status: row.get(5)?,
+                    path: row.get(1)?,
+                    safe_hash: row.get(2)?,
+                    provider: row.get(3)?,
+                    model: row.get(4)?,
+                    dimensions: as_u64(row.get::<_, i64>(5)?) as usize,
+                    distance_metric: row.get(6)?,
+                    vector_json: row.get(7)?,
+                    privacy_status: row.get(8)?,
                 },
             ))
         }),
@@ -1067,6 +1177,10 @@ FROM semantic_vectors WHERE repo_id = ?1
         records.insert(vector_id, record);
     }
     Ok(records)
+}
+
+fn semantic_record_unique_key(path: &str, provider: &str, model: &str) -> String {
+    format!("{path}\n{provider}\n{model}")
 }
 
 fn count_rows(connection: &Connection, path: &Path, table: &str) -> Result<usize, StorageError> {
@@ -2158,6 +2272,48 @@ mod tests {
         .unwrap();
         assert_eq!(second_provider.semantic_vector_records, 1);
         assert_eq!(second_provider.created_records, 1);
+        let loaded = load_semantic_vector_records(
+            &repo,
+            &config,
+            "local_fastembed",
+            "JinaEmbeddingsV2BaseCode",
+            768,
+            "cosine",
+        )
+        .unwrap();
+        assert_eq!(loaded.len(), 1);
+        assert_eq!(loaded[0].path, "src/lib.rs");
+        assert_eq!(loaded[0].safe_hash, "safe-hash");
+        assert_eq!(loaded[0].vector, vec![0.4, 0.5, 0.6]);
+        let changed_hash = persist_semantic_vector_records(
+            &repo,
+            &config,
+            &[StorageSemanticVectorRecord {
+                path: "src/lib.rs".to_string(),
+                safe_hash: "new-safe-hash".to_string(),
+                provider: "local_fastembed".to_string(),
+                model: "JinaEmbeddingsV2BaseCode".to_string(),
+                dimensions: 768,
+                distance_metric: "cosine".to_string(),
+                vector: vec![0.7, 0.8, 0.9],
+                privacy_status: "local_only".to_string(),
+            }],
+        )
+        .unwrap();
+        assert_eq!(changed_hash.semantic_vector_records, 1);
+        assert_eq!(changed_hash.updated_records, 1);
+        let reloaded = load_semantic_vector_records(
+            &repo,
+            &config,
+            "local_fastembed",
+            "JinaEmbeddingsV2BaseCode",
+            768,
+            "cosine",
+        )
+        .unwrap();
+        assert_eq!(reloaded.len(), 1);
+        assert_eq!(reloaded[0].safe_hash, "new-safe-hash");
+        assert_eq!(reloaded[0].vector, vec![0.7, 0.8, 0.9]);
         let bytes = fs::read(&status.database_path).unwrap();
         let database_text = String::from_utf8_lossy(&bytes);
         assert!(!database_text.contains("CTXHELM_SEMANTIC_SOURCE_SENTINEL"));
