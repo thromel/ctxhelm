@@ -352,6 +352,14 @@ promotes, all 16 evaluated commits include non-empty profiles, and recall
 metrics stay unchanged from Phase 187. Release reviewers can use this profile to
 explain ranking-budget allocation before accepting future source/doc tradeoffs.
 
+Phase 189 uses those selected-signal profiles to rebalance broad governance docs
+against source-history reserve. Broad root governance docs now run before broad
+source-history, while source-history remains protected for standard scope and for
+broad tasks without governance pressure. Source-history candidates also prefer
+module entrypoints such as `src/lib.rs`. The fresh four-repo proof promotes;
+ctxhelm File Recall@10 improves (`0.5587302 -> 0.67777777`) while ctxhelm Source
+Recall@10 stays `0.55`, and the other measured repositories stay unchanged.
+
 The optional real-client evidence wrappers are:
 
 - `scripts/smoke-codex-mcp.sh`

@@ -765,6 +765,13 @@ Recommendation today:
   include non-empty profiles. Use this field to debug budget tradeoffs such as
   co-change source slots versus broad governance docs before changing ranking
   allocation again.
+- Phase 189 uses those profiles to rebalance broad target-file allocation. Broad
+  root governance docs now run before broad source-history reserve, while
+  source-history remains protected for standard tasks and for broad tasks without
+  governance pressure. Source-history candidates now prefer module entrypoints
+  such as `src/lib.rs`. The four-repo proof still promotes; ctxhelm File
+  Recall@10 improves (`0.5587302 -> 0.67777777`) while ctxhelm Source Recall@10
+  stays `0.55`.
 - Treat cloud embeddings/reranking as disabled unless an explicit repo policy
   allows them.
 

@@ -465,6 +465,14 @@ fn select_target_files(
         {
             push_target(candidate, &mut selected, &mut selected_paths, file_budget);
         }
+        if broad_scope {
+            for (_, candidate) in governance_doc_floor(candidates)
+                .into_iter()
+                .take(governance_doc_floor_limit(file_budget))
+            {
+                push_target(candidate, &mut selected, &mut selected_paths, file_budget);
+            }
+        }
         let mut source_history_floor_selected = 0usize;
         for (_, candidate) in source_history_floor(candidates) {
             if source_history_floor_selected >= source_history_floor_limit(file_budget) {
@@ -477,12 +485,6 @@ fn select_target_files(
             }
         }
         if broad_scope {
-            for (_, candidate) in governance_doc_floor(candidates)
-                .into_iter()
-                .take(governance_doc_floor_limit(file_budget))
-            {
-                push_target(candidate, &mut selected, &mut selected_paths, file_budget);
-            }
             for (_, candidate) in config_lexical_floor(candidates)
                 .into_iter()
                 .take(config_lexical_floor_limit(file_budget))
@@ -862,6 +864,9 @@ fn source_history_floor(candidates: &[RankedCandidate]) -> Vec<(f32, &RankedCand
         source_floor_path_priority(left)
             .cmp(&source_floor_path_priority(right))
             .then_with(|| {
+                source_history_path_priority(left).cmp(&source_history_path_priority(right))
+            })
+            .then_with(|| {
                 right_score
                     .total_cmp(left_score)
                     .then_with(|| right.rank_score.total_cmp(&left.rank_score))
@@ -884,6 +889,34 @@ fn has_source_history_corroboration(candidate: &RankedCandidate) -> bool {
 
 fn source_history_floor_limit(file_budget: usize) -> usize {
     file_budget.div_ceil(4).clamp(1, 3)
+}
+
+fn source_history_path_priority(candidate: &RankedCandidate) -> u8 {
+    candidate
+        .candidate
+        .path
+        .as_deref()
+        .map(source_history_path_priority_for_path)
+        .unwrap_or(2)
+}
+
+fn source_history_path_priority_for_path(path: &str) -> u8 {
+    if is_source_module_entrypoint(path) {
+        0
+    } else {
+        1
+    }
+}
+
+fn is_source_module_entrypoint(path: &str) -> bool {
+    path.ends_with("/src/lib.rs")
+        || path.ends_with("/src/main.rs")
+        || path.ends_with("/src/mod.rs")
+        || path.ends_with("/__init__.py")
+        || path.ends_with("/index.ts")
+        || path.ends_with("/index.tsx")
+        || path.ends_with("/index.js")
+        || path.ends_with("/index.jsx")
 }
 
 fn dependency_edge_family_priority(candidate: &RankedCandidate) -> u8 {
@@ -3116,6 +3149,85 @@ mod tests {
                 lexical("src/c.ts", 24.0),
                 lexical("src/d.ts", 24.0),
                 SearchResult {
+                    path: "docs/history-a.md".to_string(),
+                    role: FileRole::Docs,
+                    language: Some("markdown".to_string()),
+                    score: 24.0,
+                    reason: "strong doc match".to_string(),
+                },
+                SearchResult {
+                    path: "docs/history-b.md".to_string(),
+                    role: FileRole::Docs,
+                    language: Some("markdown".to_string()),
+                    score: 24.0,
+                    reason: "strong doc match".to_string(),
+                },
+            ],
+            co_change_hints: vec![
+                CoChangeHint {
+                    path: "src/historical-a.ts".to_string(),
+                    commit_count: 3,
+                    confidence: 0.85,
+                    sample_commits: vec!["abc1234".to_string(), "def5678".to_string()],
+                    reason: "changed together".to_string(),
+                },
+                CoChangeHint {
+                    path: "src/historical-b.ts".to_string(),
+                    commit_count: 2,
+                    confidence: 0.75,
+                    sample_commits: vec!["abc1234".to_string()],
+                    reason: "changed together".to_string(),
+                },
+            ],
+            dependency_edges: vec![
+                DependencyEdge {
+                    source_path: "src/a.ts".to_string(),
+                    target_path: "src/historical-a.ts".to_string(),
+                    kind: "imports".to_string(),
+                    confidence: 0.7,
+                    reason: "imports corroborated history".to_string(),
+                },
+                DependencyEdge {
+                    source_path: "src/b.ts".to_string(),
+                    target_path: "src/historical-b.ts".to_string(),
+                    kind: "imports".to_string(),
+                    confidence: 0.7,
+                    reason: "imports corroborated history".to_string(),
+                },
+            ],
+            roles: roles([
+                ("src/a.ts", FileRole::Source),
+                ("src/b.ts", FileRole::Source),
+                ("src/c.ts", FileRole::Source),
+                ("src/d.ts", FileRole::Source),
+                ("src/historical-a.ts", FileRole::Source),
+                ("src/historical-b.ts", FileRole::Source),
+                ("docs/history-a.md", FileRole::Docs),
+                ("docs/history-b.md", FileRole::Docs),
+            ]),
+            ..RankingInput::default()
+        });
+
+        let selection = select_ranked_candidates_for_scope(&candidates, 6, 0, true);
+        let paths = selection
+            .target_files
+            .iter()
+            .map(|target| target.path.as_str())
+            .collect::<Vec<_>>();
+
+        assert!(paths.contains(&"src/historical-a.ts"));
+        assert!(paths.contains(&"src/historical-b.ts"));
+    }
+
+    #[test]
+    fn broad_selection_keeps_governance_docs_before_source_cochange_reserve() {
+        let candidates = rank_candidates(RankingInput {
+            lexical_results: vec![
+                lexical("src/a.ts", 24.0),
+                lexical("src/b.ts", 24.0),
+                lexical("src/c.ts", 24.0),
+                lexical("src/d.ts", 24.0),
+                SearchResult {
                     path: ".planning/STATE.md".to_string(),
                     role: FileRole::Docs,
                     language: Some("markdown".to_string()),
@@ -3182,8 +3294,61 @@ mod tests {
             .map(|target| target.path.as_str())
             .collect::<Vec<_>>();
 
+        assert!(paths.contains(&".planning/STATE.md"));
+        assert!(paths.contains(&".planning/ROADMAP.md"));
         assert!(paths.contains(&"src/historical-a.ts"));
-        assert!(paths.contains(&"src/historical-b.ts"));
+    }
+
+    #[test]
+    fn source_history_floor_prefers_module_entrypoints() {
+        let candidates = rank_candidates(RankingInput {
+            lexical_results: vec![lexical("src/a.ts", 24.0)],
+            co_change_hints: vec![
+                CoChangeHint {
+                    path: "crates/tool/src/planning.rs".to_string(),
+                    commit_count: 4,
+                    confidence: 0.95,
+                    sample_commits: vec!["abc1234".to_string()],
+                    reason: "changed together".to_string(),
+                },
+                CoChangeHint {
+                    path: "crates/index/src/lib.rs".to_string(),
+                    commit_count: 2,
+                    confidence: 0.70,
+                    sample_commits: vec!["def5678".to_string()],
+                    reason: "changed together".to_string(),
+                },
+            ],
+            dependency_edges: vec![
+                DependencyEdge {
+                    source_path: "src/a.ts".to_string(),
+                    target_path: "crates/tool/src/planning.rs".to_string(),
+                    kind: "imports".to_string(),
+                    confidence: 0.7,
+                    reason: "imports corroborated history".to_string(),
+                },
+                DependencyEdge {
+                    source_path: "src/a.ts".to_string(),
+                    target_path: "crates/index/src/lib.rs".to_string(),
+                    kind: "imports".to_string(),
+                    confidence: 0.7,
+                    reason: "imports corroborated history".to_string(),
+                },
+            ],
+            roles: roles([
+                ("src/a.ts", FileRole::Source),
+                ("crates/tool/src/planning.rs", FileRole::Source),
+                ("crates/index/src/lib.rs", FileRole::Source),
+            ]),
+            ..RankingInput::default()
+        });
+
+        let floor = source_history_floor(&candidates);
+
+        assert_eq!(
+            floor[0].1.candidate.path.as_deref(),
+            Some("crates/index/src/lib.rs")
+        );
     }
 
     #[test]

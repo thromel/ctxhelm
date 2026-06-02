@@ -30,6 +30,8 @@ Phase 187 adds a bounded source-history reserve for source files whose co-change
 
 Phase 188 adds source-free `selectedSignalProfiles` to historical commit eval reports. Each commit now reports selected top-10 counts by signal and role, plus selected retrieval-target counts. The fresh release-binary proof promotes, all 16 evaluated commits are profiled, and retrieval metrics stay unchanged from Phase 187; this gives the next source-vs-doc ranking pass commit-level evidence instead of relying on aggregate recall alone.
 
+Phase 189 uses those selected-signal profiles to rebalance broad target-file budget. Broad root governance docs now run before broad source-history reserve, while source-history remains protected for standard scope and for broad tasks without governance-doc pressure. Source-history candidates now prefer module entrypoints such as `src/lib.rs`. The fresh proof promotes; ctxhelm File Recall@10 improves from `0.5587302` to `0.67777777` while ctxhelm Source Recall@10 stays `0.55`.
+
 ## v2.5 Production Retrieval Quality
 
 ## Phases
@@ -37,7 +39,7 @@ Phase 188 adds source-free `selectedSignalProfiles` to historical commit eval re
 **Phase Numbering:**
 
 - Integer phases (61, 62, 63, 64, 65): Planned v2.5 work
-- Phases 66-188: Production-readiness follow-ups from the original blocked proof and the channel-aware promotion path
+- Phases 66-189: Production-readiness follow-ups from the original blocked proof and the channel-aware promotion path
 - Decimal phases (61.1, 62.1): Urgent insertions if needed
 
 - [x] **Phase 61: Multi-Repo Quality Baselines** - Maintainers can run source-free paired baselines across RefactoringMiner and a second real repository with stable comparison artifacts.
@@ -150,6 +152,7 @@ Phase 188 adds source-free `selectedSignalProfiles` to historical commit eval re
 - [x] **Phase 186: Gap Profile Deduplication** - Grouped retrieval-gap summaries preserve per-file misses while merging each matching context-area profile once.
 - [x] **Phase 187: Corroborated Source History Reserve** - Source co-change candidates with corroborating dependency/lexical/symbol evidence receive bounded target-file budget, improving source recall while recording the broad-doc tradeoff.
 - [x] **Phase 188: Selected Signal Profiles** - Historical eval commit reports expose source-free selected top-10 counts by signal and role, including selected retrieval-target counts.
+- [x] **Phase 189: Balanced Broad History And Governance Budget** - Broad governance docs regain budget ahead of broad source-history reserve while module-entrypoint source-history ordering preserves the measured source recall gain.
 - [x] **Phase 162: Feature-Enabled Local Fastembed Gate Proof** - A feature-enabled `local_fastembed` gate run on clean RefactoringMiner now proves the production-local backend works end-to-end, but remains held because it adds no semantic-only target hits and is still slower than default; the gate emits a source-free diagnostic for that condition.
 - [x] **Phase 163: Persisted Semantic Vector Reuse** - Fresh CLI/MCP processes can reuse persisted source-free semantic document vectors instead of recomputing every candidate vector.
 - [x] **Phase 164: Global Semantic Vector Candidates And Write-Through** - Semantic search can include persisted vector candidates outside the lexical prefilter and write through newly embedded candidate misses.
@@ -947,7 +950,7 @@ downgrading the proof to a smaller corpus.
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 61 -> 62 -> 63 -> 64 -> 65 -> 66 -> 67 -> 69 -> 70 -> 71 -> 72 -> 73 -> 74 -> 75 -> 76 -> 77 -> 78 -> 79 -> 80 -> 81 -> 82 -> 83 -> 84 -> 85 -> 86 -> 87 -> 88 -> 89 -> 90 -> 91 -> 92 -> 93 -> 94 -> 95 -> 96 -> 97 -> 98 -> 99 -> 100 -> 101 -> 102 -> 103 -> 104 -> 105 -> 106 -> 107 -> 178 -> 179 -> 180 -> 181 -> 182 -> 183 -> 184 -> 185 -> 186 -> 187 -> 188
+Phases execute in numeric order: 61 -> 62 -> 63 -> 64 -> 65 -> 66 -> 67 -> 69 -> 70 -> 71 -> 72 -> 73 -> 74 -> 75 -> 76 -> 77 -> 78 -> 79 -> 80 -> 81 -> 82 -> 83 -> 84 -> 85 -> 86 -> 87 -> 88 -> 89 -> 90 -> 91 -> 92 -> 93 -> 94 -> 95 -> 96 -> 97 -> 98 -> 99 -> 100 -> 101 -> 102 -> 103 -> 104 -> 105 -> 106 -> 107 -> 178 -> 179 -> 180 -> 181 -> 182 -> 183 -> 184 -> 185 -> 186 -> 187 -> 188 -> 189
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
@@ -1010,6 +1013,7 @@ Phases execute in numeric order: 61 -> 62 -> 63 -> 64 -> 65 -> 66 -> 67 -> 69 ->
 | 186. Gap Profile Deduplication | Evidence artifact | Complete | 2026-06-03 |
 | 187. Corroborated Source History Reserve | Evidence artifact | Complete | 2026-06-03 |
 | 188. Selected Signal Profiles | Evidence artifact | Complete | 2026-06-03 |
+| 189. Balanced Broad History And Governance Budget | Evidence artifact | Complete | 2026-06-03 |
 
 ---
 *Roadmap created: 2026-05-22*

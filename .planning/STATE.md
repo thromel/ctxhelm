@@ -4,10 +4,10 @@ milestone: v2.5
 milestone_name: Production Retrieval Quality
 status: active
 last_updated: "2026-06-03T00:00:00Z"
-last_activity: 2026-06-03 -- Phase 188 adds source-free selected-signal profiles to historical eval reports so ranking budget tradeoffs are measurable per commit
+last_activity: 2026-06-03 -- Phase 189 balances broad governance docs against source-history reserve while preserving source recall
 progress:
-  total_phases: 99
-  completed_phases: 99
+  total_phases: 100
+  completed_phases: 100
   total_plans: 7
   completed_plans: 7
   percent: 100
@@ -17,10 +17,10 @@ progress:
 
 ## Current Position
 
-Phase: 188 - Selected Signal Profiles
-Plan: 188-selected-signal-profiles
+Phase: 189 - Balanced Broad History And Governance Budget
+Plan: 189-balanced-broad-history
 Status: Complete
-Last activity: 2026-06-03 -- Phase 188 adds source-free `selectedSignalProfiles` to historical commit eval reports. Fresh release-binary proof promotes from `/tmp/ctxhelm-rd/phase188-selected-signal-profile-proof.json`; all 16 evaluated commits across RefactoringMiner, ctxhelm, ReAgent, and VeriSchema have non-empty selected-signal profiles, and retrieval metrics stay unchanged from Phase 187. The profile exposes top-10 selected counts by role and signal, plus retrieval-target selected counts, so the Phase 187 source-vs-docs budget tradeoff can be diagnosed per commit without source text.
+Last activity: 2026-06-03 -- Phase 189 uses the Phase 188 selected-signal profiles to rebalance broad ranking budget: root governance docs now run before broad source-history reserve, while source-history still works for standard scope and for broad tasks without governance pressure. Source-history ordering now prefers module entrypoints such as `src/lib.rs`. Fresh release-binary proof promotes from `/tmp/ctxhelm-rd/phase189-balanced-broad-history-proof.json`; ctxhelm File Recall@10 improves from `0.5587302` to `0.67777777`, ctxhelm Source Recall@10 stays `0.55`, and RefactoringMiner/ReAgent/VeriSchema stay unchanged.
 
 ## Project Reference
 
@@ -167,6 +167,7 @@ Planned phases:
 - Phase 186: Gap Profile Deduplication (complete follow-up)
 - Phase 187: Corroborated Source History Reserve (complete follow-up)
 - Phase 188: Selected Signal Profiles (complete follow-up)
+- Phase 189: Balanced Broad History And Governance Budget (complete follow-up)
 
 ## Last Completed Milestone
 
