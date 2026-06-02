@@ -336,6 +336,15 @@ multiple missed files can still raise `missedCount`, `examplePaths`, and
 only once. This keeps release proof diagnostics from overstating source-free
 area pressure when a grouped gap contains several files from the same area.
 
+Phase 187 adds a bounded source-history reserve for source files whose
+co-change evidence is corroborated by dependency, lexical, lexical-expansion,
+or symbol signals. The fresh four-repo release proof still promotes and improves
+source recall for ctxhelm (`0.42857143 -> 0.5`) and VeriSchema
+(`0.32258064 -> 0.38709676`). The proof also records a ctxhelm all-file
+Recall@10 tradeoff (`0.6666667 -> 0.5587302`) because broad docs lose some
+top-10 budget; this is accepted as a source-channel R&D improvement, not as a
+blanket all-file recall win.
+
 The optional real-client evidence wrappers are:
 
 - `scripts/smoke-codex-mcp.sh`

@@ -26,6 +26,8 @@ Phase 185 carries those area profiles into retrieval-gap summaries. Gap reports 
 
 Phase 186 deduplicates those area-profile fields when multiple missed files collapse into the same grouped gap summary. Per-file evidence remains intact through `missedCount`, `examplePaths`, and `nextReadPaths`, while context-area signal/role/unselected counts now represent each matching task-conditioned area profile once instead of once per missed file.
 
+Phase 187 adds a bounded source-history reserve for source files whose co-change evidence is corroborated by dependency, lexical, lexical-expansion, or symbol signals. The four-repo release proof still promotes; ctxhelm Source Recall@10 improves from `0.42857143` to `0.5`, and VeriSchema Source Recall@10 improves from `0.32258064` to `0.38709676`. This is a source-channel improvement rather than a blanket all-file win: ctxhelm all-file Recall@10 drops from `0.6666667` to `0.5587302` because broad docs lose some fixed top-10 budget, so future ranking work should balance broad docs against source-history pressure more carefully.
+
 ## v2.5 Production Retrieval Quality
 
 ## Phases
@@ -33,7 +35,7 @@ Phase 186 deduplicates those area-profile fields when multiple missed files coll
 **Phase Numbering:**
 
 - Integer phases (61, 62, 63, 64, 65): Planned v2.5 work
-- Phases 66-186: Production-readiness follow-ups from the original blocked proof and the channel-aware promotion path
+- Phases 66-187: Production-readiness follow-ups from the original blocked proof and the channel-aware promotion path
 - Decimal phases (61.1, 62.1): Urgent insertions if needed
 
 - [x] **Phase 61: Multi-Repo Quality Baselines** - Maintainers can run source-free paired baselines across RefactoringMiner and a second real repository with stable comparison artifacts.
@@ -144,6 +146,7 @@ Phase 186 deduplicates those area-profile fields when multiple missed files coll
 - [x] **Phase 184: Context Area Signal Profiles** - Broad context areas and packs expose source-free signal-family counts so agents can choose progressive native reads without expanding the protected top-10 budget.
 - [x] **Phase 185: Gap Summary Area Profiles** - Retrieval gap summaries carry source-free context-area signal, role, selected-role, and unselected-count profiles when the missed target's task-conditioned area was surfaced.
 - [x] **Phase 186: Gap Profile Deduplication** - Grouped retrieval-gap summaries preserve per-file misses while merging each matching context-area profile once.
+- [x] **Phase 187: Corroborated Source History Reserve** - Source co-change candidates with corroborating dependency/lexical/symbol evidence receive bounded target-file budget, improving source recall while recording the broad-doc tradeoff.
 - [x] **Phase 162: Feature-Enabled Local Fastembed Gate Proof** - A feature-enabled `local_fastembed` gate run on clean RefactoringMiner now proves the production-local backend works end-to-end, but remains held because it adds no semantic-only target hits and is still slower than default; the gate emits a source-free diagnostic for that condition.
 - [x] **Phase 163: Persisted Semantic Vector Reuse** - Fresh CLI/MCP processes can reuse persisted source-free semantic document vectors instead of recomputing every candidate vector.
 - [x] **Phase 164: Global Semantic Vector Candidates And Write-Through** - Semantic search can include persisted vector candidates outside the lexical prefilter and write through newly embedded candidate misses.
@@ -941,7 +944,7 @@ downgrading the proof to a smaller corpus.
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 61 -> 62 -> 63 -> 64 -> 65 -> 66 -> 67 -> 69 -> 70 -> 71 -> 72 -> 73 -> 74 -> 75 -> 76 -> 77 -> 78 -> 79 -> 80 -> 81 -> 82 -> 83 -> 84 -> 85 -> 86 -> 87 -> 88 -> 89 -> 90 -> 91 -> 92 -> 93 -> 94 -> 95 -> 96 -> 97 -> 98 -> 99 -> 100 -> 101 -> 102 -> 103 -> 104 -> 105 -> 106 -> 107 -> 178 -> 179 -> 180 -> 181 -> 182 -> 183 -> 184 -> 185 -> 186
+Phases execute in numeric order: 61 -> 62 -> 63 -> 64 -> 65 -> 66 -> 67 -> 69 -> 70 -> 71 -> 72 -> 73 -> 74 -> 75 -> 76 -> 77 -> 78 -> 79 -> 80 -> 81 -> 82 -> 83 -> 84 -> 85 -> 86 -> 87 -> 88 -> 89 -> 90 -> 91 -> 92 -> 93 -> 94 -> 95 -> 96 -> 97 -> 98 -> 99 -> 100 -> 101 -> 102 -> 103 -> 104 -> 105 -> 106 -> 107 -> 178 -> 179 -> 180 -> 181 -> 182 -> 183 -> 184 -> 185 -> 186 -> 187
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
@@ -1002,6 +1005,7 @@ Phases execute in numeric order: 61 -> 62 -> 63 -> 64 -> 65 -> 66 -> 67 -> 69 ->
 | 184. Context Area Signal Profiles | Evidence artifact | Complete | 2026-06-03 |
 | 185. Gap Summary Area Profiles | Evidence artifact | Complete | 2026-06-03 |
 | 186. Gap Profile Deduplication | Evidence artifact | Complete | 2026-06-03 |
+| 187. Corroborated Source History Reserve | Evidence artifact | Complete | 2026-06-03 |
 
 ---
 *Roadmap created: 2026-05-22*

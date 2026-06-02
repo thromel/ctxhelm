@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v2.5
 milestone_name: Production Retrieval Quality
 status: active
-last_updated: "2026-06-02T21:11:51Z"
-last_activity: 2026-06-03 -- Phase 186 deduplicates grouped retrieval-gap area profile counts without hiding per-file missed targets
+last_updated: "2026-06-03T00:00:00Z"
+last_activity: 2026-06-03 -- Phase 187 adds a corroborated source-history reserve for co-change source misses and records the source-vs-docs tradeoff
 progress:
   total_phases: 98
   completed_phases: 98
@@ -17,10 +17,10 @@ progress:
 
 ## Current Position
 
-Phase: 186 - Gap Profile Deduplication
-Plan: 186-gap-profile-dedupe
+Phase: 187 - Corroborated Source History Reserve
+Plan: 187-source-history-reserve
 Status: Complete
-Last activity: 2026-06-03 -- Phase 186 deduplicates source-free context-area profile aggregation in grouped retrieval-gap summaries. Fresh release-binary proof promotes from `/tmp/ctxhelm-rd/phase186-gap-profile-dedupe-release-proof.json`; grouped misses still preserve per-file `missedCount`, `examplePaths`, and `nextReadPaths`, while `contextAreaSignalCounts`, `contextAreaRoleCounts`, `contextAreaSelectedRoleCounts`, and `contextAreaUnselectedCount` merge each matching area profile once per grouped gap.
+Last activity: 2026-06-03 -- Phase 187 adds a bounded source-history reserve for source files with co-change evidence corroborated by dependency, lexical, lexical-expansion, or symbol signals. Fresh release-binary proof promotes from `/tmp/ctxhelm-rd/phase187-source-history-reserve-release-proof.json`; ctxhelm Source Recall@10 improves from `0.42857143` to `0.5`, VeriSchema Source Recall@10 improves from `0.32258064` to `0.38709676`, RefactoringMiner/ReAgent stay unchanged, and the ctxhelm all-file Recall@10 tradeoff is recorded explicitly (`0.6666667 -> 0.5587302`) because broad docs lose some top-10 budget.
 
 ## Project Reference
 
@@ -165,6 +165,7 @@ Planned phases:
 - Phase 184: Context Area Signal Profiles (complete follow-up)
 - Phase 185: Gap Summary Area Profiles (complete follow-up)
 - Phase 186: Gap Profile Deduplication (complete follow-up)
+- Phase 187: Corroborated Source History Reserve (complete follow-up)
 
 ## Last Completed Milestone
 

@@ -751,6 +751,13 @@ Recommendation today:
   `src/test/java/org/refactoringminer/astDiff/tests/TypeScriptDiffTest.java`.
   The warmed gate took `21.20s`; semantic remains opt-in and the next quality
   work should target graph/history/fusion for coupled source misses.
+- Phase 187 adds a source-history reserve for co-change source candidates only
+  when another source-safe signal corroborates the path. The clean four-repo
+  release proof still promotes; source recall improves on ctxhelm
+  (`0.42857143 -> 0.5`) and VeriSchema (`0.32258064 -> 0.38709676`). The same
+  proof records a ctxhelm all-file Recall@10 tradeoff (`0.6666667 -> 0.5587302`)
+  from broad-doc displacement, so this should be read as a source-channel
+  improvement rather than an all-file recall improvement.
 - Treat cloud embeddings/reranking as disabled unless an explicit repo policy
   allows them.
 

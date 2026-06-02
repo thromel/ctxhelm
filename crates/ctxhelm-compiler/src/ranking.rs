@@ -465,6 +465,17 @@ fn select_target_files(
         {
             push_target(candidate, &mut selected, &mut selected_paths, file_budget);
         }
+        let mut source_history_floor_selected = 0usize;
+        for (_, candidate) in source_history_floor(candidates) {
+            if source_history_floor_selected >= source_history_floor_limit(file_budget) {
+                break;
+            }
+            let before = selected.len();
+            push_target(candidate, &mut selected, &mut selected_paths, file_budget);
+            if selected.len() > before {
+                source_history_floor_selected += 1;
+            }
+        }
         if broad_scope {
             for (_, candidate) in governance_doc_floor(candidates)
                 .into_iter()
@@ -564,13 +575,27 @@ fn select_target_files(
     } else {
         source_dependency_floor_limit(file_budget)
     };
+    let history_floor_reserve =
+        if has_active_context || !has_source_history_target_candidates(candidates) {
+            0
+        } else {
+            source_history_floor_limit(file_budget)
+        };
     let lexical_floor_limit = if has_active_context {
         7.min(file_budget)
-    } else if symbol_floor_reserve == 0 && dependency_floor_reserve == 0 {
+    } else if symbol_floor_reserve == 0
+        && dependency_floor_reserve == 0
+        && history_floor_reserve == 0
+    {
         file_budget
     } else {
         file_budget
-            .saturating_sub(symbol_floor_reserve + dependency_floor_reserve + selected.len())
+            .saturating_sub(
+                symbol_floor_reserve
+                    + dependency_floor_reserve
+                    + history_floor_reserve
+                    + selected.len(),
+            )
             .max(1)
     };
     let mut lexical_floor_selected = 0usize;
@@ -643,7 +668,6 @@ fn select_target_files(
             }
         }
     }
-
     if !has_active_context && selected.len() < file_budget {
         for (_, candidate) in source_lexical_floor(candidates)
             .into_iter()
@@ -806,6 +830,60 @@ fn has_source_dependency_target_candidates(candidates: &[RankedCandidate]) -> bo
             && candidate.candidate.role == Some(FileRole::Source)
             && signal_score(&candidate.candidate, RetrievalSignalKind::Dependency).is_some()
     })
+}
+
+fn has_source_history_target_candidates(candidates: &[RankedCandidate]) -> bool {
+    candidates.iter().any(|candidate| {
+        candidate.target_file.is_some()
+            && candidate.candidate.role == Some(FileRole::Source)
+            && signal_score(&candidate.candidate, RetrievalSignalKind::CoChange)
+                .is_some_and(|score| score >= 0.50)
+            && has_source_history_corroboration(candidate)
+    })
+}
+
+fn source_history_floor(candidates: &[RankedCandidate]) -> Vec<(f32, &RankedCandidate)> {
+    let mut source_history_floor = candidates
+        .iter()
+        .filter(|candidate| candidate.target_file.is_some())
+        .filter(|candidate| candidate.candidate.role == Some(FileRole::Source))
+        .filter_map(|candidate| {
+            let history_score = signal_score(&candidate.candidate, RetrievalSignalKind::CoChange)?;
+            if history_score < 0.50 {
+                return None;
+            }
+            if !has_source_history_corroboration(candidate) {
+                return None;
+            }
+            Some((history_score, candidate))
+        })
+        .collect::<Vec<_>>();
+    source_history_floor.sort_by(|(left_score, left), (right_score, right)| {
+        source_floor_path_priority(left)
+            .cmp(&source_floor_path_priority(right))
+            .then_with(|| {
+                right_score
+                    .total_cmp(left_score)
+                    .then_with(|| right.rank_score.total_cmp(&left.rank_score))
+                    .then_with(|| left.candidate.path.cmp(&right.candidate.path))
+            })
+    });
+    source_history_floor
+}
+
+fn has_source_history_corroboration(candidate: &RankedCandidate) -> bool {
+    [
+        RetrievalSignalKind::Dependency,
+        RetrievalSignalKind::Lexical,
+        RetrievalSignalKind::LexicalExpansion,
+        RetrievalSignalKind::Symbol,
+    ]
+    .into_iter()
+    .any(|signal| signal_score(&candidate.candidate, signal).is_some())
+}
+
+fn source_history_floor_limit(file_budget: usize) -> usize {
+    file_budget.div_ceil(4).clamp(1, 3)
 }
 
 fn dependency_edge_family_priority(candidate: &RankedCandidate) -> u8 {
@@ -2952,6 +3030,190 @@ mod tests {
             .collect::<Vec<_>>();
 
         assert!(paths.contains(&"src/historical.ts"));
+    }
+
+    #[test]
+    fn selection_reserves_source_cochange_targets_when_lexical_fills_budget() {
+        let candidates = rank_candidates(RankingInput {
+            lexical_results: vec![
+                lexical("src/a.ts", 24.0),
+                lexical("src/b.ts", 24.0),
+                lexical("src/c.ts", 24.0),
+                lexical("src/d.ts", 24.0),
+                lexical("src/e.ts", 24.0),
+                lexical("src/f.ts", 24.0),
+                SearchResult {
+                    path: "docs/history.md".to_string(),
+                    role: FileRole::Docs,
+                    language: Some("markdown".to_string()),
+                    score: 24.0,
+                    reason: "strong doc match".to_string(),
+                },
+            ],
+            co_change_hints: vec![
+                CoChangeHint {
+                    path: "src/historical-a.ts".to_string(),
+                    commit_count: 3,
+                    confidence: 0.85,
+                    sample_commits: vec!["abc1234".to_string(), "def5678".to_string()],
+                    reason: "changed together".to_string(),
+                },
+                CoChangeHint {
+                    path: "src/historical-b.ts".to_string(),
+                    commit_count: 2,
+                    confidence: 0.75,
+                    sample_commits: vec!["abc1234".to_string()],
+                    reason: "changed together".to_string(),
+                },
+            ],
+            dependency_edges: vec![
+                DependencyEdge {
+                    source_path: "src/a.ts".to_string(),
+                    target_path: "src/historical-a.ts".to_string(),
+                    kind: "imports".to_string(),
+                    confidence: 0.7,
+                    reason: "imports corroborated history".to_string(),
+                },
+                DependencyEdge {
+                    source_path: "src/b.ts".to_string(),
+                    target_path: "src/historical-b.ts".to_string(),
+                    kind: "imports".to_string(),
+                    confidence: 0.7,
+                    reason: "imports corroborated history".to_string(),
+                },
+            ],
+            roles: roles([
+                ("src/a.ts", FileRole::Source),
+                ("src/b.ts", FileRole::Source),
+                ("src/c.ts", FileRole::Source),
+                ("src/d.ts", FileRole::Source),
+                ("src/e.ts", FileRole::Source),
+                ("src/f.ts", FileRole::Source),
+                ("src/historical-a.ts", FileRole::Source),
+                ("src/historical-b.ts", FileRole::Source),
+                ("docs/history.md", FileRole::Docs),
+            ]),
+            ..RankingInput::default()
+        });
+
+        let selection = select_ranked_candidates(&candidates, 6, 0);
+        let paths = selection
+            .target_files
+            .iter()
+            .map(|target| target.path.as_str())
+            .collect::<Vec<_>>();
+
+        assert!(paths.contains(&"src/historical-a.ts"));
+        assert!(paths.contains(&"src/historical-b.ts"));
+    }
+
+    #[test]
+    fn broad_selection_reserves_source_cochange_targets_when_lexical_fills_budget() {
+        let candidates = rank_candidates(RankingInput {
+            lexical_results: vec![
+                lexical("src/a.ts", 24.0),
+                lexical("src/b.ts", 24.0),
+                lexical("src/c.ts", 24.0),
+                lexical("src/d.ts", 24.0),
+                SearchResult {
+                    path: ".planning/STATE.md".to_string(),
+                    role: FileRole::Docs,
+                    language: Some("markdown".to_string()),
+                    score: 24.0,
+                    reason: "strong planning match".to_string(),
+                },
+                SearchResult {
+                    path: ".planning/ROADMAP.md".to_string(),
+                    role: FileRole::Docs,
+                    language: Some("markdown".to_string()),
+                    score: 24.0,
+                    reason: "strong planning match".to_string(),
+                },
+            ],
+            co_change_hints: vec![
+                CoChangeHint {
+                    path: "src/historical-a.ts".to_string(),
+                    commit_count: 3,
+                    confidence: 0.85,
+                    sample_commits: vec!["abc1234".to_string(), "def5678".to_string()],
+                    reason: "changed together".to_string(),
+                },
+                CoChangeHint {
+                    path: "src/historical-b.ts".to_string(),
+                    commit_count: 2,
+                    confidence: 0.75,
+                    sample_commits: vec!["abc1234".to_string()],
+                    reason: "changed together".to_string(),
+                },
+            ],
+            dependency_edges: vec![
+                DependencyEdge {
+                    source_path: "src/a.ts".to_string(),
+                    target_path: "src/historical-a.ts".to_string(),
+                    kind: "imports".to_string(),
+                    confidence: 0.7,
+                    reason: "imports corroborated history".to_string(),
+                },
+                DependencyEdge {
+                    source_path: "src/b.ts".to_string(),
+                    target_path: "src/historical-b.ts".to_string(),
+                    kind: "imports".to_string(),
+                    confidence: 0.7,
+                    reason: "imports corroborated history".to_string(),
+                },
+            ],
+            roles: roles([
+                ("src/a.ts", FileRole::Source),
+                ("src/b.ts", FileRole::Source),
+                ("src/c.ts", FileRole::Source),
+                ("src/d.ts", FileRole::Source),
+                ("src/historical-a.ts", FileRole::Source),
+                ("src/historical-b.ts", FileRole::Source),
+                (".planning/STATE.md", FileRole::Docs),
+                (".planning/ROADMAP.md", FileRole::Docs),
+            ]),
+            ..RankingInput::default()
+        });
+
+        let selection = select_ranked_candidates_for_scope(&candidates, 6, 0, true);
+        let paths = selection
+            .target_files
+            .iter()
+            .map(|target| target.path.as_str())
+            .collect::<Vec<_>>();
+
+        assert!(paths.contains(&"src/historical-a.ts"));
+        assert!(paths.contains(&"src/historical-b.ts"));
+    }
+
+    #[test]
+    fn selection_does_not_let_source_cochange_reserve_displace_active_context_anchor() {
+        let candidates = rank_candidates(RankingInput {
+            anchors: vec![AnchorCandidate {
+                path: "docs/active.md".to_string(),
+                role: FileRole::Docs,
+                current_diff: false,
+            }],
+            lexical_results: vec![lexical("src/a.ts", 24.0), lexical("src/b.ts", 24.0)],
+            co_change_hints: vec![CoChangeHint {
+                path: "src/historical.ts".to_string(),
+                commit_count: 3,
+                confidence: 0.95,
+                sample_commits: vec!["abc1234".to_string(), "def5678".to_string()],
+                reason: "changed together".to_string(),
+            }],
+            roles: roles([
+                ("docs/active.md", FileRole::Docs),
+                ("src/a.ts", FileRole::Source),
+                ("src/b.ts", FileRole::Source),
+                ("src/historical.ts", FileRole::Source),
+            ]),
+            ..RankingInput::default()
+        });
+
+        let selection = select_ranked_candidates(&candidates, 2, 0);
+
+        assert_eq!(selection.target_files[0].path, "docs/active.md");
     }
 
     #[test]
