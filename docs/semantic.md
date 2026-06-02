@@ -124,6 +124,14 @@ path/provider/model identity and stale hashes are not reused. Provider or model
 failures during indexing are reported as errors; ctxhelm no longer treats a
 failed semantic vector build as a successful zero-vector index.
 
+Large generated fixture trees are pruned before inventory and freshness walks
+when generated files are excluded by policy. In the RefactoringMiner proof, that
+cut a bounded `local_fastembed` seed from Phase 166 `55.65s` to `5.18s` and a
+second fresh-process semantic search from `12.08s` to `0.11s` while preserving
+the known `TypeScriptVisitor.java` top result. This is a latency improvement,
+not a semantic-quality promotion; semantic retrieval remains opt-in until fixed
+corpus gates show target-file recall lift over lexical.
+
 ## Agent And MCP Use
 
 MCP `prepare_task`, `get_pack`, and `search` accept `semantic: true`. The field is optional and additive, so existing agents keep their lexical, symbol, graph, test, and history behavior unless they explicitly request semantic retrieval.

@@ -1,6 +1,6 @@
 use crate::policy::{classify_path, language_for_path, POLICY_VERSION};
 use ctxhelm_core::FileRole;
-use ignore::WalkBuilder;
+use ignore::{DirEntry, WalkBuilder};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::fs;
@@ -10,7 +10,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use thiserror::Error;
 use uuid::Uuid;
 
-pub const INVENTORY_SCHEMA_VERSION: u32 = 3;
+pub const INVENTORY_SCHEMA_VERSION: u32 = 4;
 
 #[derive(Debug, Error)]
 pub enum InventoryError {
@@ -151,6 +151,11 @@ pub fn build_inventory(
         .ignore(false)
         .add_custom_ignore_filename(".ctxhelmignore")
         .add_custom_ignore_filename(".cursorignore");
+    let filter_repo_root = repo_root.clone();
+    let filter_options = options.clone();
+    walker.filter_entry(move |entry| {
+        should_descend_inventory_entry(&filter_repo_root, entry, &filter_options)
+    });
 
     for result in walker.build() {
         let Ok(entry) = result else {
@@ -264,6 +269,11 @@ pub(crate) fn build_inventory_freshness_metadata(
         .ignore(false)
         .add_custom_ignore_filename(".ctxhelmignore")
         .add_custom_ignore_filename(".cursorignore");
+    let filter_repo_root = repo_root.clone();
+    let filter_options = options.clone();
+    walker.filter_entry(move |entry| {
+        should_descend_inventory_entry(&filter_repo_root, entry, &filter_options)
+    });
 
     for result in walker.build() {
         let Ok(entry) = result else {
@@ -472,6 +482,92 @@ pub(crate) fn normalize_relative_path(repo_root: &Path, path: &Path) -> String {
         })
         .collect::<Vec<_>>()
         .join("/")
+}
+
+fn should_descend_inventory_entry(
+    repo_root: &Path,
+    entry: &DirEntry,
+    options: &InventoryOptions,
+) -> bool {
+    if !entry.file_type().is_some_and(|kind| kind.is_dir()) {
+        return true;
+    }
+    let relative = normalize_relative_path(repo_root, entry.path());
+    if relative.is_empty() {
+        return true;
+    }
+    let lower = relative.to_ascii_lowercase();
+    if lower == ".git" || lower.starts_with(".git/") {
+        return false;
+    }
+    if !options.include_generated && is_prunable_generated_directory(&lower) {
+        return false;
+    }
+    if !options.include_sensitive && is_prunable_sensitive_directory(&lower) {
+        return false;
+    }
+    true
+}
+
+fn is_prunable_generated_directory(lower: &str) -> bool {
+    matches!(
+        lower,
+        "node_modules"
+            | ".gradle"
+            | ".ctxhelm/cache"
+            | ".fastembed_cache"
+            | "target"
+            | "dist"
+            | "build"
+            | "coverage"
+            | "vendor"
+            | "src/main 2"
+            | "src/test 2"
+            | "src/test/resources/oracle"
+            | "src/test/resources/astdiff"
+            | "src/test/resources/mappings"
+            | "src/main/resources/web/monaco"
+    ) || lower.starts_with("node_modules/")
+        || lower.starts_with(".gradle/")
+        || lower.starts_with(".ctxhelm/cache/")
+        || lower.starts_with(".fastembed_cache/")
+        || lower.starts_with("target/")
+        || lower.starts_with("dist/")
+        || lower.starts_with("build/")
+        || lower.starts_with("build ")
+        || lower.starts_with("coverage/")
+        || lower.starts_with("vendor/")
+        || lower.starts_with("src/main 2/")
+        || lower.starts_with("src/test 2/")
+        || lower.starts_with("src/test/resources/oracle/")
+        || lower.starts_with("src/test/resources/astdiff/")
+        || lower.starts_with("src/test/resources/mappings/")
+        || lower.starts_with("src/main/resources/web/monaco/")
+        || lower.contains("/node_modules/")
+        || lower.contains("/.gradle/")
+        || lower.contains("/.ctxhelm/cache/")
+        || lower.contains("/.fastembed_cache/")
+        || lower.contains("/target/")
+        || lower.contains("/dist/")
+        || lower.contains("/build/")
+        || lower.contains("/build ")
+        || lower.contains("/coverage/")
+        || lower.contains("/vendor/")
+        || lower.contains("/resources/oracle/")
+        || lower.contains("/resources/astdiff/")
+        || lower.contains("/resources/mappings/")
+        || lower.contains("/resources/web/monaco/")
+}
+
+fn is_prunable_sensitive_directory(lower: &str) -> bool {
+    lower == ".ssh"
+        || lower.starts_with(".ssh/")
+        || lower.contains("/.ssh/")
+        || lower == ".aws"
+        || lower.starts_with(".aws/")
+        || lower.contains("/.aws/")
+        || lower.contains("secret")
+        || lower.contains("credentials")
 }
 
 pub(crate) fn normalize_input_path(repo_root: &Path, path: &str) -> String {

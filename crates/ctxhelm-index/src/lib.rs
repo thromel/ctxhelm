@@ -184,6 +184,7 @@ mod tests {
         fs::write(repo.join("README.md"), "# Repo\n").unwrap();
         fs::write(repo.join("schema.sql"), "create table users(id int);\n").unwrap();
         fs::write(repo.join("package.json"), "{}\n").unwrap();
+        fs::write(repo.join("package-lock.json"), "{}\n").unwrap();
         fs::write(repo.join(".env"), "TOKEN=secret\n").unwrap();
         fs::write(repo.join("private.key"), "secret\n").unwrap();
         fs::write(repo.join("dist/app.min.js"), "minified\n").unwrap();
@@ -244,6 +245,7 @@ mod tests {
         assert!(!paths.contains(&"src/test/resources/astDiff/defects4j/example.json"));
         assert!(!paths.contains(&"src/test/resources/mappings/example.json"));
         assert!(!paths.contains(&"src/main/resources/web/monaco/min/vs/editor/editor.main.js"));
+        assert!(!paths.contains(&"package-lock.json"));
         assert!(!paths.contains(&"ignored-by-git.ts"));
         assert!(!paths.contains(&"ignored-by-ctxhelm.ts"));
         assert!(!paths.contains(&"ignored-by-cursor.ts"));
@@ -256,7 +258,7 @@ mod tests {
         assert_eq!(lib.language.as_deref(), Some("typescript"));
         assert_eq!(lib.role, FileRole::Source);
         assert_eq!(lib.hash.len(), 64);
-        assert!(inventory.generated_count >= 1);
+        assert_eq!(inventory.generated_count, 1);
         assert!(inventory.sensitive_count >= 2);
     }
 

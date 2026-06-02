@@ -119,6 +119,7 @@ v2.5 therefore focuses on measured retrieval quality, not more surface area. The
 - [x] **Phase 164: Global Semantic Vector Candidates And Write-Through** - Semantic search can include persisted vector candidates outside the lexical prefilter and write through newly embedded candidate misses.
 - [x] **Phase 165: Fastembed Default And Loud Index Errors** - `local_fastembed` defaults to `AllMiniLML6V2Q`, documented model ids resolve explicitly, and semantic indexing fails loudly instead of reporting successful zero-vector stores.
 - [x] **Phase 166: Semantic Query Vector Reuse** - Repeated fresh-process `local_fastembed` searches reuse source-free query vectors and single-pass stored-candidate expansion, reducing RefactoringMiner steady-state search latency while preserving the known top result.
+- [x] **Phase 167: Pruned Generated Inventory Walk** - Inventory and freshness walks now prune generated fixture/cache/build trees before descending, cutting clean RefactoringMiner first lexical setup to `3.70s`, semantic seed to `5.18s`, and second fresh-process semantic search to `0.11s` while preserving the known top result.
 
 ## Phase Details
 

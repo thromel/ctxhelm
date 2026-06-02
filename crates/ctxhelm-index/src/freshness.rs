@@ -537,6 +537,34 @@ mod tests {
     }
 
     #[test]
+    fn freshness_ignores_created_files_inside_pruned_generated_dirs() {
+        let temp = tempfile::tempdir().unwrap();
+        let repo = temp.path().join("repo");
+        fs::create_dir_all(repo.join(".git")).unwrap();
+        fs::create_dir_all(repo.join("src/test/resources/oracle/commits")).unwrap();
+        fs::write(repo.join("src/lib.rs"), "pub fn source() {}\n").unwrap();
+        fs::write(
+            repo.join("src/test/resources/oracle/commits/before.json"),
+            "{}\n",
+        )
+        .unwrap();
+
+        let cached = build_inventory(&repo, &InventoryOptions::default()).unwrap();
+        fs::write(
+            repo.join("src/test/resources/oracle/commits/after.json"),
+            "{}\n",
+        )
+        .unwrap();
+
+        let freshness =
+            check_inventory_freshness(&repo, &cached, &InventoryOptions::default()).unwrap();
+
+        assert!(freshness.fresh);
+        assert!(freshness.reasons.is_empty());
+        assert_eq!(paths(&cached), vec!["src/lib.rs"]);
+    }
+
+    #[test]
     fn old_inventory_json_without_metadata_deserializes_as_stale() {
         let _guard = env_lock();
         let temp = tempfile::tempdir().unwrap();

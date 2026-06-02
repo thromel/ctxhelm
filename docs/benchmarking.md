@@ -644,8 +644,18 @@ Recommendation today:
   `local_fastembed` global stored-candidate expansion single-pass. On the same
   RefactoringMiner probe, the second fresh-process AllMini search dropped from
   Phase 165 `16.92s` to `12.08s` while preserving `TypeScriptVisitor.java` as
-  the top result. Semantic remains opt-in because large-fixture inventory/search
-  setup still costs roughly 14-15s.
+  the top result.
+- Phase 167 removes the shared large-fixture setup bottleneck by pruning
+  generated fixture/cache/build directories before inventory and freshness walks
+  descend into them. On the clean RefactoringMiner fixture, generated exclusions
+  dropped from `38,242` walked files to `25` counted generated files, fresh
+  lexical setup took `3.70s`, cache-hit lexical search took `0.08s`, semantic
+  status took `0.10s`, the bounded AllMini semantic seed dropped from Phase 166
+  `55.65s` to `5.18s`, and the second fresh-process semantic search dropped
+  from `12.08s` to `0.11s` while preserving `TypeScriptVisitor.java` as the top
+  result. Semantic still remains opt-in until quality gates show target-file
+  recall lift, but latency is no longer blocked by generated fixture traversal
+  on this proof repo.
 - Treat cloud embeddings/reranking as disabled unless an explicit repo policy
   allows them.
 

@@ -4,7 +4,7 @@ milestone: v2.5
 milestone_name: Production Retrieval Quality
 status: active
 last_updated: "2026-06-02T00:00:00Z"
-last_activity: 2026-06-02 -- Phase 166 added source-free persisted query-vector reuse and single-pass local_fastembed stored-candidate expansion, reducing RefactoringMiner steady-state fresh-process semantic search to 12.08s
+last_activity: 2026-06-02 -- Phase 167 pruned generated inventory trees before walking, reducing RefactoringMiner semantic seed to 5.18s and steady-state fresh-process semantic search to 0.11s
 progress:
   total_phases: 89
   completed_phases: 89
@@ -17,10 +17,10 @@ progress:
 
 ## Current Position
 
-Phase: 166 - Semantic Query Vector Reuse
-Plan: 166-semantic-query-vector-reuse
+Phase: 167 - Pruned Generated Inventory Walk
+Plan: 167-pruned-generated-inventory-walk
 Status: Complete
-Last activity: 2026-06-02 -- Phase 166 added storage schema v4 for source-free semantic query vectors, reused persisted query embeddings by query hash, and kept `local_fastembed` stored-candidate expansion to one semantic-document pass. RefactoringMiner proof showed a fresh bounded AllMini seed creates 16 vectors, the first query writes through to 31 document vectors plus 1 query vector, `TypeScriptVisitor.java` remains the top result, and the second fresh-process search drops from Phase 165 `16.92s` to `12.08s`. Semantic remains opt-in because large-fixture inventory/search setup still costs roughly 14-15s.
+Last activity: 2026-06-02 -- Phase 167 bumped inventory schema to v4 and pruned `.git`, generated fixture/cache/build directories, and sensitive directories at the walker level when excluded by policy. RefactoringMiner proof showed generated exclusions drop from 38,242 walked files to 25 counted generated files, lexical fresh setup drops to `3.70s` and cache-hit search to `0.08s`, semantic status drops to `0.10s`, the bounded AllMini semantic seed drops from Phase 166 `55.65s` to `5.18s`, and the second fresh-process semantic search drops from `12.08s` to `0.11s` while preserving `TypeScriptVisitor.java` as top result.
 
 ## Project Reference
 
@@ -143,6 +143,7 @@ Planned phases:
 - Phase 164: Global Semantic Vector Candidates And Write-Through (complete follow-up)
 - Phase 165: Fastembed Default And Loud Index Errors (complete follow-up)
 - Phase 166: Semantic Query Vector Reuse (complete follow-up)
+- Phase 167: Pruned Generated Inventory Walk (complete follow-up)
 
 ## Last Completed Milestone
 
