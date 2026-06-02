@@ -1057,6 +1057,10 @@ mod tests {
                 resource_uri: "ctxhelm://repo/context-area/src".to_string(),
                 representative_paths: vec!["src/lib.rs".to_string()],
                 next_read_paths: vec!["src/compiler.rs".to_string()],
+                signal_counts: BTreeMap::from([
+                    ("dependency".to_string(), 2),
+                    ("lexical".to_string(), 1),
+                ]),
                 role_counts: BTreeMap::from([("source".to_string(), 3)]),
                 selected_role_counts: BTreeMap::from([("source".to_string(), 1)]),
                 candidate_count: 3,
@@ -1071,6 +1075,7 @@ mod tests {
                 resource_uri: "ctxhelm://repo/context-area/tests".to_string(),
                 representative_paths: vec!["tests/lib_test.rs".to_string()],
                 next_read_paths: vec!["tests/lib_test.rs".to_string()],
+                signal_counts: BTreeMap::from([("related_test".to_string(), 2)]),
                 role_counts: BTreeMap::from([("test".to_string(), 2)]),
                 selected_role_counts: BTreeMap::new(),
                 candidate_count: 2,
@@ -1098,6 +1103,8 @@ mod tests {
         assert!(markdown.contains("`src/compiler.rs`"));
         assert!(markdown.contains("`tests/lib_test.rs`"));
         assert!(markdown.contains("Next reads"));
+        assert!(markdown.contains("Signals: dependency=2, lexical=1"));
+        assert!(markdown.contains("Signals: related_test=2"));
         assert!(markdown.contains("Role counts: source=3"));
         assert!(markdown.contains("Selected roles: source=1"));
         assert!(markdown.contains("Role counts: test=2"));
@@ -1903,6 +1910,7 @@ mod tests {
                     resource_uri: "ctxhelm://repo/context-area/src".to_string(),
                     representative_paths: vec!["src/lib.rs".to_string()],
                     next_read_paths: vec![],
+                    signal_counts: BTreeMap::from([("lexical".to_string(), 1)]),
                     role_counts: BTreeMap::from([("source".to_string(), 1)]),
                     selected_role_counts: BTreeMap::from([("source".to_string(), 1)]),
                     candidate_count: 1,

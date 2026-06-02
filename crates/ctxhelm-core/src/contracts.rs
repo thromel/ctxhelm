@@ -57,6 +57,8 @@ pub struct ContextArea {
     #[serde(default)]
     pub next_read_paths: Vec<String>,
     #[serde(default)]
+    pub signal_counts: BTreeMap<String, usize>,
+    #[serde(default)]
     pub role_counts: BTreeMap<String, usize>,
     #[serde(default)]
     pub selected_role_counts: BTreeMap<String, usize>,
@@ -1643,6 +1645,7 @@ mod tests {
                 resource_uri: "ctxhelm://repo/context-area/src".to_string(),
                 representative_paths: vec!["src/lib.rs".to_string()],
                 next_read_paths: vec![],
+                signal_counts: BTreeMap::from([("lexical".to_string(), 1)]),
                 role_counts: BTreeMap::from([("source".to_string(), 1)]),
                 selected_role_counts: BTreeMap::from([("source".to_string(), 1)]),
                 candidate_count: 1,
@@ -1692,6 +1695,9 @@ mod tests {
                 "resourceUri": "ctxhelm://repo/context-area/src",
                 "representativePaths": ["src/lib.rs"],
                 "nextReadPaths": [],
+                "signalCounts": {
+                    "lexical": 1
+                },
                 "roleCounts": {
                     "source": 1
                 },
@@ -1855,6 +1861,7 @@ mod tests {
                 resource_uri: "ctxhelm://repo/context-area/src".to_string(),
                 representative_paths: vec!["src/lib.rs".to_string()],
                 next_read_paths: vec![],
+                signal_counts: BTreeMap::from([("lexical".to_string(), 1)]),
                 role_counts: BTreeMap::from([("source".to_string(), 1)]),
                 selected_role_counts: BTreeMap::from([("source".to_string(), 1)]),
                 candidate_count: 1,

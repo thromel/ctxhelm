@@ -20,6 +20,8 @@ Phase 182 makes that fixture-object problem release-safe: proof fixture preparat
 
 Phase 183 refreshes the default clean fixture proof to a reachable VeriSchema revision and adds source-free repo-scoped product-proof runtime ceilings. The default runtime gate remains `5000ms` per commit, while the refreshed RefactoringMiner detached fixture explicitly carries `proofRuntimeCeilingMillis: 15000` after measured cold proof cost exceeded the default. Cold and warm Phase 183 proof both promote, and the release gate now uses the refreshed config and proof artifact name by default.
 
+Phase 184 adds source-free signal profiles to broad `contextAreas` and generated context packs. Plans and packs now show whether each area is being pressured by lexical, dependency, co-change, semantic, test, docs, config, anchor, history, current-diff, or memory signals. A dependency-reserve widening experiment was measured and rejected because it produced no recall lift while worsening protected miss pressure on some corpora; the accepted change keeps ranking stable and makes progressive native reads more explainable.
+
 ## v2.5 Production Retrieval Quality
 
 ## Phases
@@ -27,7 +29,7 @@ Phase 183 refreshes the default clean fixture proof to a reachable VeriSchema re
 **Phase Numbering:**
 
 - Integer phases (61, 62, 63, 64, 65): Planned v2.5 work
-- Phases 66-175: Production-readiness follow-ups from the original blocked proof and the channel-aware promotion path
+- Phases 66-184: Production-readiness follow-ups from the original blocked proof and the channel-aware promotion path
 - Decimal phases (61.1, 62.1): Urgent insertions if needed
 
 - [x] **Phase 61: Multi-Repo Quality Baselines** - Maintainers can run source-free paired baselines across RefactoringMiner and a second real repository with stable comparison artifacts.
@@ -134,6 +136,8 @@ Phase 183 refreshes the default clean fixture proof to a reachable VeriSchema re
 - [x] **Phase 177: JVM Context-Area Granularity** - Context-area grouping recognizes `src/main|test/java|kotlin` roots and emits package-level areas, making RefactoringMiner gap resources narrow enough for progressive agent reads without changing top-10 recall.
 - [x] **Phase 181: Graph Edge Budget Allocation** - Source dependency floors allocate scarce graph budget by measured edge family, preferring `precision:*` and direct `imports` before lower-yield `python_reexport` evidence.
 - [x] **Phase 182: Proof Fixture Freshness Guard** - Clean proof fixtures emit source-free readiness reports and release-gate proof verifies requested revisions and checked-out heads before using detached fixtures.
+- [x] **Phase 183: Clean Fixture Refresh Runtime Ceiling** - The default clean fixture proof uses a reachable VeriSchema revision and source-free per-repo runtime ceilings while keeping the global product-proof ceiling unchanged.
+- [x] **Phase 184: Context Area Signal Profiles** - Broad context areas and packs expose source-free signal-family counts so agents can choose progressive native reads without expanding the protected top-10 budget.
 - [x] **Phase 162: Feature-Enabled Local Fastembed Gate Proof** - A feature-enabled `local_fastembed` gate run on clean RefactoringMiner now proves the production-local backend works end-to-end, but remains held because it adds no semantic-only target hits and is still slower than default; the gate emits a source-free diagnostic for that condition.
 - [x] **Phase 163: Persisted Semantic Vector Reuse** - Fresh CLI/MCP processes can reuse persisted source-free semantic document vectors instead of recomputing every candidate vector.
 - [x] **Phase 164: Global Semantic Vector Candidates And Write-Through** - Semantic search can include persisted vector candidates outside the lexical prefilter and write through newly embedded candidate misses.
@@ -986,6 +990,10 @@ Phases execute in numeric order: 61 -> 62 -> 63 -> 64 -> 65 -> 66 -> 67 -> 69 ->
 | 178. Explained All-File Trails | Evidence artifact | Complete | 2026-06-02 |
 | 179. Graph Edge Profiles | Evidence artifact | Complete | 2026-06-02 |
 | 180. Graph Edge Ablations | Evidence artifact | Complete | 2026-06-02 |
+| 181. Graph Edge Budget Allocation | Evidence artifact | Complete | 2026-06-03 |
+| 182. Proof Fixture Freshness Guard | Evidence artifact | Complete | 2026-06-03 |
+| 183. Clean Fixture Refresh Runtime Ceiling | Evidence artifact | Complete | 2026-06-03 |
+| 184. Context Area Signal Profiles | Evidence artifact | Complete | 2026-06-03 |
 
 ---
 *Roadmap created: 2026-05-22*

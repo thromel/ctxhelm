@@ -1064,10 +1064,12 @@ fn render_context_areas(plan: &ContextPlan) -> String {
                 };
                 let role_counts = render_role_counts(&area.role_counts);
                 let selected_role_counts = render_role_counts(&area.selected_role_counts);
+                let signal_counts = render_role_counts(&area.signal_counts);
                 format!(
-                    "- `{}`: {} Role counts: {}. Selected roles: {}. Representative paths: {}. Next reads: {}. Resource: {}",
+                    "- `{}`: {} Signals: {}. Role counts: {}. Selected roles: {}. Representative paths: {}. Next reads: {}. Resource: {}",
                     area.area,
                     area.reason,
+                    signal_counts,
                     role_counts,
                     selected_role_counts,
                     representatives,

@@ -547,6 +547,7 @@ fn context_areas_for_plan(
         let area = context_area_for_path(path);
         let entry = areas.entry(area).or_default();
         entry.record_role(&candidate.role);
+        entry.record_signals(candidate);
         if entry.unique_paths.insert(path.to_string()) {
             entry.candidate_count += 1;
             if entry.representative_paths.len() < 3 {
@@ -570,6 +571,7 @@ fn context_areas_for_plan(
                 resource_uri: context_area_resource_uri(&area),
                 representative_paths: accumulator.representative_paths.clone(),
                 next_read_paths: accumulator.next_read_paths.clone(),
+                signal_counts: accumulator.signal_counts(),
                 role_counts: accumulator.role_counts(),
                 selected_role_counts: accumulator.selected_role_counts(),
                 candidate_count: accumulator.candidate_count,
@@ -687,6 +689,7 @@ struct AreaAccumulator {
     selected_config_count: usize,
     selected_schema_count: usize,
     selected_docs_count: usize,
+    signal_counts: BTreeMap<String, usize>,
 }
 
 impl AreaAccumulator {
@@ -709,6 +712,21 @@ impl AreaAccumulator {
             Some(FileRole::Schema) => self.selected_schema_count += 1,
             Some(FileRole::Docs) => self.selected_docs_count += 1,
             _ => {}
+        }
+    }
+
+    fn record_signals(&mut self, candidate: &RetrievalCandidate) {
+        let mut seen = BTreeSet::new();
+        for score in &candidate.signal_scores {
+            seen.insert(retrieval_signal_key(&score.signal));
+        }
+        if seen.is_empty() {
+            for evidence in &candidate.evidence {
+                seen.insert(retrieval_signal_key(&evidence.signal));
+            }
+        }
+        for signal in seen {
+            *self.signal_counts.entry(signal.to_string()).or_insert(0) += 1;
         }
     }
 
@@ -738,6 +756,28 @@ impl AreaAccumulator {
             ("schema", self.selected_schema_count),
             ("docs", self.selected_docs_count),
         ])
+    }
+
+    fn signal_counts(&self) -> BTreeMap<String, usize> {
+        self.signal_counts.clone()
+    }
+}
+
+fn retrieval_signal_key(signal: &RetrievalSignalKind) -> &'static str {
+    match signal {
+        RetrievalSignalKind::Lexical => "lexical",
+        RetrievalSignalKind::LexicalExpansion => "lexical_expansion",
+        RetrievalSignalKind::Symbol => "symbol",
+        RetrievalSignalKind::Dependency => "dependency",
+        RetrievalSignalKind::RelatedTest => "related_test",
+        RetrievalSignalKind::Semantic => "semantic",
+        RetrievalSignalKind::CoChange => "co_change",
+        RetrievalSignalKind::CurrentDiff => "current_diff",
+        RetrievalSignalKind::History => "history",
+        RetrievalSignalKind::Docs => "docs",
+        RetrievalSignalKind::Config => "config",
+        RetrievalSignalKind::Anchor => "anchor",
+        RetrievalSignalKind::Memory => "memory",
     }
 }
 
@@ -2272,7 +2312,11 @@ mod tests {
                     role: Some(FileRole::Source),
                     reason_code: "lexical_match".to_string(),
                     confidence: 0.9,
-                    signal_scores: vec![],
+                    signal_scores: vec![RetrievalSignalScore {
+                        signal: RetrievalSignalKind::Dependency,
+                        score: 0.8,
+                        weight: 0.2,
+                    }],
                     evidence: vec![],
                 },
                 RetrievalCandidate {
@@ -2281,7 +2325,11 @@ mod tests {
                     role: Some(FileRole::Docs),
                     reason_code: "lexical_match".to_string(),
                     confidence: 0.8,
-                    signal_scores: vec![],
+                    signal_scores: vec![RetrievalSignalScore {
+                        signal: RetrievalSignalKind::Lexical,
+                        score: 0.8,
+                        weight: 0.35,
+                    }],
                     evidence: vec![],
                 },
                 RetrievalCandidate {
@@ -2290,7 +2338,11 @@ mod tests {
                     role: Some(FileRole::Docs),
                     reason_code: "lexical_match".to_string(),
                     confidence: 0.7,
-                    signal_scores: vec![],
+                    signal_scores: vec![RetrievalSignalScore {
+                        signal: RetrievalSignalKind::CoChange,
+                        score: 0.7,
+                        weight: 0.2,
+                    }],
                     evidence: vec![],
                 },
             ],
@@ -2315,6 +2367,16 @@ mod tests {
             docs_area.role_counts.get("docs").copied(),
             Some(2),
             "context areas should expose source-free role mix"
+        );
+        assert_eq!(
+            docs_area.signal_counts.get("lexical").copied(),
+            Some(1),
+            "context areas should expose source-free signal mix"
+        );
+        assert_eq!(
+            docs_area.signal_counts.get("co_change").copied(),
+            Some(1),
+            "context areas should preserve history pressure"
         );
         assert!(
             docs_area.selected_role_counts.is_empty(),

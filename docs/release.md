@@ -315,6 +315,15 @@ global runtime-threshold change. The cold Phase 183 proof promotes with
 RefactoringMiner as a context-channel lexical-ceiling `match` and ctxhelm,
 ReAgent, and VeriSchema as `beat`.
 
+Phase 184 adds source-free `signalCounts` to task-conditioned context areas and
+renders them in context packs as `Signals:`. This is release-relevant because it
+keeps the protected top-10 ranking stable while making broad progressive reads
+auditable: an agent can see whether an area was surfaced by lexical,
+dependency, co-change, semantic, test, docs, config, anchor, history,
+current-diff, or memory signals before deciding which native file reads to do
+next. The accepted change followed a rejected dependency-reserve widening
+experiment that produced no recall lift in the clean four-repo proof.
+
 The optional real-client evidence wrappers are:
 
 - `scripts/smoke-codex-mcp.sh`

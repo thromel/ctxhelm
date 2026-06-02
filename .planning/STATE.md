@@ -3,11 +3,11 @@ gsd_state_version: 1.0
 milestone: v2.5
 milestone_name: Production Retrieval Quality
 status: active
-last_updated: "2026-06-02T19:45:39Z"
-last_activity: 2026-06-03 -- Phase 183 refreshes the default clean fixture proof to a reachable VeriSchema revision and adds repo-scoped product-proof runtime ceilings so large detached cold fixtures do not weaken the global 5000ms gate
+last_updated: "2026-06-02T20:48:20Z"
+last_activity: 2026-06-03 -- Phase 184 adds source-free signal profiles to context areas so broad progressive guidance tells agents which retrieval signals are pressuring each area without changing the protected top-10 budget
 progress:
-  total_phases: 95
-  completed_phases: 95
+  total_phases: 96
+  completed_phases: 96
   total_plans: 7
   completed_plans: 7
   percent: 100
@@ -17,10 +17,10 @@ progress:
 
 ## Current Position
 
-Phase: 183 - Clean Fixture Refresh Runtime Ceiling
-Plan: 183-clean-fixture-refresh-runtime-ceiling
+Phase: 184 - Context Area Signal Profiles
+Plan: 184-context-area-signal-profiles
 Status: Complete
-Last activity: 2026-06-03 -- Phase 183 adds source-free `proofRuntimeCeilingMillis` per benchmark repository, keeps the default product-proof runtime gate at `5000ms` per commit, and wires `.planning/e2e/2026-06-03-phase183-clean-fixture-refresh-config.json` into the release gate as the default clean fixture proof. Cold proof promotes from `/tmp/ctxhelm-rd/phase183-clean-fixture-refresh-proof-scoped.json` with RefactoringMiner using an explicit `15000ms` ceiling after observing `11803ms` per commit, while ctxhelm, ReAgent, and VeriSchema stay on the default ceiling and beat lexical/context proof requirements. Warm proof also promotes from `/tmp/ctxhelm-rd/phase183-clean-fixture-refresh-warm-proof-scoped.json`.
+Last activity: 2026-06-03 -- Phase 184 adds source-free `signalCounts` to `contextAreas` and renders `Signals:` in broad context-area pack guidance. The accepted change improves progressive native-read guidance without changing top-10 ranking. A dependency-reserve widening experiment was rejected after a four-repo proof showed zero file/source/test/effective-validation recall lift and worse protected miss pressure on some corpora. Fresh proof promotes from `/tmp/ctxhelm-rd/phase184-context-area-signal-proof.json`, and `143` historical context-area rows contain non-empty signal profiles.
 
 ## Project Reference
 
@@ -152,6 +152,17 @@ Planned phases:
 - Phase 171: Governance Doc Priority (complete follow-up)
 - Phase 172: Benchmarking Governance Doc Priority (complete follow-up)
 - Phase 173: Source Recall Promotion Guard (complete follow-up)
+- Phase 174: Source Recall Release Proof Contract (complete follow-up)
+- Phase 175: Semantic Missed Target Gap Families (complete follow-up)
+- Phase 176: Focused Context-Area Guidance (complete follow-up)
+- Phase 177: JVM Context-Area Granularity (complete follow-up)
+- Phase 178: Explained All-File Trails (complete follow-up)
+- Phase 179: Graph Edge Profiles (complete follow-up)
+- Phase 180: Graph Edge Ablations (complete follow-up)
+- Phase 181: Graph Edge Budget Allocation (complete follow-up)
+- Phase 182: Proof Fixture Freshness Guard (complete follow-up)
+- Phase 183: Clean Fixture Refresh Runtime Ceiling (complete follow-up)
+- Phase 184: Context Area Signal Profiles (complete follow-up)
 
 ## Last Completed Milestone
 
@@ -267,6 +278,8 @@ Continue production-readiness work from remaining measured gaps: make Codex CLI 
 - Phase 180 adds source-free graph edge ablations to historical eval. Latest proof notes: `.planning/e2e/2026-06-02-phase180-graph-edge-ablations.md`; fresh source-free summary: `/tmp/ctxhelm-rd/phase180-graph-edge-ablation-proof.json`; the four-repo proof promotes and VeriSchema exclusive `imports` ablation removes `1` target hit for Recall@K delta `-0.00512819`, while `python_reexport` has no exclusive top-10 target lift.
 - Phase 181 adds graph edge-family budget allocation for source dependency floors. Latest proof notes: `.planning/e2e/2026-06-03-phase181-graph-edge-budget-allocation.md`; fresh source-free summaries: `/tmp/ctxhelm-rd/phase181-graph-edge-budget-three-warm-proof.json` and `/tmp/ctxhelm-rd/phase181-current-verischema-proof.json`; focused tests pass, the warm three-fixture proof promotes, current reachable VeriSchema promotes, and the old pinned VeriSchema SHA is recorded as an unreproducible fixture freshness problem.
 - Phase 182 adds source-free proof fixture freshness reports and release-gate fixture HEAD validation. Latest proof notes: `.planning/e2e/2026-06-03-phase182-proof-fixture-freshness-guard.md`; fresh source-free reports: `/tmp/ctxhelm-rd/phase182-fixture-reports/*.fixture-status.json`; focused release-packaging tests pass and the live VeriSchema report blocks the old pinned SHA with `revisionAvailable: false`.
+- Phase 183 refreshes the clean four-repo fixture proof to the reachable VeriSchema revision and adds source-free per-repo proof runtime ceilings. Latest proof notes: `.planning/e2e/2026-06-03-phase183-clean-fixture-refresh-runtime-ceiling.md`; fresh source-free summaries: `/tmp/ctxhelm-rd/phase183-clean-fixture-refresh-proof-scoped.json` and `/tmp/ctxhelm-rd/phase183-clean-fixture-refresh-warm-proof-scoped.json`; the release gate now uses `.planning/e2e/2026-06-03-phase183-clean-fixture-refresh-config.json` by default.
+- Phase 184 adds source-free signal profiles to context-area guidance. Latest proof notes: `.planning/e2e/2026-06-03-phase184-context-area-signal-profiles.md`; fresh source-free summary: `/tmp/ctxhelm-rd/phase184-context-area-signal-proof.json`; the four-repo proof promotes and `143` historical context-area rows expose non-empty `signalCounts`.
 - Phase 129 adds public release freshness proof. Latest proof notes: `.planning/e2e/2026-06-01-phase129-public-release-freshness.md`; durable source-free summary: `.ctxhelm/e2e/phase129-public-release-freshness.json`; public `v1.1.0` targets `68383cbfc2fff00c4f53fbd2b7bf90527ac4bd7e`, current main is `a07e6be31a0605af1810e79cb18b34245fa7def0`, `gitRelation = current_descends_from_release`, `commitsAhead = 19`, and `status = outdated`.
 - Phase 130 publishes and verifies the current public `v1.1.1` archive. Latest proof notes: `.planning/e2e/2026-06-01-phase130-public-v111-release.md`; durable source-free summaries: `.ctxhelm/e2e/phase130-github-release.json`, `.ctxhelm/e2e/phase130-public-release-freshness.json`, `.ctxhelm/e2e/phase130-public-archive-install.json`, and `.ctxhelm/e2e/phase130-public-real-client-smoke.json`; public `v1.1.1` targets `6c93100fa0e4f5a5444fb7fd967c721cca49a401`, `gitRelation = same`, `commitsAhead = 0`, temporary public archive install passes version/help/doctor/first-pack checks, Claude Code `2.1.158` passes explicit-repo `prepare_task` and `get_pack`, and Codex CLI `0.44.0` remains an optional source-free skip.
 - Phase 131 publishes and verifies the product-aware `v1.1.2` archive. Latest proof notes: `.planning/e2e/2026-06-01-phase131-product-aware-freshness-release.md`; durable source-free summaries: `.ctxhelm/e2e/phase131-github-release.json`, `.ctxhelm/e2e/phase131-github-release-verify.json`, `.ctxhelm/e2e/phase131-public-release-freshness.json`, `.ctxhelm/e2e/phase131-public-archive-install.json`, and `.ctxhelm/e2e/phase131-public-real-client-smoke.json`; public `v1.1.2` targets `ac6dc97f04cd18b5f2c6c32f7a1eca49e3ef5587`, `productStatus = current`, `productCommitsAhead = 0`, temporary public archive install passes version/help/doctor/first-pack checks, Claude Code `2.1.158` passes explicit-repo `prepare_task` and `get_pack`, and Codex CLI `0.44.0` remains an optional source-free skip.

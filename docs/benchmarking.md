@@ -96,11 +96,18 @@ Prepare-task plans now expose `contextAreas` for broad multi-area prompts. This
 is an additive, source-free channel that groups candidate paths by repository
 area, reports how many candidate and selected paths each area contributed, and
 lists representative paths, concrete unselected `nextReadPaths`, source-free
-`roleCounts`, source-free `selectedRoleCounts`, and `unselectedCount`. Docs areas
-are included in this channel. It lets agents
+`roleCounts`, source-free `selectedRoleCounts`, source-free `signalCounts`, and
+`unselectedCount`. Docs areas are included in this channel. It lets agents
 inspect likely adjacent source/docs areas with native file reads without
 forcing those areas into the protected top-10 file budget, so retrieval quality
 metrics remain comparable to earlier proofs.
+
+`signalCounts` are per-area counts of candidate files by retrieval signal
+family. They are deduplicated per candidate and can include `lexical`,
+`lexical_expansion`, `symbol`, `dependency`, `related_test`, `semantic`,
+`co_change`, `current_diff`, `history`, `docs`, `config`, `anchor`, and
+`memory`. The counts explain why an area was surfaced without storing source
+text or changing the recall denominator.
 
 Dynamic MCP context-area resources expose a separate inventory-wide scope.
 `resourceScope.kind = safeInventoryArea`, `taskConditioned = false`,
