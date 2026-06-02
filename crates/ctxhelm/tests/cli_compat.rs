@@ -1190,6 +1190,7 @@ fn search_related_tests_dependencies_and_eval_history_emit_json_shapes() {
             "signalAblations",
             "tokenRoi",
             "retrievalGapSummaries",
+            "graphEdgeProfiles",
             "runtime",
             "privacyStatus",
         ],
@@ -1211,6 +1212,7 @@ fn search_related_tests_dependencies_and_eval_history_emit_json_shapes() {
     assert!(history["tokenRoi"].is_array());
     assert_eq!(history["tokenRoi"][0]["budget"], "brief");
     assert!(history["retrievalGapSummaries"].is_array());
+    assert!(history["graphEdgeProfiles"].is_array());
     assert!(history["runtime"]["totalMillis"].as_u64().is_some());
     assert!(history["runtime"]["commitMillis"].as_u64().is_some());
     assert!(history["runtime"]["overheadMillis"].as_u64().is_some());
@@ -1232,6 +1234,7 @@ fn search_related_tests_dependencies_and_eval_history_emit_json_shapes() {
                 "recommendedContextFiles",
                 "recommendedCommands",
                 "lexicalBaselineFiles",
+                "graphEdgeProfiles",
                 "fileHitsAt5",
                 "fileHitsAt10",
                 "lexicalBaselineHitsAt5",
@@ -1265,6 +1268,7 @@ fn search_related_tests_dependencies_and_eval_history_emit_json_shapes() {
         .stdout(contains("Ranking budget K: `10`"))
         .stdout(contains("Recall@K:"))
         .stdout(contains("## Signal Ablations"))
+        .stdout(contains("## Graph Edge Profiles"))
         .stdout(contains("## Runtime Diagnostics"))
         .stdout(contains("## Grouped Retrieval Failures"))
         .stdout(contains("Source text logged: `false`"));

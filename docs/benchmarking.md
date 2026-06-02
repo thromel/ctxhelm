@@ -71,6 +71,13 @@ style changes that cannot be fully covered by a small K=10 context budget, and
 `broadScopeCommitCount` summarizes that count at report level. These fields are
 source-free diagnostics; they do not remove targets from recall denominators.
 
+Historical eval reports also include source-free `graphEdgeProfiles`. These
+profiles split graph candidate evidence by edge label, such as `imports`,
+`python_reexport`, or `precision:calls`, and report candidate count,
+selected-at-10 count, retrieval-target count, target hits, and target misses.
+This keeps GraphRAG work measurable by edge family without changing the default
+ranking or adding source text to reports.
+
 Prepare-task plans now expose `contextAreas` for broad multi-area prompts. This
 is an additive, source-free channel that groups candidate paths by repository
 area, reports how many candidate and selected paths each area contributed, and

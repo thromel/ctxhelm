@@ -5053,6 +5053,24 @@ fn render_historical_eval_report(report: &HistoricalEvalReport) -> String {
     }
     output.push('\n');
 
+    output.push_str("## Graph Edge Profiles\n\n");
+    if report.graph_edge_profiles.is_empty() {
+        output.push_str("- No graph edge profile rows available.\n");
+    } else {
+        for profile in &report.graph_edge_profiles {
+            output.push_str(&format!(
+                "- `{}`: candidates `{}`, selected@10 `{}`, retrieval targets `{}`, target hits@10 `{}`, target misses@10 `{}`\n",
+                profile.edge_label,
+                profile.candidate_count,
+                profile.selected_at_10_count,
+                profile.retrieval_target_count,
+                profile.retrieval_target_hit_at_10_count,
+                profile.retrieval_target_missed_at_10_count
+            ));
+        }
+    }
+    output.push('\n');
+
     output.push_str("## Runtime Diagnostics\n\n");
     output.push_str(&format!(
         "- Total runtime ms: `{}`\n- Commit-loop runtime ms: `{}`\n- Overhead runtime ms: `{}`\n- Average commit runtime ms: `{:.2}`\n",
@@ -5914,6 +5932,14 @@ mod tests {
                 },
             ],
             retrieval_gap_summaries: Vec::new(),
+            graph_edge_profiles: vec![ctxhelm_compiler::GraphEdgeProfile {
+                edge_label: "imports".to_string(),
+                candidate_count: 2,
+                selected_at_10_count: 1,
+                retrieval_target_count: 1,
+                retrieval_target_hit_at_10_count: 1,
+                retrieval_target_missed_at_10_count: 0,
+            }],
             runtime: ctxhelm_compiler::HistoricalEvalRuntimeSummary {
                 total_millis: 250,
                 commit_millis: 250,
@@ -5983,6 +6009,14 @@ mod tests {
                 lexical_baseline_files: vec!["README.md".to_string()],
                 signal_baseline_files: Vec::new(),
                 protected_evidence: Vec::new(),
+                graph_edge_profiles: vec![ctxhelm_compiler::GraphEdgeProfile {
+                    edge_label: "imports".to_string(),
+                    candidate_count: 2,
+                    selected_at_10_count: 1,
+                    retrieval_target_count: 1,
+                    retrieval_target_hit_at_10_count: 1,
+                    retrieval_target_missed_at_10_count: 0,
+                }],
                 file_hits_at_5: vec!["src/auth.ts".to_string()],
                 file_hits_at_10: vec!["src/auth.ts".to_string()],
                 lexical_baseline_hits_at_5: vec![],
@@ -6043,6 +6077,10 @@ mod tests {
         assert!(markdown.contains("Token ROI"));
         assert!(markdown.contains("`Brief`: cutoff `5`, estimated tokens `4000`"));
         assert!(markdown.contains("larger pack adds little value `true`"));
+        assert!(markdown.contains("Graph Edge Profiles"));
+        assert!(markdown.contains(
+            "`imports`: candidates `2`, selected@10 `1`, retrieval targets `1`, target hits@10 `1`, target misses@10 `0`"
+        ));
         assert!(markdown.contains("Top Retrieval Gaps"));
         assert!(markdown.contains("`README.md` (Docs) missed `1` time"));
         assert!(markdown.contains("Lexical baseline hits@5/10: `0/0`"));

@@ -806,6 +806,8 @@ pub struct HistoricalEvalReport {
     pub signal_ablations: Vec<SignalAblationResult>,
     pub token_roi: Vec<TokenRoiMetric>,
     pub retrieval_gap_summaries: Vec<RetrievalGapSummary>,
+    #[serde(default)]
+    pub graph_edge_profiles: Vec<GraphEdgeProfile>,
     pub runtime: HistoricalEvalRuntimeSummary,
     pub low_information_commit_count: usize,
     #[serde(default)]
@@ -1126,6 +1128,17 @@ pub struct HistoricalMissingFileSummary {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
+pub struct GraphEdgeProfile {
+    pub edge_label: String,
+    pub candidate_count: usize,
+    pub selected_at_10_count: usize,
+    pub retrieval_target_count: usize,
+    pub retrieval_target_hit_at_10_count: usize,
+    pub retrieval_target_missed_at_10_count: usize,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
 pub struct HistoricalSignalRanking {
     pub signal: RetrievalSignalKind,
     pub files: Vec<String>,
@@ -1152,6 +1165,8 @@ pub struct HistoricalCommitEval {
     pub signal_baseline_files: Vec<HistoricalSignalRanking>,
     #[serde(default)]
     pub protected_evidence: Vec<HistoricalProtectedEvidenceFile>,
+    #[serde(default)]
+    pub graph_edge_profiles: Vec<GraphEdgeProfile>,
     pub file_hits_at_5: Vec<String>,
     pub file_hits_at_10: Vec<String>,
     pub lexical_baseline_hits_at_5: Vec<String>,
@@ -3962,6 +3977,7 @@ pub fn evaluate_historical_commits(
         &labels_by_path,
         10,
     );
+    let graph_edge_profiles = graph_edge_profiles(&commits);
     let protected_evidence = protected_evidence_summary(&commits);
     let runtime = historical_eval_runtime_summary(
         &commits,
@@ -3986,6 +4002,7 @@ pub fn evaluate_historical_commits(
         signal_ablations,
         token_roi,
         retrieval_gap_summaries,
+        graph_edge_profiles,
         runtime,
         low_information_commit_count: commits
             .iter()
@@ -4330,6 +4347,12 @@ fn evaluate_historical_commit_sample(
         &candidate_roles_by_path,
         10,
     );
+    let graph_edge_profiles = graph_edge_profiles_for_commit(
+        &plan,
+        &recommended_context_files,
+        &retrieval_target_paths,
+        10,
+    );
     let file_hits_at_5 = changed_file_hits(&retrieval_target_files, &recommended_context_files, 5);
     let file_hits_at_10 =
         changed_file_hits(&retrieval_target_files, &recommended_context_files, 10);
@@ -4404,6 +4427,7 @@ fn evaluate_historical_commit_sample(
             lexical_baseline_files,
             signal_baseline_files,
             protected_evidence,
+            graph_edge_profiles,
             file_hits_at_5,
             file_hits_at_10,
             lexical_baseline_hits_at_5,
@@ -6172,6 +6196,105 @@ fn protected_evidence_summary(commits: &[HistoricalCommitEval]) -> ProtectedEvid
     }
 }
 
+fn graph_edge_profiles(commits: &[HistoricalCommitEval]) -> Vec<GraphEdgeProfile> {
+    let mut by_label = BTreeMap::<String, GraphEdgeProfile>::new();
+    for commit in commits {
+        for profile in &commit.graph_edge_profiles {
+            let entry = by_label
+                .entry(profile.edge_label.clone())
+                .or_insert_with(|| GraphEdgeProfile {
+                    edge_label: profile.edge_label.clone(),
+                    candidate_count: 0,
+                    selected_at_10_count: 0,
+                    retrieval_target_count: 0,
+                    retrieval_target_hit_at_10_count: 0,
+                    retrieval_target_missed_at_10_count: 0,
+                });
+            entry.candidate_count += profile.candidate_count;
+            entry.selected_at_10_count += profile.selected_at_10_count;
+            entry.retrieval_target_count += profile.retrieval_target_count;
+            entry.retrieval_target_hit_at_10_count += profile.retrieval_target_hit_at_10_count;
+            entry.retrieval_target_missed_at_10_count +=
+                profile.retrieval_target_missed_at_10_count;
+        }
+    }
+    let mut profiles = by_label.into_values().collect::<Vec<_>>();
+    profiles.sort_by(|left, right| {
+        right
+            .retrieval_target_hit_at_10_count
+            .cmp(&left.retrieval_target_hit_at_10_count)
+            .then_with(|| right.candidate_count.cmp(&left.candidate_count))
+            .then_with(|| left.edge_label.cmp(&right.edge_label))
+    });
+    profiles
+}
+
+fn graph_edge_profiles_for_commit(
+    plan: &ContextPlan,
+    recommended_context_files: &[String],
+    retrieval_target_paths: &BTreeSet<String>,
+    limit: usize,
+) -> Vec<GraphEdgeProfile> {
+    let mut paths_by_label = BTreeMap::<String, BTreeSet<String>>::new();
+    for candidate in &plan.retrieval_candidates {
+        let Some(path) = &candidate.path else {
+            continue;
+        };
+        for evidence in &candidate.evidence {
+            if evidence.signal != RetrievalSignalKind::Dependency {
+                continue;
+            }
+            let Some(label) = evidence
+                .edge_label
+                .as_deref()
+                .filter(|label| !label.trim().is_empty())
+            else {
+                continue;
+            };
+            paths_by_label
+                .entry(label.to_string())
+                .or_default()
+                .insert(path.clone());
+        }
+    }
+
+    let selected_at_limit = recommended_context_files
+        .iter()
+        .take(limit.max(1))
+        .cloned()
+        .collect::<BTreeSet<_>>();
+    paths_by_label
+        .into_iter()
+        .map(|(edge_label, paths)| {
+            let candidate_count = paths.len();
+            let selected_at_10_count = paths
+                .iter()
+                .filter(|path| selected_at_limit.contains(path.as_str()))
+                .count();
+            let retrieval_target_count = paths
+                .iter()
+                .filter(|path| retrieval_target_paths.contains(path.as_str()))
+                .count();
+            let retrieval_target_hit_at_10_count = paths
+                .iter()
+                .filter(|path| {
+                    retrieval_target_paths.contains(path.as_str())
+                        && selected_at_limit.contains(path.as_str())
+                })
+                .count();
+            GraphEdgeProfile {
+                edge_label,
+                candidate_count,
+                selected_at_10_count,
+                retrieval_target_count,
+                retrieval_target_hit_at_10_count,
+                retrieval_target_missed_at_10_count: retrieval_target_count
+                    .saturating_sub(retrieval_target_hit_at_10_count),
+            }
+        })
+        .collect()
+}
+
 fn protected_evidence_signal_order() -> Vec<RetrievalSignalKind> {
     vec![
         RetrievalSignalKind::Anchor,
@@ -7072,7 +7195,9 @@ fn top_missing_files(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use ctxhelm_core::{ProviderPolicy, ProviderPolicyReport};
+    use ctxhelm_core::{
+        ProviderPolicy, ProviderPolicyReport, RetrievalEvidence, RetrievalSignalScore,
+    };
 
     #[test]
     fn parent_snapshot_command_helper_times_out_instead_of_hanging() {
@@ -7446,6 +7571,83 @@ mod tests {
     }
 
     #[test]
+    fn graph_edge_profiles_count_edge_family_hits_and_misses() {
+        let mut plan = crate::planning::empty_plan_for_task(TaskType::BugFix);
+        plan.retrieval_candidates = vec![
+            RetrievalCandidate {
+                kind: RetrievalCandidateKind::File,
+                path: Some("src/hit.rs".to_string()),
+                role: Some(FileRole::Source),
+                reason_code: "dependency_neighbor".to_string(),
+                confidence: 0.8,
+                signal_scores: vec![RetrievalSignalScore {
+                    signal: RetrievalSignalKind::Dependency,
+                    score: 0.8,
+                    weight: 0.75,
+                }],
+                evidence: vec![RetrievalEvidence {
+                    signal: RetrievalSignalKind::Dependency,
+                    score: 0.8,
+                    reason_code: "dependency_neighbor".to_string(),
+                    path: Some("src/hit.rs".to_string()),
+                    role: Some(FileRole::Source),
+                    edge_label: Some("imports".to_string()),
+                    commit_ids: Vec::new(),
+                    commit_count: 0,
+                }],
+            },
+            RetrievalCandidate {
+                kind: RetrievalCandidateKind::File,
+                path: Some("src/miss.rs".to_string()),
+                role: Some(FileRole::Source),
+                reason_code: "dependency_neighbor".to_string(),
+                confidence: 0.7,
+                signal_scores: vec![RetrievalSignalScore {
+                    signal: RetrievalSignalKind::Dependency,
+                    score: 0.7,
+                    weight: 0.75,
+                }],
+                evidence: vec![RetrievalEvidence {
+                    signal: RetrievalSignalKind::Dependency,
+                    score: 0.7,
+                    reason_code: "dependency_neighbor".to_string(),
+                    path: Some("src/miss.rs".to_string()),
+                    role: Some(FileRole::Source),
+                    edge_label: Some("precision:calls".to_string()),
+                    commit_ids: Vec::new(),
+                    commit_count: 0,
+                }],
+            },
+        ];
+        let targets = ["src/hit.rs".to_string(), "src/miss.rs".to_string()]
+            .into_iter()
+            .collect::<BTreeSet<_>>();
+
+        let profiles =
+            graph_edge_profiles_for_commit(&plan, &["src/hit.rs".to_string()], &targets, 10);
+
+        let imports = profiles
+            .iter()
+            .find(|profile| profile.edge_label == "imports")
+            .expect("imports edge profile");
+        assert_eq!(imports.candidate_count, 1);
+        assert_eq!(imports.selected_at_10_count, 1);
+        assert_eq!(imports.retrieval_target_count, 1);
+        assert_eq!(imports.retrieval_target_hit_at_10_count, 1);
+        assert_eq!(imports.retrieval_target_missed_at_10_count, 0);
+
+        let precision = profiles
+            .iter()
+            .find(|profile| profile.edge_label == "precision:calls")
+            .expect("precision edge profile");
+        assert_eq!(precision.candidate_count, 1);
+        assert_eq!(precision.selected_at_10_count, 0);
+        assert_eq!(precision.retrieval_target_count, 1);
+        assert_eq!(precision.retrieval_target_hit_at_10_count, 0);
+        assert_eq!(precision.retrieval_target_missed_at_10_count, 1);
+    }
+
+    #[test]
     fn semantic_contribution_diagnostics_explain_no_unique_hits_or_candidates() {
         let no_unique = SemanticContributionSummary {
             evaluated_commits: 1,
@@ -7572,6 +7774,7 @@ mod tests {
                     role: Some(FileRole::Source),
                 },
             ],
+            graph_edge_profiles: Vec::new(),
             file_hits_at_5: Vec::new(),
             file_hits_at_10: Vec::new(),
             lexical_baseline_hits_at_5: Vec::new(),
@@ -8395,6 +8598,7 @@ mod tests {
             lexical_baseline_files: Vec::new(),
             signal_baseline_files: Vec::new(),
             protected_evidence: Vec::new(),
+            graph_edge_profiles: Vec::new(),
             file_hits_at_5: Vec::new(),
             file_hits_at_10: Vec::new(),
             lexical_baseline_hits_at_5: Vec::new(),
@@ -8471,6 +8675,7 @@ mod tests {
             lexical_baseline_files: Vec::new(),
             signal_baseline_files: Vec::new(),
             protected_evidence: Vec::new(),
+            graph_edge_profiles: Vec::new(),
             file_hits_at_5: Vec::new(),
             file_hits_at_10: Vec::new(),
             lexical_baseline_hits_at_5: Vec::new(),
@@ -8707,6 +8912,7 @@ mod tests {
             signal_ablations: Vec::new(),
             token_roi: Vec::new(),
             retrieval_gap_summaries: Vec::new(),
+            graph_edge_profiles: Vec::new(),
             runtime: HistoricalEvalRuntimeSummary {
                 total_millis: 1,
                 commit_millis: 1,
@@ -8755,6 +8961,7 @@ mod tests {
                 lexical_baseline_files: Vec::new(),
                 signal_baseline_files: Vec::new(),
                 protected_evidence: Vec::new(),
+                graph_edge_profiles: Vec::new(),
                 file_hits_at_5: Vec::new(),
                 file_hits_at_10: Vec::new(),
                 lexical_baseline_hits_at_5: Vec::new(),
