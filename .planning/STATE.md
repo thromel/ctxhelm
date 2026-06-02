@@ -4,10 +4,10 @@ milestone: v2.5
 milestone_name: Production Retrieval Quality
 status: active
 last_updated: "2026-06-03T00:00:00Z"
-last_activity: 2026-06-03 -- Phase 189 balances broad governance docs against source-history reserve while preserving source recall
+last_activity: 2026-06-03 -- Phase 190 adds context-area coverage and inspection pressure for progressive broad-area reads
 progress:
-  total_phases: 100
-  completed_phases: 100
+  total_phases: 101
+  completed_phases: 101
   total_plans: 7
   completed_plans: 7
   percent: 100
@@ -17,10 +17,10 @@ progress:
 
 ## Current Position
 
-Phase: 189 - Balanced Broad History And Governance Budget
-Plan: 189-balanced-broad-history
+Phase: 190 - Context Area Inspection Pressure
+Plan: 190-context-area-inspection-pressure
 Status: Complete
-Last activity: 2026-06-03 -- Phase 189 uses the Phase 188 selected-signal profiles to rebalance broad ranking budget: root governance docs now run before broad source-history reserve, while source-history still works for standard scope and for broad tasks without governance pressure. Source-history ordering now prefers module entrypoints such as `src/lib.rs`. Fresh release-binary proof promotes from `/tmp/ctxhelm-rd/phase189-balanced-broad-history-proof.json`; ctxhelm File Recall@10 improves from `0.5587302` to `0.67777777`, ctxhelm Source Recall@10 stays `0.55`, and RefactoringMiner/ReAgent/VeriSchema stay unchanged.
+Last activity: 2026-06-03 -- Phase 190 adds source-free `coveragePercent` and `inspectionPressure` to plan-level context areas and renders those signals into context-pack broad-area guidance. Fresh release-binary proof promotes from `/tmp/ctxhelm-rd/phase190-context-area-pressure-proof.json`; all four repositories keep Phase 189 file/source/test/context-area metrics unchanged while every sampled context area carries the new fields.
 
 ## Project Reference
 
@@ -168,6 +168,7 @@ Planned phases:
 - Phase 187: Corroborated Source History Reserve (complete follow-up)
 - Phase 188: Selected Signal Profiles (complete follow-up)
 - Phase 189: Balanced Broad History And Governance Budget (complete follow-up)
+- Phase 190: Context Area Inspection Pressure (complete follow-up)
 
 ## Last Completed Milestone
 

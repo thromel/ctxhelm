@@ -1066,6 +1066,8 @@ mod tests {
                 candidate_count: 3,
                 selected_count: 1,
                 unselected_count: 2,
+                coverage_percent: 33,
+                inspection_pressure: 6,
             },
             ctxhelm_core::ContextArea {
                 area: "tests".to_string(),
@@ -1081,6 +1083,8 @@ mod tests {
                 candidate_count: 2,
                 selected_count: 0,
                 unselected_count: 2,
+                coverage_percent: 0,
+                inspection_pressure: 4,
             },
         ];
 
@@ -1103,6 +1107,8 @@ mod tests {
         assert!(markdown.contains("`src/compiler.rs`"));
         assert!(markdown.contains("`tests/lib_test.rs`"));
         assert!(markdown.contains("Next reads"));
+        assert!(markdown.contains("Coverage: 33% selected, pressure 6"));
+        assert!(markdown.contains("pressure 4, coverage 0%"));
         assert!(markdown.contains("Signals: dependency=2, lexical=1"));
         assert!(markdown.contains("Signals: related_test=2"));
         assert!(markdown.contains("Role counts: source=3"));
@@ -1917,6 +1923,8 @@ mod tests {
                     candidate_count: 1,
                     selected_count: 1,
                     unselected_count: 0,
+                    coverage_percent: 100,
+                    inspection_pressure: 0,
                 }],
                 confidence: 0.8,
                 query_trace: None,

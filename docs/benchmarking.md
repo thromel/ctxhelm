@@ -772,6 +772,11 @@ Recommendation today:
   such as `src/lib.rs`. The four-repo proof still promotes; ctxhelm File
   Recall@10 improves (`0.5587302 -> 0.67777777`) while ctxhelm Source Recall@10
   stays `0.55`.
+- Phase 190 adds `coveragePercent` and `inspectionPressure` to plan-level
+  `contextAreas` and renders those fields in context-pack guidance. This makes
+  broad-area hints more actionable for progressive native reads without spending
+  more top-10 target-file budget. The four-repo proof still promotes with Phase
+  189 file/source/test/context-area metrics unchanged.
 - Treat cloud embeddings/reranking as disabled unless an explicit repo policy
   allows them.
 

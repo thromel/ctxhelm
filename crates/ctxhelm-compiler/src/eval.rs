@@ -9376,6 +9376,8 @@ mod tests {
                 candidate_count: 3,
                 selected_count: 1,
                 unselected_count: 2,
+                coverage_percent: 33,
+                inspection_pressure: 6,
             }],
             confidence: 0.5,
             query_trace: None,

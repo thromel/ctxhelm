@@ -989,11 +989,18 @@ fn render_context_areas(plan: &ContextPlan) -> String {
     let mut output = String::from(
         "Use these source-free area hints for progressive native reads when the target-file list is too narrow for the task. Inspect representative paths from zero-selected areas first, then ask for a deeper pack only if those reads do not explain the change.\n\n",
     );
-    let zero_selected = plan
+    let mut zero_selected = plan
         .context_areas
         .iter()
         .filter(|area| area.selected_count == 0)
         .collect::<Vec<_>>();
+    zero_selected.sort_by(|left, right| {
+        right
+            .inspection_pressure
+            .cmp(&left.inspection_pressure)
+            .then_with(|| right.candidate_count.cmp(&left.candidate_count))
+            .then_with(|| left.area.cmp(&right.area))
+    });
     if !zero_selected.is_empty() {
         output.push_str("Zero-selected areas to inspect next:\n");
         output.push_str(
@@ -1024,8 +1031,12 @@ fn render_context_areas(plan: &ContextPlan) -> String {
                         format!("resource `{}`", area.resource_uri)
                     };
                     format!(
-                        "- `{}`: next reads {} ({})",
-                        area.area, next_reads, resource
+                        "- `{}`: pressure {}, coverage {}%, next reads {} ({})",
+                        area.area,
+                        area.inspection_pressure,
+                        area.coverage_percent,
+                        next_reads,
+                        resource
                     )
                 })
                 .collect::<Vec<_>>()
@@ -1066,9 +1077,11 @@ fn render_context_areas(plan: &ContextPlan) -> String {
                 let selected_role_counts = render_role_counts(&area.selected_role_counts);
                 let signal_counts = render_role_counts(&area.signal_counts);
                 format!(
-                    "- `{}`: {} Signals: {}. Role counts: {}. Selected roles: {}. Representative paths: {}. Next reads: {}. Resource: {}",
+                    "- `{}`: {} Coverage: {}% selected, pressure {}. Signals: {}. Role counts: {}. Selected roles: {}. Representative paths: {}. Next reads: {}. Resource: {}",
                     area.area,
                     area.reason,
+                    area.coverage_percent,
+                    area.inspection_pressure,
                     signal_counts,
                     role_counts,
                     selected_role_counts,

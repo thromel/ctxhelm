@@ -66,6 +66,10 @@ pub struct ContextArea {
     pub selected_count: usize,
     #[serde(default)]
     pub unselected_count: usize,
+    #[serde(default)]
+    pub coverage_percent: u8,
+    #[serde(default)]
+    pub inspection_pressure: usize,
 }
 
 pub fn context_area_for_path(path: &str) -> String {
@@ -1651,6 +1655,8 @@ mod tests {
                 candidate_count: 1,
                 selected_count: 1,
                 unselected_count: 0,
+                coverage_percent: 100,
+                inspection_pressure: 0,
             }],
             recommended_commands: vec![],
             pack_options: vec![PackOption {
@@ -1706,7 +1712,9 @@ mod tests {
                 },
                 "candidateCount": 1,
                 "selectedCount": 1,
-                "unselectedCount": 0
+                "unselectedCount": 0,
+                "coveragePercent": 100,
+                "inspectionPressure": 0
             }],
             "recommendedCommands": [],
             "packOptions": [{
@@ -1867,6 +1875,8 @@ mod tests {
                 candidate_count: 1,
                 selected_count: 1,
                 unselected_count: 0,
+                coverage_percent: 100,
+                inspection_pressure: 0,
             }],
             recommended_commands: vec![],
             pack_options: vec![],

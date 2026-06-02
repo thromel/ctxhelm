@@ -565,6 +565,9 @@ fn context_areas_for_plan(
     let mut areas = areas
         .into_iter()
         .map(|(area, accumulator)| {
+            let unselected_count = accumulator
+                .candidate_count
+                .saturating_sub(accumulator.selected_count);
             let context_area = ContextArea {
                 area: area.clone(),
                 reason: context_area_reason(&accumulator, multi_area_task),
@@ -576,9 +579,12 @@ fn context_areas_for_plan(
                 selected_role_counts: accumulator.selected_role_counts(),
                 candidate_count: accumulator.candidate_count,
                 selected_count: accumulator.selected_count,
-                unselected_count: accumulator
-                    .candidate_count
-                    .saturating_sub(accumulator.selected_count),
+                unselected_count,
+                coverage_percent: context_area_coverage_percent(
+                    accumulator.selected_count,
+                    accumulator.candidate_count,
+                ),
+                inspection_pressure: context_area_inspection_pressure(&accumulator),
             };
             RankedContextArea {
                 context_area,
@@ -623,6 +629,12 @@ fn context_areas_for_plan(
                     .candidate_count
                     .cmp(&left.context_area.candidate_count)
             })
+            .then_with(|| {
+                right
+                    .context_area
+                    .inspection_pressure
+                    .cmp(&left.context_area.inspection_pressure)
+            })
             .then_with(|| left.context_area.area.cmp(&right.context_area.area))
     });
     let mut areas = areas
@@ -631,6 +643,29 @@ fn context_areas_for_plan(
         .collect::<Vec<_>>();
     areas.truncate(MAX_CONTEXT_AREAS);
     areas
+}
+
+fn context_area_coverage_percent(selected_count: usize, candidate_count: usize) -> u8 {
+    if candidate_count == 0 {
+        return 0;
+    }
+    let percent = selected_count.saturating_mul(100) / candidate_count;
+    percent.min(100) as u8
+}
+
+fn context_area_inspection_pressure(accumulator: &AreaAccumulator) -> usize {
+    let unselected_source_like = accumulator
+        .source_like_count()
+        .saturating_sub(accumulator.selected_source_like_count());
+    let unselected_validation = accumulator
+        .test_count
+        .saturating_sub(accumulator.selected_test_count);
+    let unselected_docs = accumulator
+        .docs_count
+        .saturating_sub(accumulator.selected_docs_count);
+    unselected_source_like.saturating_mul(3)
+        + unselected_validation.saturating_mul(2)
+        + unselected_docs
 }
 
 fn context_area_reason(accumulator: &AreaAccumulator, multi_area_task: bool) -> String {
@@ -2363,6 +2398,11 @@ mod tests {
         assert_eq!(docs_area.candidate_count, 2);
         assert_eq!(docs_area.selected_count, 0);
         assert_eq!(docs_area.unselected_count, 2);
+        assert_eq!(docs_area.coverage_percent, 0);
+        assert_eq!(
+            docs_area.inspection_pressure, 2,
+            "docs-only zero-selected areas should carry bounded inspection pressure"
+        );
         assert_eq!(
             docs_area.role_counts.get("docs").copied(),
             Some(2),

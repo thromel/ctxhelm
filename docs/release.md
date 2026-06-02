@@ -360,6 +360,14 @@ module entrypoints such as `src/lib.rs`. The fresh four-repo proof promotes;
 ctxhelm File Recall@10 improves (`0.5587302 -> 0.67777777`) while ctxhelm Source
 Recall@10 stays `0.55`, and the other measured repositories stay unchanged.
 
+Phase 190 adds source-free context-area coverage and inspection-pressure fields
+to prepared plans and packs. `coveragePercent` reports selected paths divided by
+candidate paths, while `inspectionPressure` weights under-read
+source/config/schema paths ahead of tests and docs. Pack guidance now orders
+zero-selected areas by pressure so agents can prioritize progressive native
+reads without changing target-file budget. The fresh four-repo proof promotes
+with Phase 189 file/source/test/context-area metrics unchanged.
+
 The optional real-client evidence wrappers are:
 
 - `scripts/smoke-codex-mcp.sh`
