@@ -538,11 +538,15 @@ fn select_target_files(
         })
         .collect::<Vec<_>>();
     lexical_floor.sort_by(|(left_score, left), (right_score, right)| {
-        right_score
-            .total_cmp(left_score)
-            .then_with(|| left.lexical_rank.cmp(&right.lexical_rank))
-            .then_with(|| right.rank_score.total_cmp(&left.rank_score))
-            .then_with(|| left.candidate.path.cmp(&right.candidate.path))
+        lexical_floor_path_priority(left)
+            .cmp(&lexical_floor_path_priority(right))
+            .then_with(|| {
+                right_score
+                    .total_cmp(left_score)
+                    .then_with(|| left.lexical_rank.cmp(&right.lexical_rank))
+                    .then_with(|| right.rank_score.total_cmp(&left.rank_score))
+                    .then_with(|| left.candidate.path.cmp(&right.candidate.path))
+            })
     });
 
     let symbol_floor_reserve = if has_active_context || !has_symbol_target_candidates(candidates) {
@@ -701,11 +705,15 @@ fn source_lexical_floor(candidates: &[RankedCandidate]) -> Vec<(f32, &RankedCand
         })
         .collect::<Vec<_>>();
     source_lexical_floor.sort_by(|(left_score, left), (right_score, right)| {
-        right_score
-            .total_cmp(left_score)
-            .then_with(|| left.lexical_rank.cmp(&right.lexical_rank))
-            .then_with(|| right.rank_score.total_cmp(&left.rank_score))
-            .then_with(|| left.candidate.path.cmp(&right.candidate.path))
+        source_floor_path_priority(left)
+            .cmp(&source_floor_path_priority(right))
+            .then_with(|| {
+                right_score
+                    .total_cmp(left_score)
+                    .then_with(|| left.lexical_rank.cmp(&right.lexical_rank))
+                    .then_with(|| right.rank_score.total_cmp(&left.rank_score))
+                    .then_with(|| left.candidate.path.cmp(&right.candidate.path))
+            })
     });
     source_lexical_floor
 }
@@ -725,10 +733,14 @@ fn source_symbol_floor(candidates: &[RankedCandidate]) -> Vec<(f32, &RankedCandi
         })
         .collect::<Vec<_>>();
     source_symbol_floor.sort_by(|(left_score, left), (right_score, right)| {
-        right_score
-            .total_cmp(left_score)
-            .then_with(|| right.rank_score.total_cmp(&left.rank_score))
-            .then_with(|| left.candidate.path.cmp(&right.candidate.path))
+        source_floor_path_priority(left)
+            .cmp(&source_floor_path_priority(right))
+            .then_with(|| {
+                right_score
+                    .total_cmp(left_score)
+                    .then_with(|| right.rank_score.total_cmp(&left.rank_score))
+                    .then_with(|| left.candidate.path.cmp(&right.candidate.path))
+            })
     });
     source_symbol_floor
 }
@@ -906,6 +918,52 @@ fn is_workflow_script_path(path: &str) -> bool {
         || lower.ends_with(".zsh")
         || lower.ends_with("/makefile")
         || lower == "makefile"
+}
+
+fn source_floor_path_priority(candidate: &RankedCandidate) -> u8 {
+    candidate
+        .candidate
+        .path
+        .as_deref()
+        .map(source_path_priority)
+        .unwrap_or(2)
+}
+
+fn source_path_priority(path: &str) -> u8 {
+    let Some(root) = path.split('/').find(|component| !component.is_empty()) else {
+        return 2;
+    };
+    if is_auxiliary_source_root(root) {
+        1
+    } else {
+        0
+    }
+}
+
+fn lexical_floor_path_priority(candidate: &RankedCandidate) -> u8 {
+    if candidate.candidate.role == Some(FileRole::Source) {
+        source_floor_path_priority(candidate)
+    } else {
+        0
+    }
+}
+
+fn is_auxiliary_source_root(root: &str) -> bool {
+    matches!(
+        root,
+        "bench"
+            | "benches"
+            | "benchmark"
+            | "benchmarks"
+            | "demo"
+            | "demos"
+            | "example"
+            | "examples"
+            | "notebook"
+            | "notebooks"
+            | "sample"
+            | "samples"
+    )
 }
 
 fn governance_doc_floor(candidates: &[RankedCandidate]) -> Vec<(f32, &RankedCandidate)> {
@@ -1658,6 +1716,41 @@ mod tests {
                 "src/lexical-2.ts",
                 "src/lexical-3.ts",
                 "src/lexical-4.ts",
+            ]
+        );
+    }
+
+    #[test]
+    fn selection_prefers_implementation_sources_over_auxiliary_examples_in_source_floor() {
+        let candidates = rank_candidates(RankingInput {
+            lexical_results: vec![
+                lexical("examples/full_workflow_example.py", 20.0),
+                lexical("schema_agent/agents/base.py", 8.0),
+                lexical("schema_agent/agents/normalization.py", 8.0),
+                lexical("schema_agent/core/routing.py", 8.0),
+            ],
+            roles: roles([
+                ("examples/full_workflow_example.py", FileRole::Source),
+                ("schema_agent/agents/base.py", FileRole::Source),
+                ("schema_agent/agents/normalization.py", FileRole::Source),
+                ("schema_agent/core/routing.py", FileRole::Source),
+            ]),
+            ..RankingInput::default()
+        });
+
+        let selection = select_ranked_candidates_for_scope(&candidates, 3, 0, true);
+        let paths = selection
+            .target_files
+            .iter()
+            .map(|target| target.path.as_str())
+            .collect::<Vec<_>>();
+
+        assert_eq!(
+            paths,
+            vec![
+                "schema_agent/agents/base.py",
+                "schema_agent/agents/normalization.py",
+                "schema_agent/core/routing.py",
             ]
         );
     }

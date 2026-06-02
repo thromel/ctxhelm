@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v2.5
 milestone_name: Production Retrieval Quality
 status: active
-last_updated: "2026-06-02T00:00:00Z"
-last_activity: 2026-06-02 -- Phase 169 fixed a measured RefactoringMiner graph-ordering/context-balance miss; two-commit File Recall@10 improved from 0.5833334 to 0.75 and the ranked_below_budget_dependency gap disappeared
+last_updated: "2026-06-02T03:52:31Z"
+last_activity: 2026-06-02 -- Phase 170 preserved the four-repo clean-cold promotion while demoting auxiliary example roots in source-floor ranking; average File Recall@10 improved from 0.54832906 to 0.5499957 and VeriSchema Source Recall@10 improved from 0.2624269 to 0.2763158 without validation regression
 progress:
   total_phases: 90
   completed_phases: 90
@@ -17,10 +17,10 @@ progress:
 
 ## Current Position
 
-Phase: 169 - Graph Ordering And Context Balance
-Plan: 169-graph-ordering-and-context-balance
+Phase: 170 - Auxiliary Source Priority
+Plan: 170-auxiliary-source-priority
 Status: Complete
-Last activity: 2026-06-02 -- Phase 169 targeted the coupled-source misses left after semantic failed to lift RefactoringMiner. The `UMLClassBaseDiff.java` miss remains correctly classified as `area_context_only`, but the `UMLOperationDiff.java` miss had a direct graph edge from `UMLOperationBodyMapper.java`. Related dependency retrieval now prefers outgoing seed imports, uses source-free identifier-token affinity, preserves dependency retriever order during ranking, reserves bounded standard-scope dependency evidence, and balances validation-test reserve at one-quarter of a 10-item context pack. The exact two-commit RefactoringMiner proof improved File/Source Recall@10 from `0.5833334` to `0.75` versus lexical `0.5833334`.
+Last activity: 2026-06-02 -- Phase 170 followed the clean four-repo proof after Phase 169 and fixed a measured broad-source ranking pressure: high-scoring auxiliary example sources could consume constrained top-10 context slots ahead of implementation files. Source lexical and symbol floors now prefer implementation roots over auxiliary roots such as `examples/`, while preserving `scripts/` as normal source after proof showed it is product code for ReAgent. The four-repo clean-cold proof still promotes, average File Recall@10 improves from `0.54832906` to `0.5499957`, average lift vs lexical improves from `+0.09123646` to `+0.09290312`, VeriSchema Source Recall@10 improves from `0.2624269` to `0.2763158`, and Test Recall@10 remains `0.67989415`.
 
 ## Project Reference
 
@@ -146,6 +146,7 @@ Planned phases:
 - Phase 167: Pruned Generated Inventory Walk (complete follow-up)
 - Phase 168: Semantic Alias And Noise Diagnostics (complete follow-up)
 - Phase 169: Graph Ordering And Context Balance (complete follow-up)
+- Phase 170: Auxiliary Source Priority (complete follow-up)
 
 ## Last Completed Milestone
 
