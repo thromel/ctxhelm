@@ -56,6 +56,9 @@ use std::path::PathBuf;
 use std::time::{SystemTime, UNIX_EPOCH};
 use uuid::Uuid;
 
+const DEFAULT_LOCAL_FASTEMBED_INDEX_LIMIT: usize = 16;
+const LOCAL_FASTEMBED_PROVIDER_NAME: &str = "local_fastembed";
+
 #[derive(Debug, Parser)]
 #[command(name = "ctxhelm")]
 #[command(about = "ctxhelm: agent-native context packs for coding agents")]
@@ -1457,7 +1460,7 @@ fn main() -> Result<()> {
                     &repo.path,
                     &semantic_options(
                         true,
-                        args.semantic_limit.unwrap_or(usize::MAX),
+                        semantic_index_limit(&args.semantic_provider, args.semantic_limit),
                         &args.semantic_provider,
                     ),
                     &StoreConfig {
@@ -3474,6 +3477,16 @@ fn semantic_options(enabled: bool, limit: usize, args: &SemanticProviderArgs) ->
         limit,
         provider: semantic_provider_config(args),
     }
+}
+
+fn semantic_index_limit(args: &SemanticProviderArgs, explicit_limit: Option<usize>) -> usize {
+    explicit_limit.unwrap_or_else(|| {
+        if args.provider == LOCAL_FASTEMBED_PROVIDER_NAME {
+            DEFAULT_LOCAL_FASTEMBED_INDEX_LIMIT
+        } else {
+            usize::MAX
+        }
+    })
 }
 
 fn write_or_print(output_path: Option<&Path>, artifact: &str) -> Result<()> {
@@ -6019,6 +6032,27 @@ mod tests {
             panic!("expected eval history command");
         };
         assert_eq!(default_args.budget, 10);
+    }
+
+    #[test]
+    fn local_fastembed_index_limit_defaults_to_bounded_foreground_seed() {
+        let local_fastembed = SemanticProviderArgs {
+            provider: LOCAL_FASTEMBED_PROVIDER_NAME.to_string(),
+            model: None,
+            dimensions: None,
+        };
+        let local_hash = SemanticProviderArgs {
+            provider: "local_hash".to_string(),
+            model: None,
+            dimensions: None,
+        };
+
+        assert_eq!(
+            semantic_index_limit(&local_fastembed, None),
+            DEFAULT_LOCAL_FASTEMBED_INDEX_LIMIT
+        );
+        assert_eq!(semantic_index_limit(&local_fastembed, Some(7)), 7);
+        assert_eq!(semantic_index_limit(&local_hash, None), usize::MAX);
     }
 
     #[test]

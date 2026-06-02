@@ -626,6 +626,14 @@ Recommendation today:
   improved direct semantic search from `10.56s` with an empty store to `6.03s`
   with the seeded store. Query/model initialization still dominates the warm
   path, so this is a runtime improvement, not yet a semantic-only recall win.
+- Phase 164 adds persisted-vector candidates outside the lexical prefilter and
+  write-through caching for embedded candidate misses. A full 647-file
+  RefactoringMiner `local_fastembed` seed was stopped after more than 9 minutes,
+  so foreground default seeding is bounded to 16 vectors. On the same
+  `Improvement in TypeScriptVisitor` query, first search after a 16-vector seed
+  took `31.48s`, persisted candidate misses, and the second fresh-process search
+  took `20.86s`; both ranked `TypeScriptVisitor.java` first and storage grew
+  from `16` to `31` vectors without pruning.
 - Treat cloud embeddings/reranking as disabled unless an explicit repo policy
   allows them.
 

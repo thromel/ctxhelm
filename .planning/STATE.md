@@ -4,7 +4,7 @@ milestone: v2.5
 milestone_name: Production Retrieval Quality
 status: active
 last_updated: "2026-06-02T00:00:00Z"
-last_activity: 2026-06-02 -- Phase 162 ran the feature-enabled local_fastembed gate and added contribution diagnostics
+last_activity: 2026-06-02 -- Phase 164 added global persisted semantic vector candidates, write-through source-free vector caching, and bounded foreground local_fastembed indexing
 progress:
   total_phases: 89
   completed_phases: 89
@@ -17,10 +17,10 @@ progress:
 
 ## Current Position
 
-Phase: 162 - Feature-Enabled Local Fastembed Gate Proof
-Plan: 162-feature-enabled-local-fastembed-gate-proof
+Phase: 164 - Global Semantic Vector Candidates And Write-Through
+Plan: 164-global-semantic-vector-candidates
 Status: Complete
-Last activity: 2026-06-02 -- Phase 162 ran `ctxhelm eval gate` with a feature-enabled `local_fastembed` build on clean RefactoringMiner. Cold compile/model initialization took `5:24.46`; warm feature-enabled gate completed in `10.48s`. `local_fastembed` hit the sampled target but produced zero semantic-only target hits, overlapped lexical on both semantic-selected files, and stayed slower than default, so the gate correctly held promotion. The gate now emits `semantic_contribution_no_unique_target_hits` to explain this source-free.
+Last activity: 2026-06-02 -- Phase 164 added persisted-vector candidates outside the lexical prefilter, source-free write-through caching for embedded candidate misses, and incremental vector upsert semantics so search does not prune indexed vectors. RefactoringMiner proof showed full synchronous local_fastembed indexing is not viable as a foreground default (>9 minutes stopped for 647 files; 128-vector default stopped after >4 minutes), so foreground local_fastembed indexing is bounded to 16 vectors unless `--semantic-limit` is explicit. Back-to-back fresh-process RefactoringMiner searches improved from `31.48s` to `20.86s` after write-through while preserving `TypeScriptVisitor.java` as the top result and growing stored vectors from 16 to 31 without pruning.
 
 ## Project Reference
 
@@ -139,6 +139,8 @@ Planned phases:
 - Phase 160: Bounded Semantic Status And Search (complete follow-up)
 - Phase 161: Semantic Gate Contribution Diagnostics (complete follow-up)
 - Phase 162: Feature-Enabled Local Fastembed Gate Proof (complete follow-up)
+- Phase 163: Persisted Semantic Vector Reuse (complete follow-up)
+- Phase 164: Global Semantic Vector Candidates And Write-Through (complete follow-up)
 
 ## Last Completed Milestone
 

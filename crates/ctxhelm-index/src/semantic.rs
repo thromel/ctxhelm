@@ -3,7 +3,8 @@ use crate::inventory::{canonicalize, FileInventoryEntry, InventoryError, Invento
 use crate::search::{query_term_weight, query_terms};
 use crate::storage::{
     load_semantic_vector_records, persist_semantic_vector_records, sync_inventory_to_store,
-    StorageError, StorageSemanticIndexReport, StorageSemanticVectorRecord, StoreConfig,
+    upsert_semantic_vector_records, StorageError, StorageSemanticIndexReport,
+    StorageSemanticVectorRecord, StoreConfig,
 };
 use crate::symbols::CodeSymbol;
 use crate::{
@@ -32,6 +33,8 @@ pub const LOCAL_FASTEMBED_PROVIDER_ROLE: &str = "production_local";
 #[cfg(feature = "local-embeddings")]
 const LOCAL_FASTEMBED_VECTOR_CACHE_LIMIT: usize = 10_000;
 const DEFAULT_LOCAL_FASTEMBED_DOCUMENT_PREFILTER_LIMIT: usize = 128;
+
+type SemanticCandidateVectors = (Vec<SemanticDocument>, BTreeMap<String, Vec<f32>>);
 
 #[cfg(feature = "local-embeddings")]
 struct CachedFastembedModel {
@@ -460,12 +463,15 @@ pub fn semantic_search_report(
             count: original_document_count - candidate_documents.len(),
         });
     }
-    let stored_vectors = stored_semantic_vectors_by_document(
+    let stored_vector_records =
+        load_stored_semantic_vector_records(&repo_root, &provider, &mut diagnostics);
+    let (candidate_documents, stored_vectors) = extend_with_stored_semantic_candidates(
         &repo_root,
         &provider,
-        &candidate_documents,
+        candidate_documents,
+        &stored_vector_records,
         &mut diagnostics,
-    );
+    )?;
     let mut file_vectors = candidate_documents
         .iter()
         .map(|document| {
@@ -528,6 +534,14 @@ pub fn semantic_search_report(
             provider,
         });
     };
+    persist_embedded_semantic_vectors(
+        &repo_root,
+        &provider,
+        &candidate_documents,
+        &missing_indices,
+        embedded_file_vectors,
+        &mut diagnostics,
+    );
     for (index, vector) in missing_indices
         .into_iter()
         .zip(embedded_file_vectors.iter())
@@ -796,19 +810,32 @@ fn semantic_document_storage_key(path: &str, safe_hash: &str) -> String {
 }
 
 fn stored_semantic_vectors_by_document(
-    repo_root: &Path,
     provider: &SemanticProviderConfig,
     documents: &[SemanticDocument],
-    diagnostics: &mut Vec<Diagnostic>,
+    stored_records: &[StorageSemanticVectorRecord],
 ) -> BTreeMap<String, Vec<f32>> {
-    if documents.is_empty() {
-        return BTreeMap::new();
-    }
     let needed = documents
         .iter()
         .map(|document| semantic_document_storage_key(&document.path, &document.safe_hash))
         .collect::<BTreeSet<_>>();
-    let records = match load_semantic_vector_records(
+    stored_records
+        .iter()
+        .filter(|record| record.vector.len() == provider.dimensions)
+        .filter_map(|record| {
+            let key = semantic_document_storage_key(&record.path, &record.safe_hash);
+            needed
+                .contains(&key)
+                .then_some((key, record.vector.clone()))
+        })
+        .collect()
+}
+
+fn load_stored_semantic_vector_records(
+    repo_root: &Path,
+    provider: &SemanticProviderConfig,
+    diagnostics: &mut Vec<Diagnostic>,
+) -> Vec<StorageSemanticVectorRecord> {
+    match load_semantic_vector_records(
         repo_root,
         &StoreConfig::default(),
         &provider.provider,
@@ -825,17 +852,64 @@ fn stored_semantic_vectors_by_document(
                 paths: Vec::new(),
                 count: 0,
             });
-            return BTreeMap::new();
+            Vec::new()
         }
-    };
-    records
-        .into_iter()
+    }
+}
+
+fn extend_with_stored_semantic_candidates(
+    repo_root: &Path,
+    provider: &SemanticProviderConfig,
+    mut candidate_documents: Vec<SemanticDocument>,
+    stored_records: &[StorageSemanticVectorRecord],
+    diagnostics: &mut Vec<Diagnostic>,
+) -> Result<SemanticCandidateVectors, InventoryError> {
+    if stored_records.is_empty() {
+        return Ok((
+            candidate_documents,
+            stored_semantic_vectors_by_document(provider, &[], stored_records),
+        ));
+    }
+    let mut candidate_keys = candidate_documents
+        .iter()
+        .map(|document| semantic_document_storage_key(&document.path, &document.safe_hash))
+        .collect::<BTreeSet<_>>();
+    let stored_keys = stored_records
+        .iter()
         .filter(|record| record.vector.len() == provider.dimensions)
-        .filter_map(|record| {
-            let key = semantic_document_storage_key(&record.path, &record.safe_hash);
-            needed.contains(&key).then_some((key, record.vector))
-        })
-        .collect()
+        .map(|record| semantic_document_storage_key(&record.path, &record.safe_hash))
+        .collect::<BTreeSet<_>>();
+    let missing_stored_keys = stored_keys
+        .difference(&candidate_keys)
+        .cloned()
+        .collect::<BTreeSet<_>>();
+    if !missing_stored_keys.is_empty() {
+        let all_document_report = semantic_document_report(
+            repo_root,
+            &SemanticDocumentOptions {
+                limit: usize::MAX,
+                query: None,
+                include_symbols: false,
+                include_dependencies: false,
+                include_related_tests: false,
+            },
+        )?;
+        diagnostics.extend(all_document_report.diagnostics);
+        let mut added = 0usize;
+        for document in all_document_report.documents {
+            let key = semantic_document_storage_key(&document.path, &document.safe_hash);
+            if missing_stored_keys.contains(&key) && candidate_keys.insert(key) {
+                candidate_documents.push(document);
+                added += 1;
+            }
+        }
+        if added > 0 {
+            diagnostics.push(semantic_vector_storage_global_candidates_diagnostic(added));
+        }
+    }
+    let stored_vectors =
+        stored_semantic_vectors_by_document(provider, &candidate_documents, stored_records);
+    Ok((candidate_documents, stored_vectors))
 }
 
 fn semantic_vector_storage_reused_diagnostic(reused: usize, embedded: usize) -> Diagnostic {
@@ -848,6 +922,75 @@ fn semantic_vector_storage_reused_diagnostic(reused: usize, embedded: usize) -> 
         paths: Vec::new(),
         count: reused,
     }
+}
+
+fn semantic_vector_storage_global_candidates_diagnostic(count: usize) -> Diagnostic {
+    Diagnostic {
+        code: "semantic_vector_storage_global_candidates".to_string(),
+        severity: DiagnosticSeverity::Info,
+        message: format!(
+            "Semantic search added {count} persisted source-free vector candidate(s) outside the lexical prefilter."
+        ),
+        paths: Vec::new(),
+        count,
+    }
+}
+
+fn persist_embedded_semantic_vectors(
+    repo_root: &Path,
+    provider: &SemanticProviderConfig,
+    candidate_documents: &[SemanticDocument],
+    missing_indices: &[usize],
+    embedded_file_vectors: &[Vec<f32>],
+    diagnostics: &mut Vec<Diagnostic>,
+) {
+    let records = missing_indices
+        .iter()
+        .zip(embedded_file_vectors.iter())
+        .filter_map(|(index, vector)| {
+            if vector.len() != provider.dimensions {
+                return None;
+            }
+            let document = candidate_documents.get(*index)?;
+            Some(StorageSemanticVectorRecord {
+                path: document.path.clone(),
+                safe_hash: document.safe_hash.clone(),
+                provider: provider.provider.clone(),
+                model: provider.model.clone(),
+                dimensions: provider.dimensions,
+                distance_metric: provider.distance_metric.clone(),
+                vector: vector.clone(),
+                privacy_status: serde_json::to_string(&PrivacyStatus::local_only())
+                    .unwrap_or_else(|_| "local_only".to_string()),
+            })
+        })
+        .collect::<Vec<_>>();
+    if records.is_empty() {
+        return;
+    }
+    let config = StoreConfig::default();
+    if let Err(error) = sync_inventory_to_store(repo_root, &InventoryOptions::default(), &config)
+        .and_then(|_| upsert_semantic_vector_records(repo_root, &config, &records).map(|_| ()))
+    {
+        diagnostics.push(Diagnostic {
+            code: "semantic_vector_storage_persist_failed".to_string(),
+            severity: DiagnosticSeverity::Warning,
+            message: format!("Could not persist source-free semantic vectors: {error}"),
+            paths: Vec::new(),
+            count: records.len(),
+        });
+        return;
+    }
+    diagnostics.push(Diagnostic {
+        code: "semantic_vector_storage_persisted".to_string(),
+        severity: DiagnosticSeverity::Info,
+        message: format!(
+            "Semantic search persisted {} source-free candidate vector(s) for future reuse.",
+            records.len()
+        ),
+        paths: Vec::new(),
+        count: records.len(),
+    });
 }
 
 fn semantic_document_summary(file: &FileInventoryEntry, facet_count: usize) -> String {
@@ -1555,6 +1698,128 @@ mod tests {
         assert_eq!(report.results[0].path, "src/payments.ts");
         assert!(report.diagnostics.iter().any(|diagnostic| {
             diagnostic.code == "semantic_vector_storage_reused" && diagnostic.count == 1
+        }));
+    }
+
+    #[test]
+    fn semantic_search_persists_embedded_candidate_vectors_for_reuse() {
+        let _guard = crate::test_env_lock();
+        let temp = tempfile::tempdir().unwrap();
+        let repo = temp.path().join("repo");
+        let previous_home = std::env::var_os("CTXHELM_HOME");
+        std::env::set_var("CTXHELM_HOME", temp.path());
+        fs::create_dir_all(repo.join(".git")).unwrap();
+        fs::create_dir_all(repo.join("src")).unwrap();
+        fs::write(
+            repo.join("src/payments.ts"),
+            "export function handlePaymentWebhook() { return true; }\n",
+        )
+        .unwrap();
+
+        let report = semantic_search_report(
+            &repo,
+            "payment webhook",
+            &SemanticOptions {
+                enabled: true,
+                limit: 5,
+                provider: SemanticProviderConfig::default(),
+            },
+        )
+        .unwrap();
+        let stored = load_semantic_vector_records(
+            &repo,
+            &StoreConfig::default(),
+            DEFAULT_SEMANTIC_PROVIDER,
+            DEFAULT_SEMANTIC_MODEL,
+            DEFAULT_SEMANTIC_DIMENSIONS,
+            DEFAULT_SEMANTIC_DISTANCE,
+        )
+        .unwrap();
+        match previous_home {
+            Some(value) => std::env::set_var("CTXHELM_HOME", value),
+            None => std::env::remove_var("CTXHELM_HOME"),
+        }
+
+        assert!(report.diagnostics.iter().any(|diagnostic| {
+            diagnostic.code == "semantic_vector_storage_persisted" && diagnostic.count == 1
+        }));
+        assert_eq!(stored.len(), 1);
+        assert_eq!(stored[0].path, "src/payments.ts");
+    }
+
+    #[test]
+    fn semantic_search_adds_persisted_candidates_outside_lexical_prefilter() {
+        let _guard = crate::test_env_lock();
+        let temp = tempfile::tempdir().unwrap();
+        let repo = temp.path().join("repo");
+        let previous_home = std::env::var_os("CTXHELM_HOME");
+        std::env::set_var("CTXHELM_HOME", temp.path());
+        let config = StoreConfig::default();
+        fs::create_dir_all(repo.join(".git")).unwrap();
+        fs::create_dir_all(repo.join("src")).unwrap();
+        for index in 0..90 {
+            fs::write(
+                repo.join(format!("src/payment_decoy_{index:02}.rs")),
+                "pub fn unrelated() {}\n",
+            )
+            .unwrap();
+        }
+        fs::write(repo.join("src/needle.rs"), "pub fn unrelated() {}\n").unwrap();
+
+        sync_inventory_to_store(&repo, &InventoryOptions::default(), &config).unwrap();
+        let document_report = semantic_document_report(
+            &repo,
+            &SemanticDocumentOptions {
+                limit: usize::MAX,
+                query: None,
+                include_symbols: false,
+                include_dependencies: false,
+                include_related_tests: false,
+            },
+        )
+        .unwrap();
+        let needle_document = document_report
+            .documents
+            .iter()
+            .find(|document| document.path == "src/needle.rs")
+            .unwrap();
+        persist_semantic_vector_records(
+            &repo,
+            &config,
+            &[StorageSemanticVectorRecord {
+                path: needle_document.path.clone(),
+                safe_hash: needle_document.safe_hash.clone(),
+                provider: DEFAULT_SEMANTIC_PROVIDER.to_string(),
+                model: DEFAULT_SEMANTIC_MODEL.to_string(),
+                dimensions: DEFAULT_SEMANTIC_DIMENSIONS,
+                distance_metric: DEFAULT_SEMANTIC_DISTANCE.to_string(),
+                vector: vectorize_text("payment webhook", DEFAULT_SEMANTIC_DIMENSIONS),
+                privacy_status: "local_only".to_string(),
+            }],
+        )
+        .unwrap();
+
+        let report = semantic_search_report(
+            &repo,
+            "payment webhook",
+            &SemanticOptions {
+                enabled: true,
+                limit: 5,
+                provider: SemanticProviderConfig::default(),
+            },
+        )
+        .unwrap();
+        match previous_home {
+            Some(value) => std::env::set_var("CTXHELM_HOME", value),
+            None => std::env::remove_var("CTXHELM_HOME"),
+        }
+
+        assert!(report
+            .results
+            .iter()
+            .any(|result| result.path == "src/needle.rs"));
+        assert!(report.diagnostics.iter().any(|diagnostic| {
+            diagnostic.code == "semantic_vector_storage_global_candidates" && diagnostic.count == 1
         }));
     }
 

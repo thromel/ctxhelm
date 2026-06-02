@@ -82,6 +82,15 @@ matches and falls back to embedding candidate misses. The schema uniqueness key
 is `repo_id + path + provider + model`, so changed file hashes update the row
 instead of leaving duplicate stale vectors behind.
 
+The foreground `local_fastembed` default seeds 16 vectors. Larger values through
+`--semantic-limit` are supported, but should be treated as deliberate local
+indexing work rather than an automatic agent-turn prerequisite.
+
+Semantic search also performs source-free write-through caching for embedded
+candidate misses. This is an incremental upsert, not a full-index replacement,
+so interactive searches do not prune vectors created by `ctxhelm index
+--semantic`.
+
 ## Memory Card Metadata
 
 ```bash

@@ -548,6 +548,23 @@ pub fn persist_semantic_vector_records(
     config: &StoreConfig,
     records: &[StorageSemanticVectorRecord],
 ) -> Result<StorageSemanticIndexReport, StorageError> {
+    persist_semantic_vector_records_with_mode(repo_root, config, records, true)
+}
+
+pub fn upsert_semantic_vector_records(
+    repo_root: impl AsRef<Path>,
+    config: &StoreConfig,
+    records: &[StorageSemanticVectorRecord],
+) -> Result<StorageSemanticIndexReport, StorageError> {
+    persist_semantic_vector_records_with_mode(repo_root, config, records, false)
+}
+
+fn persist_semantic_vector_records_with_mode(
+    repo_root: impl AsRef<Path>,
+    config: &StoreConfig,
+    records: &[StorageSemanticVectorRecord],
+    prune_absent: bool,
+) -> Result<StorageSemanticIndexReport, StorageError> {
     let storage = initialize_store(repo_root, config)?;
     let connection = open_connection(&storage.database_path)?;
     enable_foreign_keys(&connection, &storage.database_path)?;
@@ -621,17 +638,19 @@ ON CONFLICT(repo_id, path, provider, model) DO UPDATE SET
         )?;
     }
     let mut deleted_records = 0;
-    for vector_id in existing
-        .keys()
-        .filter(|id| !retained_vector_ids.contains(*id))
-    {
-        deleted_records += sqlite(
-            &storage.database_path,
-            connection.execute(
-                "DELETE FROM semantic_vectors WHERE repo_id = ?1 AND vector_id = ?2",
-                params![storage.repo_id, vector_id],
-            ),
-        )?;
+    if prune_absent {
+        for vector_id in existing
+            .keys()
+            .filter(|id| !retained_vector_ids.contains(*id))
+        {
+            deleted_records += sqlite(
+                &storage.database_path,
+                connection.execute(
+                    "DELETE FROM semantic_vectors WHERE repo_id = ?1 AND vector_id = ?2",
+                    params![storage.repo_id, vector_id],
+                ),
+            )?;
+        }
     }
     let status = storage_status_for_path(&storage.database_path)?;
     Ok(StorageSemanticIndexReport {
@@ -2319,6 +2338,70 @@ mod tests {
         assert!(!database_text.contains("CTXHELM_SEMANTIC_SOURCE_SENTINEL"));
         assert!(database_text.contains("local_fastembed"));
         assert!(database_text.contains("JinaEmbeddingsV2BaseCode"));
+
+        drop(temp);
+    }
+
+    #[test]
+    fn upserts_semantic_vectors_without_pruning_existing_index() {
+        let temp = tempfile::tempdir().unwrap();
+        let repo = temp.path().join("repo");
+        let config = StoreConfig {
+            path_override: Some(temp.path().join("store.sqlite3")),
+        };
+        fs::create_dir_all(repo.join(".git")).unwrap();
+        fs::create_dir_all(repo.join("src")).unwrap();
+        fs::write(repo.join("src/lib.rs"), "pub fn primary() {}\n").unwrap();
+        fs::write(repo.join("src/extra.rs"), "pub fn extra() {}\n").unwrap();
+
+        sync_inventory_to_store(&repo, &InventoryOptions::default(), &config).unwrap();
+        persist_semantic_vector_records(
+            &repo,
+            &config,
+            &[StorageSemanticVectorRecord {
+                path: "src/lib.rs".to_string(),
+                safe_hash: "hash-a".to_string(),
+                provider: "local_fastembed".to_string(),
+                model: "JinaEmbeddingsV2BaseCode".to_string(),
+                dimensions: 768,
+                distance_metric: "cosine".to_string(),
+                vector: vec![0.1, 0.2],
+                privacy_status: "local_only".to_string(),
+            }],
+        )
+        .unwrap();
+
+        let upserted = upsert_semantic_vector_records(
+            &repo,
+            &config,
+            &[StorageSemanticVectorRecord {
+                path: "src/extra.rs".to_string(),
+                safe_hash: "hash-b".to_string(),
+                provider: "local_fastembed".to_string(),
+                model: "JinaEmbeddingsV2BaseCode".to_string(),
+                dimensions: 768,
+                distance_metric: "cosine".to_string(),
+                vector: vec![0.3, 0.4],
+                privacy_status: "local_only".to_string(),
+            }],
+        )
+        .unwrap();
+
+        assert_eq!(upserted.created_records, 1);
+        assert_eq!(upserted.deleted_records, 0);
+        assert_eq!(upserted.semantic_vector_records, 2);
+        let loaded = load_semantic_vector_records(
+            &repo,
+            &config,
+            "local_fastembed",
+            "JinaEmbeddingsV2BaseCode",
+            768,
+            "cosine",
+        )
+        .unwrap();
+        assert_eq!(loaded.len(), 2);
+        assert!(loaded.iter().any(|record| record.path == "src/lib.rs"));
+        assert!(loaded.iter().any(|record| record.path == "src/extra.rs"));
 
         drop(temp);
     }
