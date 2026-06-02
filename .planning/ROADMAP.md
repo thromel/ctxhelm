@@ -12,7 +12,7 @@ Phase 173 turns that manual source-recall judgment into a product-proof guardrai
 
 Phase 174 makes that guardrail part of the release artifact contract: the product-proof checker now rejects stale corpus verdicts without source-recall fields and blocks source recall regressions, with a fresh RefactoringMiner-clone four-repo proof still promoting under the tightened checker.
 
-Phase 175 adds semantic-missed target gap families to the semantic/precision gate, so embedding R&D can distinguish graph/fusion coupling misses from semantic document/query coverage misses before promoting local embeddings.
+Phase 176 adds focused context-area guidance for standard tasks, so area-context-only misses can surface task-conditioned area resources without pretending the exact target had enough source-free ranking signal.
 
 ## v2.5 Production Retrieval Quality
 
@@ -124,6 +124,7 @@ Phase 175 adds semantic-missed target gap families to the semantic/precision gat
 - [x] **Phase 161: Semantic Gate Contribution Diagnostics** - The semantic/precision gate now reports source-free semantic contribution counts and named semantic-only target hits, accepts provider selection for `local_hash` versus `local_fastembed`, and proves the feature-gated production-local embedding path still compiles.
 - [x] **Phase 174: Source Recall Release Proof Contract** - Product-proof release checking rejects stale corpus verdicts without source-recall fields and blocks source recall regressions beyond tolerance.
 - [x] **Phase 175: Semantic Missed Target Gap Families** - Semantic/precision gates group semantic-missed targets by source-free gap family and diagnose coupling misses separately from no-signal semantic coverage misses.
+- [x] **Phase 176: Focused Context-Area Guidance** - Standard task plans now expose focused context-area resources when selected source-like files identify an area with unselected source-like next-read candidates, while eval ranking keeps validation-test reserve behavior tied to task broadness instead of context-area presence.
 - [x] **Phase 162: Feature-Enabled Local Fastembed Gate Proof** - A feature-enabled `local_fastembed` gate run on clean RefactoringMiner now proves the production-local backend works end-to-end, but remains held because it adds no semantic-only target hits and is still slower than default; the gate emits a source-free diagnostic for that condition.
 - [x] **Phase 163: Persisted Semantic Vector Reuse** - Fresh CLI/MCP processes can reuse persisted source-free semantic document vectors instead of recomputing every candidate vector.
 - [x] **Phase 164: Global Semantic Vector Candidates And Write-Through** - Semantic search can include persisted vector candidates outside the lexical prefilter and write through newly embedded candidate misses.

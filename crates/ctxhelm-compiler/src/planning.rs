@@ -515,10 +515,6 @@ fn context_areas_for_plan(
     selection: &crate::ranking::RankedSelection,
     multi_area_task: bool,
 ) -> Vec<ContextArea> {
-    if !multi_area_task {
-        return Vec::new();
-    }
-
     let selected_paths = selection
         .target_files
         .iter()
@@ -570,10 +566,7 @@ fn context_areas_for_plan(
         .map(|(area, accumulator)| {
             let context_area = ContextArea {
                 area: area.clone(),
-                reason: format!(
-                    "Broad task candidate area with {} candidate path(s) and {} selected path(s).",
-                    accumulator.candidate_count, accumulator.selected_count
-                ),
+                reason: context_area_reason(&accumulator, multi_area_task),
                 resource_uri: context_area_resource_uri(&area),
                 representative_paths: accumulator.representative_paths.clone(),
                 next_read_paths: accumulator.next_read_paths.clone(),
@@ -591,6 +584,13 @@ fn context_areas_for_plan(
             }
         })
         .collect::<Vec<_>>();
+    if !multi_area_task {
+        areas.retain(|area| {
+            area.accumulator.selected_source_like_count() > 0
+                && area.accumulator.source_like_count()
+                    > area.accumulator.selected_source_like_count()
+        });
+    }
     areas.sort_by(|left, right| {
         context_area_priority(&left.context_area.area, &left.accumulator)
             .cmp(&context_area_priority(
@@ -629,6 +629,22 @@ fn context_areas_for_plan(
         .collect::<Vec<_>>();
     areas.truncate(MAX_CONTEXT_AREAS);
     areas
+}
+
+fn context_area_reason(accumulator: &AreaAccumulator, multi_area_task: bool) -> String {
+    let scope = if multi_area_task {
+        "Broad task"
+    } else {
+        "Focused task"
+    };
+    format!(
+        "{scope} candidate area with {} candidate path(s), {} selected path(s), and {} source-like next-read candidate(s).",
+        accumulator.candidate_count,
+        accumulator.selected_count,
+        accumulator
+            .source_like_count()
+            .saturating_sub(accumulator.selected_source_like_count())
+    )
 }
 
 struct RankedContextArea {
@@ -2312,6 +2328,58 @@ mod tests {
             ]
         );
         assert_eq!(docs_area.resource_uri, "ctxhelm://repo/context-area/docs");
+    }
+
+    #[test]
+    fn focused_context_areas_keep_selected_source_area_hints_only() {
+        let selection = crate::ranking::RankedSelection {
+            retrieval_candidates: vec![
+                RetrievalCandidate {
+                    kind: RetrievalCandidateKind::File,
+                    path: Some("src/auth/session.ts".to_string()),
+                    role: Some(FileRole::Source),
+                    reason_code: "lexical_match".to_string(),
+                    confidence: 0.9,
+                    signal_scores: vec![],
+                    evidence: vec![],
+                },
+                RetrievalCandidate {
+                    kind: RetrievalCandidateKind::File,
+                    path: Some("src/auth/cookies.ts".to_string()),
+                    role: Some(FileRole::Source),
+                    reason_code: "dependency_match".to_string(),
+                    confidence: 0.7,
+                    signal_scores: vec![],
+                    evidence: vec![],
+                },
+                RetrievalCandidate {
+                    kind: RetrievalCandidateKind::Doc,
+                    path: Some("docs/auth.md".to_string()),
+                    role: Some(FileRole::Docs),
+                    reason_code: "lexical_match".to_string(),
+                    confidence: 0.6,
+                    signal_scores: vec![],
+                    evidence: vec![],
+                },
+            ],
+            target_files: vec![TargetFile {
+                path: "src/auth/session.ts".to_string(),
+                reason: "selected source".to_string(),
+                line_range: None,
+                confidence: 0.9,
+                attribution: vec![],
+            }],
+            related_tests: vec![],
+            recommended_commands: vec![],
+        };
+
+        let areas = context_areas_for_plan(&selection, false);
+
+        assert_eq!(areas.len(), 1);
+        assert_eq!(areas[0].area, "src/auth");
+        assert_eq!(areas[0].selected_count, 1);
+        assert_eq!(areas[0].next_read_paths, vec!["src/auth/cookies.ts"]);
+        assert!(areas[0].reason.starts_with("Focused task"));
     }
 
     #[test]

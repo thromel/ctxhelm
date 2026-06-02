@@ -3077,29 +3077,43 @@ fn diagnostic_codes(value: &Value) -> Vec<&str> {
 }
 
 fn assert_no_source_or_prompt_text(value: &Value) {
+    assert_no_source_or_prompt_text_at(value, None);
+}
+
+fn assert_no_source_or_prompt_text_at(value: &Value, parent_key: Option<&str>) {
     match value {
         Value::Object(object) => {
             for (key, child) in object {
+                let role_count_label = matches!(
+                    parent_key,
+                    Some(
+                        "roleCounts"
+                            | "selectedRoleCounts"
+                            | "role_counts"
+                            | "selected_role_counts"
+                    )
+                );
                 assert!(
-                    !matches!(
-                        key.as_str(),
-                        "sourceText"
-                            | "source_text"
-                            | "source"
-                            | "snippet"
-                            | "prompt"
-                            | "task"
-                            | "taskText"
-                            | "commitSubject"
-                    ),
+                    role_count_label
+                        || !matches!(
+                            key.as_str(),
+                            "sourceText"
+                                | "source_text"
+                                | "source"
+                                | "snippet"
+                                | "prompt"
+                                | "task"
+                                | "taskText"
+                                | "commitSubject"
+                        ),
                     "unexpected source or prompt text field {key}"
                 );
-                assert_no_source_or_prompt_text(child);
+                assert_no_source_or_prompt_text_at(child, Some(key));
             }
         }
         Value::Array(items) => {
             for item in items {
-                assert_no_source_or_prompt_text(item);
+                assert_no_source_or_prompt_text_at(item, parent_key);
             }
         }
         _ => {}

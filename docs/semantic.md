@@ -153,6 +153,16 @@ from misses with no candidate signal at all. On the clean RefactoringMiner
 remaining semantic miss was `semantic_miss_area_context_only` for
 `UMLClassBaseDiff.java`, while semantic-only additions were non-targets.
 
+Phase 176 follows that result without overfitting semantic ranking. The
+remaining RefactoringMiner miss did not have lexical, symbol, dependency,
+co-change, or semantic evidence strong enough to justify top-K promotion.
+Instead, standard task plans now expose focused context-area resources when the
+selected source files identify an area with unselected source-like candidates.
+On a fresh RefactoringMiner 2-commit proof, Recall@10 stayed `0.75` versus the
+lexical baseline `0.5833334`, but each commit now surfaced
+`ctxhelm://repo/context-area/src%2Fmain` as an actionable progressive read
+resource for the `area_context_only` gap.
+
 ## Agent And MCP Use
 
 MCP `prepare_task`, `get_pack`, and `search` accept `semantic: true`. The field is optional and additive, so existing agents keep their lexical, symbol, graph, test, and history behavior unless they explicitly request semantic retrieval.

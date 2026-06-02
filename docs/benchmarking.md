@@ -408,6 +408,17 @@ semantic-missed retrieval targets into source-free families such as
 `semantic_miss_nonsemantic_coupled_signal`, and
 `semantic_miss_no_candidate_signal`.
 
+Phase 176 turns the `area_context_only` diagnosis into a better progressive
+read surface for focused tasks. When a standard plan already selects
+source-like files in an area and has unselected source-like candidates nearby,
+the plan now emits a focused context area such as
+`ctxhelm://repo/context-area/src%2Fmain`. This does not promote un-signaled
+files into the top-K context ranking. It gives agents a source-free area
+resource to inspect after the target list proves too narrow. Eval ranking keeps
+validation-test reserves tied to task broadness, not to whether context-area
+guidance is present, so focused area hints do not silently displace tests from
+Recall@10 accounting.
+
 Protected evidence is source-free metadata for budgeted paths that carry
 explicit anchor, current-diff, lexical, or symbol signals. The protected set is
 bounded by the eval context budget, so broader candidate generation can add

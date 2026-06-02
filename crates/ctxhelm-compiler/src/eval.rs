@@ -4283,6 +4283,7 @@ fn evaluate_historical_commit_sample(
         .iter()
         .map(|test| test.path.clone())
         .collect::<Vec<_>>();
+    let multi_area_task = is_multi_area_task(&task);
     let recommended_commands = plan
         .recommended_commands
         .iter()
@@ -4295,7 +4296,7 @@ fn evaluate_historical_commit_sample(
             &recommended_files,
             &recommended_tests,
             ranking_budget,
-            plan.context_areas.is_empty(),
+            !multi_area_task,
         )
     };
     let lexical_baseline_files = lexical_baseline_context_files(eval_root, &task, ranking_budget)?;
@@ -4353,9 +4354,8 @@ fn evaluate_historical_commit_sample(
         &recommended_tests,
         &recommended_commands,
     );
-    let broad_scope_task = is_multi_area_task(&task)
-        || retrieval_target_files.len() >= 12
-        || source_changed_files.len() >= 8;
+    let broad_scope_task =
+        multi_area_task || retrieval_target_files.len() >= 12 || source_changed_files.len() >= 8;
     let changed_context_areas =
         changed_context_areas(&changed_path_labels, &retrieval_target_files);
     let context_area_hits = context_area_hits(

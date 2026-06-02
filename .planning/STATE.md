@@ -3,11 +3,11 @@ gsd_state_version: 1.0
 milestone: v2.5
 milestone_name: Production Retrieval Quality
 status: active
-last_updated: "2026-06-02T06:04:00Z"
-last_activity: 2026-06-02 -- Phase 175 added semantic-missed target gap families so semantic R&D can distinguish graph/fusion coupling misses from weak semantic text/index misses; a clean RefactoringMiner local_hash gate still holds, with the remaining semantic miss classified as area-context-only instead of a semantic promotion signal
+last_updated: "2026-06-02T05:20:27Z"
+last_activity: 2026-06-02 -- Phase 176 added focused context-area guidance for standard tasks, so area-context-only misses now surface task-conditioned area resources without inflating Recall@10 or displacing validation-test reserves
 progress:
-  total_phases: 92
-  completed_phases: 92
+  total_phases: 93
+  completed_phases: 93
   total_plans: 7
   completed_plans: 7
   percent: 100
@@ -17,10 +17,10 @@ progress:
 
 ## Current Position
 
-Phase: 175 - Semantic Missed Target Gap Families
-Plan: 175-semantic-missed-target-gap-families
+Phase: 176 - Focused Context-Area Guidance
+Plan: 176-focused-context-area-guidance
 Status: Complete
-Last activity: 2026-06-02 -- Phase 175 closes the Phase 168 diagnostic gap by adding `semanticContribution.semanticMissedTargetGapFamilies` and source-free diagnostics for semantic-missed targets with nonsemantic coupled signals versus no candidate signal. A clean RefactoringMiner 2-commit `local_hash` gate at `/tmp/ctxhelm-rd/phase175-semantic-missed-gap-gate.json` still holds with semantic recall delta `+0.000`; the only semantic missed-target family is `semantic_miss_area_context_only` for `UMLClassBaseDiff.java`, while semantic-only additions remain non-targets.
+Last activity: 2026-06-02 -- Phase 176 addresses the remaining RefactoringMiner `area_context_only` miss by emitting focused context-area guidance for non-broad tasks when selected source-like files already identify an area with unselected source-like candidates. A fresh RefactoringMiner clone proof at `/tmp/ctxhelm-rd/phase176-refminer-focused-context-areas.json` keeps File Recall@10 at `0.75` versus lexical `0.5833334`, but now each evaluated commit exposes `ctxhelm://repo/context-area/src%2Fmain` as a source-free progressive read resource. Eval ranking now preserves validation-test reserves from the task broadness decision instead of coupling them to whether context areas are present.
 
 ## Project Reference
 
