@@ -649,10 +649,7 @@ pub fn semantic_search_report(
 
     let mut results = Vec::new();
     let semantic_terms = semantic_query_terms(query);
-    for (document, file_vector) in candidate_documents
-        .into_iter()
-        .zip(file_vectors.into_iter())
-    {
+    for (document, file_vector) in candidate_documents.into_iter().zip(file_vectors) {
         let Some(file_vector) = file_vector else {
             continue;
         };
