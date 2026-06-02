@@ -375,6 +375,15 @@ Recall@10, runtime/cache fields, token efficiency, provider policy, precision
 status, protected-evidence miss rate, semantic contribution summary, named wins,
 named regressions, and named misses.
 
+The semantic contribution summary also emits source-free diagnostics:
+
+- `semantic_contribution_no_candidates`: the selected semantic provider produced
+  no candidate files in the gate run.
+- `semantic_contribution_no_unique_target_hits`: semantic selected target files,
+  but none were unique beyond the lexical baseline top K.
+- `semantic_contribution_unique_target_hits`: semantic contributed target files
+  absent from the lexical baseline top K.
+
 Protected evidence is source-free metadata for budgeted paths that carry
 explicit anchor, current-diff, lexical, or symbol signals. The protected set is
 bounded by the eval context budget, so broader candidate generation can add

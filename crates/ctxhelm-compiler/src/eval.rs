@@ -2583,6 +2583,10 @@ pub fn semantic_precision_gate_report_with_provider(
     let (decision, decision_reason) =
         gate_decision_from_variants(&variants, &named_regressions, &provider_policy);
     let mut diagnostics = provider_policy.diagnostics.clone();
+    diagnostics.extend(semantic_contribution_diagnostics(
+        &semantic_contribution,
+        semantic_provider_status,
+    ));
     if !named_regressions.is_empty() {
         diagnostics.push(Diagnostic {
             code: "semantic_precision_named_regressions".to_string(),
@@ -2839,6 +2843,53 @@ fn semantic_contribution_summary(report: &HistoricalEvalReport) -> SemanticContr
     semantic_only_hits.truncate(10);
     summary.semantic_only_hits = semantic_only_hits;
     summary
+}
+
+fn semantic_contribution_diagnostics(
+    summary: &SemanticContributionSummary,
+    provider: &str,
+) -> Vec<Diagnostic> {
+    if summary.evaluated_commits == 0 {
+        return Vec::new();
+    }
+    if summary.semantic_selected_file_count == 0 {
+        return vec![Diagnostic {
+            code: "semantic_contribution_no_candidates".to_string(),
+            severity: DiagnosticSeverity::Warning,
+            message: format!(
+                "Semantic provider `{provider}` selected no source-free candidate files during the gate run; inspect provider availability and query construction before expecting semantic lift."
+            ),
+            paths: Vec::new(),
+            count: summary.evaluated_commits,
+        }];
+    }
+    if summary.semantic_target_hit_count > 0 && summary.semantic_only_target_hit_count == 0 {
+        return vec![Diagnostic {
+            code: "semantic_contribution_no_unique_target_hits".to_string(),
+            severity: DiagnosticSeverity::Info,
+            message: format!(
+                "Semantic provider `{provider}` hit target files, but none were semantic-only target hits beyond the lexical baseline top K."
+            ),
+            paths: Vec::new(),
+            count: summary.semantic_target_hit_count,
+        }];
+    }
+    if summary.semantic_only_target_hit_count > 0 {
+        return vec![Diagnostic {
+            code: "semantic_contribution_unique_target_hits".to_string(),
+            severity: DiagnosticSeverity::Info,
+            message: format!(
+                "Semantic provider `{provider}` contributed target file(s) absent from the lexical baseline top K."
+            ),
+            paths: summary
+                .semantic_only_hits
+                .iter()
+                .flat_map(|hit| hit.paths.clone())
+                .collect(),
+            count: summary.semantic_only_target_hit_count,
+        }];
+    }
+    Vec::new()
 }
 
 fn protected_evidence_miss_rate_delta(
@@ -7123,6 +7174,39 @@ mod tests {
             summary.semantic_only_hits[0].paths,
             vec!["src/semantic_only.ts".to_string()]
         );
+    }
+
+    #[test]
+    fn semantic_contribution_diagnostics_explain_no_unique_hits_or_candidates() {
+        let no_unique = SemanticContributionSummary {
+            evaluated_commits: 1,
+            commits_with_semantic_selection: 1,
+            semantic_selected_file_count: 2,
+            semantic_target_hit_count: 1,
+            semantic_only_target_hit_count: 0,
+            semantic_lexical_overlap_count: 2,
+            semantic_missed_target_count: 0,
+            average_semantic_selected_files: 2.0,
+            semantic_target_hit_rate: 1.0,
+            semantic_only_target_hit_rate: 0.0,
+            semantic_only_hits: Vec::new(),
+        };
+        let diagnostics = semantic_contribution_diagnostics(&no_unique, "local_fastembed");
+        assert_eq!(diagnostics.len(), 1);
+        assert_eq!(
+            diagnostics[0].code,
+            "semantic_contribution_no_unique_target_hits"
+        );
+        assert_eq!(diagnostics[0].severity, DiagnosticSeverity::Info);
+
+        let no_candidates = SemanticContributionSummary {
+            evaluated_commits: 1,
+            ..SemanticContributionSummary::default()
+        };
+        let diagnostics = semantic_contribution_diagnostics(&no_candidates, "local_fastembed");
+        assert_eq!(diagnostics.len(), 1);
+        assert_eq!(diagnostics[0].code, "semantic_contribution_no_candidates");
+        assert_eq!(diagnostics[0].severity, DiagnosticSeverity::Warning);
     }
 
     #[test]

@@ -4,10 +4,10 @@ milestone: v2.5
 milestone_name: Production Retrieval Quality
 status: active
 last_updated: "2026-06-02T00:00:00Z"
-last_activity: 2026-06-02 -- Phase 161 added provider-aware semantic gate contribution diagnostics
+last_activity: 2026-06-02 -- Phase 162 ran the feature-enabled local_fastembed gate and added contribution diagnostics
 progress:
-  total_phases: 88
-  completed_phases: 88
+  total_phases: 89
+  completed_phases: 89
   total_plans: 7
   completed_plans: 7
   percent: 100
@@ -17,10 +17,10 @@ progress:
 
 ## Current Position
 
-Phase: 161 - Semantic Gate Contribution Diagnostics
-Plan: 161-semantic-gate-contribution-diagnostics
+Phase: 162 - Feature-Enabled Local Fastembed Gate Proof
+Plan: 162-feature-enabled-local-fastembed-gate-proof
 Status: Complete
-Last activity: 2026-06-02 -- Phase 161 makes `ctxhelm eval gate` provider-aware and adds source-free semantic contribution diagnostics. The gate now reports semantic-selected files, target hits, semantic-only target hits, semantic/lexical overlap, missed targets, hit rates, and named semantic-only hits. On the clean RefactoringMiner limit-1 proof, `local_hash` selected two semantic files, hit the target, but had zero semantic-only target hits and full lexical overlap, so the decision stayed `hold`. The gate now accepts `--semantic-provider local_fastembed`, and `cargo check -p ctxhelm-index --features local-embeddings --locked` proves the production-local embedding path still compiles.
+Last activity: 2026-06-02 -- Phase 162 ran `ctxhelm eval gate` with a feature-enabled `local_fastembed` build on clean RefactoringMiner. Cold compile/model initialization took `5:24.46`; warm feature-enabled gate completed in `10.48s`. `local_fastembed` hit the sampled target but produced zero semantic-only target hits, overlapped lexical on both semantic-selected files, and stayed slower than default, so the gate correctly held promotion. The gate now emits `semantic_contribution_no_unique_target_hits` to explain this source-free.
 
 ## Project Reference
 
@@ -138,6 +138,7 @@ Planned phases:
 - Phase 159: Lexical Runtime Accounting And Exact-Primary Policy (complete follow-up)
 - Phase 160: Bounded Semantic Status And Search (complete follow-up)
 - Phase 161: Semantic Gate Contribution Diagnostics (complete follow-up)
+- Phase 162: Feature-Enabled Local Fastembed Gate Proof (complete follow-up)
 
 ## Last Completed Milestone
 

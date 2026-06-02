@@ -114,6 +114,7 @@ v2.5 therefore focuses on measured retrieval quality, not more surface area. The
 - [x] **Phase 159: Lexical Runtime Accounting And Exact-Primary Policy** - Lexical backend proof now separates shared inventory warmup, uses source-safe inventory fingerprints for cache keys, reuses in-process fielded indexes, and stops early for exact-dominant or single-identifier queries; clean RefactoringMiner active backend time reaches parity with legacy while preserving recall parity.
 - [x] **Phase 160: Bounded Semantic Status And Search** - Direct semantic status/search now use bounded source-free document samples, avoid eager symbol/dependency/test/vector work on status paths, and rank exact path/identifier matches through source-free path metadata plus an exact metadata boost; the clean RefactoringMiner `TypeScriptVisitor` semantic probe now returns the target file first.
 - [x] **Phase 161: Semantic Gate Contribution Diagnostics** - The semantic/precision gate now reports source-free semantic contribution counts and named semantic-only target hits, accepts provider selection for `local_hash` versus `local_fastembed`, and proves the feature-gated production-local embedding path still compiles.
+- [x] **Phase 162: Feature-Enabled Local Fastembed Gate Proof** - A feature-enabled `local_fastembed` gate run on clean RefactoringMiner now proves the production-local backend works end-to-end, but remains held because it adds no semantic-only target hits and is still slower than default; the gate emits a source-free diagnostic for that condition.
 
 ## Phase Details
 
