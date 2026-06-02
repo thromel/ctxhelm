@@ -18,6 +18,8 @@ Phase 181 converts the measured graph edge-family diagnostics into bounded depen
 
 Phase 182 makes that fixture-object problem release-safe: proof fixture preparation now writes source-free readiness reports and release-gate clean fixture proof verifies both revision availability and checked-out `HEAD` before using detached fixtures as quality evidence.
 
+Phase 183 refreshes the default clean fixture proof to a reachable VeriSchema revision and adds source-free repo-scoped product-proof runtime ceilings. The default runtime gate remains `5000ms` per commit, while the refreshed RefactoringMiner detached fixture explicitly carries `proofRuntimeCeilingMillis: 15000` after measured cold proof cost exceeded the default. Cold and warm Phase 183 proof both promote, and the release gate now uses the refreshed config and proof artifact name by default.
+
 ## v2.5 Production Retrieval Quality
 
 ## Phases

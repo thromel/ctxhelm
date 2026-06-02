@@ -257,7 +257,7 @@ fn release_gate_script_contract() {
         "CTXHELM_REAL_CLIENT_EVIDENCE_DIR",
         "CTXHELM_PROOF_DIR",
         "CTXHELM_BENCHMARK_CONFIG",
-        "phase110-clean-cold-fixture-config.json",
+        "phase183-clean-fixture-refresh-config.json",
         "eval proof",
         "check-product-proof.py",
         "release proof bundle",

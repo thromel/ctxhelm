@@ -30,7 +30,7 @@ smoke_claude_mcp_script="$repo_root/scripts/smoke-claude-mcp.sh"
 claude_workflow_eval_script="$repo_root/scripts/e2e-claude-workflow.sh"
 smoke_cursor_mcp_script="$repo_root/scripts/smoke-cursor-mcp.sh"
 smoke_opencode_mcp_script="$repo_root/scripts/smoke-opencode-mcp.sh"
-clean_fixture_config_default="$repo_root/.planning/e2e/2026-05-31-phase110-clean-cold-fixture-config.json"
+clean_fixture_config_default="$repo_root/.planning/e2e/2026-06-03-phase183-clean-fixture-refresh-config.json"
 
 work_dir="$(mktemp -d)"
 cleanup() {
@@ -292,7 +292,7 @@ if [[ "$clean_fixture_skip" == "1" ]]; then
   echo "clean cold fixture proof skipped: CTXHELM_SKIP_CLEAN_FIXTURE_PROOF=1"
   clean_fixture_status="skipped_explicit"
 elif clean_fixture_error="$(clean_fixture_ready "$clean_fixture_config" 2>&1)"; then
-  clean_fixture_report="$proof_dir/phase110-clean-fixture-product-proof.json"
+  clean_fixture_report="$proof_dir/phase183-clean-fixture-product-proof.json"
   "$ctxhelm_bin" eval proof --config "$clean_fixture_config" --format json >"$clean_fixture_report"
   python3 "$repo_root/scripts/check-product-proof.py" "$clean_fixture_report"
   clean_fixture_status="passed"

@@ -110,4 +110,4 @@ fi
 ensure_fixture "RefactoringMiner" "${CTXHELM_REFACTORINGMINER_SOURCE:-git@github.com:thromel/RefactoringMiner.git}" "${CTXHELM_REFACTORINGMINER_REVISION:-949bddcd3509a805f5e3bcc55fcdb71a691b0dac}"
 ensure_fixture "ctxhelm" "${CTXHELM_CTXHELM_SOURCE:-git@github.com:thromel/ctxhelm.git}" "${CTXHELM_CTXHELM_REVISION:-7f439fa1b1f2784aed6425b695d7c35944ea7955}"
 ensure_fixture "ReAgent" "${CTXHELM_REAGENT_SOURCE:-git@github.com:SRK-LLM-Research/ccia-framework.git}" "${CTXHELM_REAGENT_REVISION:-44277ff7d89a8e2e2a1cbdf8d350c409e379786d}"
-ensure_fixture "VeriSchema" "$verischema_source" "${CTXHELM_VERISCHEMA_REVISION:-b5cfb2a551d026514f505c45863db31277bcd1ad}"
+ensure_fixture "VeriSchema" "$verischema_source" "${CTXHELM_VERISCHEMA_REVISION:-33578667304472d3d58be2301dcc31d07e5c9bc4}"

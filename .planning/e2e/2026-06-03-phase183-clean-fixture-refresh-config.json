@@ -1,0 +1,50 @@
+{
+  "manifestVersion": "ctxhelm-benchmark-corpus-v2.5",
+  "name": "phase183-clean-fixture-refresh-proof",
+  "corpusId": "phase183-clean-fixture-refresh-2026-06-03",
+  "privacyLabel": "source_free_local",
+  "description": "Four-repo production-readiness proof using clean detached full fixtures with a reachable VeriSchema revision after the old Phase 110 VeriSchema object became unavailable.",
+  "defaults": {
+    "limit": 5,
+    "rankingBudget": 10,
+    "mode": "bug_fix",
+    "targetAgent": "generic",
+    "semanticEnabled": false,
+    "cacheEnabled": false,
+    "forceRefresh": true,
+    "parallelism": 4,
+    "roleFilters": []
+  },
+  "repositories": [
+    {
+      "name": "RefactoringMiner",
+      "path": "../../../ctxhelm-proof-fixtures/RefactoringMiner",
+      "revisionRangeId": "phase73-refminer-949bdd-only",
+      "base": "c16c031d048618c8389f474f80c2feee21a06ad1",
+      "head": "949bddcd3509a805f5e3bcc55fcdb71a691b0dac",
+      "proofRuntimeCeilingMillis": 15000,
+      "privacyLabel": "source_free_local"
+    },
+    {
+      "name": "ctxhelm",
+      "path": "../../../ctxhelm-proof-fixtures/ctxhelm",
+      "revisionRangeId": "phase72-pre-test-seed-head-history-limit-5",
+      "head": "7f439fa1b1f2784aed6425b695d7c35944ea7955",
+      "privacyLabel": "source_free_local"
+    },
+    {
+      "name": "ReAgent",
+      "path": "../../../ctxhelm-proof-fixtures/ReAgent",
+      "revisionRangeId": "head-history-limit-5",
+      "head": "44277ff7d89a8e2e2a1cbdf8d350c409e379786d",
+      "privacyLabel": "source_free_local"
+    },
+    {
+      "name": "VeriSchema",
+      "path": "../../../ctxhelm-proof-fixtures/VeriSchema",
+      "revisionRangeId": "phase183-reachable-head-history-limit-5",
+      "head": "33578667304472d3d58be2301dcc31d07e5c9bc4",
+      "privacyLabel": "source_free_local"
+    }
+  ]
+}

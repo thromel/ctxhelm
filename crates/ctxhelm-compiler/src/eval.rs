@@ -997,6 +997,8 @@ pub struct BenchmarkRepoConfig {
     #[serde(default)]
     pub lexical_backend_comparison: Option<bool>,
     #[serde(default)]
+    pub proof_runtime_ceiling_millis: Option<u64>,
+    #[serde(default)]
     pub baseline: Option<BenchmarkRepoBaseline>,
 }
 
@@ -1107,6 +1109,8 @@ pub struct BenchmarkRepoEffectiveConfig {
     pub role_filters: Vec<FileRole>,
     #[serde(default)]
     pub lexical_backend_comparison: bool,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub proof_runtime_ceiling_millis: Option<u64>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -1755,23 +1759,31 @@ fn product_proof_release_decision(
     }
     let slow = corpus_verdicts
         .iter()
-        .filter(|verdict| {
+        .filter_map(|verdict| {
             let Some(repo) = benchmark_report
                 .repositories
                 .iter()
                 .find(|repo| repo.name == verdict.repository)
             else {
-                return true;
+                return Some(format!("{}:missing-report", verdict.repository));
             };
-            product_proof_runtime_blocks_promotion(repo, verdict)
+            if product_proof_runtime_blocks_promotion(repo, verdict) {
+                Some(format!(
+                    "{}:{}ms>{}ms",
+                    verdict.repository,
+                    product_proof_runtime_per_commit_millis(repo, verdict),
+                    product_proof_runtime_ceiling_millis(repo)
+                ))
+            } else {
+                None
+            }
         })
-        .map(|verdict| verdict.repository.clone())
         .collect::<Vec<_>>();
     if !slow.is_empty() {
         return (
             SemanticPrecisionGateDecision::Block,
             format!(
-                "Blocked because proof runtime exceeded 5000ms per commit for: {}.",
+                "Blocked because proof runtime exceeded the configured per-commit ceiling for: {}.",
                 slow.join(", ")
             ),
         );
@@ -1781,6 +1793,23 @@ fn product_proof_release_decision(
         "Promote: every evaluated corpus beat lexical or reached a perfect lexical ceiling on non-test context recall, while maintaining validation-test recall under local-only proof thresholds."
             .to_string(),
     )
+}
+
+const PRODUCT_PROOF_DEFAULT_RUNTIME_CEILING_MILLIS: u64 = 5_000;
+const PRODUCT_PROOF_PERFECT_COLD_START_CEILING_MILLIS: u64 = 10_000;
+
+fn product_proof_runtime_ceiling_millis(repo: &BenchmarkRepoReport) -> u64 {
+    repo.effective_config
+        .proof_runtime_ceiling_millis
+        .unwrap_or(PRODUCT_PROOF_DEFAULT_RUNTIME_CEILING_MILLIS)
+}
+
+fn product_proof_runtime_per_commit_millis(
+    repo: &BenchmarkRepoReport,
+    verdict: &ProductProofCorpusVerdict,
+) -> u64 {
+    let commits = repo.evaluated_commits.max(1) as u64;
+    verdict.runtime_millis / commits
 }
 
 fn product_proof_warm_cache_runtime_blocks_promotion(repo: &BenchmarkRepoReport) -> bool {
@@ -1804,9 +1833,9 @@ fn product_proof_runtime_blocks_promotion(
     repo: &BenchmarkRepoReport,
     verdict: &ProductProofCorpusVerdict,
 ) -> bool {
-    let commits = repo.evaluated_commits.max(1) as u64;
-    let per_commit_millis = verdict.runtime_millis / commits;
-    if per_commit_millis <= 5_000 {
+    let commits = repo.evaluated_commits.max(1);
+    let per_commit_millis = product_proof_runtime_per_commit_millis(repo, verdict);
+    if per_commit_millis <= product_proof_runtime_ceiling_millis(repo) {
         return false;
     }
 
@@ -1814,8 +1843,9 @@ fn product_proof_runtime_blocks_promotion(
     // throughput threshold even when ctxhelm has perfect context coverage and
     // no protected target misses. Keep that as a diagnostic, not a promotion
     // blocker, as long as it remains below the hard cold-start ceiling.
-    !(commits == 1
-        && per_commit_millis <= 10_000
+    !(repo.effective_config.proof_runtime_ceiling_millis.is_none()
+        && commits == 1
+        && per_commit_millis <= PRODUCT_PROOF_PERFECT_COLD_START_CEILING_MILLIS
         && product_proof_is_perfect_ceiling_match(verdict))
 }
 
@@ -1885,6 +1915,9 @@ fn product_proof_corpus_verdict(repo: &BenchmarkRepoReport) -> ProductProofCorpu
     let context_vs_all_file_delta_at_10 = context_comparison.ctxhelm - report.file_recall_at_10;
     let lexical_context_vs_all_file_delta_at_10 =
         context_comparison.lexical - report.lexical_baseline_recall_at_10;
+    let runtime_per_commit_millis =
+        report.runtime.total_millis / (repo.evaluated_commits.max(1) as u64);
+    let runtime_ceiling_millis = product_proof_runtime_ceiling_millis(repo);
     let validation_target_count = report
         .commits
         .iter()
@@ -1960,18 +1993,28 @@ fn product_proof_corpus_verdict(repo: &BenchmarkRepoReport) -> ProductProofCorpu
                 .to_string(),
         );
     }
+    if runtime_per_commit_millis > PRODUCT_PROOF_DEFAULT_RUNTIME_CEILING_MILLIS
+        && runtime_per_commit_millis <= runtime_ceiling_millis
+        && repo.effective_config.proof_runtime_ceiling_millis.is_some()
+    {
+        notes.push(format!(
+            "proof runtime used repo-scoped {}ms per-commit ceiling; observed {}ms per commit",
+            runtime_ceiling_millis, runtime_per_commit_millis
+        ));
+    }
     if repo.evaluated_commits == 1
-        && report.runtime.total_millis > 5_000
-        && report.runtime.total_millis <= 10_000
+        && report.runtime.total_millis > PRODUCT_PROOF_DEFAULT_RUNTIME_CEILING_MILLIS
+        && report.runtime.total_millis <= PRODUCT_PROOF_PERFECT_COLD_START_CEILING_MILLIS
         && matches!(status, ProductProofCorpusStatus::Match)
         && context_comparison.ctxhelm >= 0.999
         && context_comparison.lexical >= 0.999
         && report.protected_evidence.retrieval_target_miss_rate_at_10 == 0.0
     {
-        notes.push(
-            "single-commit cold proof exceeded 5000ms but stayed under the cold-start diagnostic ceiling"
-                .to_string(),
-        );
+        notes.push(format!(
+            "single-commit cold proof exceeded {}ms but stayed under the {}ms cold-start diagnostic ceiling",
+            PRODUCT_PROOF_DEFAULT_RUNTIME_CEILING_MILLIS,
+            PRODUCT_PROOF_PERFECT_COLD_START_CEILING_MILLIS
+        ));
     }
     if report.runtime.cache_hits > 0 {
         notes.push(format!(
@@ -3431,6 +3474,9 @@ fn run_benchmark_repo(
         lexical_backend_comparison: repo_config
             .lexical_backend_comparison
             .unwrap_or(defaults.lexical_backend_comparison),
+        proof_runtime_ceiling_millis: repo_config
+            .proof_runtime_ceiling_millis
+            .filter(|ceiling| *ceiling > 0),
     };
     let semantic_provider = benchmark_semantic_provider(&effective_config);
     effective_config.semantic_provider = semantic_provider.provider.clone();
@@ -8281,6 +8327,7 @@ mod tests {
                 parallelism: Some(1),
                 role_filters: Vec::new(),
                 lexical_backend_comparison: None,
+                proof_runtime_ceiling_millis: None,
                 baseline: None,
             }],
         };
@@ -8493,6 +8540,36 @@ mod tests {
             .release_gate
             .decision_reason
             .contains("runtime exceeded"));
+    }
+
+    #[test]
+    fn product_proof_release_gate_accepts_repo_scoped_runtime_ceiling() {
+        let mut slow = empty_historical_eval_report("slow-cold-fixture");
+        set_recall_metrics(&mut slow, 0.72, 0.55);
+        slow.runtime.total_millis = 13_878;
+
+        let mut suite = benchmark_report_with_repos(vec![("large-cold-fixture", slow)]);
+        suite.repositories[0]
+            .effective_config
+            .proof_runtime_ceiling_millis = Some(15_000);
+
+        let report = build_product_proof_report(suite);
+        let verdict = report
+            .release_gate
+            .corpus_verdicts
+            .iter()
+            .find(|verdict| verdict.repository == "large-cold-fixture")
+            .unwrap();
+
+        assert_eq!(verdict.status, ProductProofCorpusStatus::Beat);
+        assert!(verdict
+            .notes
+            .iter()
+            .any(|note| note.contains("repo-scoped 15000ms per-commit ceiling")));
+        assert_eq!(
+            report.release_gate.decision,
+            SemanticPrecisionGateDecision::Promote
+        );
     }
 
     #[test]
@@ -9151,6 +9228,7 @@ mod tests {
             parallelism: 1,
             role_filters: Vec::new(),
             lexical_backend_comparison: false,
+            proof_runtime_ceiling_millis: None,
         }
     }
 

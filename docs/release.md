@@ -291,8 +291,8 @@ prompts, and remote URLs. If a pinned revision is no longer reachable, fixture
 prep fails before checkout with `revisionAvailable: false`.
 
 Then run the release gate normally. The gate uses
-`.planning/e2e/2026-05-31-phase110-clean-cold-fixture-config.json` by default,
-writes `phase110-clean-fixture-product-proof.json` into `CTXHELM_PROOF_DIR`,
+`.planning/e2e/2026-06-03-phase183-clean-fixture-refresh-config.json` by default,
+writes `phase183-clean-fixture-product-proof.json` into `CTXHELM_PROOF_DIR`,
 and validates it with `scripts/check-product-proof.py`. Before running the proof,
 the gate verifies every configured fixture exists, contains the requested commit,
 and has `HEAD` checked out at the configured `head`. Missing, stale, or
@@ -303,6 +303,17 @@ missing or stale fixtures fail the gate. Maintainers may override the config
 with `CTXHELM_CLEAN_FIXTURE_CONFIG=/absolute/path/to/config.json` or skip the
 check explicitly with `CTXHELM_SKIP_CLEAN_FIXTURE_PROOF=1` for non-release local
 diagnostics.
+
+Phase 183 refreshes the default clean fixture config after the old pinned
+VeriSchema object became unreachable. The refreshed four-repo proof keeps the
+standard `5000ms` per-commit runtime ceiling for ctxhelm, ReAgent, and
+VeriSchema, and uses an explicit source-free `proofRuntimeCeilingMillis: 15000`
+only for the detached RefactoringMiner fixture. Product proof reports the
+effective ceiling in each repository's `effectiveConfig` and records a verdict
+note when a repo-scoped ceiling is used, so a release cannot silently hide a
+global runtime-threshold change. The cold Phase 183 proof promotes with
+RefactoringMiner as a context-channel lexical-ceiling `match` and ctxhelm,
+ReAgent, and VeriSchema as `beat`.
 
 The optional real-client evidence wrappers are:
 

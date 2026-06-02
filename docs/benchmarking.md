@@ -187,6 +187,11 @@ Fields:
 - `repositories[*].privacyLabel`: expected repo privacy class.
 - `repositories[*].base` / `head`: optional stable revision range.
 - `repositories[*].limit`, `rankingBudget`, `mode`, `targetAgent`, `semanticEnabled`, `semanticProvider`, `semanticModel`, `semanticDimensions`, `lexicalBackendComparison`, `cacheEnabled`, `forceRefresh`, `parallelism`, `roleFilters`: per-repo overrides.
+- `repositories[*].proofRuntimeCeilingMillis`: optional source-free product-proof
+  runtime ceiling override for a specific repository. Omit it to keep the
+  default `5000ms` per-commit promotion gate; use it only when a detached
+  large-history fixture has measured cold-start cost that should not weaken the
+  global release threshold.
 - `repositories[*].baseline`: optional locked source-free baseline metadata for regression suites. Supported fields are `fileRecallAt10`, `lexicalBaselineRecallAt10`, `totalMillis`, `gapFamilies`, and `notes`.
 
 ## Run

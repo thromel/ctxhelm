@@ -3,11 +3,11 @@ gsd_state_version: 1.0
 milestone: v2.5
 milestone_name: Production Retrieval Quality
 status: active
-last_updated: "2026-06-02T19:27:12Z"
-last_activity: 2026-06-03 -- Phase 182 hardens clean proof fixture freshness by reporting unreachable pinned revisions source-free and making the release gate verify fixture HEADs before proof claims
+last_updated: "2026-06-02T19:45:39Z"
+last_activity: 2026-06-03 -- Phase 183 refreshes the default clean fixture proof to a reachable VeriSchema revision and adds repo-scoped product-proof runtime ceilings so large detached cold fixtures do not weaken the global 5000ms gate
 progress:
-  total_phases: 94
-  completed_phases: 94
+  total_phases: 95
+  completed_phases: 95
   total_plans: 7
   completed_plans: 7
   percent: 100
@@ -17,10 +17,10 @@ progress:
 
 ## Current Position
 
-Phase: 182 - Proof Fixture Freshness Guard
-Plan: 182-proof-fixture-freshness-guard
+Phase: 183 - Clean Fixture Refresh Runtime Ceiling
+Plan: 183-clean-fixture-refresh-runtime-ceiling
 Status: Complete
-Last activity: 2026-06-03 -- Phase 182 upgrades `scripts/prepare-proof-fixtures.sh` from checkout-only hydration to source-free fixture readiness reporting. The script now checks requested revisions before checkout, writes per-fixture JSON reports, and blocks early when a pinned revision is unavailable. `scripts/release-gate.sh` now verifies configured clean fixtures are present, contain the requested `head`, and have `HEAD` at that commit before running the clean cold fixture proof. The live report at `/tmp/ctxhelm-rd/phase182-fixture-reports/VeriSchema.fixture-status.json` records `revisionAvailable: false` for the old pinned VeriSchema SHA while RefactoringMiner, ctxhelm, and ReAgent are ready.
+Last activity: 2026-06-03 -- Phase 183 adds source-free `proofRuntimeCeilingMillis` per benchmark repository, keeps the default product-proof runtime gate at `5000ms` per commit, and wires `.planning/e2e/2026-06-03-phase183-clean-fixture-refresh-config.json` into the release gate as the default clean fixture proof. Cold proof promotes from `/tmp/ctxhelm-rd/phase183-clean-fixture-refresh-proof-scoped.json` with RefactoringMiner using an explicit `15000ms` ceiling after observing `11803ms` per commit, while ctxhelm, ReAgent, and VeriSchema stay on the default ceiling and beat lexical/context proof requirements. Warm proof also promotes from `/tmp/ctxhelm-rd/phase183-clean-fixture-refresh-warm-proof-scoped.json`.
 
 ## Project Reference
 

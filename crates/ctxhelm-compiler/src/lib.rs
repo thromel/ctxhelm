@@ -2750,6 +2750,7 @@ mod tests {
                     parallelism: None,
                     role_filters: Vec::new(),
                     lexical_backend_comparison: None,
+                    proof_runtime_ceiling_millis: None,
                     baseline: Some(BenchmarkRepoBaseline {
                         file_recall_at_10: None,
                         lexical_baseline_recall_at_10: None,
@@ -2779,6 +2780,7 @@ mod tests {
                     parallelism: Some(1),
                     role_filters: vec![FileRole::Source],
                     lexical_backend_comparison: None,
+                    proof_runtime_ceiling_millis: None,
                     baseline: None,
                 },
             ],
