@@ -2367,6 +2367,9 @@ export function requireSession(user?: { id: string }) {
     assert!(value["releaseGate"]["lexicalBackendComparison"]["averageRecallDeltaAt10"].is_number());
     assert!(value["releaseGate"]["lexicalBackendComparison"]["bm25Claim"].is_string());
     assert!(value["releaseGate"]["corpusVerdicts"].is_array());
+    assert!(value["releaseGate"]["corpusVerdicts"][0]["sourceRecallAt10"].is_number());
+    assert!(value["releaseGate"]["corpusVerdicts"][0]["lexicalSourceRecallAt10"].is_number());
+    assert!(value["releaseGate"]["corpusVerdicts"][0]["sourceDeltaAt10"].is_number());
     assert!(value["limitations"].is_array());
     assert!(value["helpsWhen"].is_array());
     assert!(value["doesNotHelpWhen"].is_array());
@@ -2396,6 +2399,8 @@ export function requireSession(user?: { id: string }) {
         .stdout(contains("Release Gate Decision"))
         .stdout(contains("Lexical Backend Comparison Summary"))
         .stdout(contains("Corpus Verdicts"))
+        .stdout(contains("source recall@10"))
+        .stdout(contains("lexical source recall@10"))
         .stdout(contains("When It Helps"))
         .stdout(contains("When It Does Not Help"))
         .stdout(contains("Limitations"))

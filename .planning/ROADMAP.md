@@ -8,6 +8,8 @@ v2.5 therefore focuses on measured retrieval quality, not more surface area. The
 
 Phase 172 promotes `docs/benchmarking.md` inside the same bounded governance priority after a measured proof showed the wider reserve was unsafe for source recall; the accepted variant removes the repeated benchmarking-doc gap while keeping source and validation recall unchanged.
 
+Phase 173 turns that manual source-recall judgment into a product-proof guardrail: corpus verdicts now expose source Recall@10 versus lexical source Recall@10, and promotion blocks when source recall regresses even if aggregate file/context recall looks better.
+
 ## v2.5 Production Retrieval Quality
 
 ## Phases
@@ -15,7 +17,7 @@ Phase 172 promotes `docs/benchmarking.md` inside the same bounded governance pri
 **Phase Numbering:**
 
 - Integer phases (61, 62, 63, 64, 65): Planned v2.5 work
-- Phases 66-172: Production-readiness follow-ups from the original blocked proof and the channel-aware promotion path
+- Phases 66-173: Production-readiness follow-ups from the original blocked proof and the channel-aware promotion path
 - Decimal phases (61.1, 62.1): Urgent insertions if needed
 
 - [x] **Phase 61: Multi-Repo Quality Baselines** - Maintainers can run source-free paired baselines across RefactoringMiner and a second real repository with stable comparison artifacts.
@@ -127,6 +129,7 @@ Phase 172 promotes `docs/benchmarking.md` inside the same bounded governance pri
 - [x] **Phase 170: Auxiliary Source Priority** - Source floors prefer implementation roots over auxiliary example/demo roots while preserving `scripts/` as normal source; the clean four-repo proof still promotes and VeriSchema Source Recall@10 improves from `0.2624269` to `0.2763158`.
 - [x] **Phase 171: Governance Doc Priority** - Governance-doc floors prefer current root planning docs before older or generic docs; the clean four-repo proof still promotes and ctxhelm File Recall@10 improves from `0.41904765` to `0.60952383`.
 - [x] **Phase 172: Benchmarking Governance Doc Priority** - Bounded governance-doc priority promotes `docs/benchmarking.md`; the clean four-repo proof still promotes, average File Recall@10 improves to `0.61190045`, ctxhelm File Recall@10 improves to `0.6666667`, and source/test recall stays unchanged.
+- [x] **Phase 173: Source Recall Promotion Guard** - Product proof now reports source Recall@10 deltas versus lexical and blocks aggregate-only promotion when source recall regresses.
 
 ## Phase Details
 

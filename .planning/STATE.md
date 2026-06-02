@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v2.5
 milestone_name: Production Retrieval Quality
 status: active
-last_updated: "2026-06-02T04:19:07Z"
-last_activity: 2026-06-02 -- Phase 172 preserved four-repo clean-cold promotion while promoting docs/benchmarking.md inside the bounded governance-doc priority; average File Recall@10 improved from 0.59761477 to 0.61190045, ctxhelm File Recall@10 improved from 0.60952383 to 0.6666667, and source/test recall stayed unchanged
+last_updated: "2026-06-02T04:39:58Z"
+last_activity: 2026-06-02 -- Phase 173 hardened product proof against aggregate-only ranking wins by adding source Recall@10 comparison fields to corpus verdicts and blocking promotion when ctxhelm source recall trails lexical beyond tolerance; the clean four-repo proof still promotes with non-negative source deltas on every corpus
 progress:
   total_phases: 90
   completed_phases: 90
@@ -17,10 +17,10 @@ progress:
 
 ## Current Position
 
-Phase: 172 - Benchmarking Governance Doc Priority
-Plan: 172-benchmarking-governance-doc-priority
+Phase: 173 - Source Recall Promotion Guard
+Plan: 173-source-recall-promotion-guard
 Status: Complete
-Last activity: 2026-06-02 -- Phase 172 converted the remaining repeated `docs/benchmarking.md` ctxhelm gap into a bounded governance-doc priority fix without increasing the governance reserve. A rejected five-slot reserve improved all-file recall but regressed ctxhelm Source Recall@10; the accepted bounded variant only reorders the existing four-slot governance priority. The four-repo clean-cold proof still promotes, average File Recall@10 improves from `0.59761477` to `0.61190045`, average lift vs lexical improves from `+0.14052217` to `+0.15480788`, ctxhelm File Recall@10 improves from `0.60952383` to `0.6666667`, ctxhelm Context Recall@10 improves from `0.6111111` to `0.6666667`, ctxhelm protected target miss-rate drops from `0.25` to `0.16666667`, Source Recall@10 stays unchanged on every corpus, and Test Recall@10 remains `0.67989415`.
+Last activity: 2026-06-02 -- Phase 173 converted today's rejected ranking experiments into a product-proof guardrail. The source-history reserve, binary-entrypoint demotion, and experiments-root demotion each produced some plausible local behavior but regressed corpus-level source/protected metrics. Product-proof corpus verdicts now expose `sourceRecallAt10`, `lexicalSourceRecallAt10`, and `sourceDeltaAt10`, and default promotion blocks if source recall trails lexical by more than `0.03`. The clean four-repo proof still promotes with average File Recall@10 `0.61190045`, average lift vs lexical `+0.15480788`, Test Recall@10 `0.67989415`, and source deltas: RefactoringMiner `0.0`, ctxhelm `+0.08333331`, ReAgent `+0.3333333`, VeriSchema `+0.14473686`.
 
 ## Project Reference
 
@@ -149,6 +149,7 @@ Planned phases:
 - Phase 170: Auxiliary Source Priority (complete follow-up)
 - Phase 171: Governance Doc Priority (complete follow-up)
 - Phase 172: Benchmarking Governance Doc Priority (complete follow-up)
+- Phase 173: Source Recall Promotion Guard (complete follow-up)
 
 ## Last Completed Milestone
 

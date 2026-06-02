@@ -695,6 +695,12 @@ pub struct ProductProofCorpusVerdict {
     pub lexical_baseline_recall_at_10: f32,
     pub lexical_delta_at_10: f32,
     #[serde(default)]
+    pub source_recall_at_10: f32,
+    #[serde(default)]
+    pub lexical_source_recall_at_10: f32,
+    #[serde(default)]
+    pub source_delta_at_10: f32,
+    #[serde(default)]
     pub agent_evidence_recall_at_10: f32,
     #[serde(default)]
     pub agent_evidence_delta_at_10: f32,
@@ -1661,6 +1667,20 @@ fn product_proof_release_decision(
             ),
         );
     }
+    let source_regressions = corpus_verdicts
+        .iter()
+        .filter(|verdict| product_proof_source_recall_blocks_promotion(verdict))
+        .map(|verdict| format!("{}:{:.3}", verdict.repository, verdict.source_delta_at_10))
+        .collect::<Vec<_>>();
+    if !source_regressions.is_empty() {
+        return (
+            SemanticPrecisionGateDecision::Block,
+            format!(
+                "Blocked because source Recall@10 trailed lexical beyond the promotion tolerance for: {}.",
+                source_regressions.join(", ")
+            ),
+        );
+    }
     let stale_or_slow_warm_cache = benchmark_report
         .repositories
         .iter()
@@ -1753,6 +1773,10 @@ fn product_proof_verdict_blocks_promotion(verdict: &ProductProofCorpusVerdict) -
     }
 }
 
+fn product_proof_source_recall_blocks_promotion(verdict: &ProductProofCorpusVerdict) -> bool {
+    verdict.source_delta_at_10 < -0.03
+}
+
 fn product_proof_is_perfect_ceiling_match(verdict: &ProductProofCorpusVerdict) -> bool {
     verdict.context_recall_at_10 >= 0.999
         && verdict.lexical_context_recall_at_10 >= 0.999
@@ -1770,6 +1794,9 @@ fn product_proof_corpus_verdict(repo: &BenchmarkRepoReport) -> ProductProofCorpu
             file_recall_at_10: 0.0,
             lexical_baseline_recall_at_10: 0.0,
             lexical_delta_at_10: 0.0,
+            source_recall_at_10: 0.0,
+            lexical_source_recall_at_10: 0.0,
+            source_delta_at_10: 0.0,
             agent_evidence_recall_at_10: 0.0,
             agent_evidence_delta_at_10: 0.0,
             context_recall_at_10: 0.0,
@@ -1791,6 +1818,9 @@ fn product_proof_corpus_verdict(repo: &BenchmarkRepoReport) -> ProductProofCorpu
         };
     };
     let lexical_delta_at_10 = report.file_recall_at_10 - report.lexical_baseline_recall_at_10;
+    let lexical_source_recall_at_10 =
+        average_source_recall_for_ranking(&report.commits, |commit| &commit.lexical_baseline_files);
+    let source_delta_at_10 = report.source_recall_at_10 - lexical_source_recall_at_10;
     let agent_evidence_recall_at_10 = agent_evidence_recall_at_10(report);
     let agent_evidence_delta_at_10 =
         agent_evidence_recall_at_10 - report.lexical_baseline_recall_at_10;
@@ -1857,6 +1887,12 @@ fn product_proof_corpus_verdict(repo: &BenchmarkRepoReport) -> ProductProofCorpu
             report.protected_evidence.retrieval_target_miss_rate_at_10
         ));
     }
+    if source_delta_at_10 < -0.03 {
+        notes.push(format!(
+            "source recall at 10 trails lexical by {:.3}",
+            source_delta_at_10
+        ));
+    }
     if matches!(status, ProductProofCorpusStatus::Match)
         && context_comparison.ctxhelm >= 0.999
         && context_comparison.lexical >= 0.999
@@ -1894,6 +1930,9 @@ fn product_proof_corpus_verdict(repo: &BenchmarkRepoReport) -> ProductProofCorpu
         file_recall_at_10: report.file_recall_at_10,
         lexical_baseline_recall_at_10: report.lexical_baseline_recall_at_10,
         lexical_delta_at_10,
+        source_recall_at_10: report.source_recall_at_10,
+        lexical_source_recall_at_10,
+        source_delta_at_10,
         agent_evidence_recall_at_10,
         agent_evidence_delta_at_10,
         context_recall_at_10: context_comparison.ctxhelm,
@@ -6171,6 +6210,33 @@ fn average_role_recall(commits: &[HistoricalCommitEval], role: FileRole, limit: 
     }
 }
 
+fn average_source_recall_for_ranking<'a>(
+    commits: &'a [HistoricalCommitEval],
+    ranking: impl Fn(&'a HistoricalCommitEval) -> &'a [String],
+) -> f32 {
+    let mut total = 0.0;
+    let mut count = 0usize;
+    for commit in commits {
+        let source_changed_files = filter_changed_labels_by_role(
+            &commit.changed_path_labels,
+            &commit.retrieval_target_files,
+            |role| matches!(role, FileRole::Source),
+        );
+        if source_changed_files.is_empty() {
+            continue;
+        }
+        let hits = changed_file_hits(&source_changed_files, ranking(commit), 10).len();
+        total += hits as f32 / source_changed_files.len() as f32;
+        count += 1;
+    }
+
+    if count == 0 {
+        0.0
+    } else {
+        total / count as f32
+    }
+}
+
 fn average_validation_command_recall(commits: &[HistoricalCommitEval]) -> f32 {
     average_test_hit_rate(commits, |commit| commit.validation_command_hits)
 }
@@ -7603,6 +7669,62 @@ mod tests {
     }
 
     #[test]
+    fn product_proof_release_gate_blocks_source_recall_regression() {
+        let mut eval = empty_historical_eval_report("source-regression");
+        set_recall_metrics(&mut eval, 0.67, 0.50);
+        eval.source_recall_at_10 = 0.0;
+        let commit = &mut eval.commits[0];
+        commit.changed_path_labels = vec![
+            historical_changed_path_label("src/a.py", FileRole::Source),
+            historical_changed_path_label("src/b.py", FileRole::Source),
+            historical_changed_path_label("docs/a.md", FileRole::Docs),
+            historical_changed_path_label("docs/b.md", FileRole::Docs),
+            historical_changed_path_label("docs/c.md", FileRole::Docs),
+            historical_changed_path_label("docs/d.md", FileRole::Docs),
+        ];
+        commit.retrieval_target_files = vec![
+            "src/a.py".to_string(),
+            "src/b.py".to_string(),
+            "docs/a.md".to_string(),
+            "docs/b.md".to_string(),
+            "docs/c.md".to_string(),
+            "docs/d.md".to_string(),
+        ];
+        commit.recommended_context_files = vec![
+            "docs/a.md".to_string(),
+            "docs/b.md".to_string(),
+            "docs/c.md".to_string(),
+            "docs/d.md".to_string(),
+        ];
+        commit.lexical_baseline_files = vec![
+            "src/a.py".to_string(),
+            "src/b.py".to_string(),
+            "docs/a.md".to_string(),
+        ];
+        commit.source_files_changed = 2;
+        commit.source_hits_at_10 = 0;
+
+        let report = build_product_proof_report(benchmark_report_with_repos(vec![(
+            "source-regression",
+            eval,
+        )]));
+        let verdict = &report.release_gate.corpus_verdicts[0];
+
+        assert_eq!(verdict.status, ProductProofCorpusStatus::Beat);
+        assert_eq!(verdict.source_recall_at_10, 0.0);
+        assert_eq!(verdict.lexical_source_recall_at_10, 1.0);
+        assert_eq!(verdict.source_delta_at_10, -1.0);
+        assert_eq!(
+            report.release_gate.decision,
+            SemanticPrecisionGateDecision::Block
+        );
+        assert!(report
+            .release_gate
+            .decision_reason
+            .contains("source Recall@10 trailed lexical"));
+    }
+
+    #[test]
     fn product_proof_release_gate_accepts_perfect_ceiling_match() {
         let mut ceiling = empty_historical_eval_report("ceiling");
         set_recall_metrics(&mut ceiling, 1.0, 1.0);
@@ -7823,6 +7945,7 @@ mod tests {
     fn product_proof_release_gate_explains_validation_separated_all_file_divergence() {
         let mut eval = empty_historical_eval_report("explained-divergence");
         set_recall_metrics(&mut eval, 0.60, 0.80);
+        eval.source_recall_at_10 = 1.0;
         eval.test_recall_at_10 = 1.0;
         eval.effective_validation_recall_at_10 = 1.0;
         let commit = &mut eval.commits[0];
@@ -7853,6 +7976,8 @@ mod tests {
             "tests/auth/session.test.ts".to_string(),
             "tests/auth/redirect.test.ts".to_string(),
         ];
+        commit.source_files_changed = 3;
+        commit.source_hits_at_10 = 3;
         commit.test_files_changed = 2;
         commit.test_hits_at_10 = 2;
         commit.effective_validation_hits_at_10 = 2;
