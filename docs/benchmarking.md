@@ -25,8 +25,16 @@ Product-proof corpus verdicts also expose machine-checkable divergence fields:
 - `contextVsAllFileDeltaAt10`: ctxhelm context-channel Recall@10 minus all-file Recall@10.
 - `lexicalContextVsAllFileDeltaAt10`: lexical context-channel Recall@10 minus lexical all-file Recall@10.
 - `allFileDivergenceExplained`: `true` only when any all-file lexical deficit is explained by non-regressed context recall plus covered validation targets.
+- `sourceRecallAt10`: ctxhelm Recall@10 for source-code targets.
+- `lexicalSourceRecallAt10`: lexical baseline Recall@10 for source-code targets.
+- `sourceDeltaAt10`: ctxhelm source Recall@10 minus lexical source Recall@10.
 
-The release gate and `scripts/check-product-proof.py` block unexplained all-file lexical deficits. This keeps the proof honest when lexical wins raw all-file recall by ranking validation tests as files, while still rejecting unexplained source-context losses.
+The release gate and `scripts/check-product-proof.py` block stale proof JSON that
+does not contain these source-recall fields, unexplained all-file lexical
+deficits, and source-code recall regressions beyond the release tolerance. This
+keeps the proof honest when lexical wins raw all-file recall by ranking
+validation tests as files, while still rejecting aggregate wins that hide worse
+source-code target selection.
 
 Product-proof JSON also includes `releaseGate.lexicalComparison`, a suite-level
 summary of the same boundary. `allFileClaim` reports whether ctxhelm beats,
@@ -685,9 +693,11 @@ defaults, if proof-boundary language is missing, if current reachable
 retrieval-gap summaries are not resource-backed with context-area URIs and
 next-read paths, if a benchmark repository report is missing, if a corpus has
 insufficient evidence because history is unavailable, if the pinned broad fixed
-corpus regresses below its recorded per-repository floors, or if
-`releaseGate.decision != "promote"`. A configured proof where any required
-corpus only matches or trails lexical retrieval blocks default promotion.
+corpus regresses below its recorded per-repository floors, if corpus verdicts
+are missing source-recall fields or show source recall regression beyond the
+release tolerance, or if `releaseGate.decision != "promote"`. A configured proof
+where any required corpus only matches or trails lexical retrieval blocks
+default promotion.
 
 The deterministic release smoke is:
 

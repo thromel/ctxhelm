@@ -1027,6 +1027,8 @@ fn product_proof_checker_accepts_promote_and_rejects_block() {
     let block_path = temp.path().join("block.json");
     let missing_resource_path = temp.path().join("missing-resource-gap.json");
     let missing_report_path = temp.path().join("missing-repo-report.json");
+    let missing_source_path = temp.path().join("missing-source-recall.json");
+    let source_regression_path = temp.path().join("source-regression.json");
     let broad_floor_path = temp.path().join("broad-fixed-corpus-floor.json");
     let broad_regression_path = temp.path().join("broad-fixed-corpus-regression.json");
     fs::write(&promote_path, product_proof_json("promote", true, "beat")).unwrap();
@@ -1039,6 +1041,16 @@ fn product_proof_checker_accepts_promote_and_rejects_block() {
     fs::write(
         &missing_report_path,
         product_proof_json_without_repository_report(),
+    )
+    .unwrap();
+    fs::write(
+        &missing_source_path,
+        product_proof_json_without_source_recall_fields(),
+    )
+    .unwrap();
+    fs::write(
+        &source_regression_path,
+        product_proof_json_with_source_recall_regression(),
     )
     .unwrap();
     fs::write(
@@ -1114,6 +1126,38 @@ fn product_proof_checker_accepts_promote_and_rejects_block() {
         "unexpected checker error: {stderr}"
     );
 
+    let missing_source = Command::new("python3")
+        .arg(&script)
+        .arg(&missing_source_path)
+        .current_dir(&repo_root)
+        .output()
+        .unwrap();
+    assert!(
+        !missing_source.status.success(),
+        "stale product proof without source-recall fields should fail release checker"
+    );
+    let stderr = String::from_utf8_lossy(&missing_source.stderr);
+    assert!(
+        stderr.contains("missing source-recall field sourceRecallAt10"),
+        "unexpected checker error: {stderr}"
+    );
+
+    let source_regression = Command::new("python3")
+        .arg(&script)
+        .arg(&source_regression_path)
+        .current_dir(&repo_root)
+        .output()
+        .unwrap();
+    assert!(
+        !source_regression.status.success(),
+        "product proof with source recall regression should fail release checker"
+    );
+    let stderr = String::from_utf8_lossy(&source_regression.stderr);
+    assert!(
+        stderr.contains("source recall regression") && stderr.contains("sourceDeltaAt10"),
+        "unexpected checker error: {stderr}"
+    );
+
     let broad_floor = Command::new("python3")
         .arg(&script)
         .arg(&broad_floor_path)
@@ -1184,6 +1228,9 @@ fn product_proof_json(decision: &str, default_promotion_allowed: bool, status: &
       "repository": "fixture",
       "status": "{status}",
       "lexicalDeltaAt10": 0.1,
+      "sourceRecallAt10": 0.9,
+      "lexicalSourceRecallAt10": 0.8,
+      "sourceDeltaAt10": 0.1,
       "contextVsAllFileDeltaAt10": 0.0,
       "lexicalContextVsAllFileDeltaAt10": 0.0,
       "allFileDivergenceExplained": true
@@ -1219,6 +1266,32 @@ fn product_proof_json_without_repository_report() -> String {
         }]
       }"#,
         r#""report": null"#,
+    )
+}
+
+fn product_proof_json_without_source_recall_fields() -> String {
+    product_proof_json("promote", true, "beat")
+        .replace(
+            r#"      "sourceRecallAt10": 0.9,
+"#,
+            "",
+        )
+        .replace(
+            r#"      "lexicalSourceRecallAt10": 0.8,
+"#,
+            "",
+        )
+        .replace(
+            r#"      "sourceDeltaAt10": 0.1,
+"#,
+            "",
+        )
+}
+
+fn product_proof_json_with_source_recall_regression() -> String {
+    product_proof_json("promote", true, "beat").replace(
+        r#"      "sourceDeltaAt10": 0.1,"#,
+        r#"      "sourceDeltaAt10": -0.031,"#,
     )
 }
 
@@ -1283,6 +1356,9 @@ fn product_proof_json_with_broad_fixed_corpus(verischema_file_recall_at_10: f64)
       "repository": "phase92-area-aware-gap-taxonomy-2026-05-31",
       "status": "beat",
       "lexicalDeltaAt10": 0.1,
+      "sourceRecallAt10": 0.9,
+      "lexicalSourceRecallAt10": 0.8,
+      "sourceDeltaAt10": 0.1,
       "contextVsAllFileDeltaAt10": 0.0,
       "lexicalContextVsAllFileDeltaAt10": 0.0,
       "allFileDivergenceExplained": true

@@ -3,11 +3,11 @@ gsd_state_version: 1.0
 milestone: v2.5
 milestone_name: Production Retrieval Quality
 status: active
-last_updated: "2026-06-02T04:39:58Z"
-last_activity: 2026-06-02 -- Phase 173 hardened product proof against aggregate-only ranking wins by adding source Recall@10 comparison fields to corpus verdicts and blocking promotion when ctxhelm source recall trails lexical beyond tolerance; the clean four-repo proof still promotes with non-negative source deltas on every corpus
+last_updated: "2026-06-02T05:14:00Z"
+last_activity: 2026-06-02 -- Phase 174 made the source-recall proof schema a release-checker contract: stale product-proof JSON without source Recall@10 fields now fails, source recall regressions beyond tolerance fail, and a fresh RefactoringMiner-clone four-repo proof still promotes under the tightened checker
 progress:
-  total_phases: 90
-  completed_phases: 90
+  total_phases: 91
+  completed_phases: 91
   total_plans: 7
   completed_plans: 7
   percent: 100
@@ -17,10 +17,10 @@ progress:
 
 ## Current Position
 
-Phase: 173 - Source Recall Promotion Guard
-Plan: 173-source-recall-promotion-guard
+Phase: 174 - Source Recall Release Proof Contract
+Plan: 174-source-recall-release-proof-contract
 Status: Complete
-Last activity: 2026-06-02 -- Phase 173 converted today's rejected ranking experiments into a product-proof guardrail. The source-history reserve, binary-entrypoint demotion, and experiments-root demotion each produced some plausible local behavior but regressed corpus-level source/protected metrics. Product-proof corpus verdicts now expose `sourceRecallAt10`, `lexicalSourceRecallAt10`, and `sourceDeltaAt10`, and default promotion blocks if source recall trails lexical by more than `0.03`. The clean four-repo proof still promotes with average File Recall@10 `0.61190045`, average lift vs lexical `+0.15480788`, Test Recall@10 `0.67989415`, and source deltas: RefactoringMiner `0.0`, ctxhelm `+0.08333331`, ReAgent `+0.3333333`, VeriSchema `+0.14473686`.
+Last activity: 2026-06-02 -- Phase 174 promoted Phase 173's source-recall fields from runtime output to release artifact freshness policy. `scripts/check-product-proof.py` now rejects corpus verdicts missing `sourceRecallAt10`, `lexicalSourceRecallAt10`, or `sourceDeltaAt10`, and blocks source recall regressions below `-0.03`. A four-repo proof using a fresh RefactoringMiner clone at the pinned corpus commits still promotes under the tightened checker: RefactoringMiner source delta `0.0`, ctxhelm `+0.08333331`, ReAgent `+0.3333333`, VeriSchema `+0.14473686`.
 
 ## Project Reference
 
@@ -138,6 +138,7 @@ Planned phases:
 - Phase 159: Lexical Runtime Accounting And Exact-Primary Policy (complete follow-up)
 - Phase 160: Bounded Semantic Status And Search (complete follow-up)
 - Phase 161: Semantic Gate Contribution Diagnostics (complete follow-up)
+- Phase 174: Source Recall Release Proof Contract (complete follow-up)
 - Phase 162: Feature-Enabled Local Fastembed Gate Proof (complete follow-up)
 - Phase 163: Persisted Semantic Vector Reuse (complete follow-up)
 - Phase 164: Global Semantic Vector Candidates And Write-Through (complete follow-up)

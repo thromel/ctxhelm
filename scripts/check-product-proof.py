@@ -20,6 +20,25 @@ def is_perfect_ceiling_match(verdict: dict) -> bool:
     )
 
 
+def require_number(verdict: dict, field: str) -> float:
+    if field not in verdict:
+        fail(
+            "product proof corpus verdict was missing source-recall field "
+            + field
+            + ": "
+            + str(verdict.get("repository"))
+        )
+    try:
+        return float(verdict.get(field))
+    except (TypeError, ValueError):
+        fail(
+            "product proof corpus verdict had non-numeric source-recall field "
+            + field
+            + ": "
+            + str(verdict.get("repository"))
+        )
+
+
 def current_reachable_gap_summaries(report: dict):
     repositories = report.get("benchmarkReport", {}).get("repositories", [])
     if not isinstance(repositories, list):
@@ -194,6 +213,16 @@ def main() -> None:
             fail(
                 "product proof corpus had unexplained all-file lexical divergence: "
                 + str(verdict.get("repository"))
+            )
+        require_number(verdict, "sourceRecallAt10")
+        require_number(verdict, "lexicalSourceRecallAt10")
+        source_delta = require_number(verdict, "sourceDeltaAt10")
+        if source_delta < -0.03:
+            fail(
+                "product proof corpus had source recall regression: "
+                + str(verdict.get("repository"))
+                + " sourceDeltaAt10 "
+                + str(source_delta)
             )
         if verdict.get("status") != "beat" and not is_perfect_ceiling_match(verdict):
             fail(
