@@ -4,10 +4,10 @@ milestone: v2.5
 milestone_name: Production Retrieval Quality
 status: active
 last_updated: "2026-06-03T00:00:00Z"
-last_activity: 2026-06-03 -- Phase 187 adds a corroborated source-history reserve for co-change source misses and records the source-vs-docs tradeoff
+last_activity: 2026-06-03 -- Phase 188 adds source-free selected-signal profiles to historical eval reports so ranking budget tradeoffs are measurable per commit
 progress:
-  total_phases: 98
-  completed_phases: 98
+  total_phases: 99
+  completed_phases: 99
   total_plans: 7
   completed_plans: 7
   percent: 100
@@ -17,10 +17,10 @@ progress:
 
 ## Current Position
 
-Phase: 187 - Corroborated Source History Reserve
-Plan: 187-source-history-reserve
+Phase: 188 - Selected Signal Profiles
+Plan: 188-selected-signal-profiles
 Status: Complete
-Last activity: 2026-06-03 -- Phase 187 adds a bounded source-history reserve for source files with co-change evidence corroborated by dependency, lexical, lexical-expansion, or symbol signals. Fresh release-binary proof promotes from `/tmp/ctxhelm-rd/phase187-source-history-reserve-release-proof.json`; ctxhelm Source Recall@10 improves from `0.42857143` to `0.5`, VeriSchema Source Recall@10 improves from `0.32258064` to `0.38709676`, RefactoringMiner/ReAgent stay unchanged, and the ctxhelm all-file Recall@10 tradeoff is recorded explicitly (`0.6666667 -> 0.5587302`) because broad docs lose some top-10 budget.
+Last activity: 2026-06-03 -- Phase 188 adds source-free `selectedSignalProfiles` to historical commit eval reports. Fresh release-binary proof promotes from `/tmp/ctxhelm-rd/phase188-selected-signal-profile-proof.json`; all 16 evaluated commits across RefactoringMiner, ctxhelm, ReAgent, and VeriSchema have non-empty selected-signal profiles, and retrieval metrics stay unchanged from Phase 187. The profile exposes top-10 selected counts by role and signal, plus retrieval-target selected counts, so the Phase 187 source-vs-docs budget tradeoff can be diagnosed per commit without source text.
 
 ## Project Reference
 
@@ -166,6 +166,7 @@ Planned phases:
 - Phase 185: Gap Summary Area Profiles (complete follow-up)
 - Phase 186: Gap Profile Deduplication (complete follow-up)
 - Phase 187: Corroborated Source History Reserve (complete follow-up)
+- Phase 188: Selected Signal Profiles (complete follow-up)
 
 ## Last Completed Milestone
 

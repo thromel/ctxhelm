@@ -1885,6 +1885,7 @@ mod tests {
                 recommended_commands: Vec::new(),
                 lexical_baseline_files: vec!["src/lib.rs".to_string()],
                 signal_baseline_files: Vec::new(),
+                selected_signal_profiles: Vec::new(),
                 protected_evidence: Vec::new(),
                 graph_edge_profiles: Vec::new(),
                 file_hits_at_5: vec!["src/lib.rs".to_string()],

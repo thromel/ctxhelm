@@ -345,6 +345,13 @@ Recall@10 tradeoff (`0.6666667 -> 0.5587302`) because broad docs lose some
 top-10 budget; this is accepted as a source-channel R&D improvement, not as a
 blanket all-file recall win.
 
+Phase 188 adds source-free selected-signal profiles to historical commit eval
+reports. Each commit records selected top-10 counts by signal and role, plus how
+many selected paths were retrieval targets. The fresh four-repo proof still
+promotes, all 16 evaluated commits include non-empty profiles, and recall
+metrics stay unchanged from Phase 187. Release reviewers can use this profile to
+explain ranking-budget allocation before accepting future source/doc tradeoffs.
+
 The optional real-client evidence wrappers are:
 
 - `scripts/smoke-codex-mcp.sh`

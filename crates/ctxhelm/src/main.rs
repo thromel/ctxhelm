@@ -6052,6 +6052,7 @@ mod tests {
                 recommended_commands: vec!["pnpm test tests/auth.test.ts".to_string()],
                 lexical_baseline_files: vec!["README.md".to_string()],
                 signal_baseline_files: Vec::new(),
+                selected_signal_profiles: Vec::new(),
                 protected_evidence: Vec::new(),
                 graph_edge_profiles: vec![ctxhelm_compiler::GraphEdgeProfile {
                     edge_label: "imports".to_string(),

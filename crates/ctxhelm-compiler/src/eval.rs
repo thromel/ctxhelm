@@ -1172,6 +1172,15 @@ pub struct HistoricalSignalRanking {
     pub files: Vec<String>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct HistoricalSelectedSignalProfile {
+    pub signal: RetrievalSignalKind,
+    pub role: FileRole,
+    pub selected_at_10_count: usize,
+    pub retrieval_target_selected_at_10_count: usize,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct HistoricalCommitEval {
@@ -1191,6 +1200,8 @@ pub struct HistoricalCommitEval {
     pub lexical_baseline_files: Vec<String>,
     #[serde(default)]
     pub signal_baseline_files: Vec<HistoricalSignalRanking>,
+    #[serde(default)]
+    pub selected_signal_profiles: Vec<HistoricalSelectedSignalProfile>,
     #[serde(default)]
     pub protected_evidence: Vec<HistoricalProtectedEvidenceFile>,
     #[serde(default)]
@@ -4492,6 +4503,13 @@ fn evaluate_historical_commit_sample(
     );
     let signal_baseline_files =
         signal_baseline_rankings(&recommended_context_files, &signals_by_path);
+    let selected_signal_profiles = selected_signal_profiles(
+        &recommended_context_files,
+        &signals_by_path,
+        &candidate_roles_by_path,
+        &retrieval_target_paths,
+        10,
+    );
     let source_changed_files =
         filter_changed_labels_by_role(&changed_path_labels, &retrieval_target_files, |role| {
             matches!(role, FileRole::Source)
@@ -4546,6 +4564,7 @@ fn evaluate_historical_commit_sample(
             recommended_commands,
             lexical_baseline_files,
             signal_baseline_files,
+            selected_signal_profiles,
             protected_evidence,
             graph_edge_profiles,
             file_hits_at_5,
@@ -6183,6 +6202,82 @@ fn signal_baseline_rankings(
             signal,
         })
         .collect()
+}
+
+fn selected_signal_profiles(
+    recommended_context_files: &[String],
+    signals_by_path: &BTreeMap<String, Vec<RetrievalSignalKind>>,
+    candidate_roles_by_path: &BTreeMap<String, FileRole>,
+    retrieval_target_paths: &BTreeSet<String>,
+    limit: usize,
+) -> Vec<HistoricalSelectedSignalProfile> {
+    let mut profiles = Vec::<HistoricalSelectedSignalProfile>::new();
+    for path in recommended_context_files.iter().take(limit) {
+        let role = candidate_roles_by_path
+            .get(path)
+            .cloned()
+            .unwrap_or(FileRole::Unknown);
+        let Some(signals) = signals_by_path.get(path) else {
+            continue;
+        };
+        for signal in signals {
+            if let Some(profile) = profiles
+                .iter_mut()
+                .find(|profile| profile.signal == *signal && profile.role == role)
+            {
+                profile.selected_at_10_count += 1;
+                if retrieval_target_paths.contains(path) {
+                    profile.retrieval_target_selected_at_10_count += 1;
+                }
+            } else {
+                profiles.push(HistoricalSelectedSignalProfile {
+                    signal: signal.clone(),
+                    role: role.clone(),
+                    selected_at_10_count: 1,
+                    retrieval_target_selected_at_10_count: usize::from(
+                        retrieval_target_paths.contains(path),
+                    ),
+                });
+            }
+        }
+    }
+    profiles.sort_by(|left, right| {
+        signal_order(&left.signal)
+            .cmp(&signal_order(&right.signal))
+            .then_with(|| file_role_order(&left.role).cmp(&file_role_order(&right.role)))
+    });
+    profiles
+}
+
+fn signal_order(signal: &RetrievalSignalKind) -> u8 {
+    match signal {
+        RetrievalSignalKind::Anchor => 0,
+        RetrievalSignalKind::CurrentDiff => 1,
+        RetrievalSignalKind::Lexical => 2,
+        RetrievalSignalKind::LexicalExpansion => 3,
+        RetrievalSignalKind::Symbol => 4,
+        RetrievalSignalKind::Dependency => 5,
+        RetrievalSignalKind::RelatedTest => 6,
+        RetrievalSignalKind::CoChange => 7,
+        RetrievalSignalKind::History => 8,
+        RetrievalSignalKind::Semantic => 9,
+        RetrievalSignalKind::Config => 10,
+        RetrievalSignalKind::Docs => 11,
+        RetrievalSignalKind::Memory => 12,
+    }
+}
+
+fn file_role_order(role: &FileRole) -> u8 {
+    match role {
+        FileRole::Source => 0,
+        FileRole::Test => 1,
+        FileRole::Config => 2,
+        FileRole::Schema => 3,
+        FileRole::Docs => 4,
+        FileRole::Generated => 5,
+        FileRole::Sensitive => 6,
+        FileRole::Unknown => 7,
+    }
 }
 
 fn protected_evidence_files(
@@ -8223,6 +8318,7 @@ mod tests {
             recommended_commands: Vec::new(),
             lexical_baseline_files: Vec::new(),
             signal_baseline_files: Vec::new(),
+            selected_signal_profiles: Vec::new(),
             protected_evidence: vec![
                 HistoricalProtectedEvidenceFile {
                     path: "src/exact.ts".to_string(),
@@ -8324,6 +8420,73 @@ mod tests {
         assert!(files[0].selected_at_10);
         assert!(files[0].retrieval_target);
         assert_eq!(files[0].role, Some(FileRole::Source));
+    }
+
+    #[test]
+    fn selected_signal_profiles_count_roles_signals_and_target_hits() {
+        let recommended = vec![
+            ".planning/STATE.md".to_string(),
+            "src/lib.rs".to_string(),
+            "src/history.rs".to_string(),
+            "scripts/release.sh".to_string(),
+        ];
+        let mut signals = BTreeMap::new();
+        signals.insert(
+            ".planning/STATE.md".to_string(),
+            vec![RetrievalSignalKind::Lexical, RetrievalSignalKind::Docs],
+        );
+        signals.insert(
+            "src/lib.rs".to_string(),
+            vec![
+                RetrievalSignalKind::Lexical,
+                RetrievalSignalKind::Dependency,
+            ],
+        );
+        signals.insert(
+            "src/history.rs".to_string(),
+            vec![
+                RetrievalSignalKind::CoChange,
+                RetrievalSignalKind::Dependency,
+            ],
+        );
+        signals.insert(
+            "scripts/release.sh".to_string(),
+            vec![RetrievalSignalKind::Lexical],
+        );
+        let roles = BTreeMap::from([
+            (".planning/STATE.md".to_string(), FileRole::Docs),
+            ("src/lib.rs".to_string(), FileRole::Source),
+            ("src/history.rs".to_string(), FileRole::Source),
+            ("scripts/release.sh".to_string(), FileRole::Unknown),
+        ]);
+        let targets = BTreeSet::from([
+            ".planning/STATE.md".to_string(),
+            "src/history.rs".to_string(),
+        ]);
+
+        let profiles = selected_signal_profiles(&recommended, &signals, &roles, &targets, 3);
+
+        assert!(profiles.contains(&HistoricalSelectedSignalProfile {
+            signal: RetrievalSignalKind::Lexical,
+            role: FileRole::Docs,
+            selected_at_10_count: 1,
+            retrieval_target_selected_at_10_count: 1,
+        }));
+        assert!(profiles.contains(&HistoricalSelectedSignalProfile {
+            signal: RetrievalSignalKind::Dependency,
+            role: FileRole::Source,
+            selected_at_10_count: 2,
+            retrieval_target_selected_at_10_count: 1,
+        }));
+        assert!(profiles.contains(&HistoricalSelectedSignalProfile {
+            signal: RetrievalSignalKind::CoChange,
+            role: FileRole::Source,
+            selected_at_10_count: 1,
+            retrieval_target_selected_at_10_count: 1,
+        }));
+        assert!(!profiles.iter().any(|profile| {
+            profile.signal == RetrievalSignalKind::Lexical && profile.role == FileRole::Unknown
+        }));
     }
 
     #[test]
@@ -9093,6 +9256,7 @@ mod tests {
             recommended_commands: Vec::new(),
             lexical_baseline_files: Vec::new(),
             signal_baseline_files: Vec::new(),
+            selected_signal_profiles: Vec::new(),
             protected_evidence: Vec::new(),
             graph_edge_profiles: Vec::new(),
             file_hits_at_5: Vec::new(),
@@ -9173,6 +9337,7 @@ mod tests {
             recommended_commands: Vec::new(),
             lexical_baseline_files: Vec::new(),
             signal_baseline_files: Vec::new(),
+            selected_signal_profiles: Vec::new(),
             protected_evidence: Vec::new(),
             graph_edge_profiles: Vec::new(),
             file_hits_at_5: Vec::new(),
@@ -9506,6 +9671,7 @@ mod tests {
                 recommended_commands: Vec::new(),
                 lexical_baseline_files: Vec::new(),
                 signal_baseline_files: Vec::new(),
+                selected_signal_profiles: Vec::new(),
                 protected_evidence: Vec::new(),
                 graph_edge_profiles: Vec::new(),
                 file_hits_at_5: Vec::new(),

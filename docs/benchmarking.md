@@ -758,6 +758,13 @@ Recommendation today:
   proof records a ctxhelm all-file Recall@10 tradeoff (`0.6666667 -> 0.5587302`)
   from broad-doc displacement, so this should be read as a source-channel
   improvement rather than an all-file recall improvement.
+- Phase 188 adds `selectedSignalProfiles` to historical commit eval reports.
+  Each commit now reports selected top-10 counts by source-free signal family and
+  file role, plus selected retrieval-target counts. The four-repo release proof
+  still promotes with unchanged recall metrics, and all 16 evaluated commits
+  include non-empty profiles. Use this field to debug budget tradeoffs such as
+  co-change source slots versus broad governance docs before changing ranking
+  allocation again.
 - Treat cloud embeddings/reranking as disabled unless an explicit repo policy
   allows them.
 
