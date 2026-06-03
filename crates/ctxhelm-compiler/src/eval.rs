@@ -924,6 +924,12 @@ pub struct ContextAreaNextReadSummary {
     pub next_read_recoverable_count: usize,
     #[serde(default)]
     pub agent_evidence_recoverable_count: usize,
+    #[serde(default)]
+    pub agent_evidence_only_count: usize,
+    #[serde(default)]
+    pub agent_evidence_only_role_counts: BTreeMap<String, usize>,
+    #[serde(default)]
+    pub top_agent_evidence_only_areas: Vec<CandidateCoverageAreaSummary>,
     pub top_pressure_next_read_recoverable_count: usize,
     pub zero_selected_area_recoverable_count: usize,
     pub source_text_logged: bool,
@@ -7099,6 +7105,7 @@ fn context_area_next_read_summary(commits: &[HistoricalCommitEval]) -> ContextAr
         source_text_logged: false,
         ..ContextAreaNextReadSummary::default()
     };
+    let mut agent_evidence_only_area_counts = BTreeMap::<String, usize>::new();
 
     for commit in commits {
         if commit.missing_files_at_10.is_empty() || commit.context_areas.is_empty() {
@@ -7122,6 +7129,11 @@ fn context_area_next_read_summary(commits: &[HistoricalCommitEval]) -> ContextAr
             .chain(commit.recommended_context_files.iter().cloned())
             .chain(commit.recommended_tests.iter().cloned())
             .collect::<BTreeSet<_>>();
+        let roles_by_path = commit
+            .changed_path_labels
+            .iter()
+            .map(|label| (label.path.clone(), label.role.clone()))
+            .collect::<BTreeMap<_, _>>();
         let top_pressure_next_reads = commit
             .context_areas
             .iter()
@@ -7138,12 +7150,47 @@ fn context_area_next_read_summary(commits: &[HistoricalCommitEval]) -> ContextAr
         summary.missed_file_count_at_10 += missing.len();
         summary.next_read_recoverable_count += missing.intersection(&all_next_reads).count();
         summary.agent_evidence_recoverable_count += missing.intersection(&agent_evidence).count();
+        for path in missing
+            .intersection(&agent_evidence)
+            .filter(|path| !all_next_reads.contains(*path))
+        {
+            summary.agent_evidence_only_count += 1;
+            let role = roles_by_path
+                .get(path.as_str())
+                .cloned()
+                .unwrap_or(FileRole::Unknown);
+            *summary
+                .agent_evidence_only_role_counts
+                .entry(file_role_label(&role).to_string())
+                .or_insert(0) += 1;
+            *agent_evidence_only_area_counts
+                .entry(context_area_for_path(path))
+                .or_insert(0) += 1;
+        }
         summary.top_pressure_next_read_recoverable_count +=
             missing.intersection(&top_pressure_next_reads).count();
         summary.zero_selected_area_recoverable_count +=
             missing.intersection(&zero_selected_next_reads).count();
     }
 
+    let mut top_agent_evidence_only_areas = agent_evidence_only_area_counts
+        .into_iter()
+        .collect::<Vec<_>>();
+    top_agent_evidence_only_areas.sort_by(|(left_area, left_count), (right_area, right_count)| {
+        right_count
+            .cmp(left_count)
+            .then_with(|| left_area.cmp(right_area))
+    });
+    summary.top_agent_evidence_only_areas = top_agent_evidence_only_areas
+        .into_iter()
+        .take(10)
+        .map(
+            |(context_area, missed_count)| CandidateCoverageAreaSummary {
+                context_area,
+                missed_count,
+            },
+        )
+        .collect();
     summary
 }
 
@@ -9650,7 +9697,11 @@ mod tests {
             task_hash: "task".to_string(),
             task_type: TaskType::BugFix,
             target_agent: "generic".to_string(),
-            changed_path_labels: Vec::new(),
+            changed_path_labels: vec![
+                historical_changed_path_label("schema_agent/core/fd_router.py", FileRole::Source),
+                historical_changed_path_label("docs/architecture.md", FileRole::Docs),
+                historical_changed_path_label("tests/agents/test_base.py", FileRole::Test),
+            ],
             safe_changed_files: Vec::new(),
             retrieval_target_files: Vec::new(),
             excluded_changed_file_count: 0,
@@ -9780,6 +9831,18 @@ mod tests {
         assert_eq!(next_read.missed_file_count_at_10, 3);
         assert_eq!(next_read.next_read_recoverable_count, 2);
         assert_eq!(next_read.agent_evidence_recoverable_count, 3);
+        assert_eq!(next_read.agent_evidence_only_count, 1);
+        assert_eq!(
+            next_read.agent_evidence_only_role_counts.get("test"),
+            Some(&1)
+        );
+        assert_eq!(
+            next_read.top_agent_evidence_only_areas,
+            vec![CandidateCoverageAreaSummary {
+                context_area: "tests/agents".to_string(),
+                missed_count: 1,
+            }]
+        );
         assert_eq!(next_read.top_pressure_next_read_recoverable_count, 1);
         assert_eq!(next_read.zero_selected_area_recoverable_count, 1);
         assert!(!next_read.source_text_logged);

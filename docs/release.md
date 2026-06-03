@@ -452,6 +452,16 @@ validation/broad-area regression. A source-dependency-before-workflow ordering
 experiment was rejected because it displaced a true workflow-script hit and
 regressed VeriSchema File Recall@10.
 
+Phase 201 adds source-free agent-evidence-only gap profiles to
+`contextAreaNextReadSummary`. The fresh four-repo proof promotes with Phase 200
+retrieval metrics unchanged while showing VeriSchema has `10` missed@10 files
+recoverable through agent evidence but not progressive next reads. All `10` are
+tests, concentrated in `tests/agents=5`, `tests/evaluation=4`, and
+`tests/core=1`; RefactoringMiner has `1` agent-evidence-only test gap in
+`src/test/java/org/refactoringminer/mcp`. A broad agent-source reserve,
+role-aware related-test next-read priority, and larger high-pressure next-read
+cap were measured and rejected because they produced no recovery movement.
+
 The optional real-client evidence wrappers are:
 
 - `scripts/smoke-codex-mcp.sh`

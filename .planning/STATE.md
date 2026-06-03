@@ -4,10 +4,10 @@ milestone: v2.5
 milestone_name: Production Retrieval Quality
 status: active
 last_updated: "2026-06-03T00:00:00Z"
-last_activity: 2026-06-03 -- Phase 200 adds contextual README doc reserve
+last_activity: 2026-06-03 -- Phase 201 adds agent-evidence-only gap diagnostics
 progress:
-  total_phases: 111
-  completed_phases: 111
+  total_phases: 112
+  completed_phases: 112
   total_plans: 7
   completed_plans: 7
   percent: 100
@@ -17,10 +17,10 @@ progress:
 
 ## Current Position
 
-Phase: 200 - Contextual README Doc Reserve
-Plan: 200-contextual-readme-doc-reserve
+Phase: 201 - Agent Evidence Only Gap Profiles
+Plan: 201-agent-evidence-only-gap-profiles
 Status: Complete
-Last activity: 2026-06-03 -- Phase 200 adds a bounded contextual README doc reserve for broad tasks. Fresh proof promotes from `/tmp/ctxhelm-rd/phase200-contextual-readme-after-workflow-proof.json`; average File Recall@10 improves from `0.658268` to `0.7082679`, average file delta vs lexical improves from `+0.17873949` to `+0.22873944`, Agent Evidence Recall@10 improves from `0.76052284` to `0.81052285`, Context Recall@10 improves from `0.7638889` to `0.7708334`, and VeriSchema File Recall@10 improves from `0.35529414` to `0.55529416` without source/test/effective-validation/broad-area regression. A broader source-dependency-before-workflow ordering was tested at `/tmp/ctxhelm-rd/phase200-source-dependency-before-workflow-proof.json` and rejected because it regressed VeriSchema File Recall@10.
+Last activity: 2026-06-03 -- Phase 201 adds source-free agent-evidence-only gap profiles to `contextAreaNextReadSummary`. Fresh proof promotes from `/tmp/ctxhelm-rd/phase201-agent-evidence-gap-proof.json` with Phase 200 retrieval metrics unchanged while exposing that VeriSchema has `10` missed@10 files recoverable through agent evidence but not progressive next reads; all `10` are tests, concentrated in `tests/agents=5`, `tests/evaluation=4`, and `tests/core=1`. RefactoringMiner has `1` agent-evidence-only test gap in `src/test/java/org/refactoringminer/mcp`. Two attempted next ranking/read-order experiments were measured and rejected because they produced no recovery movement.
 
 ## Project Reference
 
@@ -179,6 +179,7 @@ Planned phases:
 - Phase 198: Candidate Coverage Accounting (complete follow-up)
 - Phase 199: Candidate Miss Pressure Profiles (complete follow-up)
 - Phase 200: Contextual README Doc Reserve (complete follow-up)
+- Phase 201: Agent Evidence Only Gap Profiles (complete follow-up)
 
 ## Last Completed Milestone
 

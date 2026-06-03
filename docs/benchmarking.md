@@ -841,6 +841,16 @@ Recommendation today:
   source/test/effective-validation/broad-area regression. A source-dependency
   ordering experiment was rejected because it displaced a true workflow-script
   hit and regressed VeriSchema File Recall@10.
+- Phase 201 adds source-free agent-evidence-only gap profiles to
+  `contextAreaNextReadSummary`. The four-repo proof promotes with Phase 200
+  retrieval metrics unchanged while showing the residual gap between
+  progressive next reads and the full agent evidence bundle is validation-only:
+  VeriSchema has `10` agent-evidence-only missed@10 files, all tests,
+  concentrated in `tests/agents=5`, `tests/evaluation=4`, and `tests/core=1`;
+  RefactoringMiner has `1` agent-evidence-only test gap. A broad agent-source
+  reserve, role-aware related-test next-read priority, and larger high-pressure
+  next-read cap were measured and rejected because they produced no recovery
+  movement.
 - Treat cloud embeddings/reranking as disabled unless an explicit repo policy
   allows them.
 
