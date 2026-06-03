@@ -805,6 +805,12 @@ Recommendation today:
   progressive reads. The four-repo proof still promotes with selected-file,
   source, test, validation, and broad-area metrics unchanged while next-read
   recovery improves from `10 -> 11` on ctxhelm and `14 -> 16` on VeriSchema.
+- Phase 196 reserves selected validation areas in broad context-area guidance
+  and adds package-mirrored related-test affinity. The accepted four-repo proof
+  still promotes with selected-file, source, test, and validation metrics
+  unchanged while VeriSchema broad context-area recall improves from
+  `0.5777778 -> 0.84444445` and next-read recovery improves from `16 -> 19` of
+  `39` missed@10 files.
 - Treat cloud embeddings/reranking as disabled unless an explicit repo policy
   allows them.
 

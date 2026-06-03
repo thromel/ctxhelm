@@ -1605,6 +1605,46 @@ public class UMLOperationBodyMapper {}\n",
     }
 
     #[test]
+    fn related_tests_prefers_python_package_mirrored_test_directory() {
+        let _guard = env_lock();
+        let temp = tempfile::tempdir().unwrap();
+        let repo = temp.path().join("repo");
+        let home = temp.path().join("ctxhelm-home");
+        fs::create_dir_all(repo.join(".git")).unwrap();
+        fs::create_dir_all(repo.join("schema_agent/agents")).unwrap();
+        fs::create_dir_all(repo.join("tests/agents")).unwrap();
+        fs::create_dir_all(repo.join("tests/core")).unwrap();
+        fs::write(
+            repo.join("schema_agent/agents/base.py"),
+            "class BaseAgent:\n    pass\n",
+        )
+        .unwrap();
+        fs::write(
+            repo.join("tests/agents/test_base_agent_openai_compatible.py"),
+            "def test_openai_compatible():\n    pass\n",
+        )
+        .unwrap();
+        fs::write(
+            repo.join("tests/core/test_base_agent_openai_compatible.py"),
+            "def test_openai_compatible():\n    pass\n",
+        )
+        .unwrap();
+        std::env::set_var("CTXHELM_HOME", &home);
+
+        let results = related_tests(&repo, &["schema_agent/agents/base.py".to_string()]).unwrap();
+
+        assert_eq!(
+            results[0].path,
+            "tests/agents/test_base_agent_openai_compatible.py"
+        );
+        assert!(results[0]
+            .reason
+            .contains("test path mirrors source directory `tests/agents`"));
+
+        std::env::remove_var("CTXHELM_HOME");
+    }
+
+    #[test]
     fn related_tests_refreshes_stale_inventory_for_created_test_files() {
         let _guard = env_lock();
         let temp = tempfile::tempdir().unwrap();
@@ -1760,6 +1800,9 @@ public class UMLOperationBodyMapper {}\n",
             results[0].command.as_deref(),
             Some("./gradlew test --tests org.example.auth.SessionServiceTest")
         );
+        assert!(results[0]
+            .reason
+            .contains("test path mirrors source directory `src/test/java/org/example/auth`"));
 
         std::env::remove_var("CTXHELM_HOME");
     }

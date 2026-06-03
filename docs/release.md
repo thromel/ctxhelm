@@ -410,6 +410,13 @@ fresh four-repo proof promotes with selected-file/source/test/validation and
 broad-area metrics unchanged while next-read recovery improves to `11 / 12` on
 ctxhelm and `16 / 39` on VeriSchema.
 
+Phase 196 reserves selected validation areas in broad context-area guidance.
+Package-mirrored related-test affinity now maps source directories such as
+`schema_agent/agents` to `tests/agents` and JVM main roots to their test roots.
+The accepted four-repo proof promotes with selected-file/source/test/validation
+metrics unchanged while VeriSchema broad context-area recall improves to
+`0.84444445` and next-read recovery improves to `19 / 39`.
+
 The optional real-client evidence wrappers are:
 
 - `scripts/smoke-codex-mcp.sh`

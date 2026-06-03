@@ -603,10 +603,11 @@ fn context_areas_for_plan(
         });
     }
     areas.sort_by(|left, right| {
-        context_area_priority(&left.context_area.area, &left.accumulator)
+        context_area_priority(&left.context_area.area, &left.accumulator, multi_area_task)
             .cmp(&context_area_priority(
                 &right.context_area.area,
                 &right.accumulator,
+                multi_area_task,
             ))
             .then_with(|| {
                 right
@@ -710,20 +711,23 @@ struct RankedContextArea {
     accumulator: AreaAccumulator,
 }
 
-fn context_area_priority(area: &str, accumulator: &AreaAccumulator) -> u8 {
-    if area == "examples" || area.starts_with("examples/") {
-        return 2;
-    }
-    if accumulator.source_count + accumulator.config_count + accumulator.schema_count > 0 {
+fn context_area_priority(area: &str, accumulator: &AreaAccumulator, multi_area_task: bool) -> u8 {
+    if multi_area_task && accumulator.selected_test_count > 0 {
         return 0;
     }
-    if accumulator.docs_count > 0 {
+    if area == "examples" || area.starts_with("examples/") {
+        return 3;
+    }
+    if accumulator.source_count + accumulator.config_count + accumulator.schema_count > 0 {
         return 1;
     }
-    if accumulator.test_count > 0 {
+    if accumulator.docs_count > 0 {
         return 2;
     }
-    3
+    if accumulator.test_count > 0 {
+        return 3;
+    }
+    4
 }
 
 const MAX_CONTEXT_AREAS: usize = 16;
@@ -2760,6 +2764,90 @@ mod tests {
             "high-pressure source areas should expose a larger progressive read budget"
         );
         assert_eq!(areas[0].next_read_paths[0], "src/auth/neighbor_0.ts");
+    }
+
+    #[test]
+    fn broad_context_areas_reserve_selected_validation_areas() {
+        let mut retrieval_candidates = Vec::new();
+        for index in 0..MAX_CONTEXT_AREAS + 4 {
+            retrieval_candidates.push(RetrievalCandidate {
+                kind: RetrievalCandidateKind::File,
+                path: Some(format!("src/module_{index}/workflow.ts")),
+                role: Some(FileRole::Source),
+                reason_code: "lexical_match".to_string(),
+                confidence: 0.7,
+                signal_scores: vec![RetrievalSignalScore {
+                    signal: RetrievalSignalKind::LexicalExpansion,
+                    score: 0.7,
+                    weight: 0.8,
+                }],
+                evidence: vec![],
+            });
+        }
+        retrieval_candidates.push(RetrievalCandidate {
+            kind: RetrievalCandidateKind::Test,
+            path: Some("tests/agents/test_base_agent_openai_compatible.py".to_string()),
+            role: Some(FileRole::Test),
+            reason_code: "related_test".to_string(),
+            confidence: 0.95,
+            signal_scores: vec![RetrievalSignalScore {
+                signal: RetrievalSignalKind::RelatedTest,
+                score: 0.95,
+                weight: 0.9,
+            }],
+            evidence: vec![],
+        });
+        retrieval_candidates.push(RetrievalCandidate {
+            kind: RetrievalCandidateKind::Test,
+            path: Some("tests/agents/test_requirement_analyzer.py".to_string()),
+            role: Some(FileRole::Test),
+            reason_code: "related_test".to_string(),
+            confidence: 0.85,
+            signal_scores: vec![RetrievalSignalScore {
+                signal: RetrievalSignalKind::RelatedTest,
+                score: 0.85,
+                weight: 0.9,
+            }],
+            evidence: vec![],
+        });
+
+        let selection = crate::ranking::RankedSelection {
+            retrieval_candidates,
+            target_files: vec![TargetFile {
+                path: "src/module_0/workflow.ts".to_string(),
+                reason: "selected source".to_string(),
+                line_range: None,
+                confidence: 0.9,
+                attribution: vec![],
+            }],
+            related_tests: vec![ctxhelm_core::RelatedTest {
+                path: "tests/agents/test_base_agent_openai_compatible.py".to_string(),
+                reason: "selected validation".to_string(),
+                command: Some(
+                    "pytest tests/agents/test_base_agent_openai_compatible.py".to_string(),
+                ),
+                confidence: 0.95,
+                attribution: vec![],
+            }],
+            recommended_commands: vec![],
+        };
+
+        let areas = context_areas_for_plan(&selection, true);
+        let validation_area = areas
+            .iter()
+            .find(|area| area.area == "tests/agents")
+            .unwrap();
+
+        assert_eq!(validation_area.selected_count, 1);
+        assert_eq!(
+            validation_area.selected_role_counts.get("test").copied(),
+            Some(1)
+        );
+        assert_eq!(
+            validation_area.next_read_paths,
+            vec!["tests/agents/test_requirement_analyzer.py".to_string()],
+            "broad packs should preserve validation next-read hints even with many source areas"
+        );
     }
 
     #[test]

@@ -146,6 +146,7 @@ struct SourceKey {
     path: String,
     stem: String,
     directory: String,
+    test_directories: Vec<String>,
     identifiers: Vec<String>,
     priority: usize,
 }
@@ -167,6 +168,7 @@ fn source_key(path: &str, priority: usize) -> SourceKey {
     SourceKey {
         path: normalized.to_ascii_lowercase(),
         stem,
+        test_directories: mirrored_test_directories(&directory),
         directory,
         identifiers,
         priority,
@@ -218,6 +220,16 @@ fn score_test_file(
             structural_score += 4.0;
             reasons.push(format!("test path shares directory `{}`", source.directory));
         }
+        for test_directory in &source.test_directories {
+            if test_path_lower.contains(test_directory) {
+                score += 7.0 + source_priority_bonus(source.priority);
+                structural_score += 7.0;
+                reasons.push(format!(
+                    "test path mirrors source directory `{test_directory}`"
+                ));
+                break;
+            }
+        }
         if content.contains(&source.path) {
             score += 8.0;
             structural_score += 8.0;
@@ -253,6 +265,51 @@ fn score_test_file(
     reasons.sort();
     reasons.dedup();
     Some((score, reasons.join("; ")))
+}
+
+fn mirrored_test_directories(directory: &str) -> Vec<String> {
+    if directory.is_empty() {
+        return Vec::new();
+    }
+    let parts = directory.split('/').collect::<Vec<_>>();
+    let mut directories = Vec::new();
+
+    if let Some(rest) = directory.strip_prefix("src/main/java/") {
+        directories.push(format!("src/test/java/{rest}"));
+    }
+    if let Some(rest) = directory.strip_prefix("src/main/kotlin/") {
+        directories.push(format!("src/test/kotlin/{rest}"));
+    }
+
+    let package_parts = package_test_directory_parts(&parts);
+    if !package_parts.is_empty() {
+        for end in (1..=package_parts.len()).rev() {
+            directories.push(format!("tests/{}", package_parts[..end].join("/")));
+        }
+    }
+
+    directories.sort();
+    directories.dedup();
+    directories
+}
+
+fn package_test_directory_parts<'a>(parts: &'a [&str]) -> &'a [&'a str] {
+    if parts.is_empty() {
+        return &[];
+    }
+    if matches!(parts[0], "src" | "lib" | "app") {
+        return &parts[1..];
+    }
+    if parts.len() >= 2
+        && !matches!(
+            parts[0],
+            "tests" | "test" | "docs" | "documentation" | "examples" | "scripts"
+        )
+        && !matches!(parts[1], "main" | "test" | "tests")
+    {
+        return &parts[1..];
+    }
+    &[]
 }
 
 fn source_priority_bonus(priority: usize) -> f32 {

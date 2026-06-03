@@ -4,10 +4,10 @@ milestone: v2.5
 milestone_name: Production Retrieval Quality
 status: active
 last_updated: "2026-06-03T00:00:00Z"
-last_activity: 2026-06-03 -- Phase 195 expands context-area next-read budgets for high-pressure areas
+last_activity: 2026-06-03 -- Phase 196 reserves validation context areas for broad progressive reads
 progress:
-  total_phases: 106
-  completed_phases: 106
+  total_phases: 107
+  completed_phases: 107
   total_plans: 7
   completed_plans: 7
   percent: 100
@@ -17,10 +17,10 @@ progress:
 
 ## Current Position
 
-Phase: 195 - Adaptive Context Area Next-Read Budget
-Plan: 195-adaptive-context-area-next-read-budget
+Phase: 196 - Validation Context Area Reserve
+Plan: 196-validation-context-area-reserve
 Status: Complete
-Last activity: 2026-06-03 -- Phase 195 makes `nextReadPaths` adaptive for high-pressure source-like and validation-heavy context areas. Fresh release-binary proof promotes from `/tmp/ctxhelm-rd/phase195-adaptive-next-read-proof.json`; selected-file/source/test/validation/broad-area metrics stay unchanged from Phase 194 while next-read recovery improves from `10 -> 11` on ctxhelm and `14 -> 16` on VeriSchema.
+Last activity: 2026-06-03 -- Phase 196 reserves selected validation areas for broad progressive context guidance and adds package-mirrored related-test affinity. Fresh release-binary proof promotes from `/tmp/ctxhelm-rd/phase196-validation-area-proof.json`; selected-file/source/test/validation metrics stay unchanged from Phase 195 while VeriSchema broad context-area recall improves from `0.5777778 -> 0.84444445` and next-read recovery improves from `16 -> 19` of `39` missed@10 files.
 
 ## Project Reference
 
@@ -174,6 +174,7 @@ Planned phases:
 - Phase 193: Context Area Next-Read Recovery (complete follow-up)
 - Phase 194: Context Area Next-Read Ordering (complete follow-up)
 - Phase 195: Adaptive Context Area Next-Read Budget (complete follow-up)
+- Phase 196: Validation Context Area Reserve (complete follow-up)
 
 ## Last Completed Milestone
 
