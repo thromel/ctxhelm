@@ -1797,7 +1797,14 @@ fn eval_agent_run_renders_source_free_report() {
                 "ctxhelmEvidenceOnlyTargetsObserved": false,
                 "ctxhelmEvidenceOnlyTargets": {},
                 "ctxhelmUnderReadTargetsObserved": false,
-                "outcomeClaim": "ctxhelm_improved"
+                "outcomeClaim": "ctxhelm_improved",
+                "recommendedResearchActions": [
+                    {
+                        "action": "preserve_current_agent_contract",
+                        "priority": 3,
+                        "reason": "Comparable lanes produced stable source-free outcome evidence."
+                    }
+                ]
             },
             "privacyStatus": {
                 "localOnly": true,
@@ -1837,6 +1844,9 @@ fn eval_agent_run_renders_source_free_report() {
         .stdout(contains("Rate limits observed: `false`"))
         .stdout(contains("ctxhelm evidence misses observed: `false`"))
         .stdout(contains("ctxhelm evidence-only targets observed: `false`"))
+        .stdout(contains(
+            "Recommended R&D actions: `preserve_current_agent_contract(p3)`",
+        ))
         .stdout(contains("target coverage `1.00`"))
         .stdout(contains("target read coverage `1.00`"))
         .stdout(contains("evaluation `eligible` eligible `true`"))
@@ -1965,7 +1975,19 @@ fn eval_agent_run_renders_invalid_required_ctxhelm_call_reasons() {
                 "ctxhelmEvidenceOnlyTargetsObserved": false,
                 "ctxhelmEvidenceOnlyTargets": {},
                 "ctxhelmUnderReadTargetsObserved": false,
-                "outcomeClaim": "insufficient_comparable_lanes"
+                "outcomeClaim": "insufficient_comparable_lanes",
+                "recommendedResearchActions": [
+                    {
+                        "action": "harden_required_ctxhelm_call_guidance",
+                        "priority": 1,
+                        "reason": "A ctxhelm-assisted lane did not make all required source-free ctxhelm calls."
+                    },
+                    {
+                        "action": "fix_retrieval_or_query_construction",
+                        "priority": 1,
+                        "reason": "ctxhelm evidence did not surface at least one expected target."
+                    }
+                ]
             },
             "privacyStatus": {
                 "sourceTextLogged": false
@@ -1988,6 +2010,9 @@ fn eval_agent_run_renders_invalid_required_ctxhelm_call_reasons() {
         .stdout(contains("compliance `invalid`"))
         .stdout(contains(
             "ctxhelm evidence misses: `ctxhelm-plan=src/lib.rs`",
+        ))
+        .stdout(contains(
+            "Recommended R&D actions: `harden_required_ctxhelm_call_guidance(p1), fix_retrieval_or_query_construction(p1)`",
         ))
         .stdout(contains(
             "invalid required `prepare_task[repo, task; attempts=1]`",
@@ -2063,6 +2088,13 @@ fn eval_agent_run_renders_source_free_suite_report() {
                 "ctxhelmEvidenceOnlyTargetsObserved": true,
                 "ctxhelmUnderReadTargetsObserved": false,
                 "outcomeClaim": "ctxhelm_improved",
+                "recommendedResearchActions": [
+                    {
+                        "action": "improve_agent_consumption_guidance",
+                        "priority": 2,
+                        "reason": "ctxhelm surfaced expected targets that the agent did not consume with native reads."
+                    }
+                ],
                 "laneSummaries": [
                     {
                         "lane": "baseline",
@@ -2162,6 +2194,9 @@ fn eval_agent_run_renders_source_free_suite_report() {
         .stdout(contains("Rate limits observed: `false`"))
         .stdout(contains("ctxhelm evidence misses observed: `false`"))
         .stdout(contains("ctxhelm evidence-only targets observed: `true`"))
+        .stdout(contains(
+            "Recommended R&D actions: `improve_agent_consumption_guidance(p2)`",
+        ))
         .stdout(contains("Target coverage delta average: `0.25`"))
         .stdout(contains("Target read coverage delta average: `0.25`"))
         .stdout(contains("Irrelevant read delta sum: `3`"))

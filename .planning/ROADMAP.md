@@ -76,6 +76,8 @@ Phase 210 attributes real-agent outcome gaps across ctxhelm evidence coverage an
 
 Phase 211 fixes the first retrieval miss exposed by Phase 210 attribution. The task `Improve agent-run report attribution` previously surfaced the harness script but missed `crates/ctxhelm/src/main.rs`, where the CLI renderer lives. Query construction and lexical search now add conservative hyphen-to-underscore aliases such as `agent_run`, so symbol search can match identifiers like `render_agent_run_report`. The refreshed real Claude Code probe still rate-limits, but both ctxhelm-assisted lanes now surface both target paths with zero ctxhelm evidence misses.
 
+Phase 212 turns paired real-agent diagnostics into explicit source-free R&D routing. Single-run reports and suite aggregates now include `recommendedResearchActions`, mapping rate limits/client failures to `retry_real_client_when_available`, skipped non-real reports to `collect_real_client_evidence`, ctxhelm evidence misses to retrieval/query fixes, evidence-only targets to agent-consumption guidance, invalid observed ctxhelm calls to required-call guidance, and comparable no-lift outcomes to native-baseline analysis. The latest real Claude Code probe is still rate-limited, so it correctly recommends retrying the client instead of misclassifying skipped required calls or evidence-only targets as prompt failures.
+
 ## v2.5 Production Retrieval Quality
 
 ## Phases
@@ -219,6 +221,7 @@ Phase 211 fixes the first retrieval miss exposed by Phase 210 attribution. The t
 - [x] **Phase 209: Agent-Run Required Call Argument Validation** - Required ctxhelm calls must carry explicit repo/task and brief-pack arguments before a lane can become comparable.
 - [x] **Phase 210: Agent-Run Evidence Attribution** - Paired agent-run reports distinguish targets surfaced by ctxhelm evidence from surfaced targets the agent did not read and targets not surfaced by ctxhelm evidence.
 - [x] **Phase 211: Hyphenated Identifier Query Aliases** - Query construction and lexical search map hyphenated task terms to underscore code identifiers, fixing the `agent-run` to `render_agent_run_report` evidence miss.
+- [x] **Phase 212: Agent-Run R&D Action Routing** - Paired agent-run reports and suite aggregates recommend source-free next R&D actions for client availability, retrieval misses, consumption misses, required-call failures, and comparable no-lift outcomes.
 - [x] **Phase 162: Feature-Enabled Local Fastembed Gate Proof** - A feature-enabled `local_fastembed` gate run on clean RefactoringMiner now proves the production-local backend works end-to-end, but remains held because it adds no semantic-only target hits and is still slower than default; the gate emits a source-free diagnostic for that condition.
 - [x] **Phase 163: Persisted Semantic Vector Reuse** - Fresh CLI/MCP processes can reuse persisted source-free semantic document vectors instead of recomputing every candidate vector.
 - [x] **Phase 164: Global Semantic Vector Candidates And Write-Through** - Semantic search can include persisted vector candidates outside the lexical prefilter and write through newly embedded candidate misses.

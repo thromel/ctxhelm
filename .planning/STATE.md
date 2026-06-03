@@ -4,10 +4,10 @@ milestone: v2.5
 milestone_name: Production Retrieval Quality
 status: active
 last_updated: "2026-06-03T00:00:00Z"
-last_activity: 2026-06-03 -- Phase 211 fixes hyphenated identifier retrieval misses
+last_activity: 2026-06-03 -- Phase 212 routes paired-run R&D actions source-free
 progress:
-  total_phases: 120
-  completed_phases: 120
+  total_phases: 121
+  completed_phases: 121
   total_plans: 7
   completed_plans: 7
   percent: 100
@@ -17,10 +17,10 @@ progress:
 
 ## Current Position
 
-Phase: 211 - Hyphenated Identifier Query Aliases
-Plan: 211-hyphenated-identifier-query-aliases
+Phase: 212 - Agent-Run R&D Action Routing
+Plan: 212-agent-run-rd-action-routing
 Status: Complete
-Last activity: 2026-06-03 -- Phase 211 fixes a real Phase 210 evidence miss where `Improve agent-run report attribution` surfaced the harness script but missed the CLI report renderer in `crates/ctxhelm/src/main.rs`. Query construction and lexical search now add conservative hyphen-to-underscore aliases such as `agent_run`, allowing symbol search to match `render_agent_run_report`. The latest real Claude Code probe is still rate-limited, but ctxhelm evidence now surfaces both target paths with zero evidence misses.
+Last activity: 2026-06-03 -- Phase 212 adds source-free `recommendedResearchActions` to paired agent-run reports and suite aggregates. Reports now route observed facts into concrete next R&D actions such as retrying real clients when rate-limited, fixing retrieval/query construction when ctxhelm evidence misses targets, improving agent-consumption guidance when surfaced targets are not read, or hardening required-call guidance only after real ctxhelm calls are observed. The latest real Claude Code probe is still rate-limited and correctly recommends `retry_real_client_when_available` rather than misclassifying missing calls or evidence-only targets as guidance failures.
 
 ## Project Reference
 

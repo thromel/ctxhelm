@@ -391,6 +391,82 @@ elif comparison["ctxhelmToolCallsObserved"] and target_delta_avg == 0 and target
 else:
     outcome_claim = "no_measured_lift"
 
+def recommended_research_actions(
+    *,
+    comparison_eligible,
+    client_failures_observed,
+    rate_limits_observed,
+    missing_required_observed,
+    invalid_required_observed,
+    ctxhelm_evidence_misses_observed,
+    ctxhelm_evidence_only_observed,
+    ctxhelm_under_read_observed,
+    ctxhelm_tool_calls_observed,
+    outcome_claim,
+):
+    actions = []
+
+    def add(action, priority, reason):
+        actions.append({
+            "action": action,
+            "priority": priority,
+            "reason": reason,
+        })
+
+    if client_failures_observed or rate_limits_observed:
+        add(
+            "retry_real_client_when_available",
+            1,
+            "Client availability prevented comparable outcome proof.",
+        )
+    elif not ctxhelm_tool_calls_observed and not comparison_eligible:
+        add(
+            "collect_real_client_evidence",
+            1,
+            "No comparable real-client ctxhelm call evidence was collected.",
+        )
+    if (
+        (missing_required_observed or invalid_required_observed)
+        and not client_failures_observed
+        and ctxhelm_tool_calls_observed
+    ):
+        add(
+            "harden_required_ctxhelm_call_guidance",
+            1,
+            "A ctxhelm-assisted lane did not make all required source-free ctxhelm calls.",
+        )
+    if ctxhelm_evidence_misses_observed:
+        add(
+            "fix_retrieval_or_query_construction",
+            1,
+            "ctxhelm evidence did not surface at least one expected target.",
+        )
+    if ctxhelm_evidence_only_observed and not client_failures_observed:
+        add(
+            "improve_agent_consumption_guidance",
+            2,
+            "ctxhelm surfaced expected targets that the agent did not consume with native reads.",
+        )
+    if ctxhelm_under_read_observed and not client_failures_observed:
+        add(
+            "inspect_pack_ordering_and_native_read_instruction",
+            2,
+            "A ctxhelm-assisted lane under-read targets relative to the native baseline.",
+        )
+    if comparison_eligible and outcome_claim == "no_measured_lift":
+        add(
+            "analyze_native_baseline_gap",
+            2,
+            "Comparable lanes produced no measured ctxhelm lift.",
+        )
+    if not actions and comparison_eligible and outcome_claim in {"ctxhelm_improved", "ctxhelm_matched"}:
+        add(
+            "preserve_current_agent_contract",
+            3,
+            "Comparable lanes produced stable source-free outcome evidence.",
+        )
+    return actions
+
 payload = {
     "schemaVersion": "ctxhelm-agent-run-eval-v1",
     "status": (
@@ -435,6 +511,18 @@ payload = {
         "ctxhelmEvidenceOnlyTargetsObserved": comparison["ctxhelmEvidenceOnlyTargetsObserved"],
         "ctxhelmUnderReadTargetsObserved": comparison["ctxhelmUnderReadTargetsObserved"],
         "outcomeClaim": outcome_claim,
+        "recommendedResearchActions": recommended_research_actions(
+            comparison_eligible=bool(comparison_eligible_count),
+            client_failures_observed=comparison["clientFailuresObserved"],
+            rate_limits_observed=comparison["rateLimitsObserved"],
+            missing_required_observed=comparison["missingRequiredCtxhelmCallsObserved"],
+            invalid_required_observed=comparison["invalidRequiredCtxhelmCallsObserved"],
+            ctxhelm_evidence_misses_observed=comparison["ctxhelmEvidenceMissesObserved"],
+            ctxhelm_evidence_only_observed=comparison["ctxhelmEvidenceOnlyTargetsObserved"],
+            ctxhelm_under_read_observed=comparison["ctxhelmUnderReadTargetsObserved"],
+            ctxhelm_tool_calls_observed=comparison["ctxhelmToolCallsObserved"],
+            outcome_claim=outcome_claim,
+        ),
     },
     "privacyStatus": privacy,
     "unsupportedActions": [
@@ -1192,6 +1280,82 @@ elif ctxhelm_called and target_delta == 0 and target_read_delta == 0 and irrelev
 else:
     outcome_claim = "no_measured_lift"
 
+def recommended_research_actions(
+    *,
+    comparison_eligible,
+    client_failures_observed,
+    rate_limits_observed,
+    missing_required_observed,
+    invalid_required_observed,
+    ctxhelm_evidence_misses_observed,
+    ctxhelm_evidence_only_observed,
+    ctxhelm_under_read_observed,
+    ctxhelm_tool_calls_observed,
+    outcome_claim,
+):
+    actions = []
+
+    def add(action, priority, reason):
+        actions.append({
+            "action": action,
+            "priority": priority,
+            "reason": reason,
+        })
+
+    if client_failures_observed or rate_limits_observed:
+        add(
+            "retry_real_client_when_available",
+            1,
+            "Client availability prevented comparable outcome proof.",
+        )
+    elif not ctxhelm_tool_calls_observed and not comparison_eligible:
+        add(
+            "collect_real_client_evidence",
+            1,
+            "No comparable real-client ctxhelm call evidence was collected.",
+        )
+    if (
+        (missing_required_observed or invalid_required_observed)
+        and not client_failures_observed
+        and ctxhelm_tool_calls_observed
+    ):
+        add(
+            "harden_required_ctxhelm_call_guidance",
+            1,
+            "A ctxhelm-assisted lane did not make all required source-free ctxhelm calls.",
+        )
+    if ctxhelm_evidence_misses_observed:
+        add(
+            "fix_retrieval_or_query_construction",
+            1,
+            "ctxhelm evidence did not surface at least one expected target.",
+        )
+    if ctxhelm_evidence_only_observed and not client_failures_observed:
+        add(
+            "improve_agent_consumption_guidance",
+            2,
+            "ctxhelm surfaced expected targets that the agent did not consume with native reads.",
+        )
+    if ctxhelm_under_read_observed and not client_failures_observed:
+        add(
+            "inspect_pack_ordering_and_native_read_instruction",
+            2,
+            "A ctxhelm-assisted lane under-read targets relative to the native baseline.",
+        )
+    if comparison_eligible and outcome_claim == "no_measured_lift":
+        add(
+            "analyze_native_baseline_gap",
+            2,
+            "Comparable lanes produced no measured ctxhelm lift.",
+        )
+    if not actions and comparison_eligible and outcome_claim in {"ctxhelm_improved", "ctxhelm_matched"}:
+        add(
+            "preserve_current_agent_contract",
+            3,
+            "Comparable lanes produced stable source-free outcome evidence.",
+        )
+    return actions
+
 payload = {
     "schemaVersion": "ctxhelm-agent-run-eval-v1",
     "status": status,
@@ -1231,6 +1395,18 @@ payload = {
         "ctxhelmEvidenceOnlyTargets": ctxhelm_evidence_only_targets,
         "ctxhelmUnderReadTargetsObserved": ctxhelm_under_read,
         "outcomeClaim": outcome_claim,
+        "recommendedResearchActions": recommended_research_actions(
+            comparison_eligible=comparison_eligible,
+            client_failures_observed=client_failures_observed,
+            rate_limits_observed=rate_limits_observed,
+            missing_required_observed=missing_required_observed,
+            invalid_required_observed=invalid_required_observed,
+            ctxhelm_evidence_misses_observed=ctxhelm_evidence_misses_observed,
+            ctxhelm_evidence_only_observed=ctxhelm_evidence_only_observed,
+            ctxhelm_under_read_observed=ctxhelm_under_read,
+            ctxhelm_tool_calls_observed=ctxhelm_called,
+            outcome_claim=outcome_claim,
+        ),
     },
     "privacyStatus": {
         "localOnly": True,

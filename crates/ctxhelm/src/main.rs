@@ -4020,6 +4020,10 @@ fn render_agent_run_report(report: &serde_json::Value) -> String {
                 .and_then(serde_json::Value::as_bool)
                 .unwrap_or(true)
         ));
+        output.push_str(&format!(
+            "- Recommended R&D actions: `{}`\n",
+            render_recommended_research_actions(delta.get("recommendedResearchActions"))
+        ));
     }
     if let Some(aggregate) = report.get("aggregate") {
         output.push_str("\n## Suite Aggregate\n\n");
@@ -4099,6 +4103,10 @@ fn render_agent_run_report(report: &serde_json::Value) -> String {
                 .and_then(serde_json::Value::as_bool)
                 .map(|value| value.to_string())
                 .unwrap_or_else(|| "n/a".to_string()),
+        ));
+        output.push_str(&format!(
+            "- Recommended R&D actions: `{}`\n",
+            render_recommended_research_actions(aggregate.get("recommendedResearchActions"))
         ));
         if let Some(lanes) = aggregate
             .get("laneSummaries")
@@ -4359,6 +4367,28 @@ fn render_json_count_map(value: Option<&serde_json::Value>) -> String {
                 .map(|count| count.to_string())
                 .unwrap_or_else(|| "n/a".to_string());
             format!("{key}={count}")
+        })
+        .collect::<Vec<_>>()
+        .join(", ")
+}
+
+fn render_recommended_research_actions(value: Option<&serde_json::Value>) -> String {
+    let Some(actions) = value.and_then(serde_json::Value::as_array) else {
+        return "none".to_string();
+    };
+    if actions.is_empty() {
+        return "none".to_string();
+    }
+    actions
+        .iter()
+        .filter_map(|action| {
+            let name = action.get("action").and_then(serde_json::Value::as_str)?;
+            let priority = action
+                .get("priority")
+                .and_then(serde_json::Value::as_u64)
+                .map(|value| value.to_string())
+                .unwrap_or_else(|| "n/a".to_string());
+            Some(format!("{name}(p{priority})"))
         })
         .collect::<Vec<_>>()
         .join(", ")

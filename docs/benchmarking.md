@@ -78,6 +78,14 @@ evals. They compare what ctxhelm surfaced with what the agent actually read.
 native read, and `ctxhelmEvidenceMissedTargets` means the ctxhelm evidence did
 not surface the target. This distinction prevents agent rate limits or
 under-reading behavior from being misreported as retrieval quality.
+Single-run comparisons and suite aggregates also include
+`recommendedResearchActions`. These source-free actions route the next R&D step:
+retry a real client after rate limits or client failures, collect real-client
+evidence when only skipped contract reports exist, fix retrieval/query
+construction when ctxhelm evidence misses targets, improve agent-consumption
+guidance when surfaced targets are not read, harden required-call guidance when
+observed ctxhelm calls are malformed or incomplete, or analyze the native
+baseline when comparable lanes show no measured lift.
 
 Historical eval reports also include source-free `graphEdgeProfiles`. These
 profiles split graph candidate evidence by edge label, such as `imports`,

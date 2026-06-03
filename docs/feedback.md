@@ -130,6 +130,13 @@ evidence. Assisted lanes also record source-free ctxhelm evidence attribution:
 `ctxhelmEvidenceOnlyTargets` are surfaced targets the agent did not read, and
 `ctxhelmEvidenceMissedTargets` are targets not surfaced by ctxhelm evidence for
 that lane. This separates retrieval/packing gaps from agent-consumption gaps.
+Reports also expose `recommendedResearchActions`, a source-free routing field
+for the next R&D loop. Client failures and rate limits route to retrying the
+real client, skipped contract-only reports route to collecting real-client
+evidence, evidence misses route to retrieval/query fixes, evidence-only targets
+route to consumption guidance, malformed observed ctxhelm calls route to
+required-call guidance, and comparable no-lift results route to native-baseline
+analysis.
 The report stores path labels, hashes, and sanitized MCP request summaries only;
 it does not store raw prompts, raw model transcripts, raw MCP traffic, source
 snippets, terminal logs, or project test output.
