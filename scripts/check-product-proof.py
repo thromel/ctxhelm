@@ -160,6 +160,18 @@ def iter_context_area_pressure_summaries(value):
             yield from iter_context_area_pressure_summaries(child)
 
 
+def iter_context_area_next_read_summaries(value):
+    if isinstance(value, dict):
+        summary = value.get("contextAreaNextReadSummary")
+        if isinstance(summary, dict):
+            yield summary
+        for child in value.values():
+            yield from iter_context_area_next_read_summaries(child)
+    elif isinstance(value, list):
+        for child in value:
+            yield from iter_context_area_next_read_summaries(child)
+
+
 def validate_context_area_pressure_summaries(report: dict) -> None:
     for summary in iter_context_area_pressure_summaries(report):
         for field in (
@@ -184,6 +196,33 @@ def validate_context_area_pressure_summaries(report: dict) -> None:
             fail("context area pressure summary total was inconsistent")
         if summary.get("sourceTextLogged") is not False:
             fail("context area pressure summary was not source-free")
+
+
+def validate_context_area_next_read_summaries(report: dict) -> None:
+    for summary in iter_context_area_next_read_summaries(report):
+        for field in (
+            "missedFileCountAt10",
+            "nextReadRecoverableCount",
+            "topPressureNextReadRecoverableCount",
+            "zeroSelectedAreaRecoverableCount",
+        ):
+            if not isinstance(summary.get(field), int):
+                fail(
+                    "context area next-read summary was missing integer "
+                    + field
+                )
+        missed = summary["missedFileCountAt10"]
+        recoverable = summary["nextReadRecoverableCount"]
+        top_pressure = summary["topPressureNextReadRecoverableCount"]
+        zero_selected = summary["zeroSelectedAreaRecoverableCount"]
+        if recoverable > missed:
+            fail("context area next-read recovery exceeded missed files")
+        if top_pressure > recoverable:
+            fail("top-pressure next-read recovery exceeded total recovery")
+        if zero_selected > recoverable:
+            fail("zero-selected next-read recovery exceeded total recovery")
+        if summary.get("sourceTextLogged") is not False:
+            fail("context area next-read summary was not source-free")
 
 
 BROAD_FIXED_CORPUS_ID = "phase92-area-aware-gap-taxonomy-2026-05-31"
@@ -263,6 +302,7 @@ def main() -> None:
     validate_resource_backed_gap_summaries(report)
     validate_context_area_pressure_contract(report)
     validate_context_area_pressure_summaries(report)
+    validate_context_area_next_read_summaries(report)
     validate_broad_fixed_corpus_floors(report)
     if not report.get("headlineMetrics"):
         fail("product proof headlineMetrics were empty")

@@ -384,6 +384,15 @@ pressure area. Historical eval and benchmark markdown render the summary, and
 four-repo proof promotes with Phase 191 metrics unchanged while showing
 repository-level broad-area bottlenecks.
 
+Phase 193 measures whether progressive context-area guidance recovers files
+missed by top-10 context. `HistoricalEvalReport.contextAreaNextReadSummary`
+reports missed@10 count, next-read recoverable count, top-pressure recoverable
+count, and zero-selected-area recoverable count. Historical eval and benchmark
+markdown render the summary, and `scripts/check-product-proof.py` validates the
+recovery arithmetic. The fresh four-repo proof promotes with Phase 192 metrics
+unchanged while showing `9 / 12` ctxhelm missed@10 paths and `10 / 39`
+VeriSchema missed@10 paths recoverable via source-free next-read guidance.
+
 The optional real-client evidence wrappers are:
 
 - `scripts/smoke-codex-mcp.sh`

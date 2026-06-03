@@ -788,6 +788,12 @@ Recommendation today:
   highest-pressure area so broad-area bottlenecks are visible at repository
   scale without reading source. The four-repo proof still promotes with Phase
   191 metrics unchanged.
+- Phase 193 adds `contextAreaNextReadSummary` to historical eval reports and
+  product-proof embeddings. The summary counts top-10 misses recoverable from
+  progressive context-area `nextReadPaths`, including top-pressure and
+  zero-selected-area recovery. The four-repo proof still promotes with Phase
+  192 metrics unchanged while showing ctxhelm and VeriSchema misses that are
+  recoverable by native agent reads after the selected-file budget is exhausted.
 - Treat cloud embeddings/reranking as disabled unless an explicit repo policy
   allows them.
 
@@ -807,7 +813,9 @@ next-read paths, if a benchmark repository report is missing, if a corpus has
 insufficient evidence because history is unavailable, if the pinned broad fixed
 corpus regresses below its recorded per-repository floors, if corpus verdicts
 are missing source-recall fields or show source recall regression beyond the
-release tolerance, or if `releaseGate.decision != "promote"`. A configured proof
+release tolerance, if context-area pressure or next-read recovery summaries
+emit inconsistent arithmetic or source text, or if `releaseGate.decision !=
+"promote"`. A configured proof
 where any required corpus only matches or trails lexical retrieval blocks
 default promotion.
 

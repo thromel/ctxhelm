@@ -4998,6 +4998,9 @@ fn render_historical_eval_report(report: &HistoricalEvalReport) -> String {
     output.push_str(&render_context_area_pressure_summary(
         &report.context_area_pressure_summary,
     ));
+    output.push_str(&render_context_area_next_read_summary(
+        &report.context_area_next_read_summary,
+    ));
 
     if report.commits.is_empty() {
         output.push_str("No safe historical commits were available for evaluation.\n");
@@ -5245,6 +5248,22 @@ fn render_context_area_pressure_summary(
     )
 }
 
+fn render_context_area_next_read_summary(
+    summary: &ctxhelm_compiler::ContextAreaNextReadSummary,
+) -> String {
+    if summary.missed_file_count_at_10 == 0 {
+        return String::new();
+    }
+    format!(
+        "- Context area next-read recovery: `{}` / `{}` missed@10 path(s)\n- Top-pressure next-read recovery: `{}`\n- Zero-selected-area next-read recovery: `{}`\n- Context area next-read source-free: `{}`\n\n",
+        summary.next_read_recoverable_count,
+        summary.missed_file_count_at_10,
+        summary.top_pressure_next_read_recoverable_count,
+        summary.zero_selected_area_recoverable_count,
+        !summary.source_text_logged
+    )
+}
+
 fn render_benchmark_suite_report(report: &BenchmarkSuiteReport) -> String {
     let mut output = String::from("# ctxhelm Benchmark Suite\n\n");
     output.push_str(
@@ -5350,6 +5369,9 @@ fn render_benchmark_suite_report(report: &BenchmarkSuiteReport) -> String {
         ));
         output.push_str(&render_context_area_pressure_summary(
             &eval.context_area_pressure_summary,
+        ));
+        output.push_str(&render_context_area_next_read_summary(
+            &eval.context_area_next_read_summary,
         ));
 
         if let Some(lexical_backend) = &repo.lexical_backend_corpus {
@@ -6063,6 +6085,13 @@ mod tests {
                 }),
                 source_text_logged: false,
             },
+            context_area_next_read_summary: ctxhelm_compiler::ContextAreaNextReadSummary {
+                missed_file_count_at_10: 2,
+                next_read_recoverable_count: 1,
+                top_pressure_next_read_recoverable_count: 1,
+                zero_selected_area_recoverable_count: 0,
+                source_text_logged: false,
+            },
             file_recall_at_5: 1.0,
             file_recall_at_10: 1.0,
             lexical_baseline_recall_at_5: 0.5,
@@ -6161,6 +6190,9 @@ mod tests {
         assert!(markdown
             .contains("Context area pressure mix: source-like `6`, validation `0`, docs `1`"));
         assert!(markdown.contains("Highest pressure area: `src` pressure `6` coverage `33%`"));
+        assert!(markdown.contains("Context area next-read recovery: `1` / `2` missed@10 path(s)"));
+        assert!(markdown.contains("Top-pressure next-read recovery: `1`"));
+        assert!(markdown.contains("Zero-selected-area next-read recovery: `0`"));
         assert!(markdown.contains("File Recall@5: `1.00`"));
         assert!(markdown.contains("Lexical Baseline Recall@5: `0.50`"));
         assert!(markdown.contains("No-context Recall@K: `0.00`"));

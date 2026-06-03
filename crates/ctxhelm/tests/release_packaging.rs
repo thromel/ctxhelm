@@ -1306,6 +1306,22 @@ fn product_proof_json(decision: &str, default_promotion_allowed: bool, status: &
     "repositories": [{{
       "name": "fixture",
       "report": {{
+        "contextAreaPressureSummary": {{
+          "contextAreaCount": 1,
+          "zeroSelectedAreaCount": 0,
+          "totalInspectionPressure": 3,
+          "sourceLikePressure": 3,
+          "validationPressure": 0,
+          "docsPressure": 0,
+          "sourceTextLogged": false
+        }},
+        "contextAreaNextReadSummary": {{
+          "missedFileCountAt10": 1,
+          "nextReadRecoverableCount": 1,
+          "topPressureNextReadRecoverableCount": 1,
+          "zeroSelectedAreaRecoverableCount": 0,
+          "sourceTextLogged": false
+        }},
         "retrievalGapSummaries": [{{
           "role": "source",
           "signalGap": "ranked_below_budget_dependency",
@@ -1358,24 +1374,10 @@ fn product_proof_json_without_gap_resource_uri() -> String {
 }
 
 fn product_proof_json_without_repository_report() -> String {
-    product_proof_json("promote", true, "beat").replace(
-        r#""report": {
-        "retrievalGapSummaries": [{
-          "role": "source",
-          "signalGap": "ranked_below_budget_dependency",
-          "package": "src",
-          "pathFamily": "src/*.rs",
-          "contextArea": "src",
-          "contextAreaResourceUri": "ctxhelm://repo/context-area/src",
-          "targetStatus": "currentReachable",
-          "recommendationArea": "parserPrecision",
-          "missedCount": 1,
-          "examplePaths": ["src/lib.rs"],
-          "nextReadPaths": ["src/lib.rs"]
-        }]
-      }"#,
-        r#""report": null"#,
-    )
+    let mut value: serde_json::Value =
+        serde_json::from_str(&product_proof_json("promote", true, "beat")).unwrap();
+    value["benchmarkReport"]["repositories"][0]["report"] = serde_json::Value::Null;
+    serde_json::to_string_pretty(&value).unwrap()
 }
 
 fn product_proof_json_without_source_recall_fields() -> String {

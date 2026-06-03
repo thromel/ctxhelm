@@ -32,6 +32,14 @@ Phase 188 adds source-free `selectedSignalProfiles` to historical commit eval re
 
 Phase 189 uses those selected-signal profiles to rebalance broad target-file budget. Broad root governance docs now run before broad source-history reserve, while source-history remains protected for standard scope and for broad tasks without governance-doc pressure. Source-history candidates now prefer module entrypoints such as `src/lib.rs`. The fresh proof promotes; ctxhelm File Recall@10 improves from `0.5587302` to `0.67777777` while ctxhelm Source Recall@10 stays `0.55`.
 
+Phase 190 adds plan-level context-area coverage and inspection-pressure signals so broad packs can prioritize high-pressure progressive native reads without changing selected target-file ranking.
+
+Phase 191 splits inspection pressure into source-like, validation, and docs buckets, making broad unread-area pressure actionable without inspecting source text.
+
+Phase 192 aggregates those pressure buckets per repository in historical eval and product proof reports, exposing the dominant broad-area bottleneck and highest-pressure area.
+
+Phase 193 adds context-area next-read recovery summaries. The fresh release-binary proof promotes with core retrieval metrics unchanged while proving progressive next-read guidance recovers `9 / 12` ctxhelm missed@10 paths and `10 / 39` VeriSchema missed@10 paths.
+
 ## v2.5 Production Retrieval Quality
 
 ## Phases
@@ -39,7 +47,7 @@ Phase 189 uses those selected-signal profiles to rebalance broad target-file bud
 **Phase Numbering:**
 
 - Integer phases (61, 62, 63, 64, 65): Planned v2.5 work
-- Phases 66-189: Production-readiness follow-ups from the original blocked proof and the channel-aware promotion path
+- Phases 66-193: Production-readiness follow-ups from the original blocked proof and the channel-aware promotion path
 - Decimal phases (61.1, 62.1): Urgent insertions if needed
 
 - [x] **Phase 61: Multi-Repo Quality Baselines** - Maintainers can run source-free paired baselines across RefactoringMiner and a second real repository with stable comparison artifacts.
@@ -153,6 +161,10 @@ Phase 189 uses those selected-signal profiles to rebalance broad target-file bud
 - [x] **Phase 187: Corroborated Source History Reserve** - Source co-change candidates with corroborating dependency/lexical/symbol evidence receive bounded target-file budget, improving source recall while recording the broad-doc tradeoff.
 - [x] **Phase 188: Selected Signal Profiles** - Historical eval commit reports expose source-free selected top-10 counts by signal and role, including selected retrieval-target counts.
 - [x] **Phase 189: Balanced Broad History And Governance Budget** - Broad governance docs regain budget ahead of broad source-history reserve while module-entrypoint source-history ordering preserves the measured source recall gain.
+- [x] **Phase 190: Context Area Inspection Pressure** - Context areas expose coverage and inspection-pressure signals so packs can prioritize high-pressure progressive native reads.
+- [x] **Phase 191: Context Area Pressure Breakdown** - Context areas split unread pressure into source-like, validation, and docs buckets.
+- [x] **Phase 192: Context Area Pressure Summary** - Historical eval and product proof reports aggregate context-area pressure per repository.
+- [x] **Phase 193: Context Area Next-Read Recovery** - Historical eval and product proof reports quantify how often progressive next-read paths recover files missed by top-10 context.
 - [x] **Phase 162: Feature-Enabled Local Fastembed Gate Proof** - A feature-enabled `local_fastembed` gate run on clean RefactoringMiner now proves the production-local backend works end-to-end, but remains held because it adds no semantic-only target hits and is still slower than default; the gate emits a source-free diagnostic for that condition.
 - [x] **Phase 163: Persisted Semantic Vector Reuse** - Fresh CLI/MCP processes can reuse persisted source-free semantic document vectors instead of recomputing every candidate vector.
 - [x] **Phase 164: Global Semantic Vector Candidates And Write-Through** - Semantic search can include persisted vector candidates outside the lexical prefilter and write through newly embedded candidate misses.

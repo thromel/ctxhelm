@@ -845,6 +845,8 @@ pub struct HistoricalEvalReport {
     pub broad_context_area_recall: f32,
     #[serde(default)]
     pub context_area_pressure_summary: ContextAreaPressureSummary,
+    #[serde(default)]
+    pub context_area_next_read_summary: ContextAreaNextReadSummary,
     pub file_recall_at_5: f32,
     pub file_recall_at_10: f32,
     pub lexical_baseline_recall_at_5: f32,
@@ -911,6 +913,16 @@ pub struct ContextAreaPressurePeak {
     pub inspection_pressure: usize,
     pub coverage_percent: u8,
     pub unselected_count: usize,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct ContextAreaNextReadSummary {
+    pub missed_file_count_at_10: usize,
+    pub next_read_recoverable_count: usize,
+    pub top_pressure_next_read_recoverable_count: usize,
+    pub zero_selected_area_recoverable_count: usize,
+    pub source_text_logged: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -4135,6 +4147,7 @@ pub fn evaluate_historical_commits(
     let graph_edge_profiles = graph_edge_profiles(&commits);
     let protected_evidence = protected_evidence_summary(&commits);
     let context_area_pressure_summary = context_area_pressure_summary(&commits);
+    let context_area_next_read_summary = context_area_next_read_summary(&commits);
     let runtime = historical_eval_runtime_summary(
         &commits,
         elapsed_millis(eval_started),
@@ -4171,6 +4184,7 @@ pub fn evaluate_historical_commits(
             .count(),
         broad_context_area_recall: average_broad_context_area_recall(&commits),
         context_area_pressure_summary,
+        context_area_next_read_summary,
         file_recall_at_5,
         file_recall_at_10,
         lexical_baseline_recall_at_5,
@@ -6960,6 +6974,63 @@ fn context_area_pressure_summary(commits: &[HistoricalCommitEval]) -> ContextAre
     summary
 }
 
+fn context_area_next_read_summary(commits: &[HistoricalCommitEval]) -> ContextAreaNextReadSummary {
+    let mut summary = ContextAreaNextReadSummary {
+        source_text_logged: false,
+        ..ContextAreaNextReadSummary::default()
+    };
+
+    for commit in commits {
+        if commit.missing_files_at_10.is_empty() || commit.context_areas.is_empty() {
+            summary.missed_file_count_at_10 += commit.missing_files_at_10.len();
+            continue;
+        }
+
+        let missing = commit
+            .missing_files_at_10
+            .iter()
+            .cloned()
+            .collect::<BTreeSet<_>>();
+        let all_next_reads = commit
+            .context_areas
+            .iter()
+            .flat_map(|area| area.next_read_paths.iter().cloned())
+            .collect::<BTreeSet<_>>();
+        let top_pressure_next_reads = commit
+            .context_areas
+            .iter()
+            .filter(|area| is_top_pressure_context_area(area, &commit.context_areas))
+            .flat_map(|area| area.next_read_paths.iter().cloned())
+            .collect::<BTreeSet<_>>();
+        let zero_selected_next_reads = commit
+            .context_areas
+            .iter()
+            .filter(|area| area.selected_count == 0)
+            .flat_map(|area| area.next_read_paths.iter().cloned())
+            .collect::<BTreeSet<_>>();
+
+        summary.missed_file_count_at_10 += missing.len();
+        summary.next_read_recoverable_count += missing.intersection(&all_next_reads).count();
+        summary.top_pressure_next_read_recoverable_count +=
+            missing.intersection(&top_pressure_next_reads).count();
+        summary.zero_selected_area_recoverable_count +=
+            missing.intersection(&zero_selected_next_reads).count();
+    }
+
+    summary
+}
+
+fn is_top_pressure_context_area(area: &ContextArea, context_areas: &[ContextArea]) -> bool {
+    let Some(max_pressure) = context_areas
+        .iter()
+        .map(|candidate| candidate.inspection_pressure)
+        .max()
+    else {
+        return false;
+    };
+    area.inspection_pressure == max_pressure && max_pressure > 0
+}
+
 fn average_test_hit_rate(
     commits: &[HistoricalCommitEval],
     hits: impl Fn(&HistoricalCommitEval) -> usize,
@@ -9368,7 +9439,11 @@ mod tests {
             file_hits_at_10: Vec::new(),
             lexical_baseline_hits_at_5: Vec::new(),
             lexical_baseline_hits_at_10: Vec::new(),
-            missing_files_at_10: Vec::new(),
+            missing_files_at_10: vec![
+                "schema_agent/core/fd_router.py".to_string(),
+                "docs/architecture.md".to_string(),
+                "schema_agent/agents/base.py".to_string(),
+            ],
             source_files_changed: 4,
             source_hits_at_5: 1,
             source_hits_at_10: 1,
@@ -9452,6 +9527,12 @@ mod tests {
             "schema_agent/core"
         );
         assert!(!pressure.source_text_logged);
+        let next_read = context_area_next_read_summary(&commits);
+        assert_eq!(next_read.missed_file_count_at_10, 3);
+        assert_eq!(next_read.next_read_recoverable_count, 2);
+        assert_eq!(next_read.top_pressure_next_read_recoverable_count, 1);
+        assert_eq!(next_read.zero_selected_area_recoverable_count, 1);
+        assert!(!next_read.source_text_logged);
     }
 
     #[test]
@@ -9829,6 +9910,7 @@ mod tests {
             broad_scope_commit_count: 0,
             broad_context_area_recall: 0.0,
             context_area_pressure_summary: ContextAreaPressureSummary::default(),
+            context_area_next_read_summary: ContextAreaNextReadSummary::default(),
             file_recall_at_5: 0.0,
             file_recall_at_10: 0.0,
             lexical_baseline_recall_at_5: 0.0,

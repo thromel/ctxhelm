@@ -27,22 +27,23 @@ pub use eval::{
     BenchmarkRegressionThreshold, BenchmarkRepoBaseline, BenchmarkRepoBaselineStatus,
     BenchmarkRepoConfig, BenchmarkRepoEffectiveConfig, BenchmarkRepoReport, BenchmarkSuiteConfig,
     BenchmarkSuiteReport, BenchmarkThresholdCheck, CandidateFeatureComparisonReport,
-    CandidateFeatureKindDelta, ContextAreaPressurePeak, ContextAreaPressureSummary, EvalComparison,
-    GraphEdgeAblationResult, GraphEdgeProfile, HistoricalChangedPathLabel, HistoricalCommitEval,
-    HistoricalEvalEffectiveFilters, HistoricalEvalOptions, HistoricalEvalRefs,
-    HistoricalEvalReport, HistoricalEvalRuntimeSummary, HistoricalMissingFileSummary,
-    HistoricalProtectedEvidenceFile, HistoricalSignalRanking, HistoricalSlowCommitSummary,
-    LexicalBackendCommitRow, LexicalBackendComparison, LexicalBackendCorpusOptions,
-    LexicalBackendCorpusReport, LexicalBackendMetrics, LexicalBackendRuntimeSummary,
-    PairedBaselineAnalysisReport, PairedBaselineFamily, PairedBaselineRow, PairedBaselineVerdict,
-    ProductProofCorpusStatus, ProductProofCorpusVerdict, ProductProofLexicalBackendComparison,
-    ProductProofLexicalClaim, ProductProofLexicalComparison, ProductProofMetric,
-    ProductProofReleaseGate, ProductProofReport, ProtectedEvidenceSignalSummary,
-    ProtectedEvidenceSummary, RankingMetrics, RetrievalGapRecommendationArea, RetrievalGapSummary,
-    RetrievalGapTargetStatus, RoleRecallMetric, SemanticContributionSummary,
-    SemanticMissedTargetGapFamily, SemanticPrecisionGateDecision, SemanticPrecisionGateReport,
-    SemanticPrecisionNamedCase, SemanticPrecisionVariant, SemanticPrecisionVariantStatus,
-    SignalAblationResult, SignalSaturationMetric, TokenRoiMetric,
+    CandidateFeatureKindDelta, ContextAreaNextReadSummary, ContextAreaPressurePeak,
+    ContextAreaPressureSummary, EvalComparison, GraphEdgeAblationResult, GraphEdgeProfile,
+    HistoricalChangedPathLabel, HistoricalCommitEval, HistoricalEvalEffectiveFilters,
+    HistoricalEvalOptions, HistoricalEvalRefs, HistoricalEvalReport, HistoricalEvalRuntimeSummary,
+    HistoricalMissingFileSummary, HistoricalProtectedEvidenceFile, HistoricalSignalRanking,
+    HistoricalSlowCommitSummary, LexicalBackendCommitRow, LexicalBackendComparison,
+    LexicalBackendCorpusOptions, LexicalBackendCorpusReport, LexicalBackendMetrics,
+    LexicalBackendRuntimeSummary, PairedBaselineAnalysisReport, PairedBaselineFamily,
+    PairedBaselineRow, PairedBaselineVerdict, ProductProofCorpusStatus, ProductProofCorpusVerdict,
+    ProductProofLexicalBackendComparison, ProductProofLexicalClaim, ProductProofLexicalComparison,
+    ProductProofMetric, ProductProofReleaseGate, ProductProofReport,
+    ProtectedEvidenceSignalSummary, ProtectedEvidenceSummary, RankingMetrics,
+    RetrievalGapRecommendationArea, RetrievalGapSummary, RetrievalGapTargetStatus,
+    RoleRecallMetric, SemanticContributionSummary, SemanticMissedTargetGapFamily,
+    SemanticPrecisionGateDecision, SemanticPrecisionGateReport, SemanticPrecisionNamedCase,
+    SemanticPrecisionVariant, SemanticPrecisionVariantStatus, SignalAblationResult,
+    SignalSaturationMetric, TokenRoiMetric,
 };
 pub use graph::build_graph_neighborhood_report;
 pub use packs::{
@@ -1889,6 +1890,13 @@ mod tests {
                 }),
                 source_text_logged: false,
             },
+            context_area_next_read_summary: ContextAreaNextReadSummary {
+                missed_file_count_at_10: 3,
+                next_read_recoverable_count: 2,
+                top_pressure_next_read_recoverable_count: 1,
+                zero_selected_area_recoverable_count: 1,
+                source_text_logged: false,
+            },
             file_recall_at_5: 0.5,
             file_recall_at_10: 1.0,
             lexical_baseline_recall_at_5: 0.25,
@@ -1997,6 +2005,7 @@ mod tests {
             "broadScopeCommitCount",
             "broadContextAreaRecall",
             "contextAreaPressureSummary",
+            "contextAreaNextReadSummary",
             "fileRecallAt5",
             "fileRecallAt10",
             "lexicalBaselineRecallAt5",
@@ -2040,6 +2049,26 @@ mod tests {
         );
         assert_eq!(
             value["contextAreaPressureSummary"]["sourceTextLogged"],
+            false
+        );
+        assert_eq!(
+            value["contextAreaNextReadSummary"]["missedFileCountAt10"],
+            3
+        );
+        assert_eq!(
+            value["contextAreaNextReadSummary"]["nextReadRecoverableCount"],
+            2
+        );
+        assert_eq!(
+            value["contextAreaNextReadSummary"]["topPressureNextReadRecoverableCount"],
+            1
+        );
+        assert_eq!(
+            value["contextAreaNextReadSummary"]["zeroSelectedAreaRecoverableCount"],
+            1
+        );
+        assert_eq!(
+            value["contextAreaNextReadSummary"]["sourceTextLogged"],
             false
         );
         assert!(value["signalAblations"].as_array().unwrap().is_empty());
@@ -2334,6 +2363,7 @@ mod tests {
             broad_scope_commit_count: 0,
             broad_context_area_recall: 0.0,
             context_area_pressure_summary: ContextAreaPressureSummary::default(),
+            context_area_next_read_summary: ContextAreaNextReadSummary::default(),
             file_recall_at_5: 0.0,
             file_recall_at_10: 0.0,
             lexical_baseline_recall_at_5: 1.0,

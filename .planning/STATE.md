@@ -4,10 +4,10 @@ milestone: v2.5
 milestone_name: Production Retrieval Quality
 status: active
 last_updated: "2026-06-03T00:00:00Z"
-last_activity: 2026-06-03 -- Phase 192 adds source-free context-area pressure summaries to eval and proof reports
+last_activity: 2026-06-03 -- Phase 193 adds source-free context-area next-read recovery summaries to eval and proof reports
 progress:
-  total_phases: 103
-  completed_phases: 103
+  total_phases: 104
+  completed_phases: 104
   total_plans: 7
   completed_plans: 7
   percent: 100
@@ -17,10 +17,10 @@ progress:
 
 ## Current Position
 
-Phase: 192 - Context Area Pressure Summary
-Plan: 192-context-area-pressure-summary
+Phase: 193 - Context Area Next-Read Recovery
+Plan: 193-context-area-next-read-recovery
 Status: Complete
-Last activity: 2026-06-03 -- Phase 192 adds source-free `contextAreaPressureSummary` to historical eval reports, renders the summary in eval/benchmark markdown, and release-gates pressure-summary arithmetic in `scripts/check-product-proof.py`. Fresh release-binary proof promotes from `/tmp/ctxhelm-rd/phase192-area-pressure-summary-proof.json`; all four repositories keep Phase 191 file/source/test/context-area metrics unchanged while reporting per-repo broad-area pressure mix and highest-pressure areas.
+Last activity: 2026-06-03 -- Phase 193 adds source-free `contextAreaNextReadSummary` to historical eval reports, renders next-read recovery in eval/benchmark markdown, and release-gates recovery-summary arithmetic in `scripts/check-product-proof.py`. Fresh release-binary proof promotes from `/tmp/ctxhelm-rd/phase193-next-read-recovery-proof.json`; core Phase 192 retrieval metrics stay unchanged while showing progressive next-read guidance recovers `9 / 12` ctxhelm missed@10 paths and `10 / 39` VeriSchema missed@10 paths.
 
 ## Project Reference
 
@@ -171,6 +171,7 @@ Planned phases:
 - Phase 190: Context Area Inspection Pressure (complete follow-up)
 - Phase 191: Context Area Pressure Breakdown (complete follow-up)
 - Phase 192: Context Area Pressure Summary (complete follow-up)
+- Phase 193: Context Area Next-Read Recovery (complete follow-up)
 
 ## Last Completed Milestone
 
