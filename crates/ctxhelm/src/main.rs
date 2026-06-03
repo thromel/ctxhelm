@@ -4995,6 +4995,9 @@ fn render_historical_eval_report(report: &HistoricalEvalReport) -> String {
         report.broad_context_area_recall,
         report.privacy_status.local_only
     ));
+    output.push_str(&render_context_area_pressure_summary(
+        &report.context_area_pressure_summary,
+    ));
 
     if report.commits.is_empty() {
         output.push_str("No safe historical commits were available for evaluation.\n");
@@ -5213,6 +5216,35 @@ fn push_retrieval_gap_summaries(
     }
 }
 
+fn render_context_area_pressure_summary(
+    summary: &ctxhelm_compiler::ContextAreaPressureSummary,
+) -> String {
+    if summary.context_area_count == 0 {
+        return String::new();
+    }
+    let peak = summary
+        .highest_pressure_area
+        .as_ref()
+        .map(|area| {
+            format!(
+                "`{}` pressure `{}` coverage `{}%`",
+                area.area, area.inspection_pressure, area.coverage_percent
+            )
+        })
+        .unwrap_or_else(|| "none".to_string());
+    format!(
+        "- Context area pressure: total `{}`, areas `{}`, zero-selected `{}`\n- Context area pressure mix: source-like `{}`, validation `{}`, docs `{}`\n- Highest pressure area: {}\n- Context area pressure source-free: `{}`\n\n",
+        summary.total_inspection_pressure,
+        summary.context_area_count,
+        summary.zero_selected_area_count,
+        summary.source_like_pressure,
+        summary.validation_pressure,
+        summary.docs_pressure,
+        peak,
+        !summary.source_text_logged
+    )
+}
+
 fn render_benchmark_suite_report(report: &BenchmarkSuiteReport) -> String {
     let mut output = String::from("# ctxhelm Benchmark Suite\n\n");
     output.push_str(
@@ -5315,6 +5347,9 @@ fn render_benchmark_suite_report(report: &BenchmarkSuiteReport) -> String {
             eval.protected_evidence.missed_at_10_count,
             eval.protected_evidence.candidate_count,
             eval.protected_evidence.miss_rate_at_10
+        ));
+        output.push_str(&render_context_area_pressure_summary(
+            &eval.context_area_pressure_summary,
         ));
 
         if let Some(lexical_backend) = &repo.lexical_backend_corpus {
@@ -6009,6 +6044,25 @@ mod tests {
             low_information_commit_count: 1,
             broad_scope_commit_count: 0,
             broad_context_area_recall: 0.0,
+            context_area_pressure_summary: ctxhelm_compiler::ContextAreaPressureSummary {
+                context_area_count: 2,
+                zero_selected_area_count: 1,
+                total_inspection_pressure: 7,
+                source_like_unselected: 2,
+                validation_unselected: 0,
+                docs_unselected: 1,
+                source_like_pressure: 6,
+                validation_pressure: 0,
+                docs_pressure: 1,
+                highest_pressure_area: Some(ctxhelm_compiler::ContextAreaPressurePeak {
+                    area: "src".to_string(),
+                    resource_uri: "ctxhelm://repo/context-area/src".to_string(),
+                    inspection_pressure: 6,
+                    coverage_percent: 33,
+                    unselected_count: 2,
+                }),
+                source_text_logged: false,
+            },
             file_recall_at_5: 1.0,
             file_recall_at_10: 1.0,
             lexical_baseline_recall_at_5: 0.5,
@@ -6103,6 +6157,10 @@ mod tests {
         assert!(markdown.contains("Low-information commits: `1`"));
         assert!(markdown.contains("Broad-scope commits: `0`"));
         assert!(markdown.contains("Broad context area recall: `0.00`"));
+        assert!(markdown.contains("Context area pressure: total `7`, areas `2`, zero-selected `1`"));
+        assert!(markdown
+            .contains("Context area pressure mix: source-like `6`, validation `0`, docs `1`"));
+        assert!(markdown.contains("Highest pressure area: `src` pressure `6` coverage `33%`"));
         assert!(markdown.contains("File Recall@5: `1.00`"));
         assert!(markdown.contains("Lexical Baseline Recall@5: `0.50`"));
         assert!(markdown.contains("No-context Recall@K: `0.00`"));

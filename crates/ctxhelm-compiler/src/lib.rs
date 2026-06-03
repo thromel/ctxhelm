@@ -27,22 +27,22 @@ pub use eval::{
     BenchmarkRegressionThreshold, BenchmarkRepoBaseline, BenchmarkRepoBaselineStatus,
     BenchmarkRepoConfig, BenchmarkRepoEffectiveConfig, BenchmarkRepoReport, BenchmarkSuiteConfig,
     BenchmarkSuiteReport, BenchmarkThresholdCheck, CandidateFeatureComparisonReport,
-    CandidateFeatureKindDelta, EvalComparison, GraphEdgeAblationResult, GraphEdgeProfile,
-    HistoricalChangedPathLabel, HistoricalCommitEval, HistoricalEvalEffectiveFilters,
-    HistoricalEvalOptions, HistoricalEvalRefs, HistoricalEvalReport, HistoricalEvalRuntimeSummary,
-    HistoricalMissingFileSummary, HistoricalProtectedEvidenceFile, HistoricalSignalRanking,
-    HistoricalSlowCommitSummary, LexicalBackendCommitRow, LexicalBackendComparison,
-    LexicalBackendCorpusOptions, LexicalBackendCorpusReport, LexicalBackendMetrics,
-    LexicalBackendRuntimeSummary, PairedBaselineAnalysisReport, PairedBaselineFamily,
-    PairedBaselineRow, PairedBaselineVerdict, ProductProofCorpusStatus, ProductProofCorpusVerdict,
-    ProductProofLexicalBackendComparison, ProductProofLexicalClaim, ProductProofLexicalComparison,
-    ProductProofMetric, ProductProofReleaseGate, ProductProofReport,
-    ProtectedEvidenceSignalSummary, ProtectedEvidenceSummary, RankingMetrics,
-    RetrievalGapRecommendationArea, RetrievalGapSummary, RetrievalGapTargetStatus,
-    RoleRecallMetric, SemanticContributionSummary, SemanticMissedTargetGapFamily,
-    SemanticPrecisionGateDecision, SemanticPrecisionGateReport, SemanticPrecisionNamedCase,
-    SemanticPrecisionVariant, SemanticPrecisionVariantStatus, SignalAblationResult,
-    SignalSaturationMetric, TokenRoiMetric,
+    CandidateFeatureKindDelta, ContextAreaPressurePeak, ContextAreaPressureSummary, EvalComparison,
+    GraphEdgeAblationResult, GraphEdgeProfile, HistoricalChangedPathLabel, HistoricalCommitEval,
+    HistoricalEvalEffectiveFilters, HistoricalEvalOptions, HistoricalEvalRefs,
+    HistoricalEvalReport, HistoricalEvalRuntimeSummary, HistoricalMissingFileSummary,
+    HistoricalProtectedEvidenceFile, HistoricalSignalRanking, HistoricalSlowCommitSummary,
+    LexicalBackendCommitRow, LexicalBackendComparison, LexicalBackendCorpusOptions,
+    LexicalBackendCorpusReport, LexicalBackendMetrics, LexicalBackendRuntimeSummary,
+    PairedBaselineAnalysisReport, PairedBaselineFamily, PairedBaselineRow, PairedBaselineVerdict,
+    ProductProofCorpusStatus, ProductProofCorpusVerdict, ProductProofLexicalBackendComparison,
+    ProductProofLexicalClaim, ProductProofLexicalComparison, ProductProofMetric,
+    ProductProofReleaseGate, ProductProofReport, ProtectedEvidenceSignalSummary,
+    ProtectedEvidenceSummary, RankingMetrics, RetrievalGapRecommendationArea, RetrievalGapSummary,
+    RetrievalGapTargetStatus, RoleRecallMetric, SemanticContributionSummary,
+    SemanticMissedTargetGapFamily, SemanticPrecisionGateDecision, SemanticPrecisionGateReport,
+    SemanticPrecisionNamedCase, SemanticPrecisionVariant, SemanticPrecisionVariantStatus,
+    SignalAblationResult, SignalSaturationMetric, TokenRoiMetric,
 };
 pub use graph::build_graph_neighborhood_report;
 pub use packs::{
@@ -1870,6 +1870,25 @@ mod tests {
             low_information_commit_count: 0,
             broad_scope_commit_count: 0,
             broad_context_area_recall: 1.0,
+            context_area_pressure_summary: ContextAreaPressureSummary {
+                context_area_count: 1,
+                zero_selected_area_count: 0,
+                total_inspection_pressure: 0,
+                source_like_unselected: 0,
+                validation_unselected: 0,
+                docs_unselected: 0,
+                source_like_pressure: 0,
+                validation_pressure: 0,
+                docs_pressure: 0,
+                highest_pressure_area: Some(ContextAreaPressurePeak {
+                    area: "src".to_string(),
+                    resource_uri: "ctxhelm://repo/context-area/src".to_string(),
+                    inspection_pressure: 0,
+                    coverage_percent: 100,
+                    unselected_count: 0,
+                }),
+                source_text_logged: false,
+            },
             file_recall_at_5: 0.5,
             file_recall_at_10: 1.0,
             lexical_baseline_recall_at_5: 0.25,
@@ -1977,6 +1996,7 @@ mod tests {
             "lowInformationCommitCount",
             "broadScopeCommitCount",
             "broadContextAreaRecall",
+            "contextAreaPressureSummary",
             "fileRecallAt5",
             "fileRecallAt10",
             "lexicalBaselineRecallAt5",
@@ -2013,6 +2033,15 @@ mod tests {
         assert_eq!(value["runtime"]["commitMillis"], 120);
         assert_eq!(value["runtime"]["overheadMillis"], 0);
         assert_eq!(value["runtime"]["slowCommits"][0]["sha"], "abc123");
+        assert_eq!(value["contextAreaPressureSummary"]["contextAreaCount"], 1);
+        assert_eq!(
+            value["contextAreaPressureSummary"]["highestPressureArea"]["area"],
+            "src"
+        );
+        assert_eq!(
+            value["contextAreaPressureSummary"]["sourceTextLogged"],
+            false
+        );
         assert!(value["signalAblations"].as_array().unwrap().is_empty());
         assert_eq!(value["tokenRoi"][0]["budget"], "brief");
         assert_eq!(value["tokenRoi"][1]["largerPackAddsLittleValue"], true);
@@ -2304,6 +2333,7 @@ mod tests {
             low_information_commit_count: 0,
             broad_scope_commit_count: 0,
             broad_context_area_recall: 0.0,
+            context_area_pressure_summary: ContextAreaPressureSummary::default(),
             file_recall_at_5: 0.0,
             file_recall_at_10: 0.0,
             lexical_baseline_recall_at_5: 1.0,

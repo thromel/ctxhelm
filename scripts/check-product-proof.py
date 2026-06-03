@@ -148,6 +148,44 @@ def validate_context_area_pressure_contract(report: dict) -> None:
                 )
 
 
+def iter_context_area_pressure_summaries(value):
+    if isinstance(value, dict):
+        summary = value.get("contextAreaPressureSummary")
+        if isinstance(summary, dict):
+            yield summary
+        for child in value.values():
+            yield from iter_context_area_pressure_summaries(child)
+    elif isinstance(value, list):
+        for child in value:
+            yield from iter_context_area_pressure_summaries(child)
+
+
+def validate_context_area_pressure_summaries(report: dict) -> None:
+    for summary in iter_context_area_pressure_summaries(report):
+        for field in (
+            "contextAreaCount",
+            "zeroSelectedAreaCount",
+            "totalInspectionPressure",
+            "sourceLikePressure",
+            "validationPressure",
+            "docsPressure",
+        ):
+            if not isinstance(summary.get(field), int):
+                fail(
+                    "context area pressure summary was missing integer "
+                    + field
+                )
+        expected_total = (
+            summary["sourceLikePressure"]
+            + summary["validationPressure"]
+            + summary["docsPressure"]
+        )
+        if summary["totalInspectionPressure"] != expected_total:
+            fail("context area pressure summary total was inconsistent")
+        if summary.get("sourceTextLogged") is not False:
+            fail("context area pressure summary was not source-free")
+
+
 BROAD_FIXED_CORPUS_ID = "phase92-area-aware-gap-taxonomy-2026-05-31"
 BROAD_FIXED_CORPUS_FLOORS = {
     "RefactoringMiner": {
@@ -224,6 +262,7 @@ def main() -> None:
         fail("embedded benchmark privacyStatus.localOnly was not true")
     validate_resource_backed_gap_summaries(report)
     validate_context_area_pressure_contract(report)
+    validate_context_area_pressure_summaries(report)
     validate_broad_fixed_corpus_floors(report)
     if not report.get("headlineMetrics"):
         fail("product proof headlineMetrics were empty")

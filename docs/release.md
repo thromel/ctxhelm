@@ -376,6 +376,14 @@ validates emitted pressure totals. The fresh four-repo proof promotes with Phase
 190 metrics unchanged and validates 144 context-area entries with zero invalid
 breakdowns.
 
+Phase 192 aggregates context-area pressure into eval and product-proof reports.
+`HistoricalEvalReport.contextAreaPressureSummary` reports total areas,
+zero-selected areas, source-like/validation/docs pressure, and the highest
+pressure area. Historical eval and benchmark markdown render the summary, and
+`scripts/check-product-proof.py` validates emitted summary totals. The fresh
+four-repo proof promotes with Phase 191 metrics unchanged while showing
+repository-level broad-area bottlenecks.
+
 The optional real-client evidence wrappers are:
 
 - `scripts/smoke-codex-mcp.sh`

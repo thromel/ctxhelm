@@ -782,6 +782,12 @@ Recommendation today:
   retrieval-gap summaries when area profiles are available. The product-proof
   checker now validates emitted pressure arithmetic, and the four-repo proof
   still promotes with Phase 190 metrics unchanged.
+- Phase 192 adds `contextAreaPressureSummary` to historical eval reports and
+  product-proof embeddings. The summary aggregates total broad-area pressure,
+  source-like/validation/docs pressure, zero-selected areas, and the
+  highest-pressure area so broad-area bottlenecks are visible at repository
+  scale without reading source. The four-repo proof still promotes with Phase
+  191 metrics unchanged.
 - Treat cloud embeddings/reranking as disabled unless an explicit repo policy
   allows them.
 

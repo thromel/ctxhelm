@@ -843,6 +843,8 @@ pub struct HistoricalEvalReport {
     pub broad_scope_commit_count: usize,
     #[serde(default)]
     pub broad_context_area_recall: f32,
+    #[serde(default)]
+    pub context_area_pressure_summary: ContextAreaPressureSummary,
     pub file_recall_at_5: f32,
     pub file_recall_at_10: f32,
     pub lexical_baseline_recall_at_5: f32,
@@ -883,6 +885,32 @@ pub struct ProtectedEvidenceSummary {
     #[serde(default)]
     pub non_target_missed_at_10_count: usize,
     pub by_signal: Vec<ProtectedEvidenceSignalSummary>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct ContextAreaPressureSummary {
+    pub context_area_count: usize,
+    pub zero_selected_area_count: usize,
+    pub total_inspection_pressure: usize,
+    pub source_like_unselected: usize,
+    pub validation_unselected: usize,
+    pub docs_unselected: usize,
+    pub source_like_pressure: usize,
+    pub validation_pressure: usize,
+    pub docs_pressure: usize,
+    pub highest_pressure_area: Option<ContextAreaPressurePeak>,
+    pub source_text_logged: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct ContextAreaPressurePeak {
+    pub area: String,
+    pub resource_uri: String,
+    pub inspection_pressure: usize,
+    pub coverage_percent: u8,
+    pub unselected_count: usize,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -4106,6 +4134,7 @@ pub fn evaluate_historical_commits(
     );
     let graph_edge_profiles = graph_edge_profiles(&commits);
     let protected_evidence = protected_evidence_summary(&commits);
+    let context_area_pressure_summary = context_area_pressure_summary(&commits);
     let runtime = historical_eval_runtime_summary(
         &commits,
         elapsed_millis(eval_started),
@@ -4141,6 +4170,7 @@ pub fn evaluate_historical_commits(
             .filter(|commit| commit.broad_scope_task)
             .count(),
         broad_context_area_recall: average_broad_context_area_recall(&commits),
+        context_area_pressure_summary,
         file_recall_at_5,
         file_recall_at_10,
         lexical_baseline_recall_at_5,
@@ -6888,6 +6918,48 @@ fn average_broad_context_area_recall(commits: &[HistoricalCommitEval]) -> f32 {
     }
 }
 
+fn context_area_pressure_summary(commits: &[HistoricalCommitEval]) -> ContextAreaPressureSummary {
+    let mut summary = ContextAreaPressureSummary {
+        source_text_logged: false,
+        ..ContextAreaPressureSummary::default()
+    };
+    for commit in commits {
+        for area in &commit.context_areas {
+            let breakdown = &area.inspection_pressure_breakdown;
+            summary.context_area_count += 1;
+            summary.zero_selected_area_count += usize::from(area.selected_count == 0);
+            summary.total_inspection_pressure += area.inspection_pressure;
+            summary.source_like_unselected += breakdown.source_like_unselected;
+            summary.validation_unselected += breakdown.validation_unselected;
+            summary.docs_unselected += breakdown.docs_unselected;
+            summary.source_like_pressure +=
+                breakdown.source_like_unselected * breakdown.source_like_weight;
+            summary.validation_pressure +=
+                breakdown.validation_unselected * breakdown.validation_weight;
+            summary.docs_pressure += breakdown.docs_unselected * breakdown.docs_weight;
+            let replace_peak = summary
+                .highest_pressure_area
+                .as_ref()
+                .map(|peak| {
+                    area.inspection_pressure > peak.inspection_pressure
+                        || (area.inspection_pressure == peak.inspection_pressure
+                            && area.area < peak.area)
+                })
+                .unwrap_or(true);
+            if replace_peak {
+                summary.highest_pressure_area = Some(ContextAreaPressurePeak {
+                    area: area.area.clone(),
+                    resource_uri: area.resource_uri.clone(),
+                    inspection_pressure: area.inspection_pressure,
+                    coverage_percent: area.coverage_percent,
+                    unselected_count: area.unselected_count,
+                });
+            }
+        }
+    }
+    summary
+}
+
 fn average_test_hit_rate(
     commits: &[HistoricalCommitEval],
     hits: impl Fn(&HistoricalCommitEval) -> usize,
@@ -9312,7 +9384,56 @@ mod tests {
                 "schema_agent/core".to_string(),
             ],
             context_area_hits: vec!["schema_agent/core".to_string()],
-            context_areas: Vec::new(),
+            context_areas: vec![
+                ContextArea {
+                    area: "schema_agent/core".to_string(),
+                    reason: "selected implementation area".to_string(),
+                    resource_uri: "ctxhelm://repo/context-area/schema_agent%2Fcore".to_string(),
+                    representative_paths: vec!["schema_agent/core/fd_registry.py".to_string()],
+                    next_read_paths: vec!["schema_agent/core/fd_router.py".to_string()],
+                    signal_counts: BTreeMap::from([("lexical".to_string(), 2)]),
+                    role_counts: BTreeMap::from([("source".to_string(), 3)]),
+                    selected_role_counts: BTreeMap::from([("source".to_string(), 1)]),
+                    candidate_count: 3,
+                    selected_count: 1,
+                    unselected_count: 2,
+                    coverage_percent: 33,
+                    inspection_pressure: 6,
+                    inspection_pressure_breakdown: InspectionPressureBreakdown {
+                        source_like_unselected: 2,
+                        validation_unselected: 0,
+                        docs_unselected: 0,
+                        source_like_weight: 3,
+                        validation_weight: 2,
+                        docs_weight: 1,
+                        total: 6,
+                    },
+                },
+                ContextArea {
+                    area: "docs".to_string(),
+                    reason: "zero-selected docs area".to_string(),
+                    resource_uri: "ctxhelm://repo/context-area/docs".to_string(),
+                    representative_paths: vec!["docs/architecture.md".to_string()],
+                    next_read_paths: vec!["docs/architecture.md".to_string()],
+                    signal_counts: BTreeMap::from([("docs".to_string(), 1)]),
+                    role_counts: BTreeMap::from([("docs".to_string(), 1)]),
+                    selected_role_counts: BTreeMap::new(),
+                    candidate_count: 1,
+                    selected_count: 0,
+                    unselected_count: 1,
+                    coverage_percent: 0,
+                    inspection_pressure: 1,
+                    inspection_pressure_breakdown: InspectionPressureBreakdown {
+                        source_like_unselected: 0,
+                        validation_unselected: 0,
+                        docs_unselected: 1,
+                        source_like_weight: 3,
+                        validation_weight: 2,
+                        docs_weight: 1,
+                        total: 1,
+                    },
+                },
+            ],
             confidence: 0.5,
             query_trace: None,
             elapsed_millis: 0,
@@ -9320,6 +9441,17 @@ mod tests {
         }];
 
         assert_eq!(average_broad_context_area_recall(&commits), 0.5);
+        let pressure = context_area_pressure_summary(&commits);
+        assert_eq!(pressure.context_area_count, 2);
+        assert_eq!(pressure.zero_selected_area_count, 1);
+        assert_eq!(pressure.total_inspection_pressure, 7);
+        assert_eq!(pressure.source_like_pressure, 6);
+        assert_eq!(pressure.docs_pressure, 1);
+        assert_eq!(
+            pressure.highest_pressure_area.as_ref().unwrap().area,
+            "schema_agent/core"
+        );
+        assert!(!pressure.source_text_logged);
     }
 
     #[test]
@@ -9696,6 +9828,7 @@ mod tests {
             low_information_commit_count: 0,
             broad_scope_commit_count: 0,
             broad_context_area_recall: 0.0,
+            context_area_pressure_summary: ContextAreaPressureSummary::default(),
             file_recall_at_5: 0.0,
             file_recall_at_10: 0.0,
             lexical_baseline_recall_at_5: 0.0,
