@@ -4,10 +4,10 @@ milestone: v2.5
 milestone_name: Production Retrieval Quality
 status: active
 last_updated: "2026-06-03T00:00:00Z"
-last_activity: 2026-06-03 -- Phase 206 hardens source-free consumption guidance
+last_activity: 2026-06-03 -- Phase 208 classifies agent-run client failures
 progress:
-  total_phases: 115
-  completed_phases: 115
+  total_phases: 117
+  completed_phases: 117
   total_plans: 7
   completed_plans: 7
   percent: 100
@@ -17,10 +17,10 @@ progress:
 
 ## Current Position
 
-Phase: 206 - Consumption Guidance Hardening
-Plan: 206-consumption-guidance-hardening
+Phase: 208 - Agent-Run Client Failure Classification
+Plan: 208-agent-run-client-failure-classification
 Status: Complete
-Last activity: 2026-06-03 -- Phase 206 hardens product-facing consumption guidance. `prepare_task` MCP text, generated AGENTS/Cursor/Claude/OpenCode/Codex guidance, and generated packs now tell agents that discovering a path or seeing a pack snippet is not the same as consuming the current file. Real Claude Code probes were mixed: one showed `ctxhelm-plan` improving target-read coverage from `0.33` to `0.67`, while the later pack-guidance probe kept plan target-read coverage at `0.67` but had a failed brief lane before ctxhelm calls.
+Last activity: 2026-06-03 -- Phase 208 classifies real-client availability failures after a Phase 207 Claude Code probe hit a session rate limit before any lane could read files or call ctxhelm. Agent-run lane records now expose `clientFailureKind`, `clientApiErrorStatus`, and `rateLimitObserved`, while single-run and suite comparisons aggregate client failures and rate limits without storing raw client output.
 
 ## Project Reference
 

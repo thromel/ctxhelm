@@ -66,6 +66,10 @@ Phase 205 adds source-free agent consumption diagnostics to that paired-run harn
 
 Phase 206 hardens the product-facing consumption contract. `prepare_task` MCP text, generated agent guidance, and generated packs now tell agents that discovering a path or seeing a pack snippet is not the same as consuming the current file with native reads. Real Claude Code probes were mixed: the first showed `ctxhelm-plan` improving target-read coverage from `0.33` to `0.67`, while the second kept plan target-read coverage at `0.67` but had a failed brief lane before ctxhelm calls. This is accepted as guidance hardening, not as stable brief-pack outcome proof.
 
+Phase 207 hardens paired real-agent comparability. The agent-run harness now records required ctxhelm calls, observed required calls, missing required calls, call-compliance status, evaluation status, and evaluation eligibility per lane. `ctxhelm-plan` requires `prepare_task`; `ctxhelm-brief` requires both `prepare_task` and `get_pack`. Single-run and suite reports now expose comparison eligibility, comparable ctxhelm lane counts, and missing-required-call observations, and they use `insufficient_comparable_lanes` when no baseline plus ctxhelm-assisted lane was actually comparable.
+
+Phase 208 classifies real-client availability failures source-free. A Phase 207 Claude Code probe hit a session rate limit before any lane could read files or call ctxhelm. The harness now records `clientFailureKind`, `clientApiErrorStatus`, and `rateLimitObserved` per lane, and single-run/suite reports aggregate client failures and rate limits. This keeps rate limits, API errors, timeouts, and generic non-zero client exits separate from ctxhelm retrieval, pack, and consumption behavior without storing raw client output.
+
 ## v2.5 Production Retrieval Quality
 
 ## Phases
@@ -73,7 +77,7 @@ Phase 206 hardens the product-facing consumption contract. `prepare_task` MCP te
 **Phase Numbering:**
 
 - Integer phases (61, 62, 63, 64, 65): Planned v2.5 work
-- Phases 66-206: Production-readiness follow-ups from the original blocked proof and the channel-aware promotion path
+- Phases 66-208: Production-readiness follow-ups from the original blocked proof and the channel-aware promotion path
 - Decimal phases (61.1, 62.1): Urgent insertions if needed
 
 - [x] **Phase 61: Multi-Repo Quality Baselines** - Maintainers can run source-free paired baselines across RefactoringMiner and a second real repository with stable comparison artifacts.
@@ -204,6 +208,8 @@ Phase 206 hardens the product-facing consumption contract. `prepare_task` MCP te
 - [x] **Phase 204: Agent-Run Forbidden Tool Accounting** - Paired agent-run reports surface forbidden tool calls and a real Claude Code run records no lift for the Phase 203 validation-evidence task.
 - [x] **Phase 205: Agent Consumption Diagnostics** - Paired agent-run reports distinguish discovered targets from read targets and aggregate source-free role/count diagnostics for under-read agent behavior.
 - [x] **Phase 206: Consumption Guidance Hardening** - prepare_task text, generated guidance, and generated packs tell agents to read returned targets natively because path discovery and pack snippets are not file consumption.
+- [x] **Phase 207: Agent-Run Lane Comparability** - Paired agent-run reports require expected ctxhelm calls per lane and mark comparisons ineligible when a ctxhelm-assisted lane failed or skipped the required MCP path.
+- [x] **Phase 208: Agent-Run Client Failure Classification** - Paired agent-run reports classify rate limits, API errors, timeouts, and generic non-zero client exits without storing raw client output.
 - [x] **Phase 162: Feature-Enabled Local Fastembed Gate Proof** - A feature-enabled `local_fastembed` gate run on clean RefactoringMiner now proves the production-local backend works end-to-end, but remains held because it adds no semantic-only target hits and is still slower than default; the gate emits a source-free diagnostic for that condition.
 - [x] **Phase 163: Persisted Semantic Vector Reuse** - Fresh CLI/MCP processes can reuse persisted source-free semantic document vectors instead of recomputing every candidate vector.
 - [x] **Phase 164: Global Semantic Vector Candidates And Write-Through** - Semantic search can include persisted vector candidates outside the lexical prefilter and write through newly embedded candidate misses.

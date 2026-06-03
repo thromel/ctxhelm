@@ -889,6 +889,23 @@ Recommendation today:
   at `0.67` but had a failed `ctxhelm-brief` lane before ctxhelm calls. This
   phase improves the agent-consumption contract; it does not claim a stable
   brief-pack outcome lift yet.
+- Phase 207 hardens paired real-agent comparability. The harness now records
+  required ctxhelm calls, observed required calls, missing required calls,
+  `ctxhelmCallCompliance`, `evaluationStatus`, and `evaluationEligible` per
+  lane. `ctxhelm-plan` requires `prepare_task`; `ctxhelm-brief` requires both
+  `prepare_task` and `get_pack`. Single-run and suite reports expose
+  `comparisonEligible`, eligible-lane counts, comparable ctxhelm lane counts,
+  and missing-required-call observations. Outcome claims now fall back to
+  `insufficient_comparable_lanes` when a baseline plus ctxhelm-assisted lane was
+  not actually comparable, preventing failed or no-call ctxhelm lanes from being
+  interpreted as stable retrieval/pack weakness.
+- Phase 208 adds source-free real-client failure classification after a Claude
+  Code probe hit a session rate limit before any lane could run. Lane reports
+  now expose `clientFailureKind`, `clientApiErrorStatus`, and
+  `rateLimitObserved`, while comparisons and suite aggregates expose whether any
+  client failures or rate limits were observed. This keeps client availability
+  failures separate from ctxhelm retrieval, pack, and consumption behavior
+  without storing raw client output.
 - Treat cloud embeddings/reranking as disabled unless an explicit repo policy
   allows them.
 

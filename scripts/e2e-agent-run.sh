@@ -205,6 +205,7 @@ tasks = []
 lane_totals = defaultdict(lambda: {
     "taskCount": 0,
     "passedCount": 0,
+    "evaluationEligibleCount": 0,
     "targetCoverageSum": 0.0,
     "targetReadCoverageSum": 0.0,
     "readFileCount": 0,
@@ -215,12 +216,22 @@ lane_totals = defaultdict(lambda: {
     "toolCallCount": 0,
     "ctxhelmToolCallCount": 0,
     "forbiddenToolCallCount": 0,
+    "requiredCtxhelmCallCount": 0,
+    "observedRequiredCtxhelmCallCount": 0,
+    "missingRequiredCtxhelmCallCount": 0,
+    "clientFailureCount": 0,
+    "rateLimitCount": 0,
     "readRoleCounts": defaultdict(int),
     "missedTargetRoleCounts": defaultdict(int),
 })
 comparison = {
     "ctxhelmToolCallsObserved": False,
     "forbiddenToolCallsObserved": False,
+    "missingRequiredCtxhelmCallsObserved": False,
+    "clientFailuresObserved": False,
+    "rateLimitsObserved": False,
+    "comparisonEligibleCount": 0,
+    "comparableCtxhelmLaneCount": 0,
     "targetCoverageDeltaSum": 0.0,
     "targetReadCoverageDeltaSum": 0.0,
     "irrelevantReadDeltaSum": 0,
@@ -260,6 +271,20 @@ for entry in entries:
         comparison["forbiddenToolCallsObserved"]
         or bool(task_comparison.get("forbiddenToolCallsObserved", False))
     )
+    comparison["missingRequiredCtxhelmCallsObserved"] = (
+        comparison["missingRequiredCtxhelmCallsObserved"]
+        or bool(task_comparison.get("missingRequiredCtxhelmCallsObserved", False))
+    )
+    comparison["clientFailuresObserved"] = (
+        comparison["clientFailuresObserved"]
+        or bool(task_comparison.get("clientFailuresObserved", False))
+    )
+    comparison["rateLimitsObserved"] = (
+        comparison["rateLimitsObserved"]
+        or bool(task_comparison.get("rateLimitsObserved", False))
+    )
+    comparison["comparisonEligibleCount"] += 1 if task_comparison.get("comparisonEligible", False) else 0
+    comparison["comparableCtxhelmLaneCount"] += int(task_comparison.get("comparableCtxhelmLaneCount", 0) or 0)
     comparison["targetCoverageDeltaSum"] += float(task_comparison.get("targetCoverageDelta", 0.0) or 0.0)
     comparison["targetReadCoverageDeltaSum"] += float(task_comparison.get("targetReadCoverageDelta", 0.0) or 0.0)
     comparison["irrelevantReadDeltaSum"] += int(task_comparison.get("irrelevantReadDelta", 0) or 0)
@@ -273,6 +298,7 @@ for entry in entries:
         bucket = lane_totals[lane_id]
         bucket["taskCount"] += 1
         bucket["passedCount"] += 1 if lane.get("status") == "passed" else 0
+        bucket["evaluationEligibleCount"] += 1 if lane.get("evaluationEligible", False) else 0
         bucket["targetCoverageSum"] += float(metrics.get("targetCoverage", 0.0) or 0.0)
         bucket["targetReadCoverageSum"] += float(metrics.get("targetReadCoverage", 0.0) or 0.0)
         bucket["readFileCount"] += int(metrics.get("readFileCount", 0) or 0)
@@ -283,6 +309,11 @@ for entry in entries:
         bucket["toolCallCount"] += int(metrics.get("toolCallCount", 0) or 0)
         bucket["ctxhelmToolCallCount"] += int(metrics.get("ctxhelmToolCallCount", 0) or 0)
         bucket["forbiddenToolCallCount"] += int(metrics.get("forbiddenToolCallCount", 0) or 0)
+        bucket["requiredCtxhelmCallCount"] += int(metrics.get("requiredCtxhelmCallCount", 0) or 0)
+        bucket["observedRequiredCtxhelmCallCount"] += int(metrics.get("observedRequiredCtxhelmCallCount", 0) or 0)
+        bucket["missingRequiredCtxhelmCallCount"] += int(metrics.get("missingRequiredCtxhelmCallCount", 0) or 0)
+        bucket["clientFailureCount"] += 1 if lane.get("clientFailureKind") else 0
+        bucket["rateLimitCount"] += 1 if lane.get("rateLimitObserved", False) else 0
         for role, count in (lane.get("readRoleCounts") or {}).items():
             bucket["readRoleCounts"][role] += int(count or 0)
         for role, count in (lane.get("missedTargetRoleCounts") or {}).items():
@@ -295,6 +326,7 @@ for lane_id, bucket in sorted(lane_totals.items()):
         "lane": lane_id,
         "taskCount": task_count,
         "passedCount": bucket["passedCount"],
+        "evaluationEligibleCount": bucket["evaluationEligibleCount"],
         "averageTargetCoverage": bucket["targetCoverageSum"] / task_count if task_count else 0.0,
         "averageTargetReadCoverage": bucket["targetReadCoverageSum"] / task_count if task_count else 0.0,
         "readFileCount": bucket["readFileCount"],
@@ -305,6 +337,11 @@ for lane_id, bucket in sorted(lane_totals.items()):
         "toolCallCount": bucket["toolCallCount"],
         "ctxhelmToolCallCount": bucket["ctxhelmToolCallCount"],
         "forbiddenToolCallCount": bucket["forbiddenToolCallCount"],
+        "requiredCtxhelmCallCount": bucket["requiredCtxhelmCallCount"],
+        "observedRequiredCtxhelmCallCount": bucket["observedRequiredCtxhelmCallCount"],
+        "missingRequiredCtxhelmCallCount": bucket["missingRequiredCtxhelmCallCount"],
+        "clientFailureCount": bucket["clientFailureCount"],
+        "rateLimitCount": bucket["rateLimitCount"],
         "readRoleCounts": dict(sorted(bucket["readRoleCounts"].items())),
         "missedTargetRoleCounts": dict(sorted(bucket["missedTargetRoleCounts"].items())),
     })
@@ -313,7 +350,10 @@ task_count = len(tasks)
 target_delta_avg = comparison["targetCoverageDeltaSum"] / task_count if task_count else 0.0
 target_read_delta_avg = comparison["targetReadCoverageDeltaSum"] / task_count if task_count else 0.0
 irrelevant_delta_sum = comparison["irrelevantReadDeltaSum"]
-if comparison["ctxhelmToolCallsObserved"] and (target_delta_avg > 0 or target_read_delta_avg > 0 or irrelevant_delta_sum > 0):
+comparison_eligible_count = comparison["comparisonEligibleCount"]
+if task_count and comparison_eligible_count == 0:
+    outcome_claim = "insufficient_comparable_lanes"
+elif comparison["ctxhelmToolCallsObserved"] and (target_delta_avg > 0 or target_read_delta_avg > 0 or irrelevant_delta_sum > 0):
     outcome_claim = "ctxhelm_improved"
 elif comparison["ctxhelmToolCallsObserved"] and target_delta_avg == 0 and target_read_delta_avg == 0 and irrelevant_delta_sum == 0:
     outcome_claim = "ctxhelm_matched"
@@ -324,7 +364,12 @@ payload = {
     "schemaVersion": "ctxhelm-agent-run-eval-v1",
     "status": (
         "degraded"
-        if comparison["forbiddenToolCallsObserved"]
+        if (
+            comparison["forbiddenToolCallsObserved"]
+            or comparison["missingRequiredCtxhelmCallsObserved"]
+            or comparison["clientFailuresObserved"]
+            or (task_count and comparison_eligible_count == 0)
+        )
         else ("passed" if any(task.get("status") == "passed" for task in tasks) else "skipped")
     ),
     "workflowKind": "paired-agent-context-suite",
@@ -346,8 +391,13 @@ payload = {
         "targetCoverageDeltaAverage": target_delta_avg,
         "targetReadCoverageDeltaAverage": target_read_delta_avg,
         "irrelevantReadDeltaSum": irrelevant_delta_sum,
+        "comparisonEligibleCount": comparison_eligible_count,
+        "comparableCtxhelmLaneCount": comparison["comparableCtxhelmLaneCount"],
         "ctxhelmToolCallsObserved": comparison["ctxhelmToolCallsObserved"],
         "forbiddenToolCallsObserved": comparison["forbiddenToolCallsObserved"],
+        "missingRequiredCtxhelmCallsObserved": comparison["missingRequiredCtxhelmCallsObserved"],
+        "clientFailuresObserved": comparison["clientFailuresObserved"],
+        "rateLimitsObserved": comparison["rateLimitsObserved"],
         "ctxhelmUnderReadTargetsObserved": comparison["ctxhelmUnderReadTargetsObserved"],
         "outcomeClaim": outcome_claim,
     },
@@ -396,17 +446,28 @@ PY
 
 write_skip_lane() {
   local lane="$1"
-  local out="$2"
-  local reason="$3"
-  python3 - "$lane" "$out" "$reason" <<'PY'
+  local mode="$2"
+  local out="$3"
+  local reason="$4"
+  python3 - "$lane" "$mode" "$out" "$reason" <<'PY'
 import json
 import pathlib
 import sys
 
-lane, out, reason = sys.argv[1:]
+lane, mode, out, reason = sys.argv[1:]
+
+required_calls_by_mode = {
+    "baseline": [],
+    "plan": ["prepare_task"],
+    "brief": ["prepare_task", "get_pack"],
+}
+required_calls = required_calls_by_mode.get(mode, [])
 payload = {
     "lane": lane,
+    "mode": mode,
     "status": "skipped",
+    "evaluationStatus": "skipped",
+    "evaluationEligible": False,
     "skipReason": reason,
     "metrics": {
         "targetCoverage": 0.0,
@@ -419,7 +480,17 @@ payload = {
         "toolCallCount": 0,
         "ctxhelmToolCallCount": 0,
         "forbiddenToolCallCount": 0,
+        "requiredCtxhelmCallCount": len(required_calls),
+        "observedRequiredCtxhelmCallCount": 0,
+        "missingRequiredCtxhelmCallCount": len(required_calls),
     },
+    "requiredCtxhelmCalls": required_calls,
+    "observedRequiredCtxhelmCalls": [],
+    "missingRequiredCtxhelmCalls": required_calls,
+    "ctxhelmCallCompliance": "not_required" if not required_calls else "missing",
+    "clientFailureKind": None,
+    "clientApiErrorStatus": None,
+    "rateLimitObserved": False,
     "targetHits": [],
     "targetReads": [],
     "discoveredOnlyTargets": [],
@@ -471,7 +542,7 @@ run_lane() {
   local lane_json="$lane_dir/lane.json"
 
   if [[ "$run_real" != "1" && "$require_real" != "1" ]]; then
-    write_skip_lane "$lane" "$lane_json" "real Claude Code execution not requested; set CTXHELM_RUN_REAL_CLIENT=1"
+    write_skip_lane "$lane" "$mode" "$lane_json" "real Claude Code execution not requested; set CTXHELM_RUN_REAL_CLIENT=1"
     printf '%s\n' "$lane_json"
     return
   fi
@@ -480,7 +551,7 @@ run_lane() {
       echo "claude is required for agent-run proof" >&2
       exit 69
     fi
-    write_skip_lane "$lane" "$lane_json" "claude is not installed"
+    write_skip_lane "$lane" "$mode" "$lane_json" "claude is not installed"
     printf '%s\n' "$lane_json"
     return
   fi
@@ -586,6 +657,9 @@ forbidden_tool_calls = []
 read_files = []
 discovered_files = []
 result_success = False
+client_failure_kind = None
+client_api_error_status = None
+rate_limit_observed = False
 
 def role_for_path(path):
     value = str(path).lower()
@@ -642,6 +716,18 @@ if events_file.exists():
             continue
         if payload.get("type") == "result" and payload.get("subtype") == "success":
             result_success = True
+        if payload.get("type") == "rate_limit_event":
+            rate_limit_observed = True
+            client_failure_kind = "rate_limited"
+        if payload.get("type") == "result" and payload.get("is_error"):
+            api_status = payload.get("api_error_status")
+            if isinstance(api_status, int):
+                client_api_error_status = api_status
+            if api_status == 429:
+                rate_limit_observed = True
+                client_failure_kind = "rate_limited"
+            elif client_failure_kind is None:
+                client_failure_kind = "api_error" if api_status else "client_error"
         message = payload.get("message") or {}
         if not isinstance(message, dict):
             message = {}
@@ -719,12 +805,47 @@ irrelevant_reads = sorted(path for path in read_files if path not in targets)
 stderr_hash = hashlib.sha256(stderr_file.read_bytes()).hexdigest() if stderr_file.exists() else None
 events_hash = hashlib.sha256(events_file.read_bytes()).hexdigest() if events_file.exists() else None
 request_hash = hashlib.sha256(request_file.read_bytes()).hexdigest() if request_file.exists() else None
+required_calls_by_mode = {
+    "baseline": [],
+    "plan": ["prepare_task"],
+    "brief": ["prepare_task", "get_pack"],
+}
+required_calls = required_calls_by_mode.get(mode, [])
+observed_call_names = [call.get("name") for call in ctxhelm_calls]
+observed_required_calls = [
+    name for name in required_calls if name in observed_call_names
+]
+missing_required_calls = [
+    name for name in required_calls if name not in observed_call_names
+]
+ctxhelm_call_compliance = (
+    "not_required"
+    if not required_calls
+    else ("satisfied" if not missing_required_calls else "missing")
+)
+lane_status = "passed" if client_status == 0 and result_success and not forbidden_tool_calls else "failed"
+evaluation_eligible = lane_status == "passed" and ctxhelm_call_compliance != "missing"
+if evaluation_eligible:
+    evaluation_status = "eligible"
+elif lane_status != "passed":
+    evaluation_status = "failed"
+else:
+    evaluation_status = "not_comparable"
+if client_status == 124:
+    client_failure_kind = client_failure_kind or "timeout"
+elif client_status != 0 and client_failure_kind is None:
+    client_failure_kind = "client_exit_nonzero"
 
 payload = {
     "lane": lane,
     "mode": mode,
-    "status": "passed" if client_status == 0 and result_success and not forbidden_tool_calls else "failed",
+    "status": lane_status,
+    "evaluationStatus": evaluation_status,
+    "evaluationEligible": evaluation_eligible,
     "clientExitStatus": client_status,
+    "clientFailureKind": client_failure_kind,
+    "clientApiErrorStatus": client_api_error_status,
+    "rateLimitObserved": rate_limit_observed,
     "metrics": {
         "targetCoverage": target_coverage,
         "targetReadCoverage": target_read_coverage,
@@ -739,7 +860,14 @@ payload = {
         "toolCallCount": len(tool_calls),
         "ctxhelmToolCallCount": len(ctxhelm_calls),
         "forbiddenToolCallCount": len(forbidden_tool_calls),
+        "requiredCtxhelmCallCount": len(required_calls),
+        "observedRequiredCtxhelmCallCount": len(observed_required_calls),
+        "missingRequiredCtxhelmCallCount": len(missing_required_calls),
     },
+    "requiredCtxhelmCalls": required_calls,
+    "observedRequiredCtxhelmCalls": observed_required_calls,
+    "missingRequiredCtxhelmCalls": missing_required_calls,
+    "ctxhelmCallCompliance": ctxhelm_call_compliance,
     "targetHits": target_hits,
     "targetReads": target_reads,
     "discoveredOnlyTargets": discovered_only_targets,
@@ -784,8 +912,20 @@ targets = json.loads(pathlib.Path(target_path).read_text(encoding="utf-8"))
 lanes = [json.loads(pathlib.Path(path).read_text(encoding="utf-8")) for path in lane_paths]
 
 baseline = lanes[0]
+ctxhelm_lanes = [lane for lane in lanes if lane.get("mode") in {"plan", "brief"}]
+baseline_eligible = bool(baseline.get("evaluationEligible", baseline.get("status") == "passed"))
+eligible_ctxhelm_lanes = [
+    lane for lane in ctxhelm_lanes
+    if bool(lane.get("evaluationEligible", lane.get("status") == "passed"))
+]
+comparison_eligible = baseline_eligible and bool(eligible_ctxhelm_lanes)
+eligible_lanes = []
+if baseline_eligible:
+    eligible_lanes.append(baseline)
+eligible_lanes.extend(eligible_ctxhelm_lanes)
+best_candidates = eligible_lanes if eligible_lanes else lanes
 best = max(
-    lanes,
+    best_candidates,
     key=lambda lane: (
         1 if lane.get("status") == "passed" else 0,
         lane.get("metrics", {}).get("targetCoverage", 0.0),
@@ -800,19 +940,34 @@ best_metrics = best.get("metrics", {})
 target_delta = best_metrics.get("targetCoverage", 0.0) - base_metrics.get("targetCoverage", 0.0)
 target_read_delta = best_metrics.get("targetReadCoverage", 0.0) - base_metrics.get("targetReadCoverage", 0.0)
 irrelevant_delta = base_metrics.get("irrelevantReadCount", 0) - best_metrics.get("irrelevantReadCount", 0)
-ctxhelm_lanes = [lane for lane in lanes if lane.get("mode") in {"plan", "brief"}]
 ctxhelm_called = any(lane.get("metrics", {}).get("ctxhelmToolCallCount", 0) > 0 for lane in ctxhelm_lanes)
 forbidden_called = any(lane.get("metrics", {}).get("forbiddenToolCallCount", 0) > 0 for lane in lanes)
+client_failures_observed = any(bool(lane.get("clientFailureKind")) for lane in lanes)
+rate_limits_observed = any(bool(lane.get("rateLimitObserved", False)) for lane in lanes)
+missing_required_calls = {
+    lane.get("lane"): lane.get("missingRequiredCtxhelmCalls", [])
+    for lane in lanes
+    if lane.get("missingRequiredCtxhelmCalls")
+}
+missing_required_observed = bool(missing_required_calls)
 ctxhelm_under_read = any(
     lane.get("metrics", {}).get("targetReadCoverage", 0.0)
     < base_metrics.get("targetReadCoverage", 0.0)
     for lane in ctxhelm_lanes
 )
 status = "passed" if any(lane.get("status") == "passed" for lane in lanes) else "skipped"
-if status == "passed" and not ctxhelm_called:
+if status == "passed" and (not ctxhelm_called or not comparison_eligible or missing_required_observed or client_failures_observed):
     status = "degraded"
 if status == "passed" and forbidden_called:
     status = "degraded"
+if not comparison_eligible:
+    outcome_claim = "insufficient_comparable_lanes"
+elif ctxhelm_called and (target_delta > 0 or target_read_delta > 0 or irrelevant_delta > 0):
+    outcome_claim = "ctxhelm_improved"
+elif ctxhelm_called and target_delta == 0 and target_read_delta == 0 and irrelevant_delta == 0:
+    outcome_claim = "ctxhelm_matched"
+else:
+    outcome_claim = "no_measured_lift"
 
 payload = {
     "schemaVersion": "ctxhelm-agent-run-eval-v1",
@@ -833,21 +988,20 @@ payload = {
     "comparison": {
         "baselineLane": baseline.get("lane"),
         "bestLane": best.get("lane"),
+        "comparisonEligible": comparison_eligible,
+        "baselineEligible": baseline_eligible,
+        "comparableCtxhelmLaneCount": len(eligible_ctxhelm_lanes),
         "targetCoverageDelta": target_delta,
         "targetReadCoverageDelta": target_read_delta,
         "irrelevantReadDelta": irrelevant_delta,
         "ctxhelmToolCallsObserved": ctxhelm_called,
         "forbiddenToolCallsObserved": forbidden_called,
+        "missingRequiredCtxhelmCallsObserved": missing_required_observed,
+        "missingRequiredCtxhelmCalls": missing_required_calls,
+        "clientFailuresObserved": client_failures_observed,
+        "rateLimitsObserved": rate_limits_observed,
         "ctxhelmUnderReadTargetsObserved": ctxhelm_under_read,
-        "outcomeClaim": (
-            "ctxhelm_improved"
-            if ctxhelm_called and (target_delta > 0 or target_read_delta > 0 or irrelevant_delta > 0)
-            else (
-                "ctxhelm_matched"
-                if ctxhelm_called and target_delta == 0 and target_read_delta == 0 and irrelevant_delta == 0
-                else "no_measured_lift"
-            )
-        ),
+        "outcomeClaim": outcome_claim,
     },
     "privacyStatus": {
         "localOnly": True,

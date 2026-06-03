@@ -109,8 +109,16 @@ The script runs three read-only Claude Code lanes: native baseline,
 source-free lane metrics such as target coverage, read-file count, irrelevant
 read count, target-read coverage, discovered-only targets, missed-target counts,
 source-free read-role counts, tool-call count, ctxhelm tool-call count, and
-forbidden tool-call count. Observed shell/edit/write tools are surfaced as
-forbidden calls and degrade the report status. Target coverage can include files
+forbidden tool-call count. The ctxhelm-assisted lanes also record required,
+observed, and missing ctxhelm calls: `ctxhelm-plan` must call `prepare_task`,
+and `ctxhelm-brief` must call both `prepare_task` and `get_pack`. Reports mark a
+lane as comparison-eligible only when the client passed and those required calls
+were observed, so a failed or skipped ctxhelm lane cannot be mistaken for weak
+ctxhelm output. Observed shell/edit/write tools are surfaced as forbidden calls
+and degrade the report status. Client failures are classified source-free as
+well: rate limits, API errors, timeouts, and generic non-zero exits are exposed
+through `clientFailureKind`, `clientApiErrorStatus`, and rate-limit booleans
+without storing raw Claude output. Target coverage can include files
 found through search results; target-read coverage requires an actual native
 file read, which is the stronger signal for whether an agent consumed the
 evidence. The report stores path labels, hashes, and sanitized MCP request
@@ -149,8 +157,10 @@ ctxhelm eval agent-run --report .ctxhelm/e2e/agent-run-suite-claude.json
 Suite reports keep the same source-free contract and add aggregate lane
 summaries: task count, average target-coverage delta, average target-read
 coverage delta, total irrelevant-read delta, per-lane target-read/missed-target
-counts, read-role counts, tool counts, and the aggregate outcome claim. This is
-the preferred path for comparing native agent search against ctxhelm-assisted
+counts, read-role counts, tool counts, required-call compliance, eligible-lane
+counts, and the aggregate outcome claim. If no baseline plus ctxhelm-assisted
+lane is comparable, the outcome claim is `insufficient_comparable_lanes`. This
+is the preferred path for comparing native agent search against ctxhelm-assisted
 exploration across repeated tasks.
 
 ## Release Coverage

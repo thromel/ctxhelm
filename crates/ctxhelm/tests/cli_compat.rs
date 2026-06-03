@@ -1,3 +1,5 @@
+#![recursion_limit = "256"]
+
 mod common;
 
 use assert_cmd::Command;
@@ -1662,6 +1664,8 @@ fn eval_agent_run_renders_source_free_report() {
                 {
                     "lane": "baseline",
                     "status": "passed",
+                    "evaluationStatus": "eligible",
+                    "evaluationEligible": true,
                     "metrics": {
                         "targetCoverage": 0.5,
                         "targetReadCoverage": 0.5,
@@ -1672,8 +1676,18 @@ fn eval_agent_run_renders_source_free_report() {
                         "irrelevantReadCount": 2,
                         "toolCallCount": 6,
                         "ctxhelmToolCallCount": 0,
-                        "forbiddenToolCallCount": 0
+                        "forbiddenToolCallCount": 0,
+                        "requiredCtxhelmCallCount": 0,
+                        "observedRequiredCtxhelmCallCount": 0,
+                        "missingRequiredCtxhelmCallCount": 0
                     },
+                    "requiredCtxhelmCalls": [],
+                    "observedRequiredCtxhelmCalls": [],
+                    "missingRequiredCtxhelmCalls": [],
+                    "ctxhelmCallCompliance": "not_required",
+                    "clientFailureKind": null,
+                    "clientApiErrorStatus": null,
+                    "rateLimitObserved": false,
                     "readRoleCounts": {
                         "source": 2,
                         "test": 1,
@@ -1690,6 +1704,8 @@ fn eval_agent_run_renders_source_free_report() {
                 {
                     "lane": "ctxhelm-brief",
                     "status": "passed",
+                    "evaluationStatus": "eligible",
+                    "evaluationEligible": true,
                     "metrics": {
                         "targetCoverage": 1.0,
                         "targetReadCoverage": 1.0,
@@ -1700,8 +1716,18 @@ fn eval_agent_run_renders_source_free_report() {
                         "irrelevantReadCount": 0,
                         "toolCallCount": 5,
                         "ctxhelmToolCallCount": 2,
-                        "forbiddenToolCallCount": 0
+                        "forbiddenToolCallCount": 0,
+                        "requiredCtxhelmCallCount": 2,
+                        "observedRequiredCtxhelmCallCount": 2,
+                        "missingRequiredCtxhelmCallCount": 0
                     },
+                    "requiredCtxhelmCalls": ["prepare_task", "get_pack"],
+                    "observedRequiredCtxhelmCalls": ["prepare_task", "get_pack"],
+                    "missingRequiredCtxhelmCalls": [],
+                    "ctxhelmCallCompliance": "satisfied",
+                    "clientFailureKind": null,
+                    "clientApiErrorStatus": null,
+                    "rateLimitObserved": false,
                     "readRoleCounts": {
                         "source": 1,
                         "docs": 1
@@ -1716,11 +1742,18 @@ fn eval_agent_run_renders_source_free_report() {
             "comparison": {
                 "baselineLane": "baseline",
                 "bestLane": "ctxhelm-brief",
+                "comparisonEligible": true,
+                "baselineEligible": true,
+                "comparableCtxhelmLaneCount": 1,
                 "targetCoverageDelta": 0.5,
                 "targetReadCoverageDelta": 0.5,
                 "irrelevantReadDelta": 2,
                 "ctxhelmToolCallsObserved": true,
                 "forbiddenToolCallsObserved": false,
+                "missingRequiredCtxhelmCallsObserved": false,
+                "missingRequiredCtxhelmCalls": {},
+                "clientFailuresObserved": false,
+                "rateLimitsObserved": false,
                 "ctxhelmUnderReadTargetsObserved": false,
                 "outcomeClaim": "ctxhelm_improved"
             },
@@ -1754,8 +1787,16 @@ fn eval_agent_run_renders_source_free_report() {
         .stdout(contains("# ctxhelm Agent Run Report"))
         .stdout(contains("ctxhelm-agent-run-eval-v1"))
         .stdout(contains("ctxhelm-brief"))
+        .stdout(contains("Comparison eligible: `true`"))
+        .stdout(contains("Comparable ctxhelm lanes: `1`"))
+        .stdout(contains("Missing required ctxhelm calls observed: `false`"))
+        .stdout(contains("Client failures observed: `false`"))
+        .stdout(contains("Rate limits observed: `false`"))
         .stdout(contains("target coverage `1.00`"))
         .stdout(contains("target read coverage `1.00`"))
+        .stdout(contains("evaluation `eligible` eligible `true`"))
+        .stdout(contains("compliance `satisfied`"))
+        .stdout(contains("client failure `none` rate limited `false`"))
         .stdout(contains("missed targets `0`"))
         .stdout(contains("read roles `docs=1, source=1`"))
         .stdout(contains("ctxhelm calls `2`"))
@@ -1809,11 +1850,16 @@ fn eval_agent_run_renders_source_free_suite_report() {
                     "taskSha256": "task-hash-1",
                     "targetFiles": ["src/lib.rs"],
                     "comparison": {
+                        "comparisonEligible": true,
+                        "comparableCtxhelmLaneCount": 1,
                         "targetCoverageDelta": 0.5,
                         "targetReadCoverageDelta": 0.5,
                         "irrelevantReadDelta": 1,
                         "ctxhelmToolCallsObserved": true,
                         "forbiddenToolCallsObserved": false,
+                        "missingRequiredCtxhelmCallsObserved": false,
+                        "clientFailuresObserved": false,
+                        "rateLimitsObserved": false,
                         "ctxhelmUnderReadTargetsObserved": false
                     },
                     "lanes": [],
@@ -1827,8 +1873,13 @@ fn eval_agent_run_renders_source_free_suite_report() {
                 "targetCoverageDeltaAverage": 0.25,
                 "targetReadCoverageDeltaAverage": 0.25,
                 "irrelevantReadDeltaSum": 3,
+                "comparisonEligibleCount": 1,
+                "comparableCtxhelmLaneCount": 1,
                 "ctxhelmToolCallsObserved": true,
                 "forbiddenToolCallsObserved": false,
+                "missingRequiredCtxhelmCallsObserved": false,
+                "clientFailuresObserved": false,
+                "rateLimitsObserved": false,
                 "ctxhelmUnderReadTargetsObserved": false,
                 "outcomeClaim": "ctxhelm_improved",
                 "laneSummaries": [
@@ -1836,6 +1887,7 @@ fn eval_agent_run_renders_source_free_suite_report() {
                         "lane": "baseline",
                         "taskCount": 2,
                         "passedCount": 2,
+                        "evaluationEligibleCount": 2,
                         "averageTargetCoverage": 0.5,
                         "averageTargetReadCoverage": 0.5,
                         "targetReadCount": 2,
@@ -1846,6 +1898,11 @@ fn eval_agent_run_renders_source_free_suite_report() {
                         "toolCallCount": 12,
                         "ctxhelmToolCallCount": 0,
                         "forbiddenToolCallCount": 0,
+                        "requiredCtxhelmCallCount": 0,
+                        "observedRequiredCtxhelmCallCount": 0,
+                        "missingRequiredCtxhelmCallCount": 0,
+                        "clientFailureCount": 0,
+                        "rateLimitCount": 0,
                         "readRoleCounts": {
                             "source": 4,
                             "test": 2,
@@ -1859,6 +1916,7 @@ fn eval_agent_run_renders_source_free_suite_report() {
                         "lane": "ctxhelm-brief",
                         "taskCount": 2,
                         "passedCount": 2,
+                        "evaluationEligibleCount": 2,
                         "averageTargetCoverage": 0.75,
                         "averageTargetReadCoverage": 0.75,
                         "targetReadCount": 3,
@@ -1869,6 +1927,11 @@ fn eval_agent_run_renders_source_free_suite_report() {
                         "toolCallCount": 10,
                         "ctxhelmToolCallCount": 4,
                         "forbiddenToolCallCount": 0,
+                        "requiredCtxhelmCallCount": 4,
+                        "observedRequiredCtxhelmCallCount": 4,
+                        "missingRequiredCtxhelmCallCount": 0,
+                        "clientFailureCount": 0,
+                        "rateLimitCount": 0,
                         "readRoleCounts": {
                             "source": 3,
                             "docs": 2
@@ -1900,12 +1963,22 @@ fn eval_agent_run_renders_source_free_suite_report() {
         .assert()
         .success()
         .stdout(contains("## Suite Aggregate"))
+        .stdout(contains("Comparison eligible tasks: `1`"))
+        .stdout(contains("Comparable ctxhelm lanes: `1`"))
+        .stdout(contains("Missing required ctxhelm calls observed: `false`"))
+        .stdout(contains("Client failures observed: `false`"))
+        .stdout(contains("Rate limits observed: `false`"))
         .stdout(contains("Target coverage delta average: `0.25`"))
         .stdout(contains("Target read coverage delta average: `0.25`"))
         .stdout(contains("Irrelevant read delta sum: `3`"))
         .stdout(contains("## Suite Lanes"))
         .stdout(contains("ctxhelm-brief"))
+        .stdout(contains("eligible `2`"))
         .stdout(contains("avg target read coverage `0.75`"))
+        .stdout(contains(
+            "required ctxhelm calls `4` observed required `4` missing required `0`",
+        ))
+        .stdout(contains("client failures `0` rate limits `0`"))
         .stdout(contains("read roles `docs=2, source=3`"))
         .stdout(contains("forbidden calls `0`"));
 
