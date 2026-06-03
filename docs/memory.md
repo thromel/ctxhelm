@@ -91,3 +91,21 @@ benchmark/product-proof layer by running two local repositories through
 `eval proof` and requiring both embedded reports to show memory-only target hits
 beyond lexical plus product-level `evaluate_memory_reuse_lift` routing. These
 are still controlled release smokes, not proof of broad memory generalization.
+
+For broader R&D measurement, use:
+
+```bash
+scripts/measure-memory-generalization.sh \
+  --repo ../ctxhelm-proof-fixtures/RefactoringMiner \
+  --pairs 2 \
+  --scan-commits 200 \
+  --output .ctxhelm/e2e/phase219-refactoringminer-memory-generalization.json
+```
+
+That harness scans a real local repository for repeated-file historical pairs,
+seeds one approved source-free experience card from the older task, evaluates
+the newer task before and after approval, and aggregates memory lift, lexical
+coverage, unique non-target noise, and runtime. It is intentionally a
+measurement report rather than a release-gate pass/fail smoke: weak or noisy
+memory lift should be recorded honestly so the next ranking work is grounded in
+evidence.

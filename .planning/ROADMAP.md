@@ -90,6 +90,8 @@ Phase 217 release-gates benchmark-level memory-lift aggregation proof. `scripts/
 
 Phase 218 fixes parent-snapshot memory visibility for real historical evals. Historical eval now projects approved source-free memory cards from the source repo into parent-snapshot eval roots before planning, so non-root commit evaluation can use reviewed memory despite the snapshot's different local storage identity. `scripts/smoke-memory-parent-snapshot-lift.sh` release-gates the controlled path, and the RefactoringMiner repeated-file artifact shows the same fix produces memory candidates and a unique memory target hit beyond lexical on a real corpus pair. This improves real-history memory measurement, while broad memory generalization across arbitrary histories remains future work.
 
+Phase 219 turns that single real-corpus proof into a repeatable measurement harness. `scripts/measure-memory-generalization.sh` scans a real local repository for repeated-file historical pairs, runs before/after memory approval evals, and reports source-free aggregate lift/noise/runtime fields such as `memoryUniqueLiftPairs`, `memoryUniqueTargetHitCount`, `memoryUniqueNonTargetCount`, `precisionNeedsWork`, and `generalizationProven`. The two-pair RefactoringMiner run observed one unique memory lift beyond lexical and one combined-target recovery, but also eight unique non-target memory selections; the evidence says memory visibility works, while memory precision and broader generalization still need R&D.
+
 ## v2.5 Production Retrieval Quality
 
 ## Phases

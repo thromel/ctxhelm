@@ -146,6 +146,15 @@ and the RefactoringMiner pair now reports memory candidates plus one unique
 memory target hit beyond lexical. This closes parent-snapshot memory visibility;
 multi-pair and multi-repo memory generalization remain open.
 
+Status: Phase 219 adds the first repeatable real-corpus memory-generalization
+measurement harness. `scripts/measure-memory-generalization.sh` scans repeated
+historical file pairs, seeds approved experience memory from older tasks, and
+measures newer-task before/after lift without storing source text or raw task
+subjects. The two-pair RefactoringMiner run reports one unique memory lift
+beyond lexical and one combined-target recovery, but also eight unique
+non-target memory selections. This means memory visibility works; memory
+precision and broader multi-pair/multi-repo generalization remain open.
+
 ### 3. Semantic/Embedding Signal Is Wired But Not Driving Lift
 
 The current product lift comes from hybrid ranking, graph/test/history/context

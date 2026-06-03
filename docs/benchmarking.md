@@ -120,6 +120,16 @@ hits beyond lexical while routing product-level R&D to
 `evaluate_memory_reuse_lift`. It proves benchmark/report plumbing, not broad
 memory generalization on arbitrary histories.
 
+`scripts/measure-memory-generalization.sh` is the broader real-corpus R&D
+measurement path. It scans a local repository for repeated-file commit pairs,
+evaluates each newer commit before and after approving an experience card seeded
+from the older commit, and writes a source-free aggregate report with
+`memoryUniqueLiftPairs`, `memoryUniqueTargetHitCount`,
+`memoryUniqueNonTargetCount`, `precisionNeedsWork`, and
+`generalizationProven`. This harness should be used before claiming memory has
+generalized beyond controlled smokes, because it records both target lift and
+ranking noise.
+
 Historical eval reports also include source-free `graphEdgeProfiles`. These
 profiles split graph candidate evidence by edge label, such as `imports`,
 `python_reexport`, or `precision:calls`, and report candidate count,

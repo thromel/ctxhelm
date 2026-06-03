@@ -2025,6 +2025,60 @@ fn memory_benchmark_lift_smoke_script_contract() {
 }
 
 #[test]
+fn memory_generalization_measurement_script_contract() {
+    let repo_root = workspace_root();
+    let script = repo_root.join("scripts/measure-memory-generalization.sh");
+    assert!(
+        script.exists(),
+        "memory generalization measurement script is missing"
+    );
+
+    let syntax = Command::new("bash")
+        .arg("-n")
+        .arg(&script)
+        .current_dir(&repo_root)
+        .output()
+        .unwrap();
+    assert!(
+        syntax.status.success(),
+        "bash -n failed: {}",
+        String::from_utf8_lossy(&syntax.stderr)
+    );
+
+    let script_text = fs::read_to_string(&script).unwrap();
+    for required in [
+        "ctxhelm-memory-generalization-measurement-v1",
+        "multi-pair-experience-memory-generalization",
+        "--repo",
+        "--pairs",
+        "--scan-commits",
+        "eval",
+        "history",
+        "prepare-task",
+        "memory",
+        "generate-experience",
+        "approve",
+        "memoryUniqueLiftPairs",
+        "memoryUniqueNonTargetCount",
+        "precisionNeedsWork",
+        "generalizationProven",
+        "rawTaskStored",
+        "rawTaskTextStored",
+        "rawTranscriptStored",
+        "rawMcpTrafficStored",
+        "remoteEmbeddingsUsed",
+        "remoteRerankingUsed",
+        "raw prompt storage",
+        "source edits",
+    ] {
+        assert!(
+            script_text.contains(required),
+            "memory generalization measurement script missing {required}"
+        );
+    }
+}
+
+#[test]
 fn release_docs_check_passes() {
     let repo_root = workspace_root();
     let output = Command::new(repo_root.join("scripts/check-release-docs.sh"))

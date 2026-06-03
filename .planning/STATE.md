@@ -4,10 +4,10 @@ milestone: v2.5
 milestone_name: Production Retrieval Quality
 status: active
 last_updated: "2026-06-03T00:00:00Z"
-last_activity: 2026-06-03 -- Phase 218 fixes parent-snapshot memory visibility
+last_activity: 2026-06-03 -- Phase 219 measures real-corpus memory generalization
 progress:
-  total_phases: 127
-  completed_phases: 127
+  total_phases: 128
+  completed_phases: 128
   total_plans: 7
   completed_plans: 7
   percent: 100
@@ -17,10 +17,10 @@ progress:
 
 ## Current Position
 
-Phase: 218 - Parent-Snapshot Memory Lift
-Plan: 218-parent-snapshot-memory-lift
+Phase: 219 - Memory Generalization Measurement
+Plan: 219-memory-generalization-measurement
 Status: Complete
-Last activity: 2026-06-03 -- Phase 218 fixes approved memory visibility for parent-snapshot historical evals by projecting source-free source-repo memory cards into the snapshot eval root before planning. The release-gated smoke proves a non-root commit moves from no memory candidates and a missed target to one memory candidate, one selected memory source, one memory target hit, one unique memory target hit beyond lexical, `targetInCombined = true`, `targetInLexical = false`, and `evaluate_memory_reuse_lift`. A RefactoringMiner repeated-file pair now reports memory candidates and one unique memory target hit beyond lexical.
+Last activity: 2026-06-03 -- Phase 219 adds `scripts/measure-memory-generalization.sh`, a source-free real-corpus harness that scans repeated-file historical pairs, seeds approved experience memory from older tasks, evaluates newer tasks before and after approval, and aggregates lift/noise/runtime. The RefactoringMiner two-pair run in `.ctxhelm/e2e/phase219-refactoringminer-memory-generalization.json` measured one unique memory lift beyond lexical and one combined-target recovery, but also eight unique non-target memory selections, so broad memory generalization is not proven yet and the next R&D bottleneck is memory precision.
 
 ## Project Reference
 
