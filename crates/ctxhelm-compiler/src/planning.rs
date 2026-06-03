@@ -556,8 +556,8 @@ fn context_areas_for_plan(
             if selected_paths.contains(path) {
                 entry.selected_count += 1;
                 entry.record_selected_role(&candidate.role);
-            } else if entry.next_read_paths.len() < 4 {
-                entry.next_read_paths.push(path.to_string());
+            } else {
+                entry.record_next_read_candidate(candidate, path);
             }
         }
     }
@@ -573,7 +573,7 @@ fn context_areas_for_plan(
                 reason: context_area_reason(&accumulator, multi_area_task),
                 resource_uri: context_area_resource_uri(&area),
                 representative_paths: accumulator.representative_paths.clone(),
-                next_read_paths: accumulator.next_read_paths.clone(),
+                next_read_paths: accumulator.next_read_paths(),
                 signal_counts: accumulator.signal_counts(),
                 role_counts: accumulator.role_counts(),
                 selected_role_counts: accumulator.selected_role_counts(),
@@ -732,7 +732,7 @@ const MAX_CONTEXT_AREAS: usize = 16;
 struct AreaAccumulator {
     unique_paths: BTreeSet<String>,
     representative_paths: Vec<String>,
-    next_read_paths: Vec<String>,
+    next_read_candidates: Vec<AreaNextReadCandidate>,
     candidate_count: usize,
     selected_count: usize,
     source_count: usize,
@@ -786,6 +786,35 @@ impl AreaAccumulator {
         }
     }
 
+    fn record_next_read_candidate(&mut self, candidate: &RetrievalCandidate, path: &str) {
+        self.next_read_candidates.push(AreaNextReadCandidate {
+            path: path.to_string(),
+            role_priority: next_read_role_priority(&candidate.role),
+            signal_priority: next_read_signal_priority(candidate),
+            signal_score: next_read_signal_score(candidate),
+            confidence: candidate.confidence,
+            insertion_index: self.next_read_candidates.len(),
+        });
+    }
+
+    fn next_read_paths(&self) -> Vec<String> {
+        let mut candidates = self.next_read_candidates.clone();
+        candidates.sort_by(|left, right| {
+            left.role_priority
+                .cmp(&right.role_priority)
+                .then_with(|| left.signal_priority.cmp(&right.signal_priority))
+                .then_with(|| right.signal_score.total_cmp(&left.signal_score))
+                .then_with(|| right.confidence.total_cmp(&left.confidence))
+                .then_with(|| left.insertion_index.cmp(&right.insertion_index))
+                .then_with(|| left.path.cmp(&right.path))
+        });
+        candidates
+            .into_iter()
+            .take(4)
+            .map(|candidate| candidate.path)
+            .collect()
+    }
+
     fn source_like_count(&self) -> usize {
         self.source_count + self.config_count + self.schema_count
     }
@@ -816,6 +845,65 @@ impl AreaAccumulator {
 
     fn signal_counts(&self) -> BTreeMap<String, usize> {
         self.signal_counts.clone()
+    }
+}
+
+#[derive(Clone)]
+struct AreaNextReadCandidate {
+    path: String,
+    role_priority: u8,
+    signal_priority: u8,
+    signal_score: f32,
+    confidence: f32,
+    insertion_index: usize,
+}
+
+fn next_read_role_priority(role: &Option<FileRole>) -> u8 {
+    match role {
+        Some(FileRole::Source | FileRole::Config | FileRole::Schema) => 0,
+        Some(FileRole::Test) => 1,
+        Some(FileRole::Docs) => 2,
+        _ => 3,
+    }
+}
+
+fn next_read_signal_priority(candidate: &RetrievalCandidate) -> u8 {
+    candidate
+        .signal_scores
+        .iter()
+        .map(|score| next_read_signal_kind_priority(&score.signal))
+        .chain(
+            candidate
+                .evidence
+                .iter()
+                .map(|evidence| next_read_signal_kind_priority(&evidence.signal)),
+        )
+        .min()
+        .unwrap_or(9)
+}
+
+fn next_read_signal_score(candidate: &RetrievalCandidate) -> f32 {
+    candidate
+        .signal_scores
+        .iter()
+        .map(|score| score.score * score.weight)
+        .chain(candidate.evidence.iter().map(|evidence| evidence.score))
+        .max_by(|left, right| left.total_cmp(right))
+        .unwrap_or(candidate.confidence)
+}
+
+fn next_read_signal_kind_priority(signal: &RetrievalSignalKind) -> u8 {
+    match signal {
+        RetrievalSignalKind::Anchor | RetrievalSignalKind::CurrentDiff => 0,
+        RetrievalSignalKind::Lexical => 1,
+        RetrievalSignalKind::Symbol => 2,
+        RetrievalSignalKind::CoChange => 3,
+        RetrievalSignalKind::Dependency => 4,
+        RetrievalSignalKind::LexicalExpansion => 5,
+        RetrievalSignalKind::Memory => 6,
+        RetrievalSignalKind::Semantic => 7,
+        RetrievalSignalKind::RelatedTest => 8,
+        RetrievalSignalKind::History | RetrievalSignalKind::Config | RetrievalSignalKind::Docs => 9,
     }
 }
 
@@ -2506,6 +2594,102 @@ mod tests {
         assert_eq!(areas[0].selected_count, 1);
         assert_eq!(areas[0].next_read_paths, vec!["src/auth/cookies.ts"]);
         assert!(areas[0].reason.starts_with("Focused task"));
+    }
+
+    #[test]
+    fn context_area_next_reads_order_by_source_free_signal_strength() {
+        let selection = crate::ranking::RankedSelection {
+            retrieval_candidates: vec![
+                RetrievalCandidate {
+                    kind: RetrievalCandidateKind::File,
+                    path: Some("src/auth/session.ts".to_string()),
+                    role: Some(FileRole::Source),
+                    reason_code: "selected source".to_string(),
+                    confidence: 0.9,
+                    signal_scores: vec![RetrievalSignalScore {
+                        signal: RetrievalSignalKind::Lexical,
+                        score: 0.9,
+                        weight: 1.0,
+                    }],
+                    evidence: vec![],
+                },
+                RetrievalCandidate {
+                    kind: RetrievalCandidateKind::File,
+                    path: Some("src/auth/semantic.ts".to_string()),
+                    role: Some(FileRole::Source),
+                    reason_code: "semantic_match".to_string(),
+                    confidence: 0.95,
+                    signal_scores: vec![RetrievalSignalScore {
+                        signal: RetrievalSignalKind::Semantic,
+                        score: 0.95,
+                        weight: 0.45,
+                    }],
+                    evidence: vec![],
+                },
+                RetrievalCandidate {
+                    kind: RetrievalCandidateKind::File,
+                    path: Some("src/auth/cochange.ts".to_string()),
+                    role: Some(FileRole::Source),
+                    reason_code: "co_change_neighbor".to_string(),
+                    confidence: 0.7,
+                    signal_scores: vec![RetrievalSignalScore {
+                        signal: RetrievalSignalKind::CoChange,
+                        score: 0.7,
+                        weight: 1.35,
+                    }],
+                    evidence: vec![],
+                },
+                RetrievalCandidate {
+                    kind: RetrievalCandidateKind::File,
+                    path: Some("src/auth/symbol.ts".to_string()),
+                    role: Some(FileRole::Source),
+                    reason_code: "symbol_match".to_string(),
+                    confidence: 0.8,
+                    signal_scores: vec![RetrievalSignalScore {
+                        signal: RetrievalSignalKind::Symbol,
+                        score: 0.8,
+                        weight: 1.05,
+                    }],
+                    evidence: vec![],
+                },
+                RetrievalCandidate {
+                    kind: RetrievalCandidateKind::File,
+                    path: Some("src/auth/lexical.ts".to_string()),
+                    role: Some(FileRole::Source),
+                    reason_code: "lexical_match".to_string(),
+                    confidence: 0.75,
+                    signal_scores: vec![RetrievalSignalScore {
+                        signal: RetrievalSignalKind::Lexical,
+                        score: 0.75,
+                        weight: 1.0,
+                    }],
+                    evidence: vec![],
+                },
+            ],
+            target_files: vec![TargetFile {
+                path: "src/auth/session.ts".to_string(),
+                reason: "selected source".to_string(),
+                line_range: None,
+                confidence: 0.9,
+                attribution: vec![],
+            }],
+            related_tests: vec![],
+            recommended_commands: vec![],
+        };
+
+        let areas = context_areas_for_plan(&selection, false);
+
+        assert_eq!(areas.len(), 1);
+        assert_eq!(
+            areas[0].next_read_paths,
+            vec![
+                "src/auth/lexical.ts".to_string(),
+                "src/auth/symbol.ts".to_string(),
+                "src/auth/cochange.ts".to_string(),
+                "src/auth/semantic.ts".to_string(),
+            ],
+            "next reads should use source-free signal priority before insertion order"
+        );
     }
 
     #[test]

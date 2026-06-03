@@ -794,6 +794,11 @@ Recommendation today:
   zero-selected-area recovery. The four-repo proof still promotes with Phase
   192 metrics unchanged while showing ctxhelm and VeriSchema misses that are
   recoverable by native agent reads after the selected-file budget is exhausted.
+- Phase 194 makes `nextReadPaths` ordering source-free and signal-aware. Within
+  each context area, unselected paths now prefer source/config/schema roles and
+  stronger local signals before weaker progressive reads. The four-repo proof
+  still promotes with selected-file metrics unchanged while next-read recovery
+  improves from `9 -> 10` on ctxhelm and `10 -> 14` on VeriSchema.
 - Treat cloud embeddings/reranking as disabled unless an explicit repo policy
   allows them.
 

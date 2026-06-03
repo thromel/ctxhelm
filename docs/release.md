@@ -393,6 +393,13 @@ recovery arithmetic. The fresh four-repo proof promotes with Phase 192 metrics
 unchanged while showing `9 / 12` ctxhelm missed@10 paths and `10 / 39`
 VeriSchema missed@10 paths recoverable via source-free next-read guidance.
 
+Phase 194 makes context-area next-read ordering source-free and signal-aware.
+Unselected area candidates now sort by role priority, signal priority, weighted
+signal score, confidence, and stable tie-breakers before `nextReadPaths` are
+truncated. The fresh four-repo proof promotes with Phase 193 metrics unchanged
+while next-read recovery improves to `10 / 12` on ctxhelm and `14 / 39` on
+VeriSchema.
+
 The optional real-client evidence wrappers are:
 
 - `scripts/smoke-codex-mcp.sh`
