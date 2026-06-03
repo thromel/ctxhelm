@@ -2894,6 +2894,106 @@ mod tests {
     }
 
     #[test]
+    fn historical_eval_projects_source_memory_into_parent_snapshots() {
+        let _guard = env_lock();
+        let temp = tempfile::tempdir().unwrap();
+        let repo = temp.path().join("repo");
+        let home = temp.path().join("ctxhelm-home");
+        fs::create_dir_all(repo.join("src/internal")).unwrap();
+        run_git(&repo, &["init"]);
+        run_git(&repo, &["config", "user.email", "ctxhelm@example.com"]);
+        run_git(&repo, &["config", "user.name", "ctxhelm"]);
+        fs::write(
+            repo.join("src/internal/handler.ts"),
+            "export function internalHandler() { return true; }\n",
+        )
+        .unwrap();
+        run_git(&repo, &["add", "."]);
+        run_git(&repo, &["commit", "-m", "add internal handler"]);
+        let base = git_stdout(&repo, &["rev-parse", "HEAD"]).trim().to_string();
+        fs::write(
+            repo.join("src/internal/handler.ts"),
+            "export function internalHandler() { return false; }\n",
+        )
+        .unwrap();
+        run_git(&repo, &["add", "."]);
+        run_git(
+            &repo,
+            &["commit", "-m", "fix checkout signature regression"],
+        );
+        let head = git_stdout(&repo, &["rev-parse", "HEAD"]).trim().to_string();
+        std::env::set_var("CTXHELM_HOME", &home);
+
+        persist_memory_card_records(
+            &repo,
+            &StoreConfig::default(),
+            &[StorageMemoryCardRecord {
+                card: MemoryCard {
+                    id: "experience:parent-snapshot-checkout".to_string(),
+                    kind: MemoryCardKind::Experience,
+                    title: "Experience: checkout signature regression".to_string(),
+                    summary:
+                        "A prior approved run selected one source file for checkout signature work."
+                            .to_string(),
+                    source_links: vec!["src/internal/handler.ts".to_string()],
+                    input_hashes: vec!["task-hash".to_string()],
+                    freshness: MemoryFreshness::Fresh,
+                    review_status: MemoryReviewStatus::Approved,
+                    disabled: false,
+                    confidence: 0.90,
+                    reason: "test approved source-free experience card".to_string(),
+                    privacy_status: PrivacyStatus::local_only(),
+                },
+            }],
+        )
+        .unwrap();
+
+        let report = evaluate_historical_commits(
+            &repo,
+            &HistoricalEvalOptions {
+                limit: 1,
+                ranking_budget: 10,
+                task_type: TaskType::BugFix,
+                target_agent: "claude-code".to_string(),
+                base: Some(base),
+                head: Some(head),
+                semantic_enabled: false,
+                semantic_provider: SemanticProviderConfig::default(),
+                local_metadata_reranker: false,
+                cache_enabled: false,
+                force_refresh: true,
+                parallelism: 1,
+            },
+        )
+        .unwrap();
+
+        assert_eq!(report.evaluated_commits, 1);
+        assert_eq!(
+            report.commits[0].retrieval_target_files,
+            vec!["src/internal/handler.ts"]
+        );
+        assert!(report.commits[0]
+            .recommended_context_files
+            .contains(&"src/internal/handler.ts".to_string()));
+        assert!(!report.commits[0]
+            .lexical_baseline_files
+            .contains(&"src/internal/handler.ts".to_string()));
+        assert_eq!(report.memory_reuse_summary.memory_candidate_count, 1);
+        assert_eq!(report.memory_reuse_summary.memory_selected_at_10_count, 1);
+        assert_eq!(report.memory_reuse_summary.memory_target_hit_at_10_count, 1);
+        assert_eq!(
+            report.memory_reuse_summary.memory_unique_target_hit_count,
+            1
+        );
+        assert!(report
+            .recommended_research_actions
+            .iter()
+            .any(|action| action.action == "evaluate_memory_reuse_lift"));
+
+        std::env::remove_var("CTXHELM_HOME");
+    }
+
+    #[test]
     fn compile_context_pack_from_plan_reuses_existing_task_id() {
         let _guard = env_lock();
         let temp = tempfile::tempdir().unwrap();

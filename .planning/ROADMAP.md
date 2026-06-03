@@ -88,6 +88,8 @@ Phase 216 release-gates a controlled historical memory-lift proof. `scripts/smok
 
 Phase 217 release-gates benchmark-level memory-lift aggregation proof. `scripts/smoke-memory-benchmark-lift.sh` now creates two local repositories, approves one source-free experience card per repo, runs `eval proof`, and proves each embedded historical report records a memory-only target hit beyond lexical while product proof routes R&D to `evaluate_memory_reuse_lift`. The committed proof artifact records `evaluatedRepositoryCount = 2`, `evaluatedCommitCount = 2`, per-repo `memoryUniqueTargetHitCount = 1`, `targetInCombined = true`, `targetInLexical = false`, and source-free privacy flags. This closes product-proof plumbing for memory lift but does not yet prove broad memory generalization on arbitrary histories.
 
+Phase 218 fixes parent-snapshot memory visibility for real historical evals. Historical eval now projects approved source-free memory cards from the source repo into parent-snapshot eval roots before planning, so non-root commit evaluation can use reviewed memory despite the snapshot's different local storage identity. `scripts/smoke-memory-parent-snapshot-lift.sh` release-gates the controlled path, and the RefactoringMiner repeated-file artifact shows the same fix produces memory candidates and a unique memory target hit beyond lexical on a real corpus pair. This improves real-history memory measurement, while broad memory generalization across arbitrary histories remains future work.
+
 ## v2.5 Production Retrieval Quality
 
 ## Phases

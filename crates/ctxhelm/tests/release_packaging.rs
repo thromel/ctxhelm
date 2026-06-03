@@ -231,6 +231,7 @@ fn release_gate_script_contract() {
         "scripts/smoke-memory.sh",
         "scripts/smoke-memory-reuse.sh",
         "scripts/smoke-memory-history-lift.sh",
+        "scripts/smoke-memory-parent-snapshot-lift.sh",
         "scripts/smoke-memory-benchmark-lift.sh",
         "scripts/smoke-shared-artifacts.sh",
         "scripts/smoke-inspector.sh",
@@ -1910,6 +1911,60 @@ fn memory_history_lift_smoke_script_contract() {
         assert!(
             script_text.contains(required),
             "memory history lift smoke script missing {required}"
+        );
+    }
+}
+
+#[test]
+fn memory_parent_snapshot_lift_smoke_script_contract() {
+    let repo_root = workspace_root();
+    let script = repo_root.join("scripts/smoke-memory-parent-snapshot-lift.sh");
+    assert!(
+        script.exists(),
+        "memory parent-snapshot lift smoke script is missing"
+    );
+
+    let syntax = Command::new("bash")
+        .arg("-n")
+        .arg(&script)
+        .current_dir(&repo_root)
+        .output()
+        .unwrap();
+    assert!(
+        syntax.status.success(),
+        "bash -n failed: {}",
+        String::from_utf8_lossy(&syntax.stderr)
+    );
+
+    let script_text = fs::read_to_string(&script).unwrap();
+    for required in [
+        "ctxhelm-memory-parent-snapshot-lift-eval-v1",
+        "parent-snapshot-experience-memory-lift",
+        "eval history",
+        "--base",
+        "--head",
+        "memory generate-experience",
+        "memory approve",
+        "memoryUniqueTargetHitCount",
+        "evaluate_memory_reuse_lift",
+        "targetInLexical",
+        "targetInCombined",
+        "source and snapshot storage databases",
+        "sourceTextLogged",
+        "rawPromptStored",
+        "rawTaskTextStored",
+        "rawTranscriptStored",
+        "rawMcpTrafficStored",
+        "CTXHELM_MEMORY_PARENT_SNAPSHOT_SOURCE_SENTINEL",
+        "history report leaked source sentinel",
+        "history report leaked raw task text",
+        "storage leaked source sentinel",
+        "model invocation",
+        "cloud upload",
+    ] {
+        assert!(
+            script_text.contains(required),
+            "memory parent-snapshot lift smoke script missing {required}"
         );
     }
 }

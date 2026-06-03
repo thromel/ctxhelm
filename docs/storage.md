@@ -130,7 +130,10 @@ counts, metrics, IDs, and JSON metadata. It does not store raw file contents,
 source snippets, prompt text, secrets, or cloud embedding data by default.
 
 The release gate runs `scripts/smoke-storage.sh`, `scripts/smoke-memory.sh`,
-`scripts/smoke-memory-reuse.sh`, `scripts/smoke-memory-history-lift.sh`, and
-`scripts/smoke-semantic.sh`, which check repeated indexing, source-free memory
-and vector metadata, approved experience memory reuse, historical memory lift,
-and that source or secret sentinels are not persisted into `CTXHELM_HOME`.
+`scripts/smoke-memory-reuse.sh`, `scripts/smoke-memory-history-lift.sh`,
+`scripts/smoke-memory-parent-snapshot-lift.sh`,
+`scripts/smoke-memory-benchmark-lift.sh`, and `scripts/smoke-semantic.sh`, which
+check repeated indexing, source-free memory and vector metadata, approved
+experience memory reuse, historical memory lift, parent-snapshot memory
+projection, benchmark-level memory lift aggregation, and that source or secret
+sentinels are not persisted into `CTXHELM_HOME`.

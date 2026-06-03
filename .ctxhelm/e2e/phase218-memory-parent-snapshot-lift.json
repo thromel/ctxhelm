@@ -1,0 +1,75 @@
+{
+  "afterApproval": {
+    "evaluatedCommits": 1,
+    "memoryReuseSummary": {
+      "commitsWithMemoryCandidates": 1,
+      "memoryCandidateCount": 1,
+      "memorySelectedAt10Count": 1,
+      "memoryTargetHitAt10Count": 1,
+      "memoryTargetMissedAt10Count": 0,
+      "memoryUniqueNonTargetCount": 0,
+      "memoryUniqueTargetHitCount": 1,
+      "selectedRoleCounts": {
+        "source": 1
+      },
+      "sourceTextLogged": false
+    },
+    "recommendedResearchActions": [
+      "evaluate_memory_reuse_lift",
+      "improve_validation_test_mapping"
+    ],
+    "targetInCombined": true,
+    "targetInLexical": false
+  },
+  "beforeApproval": {
+    "evaluatedCommits": 1,
+    "memoryReuseSummary": {
+      "commitsWithMemoryCandidates": 0,
+      "memoryCandidateCount": 0,
+      "memorySelectedAt10Count": 0,
+      "memoryTargetHitAt10Count": 0,
+      "memoryTargetMissedAt10Count": 0,
+      "memoryUniqueNonTargetCount": 0,
+      "memoryUniqueTargetHitCount": 0,
+      "selectedRoleCounts": {},
+      "sourceTextLogged": false
+    },
+    "recommendedResearchActions": [
+      "improve_candidate_generation",
+      "improve_validation_test_mapping",
+      "collect_or_approve_experience_memory"
+    ],
+    "targetInCombined": false,
+    "targetInLexical": false
+  },
+  "experience": {
+    "approvedRecords": 1,
+    "generatedCards": 1,
+    "storedRecords": 1
+  },
+  "experienceCardId": "experience:b1b9894bc8486849f2b0f229435e37f315173ab5eae94489276247edcb187863",
+  "privacyStatus": {
+    "localOnly": true,
+    "rawMcpTrafficStored": false,
+    "rawPromptStored": false,
+    "rawTaskTextStored": false,
+    "rawTranscriptStored": false,
+    "remoteEmbeddingsUsed": false,
+    "remoteRerankingUsed": false,
+    "sourceTextLogged": false
+  },
+  "schemaVersion": "ctxhelm-memory-parent-snapshot-lift-eval-v1",
+  "status": "passed",
+  "targetFile": "src/internal/handler.ts",
+  "task": {
+    "rawTaskStored": false,
+    "taskSha256": "2b8208b0e41da0b3b831785dbea50fcda6253807deaadb811b1cd44563534721"
+  },
+  "unsupportedActions": [
+    "source edits",
+    "model invocation",
+    "cloud upload",
+    "raw prompt storage"
+  ],
+  "workflowKind": "parent-snapshot-experience-memory-lift"
+}

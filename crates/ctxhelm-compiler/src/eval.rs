@@ -16,10 +16,11 @@ use ctxhelm_core::{
 };
 use ctxhelm_index::{
     historical_commit_samples_with_safe_paths, inventory_path, legacy_lexical_search_report,
-    lexical_search, lexical_search_report, load_or_build_inventory, repo_id_for_path,
-    semantic_document_report, task_hash, write_eval_history_sidecar, HistoricalChangedPath,
-    HistoricalCommitOptions, HistoricalCommitSample, InventoryError, InventoryOptions, LabelScope,
-    SearchOptions, SemanticDocumentOptions, SemanticProviderConfig,
+    lexical_search, lexical_search_report, list_memory_cards, load_or_build_inventory,
+    persist_memory_card_records, repo_id_for_path, semantic_document_report, task_hash,
+    write_eval_history_sidecar, HistoricalChangedPath, HistoricalCommitOptions,
+    HistoricalCommitSample, InventoryError, InventoryOptions, LabelScope, SearchOptions,
+    SemanticDocumentOptions, SemanticProviderConfig, StorageMemoryCardRecord, StoreConfig,
     LEARNED_POLICY_PROFILE_SCHEMA_VERSION,
 };
 use serde::{Deserialize, Serialize};
@@ -4936,6 +4937,7 @@ fn evaluate_historical_commit_sample(
         &parent_snapshot_paths,
     )?;
     let eval_root = eval_repo.path();
+    project_source_memory_to_eval_root(repo_root, eval_root);
     let plan_started = Instant::now();
     let plan = prepare_context_plan_with_paths_history_mode_and_semantic(
         eval_root,
@@ -5128,6 +5130,23 @@ fn evaluate_historical_commit_sample(
         ranking_millis,
         pack_compiler_millis,
     })
+}
+
+fn project_source_memory_to_eval_root(source_repo: &Path, eval_root: &Path) {
+    if source_repo == eval_root {
+        return;
+    }
+    let Ok(cards) = list_memory_cards(source_repo, &StoreConfig::default(), false) else {
+        return;
+    };
+    if cards.is_empty() {
+        return;
+    }
+    let records = cards
+        .into_iter()
+        .map(|card| StorageMemoryCardRecord { card })
+        .collect::<Vec<_>>();
+    let _ = persist_memory_card_records(eval_root, &StoreConfig::default(), &records);
 }
 
 impl<'a> HistoricalEvalWorktree<'a> {

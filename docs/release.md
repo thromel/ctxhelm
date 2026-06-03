@@ -242,6 +242,7 @@ The release gate runs these required checks:
 - `scripts/smoke-memory.sh`
 - `scripts/smoke-memory-reuse.sh`
 - `scripts/smoke-memory-history-lift.sh`
+- `scripts/smoke-memory-parent-snapshot-lift.sh`
 - `scripts/smoke-memory-benchmark-lift.sh`
 - `scripts/smoke-feedback.sh`
 - `scripts/smoke-workspace.sh`
@@ -504,6 +505,12 @@ creates two local repos, approves one source-free experience card per repo, runs
 memory-only target hit beyond lexical plus product-level
 `evaluate_memory_reuse_lift` routing. It does not claim broad memory
 generalization across arbitrary repositories.
+
+The memory parent-snapshot lift smoke proves approved source-repo memory remains
+visible when historical eval builds a parent-revision snapshot with a different
+local storage identity. It runs a two-commit local repo through `eval history`
+before and after approval, requiring a memory-only target hit beyond lexical
+without persisting source sentinels or raw task text.
 
 The precision smoke proves Java/Kotlin symbol extraction, Java/Kotlin package import edges, source-free precision edge import, rejection of sensitive paths, and additive precision dependency output.
 

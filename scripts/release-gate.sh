@@ -11,6 +11,7 @@ smoke_storage_script="$repo_root/scripts/smoke-storage.sh"
 smoke_memory_script="$repo_root/scripts/smoke-memory.sh"
 smoke_memory_reuse_script="$repo_root/scripts/smoke-memory-reuse.sh"
 smoke_memory_history_lift_script="$repo_root/scripts/smoke-memory-history-lift.sh"
+smoke_memory_parent_snapshot_lift_script="$repo_root/scripts/smoke-memory-parent-snapshot-lift.sh"
 smoke_memory_benchmark_lift_script="$repo_root/scripts/smoke-memory-benchmark-lift.sh"
 smoke_feedback_script="$repo_root/scripts/smoke-feedback.sh"
 smoke_workspace_script="$repo_root/scripts/smoke-workspace.sh"
@@ -216,6 +217,9 @@ CTXHELM_BIN="$ctxhelm_bin" bash "$smoke_memory_reuse_script"
 log_step "memory history lift smoke"
 CTXHELM_BIN="$ctxhelm_bin" bash "$smoke_memory_history_lift_script"
 
+log_step "memory parent-snapshot lift smoke"
+CTXHELM_BIN="$ctxhelm_bin" bash "$smoke_memory_parent_snapshot_lift_script"
+
 log_step "memory benchmark lift smoke"
 CTXHELM_BIN="$ctxhelm_bin" bash "$smoke_memory_benchmark_lift_script"
 
@@ -418,6 +422,7 @@ required_checks = [
     "scripts/smoke-memory.sh",
     "scripts/smoke-memory-reuse.sh",
     "scripts/smoke-memory-history-lift.sh",
+    "scripts/smoke-memory-parent-snapshot-lift.sh",
     "scripts/smoke-memory-benchmark-lift.sh",
     "scripts/smoke-feedback.sh",
     "scripts/smoke-workspace.sh",

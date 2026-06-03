@@ -1,0 +1,67 @@
+{
+  "afterApproval": {
+    "memoryReuseSummary": {
+      "commitsWithMemoryCandidates": 1,
+      "memoryCandidateCount": 6,
+      "memorySelectedAt10Count": 6,
+      "memoryTargetHitAt10Count": 2,
+      "memoryTargetMissedAt10Count": 1,
+      "memoryUniqueNonTargetCount": 2,
+      "memoryUniqueTargetHitCount": 1,
+      "selectedRoleCounts": {
+        "source": 5,
+        "test": 1
+      },
+      "sourceTextLogged": false
+    },
+    "recommendedResearchActions": [
+      "improve_candidate_generation",
+      "evaluate_memory_reuse_lift",
+      "improve_validation_test_mapping"
+    ],
+    "targetInCombined": true,
+    "targetInLexical": false
+  },
+  "beforeApproval": {
+    "memoryReuseSummary": {
+      "commitsWithMemoryCandidates": 0,
+      "memoryCandidateCount": 0,
+      "memorySelectedAt10Count": 0,
+      "memoryTargetHitAt10Count": 0,
+      "memoryTargetMissedAt10Count": 0,
+      "memoryUniqueNonTargetCount": 0,
+      "memoryUniqueTargetHitCount": 0,
+      "selectedRoleCounts": {},
+      "sourceTextLogged": false
+    },
+    "targetInCombined": true,
+    "targetInLexical": false
+  },
+  "pair": {
+    "newerSha": "00fa023f0f3a",
+    "olderTaskSha256": "990249f09a505154c884c872bcb2b9d08f5f2ce7a0373f597ca0b1e0af044c7e",
+    "targetFile": "src/main/java/gr/uom/java/xmi/decomposition/TypeScriptVisitor.java"
+  },
+  "privacyStatus": {
+    "localOnly": true,
+    "rawMcpTrafficStored": false,
+    "rawPromptStored": false,
+    "rawTaskTextStored": false,
+    "rawTranscriptStored": false,
+    "remoteEmbeddingsUsed": false,
+    "remoteRerankingUsed": false,
+    "sourceTextLogged": false
+  },
+  "proofBoundary": "Single repeated-file RefactoringMiner pair; proves parent-snapshot memory visibility on a real corpus fixture, not broad generalization.",
+  "repo": "RefactoringMiner",
+  "repoPathStored": false,
+  "runtimeSeconds": {
+    "afterEval": 1.52,
+    "approve": 0.01,
+    "beforeEval": 33.07,
+    "generateExperience": 0.08,
+    "seedPrepareTask": 42.73
+  },
+  "schemaVersion": "ctxhelm-real-corpus-memory-parent-snapshot-v1",
+  "status": "passed"
+}

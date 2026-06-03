@@ -4,10 +4,10 @@ milestone: v2.5
 milestone_name: Production Retrieval Quality
 status: active
 last_updated: "2026-06-03T00:00:00Z"
-last_activity: 2026-06-03 -- Phase 217 proves benchmark-level memory lift aggregation
+last_activity: 2026-06-03 -- Phase 218 fixes parent-snapshot memory visibility
 progress:
-  total_phases: 126
-  completed_phases: 126
+  total_phases: 127
+  completed_phases: 127
   total_plans: 7
   completed_plans: 7
   percent: 100
@@ -17,10 +17,10 @@ progress:
 
 ## Current Position
 
-Phase: 217 - Memory Benchmark Lift Proof
-Plan: 217-memory-benchmark-lift-proof
+Phase: 218 - Parent-Snapshot Memory Lift
+Plan: 218-parent-snapshot-memory-lift
 Status: Complete
-Last activity: 2026-06-03 -- Phase 217 adds and release-gates `scripts/smoke-memory-benchmark-lift.sh`, a controlled two-repo benchmark/product-proof aggregation smoke. The source-free proof shows both embedded repository reports have one memory candidate, one selected memory source, one memory target hit, one unique memory target hit beyond lexical, `targetInCombined = true`, `targetInLexical = false`, and product-level `evaluate_memory_reuse_lift`.
+Last activity: 2026-06-03 -- Phase 218 fixes approved memory visibility for parent-snapshot historical evals by projecting source-free source-repo memory cards into the snapshot eval root before planning. The release-gated smoke proves a non-root commit moves from no memory candidates and a missed target to one memory candidate, one selected memory source, one memory target hit, one unique memory target hit beyond lexical, `targetInCombined = true`, `targetInLexical = false`, and `evaluate_memory_reuse_lift`. A RefactoringMiner repeated-file pair now reports memory candidates and one unique memory target hit beyond lexical.
 
 ## Project Reference
 

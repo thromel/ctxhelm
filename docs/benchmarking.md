@@ -109,6 +109,10 @@ the lexical baseline. The summary stores counts and role labels only.
 history: before approval, memory contributes no candidates; after approval, the
 historical report records a memory-only target hit beyond lexical and routes the
 next action to `evaluate_memory_reuse_lift`.
+`scripts/smoke-memory-parent-snapshot-lift.sh` covers the non-root commit path:
+historical eval builds a parent snapshot, projects source-free approved memory
+from the source checkout into that snapshot's local store, and requires the
+snapshot report to preserve a memory-only target hit beyond lexical.
 `scripts/smoke-memory-benchmark-lift.sh` exercises the higher-level aggregation
 path: two local repositories seed approved source-free experience cards, run
 `eval proof`, and require product proof to preserve per-repo memory-only target

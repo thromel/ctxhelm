@@ -137,6 +137,15 @@ memory-only target hits beyond lexical plus product-level
 positive memory lift across repositories; broad memory generalization on real
 histories remains the next higher bar.
 
+Status: Phase 218 fixes the first real-history memory blocker. A RefactoringMiner
+repeated-file probe showed approved source-repo memory disappeared when
+historical eval used a parent snapshot with a different local storage identity.
+Historical eval now projects approved source-free memory cards into parent
+snapshots before planning, the release gate covers the controlled non-root path,
+and the RefactoringMiner pair now reports memory candidates plus one unique
+memory target hit beyond lexical. This closes parent-snapshot memory visibility;
+multi-pair and multi-repo memory generalization remain open.
+
 ### 3. Semantic/Embedding Signal Is Wired But Not Driving Lift
 
 The current product lift comes from hybrid ranking, graph/test/history/context
