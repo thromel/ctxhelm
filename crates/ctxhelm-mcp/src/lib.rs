@@ -639,6 +639,14 @@ mod tests {
             .as_str()
             .unwrap()
             .contains("\"taskType\": \"bug_fix\""));
+        assert!(response["result"]["content"][0]["text"]
+            .as_str()
+            .unwrap()
+            .contains("discovering a path is not the same as consuming it"));
+        assert!(response["result"]["content"][0]["text"]
+            .as_str()
+            .unwrap()
+            .contains("Read the returned targetFiles"));
         std::env::remove_var("CTXHELM_HOME");
     }
 

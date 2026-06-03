@@ -4,7 +4,7 @@ milestone: v2.5
 milestone_name: Production Retrieval Quality
 status: active
 last_updated: "2026-06-03T00:00:00Z"
-last_activity: 2026-06-03 -- Phase 205 adds source-free agent consumption diagnostics
+last_activity: 2026-06-03 -- Phase 206 hardens source-free consumption guidance
 progress:
   total_phases: 115
   completed_phases: 115
@@ -17,10 +17,10 @@ progress:
 
 ## Current Position
 
-Phase: 205 - Agent Consumption Diagnostics
-Plan: 205-agent-consumption-diagnostics
+Phase: 206 - Consumption Guidance Hardening
+Plan: 206-consumption-guidance-hardening
 Status: Complete
-Last activity: 2026-06-03 -- Phase 205 makes real-agent consumption gaps source-free and machine-visible. Paired Claude Code agent-run reports now distinguish target discovery from actual native target reads, add discovered-only targets, missed-target counts, read-role counts, missed-target role counts, target-read coverage deltas, and a `ctxhelmUnderReadTargetsObserved` flag. A real Claude Code `2.1.159` run on the Phase 205 harness task showed `ctxhelm-brief` matching native target-read coverage at `0.67` while reducing irrelevant reads from `3` to `2`; `ctxhelm-plan` still discovered one target without reading it.
+Last activity: 2026-06-03 -- Phase 206 hardens product-facing consumption guidance. `prepare_task` MCP text, generated AGENTS/Cursor/Claude/OpenCode/Codex guidance, and generated packs now tell agents that discovering a path or seeing a pack snippet is not the same as consuming the current file. Real Claude Code probes were mixed: one showed `ctxhelm-plan` improving target-read coverage from `0.33` to `0.67`, while the later pack-guidance probe kept plan target-read coverage at `0.67` but had a failed brief lane before ctxhelm calls.
 
 ## Project Reference
 

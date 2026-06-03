@@ -879,6 +879,16 @@ Recommendation today:
   native target-read coverage at `0.67` while reducing irrelevant reads from
   `3` to `2`; the `ctxhelm-plan` lane exposed the remaining risk by discovering
   one target without actually reading it.
+- Phase 206 hardens product-facing consumption guidance. `prepare_task` MCP text
+  now tells agents that discovering a path is not the same as consuming it,
+  generated agent guidance repeats that rule, and packs include a source-free
+  `Consumption guidance` section before target files and snippets. Two Claude
+  Code `2.1.159` paired runs were intentionally treated as noisy outcome
+  evidence: the first showed `ctxhelm-plan` improving target-read coverage from
+  `0.33` to `0.67`, while the second kept `ctxhelm-plan` target-read coverage
+  at `0.67` but had a failed `ctxhelm-brief` lane before ctxhelm calls. This
+  phase improves the agent-consumption contract; it does not claim a stable
+  brief-pack outcome lift yet.
 - Treat cloud embeddings/reranking as disabled unless an explicit repo policy
   allows them.
 

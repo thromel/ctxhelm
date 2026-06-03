@@ -1,6 +1,6 @@
 # Agent Setup Matrix
 
-ctxhelm is an agent-native, read-only context broker. It generates repo-local guidance and snippets that help existing agents call `prepare_task`, read files natively, and request `get_pack` only when they need more context.
+ctxhelm is an agent-native, read-only context broker. It generates repo-local guidance and snippets that help existing agents call `prepare_task`, read returned target files natively, and request `get_pack` only when they need more context. Treat path discovery as a weaker signal than file consumption: agents should read the files they rely on before editing or answering.
 
 ## Support Matrix
 
@@ -100,7 +100,7 @@ transcript proof.
 Use the same sequence across clients:
 
 1. Call `prepare_task` with explicit `repo`, task text, mode, and active paths when known.
-2. Let the agent use native file reads for the top targets and tests.
+2. Let the agent use native file reads for the top targets and tests; discovering a path is not the same as consuming it.
 3. Call `get_pack` with the same explicit `repo` when direct file reads or brief plan context are insufficient.
 
 Example MCP tool arguments:

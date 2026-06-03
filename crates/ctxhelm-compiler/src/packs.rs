@@ -183,6 +183,11 @@ fn compile_pack_from_plan(
             ),
         ),
         section(
+            "Consumption guidance",
+            "consumption_guidance",
+            render_consumption_guidance(plan),
+        ),
+        section(
             "High-confidence target files",
             "target_files",
             render_target_files(plan),
@@ -971,6 +976,14 @@ fn render_target_files(plan: &ContextPlan) -> String {
         })
         .collect::<Vec<_>>()
         .join("\n")
+}
+
+fn render_consumption_guidance(plan: &ContextPlan) -> String {
+    let target_count = plan.target_files.len().min(5);
+    let test_count = plan.related_tests.len().min(3);
+    format!(
+        "Read the returned target files with native file tools before answering or editing; discovering a path or seeing a pack snippet is not the same as consuming the current file. Start with up to {target_count} high-confidence target file(s), then read up to {test_count} related test file(s) when validation evidence is present. Use broader context-area next reads only after those native reads do not explain the task."
+    )
 }
 
 fn render_validation(plan: &ContextPlan) -> String {

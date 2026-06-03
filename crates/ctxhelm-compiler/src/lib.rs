@@ -1034,9 +1034,17 @@ mod tests {
         assert!(pack
             .sections
             .iter()
+            .any(|section| section.kind == "consumption_guidance"));
+        assert!(pack
+            .sections
+            .iter()
             .any(|section| section.kind == "related_test_evidence"));
         assert!(markdown.contains("src/auth/session.ts"));
         assert!(markdown.contains("export function requireSession"));
+        assert!(markdown.contains("## Consumption guidance"));
+        assert!(markdown.contains(
+            "discovering a path or seeing a pack snippet is not the same as consuming the current file"
+        ));
         assert!(markdown.contains("## Related test evidence"));
         assert!(markdown.contains("Area: `tests/auth`"));
         assert!(markdown.contains(

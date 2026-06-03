@@ -5,7 +5,7 @@ use ctxhelm_compiler::{
     eval_trace_for_plan, prepare_context_plan_with_paths_and_semantic_provider,
     render_pack_markdown,
 };
-use ctxhelm_core::{CacheStatus, Diagnostic, PackBudget, TaskType};
+use ctxhelm_core::{CacheStatus, ContextPlan, Diagnostic, PackBudget, TaskType};
 use ctxhelm_index::{
     co_change_hints_report, current_diff_summary, current_diff_summary_report,
     lexical_search_report, related_dependency_edges_report, related_tests_report,
@@ -221,7 +221,7 @@ fn call_prepare_task(arguments: Value) -> Result<Value, RpcError> {
     )?;
     let structured = serde_json::to_value(&plan)
         .map_err(|error| RpcError::invalid_params(format!("failed to serialize plan: {error}")))?;
-    let text = serde_json::to_string_pretty(&plan)
+    let text = render_prepare_task_text(&plan)
         .map_err(|error| RpcError::invalid_params(format!("failed to serialize plan: {error}")))?;
 
     Ok(json!({
@@ -232,6 +232,13 @@ fn call_prepare_task(arguments: Value) -> Result<Value, RpcError> {
         "structuredContent": structured,
         "isError": false
     }))
+}
+
+fn render_prepare_task_text(plan: &ContextPlan) -> Result<String, serde_json::Error> {
+    let json = serde_json::to_string_pretty(plan)?;
+    Ok(format!(
+        "Consumption guidance:\n- Read the returned targetFiles with native file tools before answering or editing; discovering a path is not the same as consuming it.\n- Read relatedTests before deciding validation strategy when they are present.\n- Use get_pack progressively only after native reads or this plan are insufficient.\n\nContextPlan JSON:\n{json}"
+    ))
 }
 
 fn call_search(arguments: Value) -> Result<Value, RpcError> {
