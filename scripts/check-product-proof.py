@@ -203,6 +203,7 @@ def validate_context_area_next_read_summaries(report: dict) -> None:
         for field in (
             "missedFileCountAt10",
             "nextReadRecoverableCount",
+            "agentEvidenceRecoverableCount",
             "topPressureNextReadRecoverableCount",
             "zeroSelectedAreaRecoverableCount",
         ):
@@ -213,10 +214,15 @@ def validate_context_area_next_read_summaries(report: dict) -> None:
                 )
         missed = summary["missedFileCountAt10"]
         recoverable = summary["nextReadRecoverableCount"]
+        agent_evidence = summary["agentEvidenceRecoverableCount"]
         top_pressure = summary["topPressureNextReadRecoverableCount"]
         zero_selected = summary["zeroSelectedAreaRecoverableCount"]
         if recoverable > missed:
             fail("context area next-read recovery exceeded missed files")
+        if agent_evidence > missed:
+            fail("agent evidence recovery exceeded missed files")
+        if recoverable > agent_evidence:
+            fail("next-read recovery exceeded agent evidence recovery")
         if top_pressure > recoverable:
             fail("top-pressure next-read recovery exceeded total recovery")
         if zero_selected > recoverable:

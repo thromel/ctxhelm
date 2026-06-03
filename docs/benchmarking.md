@@ -811,6 +811,12 @@ Recommendation today:
   unchanged while VeriSchema broad context-area recall improves from
   `0.5777778 -> 0.84444445` and next-read recovery improves from `16 -> 19` of
   `39` missed@10 files.
+- Phase 197 adds `agentEvidenceRecoverableCount` to
+  `contextAreaNextReadSummary`. The existing `nextReadRecoverableCount` remains
+  the progressive-read-only count, while the new field also counts selected
+  related tests and selected context files. The four-repo proof still promotes
+  with retrieval metrics unchanged and shows VeriSchema `29 / 39` missed@10
+  files recoverable through the full agent evidence bundle.
 - Treat cloud embeddings/reranking as disabled unless an explicit repo policy
   allows them.
 

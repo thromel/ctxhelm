@@ -1330,6 +1330,7 @@ fn product_proof_json(decision: &str, default_promotion_allowed: bool, status: &
         "contextAreaNextReadSummary": {{
           "missedFileCountAt10": 1,
           "nextReadRecoverableCount": 1,
+          "agentEvidenceRecoverableCount": 1,
           "topPressureNextReadRecoverableCount": 1,
           "zeroSelectedAreaRecoverableCount": 0,
           "sourceTextLogged": false

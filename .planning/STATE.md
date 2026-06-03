@@ -4,10 +4,10 @@ milestone: v2.5
 milestone_name: Production Retrieval Quality
 status: active
 last_updated: "2026-06-03T00:00:00Z"
-last_activity: 2026-06-03 -- Phase 196 reserves validation context areas for broad progressive reads
+last_activity: 2026-06-03 -- Phase 197 adds agent-evidence recovery accounting
 progress:
-  total_phases: 107
-  completed_phases: 107
+  total_phases: 108
+  completed_phases: 108
   total_plans: 7
   completed_plans: 7
   percent: 100
@@ -17,10 +17,10 @@ progress:
 
 ## Current Position
 
-Phase: 196 - Validation Context Area Reserve
-Plan: 196-validation-context-area-reserve
+Phase: 197 - Agent Evidence Recovery Accounting
+Plan: 197-agent-evidence-recovery-accounting
 Status: Complete
-Last activity: 2026-06-03 -- Phase 196 reserves selected validation areas for broad progressive context guidance and adds package-mirrored related-test affinity. Fresh release-binary proof promotes from `/tmp/ctxhelm-rd/phase196-validation-area-proof.json`; selected-file/source/test/validation metrics stay unchanged from Phase 195 while VeriSchema broad context-area recall improves from `0.5777778 -> 0.84444445` and next-read recovery improves from `16 -> 19` of `39` missed@10 files.
+Last activity: 2026-06-03 -- Phase 197 adds `agentEvidenceRecoverableCount` to context-area next-read summaries. Fresh release-binary proof promotes from `/tmp/ctxhelm-rd/phase197-agent-evidence-recovery-proof.json`; selected-file/source/test/validation/broad-area metrics stay unchanged from Phase 196 while the proof now shows VeriSchema has `29 / 39` missed@10 files recoverable through the full agent evidence bundle versus `19 / 39` through progressive next reads alone.
 
 ## Project Reference
 
@@ -175,6 +175,7 @@ Planned phases:
 - Phase 194: Context Area Next-Read Ordering (complete follow-up)
 - Phase 195: Adaptive Context Area Next-Read Budget (complete follow-up)
 - Phase 196: Validation Context Area Reserve (complete follow-up)
+- Phase 197: Agent Evidence Recovery Accounting (complete follow-up)
 
 ## Last Completed Milestone
 

@@ -417,6 +417,13 @@ The accepted four-repo proof promotes with selected-file/source/test/validation
 metrics unchanged while VeriSchema broad context-area recall improves to
 `0.84444445` and next-read recovery improves to `19 / 39`.
 
+Phase 197 adds agent-evidence recovery accounting to context-area next-read
+summaries. `nextReadRecoverableCount` continues to mean progressive
+context-area reads only; `agentEvidenceRecoverableCount` also counts selected
+related tests and selected context files. The fresh four-repo proof promotes
+with retrieval metrics unchanged while VeriSchema reports `29 / 39` missed@10
+files recoverable through the full agent evidence bundle.
+
 The optional real-client evidence wrappers are:
 
 - `scripts/smoke-codex-mcp.sh`

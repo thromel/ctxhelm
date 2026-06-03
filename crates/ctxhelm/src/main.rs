@@ -5255,8 +5255,10 @@ fn render_context_area_next_read_summary(
         return String::new();
     }
     format!(
-        "- Context area next-read recovery: `{}` / `{}` missed@10 path(s)\n- Top-pressure next-read recovery: `{}`\n- Zero-selected-area next-read recovery: `{}`\n- Context area next-read source-free: `{}`\n\n",
+        "- Context area next-read recovery: `{}` / `{}` missed@10 path(s)\n- Agent-evidence recovery: `{}` / `{}` missed@10 path(s)\n- Top-pressure next-read recovery: `{}`\n- Zero-selected-area next-read recovery: `{}`\n- Context area next-read source-free: `{}`\n\n",
         summary.next_read_recoverable_count,
+        summary.missed_file_count_at_10,
+        summary.agent_evidence_recoverable_count,
         summary.missed_file_count_at_10,
         summary.top_pressure_next_read_recoverable_count,
         summary.zero_selected_area_recoverable_count,
@@ -6088,6 +6090,7 @@ mod tests {
             context_area_next_read_summary: ctxhelm_compiler::ContextAreaNextReadSummary {
                 missed_file_count_at_10: 2,
                 next_read_recoverable_count: 1,
+                agent_evidence_recoverable_count: 1,
                 top_pressure_next_read_recoverable_count: 1,
                 zero_selected_area_recoverable_count: 0,
                 source_text_logged: false,
@@ -6191,6 +6194,7 @@ mod tests {
             .contains("Context area pressure mix: source-like `6`, validation `0`, docs `1`"));
         assert!(markdown.contains("Highest pressure area: `src` pressure `6` coverage `33%`"));
         assert!(markdown.contains("Context area next-read recovery: `1` / `2` missed@10 path(s)"));
+        assert!(markdown.contains("Agent-evidence recovery: `1` / `2` missed@10 path(s)"));
         assert!(markdown.contains("Top-pressure next-read recovery: `1`"));
         assert!(markdown.contains("Zero-selected-area next-read recovery: `0`"));
         assert!(markdown.contains("File Recall@5: `1.00`"));

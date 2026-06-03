@@ -920,6 +920,8 @@ pub struct ContextAreaPressurePeak {
 pub struct ContextAreaNextReadSummary {
     pub missed_file_count_at_10: usize,
     pub next_read_recoverable_count: usize,
+    #[serde(default)]
+    pub agent_evidence_recoverable_count: usize,
     pub top_pressure_next_read_recoverable_count: usize,
     pub zero_selected_area_recoverable_count: usize,
     pub source_text_logged: bool,
@@ -6996,6 +6998,12 @@ fn context_area_next_read_summary(commits: &[HistoricalCommitEval]) -> ContextAr
             .iter()
             .flat_map(|area| area.next_read_paths.iter().cloned())
             .collect::<BTreeSet<_>>();
+        let agent_evidence = all_next_reads
+            .iter()
+            .cloned()
+            .chain(commit.recommended_context_files.iter().cloned())
+            .chain(commit.recommended_tests.iter().cloned())
+            .collect::<BTreeSet<_>>();
         let top_pressure_next_reads = commit
             .context_areas
             .iter()
@@ -7011,6 +7019,7 @@ fn context_area_next_read_summary(commits: &[HistoricalCommitEval]) -> ContextAr
 
         summary.missed_file_count_at_10 += missing.len();
         summary.next_read_recoverable_count += missing.intersection(&all_next_reads).count();
+        summary.agent_evidence_recoverable_count += missing.intersection(&agent_evidence).count();
         summary.top_pressure_next_read_recoverable_count +=
             missing.intersection(&top_pressure_next_reads).count();
         summary.zero_selected_area_recoverable_count +=
@@ -9427,7 +9436,7 @@ mod tests {
             retrieval_target_files: Vec::new(),
             excluded_changed_file_count: 0,
             recommended_files: Vec::new(),
-            recommended_tests: Vec::new(),
+            recommended_tests: vec!["tests/agents/test_base.py".to_string()],
             recommended_context_files: Vec::new(),
             recommended_commands: Vec::new(),
             lexical_baseline_files: Vec::new(),
@@ -9442,7 +9451,7 @@ mod tests {
             missing_files_at_10: vec![
                 "schema_agent/core/fd_router.py".to_string(),
                 "docs/architecture.md".to_string(),
-                "schema_agent/agents/base.py".to_string(),
+                "tests/agents/test_base.py".to_string(),
             ],
             source_files_changed: 4,
             source_hits_at_5: 1,
@@ -9530,6 +9539,7 @@ mod tests {
         let next_read = context_area_next_read_summary(&commits);
         assert_eq!(next_read.missed_file_count_at_10, 3);
         assert_eq!(next_read.next_read_recoverable_count, 2);
+        assert_eq!(next_read.agent_evidence_recoverable_count, 3);
         assert_eq!(next_read.top_pressure_next_read_recoverable_count, 1);
         assert_eq!(next_read.zero_selected_area_recoverable_count, 1);
         assert!(!next_read.source_text_logged);

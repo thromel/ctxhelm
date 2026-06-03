@@ -1893,6 +1893,7 @@ mod tests {
             context_area_next_read_summary: ContextAreaNextReadSummary {
                 missed_file_count_at_10: 3,
                 next_read_recoverable_count: 2,
+                agent_evidence_recoverable_count: 2,
                 top_pressure_next_read_recoverable_count: 1,
                 zero_selected_area_recoverable_count: 1,
                 source_text_logged: false,
@@ -2057,6 +2058,10 @@ mod tests {
         );
         assert_eq!(
             value["contextAreaNextReadSummary"]["nextReadRecoverableCount"],
+            2
+        );
+        assert_eq!(
+            value["contextAreaNextReadSummary"]["agentEvidenceRecoverableCount"],
             2
         );
         assert_eq!(
