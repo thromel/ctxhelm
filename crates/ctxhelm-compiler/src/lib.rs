@@ -35,10 +35,10 @@ pub use eval::{
     HistoricalMissingFileSummary, HistoricalProtectedEvidenceFile, HistoricalSignalRanking,
     HistoricalSlowCommitSummary, LexicalBackendCommitRow, LexicalBackendComparison,
     LexicalBackendCorpusOptions, LexicalBackendCorpusReport, LexicalBackendMetrics,
-    LexicalBackendRuntimeSummary, PairedBaselineAnalysisReport, PairedBaselineFamily,
-    PairedBaselineRow, PairedBaselineVerdict, ProductProofCorpusStatus, ProductProofCorpusVerdict,
-    ProductProofLexicalBackendComparison, ProductProofLexicalClaim, ProductProofLexicalComparison,
-    ProductProofMetric, ProductProofReleaseGate, ProductProofReport,
+    LexicalBackendRuntimeSummary, MemoryReuseSummary, PairedBaselineAnalysisReport,
+    PairedBaselineFamily, PairedBaselineRow, PairedBaselineVerdict, ProductProofCorpusStatus,
+    ProductProofCorpusVerdict, ProductProofLexicalBackendComparison, ProductProofLexicalClaim,
+    ProductProofLexicalComparison, ProductProofMetric, ProductProofReleaseGate, ProductProofReport,
     ProtectedEvidenceSignalSummary, ProtectedEvidenceSummary, RankingMetrics,
     RecommendedResearchAction, RetrievalGapRecommendationArea, RetrievalGapSummary,
     RetrievalGapTargetStatus, RoleRecallMetric, SemanticContributionSummary,
@@ -1938,6 +1938,17 @@ mod tests {
                 }],
                 source_text_logged: false,
             },
+            memory_reuse_summary: MemoryReuseSummary {
+                commits_with_memory_candidates: 1,
+                memory_candidate_count: 2,
+                memory_selected_at_10_count: 1,
+                memory_target_hit_at_10_count: 1,
+                memory_target_missed_at_10_count: 0,
+                memory_unique_target_hit_count: 1,
+                memory_unique_non_target_count: 1,
+                selected_role_counts: BTreeMap::from([("source".to_string(), 1)]),
+                source_text_logged: false,
+            },
             recommended_research_actions: vec![RecommendedResearchAction {
                 action: "improve_candidate_generation".to_string(),
                 priority: 1,
@@ -2149,6 +2160,17 @@ mod tests {
             "src/auth"
         );
         assert_eq!(value["candidateCoverageSummary"]["sourceTextLogged"], false);
+        assert_eq!(
+            value["memoryReuseSummary"]["commitsWithMemoryCandidates"],
+            1
+        );
+        assert_eq!(value["memoryReuseSummary"]["memoryCandidateCount"], 2);
+        assert_eq!(value["memoryReuseSummary"]["memoryUniqueTargetHitCount"], 1);
+        assert_eq!(
+            value["memoryReuseSummary"]["selectedRoleCounts"]["source"],
+            1
+        );
+        assert_eq!(value["memoryReuseSummary"]["sourceTextLogged"], false);
         assert_eq!(
             value["recommendedResearchActions"][0]["action"],
             "improve_candidate_generation"
@@ -2452,6 +2474,7 @@ mod tests {
             context_area_pressure_summary: ContextAreaPressureSummary::default(),
             context_area_next_read_summary: ContextAreaNextReadSummary::default(),
             candidate_coverage_summary: CandidateCoverageSummary::default(),
+            memory_reuse_summary: MemoryReuseSummary::default(),
             recommended_research_actions: Vec::new(),
             file_recall_at_5: 0.0,
             file_recall_at_10: 0.0,

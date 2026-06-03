@@ -140,11 +140,15 @@ analysis.
 Historical eval and product-proof reports use the same
 `recommendedResearchActions` shape for report-level R&D routing. Historical
 reports can recommend candidate generation, ranking or budget allocation,
-progressive-read alignment, validation-test mapping, and graph edge-budget
-work. Product proof reports can recommend fixture/history refresh, runtime
-work, protected-evidence preservation, retrieval/ranking fixes,
-native-baseline analysis, BM25 evidence collection, or preserving the current
-contract when no source-free bottleneck is present.
+progressive-read alignment, validation-test mapping, memory reuse evidence
+collection or selection work, and graph edge-budget work. Historical reports
+also expose `memoryReuseSummary`, which counts memory candidates, selected
+memory evidence, memory target hits/misses, and unique target or non-target
+memory contributions beyond lexical baseline evidence. Product proof reports can
+recommend fixture/history refresh, runtime work, protected-evidence
+preservation, retrieval/ranking fixes, native-baseline analysis, BM25 evidence
+collection, memory reuse proof, or preserving the current contract when no
+source-free bottleneck is present.
 The report stores path labels, hashes, and sanitized MCP request summaries only;
 it does not store raw prompts, raw model transcripts, raw MCP traffic, source
 snippets, terminal logs, or project test output.

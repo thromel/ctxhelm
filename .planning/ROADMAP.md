@@ -80,6 +80,8 @@ Phase 212 turns paired real-agent diagnostics into explicit source-free R&D rout
 
 Phase 213 extends the same source-free R&D routing into historical eval and product-proof reports. Historical reports now turn candidate coverage, context-area next-read, agent-evidence-only, validation, protected-evidence, and graph edge summaries into explicit next actions. Product-proof reports now route corpus verdicts and lexical/backend claims into fixture/history refresh, runtime work, protected-evidence preservation, retrieval/ranking fixes, native-baseline analysis, BM25 evidence collection, or preserving the current contract.
 
+Phase 214 makes experience-memory reuse measurable in historical and product-proof reports. Historical eval now emits `memoryReuseSummary`, counting memory candidates, selected memory evidence, memory target hits and misses, unique memory target hits beyond lexical, unique memory non-targets, and selected memory roles without storing source text. R&D action routing now distinguishes missing memory evidence from positive memory lift, memory noise, and weak memory selection.
+
 ## v2.5 Production Retrieval Quality
 
 ## Phases

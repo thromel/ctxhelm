@@ -4,10 +4,10 @@ milestone: v2.5
 milestone_name: Production Retrieval Quality
 status: active
 last_updated: "2026-06-03T00:00:00Z"
-last_activity: 2026-06-03 -- Phase 213 routes historical/product-proof R&D actions source-free
+last_activity: 2026-06-03 -- Phase 214 adds memory reuse proof diagnostics
 progress:
-  total_phases: 122
-  completed_phases: 122
+  total_phases: 123
+  completed_phases: 123
   total_plans: 7
   completed_plans: 7
   percent: 100
@@ -17,10 +17,10 @@ progress:
 
 ## Current Position
 
-Phase: 213 - Report-Level R&D Action Routing
-Plan: 213-report-level-rd-action-routing
+Phase: 214 - Memory Reuse Proof Diagnostics
+Plan: 214-memory-reuse-proof-diagnostics
 Status: Complete
-Last activity: 2026-06-03 -- Phase 213 extends source-free `recommendedResearchActions` from paired agent-run reports into historical eval and product-proof reports. Historical reports now route no-candidate misses, generated-but-unselected misses, progressive next-read recovery, agent-evidence-only recovery, validation gaps, protected-evidence misses, and graph edge evidence into concrete R&D actions. Product-proof reports now aggregate corpus verdicts into fixture/history refresh, runtime, protected-evidence, retrieval/ranking, native-baseline, BM25 evidence, or preserve-contract actions.
+Last activity: 2026-06-03 -- Phase 214 adds source-free `memoryReuseSummary` to historical eval reports and folds memory evidence into historical/product-proof `recommendedResearchActions`. Reports now distinguish no active memory evidence from memory unique target hits, memory unique non-targets, and memory selection misses, so the next R&D loop can decide whether to collect/approve experience memory, evaluate memory reuse lift, reduce memory retrieval noise, or improve memory selection policy.
 
 ## Project Reference
 

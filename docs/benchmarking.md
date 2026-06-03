@@ -91,12 +91,20 @@ Historical eval and product-proof reports also expose
 `recommendedResearchActions`. Historical reports route candidate gaps to
 candidate generation, generated-but-unselected misses to ranking or budget
 allocation, context-area recovery to progressive native-read guidance, broader
-agent-evidence-only recovery to next-read alignment, validation gaps to test
-mapping, and graph ablation/profile evidence to graph edge-budget work. Product
-proof reports aggregate corpus verdicts into fixture/history refresh, runtime,
+agent-evidence-only recovery to next-read alignment, memory reuse evidence to
+experience-memory collection or selection work, validation gaps to test mapping,
+and graph ablation/profile evidence to graph edge-budget work. Product proof
+reports aggregate corpus verdicts into fixture/history refresh, runtime,
 protected-evidence, retrieval/ranking regression, native-baseline gap, BM25
-backend evidence, or preserve-contract actions. These recommendations use only
-counts, labels, verdicts, and source-free reasons.
+backend evidence, memory reuse proof, or preserve-contract actions. These
+recommendations use only counts, labels, verdicts, and source-free reasons.
+
+Historical eval reports include `memoryReuseSummary` to make experience-memory
+reuse measurable instead of anecdotal. It reports how many evaluated commits had
+memory candidates, how many memory candidates were selected within the top-10
+context budget, how many retrieval targets memory hit or missed while memory was
+active, and whether memory added unique target hits or unique non-targets beyond
+the lexical baseline. The summary stores counts and role labels only.
 
 Historical eval reports also include source-free `graphEdgeProfiles`. These
 profiles split graph candidate evidence by edge label, such as `imports`,

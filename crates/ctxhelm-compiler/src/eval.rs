@@ -861,6 +861,8 @@ pub struct HistoricalEvalReport {
     #[serde(default)]
     pub candidate_coverage_summary: CandidateCoverageSummary,
     #[serde(default)]
+    pub memory_reuse_summary: MemoryReuseSummary,
+    #[serde(default)]
     pub recommended_research_actions: Vec<RecommendedResearchAction>,
     pub file_recall_at_5: f32,
     pub file_recall_at_10: f32,
@@ -970,6 +972,21 @@ pub struct CandidateCoverageSummary {
 pub struct CandidateCoverageAreaSummary {
     pub context_area: String,
     pub missed_count: usize,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct MemoryReuseSummary {
+    pub commits_with_memory_candidates: usize,
+    pub memory_candidate_count: usize,
+    pub memory_selected_at_10_count: usize,
+    pub memory_target_hit_at_10_count: usize,
+    pub memory_target_missed_at_10_count: usize,
+    pub memory_unique_target_hit_count: usize,
+    pub memory_unique_non_target_count: usize,
+    #[serde(default)]
+    pub selected_role_counts: BTreeMap<String, usize>,
+    pub source_text_logged: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -1671,6 +1688,52 @@ fn product_proof_recommended_research_actions(
             "product_proof",
             "No BM25-vs-legacy lexical backend evidence is embedded in this product proof.",
         );
+    }
+
+    let historical_reports = benchmark_report
+        .repositories
+        .iter()
+        .filter_map(|repo| repo.report.as_ref())
+        .collect::<Vec<_>>();
+    if !historical_reports.is_empty() {
+        let memory_candidate_count = historical_reports
+            .iter()
+            .map(|report| report.memory_reuse_summary.memory_candidate_count)
+            .sum::<usize>();
+        let memory_unique_target_hit_count = historical_reports
+            .iter()
+            .map(|report| report.memory_reuse_summary.memory_unique_target_hit_count)
+            .sum::<usize>();
+        let memory_unique_non_target_count = historical_reports
+            .iter()
+            .map(|report| report.memory_reuse_summary.memory_unique_non_target_count)
+            .sum::<usize>();
+
+        if memory_candidate_count == 0 {
+            push_research_action(
+                &mut actions,
+                "prove_memory_reuse",
+                3,
+                "product_proof",
+                "No embedded corpus report has fresh approved memory candidates, so memory reuse lift is unproven.",
+            );
+        } else if memory_unique_target_hit_count > 0 {
+            push_research_action(
+                &mut actions,
+                "evaluate_memory_reuse_lift",
+                2,
+                "product_proof",
+                "Embedded corpus reports include memory target hits that are absent from lexical baseline evidence.",
+            );
+        } else if memory_unique_non_target_count > 0 {
+            push_research_action(
+                &mut actions,
+                "reduce_memory_retrieval_noise",
+                2,
+                "product_proof",
+                "Embedded corpus reports include unique memory non-targets without unique target-hit evidence.",
+            );
+        }
     }
 
     if release_gate.default_promotion_allowed && actions.is_empty() {
@@ -4366,6 +4429,7 @@ pub fn evaluate_historical_commits(
     let context_area_pressure_summary = context_area_pressure_summary(&commits);
     let context_area_next_read_summary = context_area_next_read_summary(&commits);
     let candidate_coverage_summary = candidate_coverage_summary(&commits);
+    let memory_reuse_summary = memory_reuse_summary(&commits);
     let runtime = historical_eval_runtime_summary(
         &commits,
         elapsed_millis(eval_started),
@@ -4404,6 +4468,7 @@ pub fn evaluate_historical_commits(
         context_area_pressure_summary,
         context_area_next_read_summary,
         candidate_coverage_summary,
+        memory_reuse_summary,
         recommended_research_actions: Vec::new(),
         file_recall_at_5,
         file_recall_at_10,
@@ -4520,6 +4585,48 @@ fn historical_recommended_research_actions(
             "historical_eval",
             "Some misses are recoverable through broader agent evidence but absent from progressive next-read paths.",
         );
+    }
+
+    if report.memory_reuse_summary.memory_candidate_count == 0 {
+        push_research_action(
+            &mut actions,
+            "collect_or_approve_experience_memory",
+            3,
+            "historical_eval",
+            "No fresh approved memory candidates contributed to this historical evaluation range.",
+        );
+    } else {
+        if report.memory_reuse_summary.memory_unique_target_hit_count > 0 {
+            push_research_action(
+                &mut actions,
+                "evaluate_memory_reuse_lift",
+                2,
+                "historical_eval",
+                "Memory contributed retrieval-target hits that were absent from the lexical baseline.",
+            );
+        }
+        if report.memory_reuse_summary.memory_unique_target_hit_count == 0
+            && report.memory_reuse_summary.memory_unique_non_target_count > 0
+        {
+            push_research_action(
+                &mut actions,
+                "reduce_memory_retrieval_noise",
+                2,
+                "historical_eval",
+                "Memory contributed unique non-target files without unique target hits in this range.",
+            );
+        }
+        if report.memory_reuse_summary.memory_target_missed_at_10_count
+            > report.memory_reuse_summary.memory_target_hit_at_10_count
+        {
+            push_research_action(
+                &mut actions,
+                "improve_memory_selection_policy",
+                3,
+                "historical_eval",
+                "Memory candidates were present, but memory missed more retrieval targets than it hit.",
+            );
+        }
     }
 
     if report.effective_validation_recall_at_10 < 1.0
@@ -7576,6 +7683,64 @@ fn candidate_coverage_summary(commits: &[HistoricalCommitEval]) -> CandidateCove
     summary
 }
 
+fn memory_reuse_summary(commits: &[HistoricalCommitEval]) -> MemoryReuseSummary {
+    let mut summary = MemoryReuseSummary {
+        source_text_logged: false,
+        ..MemoryReuseSummary::default()
+    };
+    for commit in commits {
+        let memory_files = signal_ranking_for_commit(commit, &RetrievalSignalKind::Memory)
+            .into_iter()
+            .collect::<BTreeSet<_>>();
+        if memory_files.is_empty() {
+            continue;
+        }
+        let target_files = commit
+            .retrieval_target_files
+            .iter()
+            .cloned()
+            .collect::<BTreeSet<_>>();
+        let lexical_files = commit
+            .lexical_baseline_files
+            .iter()
+            .cloned()
+            .collect::<BTreeSet<_>>();
+        let memory_target_hits = memory_files
+            .intersection(&target_files)
+            .cloned()
+            .collect::<BTreeSet<_>>();
+        let memory_unique_target_hits = memory_target_hits
+            .difference(&lexical_files)
+            .cloned()
+            .collect::<BTreeSet<_>>();
+        let memory_unique_non_targets = memory_files
+            .difference(&target_files)
+            .filter(|path| !lexical_files.contains(*path))
+            .count();
+
+        summary.commits_with_memory_candidates += 1;
+        summary.memory_candidate_count += memory_files.len();
+        summary.memory_target_hit_at_10_count += memory_target_hits.len();
+        summary.memory_target_missed_at_10_count +=
+            target_files.difference(&memory_target_hits).count();
+        summary.memory_unique_target_hit_count += memory_unique_target_hits.len();
+        summary.memory_unique_non_target_count += memory_unique_non_targets;
+
+        for profile in commit
+            .selected_signal_profiles
+            .iter()
+            .filter(|profile| profile.signal == RetrievalSignalKind::Memory)
+        {
+            summary.memory_selected_at_10_count += profile.selected_at_10_count;
+            *summary
+                .selected_role_counts
+                .entry(file_role_label(&profile.role).to_string())
+                .or_insert(0) += profile.selected_at_10_count;
+        }
+    }
+    summary
+}
+
 fn file_role_label(role: &FileRole) -> &'static str {
     match role {
         FileRole::Source => "source",
@@ -9062,6 +9227,58 @@ mod tests {
         );
         assert_eq!(diagnostics[1].severity, DiagnosticSeverity::Warning);
         assert_eq!(diagnostics[1].paths, vec!["src/no-signal.ts".to_string()]);
+    }
+
+    #[test]
+    fn memory_reuse_summary_counts_unique_memory_target_hits() {
+        let mut report = empty_historical_eval_report("memory");
+        let commit = &mut report.commits[0];
+        commit.retrieval_target_files = vec![
+            "src/payments/handler.ts".to_string(),
+            "src/payments/signature.ts".to_string(),
+        ];
+        commit.lexical_baseline_files = vec!["src/payments/signature.ts".to_string()];
+        commit.signal_baseline_files = vec![HistoricalSignalRanking {
+            signal: RetrievalSignalKind::Memory,
+            files: vec![
+                "src/payments/handler.ts".to_string(),
+                "docs/checkout.md".to_string(),
+            ],
+        }];
+        commit.selected_signal_profiles = vec![
+            HistoricalSelectedSignalProfile {
+                signal: RetrievalSignalKind::Memory,
+                role: FileRole::Source,
+                selected_at_10_count: 1,
+                retrieval_target_selected_at_10_count: 1,
+            },
+            HistoricalSelectedSignalProfile {
+                signal: RetrievalSignalKind::Memory,
+                role: FileRole::Docs,
+                selected_at_10_count: 1,
+                retrieval_target_selected_at_10_count: 0,
+            },
+        ];
+
+        let summary = memory_reuse_summary(&report.commits);
+
+        assert_eq!(summary.commits_with_memory_candidates, 1);
+        assert_eq!(summary.memory_candidate_count, 2);
+        assert_eq!(summary.memory_selected_at_10_count, 2);
+        assert_eq!(summary.memory_target_hit_at_10_count, 1);
+        assert_eq!(summary.memory_target_missed_at_10_count, 1);
+        assert_eq!(summary.memory_unique_target_hit_count, 1);
+        assert_eq!(summary.memory_unique_non_target_count, 1);
+        assert_eq!(summary.selected_role_counts["source"], 1);
+        assert_eq!(summary.selected_role_counts["docs"], 1);
+        assert!(!summary.source_text_logged);
+
+        report.memory_reuse_summary = summary;
+        let actions = historical_recommended_research_actions(&report);
+        assert!(actions
+            .iter()
+            .any(|action| action.action == "evaluate_memory_reuse_lift"
+                && action.origin == "historical_eval"));
     }
 
     #[test]
@@ -10570,6 +10787,7 @@ mod tests {
             context_area_pressure_summary: ContextAreaPressureSummary::default(),
             context_area_next_read_summary: ContextAreaNextReadSummary::default(),
             candidate_coverage_summary: CandidateCoverageSummary::default(),
+            memory_reuse_summary: MemoryReuseSummary::default(),
             recommended_research_actions: Vec::new(),
             file_recall_at_5: 0.0,
             file_recall_at_10: 0.0,

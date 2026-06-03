@@ -5381,6 +5381,7 @@ fn render_historical_eval_report(report: &HistoricalEvalReport) -> String {
     output.push_str(&render_candidate_coverage_summary(
         &report.candidate_coverage_summary,
     ));
+    output.push_str(&render_memory_reuse_summary(&report.memory_reuse_summary));
     output.push_str(&render_compiler_research_actions(
         &report.recommended_research_actions,
     ));
@@ -5714,6 +5715,28 @@ fn render_candidate_coverage_summary(
             .collect::<Vec<_>>()
             .join(", ");
         output.push_str(&format!("- Top candidate-recoverable areas: `{areas}`\n"));
+    }
+    output.push('\n');
+    output
+}
+
+fn render_memory_reuse_summary(summary: &ctxhelm_compiler::MemoryReuseSummary) -> String {
+    let mut output = format!(
+        "- Memory reuse candidates: commits `{}`, candidates `{}`, selected@10 `{}`\n- Memory reuse target hits@10: `{}`, missed targets@10 while memory active `{}`\n- Memory reuse unique target hits: `{}`\n- Memory reuse unique non-targets: `{}`\n- Memory reuse source-free: `{}`\n",
+        summary.commits_with_memory_candidates,
+        summary.memory_candidate_count,
+        summary.memory_selected_at_10_count,
+        summary.memory_target_hit_at_10_count,
+        summary.memory_target_missed_at_10_count,
+        summary.memory_unique_target_hit_count,
+        summary.memory_unique_non_target_count,
+        !summary.source_text_logged
+    );
+    if !summary.selected_role_counts.is_empty() {
+        output.push_str(&format!(
+            "- Memory reuse selected roles: `{}`\n",
+            render_count_map(&summary.selected_role_counts)
+        ));
     }
     output.push('\n');
     output
@@ -6603,6 +6626,17 @@ mod tests {
                 ],
                 source_text_logged: false,
             },
+            memory_reuse_summary: ctxhelm_compiler::MemoryReuseSummary {
+                commits_with_memory_candidates: 1,
+                memory_candidate_count: 2,
+                memory_selected_at_10_count: 1,
+                memory_target_hit_at_10_count: 1,
+                memory_target_missed_at_10_count: 0,
+                memory_unique_target_hit_count: 1,
+                memory_unique_non_target_count: 1,
+                selected_role_counts: BTreeMap::from([("source".to_string(), 1)]),
+                source_text_logged: false,
+            },
             recommended_research_actions: vec![
                 ctxhelm_compiler::RecommendedResearchAction {
                     action: "improve_candidate_generation".to_string(),
@@ -6731,6 +6765,10 @@ mod tests {
         assert!(markdown.contains("Candidate-recoverable signals: `co_change=1, dependency=1`"));
         assert!(markdown.contains("No-candidate roles: `test=1`"));
         assert!(markdown.contains("Top candidate-recoverable areas: `src/auth=1`"));
+        assert!(markdown
+            .contains("Memory reuse candidates: commits `1`, candidates `2`, selected@10 `1`"));
+        assert!(markdown.contains("Memory reuse unique target hits: `1`"));
+        assert!(markdown.contains("Memory reuse selected roles: `source=1`"));
         assert!(markdown.contains("Recommended R&D Actions"));
         assert!(markdown.contains("`improve_candidate_generation` priority `1`"));
         assert!(markdown.contains("`improve_ranking_or_budget_allocation` priority `2`"));

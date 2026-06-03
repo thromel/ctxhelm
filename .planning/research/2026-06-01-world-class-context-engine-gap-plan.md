@@ -108,6 +108,13 @@ Success gate:
   precision, or runtime on related tasks. If neutral or harmful, keep them
   opt-in and diagnostic only.
 
+Status: Phase 214 adds source-free `memoryReuseSummary` to historical eval
+reports and memory-aware `recommendedResearchActions` to historical and
+product-proof reports. This does not yet prove memory improves end-to-end agent
+outcomes, but it creates the required measurement surface: active memory
+candidates, selected memory evidence, target hits/misses, unique target hits
+beyond lexical, unique non-targets, and selected memory roles.
+
 ### 3. Semantic/Embedding Signal Is Wired But Not Driving Lift
 
 The current product lift comes from hybrid ranking, graph/test/history/context
