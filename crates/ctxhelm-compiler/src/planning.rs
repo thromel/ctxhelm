@@ -5,11 +5,11 @@ use crate::ranking::{
 };
 use ctxhelm_core::{
     context_area_for_path, context_area_resource_uri, Command, ContextArea, ContextPlan,
-    Diagnostic, DiagnosticSeverity, FileRole, FusionControlSummary, MemoryCard, MemoryFreshness,
-    MemoryReviewStatus, PackBudget, PackOption, PrivacyStatus, ProviderDecisionStatus,
-    QueryConstructionTrace, QueryFacet, QueryFacetKind, RetrievalCandidate, RetrievalCandidateKind,
-    RetrievalEvidence, RetrievalSignalKind, RetrievalSignalScore, RetrieverQuerySet, RiskFlag,
-    SelectedMemory, TargetFile, TaskType,
+    Diagnostic, DiagnosticSeverity, FileRole, FusionControlSummary, InspectionPressureBreakdown,
+    MemoryCard, MemoryFreshness, MemoryReviewStatus, PackBudget, PackOption, PrivacyStatus,
+    ProviderDecisionStatus, QueryConstructionTrace, QueryFacet, QueryFacetKind, RetrievalCandidate,
+    RetrievalCandidateKind, RetrievalEvidence, RetrievalSignalKind, RetrievalSignalScore,
+    RetrieverQuerySet, RiskFlag, SelectedMemory, TargetFile, TaskType,
 };
 use ctxhelm_index::{
     co_change_hints_report, current_diff_summary_report, lexical_search_report, list_memory_cards,
@@ -585,6 +585,9 @@ fn context_areas_for_plan(
                     accumulator.candidate_count,
                 ),
                 inspection_pressure: context_area_inspection_pressure(&accumulator),
+                inspection_pressure_breakdown: context_area_inspection_pressure_breakdown(
+                    &accumulator,
+                ),
             };
             RankedContextArea {
                 context_area,
@@ -654,6 +657,12 @@ fn context_area_coverage_percent(selected_count: usize, candidate_count: usize) 
 }
 
 fn context_area_inspection_pressure(accumulator: &AreaAccumulator) -> usize {
+    context_area_inspection_pressure_breakdown(accumulator).total
+}
+
+fn context_area_inspection_pressure_breakdown(
+    accumulator: &AreaAccumulator,
+) -> InspectionPressureBreakdown {
     let unselected_source_like = accumulator
         .source_like_count()
         .saturating_sub(accumulator.selected_source_like_count());
@@ -663,9 +672,21 @@ fn context_area_inspection_pressure(accumulator: &AreaAccumulator) -> usize {
     let unselected_docs = accumulator
         .docs_count
         .saturating_sub(accumulator.selected_docs_count);
-    unselected_source_like.saturating_mul(3)
-        + unselected_validation.saturating_mul(2)
-        + unselected_docs
+    let source_like_weight = 3usize;
+    let validation_weight = 2usize;
+    let docs_weight = 1usize;
+    InspectionPressureBreakdown {
+        source_like_unselected: unselected_source_like,
+        validation_unselected: unselected_validation,
+        docs_unselected: unselected_docs,
+        source_like_weight,
+        validation_weight,
+        docs_weight,
+        total: unselected_source_like
+            .saturating_mul(source_like_weight)
+            .saturating_add(unselected_validation.saturating_mul(validation_weight))
+            .saturating_add(unselected_docs.saturating_mul(docs_weight)),
+    }
 }
 
 fn context_area_reason(accumulator: &AreaAccumulator, multi_area_task: bool) -> String {
@@ -2403,6 +2424,9 @@ mod tests {
             docs_area.inspection_pressure, 2,
             "docs-only zero-selected areas should carry bounded inspection pressure"
         );
+        assert_eq!(docs_area.inspection_pressure_breakdown.docs_unselected, 2);
+        assert_eq!(docs_area.inspection_pressure_breakdown.docs_weight, 1);
+        assert_eq!(docs_area.inspection_pressure_breakdown.total, 2);
         assert_eq!(
             docs_area.role_counts.get("docs").copied(),
             Some(2),

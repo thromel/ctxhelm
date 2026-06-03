@@ -1031,9 +1031,10 @@ fn render_context_areas(plan: &ContextPlan) -> String {
                         format!("resource `{}`", area.resource_uri)
                     };
                     format!(
-                        "- `{}`: pressure {}, coverage {}%, next reads {} ({})",
+                        "- `{}`: pressure {} ({}), coverage {}%, next reads {} ({})",
                         area.area,
                         area.inspection_pressure,
+                        render_inspection_pressure_breakdown(&area.inspection_pressure_breakdown),
                         area.coverage_percent,
                         next_reads,
                         resource
@@ -1076,12 +1077,15 @@ fn render_context_areas(plan: &ContextPlan) -> String {
                 let role_counts = render_role_counts(&area.role_counts);
                 let selected_role_counts = render_role_counts(&area.selected_role_counts);
                 let signal_counts = render_role_counts(&area.signal_counts);
+                let pressure_breakdown =
+                    render_inspection_pressure_breakdown(&area.inspection_pressure_breakdown);
                 format!(
-                    "- `{}`: {} Coverage: {}% selected, pressure {}. Signals: {}. Role counts: {}. Selected roles: {}. Representative paths: {}. Next reads: {}. Resource: {}",
+                    "- `{}`: {} Coverage: {}% selected, pressure {} ({}). Signals: {}. Role counts: {}. Selected roles: {}. Representative paths: {}. Next reads: {}. Resource: {}",
                     area.area,
                     area.reason,
                     area.coverage_percent,
                     area.inspection_pressure,
+                    pressure_breakdown,
                     signal_counts,
                     role_counts,
                     selected_role_counts,
@@ -1094,6 +1098,20 @@ fn render_context_areas(plan: &ContextPlan) -> String {
             .join("\n"),
     );
     output
+}
+
+fn render_inspection_pressure_breakdown(
+    breakdown: &ctxhelm_core::InspectionPressureBreakdown,
+) -> String {
+    format!(
+        "source_like={}x{}, validation={}x{}, docs={}x{}",
+        breakdown.source_like_unselected,
+        breakdown.source_like_weight,
+        breakdown.validation_unselected,
+        breakdown.validation_weight,
+        breakdown.docs_unselected,
+        breakdown.docs_weight
+    )
 }
 
 fn render_role_counts(counts: &std::collections::BTreeMap<String, usize>) -> String {

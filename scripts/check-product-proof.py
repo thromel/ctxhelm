@@ -83,6 +83,71 @@ def validate_resource_backed_gap_summaries(report: dict) -> None:
             )
 
 
+def iter_context_area_lists(value):
+    if isinstance(value, dict):
+        areas = value.get("contextAreas")
+        if isinstance(areas, list):
+            yield areas
+        for child in value.values():
+            yield from iter_context_area_lists(child)
+    elif isinstance(value, list):
+        for child in value:
+            yield from iter_context_area_lists(child)
+
+
+def validate_context_area_pressure_contract(report: dict) -> None:
+    for areas in iter_context_area_lists(report):
+        for area in areas:
+            if not isinstance(area, dict):
+                fail("contextAreas contained a non-object entry")
+            area_name = area.get("area", "<unknown>")
+            for field in ("coveragePercent", "inspectionPressure"):
+                if not isinstance(area.get(field), int):
+                    fail(
+                        "context area was missing integer "
+                        + field
+                        + ": "
+                        + str(area_name)
+                    )
+            breakdown = area.get("inspectionPressureBreakdown")
+            if not isinstance(breakdown, dict):
+                fail(
+                    "context area was missing inspectionPressureBreakdown: "
+                    + str(area_name)
+                )
+            for field in (
+                "sourceLikeUnselected",
+                "validationUnselected",
+                "docsUnselected",
+                "sourceLikeWeight",
+                "validationWeight",
+                "docsWeight",
+                "total",
+            ):
+                if not isinstance(breakdown.get(field), int):
+                    fail(
+                        "context area pressure breakdown was missing integer "
+                        + field
+                        + ": "
+                        + str(area_name)
+                    )
+            expected_total = (
+                breakdown["sourceLikeUnselected"] * breakdown["sourceLikeWeight"]
+                + breakdown["validationUnselected"] * breakdown["validationWeight"]
+                + breakdown["docsUnselected"] * breakdown["docsWeight"]
+            )
+            if breakdown["total"] != expected_total:
+                fail(
+                    "context area pressure breakdown total was inconsistent: "
+                    + str(area_name)
+                )
+            if area["inspectionPressure"] != breakdown["total"]:
+                fail(
+                    "context area inspectionPressure did not match breakdown total: "
+                    + str(area_name)
+                )
+
+
 BROAD_FIXED_CORPUS_ID = "phase92-area-aware-gap-taxonomy-2026-05-31"
 BROAD_FIXED_CORPUS_FLOORS = {
     "RefactoringMiner": {
@@ -158,6 +223,7 @@ def main() -> None:
     if not report.get("benchmarkReport", {}).get("privacyStatus", {}).get("localOnly"):
         fail("embedded benchmark privacyStatus.localOnly was not true")
     validate_resource_backed_gap_summaries(report)
+    validate_context_area_pressure_contract(report)
     validate_broad_fixed_corpus_floors(report)
     if not report.get("headlineMetrics"):
         fail("product proof headlineMetrics were empty")

@@ -368,6 +368,14 @@ zero-selected areas by pressure so agents can prioritize progressive native
 reads without changing target-file budget. The fresh four-repo proof promotes
 with Phase 189 file/source/test/context-area metrics unchanged.
 
+Phase 191 makes context-area pressure explainable. Prepared plans now include
+`inspectionPressureBreakdown`, packs render the source-like/validation/docs
+pressure split, retrieval-gap summaries carry the same breakdown when a
+task-conditioned area profile is available, and `scripts/check-product-proof.py`
+validates emitted pressure totals. The fresh four-repo proof promotes with Phase
+190 metrics unchanged and validates 144 context-area entries with zero invalid
+breakdowns.
+
 The optional real-client evidence wrappers are:
 
 - `scripts/smoke-codex-mcp.sh`

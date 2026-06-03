@@ -8,8 +8,8 @@ use crate::policy::{provider_policy_report, reranker_decision, semantic_provider
 use ctxhelm_core::{
     context_area_for_path, context_area_resource_uri, CandidateFeatureExport,
     CandidateFeatureLabel, CandidateFeatureRow, CandidateFeatureSource, ContextArea, ContextPack,
-    ContextPlan, Diagnostic, DiagnosticSeverity, EvalTrace, FileRole, PackBudget,
-    PolicyQualityReport, PrecisionStatusReport, PrivacyStatus, ProviderDecisionStatus,
+    ContextPlan, Diagnostic, DiagnosticSeverity, EvalTrace, FileRole, InspectionPressureBreakdown,
+    PackBudget, PolicyQualityReport, PrecisionStatusReport, PrivacyStatus, ProviderDecisionStatus,
     ProviderPolicyReport, QueryConstructionTrace, RetrievalCandidate, RetrievalCandidateKind,
     RetrievalHealthGapFamily, RetrievalHealthMetric, RetrievalHealthReport,
     RetrievalHealthSignalContribution, RetrievalHealthTokenRoi, RetrievalSignalKind, TaskType,
@@ -452,6 +452,11 @@ pub struct RetrievalGapSummary {
     pub context_area_selected_role_counts: BTreeMap<String, usize>,
     #[serde(default, skip_serializing_if = "is_zero")]
     pub context_area_unselected_count: usize,
+    #[serde(
+        default,
+        skip_serializing_if = "inspection_pressure_breakdown_is_empty"
+    )]
+    pub context_area_inspection_pressure_breakdown: InspectionPressureBreakdown,
     pub target_status: RetrievalGapTargetStatus,
     pub recommendation_area: RetrievalGapRecommendationArea,
     pub missed_count: usize,
@@ -7346,6 +7351,8 @@ fn retrieval_gap_summaries(
                     context_area_role_counts: context_area_profile.role_counts,
                     context_area_selected_role_counts: context_area_profile.selected_role_counts,
                     context_area_unselected_count: context_area_profile.unselected_count,
+                    context_area_inspection_pressure_breakdown: context_area_profile
+                        .inspection_pressure_breakdown,
                     target_status,
                     recommendation_area,
                     missed_count: 1,
@@ -7409,6 +7416,7 @@ struct ContextAreaProfileFields {
     role_counts: BTreeMap<String, usize>,
     selected_role_counts: BTreeMap<String, usize>,
     unselected_count: usize,
+    inspection_pressure_breakdown: InspectionPressureBreakdown,
 }
 
 fn context_area_profile_fields(profile: Option<&ContextArea>) -> ContextAreaProfileFields {
@@ -7418,6 +7426,7 @@ fn context_area_profile_fields(profile: Option<&ContextArea>) -> ContextAreaProf
             role_counts: area.role_counts.clone(),
             selected_role_counts: area.selected_role_counts.clone(),
             unselected_count: area.unselected_count,
+            inspection_pressure_breakdown: area.inspection_pressure_breakdown.clone(),
         })
         .unwrap_or_default()
 }
@@ -7436,6 +7445,30 @@ fn merge_context_area_profile(summary: &mut RetrievalGapSummary, profile: Option
         &profile.selected_role_counts,
     );
     summary.context_area_unselected_count += profile.unselected_count;
+    merge_inspection_pressure_breakdown(
+        &mut summary.context_area_inspection_pressure_breakdown,
+        &profile.inspection_pressure_breakdown,
+    );
+}
+
+fn merge_inspection_pressure_breakdown(
+    target: &mut InspectionPressureBreakdown,
+    source: &InspectionPressureBreakdown,
+) {
+    target.source_like_unselected += source.source_like_unselected;
+    target.validation_unselected += source.validation_unselected;
+    target.docs_unselected += source.docs_unselected;
+    target.source_like_weight = source.source_like_weight;
+    target.validation_weight = source.validation_weight;
+    target.docs_weight = source.docs_weight;
+    target.total += source.total;
+}
+
+fn inspection_pressure_breakdown_is_empty(breakdown: &InspectionPressureBreakdown) -> bool {
+    breakdown.source_like_unselected == 0
+        && breakdown.validation_unselected == 0
+        && breakdown.docs_unselected == 0
+        && breakdown.total == 0
 }
 
 fn merge_count_maps(target: &mut BTreeMap<String, usize>, source: &BTreeMap<String, usize>) {
@@ -9378,6 +9411,15 @@ mod tests {
                 unselected_count: 2,
                 coverage_percent: 33,
                 inspection_pressure: 6,
+                inspection_pressure_breakdown: InspectionPressureBreakdown {
+                    source_like_unselected: 2,
+                    validation_unselected: 0,
+                    docs_unselected: 0,
+                    source_like_weight: 3,
+                    validation_weight: 2,
+                    docs_weight: 1,
+                    total: 6,
+                },
             }],
             confidence: 0.5,
             query_trace: None,
@@ -9441,6 +9483,18 @@ mod tests {
             Some(&1)
         );
         assert_eq!(summaries[0].context_area_unselected_count, 2);
+        assert_eq!(
+            summaries[0]
+                .context_area_inspection_pressure_breakdown
+                .source_like_unselected,
+            2
+        );
+        assert_eq!(
+            summaries[0]
+                .context_area_inspection_pressure_breakdown
+                .total,
+            6
+        );
         assert_eq!(
             summaries[0].next_read_paths,
             vec!["src/auth/session.ts", "src/auth/token.ts"]

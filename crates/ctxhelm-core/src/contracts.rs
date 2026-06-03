@@ -47,6 +47,39 @@ pub struct RelatedTest {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
+pub struct InspectionPressureBreakdown {
+    #[serde(default)]
+    pub source_like_unselected: usize,
+    #[serde(default)]
+    pub validation_unselected: usize,
+    #[serde(default)]
+    pub docs_unselected: usize,
+    #[serde(default)]
+    pub source_like_weight: usize,
+    #[serde(default)]
+    pub validation_weight: usize,
+    #[serde(default)]
+    pub docs_weight: usize,
+    #[serde(default)]
+    pub total: usize,
+}
+
+impl Default for InspectionPressureBreakdown {
+    fn default() -> Self {
+        Self {
+            source_like_unselected: 0,
+            validation_unselected: 0,
+            docs_unselected: 0,
+            source_like_weight: 3,
+            validation_weight: 2,
+            docs_weight: 1,
+            total: 0,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
 pub struct ContextArea {
     pub area: String,
     pub reason: String,
@@ -70,6 +103,8 @@ pub struct ContextArea {
     pub coverage_percent: u8,
     #[serde(default)]
     pub inspection_pressure: usize,
+    #[serde(default)]
+    pub inspection_pressure_breakdown: InspectionPressureBreakdown,
 }
 
 pub fn context_area_for_path(path: &str) -> String {
@@ -1657,6 +1692,7 @@ mod tests {
                 unselected_count: 0,
                 coverage_percent: 100,
                 inspection_pressure: 0,
+                inspection_pressure_breakdown: InspectionPressureBreakdown::default(),
             }],
             recommended_commands: vec![],
             pack_options: vec![PackOption {
@@ -1714,7 +1750,16 @@ mod tests {
                 "selectedCount": 1,
                 "unselectedCount": 0,
                 "coveragePercent": 100,
-                "inspectionPressure": 0
+                "inspectionPressure": 0,
+                "inspectionPressureBreakdown": {
+                    "sourceLikeUnselected": 0,
+                    "validationUnselected": 0,
+                    "docsUnselected": 0,
+                    "sourceLikeWeight": 3,
+                    "validationWeight": 2,
+                    "docsWeight": 1,
+                    "total": 0
+                }
             }],
             "recommendedCommands": [],
             "packOptions": [{
@@ -1877,6 +1922,7 @@ mod tests {
                 unselected_count: 0,
                 coverage_percent: 100,
                 inspection_pressure: 0,
+                inspection_pressure_breakdown: InspectionPressureBreakdown::default(),
             }],
             recommended_commands: vec![],
             pack_options: vec![],

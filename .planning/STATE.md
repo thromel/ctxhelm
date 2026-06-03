@@ -4,10 +4,10 @@ milestone: v2.5
 milestone_name: Production Retrieval Quality
 status: active
 last_updated: "2026-06-03T00:00:00Z"
-last_activity: 2026-06-03 -- Phase 190 adds context-area coverage and inspection pressure for progressive broad-area reads
+last_activity: 2026-06-03 -- Phase 191 adds source-free context-area pressure breakdowns for explainable progressive reads
 progress:
-  total_phases: 101
-  completed_phases: 101
+  total_phases: 102
+  completed_phases: 102
   total_plans: 7
   completed_plans: 7
   percent: 100
@@ -17,10 +17,10 @@ progress:
 
 ## Current Position
 
-Phase: 190 - Context Area Inspection Pressure
-Plan: 190-context-area-inspection-pressure
+Phase: 191 - Context Area Pressure Breakdown
+Plan: 191-context-area-pressure-breakdown
 Status: Complete
-Last activity: 2026-06-03 -- Phase 190 adds source-free `coveragePercent` and `inspectionPressure` to plan-level context areas and renders those signals into context-pack broad-area guidance. Fresh release-binary proof promotes from `/tmp/ctxhelm-rd/phase190-context-area-pressure-proof.json`; all four repositories keep Phase 189 file/source/test/context-area metrics unchanged while every sampled context area carries the new fields.
+Last activity: 2026-06-03 -- Phase 191 adds source-free `inspectionPressureBreakdown` to plan-level context areas, renders the source-like/validation/docs split in packs, propagates the breakdown into retrieval-gap summaries when task-conditioned area profiles are available, and release-gates the arithmetic in `scripts/check-product-proof.py`. Fresh release-binary proof promotes from `/tmp/ctxhelm-rd/phase191-area-pressure-breakdown-proof.json`; all four repositories keep Phase 190 file/source/test/context-area metrics unchanged, with 144 context-area entries and zero invalid breakdown totals.
 
 ## Project Reference
 
@@ -169,6 +169,7 @@ Planned phases:
 - Phase 188: Selected Signal Profiles (complete follow-up)
 - Phase 189: Balanced Broad History And Governance Budget (complete follow-up)
 - Phase 190: Context Area Inspection Pressure (complete follow-up)
+- Phase 191: Context Area Pressure Breakdown (complete follow-up)
 
 ## Last Completed Milestone
 

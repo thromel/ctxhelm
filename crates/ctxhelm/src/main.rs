@@ -5827,6 +5827,8 @@ mod tests {
                 context_area_role_counts: BTreeMap::new(),
                 context_area_selected_role_counts: BTreeMap::new(),
                 context_area_unselected_count: 0,
+                context_area_inspection_pressure_breakdown:
+                    ctxhelm_core::InspectionPressureBreakdown::default(),
                 target_status: ctxhelm_compiler::RetrievalGapTargetStatus::CurrentReachable,
                 recommendation_area: ctxhelm_compiler::RetrievalGapRecommendationArea::TestMapping,
                 missed_count: 2,

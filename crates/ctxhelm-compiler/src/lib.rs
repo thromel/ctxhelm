@@ -1068,6 +1068,15 @@ mod tests {
                 unselected_count: 2,
                 coverage_percent: 33,
                 inspection_pressure: 6,
+                inspection_pressure_breakdown: ctxhelm_core::InspectionPressureBreakdown {
+                    source_like_unselected: 2,
+                    validation_unselected: 0,
+                    docs_unselected: 0,
+                    source_like_weight: 3,
+                    validation_weight: 2,
+                    docs_weight: 1,
+                    total: 6,
+                },
             },
             ctxhelm_core::ContextArea {
                 area: "tests".to_string(),
@@ -1085,6 +1094,15 @@ mod tests {
                 unselected_count: 2,
                 coverage_percent: 0,
                 inspection_pressure: 4,
+                inspection_pressure_breakdown: ctxhelm_core::InspectionPressureBreakdown {
+                    source_like_unselected: 0,
+                    validation_unselected: 2,
+                    docs_unselected: 0,
+                    source_like_weight: 3,
+                    validation_weight: 2,
+                    docs_weight: 1,
+                    total: 4,
+                },
             },
         ];
 
@@ -1108,7 +1126,10 @@ mod tests {
         assert!(markdown.contains("`tests/lib_test.rs`"));
         assert!(markdown.contains("Next reads"));
         assert!(markdown.contains("Coverage: 33% selected, pressure 6"));
-        assert!(markdown.contains("pressure 4, coverage 0%"));
+        assert!(markdown.contains("source_like=2x3, validation=0x2, docs=0x1"));
+        assert!(markdown.contains("validation=2x2"));
+        assert!(markdown
+            .contains("pressure 4 (source_like=0x3, validation=2x2, docs=0x1), coverage 0%"));
         assert!(markdown.contains("Signals: dependency=2, lexical=1"));
         assert!(markdown.contains("Signals: related_test=2"));
         assert!(markdown.contains("Role counts: source=3"));
@@ -1925,6 +1946,8 @@ mod tests {
                     unselected_count: 0,
                     coverage_percent: 100,
                     inspection_pressure: 0,
+                    inspection_pressure_breakdown:
+                        ctxhelm_core::InspectionPressureBreakdown::default(),
                 }],
                 confidence: 0.8,
                 query_trace: None,
@@ -2248,6 +2271,16 @@ mod tests {
                 context_area_role_counts: BTreeMap::from([("source".to_string(), 3)]),
                 context_area_selected_role_counts: BTreeMap::from([("source".to_string(), 1)]),
                 context_area_unselected_count: 2,
+                context_area_inspection_pressure_breakdown:
+                    ctxhelm_core::InspectionPressureBreakdown {
+                        source_like_unselected: 2,
+                        validation_unselected: 0,
+                        docs_unselected: 0,
+                        source_like_weight: 3,
+                        validation_weight: 2,
+                        docs_weight: 1,
+                        total: 6,
+                    },
                 target_status: RetrievalGapTargetStatus::CurrentReachable,
                 recommendation_area: RetrievalGapRecommendationArea::LexicalRanking,
                 missed_count: 2,

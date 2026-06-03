@@ -777,6 +777,11 @@ Recommendation today:
   broad-area hints more actionable for progressive native reads without spending
   more top-10 target-file budget. The four-repo proof still promotes with Phase
   189 file/source/test/context-area metrics unchanged.
+- Phase 191 adds `inspectionPressureBreakdown` to plan-level `contextAreas`,
+  renders that source-like/validation/docs split in packs, and propagates it to
+  retrieval-gap summaries when area profiles are available. The product-proof
+  checker now validates emitted pressure arithmetic, and the four-repo proof
+  still promotes with Phase 190 metrics unchanged.
 - Treat cloud embeddings/reranking as disabled unless an explicit repo policy
   allows them.
 
