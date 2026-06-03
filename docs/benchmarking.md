@@ -799,6 +799,12 @@ Recommendation today:
   stronger local signals before weaker progressive reads. The four-repo proof
   still promotes with selected-file metrics unchanged while next-read recovery
   improves from `9 -> 10` on ctxhelm and `10 -> 14` on VeriSchema.
+- Phase 195 makes `nextReadPaths` budgets adaptive for high-pressure
+  source-like and validation-heavy context areas. Low-pressure areas stay at
+  four paths, while high-pressure areas can expose six or eight bounded
+  progressive reads. The four-repo proof still promotes with selected-file,
+  source, test, validation, and broad-area metrics unchanged while next-read
+  recovery improves from `10 -> 11` on ctxhelm and `14 -> 16` on VeriSchema.
 - Treat cloud embeddings/reranking as disabled unless an explicit repo policy
   allows them.
 

@@ -42,6 +42,8 @@ Phase 193 adds context-area next-read recovery summaries. The fresh release-bina
 
 Phase 194 orders context-area next-read paths by source-free role priority, signal priority, weighted signal score, confidence, and stable tie-breakers. The fresh release-binary proof promotes with core retrieval metrics unchanged while improving next-read recovery from `9 -> 10` on ctxhelm and `10 -> 14` on VeriSchema.
 
+Phase 195 makes context-area next-read budgets adaptive for high-pressure source-like and validation-heavy areas. The fresh release-binary proof promotes with selected-file/source/test/validation/broad-area metrics unchanged while improving next-read recovery from `10 -> 11` on ctxhelm and `14 -> 16` on VeriSchema.
+
 ## v2.5 Production Retrieval Quality
 
 ## Phases
@@ -49,7 +51,7 @@ Phase 194 orders context-area next-read paths by source-free role priority, sign
 **Phase Numbering:**
 
 - Integer phases (61, 62, 63, 64, 65): Planned v2.5 work
-- Phases 66-194: Production-readiness follow-ups from the original blocked proof and the channel-aware promotion path
+- Phases 66-195: Production-readiness follow-ups from the original blocked proof and the channel-aware promotion path
 - Decimal phases (61.1, 62.1): Urgent insertions if needed
 
 - [x] **Phase 61: Multi-Repo Quality Baselines** - Maintainers can run source-free paired baselines across RefactoringMiner and a second real repository with stable comparison artifacts.
@@ -168,6 +170,7 @@ Phase 194 orders context-area next-read paths by source-free role priority, sign
 - [x] **Phase 192: Context Area Pressure Summary** - Historical eval and product proof reports aggregate context-area pressure per repository.
 - [x] **Phase 193: Context Area Next-Read Recovery** - Historical eval and product proof reports quantify how often progressive next-read paths recover files missed by top-10 context.
 - [x] **Phase 194: Context Area Next-Read Ordering** - Context-area next-read paths prefer stronger source-free local signals before weaker progressive reads.
+- [x] **Phase 195: Adaptive Context Area Next-Read Budget** - High-pressure source-like and validation-heavy context areas expose a larger bounded progressive next-read budget.
 - [x] **Phase 162: Feature-Enabled Local Fastembed Gate Proof** - A feature-enabled `local_fastembed` gate run on clean RefactoringMiner now proves the production-local backend works end-to-end, but remains held because it adds no semantic-only target hits and is still slower than default; the gate emits a source-free diagnostic for that condition.
 - [x] **Phase 163: Persisted Semantic Vector Reuse** - Fresh CLI/MCP processes can reuse persisted source-free semantic document vectors instead of recomputing every candidate vector.
 - [x] **Phase 164: Global Semantic Vector Candidates And Write-Through** - Semantic search can include persisted vector candidates outside the lexical prefilter and write through newly embedded candidate misses.

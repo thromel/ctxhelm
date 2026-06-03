@@ -4,10 +4,10 @@ milestone: v2.5
 milestone_name: Production Retrieval Quality
 status: active
 last_updated: "2026-06-03T00:00:00Z"
-last_activity: 2026-06-03 -- Phase 194 orders context-area next-read paths by source-free signal strength
+last_activity: 2026-06-03 -- Phase 195 expands context-area next-read budgets for high-pressure areas
 progress:
-  total_phases: 105
-  completed_phases: 105
+  total_phases: 106
+  completed_phases: 106
   total_plans: 7
   completed_plans: 7
   percent: 100
@@ -17,10 +17,10 @@ progress:
 
 ## Current Position
 
-Phase: 194 - Context Area Next-Read Ordering
-Plan: 194-context-area-next-read-order
+Phase: 195 - Adaptive Context Area Next-Read Budget
+Plan: 195-adaptive-context-area-next-read-budget
 Status: Complete
-Last activity: 2026-06-03 -- Phase 194 orders context-area `nextReadPaths` by source-free role priority, signal priority, weighted signal score, confidence, and stable tie-breakers. Fresh release-binary proof promotes from `/tmp/ctxhelm-rd/phase194-next-read-order-proof.json`; core Phase 193 retrieval metrics stay unchanged while next-read recovery improves from `9 -> 10` on ctxhelm and `10 -> 14` on VeriSchema.
+Last activity: 2026-06-03 -- Phase 195 makes `nextReadPaths` adaptive for high-pressure source-like and validation-heavy context areas. Fresh release-binary proof promotes from `/tmp/ctxhelm-rd/phase195-adaptive-next-read-proof.json`; selected-file/source/test/validation/broad-area metrics stay unchanged from Phase 194 while next-read recovery improves from `10 -> 11` on ctxhelm and `14 -> 16` on VeriSchema.
 
 ## Project Reference
 
@@ -173,6 +173,7 @@ Planned phases:
 - Phase 192: Context Area Pressure Summary (complete follow-up)
 - Phase 193: Context Area Next-Read Recovery (complete follow-up)
 - Phase 194: Context Area Next-Read Ordering (complete follow-up)
+- Phase 195: Adaptive Context Area Next-Read Budget (complete follow-up)
 
 ## Last Completed Milestone
 

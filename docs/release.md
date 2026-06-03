@@ -403,6 +403,13 @@ truncated. The fresh four-repo proof promotes with Phase 193 metrics unchanged
 while next-read recovery improves to `10 / 12` on ctxhelm and `14 / 39` on
 VeriSchema.
 
+Phase 195 makes context-area next-read budgets adaptive. Low-pressure areas
+still expose four `nextReadPaths`, while high-pressure source-like or
+validation-heavy areas can expose six or eight bounded progressive reads. The
+fresh four-repo proof promotes with selected-file/source/test/validation and
+broad-area metrics unchanged while next-read recovery improves to `11 / 12` on
+ctxhelm and `16 / 39` on VeriSchema.
+
 The optional real-client evidence wrappers are:
 
 - `scripts/smoke-codex-mcp.sh`

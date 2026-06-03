@@ -808,11 +808,27 @@ impl AreaAccumulator {
                 .then_with(|| left.insertion_index.cmp(&right.insertion_index))
                 .then_with(|| left.path.cmp(&right.path))
         });
+        let limit = self.next_read_limit();
         candidates
             .into_iter()
-            .take(4)
+            .take(limit)
             .map(|candidate| candidate.path)
             .collect()
+    }
+
+    fn next_read_limit(&self) -> usize {
+        let source_like_unselected = self
+            .source_like_count()
+            .saturating_sub(self.selected_source_like_count());
+        let validation_unselected = self.test_count.saturating_sub(self.selected_test_count);
+
+        if source_like_unselected >= 12 || validation_unselected >= 8 {
+            8
+        } else if source_like_unselected >= 6 || validation_unselected >= 4 {
+            6
+        } else {
+            4
+        }
     }
 
     fn source_like_count(&self) -> usize {
@@ -2690,6 +2706,60 @@ mod tests {
             ],
             "next reads should use source-free signal priority before insertion order"
         );
+    }
+
+    #[test]
+    fn context_area_next_reads_expand_for_high_pressure_source_areas() {
+        let mut retrieval_candidates = vec![RetrievalCandidate {
+            kind: RetrievalCandidateKind::File,
+            path: Some("src/auth/session.ts".to_string()),
+            role: Some(FileRole::Source),
+            reason_code: "selected source".to_string(),
+            confidence: 0.9,
+            signal_scores: vec![RetrievalSignalScore {
+                signal: RetrievalSignalKind::Lexical,
+                score: 0.9,
+                weight: 1.0,
+            }],
+            evidence: vec![],
+        }];
+        for index in 0..12 {
+            retrieval_candidates.push(RetrievalCandidate {
+                kind: RetrievalCandidateKind::File,
+                path: Some(format!("src/auth/neighbor_{index}.ts")),
+                role: Some(FileRole::Source),
+                reason_code: "co_change_neighbor".to_string(),
+                confidence: 0.7,
+                signal_scores: vec![RetrievalSignalScore {
+                    signal: RetrievalSignalKind::CoChange,
+                    score: 0.7,
+                    weight: 1.35,
+                }],
+                evidence: vec![],
+            });
+        }
+        let selection = crate::ranking::RankedSelection {
+            retrieval_candidates,
+            target_files: vec![TargetFile {
+                path: "src/auth/session.ts".to_string(),
+                reason: "selected source".to_string(),
+                line_range: None,
+                confidence: 0.9,
+                attribution: vec![],
+            }],
+            related_tests: vec![],
+            recommended_commands: vec![],
+        };
+
+        let areas = context_areas_for_plan(&selection, false);
+
+        assert_eq!(areas.len(), 1);
+        assert_eq!(
+            areas[0].next_read_paths.len(),
+            8,
+            "high-pressure source areas should expose a larger progressive read budget"
+        );
+        assert_eq!(areas[0].next_read_paths[0], "src/auth/neighbor_0.ts");
     }
 
     #[test]
