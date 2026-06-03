@@ -70,6 +70,8 @@ Phase 207 hardens paired real-agent comparability. The agent-run harness now rec
 
 Phase 208 classifies real-client availability failures source-free. A Phase 207 Claude Code probe hit a session rate limit before any lane could read files or call ctxhelm. The harness now records `clientFailureKind`, `clientApiErrorStatus`, and `rateLimitObserved` per lane, and single-run/suite reports aggregate client failures and rate limits. This keeps rate limits, API errors, timeouts, and generic non-zero client exits separate from ctxhelm retrieval, pack, and consumption behavior without storing raw client output.
 
+Phase 209 validates required ctxhelm call arguments before counting a lane as comparable. `prepare_task` required calls must include the explicit repo and task, while `get_pack` required calls must include the explicit repo, task, `budget = "brief"`, `format = "json"`, and `recordTrace = false`. Reports now expose required call specs, invalid required-call reasons, invalid counts, and `invalidRequiredCtxhelmCallsObserved`, preventing wrong-repo or malformed ctxhelm calls from being treated as outcome evidence.
+
 ## v2.5 Production Retrieval Quality
 
 ## Phases
@@ -77,7 +79,7 @@ Phase 208 classifies real-client availability failures source-free. A Phase 207 
 **Phase Numbering:**
 
 - Integer phases (61, 62, 63, 64, 65): Planned v2.5 work
-- Phases 66-208: Production-readiness follow-ups from the original blocked proof and the channel-aware promotion path
+- Phases 66-209: Production-readiness follow-ups from the original blocked proof and the channel-aware promotion path
 - Decimal phases (61.1, 62.1): Urgent insertions if needed
 
 - [x] **Phase 61: Multi-Repo Quality Baselines** - Maintainers can run source-free paired baselines across RefactoringMiner and a second real repository with stable comparison artifacts.
@@ -210,6 +212,7 @@ Phase 208 classifies real-client availability failures source-free. A Phase 207 
 - [x] **Phase 206: Consumption Guidance Hardening** - prepare_task text, generated guidance, and generated packs tell agents to read returned targets natively because path discovery and pack snippets are not file consumption.
 - [x] **Phase 207: Agent-Run Lane Comparability** - Paired agent-run reports require expected ctxhelm calls per lane and mark comparisons ineligible when a ctxhelm-assisted lane failed or skipped the required MCP path.
 - [x] **Phase 208: Agent-Run Client Failure Classification** - Paired agent-run reports classify rate limits, API errors, timeouts, and generic non-zero client exits without storing raw client output.
+- [x] **Phase 209: Agent-Run Required Call Argument Validation** - Required ctxhelm calls must carry explicit repo/task and brief-pack arguments before a lane can become comparable.
 - [x] **Phase 162: Feature-Enabled Local Fastembed Gate Proof** - A feature-enabled `local_fastembed` gate run on clean RefactoringMiner now proves the production-local backend works end-to-end, but remains held because it adds no semantic-only target hits and is still slower than default; the gate emits a source-free diagnostic for that condition.
 - [x] **Phase 163: Persisted Semantic Vector Reuse** - Fresh CLI/MCP processes can reuse persisted source-free semantic document vectors instead of recomputing every candidate vector.
 - [x] **Phase 164: Global Semantic Vector Candidates And Write-Through** - Semantic search can include persisted vector candidates outside the lexical prefilter and write through newly embedded candidate misses.

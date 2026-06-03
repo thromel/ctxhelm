@@ -906,6 +906,14 @@ Recommendation today:
   client failures or rate limits were observed. This keeps client availability
   failures separate from ctxhelm retrieval, pack, and consumption behavior
   without storing raw client output.
+- Phase 209 validates required ctxhelm call arguments before treating a lane as
+  comparable. `prepare_task` is only a valid required call when the sanitized
+  request proves the explicit repo and task were passed. `get_pack` is only valid
+  when it carries the explicit repo, task, `budget = "brief"`,
+  `format = "json"`, and `recordTrace = false`. Reports now expose
+  `requiredCtxhelmCallSpecs`, `invalidRequiredCtxhelmCalls`, invalid-call counts,
+  and `invalidRequiredCtxhelmCallsObserved`, so wrong-repo or malformed MCP calls
+  are not counted as ctxhelm outcome evidence.
 - Treat cloud embeddings/reranking as disabled unless an explicit repo policy
   allows them.
 

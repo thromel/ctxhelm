@@ -219,6 +219,7 @@ lane_totals = defaultdict(lambda: {
     "requiredCtxhelmCallCount": 0,
     "observedRequiredCtxhelmCallCount": 0,
     "missingRequiredCtxhelmCallCount": 0,
+    "invalidRequiredCtxhelmCallCount": 0,
     "clientFailureCount": 0,
     "rateLimitCount": 0,
     "readRoleCounts": defaultdict(int),
@@ -228,6 +229,7 @@ comparison = {
     "ctxhelmToolCallsObserved": False,
     "forbiddenToolCallsObserved": False,
     "missingRequiredCtxhelmCallsObserved": False,
+    "invalidRequiredCtxhelmCallsObserved": False,
     "clientFailuresObserved": False,
     "rateLimitsObserved": False,
     "comparisonEligibleCount": 0,
@@ -275,6 +277,10 @@ for entry in entries:
         comparison["missingRequiredCtxhelmCallsObserved"]
         or bool(task_comparison.get("missingRequiredCtxhelmCallsObserved", False))
     )
+    comparison["invalidRequiredCtxhelmCallsObserved"] = (
+        comparison["invalidRequiredCtxhelmCallsObserved"]
+        or bool(task_comparison.get("invalidRequiredCtxhelmCallsObserved", False))
+    )
     comparison["clientFailuresObserved"] = (
         comparison["clientFailuresObserved"]
         or bool(task_comparison.get("clientFailuresObserved", False))
@@ -312,6 +318,7 @@ for entry in entries:
         bucket["requiredCtxhelmCallCount"] += int(metrics.get("requiredCtxhelmCallCount", 0) or 0)
         bucket["observedRequiredCtxhelmCallCount"] += int(metrics.get("observedRequiredCtxhelmCallCount", 0) or 0)
         bucket["missingRequiredCtxhelmCallCount"] += int(metrics.get("missingRequiredCtxhelmCallCount", 0) or 0)
+        bucket["invalidRequiredCtxhelmCallCount"] += int(metrics.get("invalidRequiredCtxhelmCallCount", 0) or 0)
         bucket["clientFailureCount"] += 1 if lane.get("clientFailureKind") else 0
         bucket["rateLimitCount"] += 1 if lane.get("rateLimitObserved", False) else 0
         for role, count in (lane.get("readRoleCounts") or {}).items():
@@ -340,6 +347,7 @@ for lane_id, bucket in sorted(lane_totals.items()):
         "requiredCtxhelmCallCount": bucket["requiredCtxhelmCallCount"],
         "observedRequiredCtxhelmCallCount": bucket["observedRequiredCtxhelmCallCount"],
         "missingRequiredCtxhelmCallCount": bucket["missingRequiredCtxhelmCallCount"],
+        "invalidRequiredCtxhelmCallCount": bucket["invalidRequiredCtxhelmCallCount"],
         "clientFailureCount": bucket["clientFailureCount"],
         "rateLimitCount": bucket["rateLimitCount"],
         "readRoleCounts": dict(sorted(bucket["readRoleCounts"].items())),
@@ -367,6 +375,7 @@ payload = {
         if (
             comparison["forbiddenToolCallsObserved"]
             or comparison["missingRequiredCtxhelmCallsObserved"]
+            or comparison["invalidRequiredCtxhelmCallsObserved"]
             or comparison["clientFailuresObserved"]
             or (task_count and comparison_eligible_count == 0)
         )
@@ -396,6 +405,7 @@ payload = {
         "ctxhelmToolCallsObserved": comparison["ctxhelmToolCallsObserved"],
         "forbiddenToolCallsObserved": comparison["forbiddenToolCallsObserved"],
         "missingRequiredCtxhelmCallsObserved": comparison["missingRequiredCtxhelmCallsObserved"],
+        "invalidRequiredCtxhelmCallsObserved": comparison["invalidRequiredCtxhelmCallsObserved"],
         "clientFailuresObserved": comparison["clientFailuresObserved"],
         "rateLimitsObserved": comparison["rateLimitsObserved"],
         "ctxhelmUnderReadTargetsObserved": comparison["ctxhelmUnderReadTargetsObserved"],
@@ -456,12 +466,25 @@ import sys
 
 lane, mode, out, reason = sys.argv[1:]
 
-required_calls_by_mode = {
+required_call_specs_by_mode = {
     "baseline": [],
-    "plan": ["prepare_task"],
-    "brief": ["prepare_task", "get_pack"],
+    "plan": [
+        {"name": "prepare_task", "requiresRepo": True, "requiresTask": True},
+    ],
+    "brief": [
+        {"name": "prepare_task", "requiresRepo": True, "requiresTask": True},
+        {
+            "name": "get_pack",
+            "requiresRepo": True,
+            "requiresTask": True,
+            "budget": "brief",
+            "format": "json",
+            "recordTrace": False,
+        },
+    ],
 }
-required_calls = required_calls_by_mode.get(mode, [])
+required_call_specs = required_call_specs_by_mode.get(mode, [])
+required_calls = [spec["name"] for spec in required_call_specs]
 payload = {
     "lane": lane,
     "mode": mode,
@@ -483,10 +506,13 @@ payload = {
         "requiredCtxhelmCallCount": len(required_calls),
         "observedRequiredCtxhelmCallCount": 0,
         "missingRequiredCtxhelmCallCount": len(required_calls),
+        "invalidRequiredCtxhelmCallCount": 0,
     },
+    "requiredCtxhelmCallSpecs": required_call_specs,
     "requiredCtxhelmCalls": required_calls,
     "observedRequiredCtxhelmCalls": [],
     "missingRequiredCtxhelmCalls": required_calls,
+    "invalidRequiredCtxhelmCalls": [],
     "ctxhelmCallCompliance": "not_required" if not required_calls else "missing",
     "clientFailureKind": None,
     "clientApiErrorStatus": None,
@@ -790,6 +816,7 @@ if request_file.exists():
             "hasTask": "task" in arguments,
             "budget": arguments.get("budget"),
             "format": arguments.get("format"),
+            "recordTrace": arguments.get("recordTrace"),
         })
 
 evidence_files = set(read_files) | set(discovered_files)
@@ -805,23 +832,70 @@ irrelevant_reads = sorted(path for path in read_files if path not in targets)
 stderr_hash = hashlib.sha256(stderr_file.read_bytes()).hexdigest() if stderr_file.exists() else None
 events_hash = hashlib.sha256(events_file.read_bytes()).hexdigest() if events_file.exists() else None
 request_hash = hashlib.sha256(request_file.read_bytes()).hexdigest() if request_file.exists() else None
-required_calls_by_mode = {
+required_call_specs_by_mode = {
     "baseline": [],
-    "plan": ["prepare_task"],
-    "brief": ["prepare_task", "get_pack"],
+    "plan": [
+        {"name": "prepare_task", "requiresRepo": True, "requiresTask": True},
+    ],
+    "brief": [
+        {"name": "prepare_task", "requiresRepo": True, "requiresTask": True},
+        {
+            "name": "get_pack",
+            "requiresRepo": True,
+            "requiresTask": True,
+            "budget": "brief",
+            "format": "json",
+            "recordTrace": False,
+        },
+    ],
 }
-required_calls = required_calls_by_mode.get(mode, [])
-observed_call_names = [call.get("name") for call in ctxhelm_calls]
-observed_required_calls = [
-    name for name in required_calls if name in observed_call_names
-]
+required_call_specs = required_call_specs_by_mode.get(mode, [])
+required_calls = [spec["name"] for spec in required_call_specs]
+
+def invalid_reasons(call, spec):
+    reasons = []
+    if spec.get("requiresRepo") and not call.get("hasRepo", False):
+        reasons.append("repo")
+    if spec.get("requiresTask") and not call.get("hasTask", False):
+        reasons.append("task")
+    if "budget" in spec and call.get("budget") != spec["budget"]:
+        reasons.append("budget")
+    if "format" in spec and call.get("format") != spec["format"]:
+        reasons.append("format")
+    if "recordTrace" in spec and call.get("recordTrace") != spec["recordTrace"]:
+        reasons.append("recordTrace")
+    return reasons
+
+observed_required_calls = []
+invalid_required_calls = []
+for spec in required_call_specs:
+    attempts = [call for call in ctxhelm_calls if call.get("name") == spec["name"]]
+    valid = any(not invalid_reasons(call, spec) for call in attempts)
+    if valid:
+        observed_required_calls.append(spec["name"])
+    elif attempts:
+        reason_set = sorted({
+            reason
+            for call in attempts
+            for reason in invalid_reasons(call, spec)
+        })
+        invalid_required_calls.append({
+            "name": spec["name"],
+            "reasons": reason_set,
+            "attemptCount": len(attempts),
+        })
+
 missing_required_calls = [
-    name for name in required_calls if name not in observed_call_names
+    name for name in required_calls if name not in observed_required_calls
 ]
 ctxhelm_call_compliance = (
     "not_required"
     if not required_calls
-    else ("satisfied" if not missing_required_calls else "missing")
+    else (
+        "satisfied"
+        if not missing_required_calls
+        else ("invalid" if invalid_required_calls else "missing")
+    )
 )
 lane_status = "passed" if client_status == 0 and result_success and not forbidden_tool_calls else "failed"
 evaluation_eligible = lane_status == "passed" and ctxhelm_call_compliance != "missing"
@@ -863,10 +937,13 @@ payload = {
         "requiredCtxhelmCallCount": len(required_calls),
         "observedRequiredCtxhelmCallCount": len(observed_required_calls),
         "missingRequiredCtxhelmCallCount": len(missing_required_calls),
+        "invalidRequiredCtxhelmCallCount": len(invalid_required_calls),
     },
+    "requiredCtxhelmCallSpecs": required_call_specs,
     "requiredCtxhelmCalls": required_calls,
     "observedRequiredCtxhelmCalls": observed_required_calls,
     "missingRequiredCtxhelmCalls": missing_required_calls,
+    "invalidRequiredCtxhelmCalls": invalid_required_calls,
     "ctxhelmCallCompliance": ctxhelm_call_compliance,
     "targetHits": target_hits,
     "targetReads": target_reads,
@@ -950,13 +1027,19 @@ missing_required_calls = {
     if lane.get("missingRequiredCtxhelmCalls")
 }
 missing_required_observed = bool(missing_required_calls)
+invalid_required_calls = {
+    lane.get("lane"): lane.get("invalidRequiredCtxhelmCalls", [])
+    for lane in lanes
+    if lane.get("invalidRequiredCtxhelmCalls")
+}
+invalid_required_observed = bool(invalid_required_calls)
 ctxhelm_under_read = any(
     lane.get("metrics", {}).get("targetReadCoverage", 0.0)
     < base_metrics.get("targetReadCoverage", 0.0)
     for lane in ctxhelm_lanes
 )
 status = "passed" if any(lane.get("status") == "passed" for lane in lanes) else "skipped"
-if status == "passed" and (not ctxhelm_called or not comparison_eligible or missing_required_observed or client_failures_observed):
+if status == "passed" and (not ctxhelm_called or not comparison_eligible or missing_required_observed or invalid_required_observed or client_failures_observed):
     status = "degraded"
 if status == "passed" and forbidden_called:
     status = "degraded"
@@ -998,6 +1081,8 @@ payload = {
         "forbiddenToolCallsObserved": forbidden_called,
         "missingRequiredCtxhelmCallsObserved": missing_required_observed,
         "missingRequiredCtxhelmCalls": missing_required_calls,
+        "invalidRequiredCtxhelmCallsObserved": invalid_required_observed,
+        "invalidRequiredCtxhelmCalls": invalid_required_calls,
         "clientFailuresObserved": client_failures_observed,
         "rateLimitsObserved": rate_limits_observed,
         "ctxhelmUnderReadTargetsObserved": ctxhelm_under_read,

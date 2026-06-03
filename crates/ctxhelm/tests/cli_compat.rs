@@ -1679,11 +1679,14 @@ fn eval_agent_run_renders_source_free_report() {
                         "forbiddenToolCallCount": 0,
                         "requiredCtxhelmCallCount": 0,
                         "observedRequiredCtxhelmCallCount": 0,
-                        "missingRequiredCtxhelmCallCount": 0
+                        "missingRequiredCtxhelmCallCount": 0,
+                        "invalidRequiredCtxhelmCallCount": 0
                     },
+                    "requiredCtxhelmCallSpecs": [],
                     "requiredCtxhelmCalls": [],
                     "observedRequiredCtxhelmCalls": [],
                     "missingRequiredCtxhelmCalls": [],
+                    "invalidRequiredCtxhelmCalls": [],
                     "ctxhelmCallCompliance": "not_required",
                     "clientFailureKind": null,
                     "clientApiErrorStatus": null,
@@ -1719,11 +1722,28 @@ fn eval_agent_run_renders_source_free_report() {
                         "forbiddenToolCallCount": 0,
                         "requiredCtxhelmCallCount": 2,
                         "observedRequiredCtxhelmCallCount": 2,
-                        "missingRequiredCtxhelmCallCount": 0
+                        "missingRequiredCtxhelmCallCount": 0,
+                        "invalidRequiredCtxhelmCallCount": 0
                     },
+                    "requiredCtxhelmCallSpecs": [
+                        {
+                            "name": "prepare_task",
+                            "requiresRepo": true,
+                            "requiresTask": true
+                        },
+                        {
+                            "name": "get_pack",
+                            "requiresRepo": true,
+                            "requiresTask": true,
+                            "budget": "brief",
+                            "format": "json",
+                            "recordTrace": false
+                        }
+                    ],
                     "requiredCtxhelmCalls": ["prepare_task", "get_pack"],
                     "observedRequiredCtxhelmCalls": ["prepare_task", "get_pack"],
                     "missingRequiredCtxhelmCalls": [],
+                    "invalidRequiredCtxhelmCalls": [],
                     "ctxhelmCallCompliance": "satisfied",
                     "clientFailureKind": null,
                     "clientApiErrorStatus": null,
@@ -1752,6 +1772,8 @@ fn eval_agent_run_renders_source_free_report() {
                 "forbiddenToolCallsObserved": false,
                 "missingRequiredCtxhelmCallsObserved": false,
                 "missingRequiredCtxhelmCalls": {},
+                "invalidRequiredCtxhelmCallsObserved": false,
+                "invalidRequiredCtxhelmCalls": {},
                 "clientFailuresObserved": false,
                 "rateLimitsObserved": false,
                 "ctxhelmUnderReadTargetsObserved": false,
@@ -1790,6 +1812,7 @@ fn eval_agent_run_renders_source_free_report() {
         .stdout(contains("Comparison eligible: `true`"))
         .stdout(contains("Comparable ctxhelm lanes: `1`"))
         .stdout(contains("Missing required ctxhelm calls observed: `false`"))
+        .stdout(contains("Invalid required ctxhelm calls observed: `false`"))
         .stdout(contains("Client failures observed: `false`"))
         .stdout(contains("Rate limits observed: `false`"))
         .stdout(contains("target coverage `1.00`"))
@@ -1817,6 +1840,118 @@ fn eval_agent_run_renders_source_free_report() {
         rendered_json["comparison"]["outcomeClaim"],
         "ctxhelm_improved"
     );
+}
+
+#[test]
+fn eval_agent_run_renders_invalid_required_ctxhelm_call_reasons() {
+    let fixture = fixture_repo();
+    let report_path = fixture.temp.path().join("agent-run-invalid.json");
+    fs::write(
+        &report_path,
+        json!({
+            "schemaVersion": "ctxhelm-agent-run-eval-v1",
+            "status": "degraded",
+            "client": {
+                "name": "claude",
+                "version": "Claude Code test"
+            },
+            "repo": {
+                "label": "fixture",
+                "pathSha256": "repo-hash"
+            },
+            "lanes": [
+                {
+                    "lane": "ctxhelm-plan",
+                    "status": "passed",
+                    "evaluationStatus": "not_comparable",
+                    "evaluationEligible": false,
+                    "metrics": {
+                        "targetCoverage": 0.0,
+                        "targetReadCoverage": 0.0,
+                        "targetReadCount": 0,
+                        "targetDiscoveredOnlyCount": 0,
+                        "missedTargetCount": 1,
+                        "readFileCount": 0,
+                        "irrelevantReadCount": 0,
+                        "toolCallCount": 1,
+                        "ctxhelmToolCallCount": 1,
+                        "forbiddenToolCallCount": 0,
+                        "requiredCtxhelmCallCount": 1,
+                        "observedRequiredCtxhelmCallCount": 0,
+                        "missingRequiredCtxhelmCallCount": 1,
+                        "invalidRequiredCtxhelmCallCount": 1
+                    },
+                    "requiredCtxhelmCalls": ["prepare_task"],
+                    "observedRequiredCtxhelmCalls": [],
+                    "missingRequiredCtxhelmCalls": ["prepare_task"],
+                    "invalidRequiredCtxhelmCalls": [
+                        {
+                            "name": "prepare_task",
+                            "reasons": ["repo", "task"],
+                            "attemptCount": 1
+                        }
+                    ],
+                    "ctxhelmCallCompliance": "invalid",
+                    "clientFailureKind": null,
+                    "rateLimitObserved": false,
+                    "readRoleCounts": {},
+                    "missedTargetRoleCounts": {
+                        "source": 1
+                    }
+                }
+            ],
+            "comparison": {
+                "baselineLane": "baseline",
+                "bestLane": "ctxhelm-plan",
+                "comparisonEligible": false,
+                "baselineEligible": false,
+                "comparableCtxhelmLaneCount": 0,
+                "targetCoverageDelta": 0.0,
+                "targetReadCoverageDelta": 0.0,
+                "irrelevantReadDelta": 0,
+                "ctxhelmToolCallsObserved": true,
+                "forbiddenToolCallsObserved": false,
+                "missingRequiredCtxhelmCallsObserved": true,
+                "missingRequiredCtxhelmCalls": {
+                    "ctxhelm-plan": ["prepare_task"]
+                },
+                "invalidRequiredCtxhelmCallsObserved": true,
+                "invalidRequiredCtxhelmCalls": {
+                    "ctxhelm-plan": [
+                        {
+                            "name": "prepare_task",
+                            "reasons": ["repo", "task"],
+                            "attemptCount": 1
+                        }
+                    ]
+                },
+                "clientFailuresObserved": false,
+                "rateLimitsObserved": false,
+                "ctxhelmUnderReadTargetsObserved": false,
+                "outcomeClaim": "insufficient_comparable_lanes"
+            },
+            "privacyStatus": {
+                "sourceTextLogged": false
+            }
+        })
+        .to_string(),
+    )
+    .unwrap();
+
+    Command::cargo_bin("ctxhelm")
+        .unwrap()
+        .args(["eval", "agent-run", "--report"])
+        .arg(&report_path)
+        .assert()
+        .success()
+        .stdout(contains("Invalid required ctxhelm calls observed: `true`"))
+        .stdout(contains(
+            "Invalid required ctxhelm calls: `ctxhelm-plan=prepare_task[repo, task; attempts=1]`",
+        ))
+        .stdout(contains("compliance `invalid`"))
+        .stdout(contains(
+            "invalid required `prepare_task[repo, task; attempts=1]`",
+        ));
 }
 
 #[test]
@@ -1858,6 +1993,7 @@ fn eval_agent_run_renders_source_free_suite_report() {
                         "ctxhelmToolCallsObserved": true,
                         "forbiddenToolCallsObserved": false,
                         "missingRequiredCtxhelmCallsObserved": false,
+                        "invalidRequiredCtxhelmCallsObserved": false,
                         "clientFailuresObserved": false,
                         "rateLimitsObserved": false,
                         "ctxhelmUnderReadTargetsObserved": false
@@ -1878,6 +2014,7 @@ fn eval_agent_run_renders_source_free_suite_report() {
                 "ctxhelmToolCallsObserved": true,
                 "forbiddenToolCallsObserved": false,
                 "missingRequiredCtxhelmCallsObserved": false,
+                "invalidRequiredCtxhelmCallsObserved": false,
                 "clientFailuresObserved": false,
                 "rateLimitsObserved": false,
                 "ctxhelmUnderReadTargetsObserved": false,
@@ -1901,6 +2038,7 @@ fn eval_agent_run_renders_source_free_suite_report() {
                         "requiredCtxhelmCallCount": 0,
                         "observedRequiredCtxhelmCallCount": 0,
                         "missingRequiredCtxhelmCallCount": 0,
+                        "invalidRequiredCtxhelmCallCount": 0,
                         "clientFailureCount": 0,
                         "rateLimitCount": 0,
                         "readRoleCounts": {
@@ -1930,6 +2068,7 @@ fn eval_agent_run_renders_source_free_suite_report() {
                         "requiredCtxhelmCallCount": 4,
                         "observedRequiredCtxhelmCallCount": 4,
                         "missingRequiredCtxhelmCallCount": 0,
+                        "invalidRequiredCtxhelmCallCount": 0,
                         "clientFailureCount": 0,
                         "rateLimitCount": 0,
                         "readRoleCounts": {
@@ -1966,6 +2105,7 @@ fn eval_agent_run_renders_source_free_suite_report() {
         .stdout(contains("Comparison eligible tasks: `1`"))
         .stdout(contains("Comparable ctxhelm lanes: `1`"))
         .stdout(contains("Missing required ctxhelm calls observed: `false`"))
+        .stdout(contains("Invalid required ctxhelm calls observed: `false`"))
         .stdout(contains("Client failures observed: `false`"))
         .stdout(contains("Rate limits observed: `false`"))
         .stdout(contains("Target coverage delta average: `0.25`"))
@@ -1976,7 +2116,7 @@ fn eval_agent_run_renders_source_free_suite_report() {
         .stdout(contains("eligible `2`"))
         .stdout(contains("avg target read coverage `0.75`"))
         .stdout(contains(
-            "required ctxhelm calls `4` observed required `4` missing required `0`",
+            "required ctxhelm calls `4` observed required `4` missing required `0` invalid required `0`",
         ))
         .stdout(contains("client failures `0` rate limits `0`"))
         .stdout(contains("read roles `docs=2, source=3`"))

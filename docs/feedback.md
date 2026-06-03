@@ -111,10 +111,14 @@ read count, target-read coverage, discovered-only targets, missed-target counts,
 source-free read-role counts, tool-call count, ctxhelm tool-call count, and
 forbidden tool-call count. The ctxhelm-assisted lanes also record required,
 observed, and missing ctxhelm calls: `ctxhelm-plan` must call `prepare_task`,
-and `ctxhelm-brief` must call both `prepare_task` and `get_pack`. Reports mark a
-lane as comparison-eligible only when the client passed and those required calls
-were observed, so a failed or skipped ctxhelm lane cannot be mistaken for weak
-ctxhelm output. Observed shell/edit/write tools are surfaced as forbidden calls
+and `ctxhelm-brief` must call both `prepare_task` and `get_pack`. Required calls
+are argument-validated: `prepare_task` must include the explicit repo and task,
+while `get_pack` must include the explicit repo, task, `budget = "brief"`,
+`format = "json"`, and `recordTrace = false`. Reports mark a lane as
+comparison-eligible only when the client passed and those required calls were
+observed with valid arguments, so a failed, skipped, wrong-repo, or malformed
+ctxhelm lane cannot be mistaken for weak ctxhelm output. Observed
+shell/edit/write tools are surfaced as forbidden calls
 and degrade the report status. Client failures are classified source-free as
 well: rate limits, API errors, timeouts, and generic non-zero exits are exposed
 through `clientFailureKind`, `clientApiErrorStatus`, and rate-limit booleans

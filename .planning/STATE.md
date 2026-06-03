@@ -4,10 +4,10 @@ milestone: v2.5
 milestone_name: Production Retrieval Quality
 status: active
 last_updated: "2026-06-03T00:00:00Z"
-last_activity: 2026-06-03 -- Phase 208 classifies agent-run client failures
+last_activity: 2026-06-03 -- Phase 209 validates required ctxhelm call arguments
 progress:
-  total_phases: 117
-  completed_phases: 117
+  total_phases: 118
+  completed_phases: 118
   total_plans: 7
   completed_plans: 7
   percent: 100
@@ -17,10 +17,10 @@ progress:
 
 ## Current Position
 
-Phase: 208 - Agent-Run Client Failure Classification
-Plan: 208-agent-run-client-failure-classification
+Phase: 209 - Agent-Run Required Call Argument Validation
+Plan: 209-agent-run-required-call-argument-validation
 Status: Complete
-Last activity: 2026-06-03 -- Phase 208 classifies real-client availability failures after a Phase 207 Claude Code probe hit a session rate limit before any lane could read files or call ctxhelm. Agent-run lane records now expose `clientFailureKind`, `clientApiErrorStatus`, and `rateLimitObserved`, while single-run and suite comparisons aggregate client failures and rate limits without storing raw client output.
+Last activity: 2026-06-03 -- Phase 209 validates required ctxhelm call arguments before counting a paired agent-run lane as comparable. `prepare_task` required calls must include explicit repo and task; `get_pack` required calls must include explicit repo, task, `budget = "brief"`, `format = "json"`, and `recordTrace = false`. Reports now expose invalid required-call reasons and counts without storing raw MCP traffic.
 
 ## Project Reference
 
