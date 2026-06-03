@@ -424,6 +424,16 @@ related tests and selected context files. The fresh four-repo proof promotes
 with retrieval metrics unchanged while VeriSchema reports `29 / 39` missed@10
 files recoverable through the full agent evidence bundle.
 
+Phase 198 adds source-free candidate coverage accounting for selected-file
+misses. `candidateCoverageSummary` reports missed@10 paths, how many of those
+paths were present in the generated candidate set, and how many had no candidate
+signal. The fresh four-repo proof promotes with Phase 197 retrieval and lexical
+comparison metrics unchanged while showing ctxhelm `11 / 12`, RefactoringMiner
+`1 / 1`, ReAgent `0 / 0`, and VeriSchema `36 / 39` missed@10 files are already
+candidate-recoverable. That makes the next retrieval-quality bottleneck
+selection/ranking pressure, especially in VeriSchema, rather than broad missing
+candidate generation.
+
 The optional real-client evidence wrappers are:
 
 - `scripts/smoke-codex-mcp.sh`

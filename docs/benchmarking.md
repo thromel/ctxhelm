@@ -817,6 +817,14 @@ Recommendation today:
   related tests and selected context files. The four-repo proof still promotes
   with retrieval metrics unchanged and shows VeriSchema `29 / 39` missed@10
   files recoverable through the full agent evidence bundle.
+- Phase 198 adds `candidateCoverageSummary` to historical eval reports and
+  product-proof embeddings. The summary counts selected-file misses that were
+  already generated as candidates but ranked outside top-10, plus misses with no
+  candidate signal. The four-repo proof still promotes with Phase 197 retrieval
+  metrics unchanged while showing ctxhelm `11 / 12`, RefactoringMiner `1 / 1`,
+  ReAgent `0 / 0`, and VeriSchema `36 / 39` missed@10 files are
+  candidate-recoverable. This keeps the next ranking work focused on selection
+  pressure instead of guessing at candidate-generation gaps.
 - Treat cloud embeddings/reranking as disabled unless an explicit repo policy
   allows them.
 

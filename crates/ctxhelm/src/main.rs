@@ -5001,6 +5001,9 @@ fn render_historical_eval_report(report: &HistoricalEvalReport) -> String {
     output.push_str(&render_context_area_next_read_summary(
         &report.context_area_next_read_summary,
     ));
+    output.push_str(&render_candidate_coverage_summary(
+        &report.candidate_coverage_summary,
+    ));
 
     if report.commits.is_empty() {
         output.push_str("No safe historical commits were available for evaluation.\n");
@@ -5262,6 +5265,24 @@ fn render_context_area_next_read_summary(
         summary.missed_file_count_at_10,
         summary.top_pressure_next_read_recoverable_count,
         summary.zero_selected_area_recoverable_count,
+        !summary.source_text_logged
+    )
+}
+
+fn render_candidate_coverage_summary(
+    summary: &ctxhelm_compiler::CandidateCoverageSummary,
+) -> String {
+    if summary.missed_file_count_at_10 == 0
+        && summary.candidate_recoverable_count == 0
+        && summary.no_candidate_count == 0
+    {
+        return String::new();
+    }
+    format!(
+        "- Candidate coverage recovery: `{}` / `{}` missed@10 path(s)\n- No-candidate missed@10 paths: `{}`\n- Candidate coverage source-free: `{}`\n\n",
+        summary.candidate_recoverable_count,
+        summary.missed_file_count_at_10,
+        summary.no_candidate_count,
         !summary.source_text_logged
     )
 }
@@ -6095,6 +6116,12 @@ mod tests {
                 zero_selected_area_recoverable_count: 0,
                 source_text_logged: false,
             },
+            candidate_coverage_summary: ctxhelm_compiler::CandidateCoverageSummary {
+                missed_file_count_at_10: 2,
+                candidate_recoverable_count: 1,
+                no_candidate_count: 1,
+                source_text_logged: false,
+            },
             file_recall_at_5: 1.0,
             file_recall_at_10: 1.0,
             lexical_baseline_recall_at_5: 0.5,
@@ -6155,6 +6182,7 @@ mod tests {
                 lexical_baseline_hits_at_5: vec![],
                 lexical_baseline_hits_at_10: vec![],
                 missing_files_at_10: vec![],
+                candidate_missed_files_at_10: vec![],
                 source_files_changed: 1,
                 source_hits_at_5: 1,
                 source_hits_at_10: 1,
@@ -6197,6 +6225,8 @@ mod tests {
         assert!(markdown.contains("Agent-evidence recovery: `1` / `2` missed@10 path(s)"));
         assert!(markdown.contains("Top-pressure next-read recovery: `1`"));
         assert!(markdown.contains("Zero-selected-area next-read recovery: `0`"));
+        assert!(markdown.contains("Candidate coverage recovery: `1` / `2` missed@10 path(s)"));
+        assert!(markdown.contains("No-candidate missed@10 paths: `1`"));
         assert!(markdown.contains("File Recall@5: `1.00`"));
         assert!(markdown.contains("Lexical Baseline Recall@5: `0.50`"));
         assert!(markdown.contains("No-context Recall@K: `0.00`"));

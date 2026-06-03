@@ -847,6 +847,8 @@ pub struct HistoricalEvalReport {
     pub context_area_pressure_summary: ContextAreaPressureSummary,
     #[serde(default)]
     pub context_area_next_read_summary: ContextAreaNextReadSummary,
+    #[serde(default)]
+    pub candidate_coverage_summary: CandidateCoverageSummary,
     pub file_recall_at_5: f32,
     pub file_recall_at_10: f32,
     pub lexical_baseline_recall_at_5: f32,
@@ -924,6 +926,15 @@ pub struct ContextAreaNextReadSummary {
     pub agent_evidence_recoverable_count: usize,
     pub top_pressure_next_read_recoverable_count: usize,
     pub zero_selected_area_recoverable_count: usize,
+    pub source_text_logged: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct CandidateCoverageSummary {
+    pub missed_file_count_at_10: usize,
+    pub candidate_recoverable_count: usize,
+    pub no_candidate_count: usize,
     pub source_text_logged: bool,
 }
 
@@ -1258,6 +1269,8 @@ pub struct HistoricalCommitEval {
     pub lexical_baseline_hits_at_5: Vec<String>,
     pub lexical_baseline_hits_at_10: Vec<String>,
     pub missing_files_at_10: Vec<String>,
+    #[serde(default)]
+    pub candidate_missed_files_at_10: Vec<String>,
     pub source_files_changed: usize,
     pub source_hits_at_5: usize,
     pub source_hits_at_10: usize,
@@ -4150,6 +4163,7 @@ pub fn evaluate_historical_commits(
     let protected_evidence = protected_evidence_summary(&commits);
     let context_area_pressure_summary = context_area_pressure_summary(&commits);
     let context_area_next_read_summary = context_area_next_read_summary(&commits);
+    let candidate_coverage_summary = candidate_coverage_summary(&commits);
     let runtime = historical_eval_runtime_summary(
         &commits,
         elapsed_millis(eval_started),
@@ -4187,6 +4201,7 @@ pub fn evaluate_historical_commits(
         broad_context_area_recall: average_broad_context_area_recall(&commits),
         context_area_pressure_summary,
         context_area_next_read_summary,
+        candidate_coverage_summary,
         file_recall_at_5,
         file_recall_at_10,
         lexical_baseline_recall_at_5,
@@ -4514,6 +4529,10 @@ fn evaluate_historical_commit_sample(
         .cloned()
         .collect::<BTreeSet<_>>();
     let candidate_roles_by_path = candidate_roles_by_path(&plan);
+    let candidate_paths = candidate_roles_by_path
+        .keys()
+        .cloned()
+        .collect::<BTreeSet<_>>();
     let protected_evidence = protected_evidence_files(
         &signals_by_path,
         &budgeted_protected_evidence_paths(&plan, 10),
@@ -4537,6 +4556,11 @@ fn evaluate_historical_commit_sample(
         changed_file_hits(&retrieval_target_files, &lexical_baseline_files, 10);
     let missing_files_at_10 =
         missing_changed_files(&retrieval_target_files, &recommended_context_files, 10);
+    let candidate_missed_files_at_10 = missing_files_at_10
+        .iter()
+        .filter(|path| candidate_paths.contains(*path))
+        .cloned()
+        .collect::<Vec<_>>();
     let ablation_rankings = ablation_signals()
         .into_iter()
         .map(|signal| {
@@ -4623,6 +4647,7 @@ fn evaluate_historical_commit_sample(
             lexical_baseline_hits_at_5,
             lexical_baseline_hits_at_10,
             missing_files_at_10,
+            candidate_missed_files_at_10,
             source_files_changed: source_changed_files.len(),
             source_hits_at_5,
             source_hits_at_10,
@@ -7029,6 +7054,21 @@ fn context_area_next_read_summary(commits: &[HistoricalCommitEval]) -> ContextAr
     summary
 }
 
+fn candidate_coverage_summary(commits: &[HistoricalCommitEval]) -> CandidateCoverageSummary {
+    let mut summary = CandidateCoverageSummary {
+        source_text_logged: false,
+        ..CandidateCoverageSummary::default()
+    };
+    for commit in commits {
+        summary.missed_file_count_at_10 += commit.missing_files_at_10.len();
+        summary.candidate_recoverable_count += commit.candidate_missed_files_at_10.len();
+    }
+    summary.no_candidate_count = summary
+        .missed_file_count_at_10
+        .saturating_sub(summary.candidate_recoverable_count);
+    summary
+}
+
 fn is_top_pressure_context_area(area: &ContextArea, context_areas: &[ContextArea]) -> bool {
     let Some(max_pressure) = context_areas
         .iter()
@@ -8526,6 +8566,7 @@ mod tests {
             lexical_baseline_hits_at_5: Vec::new(),
             lexical_baseline_hits_at_10: Vec::new(),
             missing_files_at_10: Vec::new(),
+            candidate_missed_files_at_10: Vec::new(),
             source_files_changed: 0,
             source_hits_at_5: 0,
             source_hits_at_10: 0,
@@ -9453,6 +9494,10 @@ mod tests {
                 "docs/architecture.md".to_string(),
                 "tests/agents/test_base.py".to_string(),
             ],
+            candidate_missed_files_at_10: vec![
+                "schema_agent/core/fd_router.py".to_string(),
+                "docs/architecture.md".to_string(),
+            ],
             source_files_changed: 4,
             source_hits_at_5: 1,
             source_hits_at_10: 1,
@@ -9603,6 +9648,10 @@ mod tests {
             missing_files_at_10: vec![
                 "src/auth/session.ts".to_string(),
                 "src/auth/token.ts".to_string(),
+                "tests/auth/session.test.ts".to_string(),
+            ],
+            candidate_missed_files_at_10: vec![
+                "src/auth/session.ts".to_string(),
                 "tests/auth/session.test.ts".to_string(),
             ],
             source_files_changed: 2,
@@ -9921,6 +9970,7 @@ mod tests {
             broad_context_area_recall: 0.0,
             context_area_pressure_summary: ContextAreaPressureSummary::default(),
             context_area_next_read_summary: ContextAreaNextReadSummary::default(),
+            candidate_coverage_summary: CandidateCoverageSummary::default(),
             file_recall_at_5: 0.0,
             file_recall_at_10: 0.0,
             lexical_baseline_recall_at_5: 0.0,
@@ -9960,6 +10010,7 @@ mod tests {
                 lexical_baseline_hits_at_5: Vec::new(),
                 lexical_baseline_hits_at_10: Vec::new(),
                 missing_files_at_10: Vec::new(),
+                candidate_missed_files_at_10: Vec::new(),
                 source_files_changed: 0,
                 source_hits_at_5: 0,
                 source_hits_at_10: 0,

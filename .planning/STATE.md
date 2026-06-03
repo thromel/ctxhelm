@@ -4,10 +4,10 @@ milestone: v2.5
 milestone_name: Production Retrieval Quality
 status: active
 last_updated: "2026-06-03T00:00:00Z"
-last_activity: 2026-06-03 -- Phase 197 adds agent-evidence recovery accounting
+last_activity: 2026-06-03 -- Phase 198 adds candidate coverage accounting
 progress:
-  total_phases: 108
-  completed_phases: 108
+  total_phases: 109
+  completed_phases: 109
   total_plans: 7
   completed_plans: 7
   percent: 100
@@ -17,10 +17,10 @@ progress:
 
 ## Current Position
 
-Phase: 197 - Agent Evidence Recovery Accounting
-Plan: 197-agent-evidence-recovery-accounting
+Phase: 198 - Candidate Coverage Accounting
+Plan: 198-candidate-coverage-accounting
 Status: Complete
-Last activity: 2026-06-03 -- Phase 197 adds `agentEvidenceRecoverableCount` to context-area next-read summaries. Fresh release-binary proof promotes from `/tmp/ctxhelm-rd/phase197-agent-evidence-recovery-proof.json`; selected-file/source/test/validation/broad-area metrics stay unchanged from Phase 196 while the proof now shows VeriSchema has `29 / 39` missed@10 files recoverable through the full agent evidence bundle versus `19 / 39` through progressive next reads alone.
+Last activity: 2026-06-03 -- Phase 198 adds source-free candidate coverage accounting for missed@10 files. Fresh proof promotes from `/tmp/ctxhelm-rd/phase198-candidate-coverage-proof.json`; selected-file/source/test/validation/broad-area and lexical-comparison metrics stay unchanged from Phase 197 while the proof shows ctxhelm has `11 / 12`, RefactoringMiner `1 / 1`, ReAgent `0 / 0`, and VeriSchema `36 / 39` missed@10 files already present in the candidate set. This proves the next VeriSchema work is mainly selection/ranking pressure, not missing candidate generation.
 
 ## Project Reference
 
@@ -176,6 +176,7 @@ Planned phases:
 - Phase 195: Adaptive Context Area Next-Read Budget (complete follow-up)
 - Phase 196: Validation Context Area Reserve (complete follow-up)
 - Phase 197: Agent Evidence Recovery Accounting (complete follow-up)
+- Phase 198: Candidate Coverage Accounting (complete follow-up)
 
 ## Last Completed Milestone
 

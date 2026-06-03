@@ -172,6 +172,18 @@ def iter_context_area_next_read_summaries(value):
             yield from iter_context_area_next_read_summaries(child)
 
 
+def iter_candidate_coverage_summaries(value):
+    if isinstance(value, dict):
+        summary = value.get("candidateCoverageSummary")
+        if isinstance(summary, dict):
+            yield summary
+        for child in value.values():
+            yield from iter_candidate_coverage_summaries(child)
+    elif isinstance(value, list):
+        for child in value:
+            yield from iter_candidate_coverage_summaries(child)
+
+
 def validate_context_area_pressure_summaries(report: dict) -> None:
     for summary in iter_context_area_pressure_summaries(report):
         for field in (
@@ -229,6 +241,29 @@ def validate_context_area_next_read_summaries(report: dict) -> None:
             fail("zero-selected next-read recovery exceeded total recovery")
         if summary.get("sourceTextLogged") is not False:
             fail("context area next-read summary was not source-free")
+
+
+def validate_candidate_coverage_summaries(report: dict) -> None:
+    for summary in iter_candidate_coverage_summaries(report):
+        for field in (
+            "missedFileCountAt10",
+            "candidateRecoverableCount",
+            "noCandidateCount",
+        ):
+            if not isinstance(summary.get(field), int):
+                fail(
+                    "candidate coverage summary was missing integer "
+                    + field
+                )
+        missed = summary["missedFileCountAt10"]
+        candidate_recoverable = summary["candidateRecoverableCount"]
+        no_candidate = summary["noCandidateCount"]
+        if candidate_recoverable > missed:
+            fail("candidate coverage recovery exceeded missed files")
+        if candidate_recoverable + no_candidate != missed:
+            fail("candidate coverage summary total was inconsistent")
+        if summary.get("sourceTextLogged") is not False:
+            fail("candidate coverage summary was not source-free")
 
 
 BROAD_FIXED_CORPUS_ID = "phase92-area-aware-gap-taxonomy-2026-05-31"
@@ -309,6 +344,7 @@ def main() -> None:
     validate_context_area_pressure_contract(report)
     validate_context_area_pressure_summaries(report)
     validate_context_area_next_read_summaries(report)
+    validate_candidate_coverage_summaries(report)
     validate_broad_fixed_corpus_floors(report)
     if not report.get("headlineMetrics"):
         fail("product proof headlineMetrics were empty")

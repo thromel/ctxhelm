@@ -1335,6 +1335,12 @@ fn product_proof_json(decision: &str, default_promotion_allowed: bool, status: &
           "zeroSelectedAreaRecoverableCount": 0,
           "sourceTextLogged": false
         }},
+        "candidateCoverageSummary": {{
+          "missedFileCountAt10": 1,
+          "candidateRecoverableCount": 1,
+          "noCandidateCount": 0,
+          "sourceTextLogged": false
+        }},
         "retrievalGapSummaries": [{{
           "role": "source",
           "signalGap": "ranked_below_budget_dependency",
