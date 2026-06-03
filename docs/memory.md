@@ -72,7 +72,8 @@ ctxhelm://repo/memory
 ## Release Coverage
 
 The release gate runs `scripts/smoke-memory.sh`,
-`scripts/smoke-memory-reuse.sh`, and `scripts/smoke-memory-history-lift.sh`.
+`scripts/smoke-memory-reuse.sh`, `scripts/smoke-memory-history-lift.sh`, and
+`scripts/smoke-memory-benchmark-lift.sh`.
 The memory smoke proves local-only storage, source-free persistence,
 stale/pending review blocking, selected-memory pack output, and approve/disable
 review controls. The memory reuse smoke proves that pending experience cards are
@@ -81,4 +82,8 @@ related task, and storage does not persist source sentinels, raw prompts,
 transcripts, or MCP traffic. The memory history-lift smoke runs `eval history`
 before and after approval and proves the historical report records a unique
 memory target hit beyond lexical, with `evaluate_memory_reuse_lift` as the
-source-free R&D action.
+source-free R&D action. The memory benchmark-lift smoke raises that proof to
+the benchmark/product-proof layer by running two local repositories through
+`eval proof` and requiring both embedded reports to show memory-only target hits
+beyond lexical plus product-level `evaluate_memory_reuse_lift` routing. This is
+still a controlled release smoke, not proof of broad memory generalization.

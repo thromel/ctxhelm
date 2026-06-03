@@ -242,6 +242,7 @@ The release gate runs these required checks:
 - `scripts/smoke-memory.sh`
 - `scripts/smoke-memory-reuse.sh`
 - `scripts/smoke-memory-history-lift.sh`
+- `scripts/smoke-memory-benchmark-lift.sh`
 - `scripts/smoke-feedback.sh`
 - `scripts/smoke-workspace.sh`
 - `scripts/smoke-shared-artifacts.sh`
@@ -495,6 +496,14 @@ These wrappers validate repo-local setup artifacts and MCP protocol behavior,
 and their evidence explicitly marks `realClientToolCalls: false`.
 
 The semantic smoke proves explicit local semantic retrieval, source-free vector metadata, semantic provenance in plans, semantic-enabled eval metadata, scaffold/provider status for `local_hash`, and cloud-disabled privacy status. It does not call cloud embedding or reranking services. The optional `local_fastembed` backend remains behind the `local-embeddings` Cargo feature and is not a default release requirement.
+
+The memory benchmark-lift smoke proves experience-memory lift is visible through
+the same benchmark/product-proof aggregation path used by release evidence. It
+creates two local repos, approves one source-free experience card per repo, runs
+`eval proof`, and requires each embedded historical report to contain a
+memory-only target hit beyond lexical plus product-level
+`evaluate_memory_reuse_lift` routing. It does not claim broad memory
+generalization across arbitrary repositories.
 
 The precision smoke proves Java/Kotlin symbol extraction, Java/Kotlin package import edges, source-free precision edge import, rejection of sensitive paths, and additive precision dependency output.
 

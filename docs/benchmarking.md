@@ -109,6 +109,12 @@ the lexical baseline. The summary stores counts and role labels only.
 history: before approval, memory contributes no candidates; after approval, the
 historical report records a memory-only target hit beyond lexical and routes the
 next action to `evaluate_memory_reuse_lift`.
+`scripts/smoke-memory-benchmark-lift.sh` exercises the higher-level aggregation
+path: two local repositories seed approved source-free experience cards, run
+`eval proof`, and require product proof to preserve per-repo memory-only target
+hits beyond lexical while routing product-level R&D to
+`evaluate_memory_reuse_lift`. It proves benchmark/report plumbing, not broad
+memory generalization on arbitrary histories.
 
 Historical eval reports also include source-free `graphEdgeProfiles`. These
 profiles split graph candidate evidence by edge label, such as `imports`,

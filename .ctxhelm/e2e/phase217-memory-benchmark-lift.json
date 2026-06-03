@@ -1,0 +1,108 @@
+{
+  "privacyStatus": {
+    "localOnly": true,
+    "rawMcpTrafficStored": false,
+    "rawPromptStored": false,
+    "rawTaskTextStored": false,
+    "rawTranscriptStored": false,
+    "remoteEmbeddingsUsed": false,
+    "remoteRerankingUsed": false,
+    "sourceTextLogged": false
+  },
+  "productProof": {
+    "defaultPromotionAllowed": true,
+    "recommendedResearchActions": [
+      "evaluate_memory_reuse_lift",
+      "collect_bm25_backend_evidence"
+    ],
+    "releaseGateDecision": "promote"
+  },
+  "repositories": [
+    {
+      "evaluatedCommits": 1,
+      "memoryReuseSummary": {
+        "commitsWithMemoryCandidates": 1,
+        "memoryCandidateCount": 1,
+        "memorySelectedAt10Count": 1,
+        "memoryTargetHitAt10Count": 1,
+        "memoryTargetMissedAt10Count": 0,
+        "memoryUniqueNonTargetCount": 0,
+        "memoryUniqueTargetHitCount": 1,
+        "selectedRoleCounts": {
+          "source": 1
+        },
+        "sourceTextLogged": false
+      },
+      "name": "memory-ts",
+      "privacyStatus": {
+        "localOnly": true,
+        "redactionsApplied": 0,
+        "remoteEmbeddingsUsed": false,
+        "remoteRerankingUsed": false
+      },
+      "recommendedResearchActions": [
+        "evaluate_memory_reuse_lift",
+        "improve_validation_test_mapping"
+      ],
+      "targetFile": "src/payments/handler.ts",
+      "targetInCombined": true,
+      "targetInLexical": false
+    },
+    {
+      "evaluatedCommits": 1,
+      "memoryReuseSummary": {
+        "commitsWithMemoryCandidates": 1,
+        "memoryCandidateCount": 1,
+        "memorySelectedAt10Count": 1,
+        "memoryTargetHitAt10Count": 1,
+        "memoryTargetMissedAt10Count": 0,
+        "memoryUniqueNonTargetCount": 0,
+        "memoryUniqueTargetHitCount": 1,
+        "selectedRoleCounts": {
+          "source": 1
+        },
+        "sourceTextLogged": false
+      },
+      "name": "memory-python",
+      "privacyStatus": {
+        "localOnly": true,
+        "redactionsApplied": 0,
+        "remoteEmbeddingsUsed": false,
+        "remoteRerankingUsed": false
+      },
+      "recommendedResearchActions": [
+        "evaluate_memory_reuse_lift",
+        "improve_validation_test_mapping"
+      ],
+      "targetFile": "services/billing/retry.py",
+      "targetInCombined": true,
+      "targetInLexical": false
+    }
+  ],
+  "schemaVersion": "ctxhelm-memory-benchmark-lift-eval-v1",
+  "status": "passed",
+  "suite": {
+    "evaluatedCommitCount": 2,
+    "evaluatedRepositoryCount": 2,
+    "suiteId": "9f2d2e790f8c9fc050da9d331fb8d9b613f5a709e8dbbc7353624a3c76d3a412"
+  },
+  "tasks": [
+    {
+      "rawTaskStored": false,
+      "targetFile": "src/payments/handler.ts",
+      "taskSha256": "2b8208b0e41da0b3b831785dbea50fcda6253807deaadb811b1cd44563534721"
+    },
+    {
+      "rawTaskStored": false,
+      "targetFile": "services/billing/retry.py",
+      "taskSha256": "2b8208b0e41da0b3b831785dbea50fcda6253807deaadb811b1cd44563534721"
+    }
+  ],
+  "unsupportedActions": [
+    "source edits",
+    "model invocation",
+    "cloud upload",
+    "raw prompt storage"
+  ],
+  "workflowKind": "benchmark-product-proof-experience-memory-lift"
+}

@@ -231,6 +231,7 @@ fn release_gate_script_contract() {
         "scripts/smoke-memory.sh",
         "scripts/smoke-memory-reuse.sh",
         "scripts/smoke-memory-history-lift.sh",
+        "scripts/smoke-memory-benchmark-lift.sh",
         "scripts/smoke-shared-artifacts.sh",
         "scripts/smoke-inspector.sh",
         "scripts/smoke-retrieval-health.sh",
@@ -1909,6 +1910,61 @@ fn memory_history_lift_smoke_script_contract() {
         assert!(
             script_text.contains(required),
             "memory history lift smoke script missing {required}"
+        );
+    }
+}
+
+#[test]
+fn memory_benchmark_lift_smoke_script_contract() {
+    let repo_root = workspace_root();
+    let script = repo_root.join("scripts/smoke-memory-benchmark-lift.sh");
+    assert!(
+        script.exists(),
+        "memory benchmark lift smoke script is missing"
+    );
+
+    let syntax = Command::new("bash")
+        .arg("-n")
+        .arg(&script)
+        .current_dir(&repo_root)
+        .output()
+        .unwrap();
+    assert!(
+        syntax.status.success(),
+        "bash -n failed: {}",
+        String::from_utf8_lossy(&syntax.stderr)
+    );
+
+    let script_text = fs::read_to_string(&script).unwrap();
+    for required in [
+        "ctxhelm-memory-benchmark-lift-eval-v1",
+        "eval proof",
+        "benchmark-product-proof-experience-memory-lift",
+        "memory generate-experience",
+        "memory approve",
+        "memoryUniqueTargetHitCount",
+        "memoryUniqueNonTargetCount",
+        "evaluate_memory_reuse_lift",
+        "targetInLexical",
+        "targetInCombined",
+        "evaluatedRepositoryCount",
+        "evaluatedCommitCount",
+        "sourceTextLogged",
+        "rawPromptStored",
+        "rawTaskTextStored",
+        "rawTranscriptStored",
+        "rawMcpTrafficStored",
+        "CTXHELM_MEMORY_BENCHMARK_SOURCE_SENTINEL_A",
+        "CTXHELM_MEMORY_BENCHMARK_SOURCE_SENTINEL_B",
+        "product proof leaked source sentinel",
+        "product proof leaked raw task text",
+        "storage leaked source sentinel",
+        "model invocation",
+        "cloud upload",
+    ] {
+        assert!(
+            script_text.contains(required),
+            "memory benchmark lift smoke script missing {required}"
         );
     }
 }

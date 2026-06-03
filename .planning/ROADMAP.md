@@ -86,6 +86,8 @@ Phase 215 release-gates experience-memory reuse proof. The packaged release gate
 
 Phase 216 release-gates a controlled historical memory-lift proof. `scripts/smoke-memory-history-lift.sh` now creates a one-commit historical eval, seeds a source-free trace, proves pending experience memory contributes no candidates before approval, approves the card, and proves `eval history` reports a memory-only target hit beyond lexical with `evaluate_memory_reuse_lift`. The committed proof artifact records `memoryUniqueTargetHitCount = 1`, `targetInCombined = true`, `targetInLexical = false`, and source-free privacy flags.
 
+Phase 217 release-gates benchmark-level memory-lift aggregation proof. `scripts/smoke-memory-benchmark-lift.sh` now creates two local repositories, approves one source-free experience card per repo, runs `eval proof`, and proves each embedded historical report records a memory-only target hit beyond lexical while product proof routes R&D to `evaluate_memory_reuse_lift`. The committed proof artifact records `evaluatedRepositoryCount = 2`, `evaluatedCommitCount = 2`, per-repo `memoryUniqueTargetHitCount = 1`, `targetInCombined = true`, `targetInLexical = false`, and source-free privacy flags. This closes product-proof plumbing for memory lift but does not yet prove broad memory generalization on arbitrary histories.
+
 ## v2.5 Production Retrieval Quality
 
 ## Phases

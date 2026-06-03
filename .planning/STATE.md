@@ -4,10 +4,10 @@ milestone: v2.5
 milestone_name: Production Retrieval Quality
 status: active
 last_updated: "2026-06-03T00:00:00Z"
-last_activity: 2026-06-03 -- Phase 216 proves historical memory lift
+last_activity: 2026-06-03 -- Phase 217 proves benchmark-level memory lift aggregation
 progress:
-  total_phases: 125
-  completed_phases: 125
+  total_phases: 126
+  completed_phases: 126
   total_plans: 7
   completed_plans: 7
   percent: 100
@@ -17,10 +17,10 @@ progress:
 
 ## Current Position
 
-Phase: 216 - Historical Memory Lift Proof
-Plan: 216-historical-memory-lift-proof
+Phase: 217 - Memory Benchmark Lift Proof
+Plan: 217-memory-benchmark-lift-proof
 Status: Complete
-Last activity: 2026-06-03 -- Phase 216 adds and release-gates `scripts/smoke-memory-history-lift.sh`, a controlled historical eval proof that compares before/after approval. The source-free proof shows memory absent before approval, then one memory candidate, one selected memory source, one memory target hit, one unique memory target hit beyond lexical, `targetInCombined = true`, `targetInLexical = false`, and `evaluate_memory_reuse_lift` after approval.
+Last activity: 2026-06-03 -- Phase 217 adds and release-gates `scripts/smoke-memory-benchmark-lift.sh`, a controlled two-repo benchmark/product-proof aggregation smoke. The source-free proof shows both embedded repository reports have one memory candidate, one selected memory source, one memory target hit, one unique memory target hit beyond lexical, `targetInCombined = true`, `targetInLexical = false`, and product-level `evaluate_memory_reuse_lift`.
 
 ## Project Reference
 

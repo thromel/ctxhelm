@@ -129,6 +129,14 @@ to a selected memory source with a unique target hit beyond lexical plus
 measure positive memory lift; broad multi-repo memory generalization remains a
 higher bar.
 
+Status: Phase 217 adds benchmark/product-proof memory-lift aggregation proof.
+The new release-gated smoke runs `eval proof` over two local repositories with
+approved source-free experience cards and requires both embedded reports to show
+memory-only target hits beyond lexical plus product-level
+`evaluate_memory_reuse_lift`. This proves product-proof plumbing can aggregate
+positive memory lift across repositories; broad memory generalization on real
+histories remains the next higher bar.
+
 ### 3. Semantic/Embedding Signal Is Wired But Not Driving Lift
 
 The current product lift comes from hybrid ranking, graph/test/history/context
