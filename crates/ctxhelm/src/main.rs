@@ -3943,7 +3943,7 @@ fn render_agent_run_report(report: &serde_json::Value) -> String {
     }
     if let Some(delta) = report.get("comparison") {
         output.push_str(&format!(
-            "- Best lane: `{}`\n- Target coverage delta: `{}`\n- Irrelevant read delta: `{}`\n- Source text logged: `{}`\n",
+            "- Best lane: `{}`\n- Target coverage delta: `{}`\n- Irrelevant read delta: `{}`\n- Forbidden tool calls observed: `{}`\n- Source text logged: `{}`\n",
             delta.get("bestLane")
                 .and_then(serde_json::Value::as_str)
                 .unwrap_or("unknown"),
@@ -3953,6 +3953,11 @@ fn render_agent_run_report(report: &serde_json::Value) -> String {
                 .unwrap_or_else(|| "n/a".to_string()),
             delta.get("irrelevantReadDelta")
                 .and_then(serde_json::Value::as_i64)
+                .map(|value| value.to_string())
+                .unwrap_or_else(|| "n/a".to_string()),
+            delta
+                .get("forbiddenToolCallsObserved")
+                .and_then(serde_json::Value::as_bool)
                 .map(|value| value.to_string())
                 .unwrap_or_else(|| "n/a".to_string()),
             report
@@ -4002,7 +4007,7 @@ fn render_agent_run_report(report: &serde_json::Value) -> String {
                     .and_then(serde_json::Value::as_str)
                     .unwrap_or("unknown");
                 output.push_str(&format!(
-                    "- `{lane_id}` tasks `{}` passed `{}` avg target coverage `{}` read files `{}` irrelevant reads `{}` tool calls `{}` ctxhelm calls `{}`\n",
+                "- `{lane_id}` tasks `{}` passed `{}` avg target coverage `{}` read files `{}` irrelevant reads `{}` tool calls `{}` ctxhelm calls `{}` forbidden calls `{}`\n",
                     lane.get("taskCount")
                         .and_then(serde_json::Value::as_u64)
                         .map(|value| value.to_string())
@@ -4031,6 +4036,10 @@ fn render_agent_run_report(report: &serde_json::Value) -> String {
                         .and_then(serde_json::Value::as_u64)
                         .map(|value| value.to_string())
                         .unwrap_or_else(|| "n/a".to_string()),
+                    lane.get("forbiddenToolCallCount")
+                        .and_then(serde_json::Value::as_u64)
+                        .map(|value| value.to_string())
+                        .unwrap_or_else(|| "n/a".to_string()),
                 ));
             }
         }
@@ -4048,7 +4057,7 @@ fn render_agent_run_report(report: &serde_json::Value) -> String {
                 .unwrap_or("unknown");
             let metrics = lane.get("metrics").unwrap_or(&serde_json::Value::Null);
             output.push_str(&format!(
-                "- `{lane_id}` status `{lane_status}` target coverage `{}` read files `{}` irrelevant reads `{}` tool calls `{}` ctxhelm calls `{}`\n",
+                "- `{lane_id}` status `{lane_status}` target coverage `{}` read files `{}` irrelevant reads `{}` tool calls `{}` ctxhelm calls `{}` forbidden calls `{}`\n",
                 metrics
                     .get("targetCoverage")
                     .and_then(serde_json::Value::as_f64)
@@ -4071,6 +4080,11 @@ fn render_agent_run_report(report: &serde_json::Value) -> String {
                     .unwrap_or_else(|| "n/a".to_string()),
                 metrics
                     .get("ctxhelmToolCallCount")
+                    .and_then(serde_json::Value::as_u64)
+                    .map(|value| value.to_string())
+                    .unwrap_or_else(|| "n/a".to_string()),
+                metrics
+                    .get("forbiddenToolCallCount")
                     .and_then(serde_json::Value::as_u64)
                     .map(|value| value.to_string())
                     .unwrap_or_else(|| "n/a".to_string()),

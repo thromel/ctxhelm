@@ -107,10 +107,11 @@ ctxhelm eval agent-run --report .ctxhelm/e2e/agent-run-claude.json
 The script runs three read-only Claude Code lanes: native baseline,
 `prepare_task`, and `prepare_task` plus a brief `get_pack`. It records
 source-free lane metrics such as target coverage, read-file count, irrelevant
-read count, tool-call count, and ctxhelm tool-call count. It stores path labels,
-hashes, and sanitized MCP request summaries only; it does not store raw prompts,
-raw model transcripts, raw MCP traffic, source snippets, terminal logs, or
-project test output.
+read count, tool-call count, ctxhelm tool-call count, and forbidden tool-call
+count. Observed shell/edit/write tools are surfaced as forbidden calls and
+degrade the report status. The report stores path labels, hashes, and sanitized
+MCP request summaries only; it does not store raw prompts, raw model transcripts,
+raw MCP traffic, source snippets, terminal logs, or project test output.
 
 Without `CTXHELM_RUN_REAL_CLIENT=1`, the script writes a skipped report so CI
 can verify the contract without pretending a real agent ran. Treat a passing

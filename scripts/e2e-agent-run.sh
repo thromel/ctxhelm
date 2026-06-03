@@ -210,9 +210,11 @@ lane_totals = defaultdict(lambda: {
     "irrelevantReadCount": 0,
     "toolCallCount": 0,
     "ctxhelmToolCallCount": 0,
+    "forbiddenToolCallCount": 0,
 })
 comparison = {
     "ctxhelmToolCallsObserved": False,
+    "forbiddenToolCallsObserved": False,
     "targetCoverageDeltaSum": 0.0,
     "irrelevantReadDeltaSum": 0,
 }
@@ -246,6 +248,10 @@ for entry in entries:
         comparison["ctxhelmToolCallsObserved"]
         or bool(task_comparison.get("ctxhelmToolCallsObserved", False))
     )
+    comparison["forbiddenToolCallsObserved"] = (
+        comparison["forbiddenToolCallsObserved"]
+        or bool(task_comparison.get("forbiddenToolCallsObserved", False))
+    )
     comparison["targetCoverageDeltaSum"] += float(task_comparison.get("targetCoverageDelta", 0.0) or 0.0)
     comparison["irrelevantReadDeltaSum"] += int(task_comparison.get("irrelevantReadDelta", 0) or 0)
     for lane in report.get("lanes", []):
@@ -259,6 +265,7 @@ for entry in entries:
         bucket["irrelevantReadCount"] += int(metrics.get("irrelevantReadCount", 0) or 0)
         bucket["toolCallCount"] += int(metrics.get("toolCallCount", 0) or 0)
         bucket["ctxhelmToolCallCount"] += int(metrics.get("ctxhelmToolCallCount", 0) or 0)
+        bucket["forbiddenToolCallCount"] += int(metrics.get("forbiddenToolCallCount", 0) or 0)
 
 lane_summaries = []
 for lane_id, bucket in sorted(lane_totals.items()):
@@ -272,6 +279,7 @@ for lane_id, bucket in sorted(lane_totals.items()):
         "irrelevantReadCount": bucket["irrelevantReadCount"],
         "toolCallCount": bucket["toolCallCount"],
         "ctxhelmToolCallCount": bucket["ctxhelmToolCallCount"],
+        "forbiddenToolCallCount": bucket["forbiddenToolCallCount"],
     })
 
 task_count = len(tasks)
@@ -286,7 +294,11 @@ else:
 
 payload = {
     "schemaVersion": "ctxhelm-agent-run-eval-v1",
-    "status": "passed" if any(task.get("status") == "passed" for task in tasks) else "skipped",
+    "status": (
+        "degraded"
+        if comparison["forbiddenToolCallsObserved"]
+        else ("passed" if any(task.get("status") == "passed" for task in tasks) else "skipped")
+    ),
     "workflowKind": "paired-agent-context-suite",
     "client": {"name": "claude", "version": client_version},
     "ctxhelmVersion": ctxhelm_version,
@@ -306,6 +318,7 @@ payload = {
         "targetCoverageDeltaAverage": target_delta_avg,
         "irrelevantReadDeltaSum": irrelevant_delta_sum,
         "ctxhelmToolCallsObserved": comparison["ctxhelmToolCallsObserved"],
+        "forbiddenToolCallsObserved": comparison["forbiddenToolCallsObserved"],
         "outcomeClaim": outcome_claim,
     },
     "privacyStatus": privacy,
@@ -527,6 +540,8 @@ stderr_file = pathlib.Path(stderr_path)
 client_status = int(status_text)
 
 tool_calls = []
+forbidden_tool_names = {"Bash", "Edit", "MultiEdit", "NotebookEdit", "Write"}
+forbidden_tool_calls = []
 read_files = []
 discovered_files = []
 result_success = False
@@ -567,7 +582,10 @@ if events_file.exists():
                 tool_input = item.get("input") or {}
                 if not isinstance(tool_input, dict):
                     tool_input = {}
-                tool_calls.append({"name": name, "inputKeys": sorted(tool_input.keys())})
+                input_keys = sorted(tool_input.keys())
+                tool_calls.append({"name": name, "inputKeys": input_keys})
+                if name in forbidden_tool_names:
+                    forbidden_tool_calls.append({"name": name, "inputKeys": input_keys})
                 if name == "Read":
                     label = rel_label(tool_input.get("file_path"))
                     if label and label not in read_files:
@@ -625,7 +643,7 @@ request_hash = hashlib.sha256(request_file.read_bytes()).hexdigest() if request_
 payload = {
     "lane": lane,
     "mode": mode,
-    "status": "passed" if client_status == 0 and result_success else "failed",
+    "status": "passed" if client_status == 0 and result_success and not forbidden_tool_calls else "failed",
     "clientExitStatus": client_status,
     "metrics": {
         "targetCoverage": target_coverage,
@@ -636,12 +654,14 @@ payload = {
         "irrelevantReadCount": len(irrelevant_reads),
         "toolCallCount": len(tool_calls),
         "ctxhelmToolCallCount": len(ctxhelm_calls),
+        "forbiddenToolCallCount": len(forbidden_tool_calls),
     },
     "targetHits": target_hits,
     "readFiles": read_files,
     "discoveredFiles": discovered_files,
     "irrelevantReads": irrelevant_reads,
     "toolCalls": tool_calls,
+    "forbiddenToolCalls": forbidden_tool_calls,
     "ctxhelmToolCalls": ctxhelm_calls,
     "evidenceHashes": {
         "streamJsonSha256": events_hash,
@@ -678,7 +698,9 @@ baseline = lanes[0]
 best = max(
     lanes,
     key=lambda lane: (
+        1 if lane.get("status") == "passed" else 0,
         lane.get("metrics", {}).get("targetCoverage", 0.0),
+        -lane.get("metrics", {}).get("forbiddenToolCallCount", 0),
         -lane.get("metrics", {}).get("irrelevantReadCount", 999_999),
         lane.get("metrics", {}).get("ctxhelmToolCallCount", 0),
     ),
@@ -689,8 +711,11 @@ target_delta = best_metrics.get("targetCoverage", 0.0) - base_metrics.get("targe
 irrelevant_delta = base_metrics.get("irrelevantReadCount", 0) - best_metrics.get("irrelevantReadCount", 0)
 ctxhelm_lanes = [lane for lane in lanes if lane.get("mode") in {"plan", "brief"}]
 ctxhelm_called = any(lane.get("metrics", {}).get("ctxhelmToolCallCount", 0) > 0 for lane in ctxhelm_lanes)
+forbidden_called = any(lane.get("metrics", {}).get("forbiddenToolCallCount", 0) > 0 for lane in lanes)
 status = "passed" if any(lane.get("status") == "passed" for lane in lanes) else "skipped"
 if status == "passed" and not ctxhelm_called:
+    status = "degraded"
+if status == "passed" and forbidden_called:
     status = "degraded"
 
 payload = {
@@ -715,6 +740,7 @@ payload = {
         "targetCoverageDelta": target_delta,
         "irrelevantReadDelta": irrelevant_delta,
         "ctxhelmToolCallsObserved": ctxhelm_called,
+        "forbiddenToolCallsObserved": forbidden_called,
         "outcomeClaim": (
             "ctxhelm_improved"
             if ctxhelm_called and (target_delta > 0 or irrelevant_delta > 0)

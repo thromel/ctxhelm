@@ -4,10 +4,10 @@ milestone: v2.5
 milestone_name: Production Retrieval Quality
 status: active
 last_updated: "2026-06-03T00:00:00Z"
-last_activity: 2026-06-03 -- Phase 203 surfaces related-test evidence in packs
+last_activity: 2026-06-03 -- Phase 204 hardens agent-run forbidden tool accounting
 progress:
-  total_phases: 114
-  completed_phases: 114
+  total_phases: 115
+  completed_phases: 115
   total_plans: 7
   completed_plans: 7
   percent: 100
@@ -17,10 +17,10 @@ progress:
 
 ## Current Position
 
-Phase: 203 - Related Test Evidence Pack Section
-Plan: 203-related-test-evidence-pack-section
+Phase: 204 - Agent-Run Forbidden Tool Accounting
+Plan: 204-agent-run-forbidden-tool-accounting
 Status: Complete
-Last activity: 2026-06-03 -- Phase 203 surfaces selected related tests as source-free validation evidence in generated packs. Packs now include `Related test evidence` with path, context area, reason, confidence, and targeted command details, plus an explicit note that selected validation evidence may not be repeated in context-area next-read lists. Focused pack validation passes with `cargo test -p ctxhelm-compiler compile_context_pack_materializes_plan_snippets_and_validation --locked -- --nocapture`.
+Last activity: 2026-06-03 -- Phase 204 makes forbidden tool calls source-free and machine-visible in paired Claude Code agent-run reports. Lane metrics now include forbidden-tool counts/calls, comparisons expose whether forbidden calls were observed, and the CLI renderer shows forbidden counts. A hardened real Claude Code run on the Phase 203 validation-evidence task reported no forbidden calls but no ctxhelm lift: native baseline covered `2 / 3` targets, while `ctxhelm-plan` and `ctxhelm-brief` each covered `1 / 3`; outcome claim `ctxhelm_matched`.
 
 ## Project Reference
 

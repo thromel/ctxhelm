@@ -954,6 +954,13 @@ test evidence` section so agents see selected related tests, context areas,
 reasons, confidence, and targeted commands even when those tests are not
 repeated in context-area next-read lists.
 
+Phase 204 strengthens real-agent outcome evidence without changing packaging.
+Paired Claude Code agent-run reports now surface forbidden shell/edit/write
+tool calls as source-free counts and tool-name/input-key summaries, and degraded
+status is used when a read-only run observes such calls. The hardened Claude
+Code `2.1.159` Phase 204 run observed no forbidden calls but recorded
+`ctxhelm_matched`, not improved, for the validation-evidence pack task.
+
 ## Artifact Audit
 
 `scripts/release-package.sh` runs `scripts/audit-release-artifact.sh` immediately after archive creation and before checksum success output. It writes a machine-readable `ctxhelm-v1.1.12-{target}.audit.json` report next to the archive.

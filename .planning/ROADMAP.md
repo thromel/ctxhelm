@@ -60,6 +60,8 @@ Phase 202 renders those agent-evidence-only gap profiles in source-free markdown
 
 Phase 203 makes selected validation evidence first-class in generated packs. Packs now include a source-free `Related test evidence` section that lists selected related tests, their context areas, reasons, confidence, and targeted commands, and explicitly tells agents that selected validation evidence may not be repeated in context-area next-read lists. This addresses the Phase 201/202 validation-consumption gap without duplicating selected tests into progressive next-read paths or perturbing target-file ranking.
 
+Phase 204 hardens real-agent outcome proof by making forbidden tool calls source-free and machine-visible in paired Claude Code agent-run reports. Lane metrics now include `forbiddenToolCallCount` and `forbiddenToolCalls`, comparisons include `forbiddenToolCallsObserved`, and suite reports aggregate forbidden calls. A hardened real Claude Code run on the Phase 203 validation-evidence task reported no forbidden calls, but also no ctxhelm lift: native baseline covered `2 / 3` targets, while `ctxhelm-plan` and `ctxhelm-brief` each covered `1 / 3`; outcome claim `ctxhelm_matched`. This keeps the next real-agent R&D focused on why pack-assisted lanes under-read docs/implementation support files instead of assuming retrieval proof translates directly into agent behavior.
+
 ## v2.5 Production Retrieval Quality
 
 ## Phases
@@ -195,6 +197,7 @@ Phase 203 makes selected validation evidence first-class in generated packs. Pac
 - [x] **Phase 201: Agent Evidence Only Gap Profiles** - Context-area next-read summaries separate missed files recoverable only through the broader agent evidence bundle by role and area.
 - [x] **Phase 202: Agent Evidence Only Report Rendering** - Historical eval markdown reports render agent-evidence-only recovery counts, roles, and top areas.
 - [x] **Phase 203: Related Test Evidence Pack Section** - Generated packs surface selected related tests as source-free validation evidence with area, reason, confidence, and command details.
+- [x] **Phase 204: Agent-Run Forbidden Tool Accounting** - Paired agent-run reports surface forbidden tool calls and a real Claude Code run records no lift for the Phase 203 validation-evidence task.
 - [x] **Phase 162: Feature-Enabled Local Fastembed Gate Proof** - A feature-enabled `local_fastembed` gate run on clean RefactoringMiner now proves the production-local backend works end-to-end, but remains held because it adds no semantic-only target hits and is still slower than default; the gate emits a source-free diagnostic for that condition.
 - [x] **Phase 163: Persisted Semantic Vector Reuse** - Fresh CLI/MCP processes can reuse persisted source-free semantic document vectors instead of recomputing every candidate vector.
 - [x] **Phase 164: Global Semantic Vector Candidates And Write-Through** - Semantic search can include persisted vector candidates outside the lexical prefilter and write through newly embedded candidate misses.

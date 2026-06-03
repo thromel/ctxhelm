@@ -862,6 +862,13 @@ Recommendation today:
   explicitly explain that selected validation evidence may not be repeated in
   context-area next-read lists. This improves agent consumption of evidence
   already counted by product proof without changing target-file ranking.
+- Phase 204 hardens paired real-agent reports with source-free forbidden-tool
+  accounting. Lane metrics now include forbidden tool-call counts/calls, suite
+  reports aggregate them, and `ctxhelm eval agent-run` renders the count. A
+  hardened Claude Code `2.1.159` run on the Phase 203 validation-evidence task
+  observed no forbidden calls but no ctxhelm lift: native baseline covered
+  `2 / 3` targets, while `ctxhelm-plan` and `ctxhelm-brief` each covered
+  `1 / 3`; outcome claim `ctxhelm_matched`.
 - Treat cloud embeddings/reranking as disabled unless an explicit repo policy
   allows them.
 
