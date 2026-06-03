@@ -4,10 +4,10 @@ milestone: v2.5
 milestone_name: Production Retrieval Quality
 status: active
 last_updated: "2026-06-03T00:00:00Z"
-last_activity: 2026-06-03 -- Phase 209 validates required ctxhelm call arguments
+last_activity: 2026-06-03 -- Phase 210 attributes ctxhelm evidence coverage versus agent reads
 progress:
-  total_phases: 118
-  completed_phases: 118
+  total_phases: 119
+  completed_phases: 119
   total_plans: 7
   completed_plans: 7
   percent: 100
@@ -17,10 +17,10 @@ progress:
 
 ## Current Position
 
-Phase: 209 - Agent-Run Required Call Argument Validation
-Plan: 209-agent-run-required-call-argument-validation
+Phase: 210 - Agent-Run Evidence Attribution
+Plan: 210-agent-run-evidence-attribution
 Status: Complete
-Last activity: 2026-06-03 -- Phase 209 validates required ctxhelm call arguments before counting a paired agent-run lane as comparable. `prepare_task` required calls must include explicit repo and task; `get_pack` required calls must include explicit repo, task, `budget = "brief"`, `format = "json"`, and `recordTrace = false`. Reports now expose invalid required-call reasons and counts without storing raw MCP traffic.
+Last activity: 2026-06-03 -- Phase 210 records source-free ctxhelm evidence coverage for paired real-agent lanes. Assisted lanes now report which target files were surfaced by ctxhelm evidence, which surfaced targets the agent did not read, and which target files were not present in ctxhelm evidence. The latest real Claude Code probe is still client-rate-limited, but it now separates client unavailability from ctxhelm evidence misses and agent consumption misses.
 
 ## Project Reference
 

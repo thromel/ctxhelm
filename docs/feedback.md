@@ -125,9 +125,14 @@ through `clientFailureKind`, `clientApiErrorStatus`, and rate-limit booleans
 without storing raw Claude output. Target coverage can include files
 found through search results; target-read coverage requires an actual native
 file read, which is the stronger signal for whether an agent consumed the
-evidence. The report stores path labels, hashes, and sanitized MCP request
-summaries only; it does not store raw prompts, raw model transcripts, raw MCP
-traffic, source snippets, terminal logs, or project test output.
+evidence. Assisted lanes also record source-free ctxhelm evidence attribution:
+`ctxhelmEvidenceTargetHits` are targets surfaced by the plan or brief pack,
+`ctxhelmEvidenceOnlyTargets` are surfaced targets the agent did not read, and
+`ctxhelmEvidenceMissedTargets` are targets not surfaced by ctxhelm evidence for
+that lane. This separates retrieval/packing gaps from agent-consumption gaps.
+The report stores path labels, hashes, and sanitized MCP request summaries only;
+it does not store raw prompts, raw model transcripts, raw MCP traffic, source
+snippets, terminal logs, or project test output.
 
 Without `CTXHELM_RUN_REAL_CLIENT=1`, the script writes a skipped report so CI
 can verify the contract without pretending a real agent ran. Treat a passing
@@ -162,10 +167,11 @@ Suite reports keep the same source-free contract and add aggregate lane
 summaries: task count, average target-coverage delta, average target-read
 coverage delta, total irrelevant-read delta, per-lane target-read/missed-target
 counts, read-role counts, tool counts, required-call compliance, eligible-lane
-counts, and the aggregate outcome claim. If no baseline plus ctxhelm-assisted
-lane is comparable, the outcome claim is `insufficient_comparable_lanes`. This
-is the preferred path for comparing native agent search against ctxhelm-assisted
-exploration across repeated tasks.
+counts, ctxhelm evidence hit/miss/evidence-only counts, and the aggregate
+outcome claim. If no baseline plus ctxhelm-assisted lane is comparable, the
+outcome claim is `insufficient_comparable_lanes`. This is the preferred path
+for comparing native agent search against ctxhelm-assisted exploration across
+repeated tasks.
 
 ## Release Coverage
 

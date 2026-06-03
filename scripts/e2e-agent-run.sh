@@ -192,6 +192,7 @@ PY
 import hashlib
 import json
 import pathlib
+import re
 import sys
 from collections import defaultdict
 
@@ -222,6 +223,10 @@ lane_totals = defaultdict(lambda: {
     "invalidRequiredCtxhelmCallCount": 0,
     "clientFailureCount": 0,
     "rateLimitCount": 0,
+    "ctxhelmEvidenceFileCount": 0,
+    "ctxhelmEvidenceTargetHitCount": 0,
+    "ctxhelmEvidenceOnlyTargetCount": 0,
+    "ctxhelmEvidenceMissedTargetCount": 0,
     "readRoleCounts": defaultdict(int),
     "missedTargetRoleCounts": defaultdict(int),
 })
@@ -232,6 +237,8 @@ comparison = {
     "invalidRequiredCtxhelmCallsObserved": False,
     "clientFailuresObserved": False,
     "rateLimitsObserved": False,
+    "ctxhelmEvidenceMissesObserved": False,
+    "ctxhelmEvidenceOnlyTargetsObserved": False,
     "comparisonEligibleCount": 0,
     "comparableCtxhelmLaneCount": 0,
     "targetCoverageDeltaSum": 0.0,
@@ -289,6 +296,14 @@ for entry in entries:
         comparison["rateLimitsObserved"]
         or bool(task_comparison.get("rateLimitsObserved", False))
     )
+    comparison["ctxhelmEvidenceMissesObserved"] = (
+        comparison["ctxhelmEvidenceMissesObserved"]
+        or bool(task_comparison.get("ctxhelmEvidenceMissesObserved", False))
+    )
+    comparison["ctxhelmEvidenceOnlyTargetsObserved"] = (
+        comparison["ctxhelmEvidenceOnlyTargetsObserved"]
+        or bool(task_comparison.get("ctxhelmEvidenceOnlyTargetsObserved", False))
+    )
     comparison["comparisonEligibleCount"] += 1 if task_comparison.get("comparisonEligible", False) else 0
     comparison["comparableCtxhelmLaneCount"] += int(task_comparison.get("comparableCtxhelmLaneCount", 0) or 0)
     comparison["targetCoverageDeltaSum"] += float(task_comparison.get("targetCoverageDelta", 0.0) or 0.0)
@@ -321,6 +336,10 @@ for entry in entries:
         bucket["invalidRequiredCtxhelmCallCount"] += int(metrics.get("invalidRequiredCtxhelmCallCount", 0) or 0)
         bucket["clientFailureCount"] += 1 if lane.get("clientFailureKind") else 0
         bucket["rateLimitCount"] += 1 if lane.get("rateLimitObserved", False) else 0
+        bucket["ctxhelmEvidenceFileCount"] += int(metrics.get("ctxhelmEvidenceFileCount", 0) or 0)
+        bucket["ctxhelmEvidenceTargetHitCount"] += int(metrics.get("ctxhelmEvidenceTargetHitCount", 0) or 0)
+        bucket["ctxhelmEvidenceOnlyTargetCount"] += int(metrics.get("ctxhelmEvidenceOnlyTargetCount", 0) or 0)
+        bucket["ctxhelmEvidenceMissedTargetCount"] += int(metrics.get("ctxhelmEvidenceMissedTargetCount", 0) or 0)
         for role, count in (lane.get("readRoleCounts") or {}).items():
             bucket["readRoleCounts"][role] += int(count or 0)
         for role, count in (lane.get("missedTargetRoleCounts") or {}).items():
@@ -350,6 +369,10 @@ for lane_id, bucket in sorted(lane_totals.items()):
         "invalidRequiredCtxhelmCallCount": bucket["invalidRequiredCtxhelmCallCount"],
         "clientFailureCount": bucket["clientFailureCount"],
         "rateLimitCount": bucket["rateLimitCount"],
+        "ctxhelmEvidenceFileCount": bucket["ctxhelmEvidenceFileCount"],
+        "ctxhelmEvidenceTargetHitCount": bucket["ctxhelmEvidenceTargetHitCount"],
+        "ctxhelmEvidenceOnlyTargetCount": bucket["ctxhelmEvidenceOnlyTargetCount"],
+        "ctxhelmEvidenceMissedTargetCount": bucket["ctxhelmEvidenceMissedTargetCount"],
         "readRoleCounts": dict(sorted(bucket["readRoleCounts"].items())),
         "missedTargetRoleCounts": dict(sorted(bucket["missedTargetRoleCounts"].items())),
     })
@@ -408,6 +431,8 @@ payload = {
         "invalidRequiredCtxhelmCallsObserved": comparison["invalidRequiredCtxhelmCallsObserved"],
         "clientFailuresObserved": comparison["clientFailuresObserved"],
         "rateLimitsObserved": comparison["rateLimitsObserved"],
+        "ctxhelmEvidenceMissesObserved": comparison["ctxhelmEvidenceMissesObserved"],
+        "ctxhelmEvidenceOnlyTargetsObserved": comparison["ctxhelmEvidenceOnlyTargetsObserved"],
         "ctxhelmUnderReadTargetsObserved": comparison["ctxhelmUnderReadTargetsObserved"],
         "outcomeClaim": outcome_claim,
     },
@@ -507,6 +532,10 @@ payload = {
         "observedRequiredCtxhelmCallCount": 0,
         "missingRequiredCtxhelmCallCount": len(required_calls),
         "invalidRequiredCtxhelmCallCount": 0,
+        "ctxhelmEvidenceFileCount": 0,
+        "ctxhelmEvidenceTargetHitCount": 0,
+        "ctxhelmEvidenceOnlyTargetCount": 0,
+        "ctxhelmEvidenceMissedTargetCount": 0,
     },
     "requiredCtxhelmCallSpecs": required_call_specs,
     "requiredCtxhelmCalls": required_calls,
@@ -521,6 +550,10 @@ payload = {
     "targetReads": [],
     "discoveredOnlyTargets": [],
     "missedTargets": [],
+    "ctxhelmEvidenceFiles": [],
+    "ctxhelmEvidenceTargetHits": [],
+    "ctxhelmEvidenceOnlyTargets": [],
+    "ctxhelmEvidenceMissedTargets": [],
     "readRoleCounts": {},
     "missedTargetRoleCounts": {},
     "sourceTextLogged": False,
@@ -565,6 +598,7 @@ run_lane() {
   local events="$lane_dir/events.jsonl"
   local stderr_log="$lane_dir/stderr.log"
   local request_log="$lane_dir/ctxhelm-requests.jsonl"
+  local ctxhelm_evidence="$lane_dir/ctxhelm-evidence.json"
   local lane_json="$lane_dir/lane.json"
 
   if [[ "$run_real" != "1" && "$require_real" != "1" ]]; then
@@ -663,17 +697,27 @@ EOF
   fi
   set -e
 
-  python3 - "$lane" "$mode" "$client_status" "$repo" "$target_json" "$events" "$stderr_log" "$request_log" "$lane_json" <<'PY'
+  if [[ "$mode" == "plan" ]]; then
+    "$ctxhelm_bin" prepare-task --repo "$repo" --no-trace "$task" >"$ctxhelm_evidence" 2>/dev/null || true
+  elif [[ "$mode" == "brief" ]]; then
+    "$ctxhelm_bin" get-pack --repo "$repo" --budget brief --format json --no-trace "$task" >"$ctxhelm_evidence" 2>/dev/null || true
+  else
+    : >"$ctxhelm_evidence"
+  fi
+
+  python3 - "$lane" "$mode" "$client_status" "$repo" "$target_json" "$events" "$stderr_log" "$request_log" "$ctxhelm_evidence" "$lane_json" <<'PY'
 import hashlib
 import json
 import pathlib
+import re
 import sys
 
-lane, mode, status_text, repo_text, target_path, events_path, stderr_path, request_log_path, output_path = sys.argv[1:]
+lane, mode, status_text, repo_text, target_path, events_path, stderr_path, request_log_path, ctxhelm_evidence_path, output_path = sys.argv[1:]
 repo = pathlib.Path(repo_text).resolve()
 targets = set(json.loads(pathlib.Path(target_path).read_text(encoding="utf-8")))
 events_file = pathlib.Path(events_path)
 request_file = pathlib.Path(request_log_path)
+ctxhelm_evidence_file = pathlib.Path(ctxhelm_evidence_path)
 stderr_file = pathlib.Path(stderr_path)
 client_status = int(status_text)
 
@@ -731,6 +775,68 @@ def rel_label(raw):
         except Exception:
             return path.name
     return path.as_posix()
+
+def collect_path_evidence(value):
+    paths = []
+
+    def looks_like_path(label):
+        if not isinstance(label, str) or not label:
+            return False
+        if label.startswith(("ctxhelm://", "repo://", "http://", "https://")):
+            return False
+        if any(char.isspace() for char in label):
+            return False
+        if "/" not in label:
+            return False
+        suffixes = (
+            ".rs", ".py", ".ts", ".tsx", ".js", ".jsx", ".go", ".java", ".kt",
+            ".cs", ".rb", ".php", ".md", ".rst", ".adoc", ".toml", ".json",
+            ".yml", ".yaml", ".lock", ".sh", ".sql", ".graphql", ".proto",
+            ".xml", ".gradle",
+        )
+        return label.lower().endswith(suffixes)
+
+    def maybe_add(raw):
+        label = rel_label(raw)
+        if label and looks_like_path(label) and label not in paths:
+            paths.append(label)
+
+    def visit(item, key=None):
+        if isinstance(item, dict):
+            for child_key, child_value in item.items():
+                visit(child_value, child_key)
+            return
+        if isinstance(item, list):
+            for child in item:
+                visit(child, key)
+            return
+        if not isinstance(item, str):
+            return
+        normalized_key = str(key or "")
+        if normalized_key == "content":
+            for match in re.findall(r"`([^`]+)`", item):
+                maybe_add(match)
+            return
+        if normalized_key in {
+            "path",
+            "file",
+            "source",
+            "resourcePath",
+            "targetFile",
+        }:
+            maybe_add(item)
+            return
+        if normalized_key in {
+            "paths",
+            "files",
+            "targetFiles",
+            "nextReadPaths",
+            "examplePaths",
+        }:
+            maybe_add(item)
+
+    visit(value)
+    return paths
 
 if events_file.exists():
     for line in events_file.read_text(encoding="utf-8", errors="replace").splitlines():
@@ -819,6 +925,14 @@ if request_file.exists():
             "recordTrace": arguments.get("recordTrace"),
         })
 
+ctxhelm_evidence_files = []
+if ctxhelm_evidence_file.exists() and ctxhelm_evidence_file.stat().st_size > 0:
+    try:
+        ctxhelm_evidence_payload = json.loads(ctxhelm_evidence_file.read_text(encoding="utf-8", errors="replace"))
+        ctxhelm_evidence_files = collect_path_evidence(ctxhelm_evidence_payload)
+    except json.JSONDecodeError:
+        ctxhelm_evidence_files = []
+
 evidence_files = set(read_files) | set(discovered_files)
 target_hits = sorted(target for target in targets if target in evidence_files)
 target_reads = sorted(target for target in targets if target in set(read_files))
@@ -826,6 +940,12 @@ discovered_only_targets = sorted(
     target for target in target_hits if target not in set(read_files)
 )
 missed_targets = sorted(target for target in targets if target not in evidence_files)
+ctxhelm_evidence_set = set(ctxhelm_evidence_files)
+ctxhelm_evidence_target_hits = sorted(target for target in targets if target in ctxhelm_evidence_set)
+ctxhelm_evidence_only_targets = sorted(
+    target for target in ctxhelm_evidence_target_hits if target not in evidence_files
+)
+ctxhelm_evidence_missed_targets = sorted(target for target in targets if target not in ctxhelm_evidence_set)
 target_coverage = len(target_hits) / len(targets) if targets else 0.0
 target_read_coverage = len(target_reads) / len(targets) if targets else 0.0
 irrelevant_reads = sorted(path for path in read_files if path not in targets)
@@ -938,6 +1058,10 @@ payload = {
         "observedRequiredCtxhelmCallCount": len(observed_required_calls),
         "missingRequiredCtxhelmCallCount": len(missing_required_calls),
         "invalidRequiredCtxhelmCallCount": len(invalid_required_calls),
+        "ctxhelmEvidenceFileCount": len(ctxhelm_evidence_files),
+        "ctxhelmEvidenceTargetHitCount": len(ctxhelm_evidence_target_hits),
+        "ctxhelmEvidenceOnlyTargetCount": len(ctxhelm_evidence_only_targets),
+        "ctxhelmEvidenceMissedTargetCount": len(ctxhelm_evidence_missed_targets),
     },
     "requiredCtxhelmCallSpecs": required_call_specs,
     "requiredCtxhelmCalls": required_calls,
@@ -949,6 +1073,10 @@ payload = {
     "targetReads": target_reads,
     "discoveredOnlyTargets": discovered_only_targets,
     "missedTargets": missed_targets,
+    "ctxhelmEvidenceFiles": ctxhelm_evidence_files,
+    "ctxhelmEvidenceTargetHits": ctxhelm_evidence_target_hits,
+    "ctxhelmEvidenceOnlyTargets": ctxhelm_evidence_only_targets,
+    "ctxhelmEvidenceMissedTargets": ctxhelm_evidence_missed_targets,
     "readRoleCounts": role_counts(read_files),
     "missedTargetRoleCounts": role_counts(missed_targets),
     "readFiles": read_files,
@@ -1033,6 +1161,18 @@ invalid_required_calls = {
     if lane.get("invalidRequiredCtxhelmCalls")
 }
 invalid_required_observed = bool(invalid_required_calls)
+ctxhelm_evidence_misses = {
+    lane.get("lane"): lane.get("ctxhelmEvidenceMissedTargets", [])
+    for lane in ctxhelm_lanes
+    if lane.get("ctxhelmEvidenceMissedTargets")
+}
+ctxhelm_evidence_misses_observed = bool(ctxhelm_evidence_misses)
+ctxhelm_evidence_only_targets = {
+    lane.get("lane"): lane.get("ctxhelmEvidenceOnlyTargets", [])
+    for lane in ctxhelm_lanes
+    if lane.get("ctxhelmEvidenceOnlyTargets")
+}
+ctxhelm_evidence_only_observed = bool(ctxhelm_evidence_only_targets)
 ctxhelm_under_read = any(
     lane.get("metrics", {}).get("targetReadCoverage", 0.0)
     < base_metrics.get("targetReadCoverage", 0.0)
@@ -1085,6 +1225,10 @@ payload = {
         "invalidRequiredCtxhelmCalls": invalid_required_calls,
         "clientFailuresObserved": client_failures_observed,
         "rateLimitsObserved": rate_limits_observed,
+        "ctxhelmEvidenceMissesObserved": ctxhelm_evidence_misses_observed,
+        "ctxhelmEvidenceMisses": ctxhelm_evidence_misses,
+        "ctxhelmEvidenceOnlyTargetsObserved": ctxhelm_evidence_only_observed,
+        "ctxhelmEvidenceOnlyTargets": ctxhelm_evidence_only_targets,
         "ctxhelmUnderReadTargetsObserved": ctxhelm_under_read,
         "outcomeClaim": outcome_claim,
     },

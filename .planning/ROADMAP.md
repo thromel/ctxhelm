@@ -72,6 +72,8 @@ Phase 208 classifies real-client availability failures source-free. A Phase 207 
 
 Phase 209 validates required ctxhelm call arguments before counting a lane as comparable. `prepare_task` required calls must include the explicit repo and task, while `get_pack` required calls must include the explicit repo, task, `budget = "brief"`, `format = "json"`, and `recordTrace = false`. Reports now expose required call specs, invalid required-call reasons, invalid counts, and `invalidRequiredCtxhelmCallsObserved`, preventing wrong-repo or malformed ctxhelm calls from being treated as outcome evidence.
 
+Phase 210 attributes real-agent outcome gaps across ctxhelm evidence coverage and native agent reads. Assisted lanes now record source-free ctxhelm evidence files, target hits in ctxhelm evidence, evidence-only targets that ctxhelm surfaced but the agent did not read, and evidence misses where ctxhelm did not surface the target. The latest real Claude Code probe still hit a rate limit, but the report now shows the difference between client unavailability, ctxhelm evidence misses, and agent consumption misses instead of collapsing all under-read behavior into one metric.
+
 ## v2.5 Production Retrieval Quality
 
 ## Phases
@@ -213,6 +215,7 @@ Phase 209 validates required ctxhelm call arguments before counting a lane as co
 - [x] **Phase 207: Agent-Run Lane Comparability** - Paired agent-run reports require expected ctxhelm calls per lane and mark comparisons ineligible when a ctxhelm-assisted lane failed or skipped the required MCP path.
 - [x] **Phase 208: Agent-Run Client Failure Classification** - Paired agent-run reports classify rate limits, API errors, timeouts, and generic non-zero client exits without storing raw client output.
 - [x] **Phase 209: Agent-Run Required Call Argument Validation** - Required ctxhelm calls must carry explicit repo/task and brief-pack arguments before a lane can become comparable.
+- [x] **Phase 210: Agent-Run Evidence Attribution** - Paired agent-run reports distinguish targets surfaced by ctxhelm evidence from surfaced targets the agent did not read and targets not surfaced by ctxhelm evidence.
 - [x] **Phase 162: Feature-Enabled Local Fastembed Gate Proof** - A feature-enabled `local_fastembed` gate run on clean RefactoringMiner now proves the production-local backend works end-to-end, but remains held because it adds no semantic-only target hits and is still slower than default; the gate emits a source-free diagnostic for that condition.
 - [x] **Phase 163: Persisted Semantic Vector Reuse** - Fresh CLI/MCP processes can reuse persisted source-free semantic document vectors instead of recomputing every candidate vector.
 - [x] **Phase 164: Global Semantic Vector Candidates And Write-Through** - Semantic search can include persisted vector candidates outside the lexical prefilter and write through newly embedded candidate misses.

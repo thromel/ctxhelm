@@ -1680,7 +1680,11 @@ fn eval_agent_run_renders_source_free_report() {
                         "requiredCtxhelmCallCount": 0,
                         "observedRequiredCtxhelmCallCount": 0,
                         "missingRequiredCtxhelmCallCount": 0,
-                        "invalidRequiredCtxhelmCallCount": 0
+                        "invalidRequiredCtxhelmCallCount": 0,
+                        "ctxhelmEvidenceFileCount": 0,
+                        "ctxhelmEvidenceTargetHitCount": 0,
+                        "ctxhelmEvidenceOnlyTargetCount": 0,
+                        "ctxhelmEvidenceMissedTargetCount": 0
                     },
                     "requiredCtxhelmCallSpecs": [],
                     "requiredCtxhelmCalls": [],
@@ -1699,6 +1703,10 @@ fn eval_agent_run_renders_source_free_report() {
                     "missedTargetRoleCounts": {
                         "docs": 1
                     },
+                    "ctxhelmEvidenceFiles": [],
+                    "ctxhelmEvidenceTargetHits": [],
+                    "ctxhelmEvidenceOnlyTargets": [],
+                    "ctxhelmEvidenceMissedTargets": [],
                     "sourceTextLogged": false,
                     "rawPromptStored": false,
                     "rawTranscriptStored": false,
@@ -1723,7 +1731,11 @@ fn eval_agent_run_renders_source_free_report() {
                         "requiredCtxhelmCallCount": 2,
                         "observedRequiredCtxhelmCallCount": 2,
                         "missingRequiredCtxhelmCallCount": 0,
-                        "invalidRequiredCtxhelmCallCount": 0
+                        "invalidRequiredCtxhelmCallCount": 0,
+                        "ctxhelmEvidenceFileCount": 3,
+                        "ctxhelmEvidenceTargetHitCount": 2,
+                        "ctxhelmEvidenceOnlyTargetCount": 0,
+                        "ctxhelmEvidenceMissedTargetCount": 0
                     },
                     "requiredCtxhelmCallSpecs": [
                         {
@@ -1753,6 +1765,10 @@ fn eval_agent_run_renders_source_free_report() {
                         "docs": 1
                     },
                     "missedTargetRoleCounts": {},
+                    "ctxhelmEvidenceFiles": ["src/lib.rs", "docs/auth.md", "tests/auth.test.ts"],
+                    "ctxhelmEvidenceTargetHits": ["src/lib.rs", "docs/auth.md"],
+                    "ctxhelmEvidenceOnlyTargets": [],
+                    "ctxhelmEvidenceMissedTargets": [],
                     "sourceTextLogged": false,
                     "rawPromptStored": false,
                     "rawTranscriptStored": false,
@@ -1776,6 +1792,10 @@ fn eval_agent_run_renders_source_free_report() {
                 "invalidRequiredCtxhelmCalls": {},
                 "clientFailuresObserved": false,
                 "rateLimitsObserved": false,
+                "ctxhelmEvidenceMissesObserved": false,
+                "ctxhelmEvidenceMisses": {},
+                "ctxhelmEvidenceOnlyTargetsObserved": false,
+                "ctxhelmEvidenceOnlyTargets": {},
                 "ctxhelmUnderReadTargetsObserved": false,
                 "outcomeClaim": "ctxhelm_improved"
             },
@@ -1815,12 +1835,15 @@ fn eval_agent_run_renders_source_free_report() {
         .stdout(contains("Invalid required ctxhelm calls observed: `false`"))
         .stdout(contains("Client failures observed: `false`"))
         .stdout(contains("Rate limits observed: `false`"))
+        .stdout(contains("ctxhelm evidence misses observed: `false`"))
+        .stdout(contains("ctxhelm evidence-only targets observed: `false`"))
         .stdout(contains("target coverage `1.00`"))
         .stdout(contains("target read coverage `1.00`"))
         .stdout(contains("evaluation `eligible` eligible `true`"))
         .stdout(contains("compliance `satisfied`"))
         .stdout(contains("client failure `none` rate limited `false`"))
         .stdout(contains("missed targets `0`"))
+        .stdout(contains("ctxhelm evidence files `3` evidence target hits `2` evidence-only targets `0` evidence misses `0`"))
         .stdout(contains("read roles `docs=1, source=1`"))
         .stdout(contains("ctxhelm calls `2`"))
         .stdout(contains("forbidden calls `0`"));
@@ -1879,7 +1902,11 @@ fn eval_agent_run_renders_invalid_required_ctxhelm_call_reasons() {
                         "requiredCtxhelmCallCount": 1,
                         "observedRequiredCtxhelmCallCount": 0,
                         "missingRequiredCtxhelmCallCount": 1,
-                        "invalidRequiredCtxhelmCallCount": 1
+                        "invalidRequiredCtxhelmCallCount": 1,
+                        "ctxhelmEvidenceFileCount": 1,
+                        "ctxhelmEvidenceTargetHitCount": 0,
+                        "ctxhelmEvidenceOnlyTargetCount": 0,
+                        "ctxhelmEvidenceMissedTargetCount": 1
                     },
                     "requiredCtxhelmCalls": ["prepare_task"],
                     "observedRequiredCtxhelmCalls": [],
@@ -1897,7 +1924,11 @@ fn eval_agent_run_renders_invalid_required_ctxhelm_call_reasons() {
                     "readRoleCounts": {},
                     "missedTargetRoleCounts": {
                         "source": 1
-                    }
+                    },
+                    "ctxhelmEvidenceFiles": ["docs/auth.md"],
+                    "ctxhelmEvidenceTargetHits": [],
+                    "ctxhelmEvidenceOnlyTargets": [],
+                    "ctxhelmEvidenceMissedTargets": ["src/lib.rs"]
                 }
             ],
             "comparison": {
@@ -1927,6 +1958,12 @@ fn eval_agent_run_renders_invalid_required_ctxhelm_call_reasons() {
                 },
                 "clientFailuresObserved": false,
                 "rateLimitsObserved": false,
+                "ctxhelmEvidenceMissesObserved": true,
+                "ctxhelmEvidenceMisses": {
+                    "ctxhelm-plan": ["src/lib.rs"]
+                },
+                "ctxhelmEvidenceOnlyTargetsObserved": false,
+                "ctxhelmEvidenceOnlyTargets": {},
                 "ctxhelmUnderReadTargetsObserved": false,
                 "outcomeClaim": "insufficient_comparable_lanes"
             },
@@ -1949,6 +1986,9 @@ fn eval_agent_run_renders_invalid_required_ctxhelm_call_reasons() {
             "Invalid required ctxhelm calls: `ctxhelm-plan=prepare_task[repo, task; attempts=1]`",
         ))
         .stdout(contains("compliance `invalid`"))
+        .stdout(contains(
+            "ctxhelm evidence misses: `ctxhelm-plan=src/lib.rs`",
+        ))
         .stdout(contains(
             "invalid required `prepare_task[repo, task; attempts=1]`",
         ));
@@ -1996,6 +2036,8 @@ fn eval_agent_run_renders_source_free_suite_report() {
                         "invalidRequiredCtxhelmCallsObserved": false,
                         "clientFailuresObserved": false,
                         "rateLimitsObserved": false,
+                        "ctxhelmEvidenceMissesObserved": false,
+                        "ctxhelmEvidenceOnlyTargetsObserved": true,
                         "ctxhelmUnderReadTargetsObserved": false
                     },
                     "lanes": [],
@@ -2017,6 +2059,8 @@ fn eval_agent_run_renders_source_free_suite_report() {
                 "invalidRequiredCtxhelmCallsObserved": false,
                 "clientFailuresObserved": false,
                 "rateLimitsObserved": false,
+                "ctxhelmEvidenceMissesObserved": false,
+                "ctxhelmEvidenceOnlyTargetsObserved": true,
                 "ctxhelmUnderReadTargetsObserved": false,
                 "outcomeClaim": "ctxhelm_improved",
                 "laneSummaries": [
@@ -2041,6 +2085,10 @@ fn eval_agent_run_renders_source_free_suite_report() {
                         "invalidRequiredCtxhelmCallCount": 0,
                         "clientFailureCount": 0,
                         "rateLimitCount": 0,
+                        "ctxhelmEvidenceFileCount": 0,
+                        "ctxhelmEvidenceTargetHitCount": 0,
+                        "ctxhelmEvidenceOnlyTargetCount": 0,
+                        "ctxhelmEvidenceMissedTargetCount": 0,
                         "readRoleCounts": {
                             "source": 4,
                             "test": 2,
@@ -2071,6 +2119,10 @@ fn eval_agent_run_renders_source_free_suite_report() {
                         "invalidRequiredCtxhelmCallCount": 0,
                         "clientFailureCount": 0,
                         "rateLimitCount": 0,
+                        "ctxhelmEvidenceFileCount": 6,
+                        "ctxhelmEvidenceTargetHitCount": 4,
+                        "ctxhelmEvidenceOnlyTargetCount": 1,
+                        "ctxhelmEvidenceMissedTargetCount": 0,
                         "readRoleCounts": {
                             "source": 3,
                             "docs": 2
@@ -2108,6 +2160,8 @@ fn eval_agent_run_renders_source_free_suite_report() {
         .stdout(contains("Invalid required ctxhelm calls observed: `false`"))
         .stdout(contains("Client failures observed: `false`"))
         .stdout(contains("Rate limits observed: `false`"))
+        .stdout(contains("ctxhelm evidence misses observed: `false`"))
+        .stdout(contains("ctxhelm evidence-only targets observed: `true`"))
         .stdout(contains("Target coverage delta average: `0.25`"))
         .stdout(contains("Target read coverage delta average: `0.25`"))
         .stdout(contains("Irrelevant read delta sum: `3`"))
@@ -2119,6 +2173,7 @@ fn eval_agent_run_renders_source_free_suite_report() {
             "required ctxhelm calls `4` observed required `4` missing required `0` invalid required `0`",
         ))
         .stdout(contains("client failures `0` rate limits `0`"))
+        .stdout(contains("ctxhelm evidence files `6` evidence target hits `4` evidence-only targets `1` evidence misses `0`"))
         .stdout(contains("read roles `docs=2, source=3`"))
         .stdout(contains("forbidden calls `0`"));
 

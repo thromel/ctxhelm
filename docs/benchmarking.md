@@ -71,6 +71,14 @@ style changes that cannot be fully covered by a small K=10 context budget, and
 `broadScopeCommitCount` summarizes that count at report level. These fields are
 source-free diagnostics; they do not remove targets from recall denominators.
 
+Paired real-agent reports are a separate proof layer from historical retrieval
+evals. They compare what ctxhelm surfaced with what the agent actually read.
+`ctxhelmEvidenceTargetHits` means the plan or pack surfaced the target path,
+`ctxhelmEvidenceOnlyTargets` means the path was surfaced but not consumed by a
+native read, and `ctxhelmEvidenceMissedTargets` means the ctxhelm evidence did
+not surface the target. This distinction prevents agent rate limits or
+under-reading behavior from being misreported as retrieval quality.
+
 Historical eval reports also include source-free `graphEdgeProfiles`. These
 profiles split graph candidate evidence by edge label, such as `imports`,
 `python_reexport`, or `precision:calls`, and report candidate count,
