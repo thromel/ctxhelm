@@ -4,7 +4,7 @@ milestone: v2.5
 milestone_name: Production Retrieval Quality
 status: active
 last_updated: "2026-06-03T00:00:00Z"
-last_activity: 2026-06-03 -- Phase 204 hardens agent-run forbidden tool accounting
+last_activity: 2026-06-03 -- Phase 205 adds source-free agent consumption diagnostics
 progress:
   total_phases: 115
   completed_phases: 115
@@ -17,10 +17,10 @@ progress:
 
 ## Current Position
 
-Phase: 204 - Agent-Run Forbidden Tool Accounting
-Plan: 204-agent-run-forbidden-tool-accounting
+Phase: 205 - Agent Consumption Diagnostics
+Plan: 205-agent-consumption-diagnostics
 Status: Complete
-Last activity: 2026-06-03 -- Phase 204 makes forbidden tool calls source-free and machine-visible in paired Claude Code agent-run reports. Lane metrics now include forbidden-tool counts/calls, comparisons expose whether forbidden calls were observed, and the CLI renderer shows forbidden counts. A hardened real Claude Code run on the Phase 203 validation-evidence task reported no forbidden calls but no ctxhelm lift: native baseline covered `2 / 3` targets, while `ctxhelm-plan` and `ctxhelm-brief` each covered `1 / 3`; outcome claim `ctxhelm_matched`.
+Last activity: 2026-06-03 -- Phase 205 makes real-agent consumption gaps source-free and machine-visible. Paired Claude Code agent-run reports now distinguish target discovery from actual native target reads, add discovered-only targets, missed-target counts, read-role counts, missed-target role counts, target-read coverage deltas, and a `ctxhelmUnderReadTargetsObserved` flag. A real Claude Code `2.1.159` run on the Phase 205 harness task showed `ctxhelm-brief` matching native target-read coverage at `0.67` while reducing irrelevant reads from `3` to `2`; `ctxhelm-plan` still discovered one target without reading it.
 
 ## Project Reference
 

@@ -3943,11 +3943,16 @@ fn render_agent_run_report(report: &serde_json::Value) -> String {
     }
     if let Some(delta) = report.get("comparison") {
         output.push_str(&format!(
-            "- Best lane: `{}`\n- Target coverage delta: `{}`\n- Irrelevant read delta: `{}`\n- Forbidden tool calls observed: `{}`\n- Source text logged: `{}`\n",
+            "- Best lane: `{}`\n- Target coverage delta: `{}`\n- Target read coverage delta: `{}`\n- Irrelevant read delta: `{}`\n- Forbidden tool calls observed: `{}`\n- ctxhelm under-read targets observed: `{}`\n- Source text logged: `{}`\n",
             delta.get("bestLane")
                 .and_then(serde_json::Value::as_str)
                 .unwrap_or("unknown"),
             delta.get("targetCoverageDelta")
+                .and_then(serde_json::Value::as_f64)
+                .map(|value| format!("{value:.2}"))
+                .unwrap_or_else(|| "n/a".to_string()),
+            delta
+                .get("targetReadCoverageDelta")
                 .and_then(serde_json::Value::as_f64)
                 .map(|value| format!("{value:.2}"))
                 .unwrap_or_else(|| "n/a".to_string()),
@@ -3957,6 +3962,11 @@ fn render_agent_run_report(report: &serde_json::Value) -> String {
                 .unwrap_or_else(|| "n/a".to_string()),
             delta
                 .get("forbiddenToolCallsObserved")
+                .and_then(serde_json::Value::as_bool)
+                .map(|value| value.to_string())
+                .unwrap_or_else(|| "n/a".to_string()),
+            delta
+                .get("ctxhelmUnderReadTargetsObserved")
                 .and_then(serde_json::Value::as_bool)
                 .map(|value| value.to_string())
                 .unwrap_or_else(|| "n/a".to_string()),
@@ -3970,7 +3980,7 @@ fn render_agent_run_report(report: &serde_json::Value) -> String {
     if let Some(aggregate) = report.get("aggregate") {
         output.push_str("\n## Suite Aggregate\n\n");
         output.push_str(&format!(
-            "- Tasks: `{}`\n- Target coverage delta average: `{}`\n- Irrelevant read delta sum: `{}`\n- Outcome claim: `{}`\n- ctxhelm calls observed: `{}`\n",
+            "- Tasks: `{}`\n- Target coverage delta average: `{}`\n- Target read coverage delta average: `{}`\n- Irrelevant read delta sum: `{}`\n- Outcome claim: `{}`\n- ctxhelm calls observed: `{}`\n- ctxhelm under-read targets observed: `{}`\n",
             aggregate
                 .get("taskCount")
                 .and_then(serde_json::Value::as_u64)
@@ -3978,6 +3988,11 @@ fn render_agent_run_report(report: &serde_json::Value) -> String {
                 .unwrap_or_else(|| "n/a".to_string()),
             aggregate
                 .get("targetCoverageDeltaAverage")
+                .and_then(serde_json::Value::as_f64)
+                .map(|value| format!("{value:.2}"))
+                .unwrap_or_else(|| "n/a".to_string()),
+            aggregate
+                .get("targetReadCoverageDeltaAverage")
                 .and_then(serde_json::Value::as_f64)
                 .map(|value| format!("{value:.2}"))
                 .unwrap_or_else(|| "n/a".to_string()),
@@ -3995,6 +4010,11 @@ fn render_agent_run_report(report: &serde_json::Value) -> String {
                 .and_then(serde_json::Value::as_bool)
                 .map(|value| value.to_string())
                 .unwrap_or_else(|| "n/a".to_string()),
+            aggregate
+                .get("ctxhelmUnderReadTargetsObserved")
+                .and_then(serde_json::Value::as_bool)
+                .map(|value| value.to_string())
+                .unwrap_or_else(|| "n/a".to_string()),
         ));
         if let Some(lanes) = aggregate
             .get("laneSummaries")
@@ -4007,7 +4027,7 @@ fn render_agent_run_report(report: &serde_json::Value) -> String {
                     .and_then(serde_json::Value::as_str)
                     .unwrap_or("unknown");
                 output.push_str(&format!(
-                "- `{lane_id}` tasks `{}` passed `{}` avg target coverage `{}` read files `{}` irrelevant reads `{}` tool calls `{}` ctxhelm calls `{}` forbidden calls `{}`\n",
+                "- `{lane_id}` tasks `{}` passed `{}` avg target coverage `{}` avg target read coverage `{}` target reads `{}` discovered-only targets `{}` missed targets `{}` read files `{}` irrelevant reads `{}` tool calls `{}` ctxhelm calls `{}` forbidden calls `{}` read roles `{}` missed target roles `{}`\n",
                     lane.get("taskCount")
                         .and_then(serde_json::Value::as_u64)
                         .map(|value| value.to_string())
@@ -4019,6 +4039,22 @@ fn render_agent_run_report(report: &serde_json::Value) -> String {
                     lane.get("averageTargetCoverage")
                         .and_then(serde_json::Value::as_f64)
                         .map(|value| format!("{value:.2}"))
+                        .unwrap_or_else(|| "n/a".to_string()),
+                    lane.get("averageTargetReadCoverage")
+                        .and_then(serde_json::Value::as_f64)
+                        .map(|value| format!("{value:.2}"))
+                        .unwrap_or_else(|| "n/a".to_string()),
+                    lane.get("targetReadCount")
+                        .and_then(serde_json::Value::as_u64)
+                        .map(|value| value.to_string())
+                        .unwrap_or_else(|| "n/a".to_string()),
+                    lane.get("targetDiscoveredOnlyCount")
+                        .and_then(serde_json::Value::as_u64)
+                        .map(|value| value.to_string())
+                        .unwrap_or_else(|| "n/a".to_string()),
+                    lane.get("missedTargetCount")
+                        .and_then(serde_json::Value::as_u64)
+                        .map(|value| value.to_string())
                         .unwrap_or_else(|| "n/a".to_string()),
                     lane.get("readFileCount")
                         .and_then(serde_json::Value::as_u64)
@@ -4040,6 +4076,8 @@ fn render_agent_run_report(report: &serde_json::Value) -> String {
                         .and_then(serde_json::Value::as_u64)
                         .map(|value| value.to_string())
                         .unwrap_or_else(|| "n/a".to_string()),
+                    render_json_count_map(lane.get("readRoleCounts")),
+                    render_json_count_map(lane.get("missedTargetRoleCounts")),
                 ));
             }
         }
@@ -4057,11 +4095,31 @@ fn render_agent_run_report(report: &serde_json::Value) -> String {
                 .unwrap_or("unknown");
             let metrics = lane.get("metrics").unwrap_or(&serde_json::Value::Null);
             output.push_str(&format!(
-                "- `{lane_id}` status `{lane_status}` target coverage `{}` read files `{}` irrelevant reads `{}` tool calls `{}` ctxhelm calls `{}` forbidden calls `{}`\n",
+                "- `{lane_id}` status `{lane_status}` target coverage `{}` target read coverage `{}` target reads `{}` discovered-only targets `{}` missed targets `{}` read files `{}` irrelevant reads `{}` tool calls `{}` ctxhelm calls `{}` forbidden calls `{}` read roles `{}` missed target roles `{}`\n",
                 metrics
                     .get("targetCoverage")
                     .and_then(serde_json::Value::as_f64)
                     .map(|value| format!("{value:.2}"))
+                    .unwrap_or_else(|| "n/a".to_string()),
+                metrics
+                    .get("targetReadCoverage")
+                    .and_then(serde_json::Value::as_f64)
+                    .map(|value| format!("{value:.2}"))
+                    .unwrap_or_else(|| "n/a".to_string()),
+                metrics
+                    .get("targetReadCount")
+                    .and_then(serde_json::Value::as_u64)
+                    .map(|value| value.to_string())
+                    .unwrap_or_else(|| "n/a".to_string()),
+                metrics
+                    .get("targetDiscoveredOnlyCount")
+                    .and_then(serde_json::Value::as_u64)
+                    .map(|value| value.to_string())
+                    .unwrap_or_else(|| "n/a".to_string()),
+                metrics
+                    .get("missedTargetCount")
+                    .and_then(serde_json::Value::as_u64)
+                    .map(|value| value.to_string())
                     .unwrap_or_else(|| "n/a".to_string()),
                 metrics
                     .get("readFileCount")
@@ -4088,12 +4146,34 @@ fn render_agent_run_report(report: &serde_json::Value) -> String {
                     .and_then(serde_json::Value::as_u64)
                     .map(|value| value.to_string())
                     .unwrap_or_else(|| "n/a".to_string()),
+                render_json_count_map(lane.get("readRoleCounts")),
+                render_json_count_map(lane.get("missedTargetRoleCounts")),
             ));
         }
     } else {
         output.push_str("_No lanes found._\n");
     }
     output
+}
+
+fn render_json_count_map(value: Option<&serde_json::Value>) -> String {
+    let Some(object) = value.and_then(serde_json::Value::as_object) else {
+        return "none".to_string();
+    };
+    if object.is_empty() {
+        return "none".to_string();
+    }
+    object
+        .iter()
+        .map(|(key, value)| {
+            let count = value
+                .as_u64()
+                .map(|count| count.to_string())
+                .unwrap_or_else(|| "n/a".to_string());
+            format!("{key}={count}")
+        })
+        .collect::<Vec<_>>()
+        .join(", ")
 }
 
 fn json_string<'a>(value: &'a serde_json::Value, key: &str) -> Option<&'a str> {

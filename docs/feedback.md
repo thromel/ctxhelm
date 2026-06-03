@@ -107,11 +107,15 @@ ctxhelm eval agent-run --report .ctxhelm/e2e/agent-run-claude.json
 The script runs three read-only Claude Code lanes: native baseline,
 `prepare_task`, and `prepare_task` plus a brief `get_pack`. It records
 source-free lane metrics such as target coverage, read-file count, irrelevant
-read count, tool-call count, ctxhelm tool-call count, and forbidden tool-call
-count. Observed shell/edit/write tools are surfaced as forbidden calls and
-degrade the report status. The report stores path labels, hashes, and sanitized
-MCP request summaries only; it does not store raw prompts, raw model transcripts,
-raw MCP traffic, source snippets, terminal logs, or project test output.
+read count, target-read coverage, discovered-only targets, missed-target counts,
+source-free read-role counts, tool-call count, ctxhelm tool-call count, and
+forbidden tool-call count. Observed shell/edit/write tools are surfaced as
+forbidden calls and degrade the report status. Target coverage can include files
+found through search results; target-read coverage requires an actual native
+file read, which is the stronger signal for whether an agent consumed the
+evidence. The report stores path labels, hashes, and sanitized MCP request
+summaries only; it does not store raw prompts, raw model transcripts, raw MCP
+traffic, source snippets, terminal logs, or project test output.
 
 Without `CTXHELM_RUN_REAL_CLIENT=1`, the script writes a skipped report so CI
 can verify the contract without pretending a real agent ran. Treat a passing
@@ -143,9 +147,10 @@ ctxhelm eval agent-run --report .ctxhelm/e2e/agent-run-suite-claude.json
 ```
 
 Suite reports keep the same source-free contract and add aggregate lane
-summaries: task count, average target-coverage delta, total irrelevant-read
-delta, per-lane read/tool counts, and the aggregate outcome claim. This is the
-preferred path for comparing native agent search against ctxhelm-assisted
+summaries: task count, average target-coverage delta, average target-read
+coverage delta, total irrelevant-read delta, per-lane target-read/missed-target
+counts, read-role counts, tool counts, and the aggregate outcome claim. This is
+the preferred path for comparing native agent search against ctxhelm-assisted
 exploration across repeated tasks.
 
 ## Release Coverage

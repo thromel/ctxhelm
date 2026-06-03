@@ -62,6 +62,8 @@ Phase 203 makes selected validation evidence first-class in generated packs. Pac
 
 Phase 204 hardens real-agent outcome proof by making forbidden tool calls source-free and machine-visible in paired Claude Code agent-run reports. Lane metrics now include `forbiddenToolCallCount` and `forbiddenToolCalls`, comparisons include `forbiddenToolCallsObserved`, and suite reports aggregate forbidden calls. A hardened real Claude Code run on the Phase 203 validation-evidence task reported no forbidden calls, but also no ctxhelm lift: native baseline covered `2 / 3` targets, while `ctxhelm-plan` and `ctxhelm-brief` each covered `1 / 3`; outcome claim `ctxhelm_matched`. This keeps the next real-agent R&D focused on why pack-assisted lanes under-read docs/implementation support files instead of assuming retrieval proof translates directly into agent behavior.
 
+Phase 205 adds source-free agent consumption diagnostics to that paired-run harness. Reports now separate target discovery from actual native target reads, expose discovered-only targets, missed-target counts, read-role counts, missed-target role counts, target-read coverage deltas, and whether ctxhelm-assisted lanes under-read targets relative to the native baseline. This does not claim a retrieval-quality lift; it makes the real-agent consumption gap machine-checkable before changing pack prompts or ranking.
+
 ## v2.5 Production Retrieval Quality
 
 ## Phases
@@ -69,7 +71,7 @@ Phase 204 hardens real-agent outcome proof by making forbidden tool calls source
 **Phase Numbering:**
 
 - Integer phases (61, 62, 63, 64, 65): Planned v2.5 work
-- Phases 66-202: Production-readiness follow-ups from the original blocked proof and the channel-aware promotion path
+- Phases 66-205: Production-readiness follow-ups from the original blocked proof and the channel-aware promotion path
 - Decimal phases (61.1, 62.1): Urgent insertions if needed
 
 - [x] **Phase 61: Multi-Repo Quality Baselines** - Maintainers can run source-free paired baselines across RefactoringMiner and a second real repository with stable comparison artifacts.
@@ -198,6 +200,7 @@ Phase 204 hardens real-agent outcome proof by making forbidden tool calls source
 - [x] **Phase 202: Agent Evidence Only Report Rendering** - Historical eval markdown reports render agent-evidence-only recovery counts, roles, and top areas.
 - [x] **Phase 203: Related Test Evidence Pack Section** - Generated packs surface selected related tests as source-free validation evidence with area, reason, confidence, and command details.
 - [x] **Phase 204: Agent-Run Forbidden Tool Accounting** - Paired agent-run reports surface forbidden tool calls and a real Claude Code run records no lift for the Phase 203 validation-evidence task.
+- [x] **Phase 205: Agent Consumption Diagnostics** - Paired agent-run reports distinguish discovered targets from read targets and aggregate source-free role/count diagnostics for under-read agent behavior.
 - [x] **Phase 162: Feature-Enabled Local Fastembed Gate Proof** - A feature-enabled `local_fastembed` gate run on clean RefactoringMiner now proves the production-local backend works end-to-end, but remains held because it adds no semantic-only target hits and is still slower than default; the gate emits a source-free diagnostic for that condition.
 - [x] **Phase 163: Persisted Semantic Vector Reuse** - Fresh CLI/MCP processes can reuse persisted source-free semantic document vectors instead of recomputing every candidate vector.
 - [x] **Phase 164: Global Semantic Vector Candidates And Write-Through** - Semantic search can include persisted vector candidates outside the lexical prefilter and write through newly embedded candidate misses.

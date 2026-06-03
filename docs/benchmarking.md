@@ -869,6 +869,16 @@ Recommendation today:
   observed no forbidden calls but no ctxhelm lift: native baseline covered
   `2 / 3` targets, while `ctxhelm-plan` and `ctxhelm-brief` each covered
   `1 / 3`; outcome claim `ctxhelm_matched`.
+- Phase 205 adds source-free agent consumption diagnostics to paired real-agent
+  reports. The harness now separates target discovery from actual native target
+  reads, reports target-read coverage deltas, discovered-only targets,
+  missed-target counts, read-role counts, missed-target role counts, and a
+  `ctxhelmUnderReadTargetsObserved` flag. This makes the Phase 204 under-read
+  behavior measurable before changing pack prompts or ranking. A Claude Code
+  `2.1.159` run on the Phase 205 harness task showed `ctxhelm-brief` matching
+  native target-read coverage at `0.67` while reducing irrelevant reads from
+  `3` to `2`; the `ctxhelm-plan` lane exposed the remaining risk by discovering
+  one target without actually reading it.
 - Treat cloud embeddings/reranking as disabled unless an explicit repo policy
   allows them.
 

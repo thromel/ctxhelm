@@ -206,17 +206,25 @@ lane_totals = defaultdict(lambda: {
     "taskCount": 0,
     "passedCount": 0,
     "targetCoverageSum": 0.0,
+    "targetReadCoverageSum": 0.0,
     "readFileCount": 0,
     "irrelevantReadCount": 0,
+    "targetReadCount": 0,
+    "targetDiscoveredOnlyCount": 0,
+    "missedTargetCount": 0,
     "toolCallCount": 0,
     "ctxhelmToolCallCount": 0,
     "forbiddenToolCallCount": 0,
+    "readRoleCounts": defaultdict(int),
+    "missedTargetRoleCounts": defaultdict(int),
 })
 comparison = {
     "ctxhelmToolCallsObserved": False,
     "forbiddenToolCallsObserved": False,
     "targetCoverageDeltaSum": 0.0,
+    "targetReadCoverageDeltaSum": 0.0,
     "irrelevantReadDeltaSum": 0,
+    "ctxhelmUnderReadTargetsObserved": False,
 }
 privacy = {
     "localOnly": True,
@@ -253,7 +261,12 @@ for entry in entries:
         or bool(task_comparison.get("forbiddenToolCallsObserved", False))
     )
     comparison["targetCoverageDeltaSum"] += float(task_comparison.get("targetCoverageDelta", 0.0) or 0.0)
+    comparison["targetReadCoverageDeltaSum"] += float(task_comparison.get("targetReadCoverageDelta", 0.0) or 0.0)
     comparison["irrelevantReadDeltaSum"] += int(task_comparison.get("irrelevantReadDelta", 0) or 0)
+    comparison["ctxhelmUnderReadTargetsObserved"] = (
+        comparison["ctxhelmUnderReadTargetsObserved"]
+        or bool(task_comparison.get("ctxhelmUnderReadTargetsObserved", False))
+    )
     for lane in report.get("lanes", []):
         lane_id = lane.get("lane", "unknown")
         metrics = lane.get("metrics", {})
@@ -261,11 +274,19 @@ for entry in entries:
         bucket["taskCount"] += 1
         bucket["passedCount"] += 1 if lane.get("status") == "passed" else 0
         bucket["targetCoverageSum"] += float(metrics.get("targetCoverage", 0.0) or 0.0)
+        bucket["targetReadCoverageSum"] += float(metrics.get("targetReadCoverage", 0.0) or 0.0)
         bucket["readFileCount"] += int(metrics.get("readFileCount", 0) or 0)
         bucket["irrelevantReadCount"] += int(metrics.get("irrelevantReadCount", 0) or 0)
+        bucket["targetReadCount"] += int(metrics.get("targetReadCount", 0) or 0)
+        bucket["targetDiscoveredOnlyCount"] += int(metrics.get("targetDiscoveredOnlyCount", 0) or 0)
+        bucket["missedTargetCount"] += int(metrics.get("missedTargetCount", 0) or 0)
         bucket["toolCallCount"] += int(metrics.get("toolCallCount", 0) or 0)
         bucket["ctxhelmToolCallCount"] += int(metrics.get("ctxhelmToolCallCount", 0) or 0)
         bucket["forbiddenToolCallCount"] += int(metrics.get("forbiddenToolCallCount", 0) or 0)
+        for role, count in (lane.get("readRoleCounts") or {}).items():
+            bucket["readRoleCounts"][role] += int(count or 0)
+        for role, count in (lane.get("missedTargetRoleCounts") or {}).items():
+            bucket["missedTargetRoleCounts"][role] += int(count or 0)
 
 lane_summaries = []
 for lane_id, bucket in sorted(lane_totals.items()):
@@ -275,19 +296,26 @@ for lane_id, bucket in sorted(lane_totals.items()):
         "taskCount": task_count,
         "passedCount": bucket["passedCount"],
         "averageTargetCoverage": bucket["targetCoverageSum"] / task_count if task_count else 0.0,
+        "averageTargetReadCoverage": bucket["targetReadCoverageSum"] / task_count if task_count else 0.0,
         "readFileCount": bucket["readFileCount"],
         "irrelevantReadCount": bucket["irrelevantReadCount"],
+        "targetReadCount": bucket["targetReadCount"],
+        "targetDiscoveredOnlyCount": bucket["targetDiscoveredOnlyCount"],
+        "missedTargetCount": bucket["missedTargetCount"],
         "toolCallCount": bucket["toolCallCount"],
         "ctxhelmToolCallCount": bucket["ctxhelmToolCallCount"],
         "forbiddenToolCallCount": bucket["forbiddenToolCallCount"],
+        "readRoleCounts": dict(sorted(bucket["readRoleCounts"].items())),
+        "missedTargetRoleCounts": dict(sorted(bucket["missedTargetRoleCounts"].items())),
     })
 
 task_count = len(tasks)
 target_delta_avg = comparison["targetCoverageDeltaSum"] / task_count if task_count else 0.0
+target_read_delta_avg = comparison["targetReadCoverageDeltaSum"] / task_count if task_count else 0.0
 irrelevant_delta_sum = comparison["irrelevantReadDeltaSum"]
-if comparison["ctxhelmToolCallsObserved"] and (target_delta_avg > 0 or irrelevant_delta_sum > 0):
+if comparison["ctxhelmToolCallsObserved"] and (target_delta_avg > 0 or target_read_delta_avg > 0 or irrelevant_delta_sum > 0):
     outcome_claim = "ctxhelm_improved"
-elif comparison["ctxhelmToolCallsObserved"] and target_delta_avg == 0 and irrelevant_delta_sum == 0:
+elif comparison["ctxhelmToolCallsObserved"] and target_delta_avg == 0 and target_read_delta_avg == 0 and irrelevant_delta_sum == 0:
     outcome_claim = "ctxhelm_matched"
 else:
     outcome_claim = "no_measured_lift"
@@ -316,9 +344,11 @@ payload = {
         "taskCount": task_count,
         "laneSummaries": lane_summaries,
         "targetCoverageDeltaAverage": target_delta_avg,
+        "targetReadCoverageDeltaAverage": target_read_delta_avg,
         "irrelevantReadDeltaSum": irrelevant_delta_sum,
         "ctxhelmToolCallsObserved": comparison["ctxhelmToolCallsObserved"],
         "forbiddenToolCallsObserved": comparison["forbiddenToolCallsObserved"],
+        "ctxhelmUnderReadTargetsObserved": comparison["ctxhelmUnderReadTargetsObserved"],
         "outcomeClaim": outcome_claim,
     },
     "privacyStatus": privacy,
@@ -380,11 +410,22 @@ payload = {
     "skipReason": reason,
     "metrics": {
         "targetCoverage": 0.0,
+        "targetReadCoverage": 0.0,
         "readFileCount": 0,
         "irrelevantReadCount": 0,
+        "targetReadCount": 0,
+        "targetDiscoveredOnlyCount": 0,
+        "missedTargetCount": 0,
         "toolCallCount": 0,
         "ctxhelmToolCallCount": 0,
+        "forbiddenToolCallCount": 0,
     },
+    "targetHits": [],
+    "targetReads": [],
+    "discoveredOnlyTargets": [],
+    "missedTargets": [],
+    "readRoleCounts": {},
+    "missedTargetRoleCounts": {},
     "sourceTextLogged": False,
     "rawTranscriptStored": False,
 }
@@ -546,6 +587,39 @@ read_files = []
 discovered_files = []
 result_success = False
 
+def role_for_path(path):
+    value = str(path).lower()
+    name = pathlib.PurePosixPath(str(path)).name.lower()
+    if (
+        "/test/" in f"/{value}/"
+        or value.startswith("tests/")
+        or value.endswith("_test.py")
+        or value.endswith(".test.ts")
+        or value.endswith(".test.tsx")
+        or value.endswith(".spec.ts")
+        or value.endswith(".spec.tsx")
+        or value.endswith("test.rs")
+    ):
+        return "test"
+    if value.startswith("docs/") or name in {"readme.md", "readme.rst"} or value.endswith((".md", ".rst", ".adoc")):
+        return "docs"
+    if (
+        value.startswith(".github/")
+        or name in {"cargo.toml", "package.json", "pyproject.toml", "go.mod", "pom.xml", "build.gradle", "settings.gradle", "makefile"}
+        or value.endswith((".yml", ".yaml", ".json", ".toml", ".lock"))
+    ):
+        return "config"
+    if value.startswith(("src/", "crates/", "app/", "lib/", "packages/", "scripts/")) or value.endswith((".rs", ".py", ".ts", ".tsx", ".js", ".jsx", ".go", ".java", ".kt", ".cs", ".rb", ".php")):
+        return "source"
+    return "other"
+
+def role_counts(paths):
+    counts = {}
+    for path in paths:
+        role = role_for_path(path)
+        counts[role] = counts.get(role, 0) + 1
+    return dict(sorted(counts.items()))
+
 def rel_label(raw):
     if not raw:
         return None
@@ -634,7 +708,13 @@ if request_file.exists():
 
 evidence_files = set(read_files) | set(discovered_files)
 target_hits = sorted(target for target in targets if target in evidence_files)
+target_reads = sorted(target for target in targets if target in set(read_files))
+discovered_only_targets = sorted(
+    target for target in target_hits if target not in set(read_files)
+)
+missed_targets = sorted(target for target in targets if target not in evidence_files)
 target_coverage = len(target_hits) / len(targets) if targets else 0.0
+target_read_coverage = len(target_reads) / len(targets) if targets else 0.0
 irrelevant_reads = sorted(path for path in read_files if path not in targets)
 stderr_hash = hashlib.sha256(stderr_file.read_bytes()).hexdigest() if stderr_file.exists() else None
 events_hash = hashlib.sha256(events_file.read_bytes()).hexdigest() if events_file.exists() else None
@@ -647,8 +727,12 @@ payload = {
     "clientExitStatus": client_status,
     "metrics": {
         "targetCoverage": target_coverage,
+        "targetReadCoverage": target_read_coverage,
         "targetHitCount": len(target_hits),
         "targetCount": len(targets),
+        "targetReadCount": len(target_reads),
+        "targetDiscoveredOnlyCount": len(discovered_only_targets),
+        "missedTargetCount": len(missed_targets),
         "readFileCount": len(read_files),
         "discoveredFileCount": len(discovered_files),
         "irrelevantReadCount": len(irrelevant_reads),
@@ -657,6 +741,11 @@ payload = {
         "forbiddenToolCallCount": len(forbidden_tool_calls),
     },
     "targetHits": target_hits,
+    "targetReads": target_reads,
+    "discoveredOnlyTargets": discovered_only_targets,
+    "missedTargets": missed_targets,
+    "readRoleCounts": role_counts(read_files),
+    "missedTargetRoleCounts": role_counts(missed_targets),
     "readFiles": read_files,
     "discoveredFiles": discovered_files,
     "irrelevantReads": irrelevant_reads,
@@ -700,6 +789,7 @@ best = max(
     key=lambda lane: (
         1 if lane.get("status") == "passed" else 0,
         lane.get("metrics", {}).get("targetCoverage", 0.0),
+        lane.get("metrics", {}).get("targetReadCoverage", 0.0),
         -lane.get("metrics", {}).get("forbiddenToolCallCount", 0),
         -lane.get("metrics", {}).get("irrelevantReadCount", 999_999),
         lane.get("metrics", {}).get("ctxhelmToolCallCount", 0),
@@ -708,10 +798,16 @@ best = max(
 base_metrics = baseline.get("metrics", {})
 best_metrics = best.get("metrics", {})
 target_delta = best_metrics.get("targetCoverage", 0.0) - base_metrics.get("targetCoverage", 0.0)
+target_read_delta = best_metrics.get("targetReadCoverage", 0.0) - base_metrics.get("targetReadCoverage", 0.0)
 irrelevant_delta = base_metrics.get("irrelevantReadCount", 0) - best_metrics.get("irrelevantReadCount", 0)
 ctxhelm_lanes = [lane for lane in lanes if lane.get("mode") in {"plan", "brief"}]
 ctxhelm_called = any(lane.get("metrics", {}).get("ctxhelmToolCallCount", 0) > 0 for lane in ctxhelm_lanes)
 forbidden_called = any(lane.get("metrics", {}).get("forbiddenToolCallCount", 0) > 0 for lane in lanes)
+ctxhelm_under_read = any(
+    lane.get("metrics", {}).get("targetReadCoverage", 0.0)
+    < base_metrics.get("targetReadCoverage", 0.0)
+    for lane in ctxhelm_lanes
+)
 status = "passed" if any(lane.get("status") == "passed" for lane in lanes) else "skipped"
 if status == "passed" and not ctxhelm_called:
     status = "degraded"
@@ -738,15 +834,17 @@ payload = {
         "baselineLane": baseline.get("lane"),
         "bestLane": best.get("lane"),
         "targetCoverageDelta": target_delta,
+        "targetReadCoverageDelta": target_read_delta,
         "irrelevantReadDelta": irrelevant_delta,
         "ctxhelmToolCallsObserved": ctxhelm_called,
         "forbiddenToolCallsObserved": forbidden_called,
+        "ctxhelmUnderReadTargetsObserved": ctxhelm_under_read,
         "outcomeClaim": (
             "ctxhelm_improved"
-            if ctxhelm_called and (target_delta > 0 or irrelevant_delta > 0)
+            if ctxhelm_called and (target_delta > 0 or target_read_delta > 0 or irrelevant_delta > 0)
             else (
                 "ctxhelm_matched"
-                if ctxhelm_called and target_delta == 0 and irrelevant_delta == 0
+                if ctxhelm_called and target_delta == 0 and target_read_delta == 0 and irrelevant_delta == 0
                 else "no_measured_lift"
             )
         ),

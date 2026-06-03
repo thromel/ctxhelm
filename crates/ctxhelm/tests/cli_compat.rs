@@ -1664,11 +1664,23 @@ fn eval_agent_run_renders_source_free_report() {
                     "status": "passed",
                     "metrics": {
                         "targetCoverage": 0.5,
+                        "targetReadCoverage": 0.5,
+                        "targetReadCount": 1,
+                        "targetDiscoveredOnlyCount": 0,
+                        "missedTargetCount": 1,
                         "readFileCount": 4,
                         "irrelevantReadCount": 2,
                         "toolCallCount": 6,
                         "ctxhelmToolCallCount": 0,
                         "forbiddenToolCallCount": 0
+                    },
+                    "readRoleCounts": {
+                        "source": 2,
+                        "test": 1,
+                        "docs": 1
+                    },
+                    "missedTargetRoleCounts": {
+                        "docs": 1
                     },
                     "sourceTextLogged": false,
                     "rawPromptStored": false,
@@ -1680,12 +1692,21 @@ fn eval_agent_run_renders_source_free_report() {
                     "status": "passed",
                     "metrics": {
                         "targetCoverage": 1.0,
+                        "targetReadCoverage": 1.0,
+                        "targetReadCount": 2,
+                        "targetDiscoveredOnlyCount": 0,
+                        "missedTargetCount": 0,
                         "readFileCount": 2,
                         "irrelevantReadCount": 0,
                         "toolCallCount": 5,
                         "ctxhelmToolCallCount": 2,
                         "forbiddenToolCallCount": 0
                     },
+                    "readRoleCounts": {
+                        "source": 1,
+                        "docs": 1
+                    },
+                    "missedTargetRoleCounts": {},
                     "sourceTextLogged": false,
                     "rawPromptStored": false,
                     "rawTranscriptStored": false,
@@ -1696,9 +1717,11 @@ fn eval_agent_run_renders_source_free_report() {
                 "baselineLane": "baseline",
                 "bestLane": "ctxhelm-brief",
                 "targetCoverageDelta": 0.5,
+                "targetReadCoverageDelta": 0.5,
                 "irrelevantReadDelta": 2,
                 "ctxhelmToolCallsObserved": true,
                 "forbiddenToolCallsObserved": false,
+                "ctxhelmUnderReadTargetsObserved": false,
                 "outcomeClaim": "ctxhelm_improved"
             },
             "privacyStatus": {
@@ -1732,6 +1755,9 @@ fn eval_agent_run_renders_source_free_report() {
         .stdout(contains("ctxhelm-agent-run-eval-v1"))
         .stdout(contains("ctxhelm-brief"))
         .stdout(contains("target coverage `1.00`"))
+        .stdout(contains("target read coverage `1.00`"))
+        .stdout(contains("missed targets `0`"))
+        .stdout(contains("read roles `docs=1, source=1`"))
         .stdout(contains("ctxhelm calls `2`"))
         .stdout(contains("forbidden calls `0`"));
 
@@ -1784,9 +1810,11 @@ fn eval_agent_run_renders_source_free_suite_report() {
                     "targetFiles": ["src/lib.rs"],
                     "comparison": {
                         "targetCoverageDelta": 0.5,
+                        "targetReadCoverageDelta": 0.5,
                         "irrelevantReadDelta": 1,
                         "ctxhelmToolCallsObserved": true,
-                        "forbiddenToolCallsObserved": false
+                        "forbiddenToolCallsObserved": false,
+                        "ctxhelmUnderReadTargetsObserved": false
                     },
                     "lanes": [],
                     "privacyStatus": {
@@ -1797,9 +1825,11 @@ fn eval_agent_run_renders_source_free_suite_report() {
             "aggregate": {
                 "taskCount": 2,
                 "targetCoverageDeltaAverage": 0.25,
+                "targetReadCoverageDeltaAverage": 0.25,
                 "irrelevantReadDeltaSum": 3,
                 "ctxhelmToolCallsObserved": true,
                 "forbiddenToolCallsObserved": false,
+                "ctxhelmUnderReadTargetsObserved": false,
                 "outcomeClaim": "ctxhelm_improved",
                 "laneSummaries": [
                     {
@@ -1807,22 +1837,45 @@ fn eval_agent_run_renders_source_free_suite_report() {
                         "taskCount": 2,
                         "passedCount": 2,
                         "averageTargetCoverage": 0.5,
+                        "averageTargetReadCoverage": 0.5,
+                        "targetReadCount": 2,
+                        "targetDiscoveredOnlyCount": 1,
+                        "missedTargetCount": 1,
                         "readFileCount": 8,
                         "irrelevantReadCount": 4,
                         "toolCallCount": 12,
                         "ctxhelmToolCallCount": 0,
-                        "forbiddenToolCallCount": 0
+                        "forbiddenToolCallCount": 0,
+                        "readRoleCounts": {
+                            "source": 4,
+                            "test": 2,
+                            "docs": 2
+                        },
+                        "missedTargetRoleCounts": {
+                            "docs": 1
+                        }
                     },
                     {
                         "lane": "ctxhelm-brief",
                         "taskCount": 2,
                         "passedCount": 2,
                         "averageTargetCoverage": 0.75,
+                        "averageTargetReadCoverage": 0.75,
+                        "targetReadCount": 3,
+                        "targetDiscoveredOnlyCount": 0,
+                        "missedTargetCount": 1,
                         "readFileCount": 5,
                         "irrelevantReadCount": 1,
                         "toolCallCount": 10,
                         "ctxhelmToolCallCount": 4,
-                        "forbiddenToolCallCount": 0
+                        "forbiddenToolCallCount": 0,
+                        "readRoleCounts": {
+                            "source": 3,
+                            "docs": 2
+                        },
+                        "missedTargetRoleCounts": {
+                            "test": 1
+                        }
                     }
                 ]
             },
@@ -1848,9 +1901,12 @@ fn eval_agent_run_renders_source_free_suite_report() {
         .success()
         .stdout(contains("## Suite Aggregate"))
         .stdout(contains("Target coverage delta average: `0.25`"))
+        .stdout(contains("Target read coverage delta average: `0.25`"))
         .stdout(contains("Irrelevant read delta sum: `3`"))
         .stdout(contains("## Suite Lanes"))
         .stdout(contains("ctxhelm-brief"))
+        .stdout(contains("avg target read coverage `0.75`"))
+        .stdout(contains("read roles `docs=2, source=3`"))
         .stdout(contains("forbidden calls `0`"));
 
     let rendered_json = json_stdout(
