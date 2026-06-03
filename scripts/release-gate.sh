@@ -10,6 +10,7 @@ smoke_first_pack_script="$repo_root/scripts/smoke-first-pack.sh"
 smoke_storage_script="$repo_root/scripts/smoke-storage.sh"
 smoke_memory_script="$repo_root/scripts/smoke-memory.sh"
 smoke_memory_reuse_script="$repo_root/scripts/smoke-memory-reuse.sh"
+smoke_memory_history_lift_script="$repo_root/scripts/smoke-memory-history-lift.sh"
 smoke_feedback_script="$repo_root/scripts/smoke-feedback.sh"
 smoke_workspace_script="$repo_root/scripts/smoke-workspace.sh"
 smoke_shared_artifacts_script="$repo_root/scripts/smoke-shared-artifacts.sh"
@@ -211,6 +212,9 @@ CTXHELM_BIN="$ctxhelm_bin" bash "$smoke_memory_script"
 log_step "memory reuse smoke"
 CTXHELM_BIN="$ctxhelm_bin" bash "$smoke_memory_reuse_script"
 
+log_step "memory history lift smoke"
+CTXHELM_BIN="$ctxhelm_bin" bash "$smoke_memory_history_lift_script"
+
 log_step "feedback smoke"
 CTXHELM_BIN="$ctxhelm_bin" bash "$smoke_feedback_script"
 
@@ -409,6 +413,7 @@ required_checks = [
     "scripts/smoke-storage.sh",
     "scripts/smoke-memory.sh",
     "scripts/smoke-memory-reuse.sh",
+    "scripts/smoke-memory-history-lift.sh",
     "scripts/smoke-feedback.sh",
     "scripts/smoke-workspace.sh",
     "scripts/smoke-shared-artifacts.sh",

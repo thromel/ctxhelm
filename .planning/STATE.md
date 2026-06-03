@@ -4,10 +4,10 @@ milestone: v2.5
 milestone_name: Production Retrieval Quality
 status: active
 last_updated: "2026-06-03T00:00:00Z"
-last_activity: 2026-06-03 -- Phase 215 release-gates memory reuse proof
+last_activity: 2026-06-03 -- Phase 216 proves historical memory lift
 progress:
-  total_phases: 124
-  completed_phases: 124
+  total_phases: 125
+  completed_phases: 125
   total_plans: 7
   completed_plans: 7
   percent: 100
@@ -17,10 +17,10 @@ progress:
 
 ## Current Position
 
-Phase: 215 - Release-Gated Memory Reuse Proof
-Plan: 215-release-gated-memory-reuse-proof
+Phase: 216 - Historical Memory Lift Proof
+Plan: 216-historical-memory-lift-proof
 Status: Complete
-Last activity: 2026-06-03 -- Phase 215 promotes the deterministic experience-memory reuse smoke into the release gate and release proof bundle. The proof now checks that pending experience cards are blocked, approved memory promotes the source-linked target on a related task, the promoted plan includes memory signal and selected-memory evidence, and storage does not persist source sentinels, raw prompts, transcripts, MCP traffic, or cloud calls.
+Last activity: 2026-06-03 -- Phase 216 adds and release-gates `scripts/smoke-memory-history-lift.sh`, a controlled historical eval proof that compares before/after approval. The source-free proof shows memory absent before approval, then one memory candidate, one selected memory source, one memory target hit, one unique memory target hit beyond lexical, `targetInCombined = true`, `targetInLexical = false`, and `evaluate_memory_reuse_lift` after approval.
 
 ## Project Reference
 

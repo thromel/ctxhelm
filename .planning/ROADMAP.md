@@ -84,6 +84,8 @@ Phase 214 makes experience-memory reuse measurable in historical and product-pro
 
 Phase 215 release-gates experience-memory reuse proof. The packaged release gate now runs `scripts/smoke-memory-reuse.sh` in addition to the general memory smoke, and the release proof bundle lists it as a required check. The source-free proof artifact shows pending memory blocked before review, approved experience memory promoting `src/payments/handler.ts` on a related task with memory signal and selected-memory evidence, and no source sentinel, raw prompt, transcript, MCP traffic, remote embedding, or remote reranking persistence.
 
+Phase 216 release-gates a controlled historical memory-lift proof. `scripts/smoke-memory-history-lift.sh` now creates a one-commit historical eval, seeds a source-free trace, proves pending experience memory contributes no candidates before approval, approves the card, and proves `eval history` reports a memory-only target hit beyond lexical with `evaluate_memory_reuse_lift`. The committed proof artifact records `memoryUniqueTargetHitCount = 1`, `targetInCombined = true`, `targetInLexical = false`, and source-free privacy flags.
+
 ## v2.5 Production Retrieval Quality
 
 ## Phases

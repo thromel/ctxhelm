@@ -105,6 +105,10 @@ memory candidates, how many memory candidates were selected within the top-10
 context budget, how many retrieval targets memory hit or missed while memory was
 active, and whether memory added unique target hits or unique non-targets beyond
 the lexical baseline. The summary stores counts and role labels only.
+`scripts/smoke-memory-history-lift.sh` exercises this path in a controlled
+history: before approval, memory contributes no candidates; after approval, the
+historical report records a memory-only target hit beyond lexical and routes the
+next action to `evaluate_memory_reuse_lift`.
 
 Historical eval reports also include source-free `graphEdgeProfiles`. These
 profiles split graph candidate evidence by edge label, such as `imports`,

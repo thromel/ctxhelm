@@ -585,6 +585,7 @@ require_text "${MEMORY_DOC}" "source-free"
 require_text "${MEMORY_DOC}" "does not store raw prompts"
 require_text "${MEMORY_DOC}" "scripts/smoke-memory.sh"
 require_text "${MEMORY_DOC}" "scripts/smoke-memory-reuse.sh"
+require_text "${MEMORY_DOC}" "scripts/smoke-memory-history-lift.sh"
 
 require_text "${SEMANTIC_DOC}" "ctxhelm search"
 require_text "${SEMANTIC_DOC}" "--semantic"

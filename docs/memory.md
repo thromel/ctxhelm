@@ -71,10 +71,14 @@ ctxhelm://repo/memory
 
 ## Release Coverage
 
-The release gate runs `scripts/smoke-memory.sh` and
-`scripts/smoke-memory-reuse.sh`. The memory smoke proves local-only storage,
-source-free persistence, stale/pending review blocking, selected-memory pack
-output, and approve/disable review controls. The memory reuse smoke proves that
-pending experience cards are blocked, approved experience memory can promote a
-source-linked target on a related task, and storage does not persist source
-sentinels, raw prompts, transcripts, or MCP traffic.
+The release gate runs `scripts/smoke-memory.sh`,
+`scripts/smoke-memory-reuse.sh`, and `scripts/smoke-memory-history-lift.sh`.
+The memory smoke proves local-only storage, source-free persistence,
+stale/pending review blocking, selected-memory pack output, and approve/disable
+review controls. The memory reuse smoke proves that pending experience cards are
+blocked, approved experience memory can promote a source-linked target on a
+related task, and storage does not persist source sentinels, raw prompts,
+transcripts, or MCP traffic. The memory history-lift smoke runs `eval history`
+before and after approval and proves the historical report records a unique
+memory target hit beyond lexical, with `evaluate_memory_reuse_lift` as the
+source-free R&D action.

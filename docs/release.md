@@ -241,6 +241,7 @@ The release gate runs these required checks:
 - `scripts/smoke-storage.sh`
 - `scripts/smoke-memory.sh`
 - `scripts/smoke-memory-reuse.sh`
+- `scripts/smoke-memory-history-lift.sh`
 - `scripts/smoke-feedback.sh`
 - `scripts/smoke-workspace.sh`
 - `scripts/smoke-shared-artifacts.sh`

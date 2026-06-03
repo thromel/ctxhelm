@@ -230,6 +230,7 @@ fn release_gate_script_contract() {
         "scripts/smoke-storage.sh",
         "scripts/smoke-memory.sh",
         "scripts/smoke-memory-reuse.sh",
+        "scripts/smoke-memory-history-lift.sh",
         "scripts/smoke-shared-artifacts.sh",
         "scripts/smoke-inspector.sh",
         "scripts/smoke-retrieval-health.sh",
@@ -1858,6 +1859,56 @@ fn memory_reuse_smoke_script_contract() {
         assert!(
             script_text.contains(required),
             "memory reuse smoke script missing {required}"
+        );
+    }
+}
+
+#[test]
+fn memory_history_lift_smoke_script_contract() {
+    let repo_root = workspace_root();
+    let script = repo_root.join("scripts/smoke-memory-history-lift.sh");
+    assert!(
+        script.exists(),
+        "memory history lift smoke script is missing"
+    );
+
+    let syntax = Command::new("bash")
+        .arg("-n")
+        .arg(&script)
+        .current_dir(&repo_root)
+        .output()
+        .unwrap();
+    assert!(
+        syntax.status.success(),
+        "bash -n failed: {}",
+        String::from_utf8_lossy(&syntax.stderr)
+    );
+
+    let script_text = fs::read_to_string(&script).unwrap();
+    for required in [
+        "ctxhelm-memory-history-lift-eval-v1",
+        "eval history",
+        "memory generate-experience",
+        "memory approve",
+        "beforeApproval",
+        "afterApproval",
+        "memoryUniqueTargetHitCount",
+        "memorySelectedAt10Count",
+        "evaluate_memory_reuse_lift",
+        "targetInLexical",
+        "targetInCombined",
+        "sourceTextLogged",
+        "rawPromptStored",
+        "rawTranscriptStored",
+        "rawMcpTrafficStored",
+        "CTXHELM_MEMORY_HISTORY_SOURCE_SENTINEL",
+        "storage leaked source sentinel",
+        "model invocation",
+        "cloud upload",
+    ] {
+        assert!(
+            script_text.contains(required),
+            "memory history lift smoke script missing {required}"
         );
     }
 }

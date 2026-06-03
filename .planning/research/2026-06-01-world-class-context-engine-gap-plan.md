@@ -121,6 +121,14 @@ memory can promote a source-linked target on a related task, and the storage
 boundary remains source-free. This closes deterministic workflow proof, while
 multi-repo historical memory-lift proof remains the next higher bar.
 
+Status: Phase 216 adds a controlled historical memory-lift proof. The new
+release-gated smoke runs `eval history` before and after approval and proves
+memory changes a historical report from no memory candidates and a missed target
+to a selected memory source with a unique target hit beyond lexical plus
+`evaluate_memory_reuse_lift`. This proves the historical eval plumbing can
+measure positive memory lift; broad multi-repo memory generalization remains a
+higher bar.
+
 ### 3. Semantic/Embedding Signal Is Wired But Not Driving Lift
 
 The current product lift comes from hybrid ranking, graph/test/history/context
