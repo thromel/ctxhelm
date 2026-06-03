@@ -199,7 +199,7 @@ fn lexical_search_cache_path(
     query_terms: &[String],
 ) -> std::path::PathBuf {
     let mut key = blake3::Hasher::new();
-    key.update(b"lexical-search-cache-v6");
+    key.update(b"lexical-search-cache-v7");
     key.update(query.trim().as_bytes());
     key.update(&limit.max(1).to_le_bytes());
     for term in query_terms {
@@ -633,11 +633,41 @@ fn search_cached_bm25_index(
 }
 
 pub(crate) fn query_terms(query: &str) -> Vec<String> {
-    query
+    let mut terms = query
         .split(|character: char| !(character.is_ascii_alphanumeric() || character == '_'))
         .filter(|term| !term.is_empty())
         .map(|term| term.to_ascii_lowercase())
-        .collect()
+        .collect::<Vec<_>>();
+    for alias in hyphenated_identifier_aliases(query) {
+        if !terms.contains(&alias) {
+            terms.push(alias);
+        }
+    }
+    terms
+}
+
+fn hyphenated_identifier_aliases(query: &str) -> Vec<String> {
+    let mut aliases = Vec::new();
+    for token in query.split(|character: char| {
+        !(character.is_ascii_alphanumeric() || character == '_' || character == '-')
+    }) {
+        let token = token.trim_matches('-').to_ascii_lowercase();
+        if !token.contains('-') {
+            continue;
+        }
+        let parts = token
+            .split('-')
+            .filter(|part| part.len() >= 2 && query_term_weight(part) > 0.0)
+            .collect::<Vec<_>>();
+        if parts.len() < 2 || parts.len() > 5 {
+            continue;
+        }
+        let alias = parts.join("_");
+        if query_term_weight(&alias) > 0.0 && !aliases.contains(&alias) {
+            aliases.push(alias);
+        }
+    }
+    aliases
 }
 
 fn score_file(
@@ -773,4 +803,18 @@ pub(crate) fn query_term_weight(term: &str) -> f32 {
     }
 
     1.0
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn query_terms_add_hyphenated_identifier_aliases() {
+        let terms = query_terms("Improve agent-run report attribution");
+
+        assert!(terms.contains(&"agent".to_string()));
+        assert!(terms.contains(&"run".to_string()));
+        assert!(terms.contains(&"agent_run".to_string()));
+    }
 }

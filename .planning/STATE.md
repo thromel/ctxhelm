@@ -4,10 +4,10 @@ milestone: v2.5
 milestone_name: Production Retrieval Quality
 status: active
 last_updated: "2026-06-03T00:00:00Z"
-last_activity: 2026-06-03 -- Phase 210 attributes ctxhelm evidence coverage versus agent reads
+last_activity: 2026-06-03 -- Phase 211 fixes hyphenated identifier retrieval misses
 progress:
-  total_phases: 119
-  completed_phases: 119
+  total_phases: 120
+  completed_phases: 120
   total_plans: 7
   completed_plans: 7
   percent: 100
@@ -17,10 +17,10 @@ progress:
 
 ## Current Position
 
-Phase: 210 - Agent-Run Evidence Attribution
-Plan: 210-agent-run-evidence-attribution
+Phase: 211 - Hyphenated Identifier Query Aliases
+Plan: 211-hyphenated-identifier-query-aliases
 Status: Complete
-Last activity: 2026-06-03 -- Phase 210 records source-free ctxhelm evidence coverage for paired real-agent lanes. Assisted lanes now report which target files were surfaced by ctxhelm evidence, which surfaced targets the agent did not read, and which target files were not present in ctxhelm evidence. The latest real Claude Code probe is still client-rate-limited, but it now separates client unavailability from ctxhelm evidence misses and agent consumption misses.
+Last activity: 2026-06-03 -- Phase 211 fixes a real Phase 210 evidence miss where `Improve agent-run report attribution` surfaced the harness script but missed the CLI report renderer in `crates/ctxhelm/src/main.rs`. Query construction and lexical search now add conservative hyphen-to-underscore aliases such as `agent_run`, allowing symbol search to match `render_agent_run_report`. The latest real Claude Code probe is still rate-limited, but ctxhelm evidence now surfaces both target paths with zero evidence misses.
 
 ## Project Reference
 

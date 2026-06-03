@@ -1496,16 +1496,24 @@ fn extract_stack_frame_facets(task: &str) -> Vec<String> {
 }
 
 fn extract_symbol_facets(task: &str) -> Vec<String> {
-    task.split(|character: char| {
-        !(character.is_ascii_alphanumeric()
-            || character == '_'
-            || character == ':'
-            || character == '.')
-    })
-    .map(clean_query_token)
-    .filter(|token| is_precise_symbol_facet(token))
-    .take(16)
-    .collect()
+    let mut symbols = task
+        .split(|character: char| {
+            !(character.is_ascii_alphanumeric()
+                || character == '_'
+                || character == ':'
+                || character == '.')
+        })
+        .map(clean_query_token)
+        .filter(|token| is_precise_symbol_facet(token))
+        .take(16)
+        .collect::<Vec<_>>();
+    for alias in hyphenated_symbol_aliases(task) {
+        if is_precise_symbol_facet(&alias) {
+            push_unique(&mut symbols, alias);
+        }
+    }
+    symbols.truncate(16);
+    symbols
 }
 
 fn is_precise_symbol_facet(token: &str) -> bool {
@@ -1554,6 +1562,32 @@ fn extract_domain_terms(task: &str) -> Vec<String> {
         }
     }
     terms
+}
+
+fn hyphenated_symbol_aliases(task: &str) -> Vec<String> {
+    let mut aliases = Vec::new();
+    for token in task.split(|character: char| {
+        !(character.is_ascii_alphanumeric() || character == '_' || character == '-')
+    }) {
+        let token = clean_query_token(token)
+            .trim_matches('-')
+            .to_ascii_lowercase();
+        if !token.contains('-') {
+            continue;
+        }
+        let parts = token
+            .split('-')
+            .filter(|part| part.len() >= 2 && !QUERY_STOP_WORDS.contains(part))
+            .collect::<Vec<_>>();
+        if parts.len() < 2 || parts.len() > 5 {
+            continue;
+        }
+        let alias = parts.join("_");
+        if !aliases.contains(&alias) {
+            aliases.push(alias);
+        }
+    }
+    aliases
 }
 
 fn looks_like_commit_subject(task: &str) -> bool {
@@ -2306,6 +2340,62 @@ mod tests {
             .facets
             .iter()
             .any(|facet| facet.kind == QueryFacetKind::DomainPhrase && facet.value == "mcp"));
+    }
+
+    #[test]
+    fn query_trace_adds_hyphenated_identifier_symbol_aliases() {
+        let trace = construct_query_trace("Improve agent-run report attribution", &[]);
+
+        assert!(trace
+            .retriever_queries
+            .symbol_terms
+            .iter()
+            .any(|term| term == "agent_run"));
+        assert!(trace
+            .retriever_queries
+            .lexical_terms
+            .iter()
+            .any(|term| term == "agent_run"));
+    }
+
+    #[test]
+    fn prepare_plan_selects_renderer_for_hyphenated_agent_run_task() {
+        let temp = tempfile::tempdir().unwrap();
+        let repo = temp.path();
+        fs::create_dir(repo.join(".git")).unwrap();
+        fs::create_dir_all(repo.join("crates/ctxhelm/src")).unwrap();
+        fs::create_dir_all(repo.join("scripts")).unwrap();
+        fs::write(
+            repo.join("crates/ctxhelm/src/main.rs"),
+            "fn render_agent_run_report() {}\nfn render_feedback_report() {}\n",
+        )
+        .unwrap();
+        fs::write(
+            repo.join("scripts/e2e-agent-run.sh"),
+            "#!/usr/bin/env bash\n# agent-run report attribution harness\n",
+        )
+        .unwrap();
+        fs::write(
+            repo.join("crates/ctxhelm/src/other.rs"),
+            "fn render_unrelated_report() {}\n",
+        )
+        .unwrap();
+
+        let plan = prepare_context_plan_with_paths_and_history(
+            repo,
+            "Improve agent-run report attribution",
+            TaskType::Explain,
+            &[],
+            false,
+        )
+        .unwrap();
+        let paths = plan
+            .target_files
+            .iter()
+            .map(|target| target.path.as_str())
+            .collect::<Vec<_>>();
+
+        assert!(paths.contains(&"crates/ctxhelm/src/main.rs"));
     }
 
     #[test]

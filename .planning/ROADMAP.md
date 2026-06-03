@@ -74,6 +74,8 @@ Phase 209 validates required ctxhelm call arguments before counting a lane as co
 
 Phase 210 attributes real-agent outcome gaps across ctxhelm evidence coverage and native agent reads. Assisted lanes now record source-free ctxhelm evidence files, target hits in ctxhelm evidence, evidence-only targets that ctxhelm surfaced but the agent did not read, and evidence misses where ctxhelm did not surface the target. The latest real Claude Code probe still hit a rate limit, but the report now shows the difference between client unavailability, ctxhelm evidence misses, and agent consumption misses instead of collapsing all under-read behavior into one metric.
 
+Phase 211 fixes the first retrieval miss exposed by Phase 210 attribution. The task `Improve agent-run report attribution` previously surfaced the harness script but missed `crates/ctxhelm/src/main.rs`, where the CLI renderer lives. Query construction and lexical search now add conservative hyphen-to-underscore aliases such as `agent_run`, so symbol search can match identifiers like `render_agent_run_report`. The refreshed real Claude Code probe still rate-limits, but both ctxhelm-assisted lanes now surface both target paths with zero ctxhelm evidence misses.
+
 ## v2.5 Production Retrieval Quality
 
 ## Phases
@@ -216,6 +218,7 @@ Phase 210 attributes real-agent outcome gaps across ctxhelm evidence coverage an
 - [x] **Phase 208: Agent-Run Client Failure Classification** - Paired agent-run reports classify rate limits, API errors, timeouts, and generic non-zero client exits without storing raw client output.
 - [x] **Phase 209: Agent-Run Required Call Argument Validation** - Required ctxhelm calls must carry explicit repo/task and brief-pack arguments before a lane can become comparable.
 - [x] **Phase 210: Agent-Run Evidence Attribution** - Paired agent-run reports distinguish targets surfaced by ctxhelm evidence from surfaced targets the agent did not read and targets not surfaced by ctxhelm evidence.
+- [x] **Phase 211: Hyphenated Identifier Query Aliases** - Query construction and lexical search map hyphenated task terms to underscore code identifiers, fixing the `agent-run` to `render_agent_run_report` evidence miss.
 - [x] **Phase 162: Feature-Enabled Local Fastembed Gate Proof** - A feature-enabled `local_fastembed` gate run on clean RefactoringMiner now proves the production-local backend works end-to-end, but remains held because it adds no semantic-only target hits and is still slower than default; the gate emits a source-free diagnostic for that condition.
 - [x] **Phase 163: Persisted Semantic Vector Reuse** - Fresh CLI/MCP processes can reuse persisted source-free semantic document vectors instead of recomputing every candidate vector.
 - [x] **Phase 164: Global Semantic Vector Candidates And Write-Through** - Semantic search can include persisted vector candidates outside the lexical prefilter and write through newly embedded candidate misses.
