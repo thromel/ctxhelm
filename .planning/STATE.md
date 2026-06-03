@@ -4,10 +4,10 @@ milestone: v2.5
 milestone_name: Production Retrieval Quality
 status: active
 last_updated: "2026-06-03T00:00:00Z"
-last_activity: 2026-06-03 -- Phase 198 adds candidate coverage accounting
+last_activity: 2026-06-03 -- Phase 199 adds candidate miss pressure profiles
 progress:
-  total_phases: 109
-  completed_phases: 109
+  total_phases: 110
+  completed_phases: 110
   total_plans: 7
   completed_plans: 7
   percent: 100
@@ -17,10 +17,10 @@ progress:
 
 ## Current Position
 
-Phase: 198 - Candidate Coverage Accounting
-Plan: 198-candidate-coverage-accounting
+Phase: 199 - Candidate Miss Pressure Profiles
+Plan: 199-candidate-miss-pressure-profiles
 Status: Complete
-Last activity: 2026-06-03 -- Phase 198 adds source-free candidate coverage accounting for missed@10 files. Fresh proof promotes from `/tmp/ctxhelm-rd/phase198-candidate-coverage-proof.json`; selected-file/source/test/validation/broad-area and lexical-comparison metrics stay unchanged from Phase 197 while the proof shows ctxhelm has `11 / 12`, RefactoringMiner `1 / 1`, ReAgent `0 / 0`, and VeriSchema `36 / 39` missed@10 files already present in the candidate set. This proves the next VeriSchema work is mainly selection/ranking pressure, not missing candidate generation.
+Last activity: 2026-06-03 -- Phase 199 adds source-free candidate miss pressure profiles. Fresh proof promotes from `/tmp/ctxhelm-rd/phase199-candidate-pressure-proof.json`; retrieval and lexical-comparison metrics stay unchanged from Phase 198 while `candidateCoverageSummary` now exposes recoverable-miss role counts, signal counts, no-candidate role counts, and top recoverable areas. VeriSchema pressure is concentrated in `schema_agent/agents=7`, `tests/agents=6`, and `tests/evaluation=6`, with recoverable signals led by `co_change=17`, `related_test=17`, and `dependency=12`.
 
 ## Project Reference
 
@@ -177,6 +177,7 @@ Planned phases:
 - Phase 196: Validation Context Area Reserve (complete follow-up)
 - Phase 197: Agent Evidence Recovery Accounting (complete follow-up)
 - Phase 198: Candidate Coverage Accounting (complete follow-up)
+- Phase 199: Candidate Miss Pressure Profiles (complete follow-up)
 
 ## Last Completed Milestone
 

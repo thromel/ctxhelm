@@ -50,6 +50,8 @@ Phase 197 adds source-free agent-evidence recovery accounting to context-area ne
 
 Phase 198 adds source-free candidate coverage accounting for files missed by top-10 context. The fresh proof promotes with Phase 197 retrieval and lexical-comparison metrics unchanged while showing most misses are already generated as candidates: ctxhelm `11 / 12`, RefactoringMiner `1 / 1`, ReAgent `0 / 0`, and VeriSchema `36 / 39`. Two direct ranking experiments were rejected because source-area spillover and docs-entrypoint reserves did not improve recall; the measured gap is now selection/ranking pressure, especially for VeriSchema.
 
+Phase 199 adds source-free candidate miss pressure profiles. `candidateCoverageSummary` now includes recoverable role counts, recoverable signal counts, no-candidate role counts, and top recoverable context areas. The fresh proof promotes with Phase 198 metrics unchanged while showing VeriSchema recoverable pressure concentrated in `schema_agent/agents=7`, `tests/agents=6`, and `tests/evaluation=6`, mostly from `co_change`, `related_test`, and `dependency` signals.
+
 ## v2.5 Production Retrieval Quality
 
 ## Phases
@@ -180,6 +182,7 @@ Phase 198 adds source-free candidate coverage accounting for files missed by top
 - [x] **Phase 196: Validation Context Area Reserve** - Broad context-area guidance reserves selected validation areas and exposes package-mirrored test clusters as progressive reads.
 - [x] **Phase 197: Agent Evidence Recovery Accounting** - Product proof reports how many selected-file misses are still covered by related tests or progressive context-area reads.
 - [x] **Phase 198: Candidate Coverage Accounting** - Historical eval and product proof reports split top-10 misses into generated-but-unselected candidates versus no-candidate gaps.
+- [x] **Phase 199: Candidate Miss Pressure Profiles** - Candidate coverage summaries expose source-free role, signal, and area pressure for generated-but-unselected misses.
 - [x] **Phase 162: Feature-Enabled Local Fastembed Gate Proof** - A feature-enabled `local_fastembed` gate run on clean RefactoringMiner now proves the production-local backend works end-to-end, but remains held because it adds no semantic-only target hits and is still slower than default; the gate emits a source-free diagnostic for that condition.
 - [x] **Phase 163: Persisted Semantic Vector Reuse** - Fresh CLI/MCP processes can reuse persisted source-free semantic document vectors instead of recomputing every candidate vector.
 - [x] **Phase 164: Global Semantic Vector Candidates And Write-Through** - Semantic search can include persisted vector candidates outside the lexical prefilter and write through newly embedded candidate misses.

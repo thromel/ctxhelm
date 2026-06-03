@@ -434,6 +434,14 @@ candidate-recoverable. That makes the next retrieval-quality bottleneck
 selection/ranking pressure, especially in VeriSchema, rather than broad missing
 candidate generation.
 
+Phase 199 adds source-free candidate miss pressure profiles. The same summary
+now includes recoverable role counts, recoverable signal counts, no-candidate
+role counts, and top recoverable context areas. The fresh four-repo proof
+promotes with Phase 198 metrics unchanged while showing VeriSchema pressure
+concentrated in `schema_agent/agents=7`, `tests/agents=6`, and
+`tests/evaluation=6`, led by `co_change=17`, `related_test=17`, and
+`dependency=12` recoverable signals.
+
 The optional real-client evidence wrappers are:
 
 - `scripts/smoke-codex-mcp.sh`

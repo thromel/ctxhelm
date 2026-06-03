@@ -5278,13 +5278,50 @@ fn render_candidate_coverage_summary(
     {
         return String::new();
     }
-    format!(
+    let mut output = format!(
         "- Candidate coverage recovery: `{}` / `{}` missed@10 path(s)\n- No-candidate missed@10 paths: `{}`\n- Candidate coverage source-free: `{}`\n\n",
         summary.candidate_recoverable_count,
         summary.missed_file_count_at_10,
         summary.no_candidate_count,
         !summary.source_text_logged
-    )
+    );
+    if !summary.candidate_recoverable_role_counts.is_empty() {
+        output.push_str(&format!(
+            "- Candidate-recoverable roles: `{}`\n",
+            render_count_map(&summary.candidate_recoverable_role_counts)
+        ));
+    }
+    if !summary.candidate_recoverable_signal_counts.is_empty() {
+        output.push_str(&format!(
+            "- Candidate-recoverable signals: `{}`\n",
+            render_count_map(&summary.candidate_recoverable_signal_counts)
+        ));
+    }
+    if !summary.no_candidate_role_counts.is_empty() {
+        output.push_str(&format!(
+            "- No-candidate roles: `{}`\n",
+            render_count_map(&summary.no_candidate_role_counts)
+        ));
+    }
+    if !summary.top_candidate_recoverable_areas.is_empty() {
+        let areas = summary
+            .top_candidate_recoverable_areas
+            .iter()
+            .map(|area| format!("{}={}", area.context_area, area.missed_count))
+            .collect::<Vec<_>>()
+            .join(", ");
+        output.push_str(&format!("- Top candidate-recoverable areas: `{areas}`\n"));
+    }
+    output.push('\n');
+    output
+}
+
+fn render_count_map(counts: &std::collections::BTreeMap<String, usize>) -> String {
+    counts
+        .iter()
+        .map(|(key, value)| format!("{key}={value}"))
+        .collect::<Vec<_>>()
+        .join(", ")
 }
 
 fn render_benchmark_suite_report(report: &BenchmarkSuiteReport) -> String {
@@ -5861,6 +5898,7 @@ mod tests {
     use super::*;
     use ctxhelm_core::PackBudget;
     use ctxhelm_core::PrivacyStatus;
+    use std::collections::BTreeMap;
     use uuid::Uuid;
 
     #[test]
@@ -6120,6 +6158,18 @@ mod tests {
                 missed_file_count_at_10: 2,
                 candidate_recoverable_count: 1,
                 no_candidate_count: 1,
+                candidate_recoverable_role_counts: BTreeMap::from([("source".to_string(), 1)]),
+                candidate_recoverable_signal_counts: BTreeMap::from([
+                    ("dependency".to_string(), 1),
+                    ("co_change".to_string(), 1),
+                ]),
+                no_candidate_role_counts: BTreeMap::from([("test".to_string(), 1)]),
+                top_candidate_recoverable_areas: vec![
+                    ctxhelm_compiler::CandidateCoverageAreaSummary {
+                        context_area: "src/auth".to_string(),
+                        missed_count: 1,
+                    },
+                ],
                 source_text_logged: false,
             },
             file_recall_at_5: 1.0,
@@ -6183,6 +6233,7 @@ mod tests {
                 lexical_baseline_hits_at_10: vec![],
                 missing_files_at_10: vec![],
                 candidate_missed_files_at_10: vec![],
+                candidate_missed_file_profiles_at_10: vec![],
                 source_files_changed: 1,
                 source_hits_at_5: 1,
                 source_hits_at_10: 1,
@@ -6227,6 +6278,10 @@ mod tests {
         assert!(markdown.contains("Zero-selected-area next-read recovery: `0`"));
         assert!(markdown.contains("Candidate coverage recovery: `1` / `2` missed@10 path(s)"));
         assert!(markdown.contains("No-candidate missed@10 paths: `1`"));
+        assert!(markdown.contains("Candidate-recoverable roles: `source=1`"));
+        assert!(markdown.contains("Candidate-recoverable signals: `co_change=1, dependency=1`"));
+        assert!(markdown.contains("No-candidate roles: `test=1`"));
+        assert!(markdown.contains("Top candidate-recoverable areas: `src/auth=1`"));
         assert!(markdown.contains("File Recall@5: `1.00`"));
         assert!(markdown.contains("Lexical Baseline Recall@5: `0.50`"));
         assert!(markdown.contains("No-context Recall@K: `0.00`"));

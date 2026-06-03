@@ -26,24 +26,25 @@ pub use eval::{
     BenchmarkComparisonReport, BenchmarkDefaults, BenchmarkGapFamilyDelta, BenchmarkMetricDelta,
     BenchmarkRegressionThreshold, BenchmarkRepoBaseline, BenchmarkRepoBaselineStatus,
     BenchmarkRepoConfig, BenchmarkRepoEffectiveConfig, BenchmarkRepoReport, BenchmarkSuiteConfig,
-    BenchmarkSuiteReport, BenchmarkThresholdCheck, CandidateCoverageSummary,
-    CandidateFeatureComparisonReport, CandidateFeatureKindDelta, ContextAreaNextReadSummary,
-    ContextAreaPressurePeak, ContextAreaPressureSummary, EvalComparison, GraphEdgeAblationResult,
-    GraphEdgeProfile, HistoricalChangedPathLabel, HistoricalCommitEval,
-    HistoricalEvalEffectiveFilters, HistoricalEvalOptions, HistoricalEvalRefs,
-    HistoricalEvalReport, HistoricalEvalRuntimeSummary, HistoricalMissingFileSummary,
-    HistoricalProtectedEvidenceFile, HistoricalSignalRanking, HistoricalSlowCommitSummary,
-    LexicalBackendCommitRow, LexicalBackendComparison, LexicalBackendCorpusOptions,
-    LexicalBackendCorpusReport, LexicalBackendMetrics, LexicalBackendRuntimeSummary,
-    PairedBaselineAnalysisReport, PairedBaselineFamily, PairedBaselineRow, PairedBaselineVerdict,
-    ProductProofCorpusStatus, ProductProofCorpusVerdict, ProductProofLexicalBackendComparison,
-    ProductProofLexicalClaim, ProductProofLexicalComparison, ProductProofMetric,
-    ProductProofReleaseGate, ProductProofReport, ProtectedEvidenceSignalSummary,
-    ProtectedEvidenceSummary, RankingMetrics, RetrievalGapRecommendationArea, RetrievalGapSummary,
-    RetrievalGapTargetStatus, RoleRecallMetric, SemanticContributionSummary,
-    SemanticMissedTargetGapFamily, SemanticPrecisionGateDecision, SemanticPrecisionGateReport,
-    SemanticPrecisionNamedCase, SemanticPrecisionVariant, SemanticPrecisionVariantStatus,
-    SignalAblationResult, SignalSaturationMetric, TokenRoiMetric,
+    BenchmarkSuiteReport, BenchmarkThresholdCheck, CandidateCoverageAreaSummary,
+    CandidateCoverageSummary, CandidateFeatureComparisonReport, CandidateFeatureKindDelta,
+    CandidateMissedFileProfile, ContextAreaNextReadSummary, ContextAreaPressurePeak,
+    ContextAreaPressureSummary, EvalComparison, GraphEdgeAblationResult, GraphEdgeProfile,
+    HistoricalChangedPathLabel, HistoricalCommitEval, HistoricalEvalEffectiveFilters,
+    HistoricalEvalOptions, HistoricalEvalRefs, HistoricalEvalReport, HistoricalEvalRuntimeSummary,
+    HistoricalMissingFileSummary, HistoricalProtectedEvidenceFile, HistoricalSignalRanking,
+    HistoricalSlowCommitSummary, LexicalBackendCommitRow, LexicalBackendComparison,
+    LexicalBackendCorpusOptions, LexicalBackendCorpusReport, LexicalBackendMetrics,
+    LexicalBackendRuntimeSummary, PairedBaselineAnalysisReport, PairedBaselineFamily,
+    PairedBaselineRow, PairedBaselineVerdict, ProductProofCorpusStatus, ProductProofCorpusVerdict,
+    ProductProofLexicalBackendComparison, ProductProofLexicalClaim, ProductProofLexicalComparison,
+    ProductProofMetric, ProductProofReleaseGate, ProductProofReport,
+    ProtectedEvidenceSignalSummary, ProtectedEvidenceSummary, RankingMetrics,
+    RetrievalGapRecommendationArea, RetrievalGapSummary, RetrievalGapTargetStatus,
+    RoleRecallMetric, SemanticContributionSummary, SemanticMissedTargetGapFamily,
+    SemanticPrecisionGateDecision, SemanticPrecisionGateReport, SemanticPrecisionNamedCase,
+    SemanticPrecisionVariant, SemanticPrecisionVariantStatus, SignalAblationResult,
+    SignalSaturationMetric, TokenRoiMetric,
 };
 pub use graph::build_graph_neighborhood_report;
 pub use packs::{
@@ -1902,6 +1903,19 @@ mod tests {
                 missed_file_count_at_10: 3,
                 candidate_recoverable_count: 2,
                 no_candidate_count: 1,
+                candidate_recoverable_role_counts: BTreeMap::from([
+                    ("source".to_string(), 1),
+                    ("test".to_string(), 1),
+                ]),
+                candidate_recoverable_signal_counts: BTreeMap::from([
+                    ("co_change".to_string(), 1),
+                    ("dependency".to_string(), 1),
+                ]),
+                no_candidate_role_counts: BTreeMap::from([("docs".to_string(), 1)]),
+                top_candidate_recoverable_areas: vec![CandidateCoverageAreaSummary {
+                    context_area: "src/auth".to_string(),
+                    missed_count: 2,
+                }],
                 source_text_logged: false,
             },
             file_recall_at_5: 0.5,
@@ -1955,6 +1969,7 @@ mod tests {
                 lexical_baseline_hits_at_10: vec!["src/lib.rs".to_string()],
                 missing_files_at_10: Vec::new(),
                 candidate_missed_files_at_10: Vec::new(),
+                candidate_missed_file_profiles_at_10: Vec::new(),
                 source_files_changed: 1,
                 source_hits_at_5: 1,
                 source_hits_at_10: 1,
@@ -2090,6 +2105,22 @@ mod tests {
             2
         );
         assert_eq!(value["candidateCoverageSummary"]["noCandidateCount"], 1);
+        assert_eq!(
+            value["candidateCoverageSummary"]["candidateRecoverableRoleCounts"]["source"],
+            1
+        );
+        assert_eq!(
+            value["candidateCoverageSummary"]["candidateRecoverableSignalCounts"]["dependency"],
+            1
+        );
+        assert_eq!(
+            value["candidateCoverageSummary"]["noCandidateRoleCounts"]["docs"],
+            1
+        );
+        assert_eq!(
+            value["candidateCoverageSummary"]["topCandidateRecoverableAreas"][0]["contextArea"],
+            "src/auth"
+        );
         assert_eq!(value["candidateCoverageSummary"]["sourceTextLogged"], false);
         assert!(value["signalAblations"].as_array().unwrap().is_empty());
         assert_eq!(value["tokenRoi"][0]["budget"], "brief");

@@ -825,6 +825,13 @@ Recommendation today:
   ReAgent `0 / 0`, and VeriSchema `36 / 39` missed@10 files are
   candidate-recoverable. This keeps the next ranking work focused on selection
   pressure instead of guessing at candidate-generation gaps.
+- Phase 199 extends `candidateCoverageSummary` with source-free pressure
+  profiles: recoverable role counts, recoverable signal counts, no-candidate
+  role counts, and top candidate-recoverable context areas. The four-repo proof
+  still promotes with Phase 198 metrics unchanged. VeriSchema now shows
+  recoverable pressure in `schema_agent/agents=7`, `tests/agents=6`, and
+  `tests/evaluation=6`, with signal pressure led by `co_change=17`,
+  `related_test=17`, and `dependency=12`.
 - Treat cloud embeddings/reranking as disabled unless an explicit repo policy
   allows them.
 

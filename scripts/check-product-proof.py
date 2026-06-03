@@ -262,6 +262,26 @@ def validate_candidate_coverage_summaries(report: dict) -> None:
             fail("candidate coverage recovery exceeded missed files")
         if candidate_recoverable + no_candidate != missed:
             fail("candidate coverage summary total was inconsistent")
+        for field in (
+            "candidateRecoverableRoleCounts",
+            "candidateRecoverableSignalCounts",
+            "noCandidateRoleCounts",
+        ):
+            if field in summary and not isinstance(summary[field], dict):
+                fail("candidate coverage summary " + field + " was not an object")
+            for key, value in (summary.get(field) or {}).items():
+                if not isinstance(key, str) or not isinstance(value, int):
+                    fail("candidate coverage summary " + field + " had invalid counts")
+        top_areas = summary.get("topCandidateRecoverableAreas", [])
+        if top_areas is not None and not isinstance(top_areas, list):
+            fail("candidate coverage top areas were not a list")
+        for area in top_areas or []:
+            if not isinstance(area, dict):
+                fail("candidate coverage top area was not an object")
+            if not isinstance(area.get("contextArea"), str):
+                fail("candidate coverage top area was missing contextArea")
+            if not isinstance(area.get("missedCount"), int):
+                fail("candidate coverage top area was missing missedCount")
         if summary.get("sourceTextLogged") is not False:
             fail("candidate coverage summary was not source-free")
 

@@ -935,7 +935,31 @@ pub struct CandidateCoverageSummary {
     pub missed_file_count_at_10: usize,
     pub candidate_recoverable_count: usize,
     pub no_candidate_count: usize,
+    #[serde(default)]
+    pub candidate_recoverable_role_counts: BTreeMap<String, usize>,
+    #[serde(default)]
+    pub candidate_recoverable_signal_counts: BTreeMap<String, usize>,
+    #[serde(default)]
+    pub no_candidate_role_counts: BTreeMap<String, usize>,
+    #[serde(default)]
+    pub top_candidate_recoverable_areas: Vec<CandidateCoverageAreaSummary>,
     pub source_text_logged: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct CandidateCoverageAreaSummary {
+    pub context_area: String,
+    pub missed_count: usize,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct CandidateMissedFileProfile {
+    pub path: String,
+    pub role: FileRole,
+    pub context_area: String,
+    pub signals: Vec<RetrievalSignalKind>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -1271,6 +1295,8 @@ pub struct HistoricalCommitEval {
     pub missing_files_at_10: Vec<String>,
     #[serde(default)]
     pub candidate_missed_files_at_10: Vec<String>,
+    #[serde(default)]
+    pub candidate_missed_file_profiles_at_10: Vec<CandidateMissedFileProfile>,
     pub source_files_changed: usize,
     pub source_hits_at_5: usize,
     pub source_hits_at_10: usize,
@@ -4561,6 +4587,8 @@ fn evaluate_historical_commit_sample(
         .filter(|path| candidate_paths.contains(*path))
         .cloned()
         .collect::<Vec<_>>();
+    let candidate_missed_file_profiles_at_10 =
+        candidate_missed_file_profiles(&missing_files_at_10, &plan, &candidate_roles_by_path);
     let ablation_rankings = ablation_signals()
         .into_iter()
         .map(|signal| {
@@ -4648,6 +4676,7 @@ fn evaluate_historical_commit_sample(
             lexical_baseline_hits_at_10,
             missing_files_at_10,
             candidate_missed_files_at_10,
+            candidate_missed_file_profiles_at_10,
             source_files_changed: source_changed_files.len(),
             source_hits_at_5,
             source_hits_at_10,
@@ -6400,6 +6429,70 @@ fn candidate_roles_by_path(plan: &ContextPlan) -> BTreeMap<String, FileRole> {
     roles
 }
 
+fn candidate_missed_file_profiles(
+    missing_files_at_10: &[String],
+    plan: &ContextPlan,
+    candidate_roles_by_path: &BTreeMap<String, FileRole>,
+) -> Vec<CandidateMissedFileProfile> {
+    let mut signals_by_path = BTreeMap::<String, Vec<RetrievalSignalKind>>::new();
+    for candidate in &plan.retrieval_candidates {
+        let Some(path) = &candidate.path else {
+            continue;
+        };
+        let signals = signals_by_path.entry(path.clone()).or_default();
+        for signal in candidate
+            .signal_scores
+            .iter()
+            .map(|score| score.signal.clone())
+            .chain(
+                candidate
+                    .evidence
+                    .iter()
+                    .map(|evidence| evidence.signal.clone()),
+            )
+        {
+            if !signals.contains(&signal) {
+                signals.push(signal);
+            }
+        }
+        signals.sort_by_key(signal_sort_key);
+    }
+
+    missing_files_at_10
+        .iter()
+        .filter_map(|path| {
+            let signals = signals_by_path.get(path)?;
+            Some(CandidateMissedFileProfile {
+                path: path.clone(),
+                role: candidate_roles_by_path
+                    .get(path)
+                    .cloned()
+                    .unwrap_or(FileRole::Unknown),
+                context_area: context_area_for_path(path),
+                signals: signals.clone(),
+            })
+        })
+        .collect()
+}
+
+fn signal_sort_key(signal: &RetrievalSignalKind) -> u8 {
+    match signal {
+        RetrievalSignalKind::Anchor => 0,
+        RetrievalSignalKind::CurrentDiff => 1,
+        RetrievalSignalKind::Lexical => 2,
+        RetrievalSignalKind::LexicalExpansion => 3,
+        RetrievalSignalKind::Symbol => 4,
+        RetrievalSignalKind::Dependency => 5,
+        RetrievalSignalKind::RelatedTest => 6,
+        RetrievalSignalKind::CoChange => 7,
+        RetrievalSignalKind::Semantic => 8,
+        RetrievalSignalKind::History => 9,
+        RetrievalSignalKind::Config => 10,
+        RetrievalSignalKind::Docs => 11,
+        RetrievalSignalKind::Memory => 12,
+    }
+}
+
 fn budgeted_protected_evidence_paths(plan: &ContextPlan, limit: usize) -> BTreeSet<String> {
     let mut paths = BTreeSet::new();
     let limit = limit.max(1);
@@ -7059,14 +7152,98 @@ fn candidate_coverage_summary(commits: &[HistoricalCommitEval]) -> CandidateCove
         source_text_logged: false,
         ..CandidateCoverageSummary::default()
     };
+    let mut area_counts = BTreeMap::<String, usize>::new();
     for commit in commits {
         summary.missed_file_count_at_10 += commit.missing_files_at_10.len();
         summary.candidate_recoverable_count += commit.candidate_missed_files_at_10.len();
+        let candidate_paths = commit
+            .candidate_missed_files_at_10
+            .iter()
+            .cloned()
+            .collect::<BTreeSet<_>>();
+        let roles_by_path = commit
+            .changed_path_labels
+            .iter()
+            .map(|label| (label.path.clone(), label.role.clone()))
+            .collect::<BTreeMap<_, _>>();
+        for profile in &commit.candidate_missed_file_profiles_at_10 {
+            *summary
+                .candidate_recoverable_role_counts
+                .entry(file_role_label(&profile.role).to_string())
+                .or_insert(0) += 1;
+            *area_counts.entry(profile.context_area.clone()).or_insert(0) += 1;
+            for signal in &profile.signals {
+                *summary
+                    .candidate_recoverable_signal_counts
+                    .entry(retrieval_signal_label(signal).to_string())
+                    .or_insert(0) += 1;
+            }
+        }
+        for path in &commit.missing_files_at_10 {
+            if candidate_paths.contains(path) {
+                continue;
+            }
+            let role = roles_by_path
+                .get(path)
+                .cloned()
+                .unwrap_or(FileRole::Unknown);
+            *summary
+                .no_candidate_role_counts
+                .entry(file_role_label(&role).to_string())
+                .or_insert(0) += 1;
+        }
     }
     summary.no_candidate_count = summary
         .missed_file_count_at_10
         .saturating_sub(summary.candidate_recoverable_count);
+    let mut top_areas = area_counts.into_iter().collect::<Vec<_>>();
+    top_areas.sort_by(|(left_area, left_count), (right_area, right_count)| {
+        right_count
+            .cmp(left_count)
+            .then_with(|| left_area.cmp(right_area))
+    });
+    summary.top_candidate_recoverable_areas = top_areas
+        .into_iter()
+        .take(10)
+        .map(
+            |(context_area, missed_count)| CandidateCoverageAreaSummary {
+                context_area,
+                missed_count,
+            },
+        )
+        .collect();
     summary
+}
+
+fn file_role_label(role: &FileRole) -> &'static str {
+    match role {
+        FileRole::Source => "source",
+        FileRole::Test => "test",
+        FileRole::Config => "config",
+        FileRole::Schema => "schema",
+        FileRole::Docs => "docs",
+        FileRole::Generated => "generated",
+        FileRole::Sensitive => "sensitive",
+        FileRole::Unknown => "unknown",
+    }
+}
+
+fn retrieval_signal_label(signal: &RetrievalSignalKind) -> &'static str {
+    match signal {
+        RetrievalSignalKind::Lexical => "lexical",
+        RetrievalSignalKind::LexicalExpansion => "lexical_expansion",
+        RetrievalSignalKind::Symbol => "symbol",
+        RetrievalSignalKind::Dependency => "dependency",
+        RetrievalSignalKind::RelatedTest => "related_test",
+        RetrievalSignalKind::Semantic => "semantic",
+        RetrievalSignalKind::CoChange => "co_change",
+        RetrievalSignalKind::CurrentDiff => "current_diff",
+        RetrievalSignalKind::History => "history",
+        RetrievalSignalKind::Docs => "docs",
+        RetrievalSignalKind::Config => "config",
+        RetrievalSignalKind::Anchor => "anchor",
+        RetrievalSignalKind::Memory => "memory",
+    }
 }
 
 fn is_top_pressure_context_area(area: &ContextArea, context_areas: &[ContextArea]) -> bool {
@@ -8567,6 +8744,7 @@ mod tests {
             lexical_baseline_hits_at_10: Vec::new(),
             missing_files_at_10: Vec::new(),
             candidate_missed_files_at_10: Vec::new(),
+            candidate_missed_file_profiles_at_10: Vec::new(),
             source_files_changed: 0,
             source_hits_at_5: 0,
             source_hits_at_10: 0,
@@ -9498,6 +9676,23 @@ mod tests {
                 "schema_agent/core/fd_router.py".to_string(),
                 "docs/architecture.md".to_string(),
             ],
+            candidate_missed_file_profiles_at_10: vec![
+                CandidateMissedFileProfile {
+                    path: "schema_agent/core/fd_router.py".to_string(),
+                    role: FileRole::Source,
+                    context_area: "schema_agent/core".to_string(),
+                    signals: vec![
+                        RetrievalSignalKind::Dependency,
+                        RetrievalSignalKind::LexicalExpansion,
+                    ],
+                },
+                CandidateMissedFileProfile {
+                    path: "docs/architecture.md".to_string(),
+                    role: FileRole::Docs,
+                    context_area: "docs".to_string(),
+                    signals: vec![RetrievalSignalKind::Lexical],
+                },
+            ],
             source_files_changed: 4,
             source_hits_at_5: 1,
             source_hits_at_10: 1,
@@ -9653,6 +9848,20 @@ mod tests {
             candidate_missed_files_at_10: vec![
                 "src/auth/session.ts".to_string(),
                 "tests/auth/session.test.ts".to_string(),
+            ],
+            candidate_missed_file_profiles_at_10: vec![
+                CandidateMissedFileProfile {
+                    path: "src/auth/session.ts".to_string(),
+                    role: FileRole::Source,
+                    context_area: "src/auth".to_string(),
+                    signals: vec![RetrievalSignalKind::Dependency],
+                },
+                CandidateMissedFileProfile {
+                    path: "tests/auth/session.test.ts".to_string(),
+                    role: FileRole::Test,
+                    context_area: "tests/auth".to_string(),
+                    signals: vec![RetrievalSignalKind::RelatedTest],
+                },
             ],
             source_files_changed: 2,
             source_hits_at_5: 0,
@@ -10011,6 +10220,7 @@ mod tests {
                 lexical_baseline_hits_at_10: Vec::new(),
                 missing_files_at_10: Vec::new(),
                 candidate_missed_files_at_10: Vec::new(),
+                candidate_missed_file_profiles_at_10: Vec::new(),
                 source_files_changed: 0,
                 source_hits_at_5: 0,
                 source_hits_at_10: 0,

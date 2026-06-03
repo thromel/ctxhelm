@@ -3098,6 +3098,10 @@ fn assert_no_source_or_prompt_text_at(value: &Value, parent_key: Option<&str>) {
                             | "selectedRoleCounts"
                             | "role_counts"
                             | "selected_role_counts"
+                            | "candidateRecoverableRoleCounts"
+                            | "candidate_recoverable_role_counts"
+                            | "noCandidateRoleCounts"
+                            | "no_candidate_role_counts"
                     )
                 );
                 assert!(
