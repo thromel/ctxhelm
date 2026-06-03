@@ -56,6 +56,8 @@ Phase 200 adds a bounded contextual README doc reserve for broad tasks. The acce
 
 Phase 201 adds source-free agent-evidence-only gap profiles to `contextAreaNextReadSummary`. The fresh proof promotes with Phase 200 retrieval metrics unchanged while showing the residual gap between progressive next reads and full agent evidence is validation-heavy: VeriSchema has `10` agent-evidence-only missed@10 files, all tests, concentrated in `tests/agents=5`, `tests/evaluation=4`, and `tests/core=1`; RefactoringMiner has `1` agent-evidence-only test gap. A broad agent-source reserve, role-aware related-test next-read priority, and larger high-pressure next-read cap were measured and rejected because they produced no recovery movement.
 
+Phase 202 renders those agent-evidence-only gap profiles in source-free markdown reports. Historical eval output now includes `Agent-evidence-only recovery`, role counts, and top areas so maintainers can see validation-only residual gaps without opening raw JSON. This is a report-surface improvement; retrieval metrics stay governed by the Phase 201 proof.
+
 ## v2.5 Production Retrieval Quality
 
 ## Phases
@@ -63,7 +65,7 @@ Phase 201 adds source-free agent-evidence-only gap profiles to `contextAreaNextR
 **Phase Numbering:**
 
 - Integer phases (61, 62, 63, 64, 65): Planned v2.5 work
-- Phases 66-201: Production-readiness follow-ups from the original blocked proof and the channel-aware promotion path
+- Phases 66-202: Production-readiness follow-ups from the original blocked proof and the channel-aware promotion path
 - Decimal phases (61.1, 62.1): Urgent insertions if needed
 
 - [x] **Phase 61: Multi-Repo Quality Baselines** - Maintainers can run source-free paired baselines across RefactoringMiner and a second real repository with stable comparison artifacts.
@@ -189,6 +191,7 @@ Phase 201 adds source-free agent-evidence-only gap profiles to `contextAreaNextR
 - [x] **Phase 199: Candidate Miss Pressure Profiles** - Candidate coverage summaries expose source-free role, signal, and area pressure for generated-but-unselected misses.
 - [x] **Phase 200: Contextual README Doc Reserve** - Broad tasks reserve one source-free nested README doc after config/workflow evidence, recovering a VeriSchema docs-only target without source/test/validation regression.
 - [x] **Phase 201: Agent Evidence Only Gap Profiles** - Context-area next-read summaries separate missed files recoverable only through the broader agent evidence bundle by role and area.
+- [x] **Phase 202: Agent Evidence Only Report Rendering** - Historical eval markdown reports render agent-evidence-only recovery counts, roles, and top areas.
 - [x] **Phase 162: Feature-Enabled Local Fastembed Gate Proof** - A feature-enabled `local_fastembed` gate run on clean RefactoringMiner now proves the production-local backend works end-to-end, but remains held because it adds no semantic-only target hits and is still slower than default; the gate emits a source-free diagnostic for that condition.
 - [x] **Phase 163: Persisted Semantic Vector Reuse** - Fresh CLI/MCP processes can reuse persisted source-free semantic document vectors instead of recomputing every candidate vector.
 - [x] **Phase 164: Global Semantic Vector Candidates And Write-Through** - Semantic search can include persisted vector candidates outside the lexical prefilter and write through newly embedded candidate misses.

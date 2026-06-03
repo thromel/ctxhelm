@@ -5257,8 +5257,8 @@ fn render_context_area_next_read_summary(
     if summary.missed_file_count_at_10 == 0 {
         return String::new();
     }
-    format!(
-        "- Context area next-read recovery: `{}` / `{}` missed@10 path(s)\n- Agent-evidence recovery: `{}` / `{}` missed@10 path(s)\n- Top-pressure next-read recovery: `{}`\n- Zero-selected-area next-read recovery: `{}`\n- Context area next-read source-free: `{}`\n\n",
+    let mut output = format!(
+        "- Context area next-read recovery: `{}` / `{}` missed@10 path(s)\n- Agent-evidence recovery: `{}` / `{}` missed@10 path(s)\n- Top-pressure next-read recovery: `{}`\n- Zero-selected-area next-read recovery: `{}`\n- Context area next-read source-free: `{}`\n",
         summary.next_read_recoverable_count,
         summary.missed_file_count_at_10,
         summary.agent_evidence_recoverable_count,
@@ -5266,7 +5266,30 @@ fn render_context_area_next_read_summary(
         summary.top_pressure_next_read_recoverable_count,
         summary.zero_selected_area_recoverable_count,
         !summary.source_text_logged
-    )
+    );
+    if summary.agent_evidence_only_count > 0 {
+        output.push_str(&format!(
+            "- Agent-evidence-only recovery: `{}` missed@10 path(s)\n",
+            summary.agent_evidence_only_count
+        ));
+    }
+    if !summary.agent_evidence_only_role_counts.is_empty() {
+        output.push_str(&format!(
+            "- Agent-evidence-only roles: `{}`\n",
+            render_count_map(&summary.agent_evidence_only_role_counts)
+        ));
+    }
+    if !summary.top_agent_evidence_only_areas.is_empty() {
+        let areas = summary
+            .top_agent_evidence_only_areas
+            .iter()
+            .map(|area| format!("{}={}", area.context_area, area.missed_count))
+            .collect::<Vec<_>>()
+            .join(", ");
+        output.push_str(&format!("- Top agent-evidence-only areas: `{areas}`\n"));
+    }
+    output.push('\n');
+    output
 }
 
 fn render_candidate_coverage_summary(
@@ -6150,9 +6173,14 @@ mod tests {
                 missed_file_count_at_10: 2,
                 next_read_recoverable_count: 1,
                 agent_evidence_recoverable_count: 1,
-                agent_evidence_only_count: 0,
-                agent_evidence_only_role_counts: BTreeMap::new(),
-                top_agent_evidence_only_areas: Vec::new(),
+                agent_evidence_only_count: 1,
+                agent_evidence_only_role_counts: BTreeMap::from([("test".to_string(), 1)]),
+                top_agent_evidence_only_areas: vec![
+                    ctxhelm_compiler::CandidateCoverageAreaSummary {
+                        context_area: "tests/auth".to_string(),
+                        missed_count: 1,
+                    },
+                ],
                 top_pressure_next_read_recoverable_count: 1,
                 zero_selected_area_recoverable_count: 0,
                 source_text_logged: false,
@@ -6277,6 +6305,9 @@ mod tests {
         assert!(markdown.contains("Highest pressure area: `src` pressure `6` coverage `33%`"));
         assert!(markdown.contains("Context area next-read recovery: `1` / `2` missed@10 path(s)"));
         assert!(markdown.contains("Agent-evidence recovery: `1` / `2` missed@10 path(s)"));
+        assert!(markdown.contains("Agent-evidence-only recovery: `1` missed@10 path(s)"));
+        assert!(markdown.contains("Agent-evidence-only roles: `test=1`"));
+        assert!(markdown.contains("Top agent-evidence-only areas: `tests/auth=1`"));
         assert!(markdown.contains("Top-pressure next-read recovery: `1`"));
         assert!(markdown.contains("Zero-selected-area next-read recovery: `0`"));
         assert!(markdown.contains("Candidate coverage recovery: `1` / `2` missed@10 path(s)"));

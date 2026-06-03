@@ -4,10 +4,10 @@ milestone: v2.5
 milestone_name: Production Retrieval Quality
 status: active
 last_updated: "2026-06-03T00:00:00Z"
-last_activity: 2026-06-03 -- Phase 201 adds agent-evidence-only gap diagnostics
+last_activity: 2026-06-03 -- Phase 202 renders agent-evidence-only gaps in reports
 progress:
-  total_phases: 112
-  completed_phases: 112
+  total_phases: 113
+  completed_phases: 113
   total_plans: 7
   completed_plans: 7
   percent: 100
@@ -17,10 +17,10 @@ progress:
 
 ## Current Position
 
-Phase: 201 - Agent Evidence Only Gap Profiles
-Plan: 201-agent-evidence-only-gap-profiles
+Phase: 202 - Agent Evidence Only Report Rendering
+Plan: 202-agent-evidence-only-report-rendering
 Status: Complete
-Last activity: 2026-06-03 -- Phase 201 adds source-free agent-evidence-only gap profiles to `contextAreaNextReadSummary`. Fresh proof promotes from `/tmp/ctxhelm-rd/phase201-agent-evidence-gap-proof.json` with Phase 200 retrieval metrics unchanged while exposing that VeriSchema has `10` missed@10 files recoverable through agent evidence but not progressive next reads; all `10` are tests, concentrated in `tests/agents=5`, `tests/evaluation=4`, and `tests/core=1`. RefactoringMiner has `1` agent-evidence-only test gap in `src/test/java/org/refactoringminer/mcp`. Two attempted next ranking/read-order experiments were measured and rejected because they produced no recovery movement.
+Last activity: 2026-06-03 -- Phase 202 renders Phase 201 agent-evidence-only gap profiles in source-free markdown reports. Historical eval reports now show `Agent-evidence-only recovery`, `Agent-evidence-only roles`, and `Top agent-evidence-only areas`, so validation-only residual gaps such as VeriSchema `tests/agents` and `tests/evaluation` are visible without opening raw JSON. Focused CLI rendering validation passes with `cargo test -p ctxhelm historical_eval_report_renders_source_free_metrics --locked -- --nocapture`.
 
 ## Project Reference
 
@@ -180,6 +180,7 @@ Planned phases:
 - Phase 199: Candidate Miss Pressure Profiles (complete follow-up)
 - Phase 200: Contextual README Doc Reserve (complete follow-up)
 - Phase 201: Agent Evidence Only Gap Profiles (complete follow-up)
+- Phase 202: Agent Evidence Only Report Rendering (complete follow-up)
 
 ## Last Completed Milestone
 

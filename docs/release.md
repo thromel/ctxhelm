@@ -462,6 +462,12 @@ tests, concentrated in `tests/agents=5`, `tests/evaluation=4`, and
 role-aware related-test next-read priority, and larger high-pressure next-read
 cap were measured and rejected because they produced no recovery movement.
 
+Phase 202 renders those source-free profiles in historical eval markdown
+reports. The report now includes agent-evidence-only recovery count, role
+counts, and top areas, so validation-only residual gaps are visible during
+normal proof review without opening raw JSON. Retrieval metrics remain governed
+by the Phase 201 proof.
+
 The optional real-client evidence wrappers are:
 
 - `scripts/smoke-codex-mcp.sh`

@@ -851,6 +851,11 @@ Recommendation today:
   reserve, role-aware related-test next-read priority, and larger high-pressure
   next-read cap were measured and rejected because they produced no recovery
   movement.
+- Phase 202 renders those source-free agent-evidence-only profiles in
+  historical eval markdown reports. Reports now show agent-evidence-only
+  recovery count, role counts, and top areas, so validation-only residual gaps
+  are visible without opening raw JSON. This is a report-surface improvement;
+  retrieval metrics remain governed by the Phase 201 proof.
 - Treat cloud embeddings/reranking as disabled unless an explicit repo policy
   allows them.
 
