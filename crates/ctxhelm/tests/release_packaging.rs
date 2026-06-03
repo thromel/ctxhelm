@@ -744,6 +744,7 @@ fn ci_workflow_contract() {
         "FORCE_JAVASCRIPT_ACTIONS_TO_NODE24",
         "actions/checkout@v5",
         "actions/cache@v5",
+        "cargo-registry-v1",
         "cargo fmt --all -- --check",
         "rustup toolchain install stable --profile minimal --component rustfmt --component clippy",
         "cargo clippy --workspace --all-targets --locked -- -D warnings",
@@ -759,6 +760,11 @@ fn ci_workflow_contract() {
             "CI workflow missing {required}"
         );
     }
+
+    assert!(
+        !workflow_text.contains("\n            target\n"),
+        "CI workflow must not cache target/ build outputs; large target caches can exhaust hosted runner disk"
+    );
 
     assert!(
         !workflow_text.contains("gh release")
@@ -785,6 +791,7 @@ fn release_artifacts_workflow_contract() {
         "startsWith(github.ref, 'refs/tags/')",
         "actions/checkout@v5",
         "actions/cache@v5",
+        "cargo-registry-v1",
         "actions/upload-artifact@v6",
         "ubuntu-latest",
         "macos-15-intel",
@@ -805,6 +812,11 @@ fn release_artifacts_workflow_contract() {
             "release artifacts workflow missing {required}"
         );
     }
+
+    assert!(
+        !workflow_text.contains("\n            target\n"),
+        "release artifacts workflow must not cache target/ build outputs; package jobs already produce bounded artifacts"
+    );
 
     for forbidden in ["git tag", "git push", "cargo publish", "brew install"] {
         assert!(

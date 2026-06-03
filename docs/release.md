@@ -215,6 +215,9 @@ requests, and manual dispatch. That workflow uses the Node 24 major versions
 workspace tests, CLI help, release-doc consistency, and the local release gate
 with external fixture and real-client checks explicitly skipped unless a
 maintainer runs the full local gate with those optional proofs enabled.
+The Actions cache is intentionally limited to Cargo registry/git metadata and
+does not restore `target/`; prior target-output caches grew large enough to
+exhaust hosted-runner disk before validation could start.
 
 This is the pre-publication blocker for v1.1.12. When `CTXHELM_BIN` is not set, the gate runs `scripts/release-package.sh`, audits the archive, extracts the generated artifact, and uses the extracted `ctxhelm` binary for installed-binary proof.
 
