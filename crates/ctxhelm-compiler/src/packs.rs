@@ -190,6 +190,14 @@ fn compile_pack_from_plan(
         section("Validation", "validation", render_validation(plan)),
     ];
 
+    if !plan.related_tests.is_empty() {
+        sections.push(section(
+            "Related test evidence",
+            "related_test_evidence",
+            render_related_test_evidence(plan),
+        ));
+    }
+
     if !plan.risk_flags.is_empty() {
         sections.push(section("Risk flags", "risk_flags", render_risk_flags(plan)));
     }
@@ -975,6 +983,32 @@ fn render_validation(plan: &ContextPlan) -> String {
         .map(|command| format!("- `{}`\n  - Reason: {}", command.command, command.reason))
         .collect::<Vec<_>>()
         .join("\n")
+}
+
+fn render_related_test_evidence(plan: &ContextPlan) -> String {
+    if plan.related_tests.is_empty() {
+        return "No related test evidence was selected.".to_string();
+    }
+
+    let mut output = String::from(
+        "Inspect these tests before broader progressive reads. They are validation evidence, so some may not be repeated in context-area next-read lists.\n\n",
+    );
+    for test in &plan.related_tests {
+        let command = test
+            .command
+            .as_ref()
+            .map(|command| format!("\n   - Command: `{command}`"))
+            .unwrap_or_default();
+        output.push_str(&format!(
+            "- `{}`\n   - Area: `{}`\n   - Reason: {}\n   - Confidence: {:.2}{}\n",
+            test.path,
+            ctxhelm_core::context_area_for_path(&test.path),
+            test.reason,
+            test.confidence,
+            command
+        ));
+    }
+    output.trim_end().to_string()
 }
 
 fn render_risk_flags(plan: &ContextPlan) -> String {

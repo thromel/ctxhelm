@@ -948,6 +948,12 @@ which proves the v2.3 contract without external repos.
 
 The release gate does not publish, upload, or create GitHub releases, and does not create tags. It does not mutate global agent config and does not run user project tests. Cursor and OpenCode real-client proof is not claimed for v1.1.12.
 
+Phase 203 improves pack consumption of validation evidence without changing the
+release artifact contract. Generated packs now include a source-free `Related
+test evidence` section so agents see selected related tests, context areas,
+reasons, confidence, and targeted commands even when those tests are not
+repeated in context-area next-read lists.
+
 ## Artifact Audit
 
 `scripts/release-package.sh` runs `scripts/audit-release-artifact.sh` immediately after archive creation and before checksum success output. It writes a machine-readable `ctxhelm-v1.1.12-{target}.audit.json` report next to the archive.

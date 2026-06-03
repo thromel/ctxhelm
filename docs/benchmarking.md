@@ -856,6 +856,12 @@ Recommendation today:
   recovery count, role counts, and top areas, so validation-only residual gaps
   are visible without opening raw JSON. This is a report-surface improvement;
   retrieval metrics remain governed by the Phase 201 proof.
+- Phase 203 surfaces selected related tests as source-free validation evidence
+  in generated packs. Packs now include a `Related test evidence` section with
+  test path, context area, reason, confidence, and targeted command details, and
+  explicitly explain that selected validation evidence may not be repeated in
+  context-area next-read lists. This improves agent consumption of evidence
+  already counted by product proof without changing target-file ranking.
 - Treat cloud embeddings/reranking as disabled unless an explicit repo policy
   allows them.
 

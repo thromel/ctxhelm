@@ -4,10 +4,10 @@ milestone: v2.5
 milestone_name: Production Retrieval Quality
 status: active
 last_updated: "2026-06-03T00:00:00Z"
-last_activity: 2026-06-03 -- Phase 202 renders agent-evidence-only gaps in reports
+last_activity: 2026-06-03 -- Phase 203 surfaces related-test evidence in packs
 progress:
-  total_phases: 113
-  completed_phases: 113
+  total_phases: 114
+  completed_phases: 114
   total_plans: 7
   completed_plans: 7
   percent: 100
@@ -17,10 +17,10 @@ progress:
 
 ## Current Position
 
-Phase: 202 - Agent Evidence Only Report Rendering
-Plan: 202-agent-evidence-only-report-rendering
+Phase: 203 - Related Test Evidence Pack Section
+Plan: 203-related-test-evidence-pack-section
 Status: Complete
-Last activity: 2026-06-03 -- Phase 202 renders Phase 201 agent-evidence-only gap profiles in source-free markdown reports. Historical eval reports now show `Agent-evidence-only recovery`, `Agent-evidence-only roles`, and `Top agent-evidence-only areas`, so validation-only residual gaps such as VeriSchema `tests/agents` and `tests/evaluation` are visible without opening raw JSON. Focused CLI rendering validation passes with `cargo test -p ctxhelm historical_eval_report_renders_source_free_metrics --locked -- --nocapture`.
+Last activity: 2026-06-03 -- Phase 203 surfaces selected related tests as source-free validation evidence in generated packs. Packs now include `Related test evidence` with path, context area, reason, confidence, and targeted command details, plus an explicit note that selected validation evidence may not be repeated in context-area next-read lists. Focused pack validation passes with `cargo test -p ctxhelm-compiler compile_context_pack_materializes_plan_snippets_and_validation --locked -- --nocapture`.
 
 ## Project Reference
 

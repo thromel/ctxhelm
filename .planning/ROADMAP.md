@@ -58,6 +58,8 @@ Phase 201 adds source-free agent-evidence-only gap profiles to `contextAreaNextR
 
 Phase 202 renders those agent-evidence-only gap profiles in source-free markdown reports. Historical eval output now includes `Agent-evidence-only recovery`, role counts, and top areas so maintainers can see validation-only residual gaps without opening raw JSON. This is a report-surface improvement; retrieval metrics stay governed by the Phase 201 proof.
 
+Phase 203 makes selected validation evidence first-class in generated packs. Packs now include a source-free `Related test evidence` section that lists selected related tests, their context areas, reasons, confidence, and targeted commands, and explicitly tells agents that selected validation evidence may not be repeated in context-area next-read lists. This addresses the Phase 201/202 validation-consumption gap without duplicating selected tests into progressive next-read paths or perturbing target-file ranking.
+
 ## v2.5 Production Retrieval Quality
 
 ## Phases
@@ -192,6 +194,7 @@ Phase 202 renders those agent-evidence-only gap profiles in source-free markdown
 - [x] **Phase 200: Contextual README Doc Reserve** - Broad tasks reserve one source-free nested README doc after config/workflow evidence, recovering a VeriSchema docs-only target without source/test/validation regression.
 - [x] **Phase 201: Agent Evidence Only Gap Profiles** - Context-area next-read summaries separate missed files recoverable only through the broader agent evidence bundle by role and area.
 - [x] **Phase 202: Agent Evidence Only Report Rendering** - Historical eval markdown reports render agent-evidence-only recovery counts, roles, and top areas.
+- [x] **Phase 203: Related Test Evidence Pack Section** - Generated packs surface selected related tests as source-free validation evidence with area, reason, confidence, and command details.
 - [x] **Phase 162: Feature-Enabled Local Fastembed Gate Proof** - A feature-enabled `local_fastembed` gate run on clean RefactoringMiner now proves the production-local backend works end-to-end, but remains held because it adds no semantic-only target hits and is still slower than default; the gate emits a source-free diagnostic for that condition.
 - [x] **Phase 163: Persisted Semantic Vector Reuse** - Fresh CLI/MCP processes can reuse persisted source-free semantic document vectors instead of recomputing every candidate vector.
 - [x] **Phase 164: Global Semantic Vector Candidates And Write-Through** - Semantic search can include persisted vector candidates outside the lexical prefilter and write through newly embedded candidate misses.

@@ -1031,8 +1031,17 @@ mod tests {
         assert_eq!(pack.budget, PackBudget::Brief);
         assert!(pack.token_estimate > 0);
         assert!(pack.sections.iter().any(|section| section.kind == "task"));
+        assert!(pack
+            .sections
+            .iter()
+            .any(|section| section.kind == "related_test_evidence"));
         assert!(markdown.contains("src/auth/session.ts"));
         assert!(markdown.contains("export function requireSession"));
+        assert!(markdown.contains("## Related test evidence"));
+        assert!(markdown.contains("Area: `tests/auth`"));
+        assert!(markdown.contains(
+            "They are validation evidence, so some may not be repeated in context-area next-read lists."
+        ));
         assert!(markdown.contains("tests/auth/session.test.ts"));
         assert!(markdown.contains("pnpm test tests/auth/session.test.ts"));
         assert!(markdown.contains("Final checklist"));
