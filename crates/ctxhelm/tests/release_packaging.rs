@@ -228,6 +228,8 @@ fn release_gate_script_contract() {
         "scripts/verify-release-archive.sh",
         "scripts/smoke-first-pack.sh",
         "scripts/smoke-storage.sh",
+        "scripts/smoke-memory.sh",
+        "scripts/smoke-memory-reuse.sh",
         "scripts/smoke-shared-artifacts.sh",
         "scripts/smoke-inspector.sh",
         "scripts/smoke-retrieval-health.sh",

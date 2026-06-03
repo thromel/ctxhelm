@@ -129,7 +129,8 @@ The storage schema stores hashes, paths that passed ctxhelm policy, roles,
 counts, metrics, IDs, and JSON metadata. It does not store raw file contents,
 source snippets, prompt text, secrets, or cloud embedding data by default.
 
-The release gate runs `scripts/smoke-storage.sh`, `scripts/smoke-memory.sh`, and
-`scripts/smoke-semantic.sh`, which check repeated indexing, source-free memory
-and vector metadata, and that source or secret sentinels are not persisted into
+The release gate runs `scripts/smoke-storage.sh`, `scripts/smoke-memory.sh`,
+`scripts/smoke-memory-reuse.sh`, and `scripts/smoke-semantic.sh`, which check
+repeated indexing, source-free memory and vector metadata, approved experience
+memory reuse, and that source or secret sentinels are not persisted into
 `CTXHELM_HOME`.

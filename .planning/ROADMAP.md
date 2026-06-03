@@ -82,6 +82,8 @@ Phase 213 extends the same source-free R&D routing into historical eval and prod
 
 Phase 214 makes experience-memory reuse measurable in historical and product-proof reports. Historical eval now emits `memoryReuseSummary`, counting memory candidates, selected memory evidence, memory target hits and misses, unique memory target hits beyond lexical, unique memory non-targets, and selected memory roles without storing source text. R&D action routing now distinguishes missing memory evidence from positive memory lift, memory noise, and weak memory selection.
 
+Phase 215 release-gates experience-memory reuse proof. The packaged release gate now runs `scripts/smoke-memory-reuse.sh` in addition to the general memory smoke, and the release proof bundle lists it as a required check. The source-free proof artifact shows pending memory blocked before review, approved experience memory promoting `src/payments/handler.ts` on a related task with memory signal and selected-memory evidence, and no source sentinel, raw prompt, transcript, MCP traffic, remote embedding, or remote reranking persistence.
+
 ## v2.5 Production Retrieval Quality
 
 ## Phases

@@ -115,6 +115,12 @@ outcomes, but it creates the required measurement surface: active memory
 candidates, selected memory evidence, target hits/misses, unique target hits
 beyond lexical, unique non-targets, and selected memory roles.
 
+Status: Phase 215 promotes deterministic experience-memory reuse proof into the
+release gate. The required smoke proves pending memory is blocked, approved
+memory can promote a source-linked target on a related task, and the storage
+boundary remains source-free. This closes deterministic workflow proof, while
+multi-repo historical memory-lift proof remains the next higher bar.
+
 ### 3. Semantic/Embedding Signal Is Wired But Not Driving Lift
 
 The current product lift comes from hybrid ranking, graph/test/history/context

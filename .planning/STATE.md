@@ -4,10 +4,10 @@ milestone: v2.5
 milestone_name: Production Retrieval Quality
 status: active
 last_updated: "2026-06-03T00:00:00Z"
-last_activity: 2026-06-03 -- Phase 214 adds memory reuse proof diagnostics
+last_activity: 2026-06-03 -- Phase 215 release-gates memory reuse proof
 progress:
-  total_phases: 123
-  completed_phases: 123
+  total_phases: 124
+  completed_phases: 124
   total_plans: 7
   completed_plans: 7
   percent: 100
@@ -17,10 +17,10 @@ progress:
 
 ## Current Position
 
-Phase: 214 - Memory Reuse Proof Diagnostics
-Plan: 214-memory-reuse-proof-diagnostics
+Phase: 215 - Release-Gated Memory Reuse Proof
+Plan: 215-release-gated-memory-reuse-proof
 Status: Complete
-Last activity: 2026-06-03 -- Phase 214 adds source-free `memoryReuseSummary` to historical eval reports and folds memory evidence into historical/product-proof `recommendedResearchActions`. Reports now distinguish no active memory evidence from memory unique target hits, memory unique non-targets, and memory selection misses, so the next R&D loop can decide whether to collect/approve experience memory, evaluate memory reuse lift, reduce memory retrieval noise, or improve memory selection policy.
+Last activity: 2026-06-03 -- Phase 215 promotes the deterministic experience-memory reuse smoke into the release gate and release proof bundle. The proof now checks that pending experience cards are blocked, approved memory promotes the source-linked target on a related task, the promoted plan includes memory signal and selected-memory evidence, and storage does not persist source sentinels, raw prompts, transcripts, MCP traffic, or cloud calls.
 
 ## Project Reference
 
