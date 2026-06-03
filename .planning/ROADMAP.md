@@ -52,6 +52,8 @@ Phase 198 adds source-free candidate coverage accounting for files missed by top
 
 Phase 199 adds source-free candidate miss pressure profiles. `candidateCoverageSummary` now includes recoverable role counts, recoverable signal counts, no-candidate role counts, and top recoverable context areas. The fresh proof promotes with Phase 198 metrics unchanged while showing VeriSchema recoverable pressure concentrated in `schema_agent/agents=7`, `tests/agents=6`, and `tests/evaluation=6`, mostly from `co_change`, `related_test`, and `dependency` signals.
 
+Phase 200 adds a bounded contextual README doc reserve for broad tasks. The accepted proof promotes and improves average File Recall@10 from `0.658268` to `0.7082679`, average file delta versus lexical from `+0.17873949` to `+0.22873944`, Agent Evidence Recall@10 from `0.76052284` to `0.81052285`, Context Recall@10 from `0.7638889` to `0.7708334`, and VeriSchema File Recall@10 from `0.35529414` to `0.55529416` without source/test/effective-validation/broad-area regression. A source-dependency-before-workflow ordering experiment was rejected because it regressed VeriSchema File Recall@10.
+
 ## v2.5 Production Retrieval Quality
 
 ## Phases
@@ -59,7 +61,7 @@ Phase 199 adds source-free candidate miss pressure profiles. `candidateCoverageS
 **Phase Numbering:**
 
 - Integer phases (61, 62, 63, 64, 65): Planned v2.5 work
-- Phases 66-197: Production-readiness follow-ups from the original blocked proof and the channel-aware promotion path
+- Phases 66-200: Production-readiness follow-ups from the original blocked proof and the channel-aware promotion path
 - Decimal phases (61.1, 62.1): Urgent insertions if needed
 
 - [x] **Phase 61: Multi-Repo Quality Baselines** - Maintainers can run source-free paired baselines across RefactoringMiner and a second real repository with stable comparison artifacts.
@@ -183,6 +185,7 @@ Phase 199 adds source-free candidate miss pressure profiles. `candidateCoverageS
 - [x] **Phase 197: Agent Evidence Recovery Accounting** - Product proof reports how many selected-file misses are still covered by related tests or progressive context-area reads.
 - [x] **Phase 198: Candidate Coverage Accounting** - Historical eval and product proof reports split top-10 misses into generated-but-unselected candidates versus no-candidate gaps.
 - [x] **Phase 199: Candidate Miss Pressure Profiles** - Candidate coverage summaries expose source-free role, signal, and area pressure for generated-but-unselected misses.
+- [x] **Phase 200: Contextual README Doc Reserve** - Broad tasks reserve one source-free nested README doc after config/workflow evidence, recovering a VeriSchema docs-only target without source/test/validation regression.
 - [x] **Phase 162: Feature-Enabled Local Fastembed Gate Proof** - A feature-enabled `local_fastembed` gate run on clean RefactoringMiner now proves the production-local backend works end-to-end, but remains held because it adds no semantic-only target hits and is still slower than default; the gate emits a source-free diagnostic for that condition.
 - [x] **Phase 163: Persisted Semantic Vector Reuse** - Fresh CLI/MCP processes can reuse persisted source-free semantic document vectors instead of recomputing every candidate vector.
 - [x] **Phase 164: Global Semantic Vector Candidates And Write-Through** - Semantic search can include persisted vector candidates outside the lexical prefilter and write through newly embedded candidate misses.

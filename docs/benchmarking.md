@@ -832,6 +832,15 @@ Recommendation today:
   recoverable pressure in `schema_agent/agents=7`, `tests/agents=6`, and
   `tests/evaluation=6`, with signal pressure led by `co_change=17`,
   `related_test=17`, and `dependency=12`.
+- Phase 200 adds a bounded contextual README doc reserve for broad tasks. The
+  accepted four-repo proof promotes and improves average File Recall@10 from
+  `0.658268` to `0.7082679`, average file delta versus lexical from
+  `+0.17873949` to `+0.22873944`, Agent Evidence Recall@10 from `0.76052284`
+  to `0.81052285`, Context Recall@10 from `0.7638889` to `0.7708334`, and
+  VeriSchema File Recall@10 from `0.35529414` to `0.55529416` without
+  source/test/effective-validation/broad-area regression. A source-dependency
+  ordering experiment was rejected because it displaced a true workflow-script
+  hit and regressed VeriSchema File Recall@10.
 - Treat cloud embeddings/reranking as disabled unless an explicit repo policy
   allows them.
 

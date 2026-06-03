@@ -497,6 +497,12 @@ fn select_target_files(
             {
                 push_target(candidate, &mut selected, &mut selected_paths, file_budget);
             }
+            for (_, candidate) in contextual_readme_floor(candidates)
+                .into_iter()
+                .take(contextual_readme_floor_limit(file_budget))
+            {
+                push_target(candidate, &mut selected, &mut selected_paths, file_budget);
+            }
         }
         let mut source_symbol_floor_selected = 0usize;
         for (_, candidate) in source_symbol_floor(candidates) {
@@ -1153,6 +1159,49 @@ fn governance_doc_floor_limit(file_budget: usize) -> usize {
     file_budget.div_ceil(3).clamp(1, 4)
 }
 
+fn contextual_readme_floor(candidates: &[RankedCandidate]) -> Vec<(f32, &RankedCandidate)> {
+    let mut readme_floor = candidates
+        .iter()
+        .filter(|candidate| candidate.target_file.is_some())
+        .filter(|candidate| candidate.candidate.role == Some(FileRole::Docs))
+        .filter(|candidate| {
+            candidate
+                .candidate
+                .path
+                .as_deref()
+                .is_some_and(is_nested_readme_doc_path)
+        })
+        .filter_map(|candidate| {
+            let docs_score = signal_score(&candidate.candidate, RetrievalSignalKind::Docs)?;
+            let lexical_score = lexical_signal_score(&candidate.candidate).unwrap_or(0.0);
+            Some((docs_score + lexical_score, candidate))
+        })
+        .collect::<Vec<_>>();
+    readme_floor.sort_by(|(left_score, left), (right_score, right)| {
+        contextual_readme_priority(left)
+            .cmp(&contextual_readme_priority(right))
+            .then_with(|| right_score.total_cmp(left_score))
+            .then_with(|| right.rank_score.total_cmp(&left.rank_score))
+            .then_with(|| left.candidate.path.cmp(&right.candidate.path))
+    });
+    readme_floor
+}
+
+fn contextual_readme_floor_limit(file_budget: usize) -> usize {
+    (file_budget / 10).clamp(1, 1)
+}
+
+fn contextual_readme_priority(candidate: &RankedCandidate) -> u8 {
+    let Some(path) = candidate.candidate.path.as_deref() else {
+        return 2;
+    };
+    if path.starts_with("docs/") || path.starts_with("paper/") {
+        0
+    } else {
+        1
+    }
+}
+
 fn governance_doc_priority(candidate: &RankedCandidate) -> u8 {
     candidate
         .candidate
@@ -1194,6 +1243,11 @@ fn is_root_governance_doc_path(path: &str) -> bool {
             | "docs/release.md"
             | "docs/semantic.md"
     )
+}
+
+fn is_nested_readme_doc_path(path: &str) -> bool {
+    path.rsplit_once('/')
+        .is_some_and(|(_, name)| name.eq_ignore_ascii_case("README.md"))
 }
 
 fn is_root_planning_doc_path(path: &str) -> bool {
@@ -2654,6 +2708,44 @@ mod tests {
 
         assert!(paths.contains(&".planning/PROJECT.md"));
         assert!(paths.contains(&".planning/MILESTONES.md"));
+    }
+
+    #[test]
+    fn broad_selection_reserves_contextual_readme_docs() {
+        let candidates = rank_candidates(RankingInput {
+            lexical_results: vec![
+                lexical("src/eval.rs", 30.0),
+                lexical("src/workflow.rs", 29.0),
+                lexical("src/state.rs", 28.0),
+                lexical("src/nodes.rs", 27.0),
+                lexical("src/agents.rs", 26.0),
+                SearchResult {
+                    path: "paper/pvldb/README.md".to_string(),
+                    role: FileRole::Docs,
+                    language: Some("markdown".to_string()),
+                    score: 12.0,
+                    reason: "paper readme match".to_string(),
+                },
+            ],
+            roles: roles([
+                ("src/eval.rs", FileRole::Source),
+                ("src/workflow.rs", FileRole::Source),
+                ("src/state.rs", FileRole::Source),
+                ("src/nodes.rs", FileRole::Source),
+                ("src/agents.rs", FileRole::Source),
+                ("paper/pvldb/README.md", FileRole::Docs),
+            ]),
+            ..RankingInput::default()
+        });
+
+        let selection = select_ranked_candidates_for_scope(&candidates, 5, 0, true);
+        let paths = selection
+            .target_files
+            .iter()
+            .map(|target| target.path.as_str())
+            .collect::<Vec<_>>();
+
+        assert!(paths.contains(&"paper/pvldb/README.md"));
     }
 
     #[test]

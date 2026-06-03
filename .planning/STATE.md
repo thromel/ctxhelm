@@ -4,10 +4,10 @@ milestone: v2.5
 milestone_name: Production Retrieval Quality
 status: active
 last_updated: "2026-06-03T00:00:00Z"
-last_activity: 2026-06-03 -- Phase 199 adds candidate miss pressure profiles
+last_activity: 2026-06-03 -- Phase 200 adds contextual README doc reserve
 progress:
-  total_phases: 110
-  completed_phases: 110
+  total_phases: 111
+  completed_phases: 111
   total_plans: 7
   completed_plans: 7
   percent: 100
@@ -17,10 +17,10 @@ progress:
 
 ## Current Position
 
-Phase: 199 - Candidate Miss Pressure Profiles
-Plan: 199-candidate-miss-pressure-profiles
+Phase: 200 - Contextual README Doc Reserve
+Plan: 200-contextual-readme-doc-reserve
 Status: Complete
-Last activity: 2026-06-03 -- Phase 199 adds source-free candidate miss pressure profiles. Fresh proof promotes from `/tmp/ctxhelm-rd/phase199-candidate-pressure-proof.json`; retrieval and lexical-comparison metrics stay unchanged from Phase 198 while `candidateCoverageSummary` now exposes recoverable-miss role counts, signal counts, no-candidate role counts, and top recoverable areas. VeriSchema pressure is concentrated in `schema_agent/agents=7`, `tests/agents=6`, and `tests/evaluation=6`, with recoverable signals led by `co_change=17`, `related_test=17`, and `dependency=12`.
+Last activity: 2026-06-03 -- Phase 200 adds a bounded contextual README doc reserve for broad tasks. Fresh proof promotes from `/tmp/ctxhelm-rd/phase200-contextual-readme-after-workflow-proof.json`; average File Recall@10 improves from `0.658268` to `0.7082679`, average file delta vs lexical improves from `+0.17873949` to `+0.22873944`, Agent Evidence Recall@10 improves from `0.76052284` to `0.81052285`, Context Recall@10 improves from `0.7638889` to `0.7708334`, and VeriSchema File Recall@10 improves from `0.35529414` to `0.55529416` without source/test/effective-validation/broad-area regression. A broader source-dependency-before-workflow ordering was tested at `/tmp/ctxhelm-rd/phase200-source-dependency-before-workflow-proof.json` and rejected because it regressed VeriSchema File Recall@10.
 
 ## Project Reference
 
@@ -178,6 +178,7 @@ Planned phases:
 - Phase 197: Agent Evidence Recovery Accounting (complete follow-up)
 - Phase 198: Candidate Coverage Accounting (complete follow-up)
 - Phase 199: Candidate Miss Pressure Profiles (complete follow-up)
+- Phase 200: Contextual README Doc Reserve (complete follow-up)
 
 ## Last Completed Milestone
 
