@@ -137,6 +137,14 @@ evidence, evidence misses route to retrieval/query fixes, evidence-only targets
 route to consumption guidance, malformed observed ctxhelm calls route to
 required-call guidance, and comparable no-lift results route to native-baseline
 analysis.
+Historical eval and product-proof reports use the same
+`recommendedResearchActions` shape for report-level R&D routing. Historical
+reports can recommend candidate generation, ranking or budget allocation,
+progressive-read alignment, validation-test mapping, and graph edge-budget
+work. Product proof reports can recommend fixture/history refresh, runtime
+work, protected-evidence preservation, retrieval/ranking fixes,
+native-baseline analysis, BM25 evidence collection, or preserving the current
+contract when no source-free bottleneck is present.
 The report stores path labels, hashes, and sanitized MCP request summaries only;
 it does not store raw prompts, raw model transcripts, raw MCP traffic, source
 snippets, terminal logs, or project test output.

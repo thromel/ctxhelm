@@ -585,8 +585,19 @@ pub struct ProductProofReport {
     pub helps_when: Vec<String>,
     pub does_not_help_when: Vec<String>,
     pub future_work: Vec<String>,
+    #[serde(default)]
+    pub recommended_research_actions: Vec<RecommendedResearchAction>,
     pub benchmark_report: BenchmarkSuiteReport,
     pub privacy_status: PrivacyStatus,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct RecommendedResearchAction {
+    pub action: String,
+    pub priority: u8,
+    pub origin: String,
+    pub reason: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -849,6 +860,8 @@ pub struct HistoricalEvalReport {
     pub context_area_next_read_summary: ContextAreaNextReadSummary,
     #[serde(default)]
     pub candidate_coverage_summary: CandidateCoverageSummary,
+    #[serde(default)]
+    pub recommended_research_actions: Vec<RecommendedResearchAction>,
     pub file_recall_at_5: f32,
     pub file_recall_at_10: f32,
     pub lexical_baseline_recall_at_5: f32,
@@ -1462,6 +1475,8 @@ pub fn build_product_proof_report(benchmark_report: BenchmarkSuiteReport) -> Pro
         / repo_count;
     let v23_eval_summary = product_proof_v23_summary(&benchmark_report, &evaluated_reports);
     let release_gate = product_proof_release_gate(&benchmark_report);
+    let recommended_research_actions =
+        product_proof_recommended_research_actions(&benchmark_report, &release_gate);
 
     ProductProofReport {
         suite_name: benchmark_report.suite_name.clone(),
@@ -1521,6 +1536,7 @@ pub fn build_product_proof_report(benchmark_report: BenchmarkSuiteReport) -> Pro
                 .to_string(),
             "v2.5: ship only variants that beat lexical on every required corpus without unsafe privacy, runtime, or protected-evidence regressions.".to_string(),
         ],
+        recommended_research_actions,
         benchmark_report,
         privacy_status: PrivacyStatus::local_only(),
     }
@@ -1541,6 +1557,160 @@ fn product_proof_release_gate(benchmark_report: &BenchmarkSuiteReport) -> Produc
         lexical_backend_comparison: product_proof_lexical_backend_comparison(benchmark_report),
         corpus_verdicts,
     }
+}
+
+fn product_proof_recommended_research_actions(
+    benchmark_report: &BenchmarkSuiteReport,
+    release_gate: &ProductProofReleaseGate,
+) -> Vec<RecommendedResearchAction> {
+    let mut actions = Vec::new();
+    if benchmark_report.evaluated_repository_count == 0 || release_gate.corpus_verdicts.is_empty() {
+        push_research_action(
+            &mut actions,
+            "collect_benchmark_evidence",
+            1,
+            "product_proof",
+            "No evaluated repository reports were embedded, so product lift is not evidence-backed.",
+        );
+        return actions;
+    }
+
+    if release_gate
+        .corpus_verdicts
+        .iter()
+        .any(|verdict| verdict.status == ProductProofCorpusStatus::InsufficientEvidence)
+    {
+        push_research_action(
+            &mut actions,
+            "refresh_fixture_or_history_evidence",
+            1,
+            "product_proof",
+            "At least one corpus has insufficient source-free history or fixture evidence.",
+        );
+    }
+
+    if release_gate
+        .corpus_verdicts
+        .iter()
+        .any(|verdict| verdict.notes.iter().any(|note| note.contains("runtime")))
+    {
+        push_research_action(
+            &mut actions,
+            "reduce_runtime_or_refresh_cache",
+            1,
+            "product_proof",
+            "At least one corpus verdict is constrained by runtime evidence.",
+        );
+    }
+
+    if release_gate
+        .corpus_verdicts
+        .iter()
+        .any(|verdict| verdict.protected_evidence_target_miss_rate_at_10 > 0.0)
+    {
+        push_research_action(
+            &mut actions,
+            "protect_high_confidence_evidence",
+            1,
+            "product_proof",
+            "A corpus still misses protected retrieval-target evidence inside the top-10 budget.",
+        );
+    }
+
+    if release_gate
+        .corpus_verdicts
+        .iter()
+        .any(|verdict| verdict.status == ProductProofCorpusStatus::Trail)
+        || release_gate
+            .lexical_comparison
+            .all_file_unexplained_trail_count
+            > 0
+    {
+        push_research_action(
+            &mut actions,
+            "fix_retrieval_or_ranking_regression",
+            1,
+            "product_proof",
+            "A corpus trails lexical without an explained context or validation-channel boundary.",
+        );
+    }
+
+    if release_gate
+        .lexical_comparison
+        .all_file_explained_trail_count
+        > 0
+        && release_gate.lexical_comparison.agent_evidence_trail_count == 0
+        && release_gate.lexical_comparison.context_trail_count == 0
+    {
+        push_research_action(
+            &mut actions,
+            "analyze_native_baseline_gap",
+            2,
+            "product_proof",
+            "Raw all-file lexical trails are explained while agent-evidence and context-channel claims do not trail.",
+        );
+    }
+
+    if release_gate.lexical_backend_comparison.bm25_claim
+        == ProductProofLexicalClaim::TrailsAnyCorpus
+    {
+        push_research_action(
+            &mut actions,
+            "investigate_bm25_backend_regression",
+            2,
+            "product_proof",
+            "BM25 lexical backend comparison trails the legacy lexical backend on at least one corpus.",
+        );
+    } else if release_gate.lexical_backend_comparison.bm25_claim
+        == ProductProofLexicalClaim::NoEvidence
+    {
+        push_research_action(
+            &mut actions,
+            "collect_bm25_backend_evidence",
+            3,
+            "product_proof",
+            "No BM25-vs-legacy lexical backend evidence is embedded in this product proof.",
+        );
+    }
+
+    if release_gate.default_promotion_allowed && actions.is_empty() {
+        push_research_action(
+            &mut actions,
+            "preserve_current_contract",
+            3,
+            "product_proof",
+            "The product proof promotes without source-free evidence of a blocking retrieval, runtime, or privacy gap.",
+        );
+    }
+
+    actions
+}
+
+fn push_research_action(
+    actions: &mut Vec<RecommendedResearchAction>,
+    action: &str,
+    priority: u8,
+    source: &str,
+    reason: &str,
+) {
+    if actions
+        .iter()
+        .any(|existing| existing.action == action && existing.origin == source)
+    {
+        return;
+    }
+    actions.push(RecommendedResearchAction {
+        action: action.to_string(),
+        priority,
+        origin: source.to_string(),
+        reason: reason.to_string(),
+    });
+    actions.sort_by(|left, right| {
+        left.priority
+            .cmp(&right.priority)
+            .then_with(|| left.action.cmp(&right.action))
+            .then_with(|| left.origin.cmp(&right.origin))
+    });
 }
 
 fn product_proof_lexical_backend_comparison(
@@ -4206,7 +4376,7 @@ pub fn evaluate_historical_commits(
         pack_compiler_millis,
     );
 
-    let report = HistoricalEvalReport {
+    let mut report = HistoricalEvalReport {
         eval_range_id,
         repo_id,
         evaluated_commits: commits.len(),
@@ -4234,6 +4404,7 @@ pub fn evaluate_historical_commits(
         context_area_pressure_summary,
         context_area_next_read_summary,
         candidate_coverage_summary,
+        recommended_research_actions: Vec::new(),
         file_recall_at_5,
         file_recall_at_10,
         lexical_baseline_recall_at_5,
@@ -4253,10 +4424,153 @@ pub fn evaluate_historical_commits(
         commits,
         privacy_status: PrivacyStatus::local_only(),
     };
+    report.recommended_research_actions = historical_recommended_research_actions(&report);
     if options.cache_enabled && !history_sampling_failed {
         write_historical_eval_cache(&report.repo_id, &report.eval_range_id, &report)?;
     }
     Ok(report)
+}
+
+fn historical_recommended_research_actions(
+    report: &HistoricalEvalReport,
+) -> Vec<RecommendedResearchAction> {
+    let mut actions = Vec::new();
+    if report.evaluated_commits == 0 {
+        push_research_action(
+            &mut actions,
+            "collect_benchmark_evidence",
+            1,
+            "historical_eval",
+            "No safe historical commits were evaluated, so retrieval quality cannot be inferred.",
+        );
+        return actions;
+    }
+
+    if report.ctxhelm_lift_at_10 < -0.03 || report.ranking_comparison.recall_lift_at_k < -0.03 {
+        push_research_action(
+            &mut actions,
+            "fix_retrieval_or_ranking_regression",
+            1,
+            "historical_eval",
+            "ctxhelm trails the lexical baseline under the current ranking budget.",
+        );
+    }
+
+    if report
+        .protected_evidence
+        .retrieval_target_missed_at_10_count
+        > 0
+    {
+        push_research_action(
+            &mut actions,
+            "protect_high_confidence_evidence",
+            1,
+            "historical_eval",
+            "Protected retrieval-target evidence is generated but not preserved inside the top-10 context budget.",
+        );
+    }
+
+    if report.candidate_coverage_summary.no_candidate_count > 0 {
+        push_research_action(
+            &mut actions,
+            "improve_candidate_generation",
+            1,
+            "historical_eval",
+            "Some missed retrieval targets have no generated source-free candidate.",
+        );
+    }
+
+    if report
+        .candidate_coverage_summary
+        .candidate_recoverable_count
+        > 0
+    {
+        push_research_action(
+            &mut actions,
+            "improve_ranking_or_budget_allocation",
+            2,
+            "historical_eval",
+            "Some missed retrieval targets were generated as candidates but ranked below the selected budget.",
+        );
+    }
+
+    if report
+        .context_area_next_read_summary
+        .next_read_recoverable_count
+        > 0
+    {
+        push_research_action(
+            &mut actions,
+            "improve_progressive_read_guidance",
+            2,
+            "historical_eval",
+            "Context-area next-read paths recover some top-10 misses, so agent-native progressive reads should be refined.",
+        );
+    }
+
+    if report
+        .context_area_next_read_summary
+        .agent_evidence_only_count
+        > 0
+    {
+        push_research_action(
+            &mut actions,
+            "align_agent_evidence_with_next_reads",
+            2,
+            "historical_eval",
+            "Some misses are recoverable through broader agent evidence but absent from progressive next-read paths.",
+        );
+    }
+
+    if report.effective_validation_recall_at_10 < 1.0
+        && (report.test_recall_at_10 < 1.0 || report.validation_command_recall < 1.0)
+    {
+        push_research_action(
+            &mut actions,
+            "improve_validation_test_mapping",
+            2,
+            "historical_eval",
+            "Validation or test recall is incomplete for the evaluated history range.",
+        );
+    }
+
+    if report
+        .graph_edge_ablations
+        .iter()
+        .any(|ablation| ablation.removed_target_hit_at_10_count > 0)
+    {
+        push_research_action(
+            &mut actions,
+            "tune_graph_edge_budget",
+            2,
+            "historical_eval",
+            "Graph edge ablations show at least one edge family contributes exclusive target hits.",
+        );
+    }
+
+    if report.graph_edge_profiles.iter().any(|profile| {
+        profile.retrieval_target_missed_at_10_count > profile.retrieval_target_hit_at_10_count
+    }) {
+        push_research_action(
+            &mut actions,
+            "improve_graph_edge_selection",
+            3,
+            "historical_eval",
+            "Graph edge profiles show more target misses than hits for at least one edge family.",
+        );
+    }
+
+    if actions.is_empty() {
+        push_research_action(
+            &mut actions,
+            "preserve_current_contract",
+            3,
+            "historical_eval",
+            "No source-free historical summary indicates a concrete retrieval, validation, graph, or budget bottleneck.",
+        );
+    }
+
+    actions
 }
 
 pub fn compare_lexical_backends_on_corpus(
@@ -9008,6 +9322,14 @@ mod tests {
                 .all_file_unexplained_trail_count,
             1
         );
+        assert!(report
+            .recommended_research_actions
+            .iter()
+            .any(
+                |action| action.action == "fix_retrieval_or_ranking_regression"
+                    && action.priority == 1
+                    && action.origin == "product_proof"
+            ));
     }
 
     #[test]
@@ -9152,6 +9474,11 @@ mod tests {
             SemanticPrecisionGateDecision::Promote
         );
         assert!(report.release_gate.default_promotion_allowed);
+        assert!(report
+            .recommended_research_actions
+            .iter()
+            .any(|action| action.action == "collect_bm25_backend_evidence"
+                || action.action == "preserve_current_contract"));
     }
 
     #[test]
@@ -10243,6 +10570,7 @@ mod tests {
             context_area_pressure_summary: ContextAreaPressureSummary::default(),
             context_area_next_read_summary: ContextAreaNextReadSummary::default(),
             candidate_coverage_summary: CandidateCoverageSummary::default(),
+            recommended_research_actions: Vec::new(),
             file_recall_at_5: 0.0,
             file_recall_at_10: 0.0,
             lexical_baseline_recall_at_5: 0.0,

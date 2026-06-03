@@ -87,6 +87,17 @@ guidance when surfaced targets are not read, harden required-call guidance when
 observed ctxhelm calls are malformed or incomplete, or analyze the native
 baseline when comparable lanes show no measured lift.
 
+Historical eval and product-proof reports also expose
+`recommendedResearchActions`. Historical reports route candidate gaps to
+candidate generation, generated-but-unselected misses to ranking or budget
+allocation, context-area recovery to progressive native-read guidance, broader
+agent-evidence-only recovery to next-read alignment, validation gaps to test
+mapping, and graph ablation/profile evidence to graph edge-budget work. Product
+proof reports aggregate corpus verdicts into fixture/history refresh, runtime,
+protected-evidence, retrieval/ranking regression, native-baseline gap, BM25
+backend evidence, or preserve-contract actions. These recommendations use only
+counts, labels, verdicts, and source-free reasons.
+
 Historical eval reports also include source-free `graphEdgeProfiles`. These
 profiles split graph candidate evidence by edge label, such as `imports`,
 `python_reexport`, or `precision:calls`, and report candidate count,

@@ -19,7 +19,7 @@ use ctxhelm_compiler::{
     ContextCardsReport, ExperienceCardsOptions, ExperienceCardsReport, FallbackCardsOptions,
     FallbackCardsReport, HistoricalEvalOptions, HistoricalEvalReport, LexicalBackendCorpusOptions,
     LexicalBackendCorpusReport, PairedBaselineAnalysisReport, ProductProofLexicalClaim,
-    ProductProofReport, SemanticPrecisionGateReport,
+    ProductProofReport, RecommendedResearchAction, SemanticPrecisionGateReport,
 };
 use ctxhelm_core::{
     run_init, run_setup_check, AgentAdapter, AgentOutcomeComparisonReport, AgentPreviewReport,
@@ -5381,6 +5381,9 @@ fn render_historical_eval_report(report: &HistoricalEvalReport) -> String {
     output.push_str(&render_candidate_coverage_summary(
         &report.candidate_coverage_summary,
     ));
+    output.push_str(&render_compiler_research_actions(
+        &report.recommended_research_actions,
+    ));
 
     if report.commits.is_empty() {
         output.push_str("No safe historical commits were available for evaluation.\n");
@@ -5711,6 +5714,22 @@ fn render_candidate_coverage_summary(
             .collect::<Vec<_>>()
             .join(", ");
         output.push_str(&format!("- Top candidate-recoverable areas: `{areas}`\n"));
+    }
+    output.push('\n');
+    output
+}
+
+fn render_compiler_research_actions(actions: &[RecommendedResearchAction]) -> String {
+    let mut output = String::from("## Recommended R&D Actions\n\n");
+    if actions.is_empty() {
+        output.push_str("- No source-free R&D actions were recommended by this report.\n\n");
+        return output;
+    }
+    for action in actions {
+        output.push_str(&format!(
+            "- `{}` priority `{}` origin `{}`: {}\n",
+            action.action, action.priority, action.origin, action.reason
+        ));
     }
     output.push('\n');
     output
@@ -6136,6 +6155,10 @@ fn render_product_proof_report(report: &ProductProofReport) -> String {
         }
     }
     output.push('\n');
+
+    output.push_str(&render_compiler_research_actions(
+        &report.recommended_research_actions,
+    ));
 
     output.push_str("## When It Helps\n\n");
     for item in &report.helps_when {
@@ -6580,6 +6603,21 @@ mod tests {
                 ],
                 source_text_logged: false,
             },
+            recommended_research_actions: vec![
+                ctxhelm_compiler::RecommendedResearchAction {
+                    action: "improve_candidate_generation".to_string(),
+                    priority: 1,
+                    origin: "historical_eval".to_string(),
+                    reason: "Some missed retrieval targets have no generated source-free candidate."
+                        .to_string(),
+                },
+                ctxhelm_compiler::RecommendedResearchAction {
+                    action: "improve_ranking_or_budget_allocation".to_string(),
+                    priority: 2,
+                    origin: "historical_eval".to_string(),
+                    reason: "Some missed retrieval targets were generated as candidates but ranked below the selected budget.".to_string(),
+                },
+            ],
             file_recall_at_5: 1.0,
             file_recall_at_10: 1.0,
             lexical_baseline_recall_at_5: 0.5,
@@ -6693,6 +6731,9 @@ mod tests {
         assert!(markdown.contains("Candidate-recoverable signals: `co_change=1, dependency=1`"));
         assert!(markdown.contains("No-candidate roles: `test=1`"));
         assert!(markdown.contains("Top candidate-recoverable areas: `src/auth=1`"));
+        assert!(markdown.contains("Recommended R&D Actions"));
+        assert!(markdown.contains("`improve_candidate_generation` priority `1`"));
+        assert!(markdown.contains("`improve_ranking_or_budget_allocation` priority `2`"));
         assert!(markdown.contains("File Recall@5: `1.00`"));
         assert!(markdown.contains("Lexical Baseline Recall@5: `0.50`"));
         assert!(markdown.contains("No-context Recall@K: `0.00`"));

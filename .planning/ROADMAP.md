@@ -78,6 +78,8 @@ Phase 211 fixes the first retrieval miss exposed by Phase 210 attribution. The t
 
 Phase 212 turns paired real-agent diagnostics into explicit source-free R&D routing. Single-run reports and suite aggregates now include `recommendedResearchActions`, mapping rate limits/client failures to `retry_real_client_when_available`, skipped non-real reports to `collect_real_client_evidence`, ctxhelm evidence misses to retrieval/query fixes, evidence-only targets to agent-consumption guidance, invalid observed ctxhelm calls to required-call guidance, and comparable no-lift outcomes to native-baseline analysis. The latest real Claude Code probe is still rate-limited, so it correctly recommends retrying the client instead of misclassifying skipped required calls or evidence-only targets as prompt failures.
 
+Phase 213 extends the same source-free R&D routing into historical eval and product-proof reports. Historical reports now turn candidate coverage, context-area next-read, agent-evidence-only, validation, protected-evidence, and graph edge summaries into explicit next actions. Product-proof reports now route corpus verdicts and lexical/backend claims into fixture/history refresh, runtime work, protected-evidence preservation, retrieval/ranking fixes, native-baseline analysis, BM25 evidence collection, or preserving the current contract.
+
 ## v2.5 Production Retrieval Quality
 
 ## Phases

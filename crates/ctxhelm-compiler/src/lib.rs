@@ -40,11 +40,11 @@ pub use eval::{
     ProductProofLexicalBackendComparison, ProductProofLexicalClaim, ProductProofLexicalComparison,
     ProductProofMetric, ProductProofReleaseGate, ProductProofReport,
     ProtectedEvidenceSignalSummary, ProtectedEvidenceSummary, RankingMetrics,
-    RetrievalGapRecommendationArea, RetrievalGapSummary, RetrievalGapTargetStatus,
-    RoleRecallMetric, SemanticContributionSummary, SemanticMissedTargetGapFamily,
-    SemanticPrecisionGateDecision, SemanticPrecisionGateReport, SemanticPrecisionNamedCase,
-    SemanticPrecisionVariant, SemanticPrecisionVariantStatus, SignalAblationResult,
-    SignalSaturationMetric, TokenRoiMetric,
+    RecommendedResearchAction, RetrievalGapRecommendationArea, RetrievalGapSummary,
+    RetrievalGapTargetStatus, RoleRecallMetric, SemanticContributionSummary,
+    SemanticMissedTargetGapFamily, SemanticPrecisionGateDecision, SemanticPrecisionGateReport,
+    SemanticPrecisionNamedCase, SemanticPrecisionVariant, SemanticPrecisionVariantStatus,
+    SignalAblationResult, SignalSaturationMetric, TokenRoiMetric,
 };
 pub use graph::build_graph_neighborhood_report;
 pub use packs::{
@@ -1938,6 +1938,13 @@ mod tests {
                 }],
                 source_text_logged: false,
             },
+            recommended_research_actions: vec![RecommendedResearchAction {
+                action: "improve_candidate_generation".to_string(),
+                priority: 1,
+                origin: "historical_eval".to_string(),
+                reason: "Some missed retrieval targets have no generated source-free candidate."
+                    .to_string(),
+            }],
             file_recall_at_5: 0.5,
             file_recall_at_10: 1.0,
             lexical_baseline_recall_at_5: 0.25,
@@ -2142,6 +2149,15 @@ mod tests {
             "src/auth"
         );
         assert_eq!(value["candidateCoverageSummary"]["sourceTextLogged"], false);
+        assert_eq!(
+            value["recommendedResearchActions"][0]["action"],
+            "improve_candidate_generation"
+        );
+        assert_eq!(value["recommendedResearchActions"][0]["priority"], 1);
+        assert_eq!(
+            value["recommendedResearchActions"][0]["origin"],
+            "historical_eval"
+        );
         assert!(value["signalAblations"].as_array().unwrap().is_empty());
         assert_eq!(value["tokenRoi"][0]["budget"], "brief");
         assert_eq!(value["tokenRoi"][1]["largerPackAddsLittleValue"], true);
@@ -2436,6 +2452,7 @@ mod tests {
             context_area_pressure_summary: ContextAreaPressureSummary::default(),
             context_area_next_read_summary: ContextAreaNextReadSummary::default(),
             candidate_coverage_summary: CandidateCoverageSummary::default(),
+            recommended_research_actions: Vec::new(),
             file_recall_at_5: 0.0,
             file_recall_at_10: 0.0,
             lexical_baseline_recall_at_5: 1.0,
