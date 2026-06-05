@@ -66,18 +66,33 @@ still source-free: raw tasks are hashed, raw
 prompts/transcripts/MCP traffic are not persisted, and the report stores only
 target path labels, lane metrics, privacy flags, and sanitized request evidence.
 
-Latest local real-client outcome refresh: 2026-06-05. Codex CLI `0.137.0`
-passed the source-free five-lane agent-run matrix with four comparable
-ctxhelm-assisted lanes, valid explicit-repo `prepare_task` and `get_pack`
-calls, no forbidden commands, no client failures, no ctxhelm evidence misses,
-and outcome claim `ctxhelm_improved`. Best lane `ctxhelm-memory` improved
-target coverage by `+0.33`, reduced irrelevant reads by `2`, reduced command
-executions by `14`, and reduced read-file count by `2`. See
+Latest local real-client outcome refresh: 2026-06-06. Codex CLI `0.137.0`
+passes both the source-free multi-task suite and the governor/release R&D
+regression task. The Phase 245 suite reports two comparison-eligible tasks,
+eight comparable ctxhelm lanes, no forbidden commands, no client failures, no
+ctxhelm evidence misses, no evidence-only targets, no under-read targets, and
+outcome claim `ctxhelm_improved`: baseline average target-read coverage is
+`0.75`, while every ctxhelm lane reaches `1.00`. The Phase 250 governor run
+then fixes a real under-read regression and reports best lane
+`ctxhelm-standard`, no ctxhelm evidence misses, no under-read targets, and
+`1.00` target-read coverage in all ctxhelm lanes. See
+`.planning/e2e/2026-06-05-phase245-codex-agent-run-suite.md`,
+`.planning/e2e/2026-06-06-phase250-governor-artifact-retrieval.md`,
+`.ctxhelm/e2e/phase245-agent-run-codex-suite-real-bounded-final.json`, and
+`.ctxhelm/e2e/phase250-agent-run-codex-governor-rd-after.json`.
+
+Latest Claude Code workflow refresh: 2026-06-06. Claude Code workflow proof
+passes with source-free explicit-repo MCP evidence and local-only privacy in
+`.ctxhelm/e2e/phase250-claude-workflow-refresh.json`. That current workflow
+proof should be separated from the older paired Claude outcome refresh: the
+2026-06-05 availability preflight for Claude Code `2.1.163` hit API status
+`429` and reported `clientFailureKind = rate_limited`, which is client
+availability evidence rather than ctxhelm retrieval failure.
+
+Historical Codex outcome evidence remains part of the release-doc contract. The
+first current Codex CLI `0.137.0` outcome refresh is recorded in
 `.planning/e2e/2026-06-05-phase237-codex-agent-run-outcome.md` and
-`.ctxhelm/e2e/phase237-agent-run-codex.json`. Claude Code `2.1.163` remains
-separately classified as unavailable because the preflight hit API status `429`
-and reported `clientFailureKind = rate_limited`; see
-`.planning/e2e/2026-06-05-phase236-agent-client-availability.md`.
+`.ctxhelm/e2e/phase237-agent-run-codex.json`.
 
 Historical Claude workflow evidence is still useful but should not be mistaken
 for current availability. The 2026-06-01 Claude Code `2.1.159` workflow passed

@@ -389,3 +389,34 @@ additions from memory. The remaining memory overlap is signal-only. The next
 world-class question is therefore outcome lift: does an actual Claude/Codex
 agent use memory-backed ctxhelm evidence to read fewer irrelevant files or solve
 more tasks, not another local ranking demotion.
+
+## June 6 R&D Audit Update
+
+Phase 250 closes the latest observed Codex under-read regression for
+context-governor and release-gate R&D tasks. The before artifact
+`.ctxhelm/e2e/phase250-agent-run-codex-governor-rd.json` matched baseline but
+showed ctxhelm evidence misses and under-read targets. The after artifact
+`.ctxhelm/e2e/phase250-agent-run-codex-governor-rd-after.json` reports
+`ctxhelm_improved`, best lane `ctxhelm-standard`, no ctxhelm evidence misses,
+no under-read targets, and `1.00` target-read coverage in every ctxhelm lane.
+
+The current R&D state is therefore:
+
+- Codex real-agent proof is strong for measured failure classes: Phase 245
+  proves a two-task suite, and Phase 250 proves a governor/release task
+  improvement.
+- Claude Code workflow proof is current again through
+  `.ctxhelm/e2e/phase250-claude-workflow-refresh.json`, but a fresh paired
+  Claude outcome suite still depends on client availability.
+- Experience memory is source-free, bounded, and has both local six-repo
+  measurement and Codex consumption evidence. Broad memory-specific real-agent
+  outcome lift should still be measured in a larger suite.
+- GraphRAG is implemented and measured through edge profiles, edge ablations,
+  and bounded edge-family budget allocation. Future graph work should target
+  ranking pressure, not unbounded edge expansion.
+- Semantic retrieval is integrated, bounded, source-free, and policy-gated, but
+  it is not yet proven as a default-lift channel. Current semantic contribution
+  diagnostics correctly hold promotion when semantic-selected files overlap
+  lexical evidence without semantic-only target hits.
+
+Tracked audit: `.planning/e2e/2026-06-06-rd-completion-audit.md`.
