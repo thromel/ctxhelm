@@ -171,6 +171,9 @@ baseline. `memoryUniqueNonTargetWithoutCurrentSupportCount` is stricter: it only
 counts those memory non-targets when no other current selected signal supports
 the path. This prevents source-free R&D from misclassifying memory attached to
 current lexical, semantic, graph, symbol, or history evidence as pure memory
-noise. Ranking also avoids attaching memory to weak lexical-expansion-only paths
-and only allows an uncorroborated memory-only rescue when no target files were
-selected at all.
+noise. `memoryUniqueNonTargetWithCurrentSupportCount` counts the complementary
+case: memory non-targets that are absent from the lexical baseline but are still
+supported by another current signal. Treat those as signal-pressure review
+items, not as evidence that uncorroborated memory should be demoted. Ranking also
+avoids attaching memory to weak lexical-expansion-only paths and only allows an
+uncorroborated memory-only rescue when no target files were selected at all.

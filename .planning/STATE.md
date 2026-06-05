@@ -4,7 +4,7 @@ milestone: v2.5
 milestone_name: Production Retrieval Quality
 status: active
 last_updated: "2026-06-03T00:00:00Z"
-last_activity: 2026-06-05 -- Phase 227 hardens failed-lane evidence-only accounting
+last_activity: 2026-06-05 -- Phase 228 routes supported memory-noise R&D
 progress:
   total_phases: 134
   completed_phases: 134
@@ -17,10 +17,10 @@ progress:
 
 ## Current Position
 
-Phase: 227 - Failed-Lane Evidence-Only Accounting
-Plan: 227-agent-run-rate-limit-accounting
+Phase: 228 - Supported Memory-Noise Routing
+Plan: 228-memory-supported-noise-routing
 Status: Complete
-Last activity: 2026-06-05 -- Phase 227 reruns the five-lane Claude Code matrix after Phase 226 and confirms the retrieval miss is gone: ctxhelm-assisted lanes surface both `scripts/e2e-agent-run.sh` and `docs/feedback.md`. Claude Code `2.1.163` is still rate-limited, so no lane is comparable and outcome lift remains unproven. The harness now gates `ctxhelmEvidenceOnlyTargets` and `ctxhelmUnderReadTargetsObserved` to evaluation-eligible lanes, so rate-limited reports no longer look like agent-consumption failures. The remaining recommended R&D action is only `retry_real_client_when_available`.
+Last activity: 2026-06-05 -- Phase 228 makes memory-generalization R&D routing distinguish supported lexical-baseline-relative memory non-targets from unsupported pure-memory noise. Reports now expose `memoryUniqueNonTargetWithCurrentSupportCount` and `supportedMemoryNoiseNeedsReview`. A fresh four-repo semantic-enabled suite measured 12 pairs, `memoryUniqueLiftPairs = 2`, `memoryUniqueNonTargetCount = 4`, `memoryUniqueNonTargetWithCurrentSupportCount = 4`, and `memoryUniqueNonTargetWithoutCurrentSupportCount = 0`. The next local memory R&D action is therefore `inspect_supported_memory_non_target_pressure`, not `demote_uncorroborated_memory_candidates`; real-agent outcome lift still waits on non-rate-limited Claude Code evidence.
 
 ## Project Reference
 

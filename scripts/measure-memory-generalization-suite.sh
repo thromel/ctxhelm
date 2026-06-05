@@ -195,6 +195,7 @@ for report in reports:
                 "generalizationProven": interpretation.get("generalizationProven"),
                 "precisionNeedsWork": interpretation.get("precisionNeedsWork"),
                 "memoryNeedsCorroboration": interpretation.get("memoryNeedsCorroboration"),
+                "supportedMemoryNoiseNeedsReview": interpretation.get("supportedMemoryNoiseNeedsReview"),
                 "semanticMeasured": interpretation.get("semanticMeasured"),
                 "semanticUsefulForMemoryTasks": interpretation.get("semanticUsefulForMemoryTasks"),
                 "lexicalStillStrong": interpretation.get("lexicalStillStrong"),
@@ -206,6 +207,9 @@ for report in reports:
 memory_unique_lift_pairs = aggregate_value("memoryUniqueLiftPairs")
 memory_unique_target_hits = aggregate_value("memoryUniqueTargetHitCount")
 memory_unique_non_targets = aggregate_value("memoryUniqueNonTargetCount")
+memory_unique_non_targets_with_current_support = aggregate_value(
+    "memoryUniqueNonTargetWithCurrentSupportCount"
+)
 memory_unique_target_hits_without_current_support = aggregate_value(
     "memoryUniqueTargetHitWithoutCurrentSupportCount"
 )
@@ -227,6 +231,30 @@ memory_targets_without_graph_or_semantic = aggregate_value(
 graph_edge_removed_target_hits = aggregate_value("graphEdgeAblationRemovedTargetHitCount")
 semantic_selected_target_pairs = aggregate_value("semanticSelectedTargetPairs")
 semantic_ablation_lift_pairs = aggregate_value("semanticAblationLiftPairs")
+
+unsupported_memory_precision_needs_work = (
+    memory_unique_non_targets_without_current_support > 0
+    or memory_unique_target_hits_without_current_support > 0
+)
+supported_memory_noise_needs_review = (
+    memory_unique_non_targets_with_current_support > 0
+    and memory_unique_non_targets_without_current_support == 0
+)
+recommended_next_r_and_d = ["increase_pairs_per_repo"]
+if unsupported_memory_precision_needs_work:
+    recommended_next_r_and_d.extend(
+        [
+            "demote_uncorroborated_memory_candidates",
+            "test_memory_candidate_corroboration_policy",
+        ]
+    )
+elif supported_memory_noise_needs_review:
+    recommended_next_r_and_d.append("inspect_supported_memory_non_target_pressure")
+if memory_unique_non_targets > 0:
+    recommended_next_r_and_d.append("compare_memory_noise_against_current_signal_roles")
+if semantic_enabled:
+    recommended_next_r_and_d.append("compare_against_lexical_graph_semantic_ablations")
+recommended_next_r_and_d.append("measure_real_agent_outcome_lift")
 
 payload = {
     "schemaVersion": "ctxhelm-memory-generalization-suite-v2",
@@ -252,6 +280,7 @@ payload = {
         "lexicalCoveredPairs": lexical_covered_pairs,
         "memoryUniqueTargetHitCount": memory_unique_target_hits,
         "memoryUniqueNonTargetCount": memory_unique_non_targets,
+        "memoryUniqueNonTargetWithCurrentSupportCount": memory_unique_non_targets_with_current_support,
         "memoryUniqueTargetHitWithoutCurrentSupportCount": memory_unique_target_hits_without_current_support,
         "memoryUniqueNonTargetWithoutCurrentSupportCount": memory_unique_non_targets_without_current_support,
         "memoryTargetHitsWithGraphSupportUpperBound": graph_supported_memory_target_hits,
@@ -274,8 +303,8 @@ payload = {
         "generalizationProven": evaluated_repos > 1 and memory_unique_lift_pairs > 1,
         "precisionNeedsWork": memory_unique_non_targets > 0
         or memory_target_hit_pairs < memory_candidate_pairs,
-        "unsupportedMemoryPrecisionNeedsWork": memory_unique_non_targets_without_current_support > 0
-        or memory_unique_target_hits_without_current_support > 0,
+        "unsupportedMemoryPrecisionNeedsWork": unsupported_memory_precision_needs_work,
+        "supportedMemoryNoiseNeedsReview": supported_memory_noise_needs_review,
         "memoryNeedsCorroboration": memory_targets_without_graph_or_semantic > 0
         or memory_unique_non_targets > 0,
         "semanticMeasured": semantic_enabled,
@@ -284,12 +313,7 @@ payload = {
         "graphCorroborationMeasured": graph_supported_memory_target_hits > 0
         or graph_edge_removed_target_hits > 0,
         "lexicalStillStrong": lexical_covered_pairs > 0,
-        "recommendedNextRAndD": [
-            "increase_pairs_per_repo",
-            "demote_memory_without_target_or_correlated_context_support",
-            "test_memory_candidate_corroboration_policy",
-            "measure_real_agent_outcome_lift",
-        ],
+        "recommendedNextRAndD": recommended_next_r_and_d,
     },
     "semantic": {
         "enabled": semantic_enabled,

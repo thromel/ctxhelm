@@ -591,6 +591,10 @@ total_unique_non_targets = sum(result["lift"]["uniqueNonTargetNoise"] for result
 total_unique_non_targets_without_current_support = sum(
     result["lift"]["uniqueNonTargetWithoutCurrentSupport"] for result in results
 )
+total_unique_non_targets_with_current_support = max(
+    0,
+    total_unique_non_targets - total_unique_non_targets_without_current_support,
+)
 total_unique_target_hits = sum(result["lift"]["memoryUniqueTargetHitDelta"] for result in results)
 total_unique_target_hits_without_current_support = sum(
     result["lift"]["uniqueTargetHitWithoutCurrentSupport"] for result in results
@@ -624,6 +628,30 @@ total_after_seconds = round(
     sum(result["runtimeSeconds"].get("afterEval", 0.0) for result in results), 2
 )
 
+unsupported_memory_precision_needs_work = (
+    total_unique_non_targets_without_current_support > 0
+    or total_unique_target_hits_without_current_support > 0
+)
+supported_memory_noise_needs_review = (
+    total_unique_non_targets_with_current_support > 0
+    and total_unique_non_targets_without_current_support == 0
+)
+recommended_next_r_and_d = ["increase_real_corpus_pair_count"]
+if unsupported_memory_precision_needs_work:
+    recommended_next_r_and_d.extend(
+        [
+            "demote_uncorroborated_memory_candidates",
+            "test_memory_candidate_corroboration_policy",
+        ]
+    )
+elif supported_memory_noise_needs_review:
+    recommended_next_r_and_d.append("inspect_supported_memory_non_target_pressure")
+if total_unique_non_targets > 0:
+    recommended_next_r_and_d.append("compare_memory_noise_against_current_signal_roles")
+if semantic_enabled:
+    recommended_next_r_and_d.append("compare_against_lexical_graph_semantic_ablations")
+recommended_next_r_and_d.append("measure_real_agent_outcome_lift")
+
 status = "measured" if evaluated else "insufficient_evidence"
 payload = {
     "schemaVersion": "ctxhelm-memory-generalization-measurement-v2",
@@ -651,6 +679,7 @@ payload = {
         "memoryNoisePairs": noise_pairs,
         "memoryUniqueTargetHitCount": total_unique_target_hits,
         "memoryUniqueNonTargetCount": total_unique_non_targets,
+        "memoryUniqueNonTargetWithCurrentSupportCount": total_unique_non_targets_with_current_support,
         "memoryUniqueTargetHitWithoutCurrentSupportCount": total_unique_target_hits_without_current_support,
         "memoryUniqueNonTargetWithoutCurrentSupportCount": total_unique_non_targets_without_current_support,
         "memoryTargetHitsWithGraphSupportUpperBound": total_graph_supported_memory_target_hits,
@@ -666,21 +695,15 @@ payload = {
         "generalizationProven": unique_lift_pairs > 1,
         "singlePairLiftObserved": unique_lift_pairs == 1,
         "precisionNeedsWork": noise_pairs > 0 or total_unique_non_targets > total_unique_target_hits,
-        "unsupportedMemoryPrecisionNeedsWork": total_unique_non_targets_without_current_support > 0
-        or total_unique_target_hits_without_current_support > 0,
+        "unsupportedMemoryPrecisionNeedsWork": unsupported_memory_precision_needs_work,
+        "supportedMemoryNoiseNeedsReview": supported_memory_noise_needs_review,
         "memoryNeedsCorroboration": total_memory_targets_without_graph_or_semantic > 0
         or total_unique_non_targets > 0,
         "semanticMeasured": semantic_enabled,
         "semanticUsefulForMemoryTasks": semantic_target_pairs > 0 or semantic_ablation_lift_pairs > 0,
         "lexicalStillStrong": lexical_covered_pairs > 0,
         "pairDiversityMeasured": candidate_target_file_count > 1 or evaluated_target_file_count > 1,
-        "recommendedNextRAndD": [
-            "increase_real_corpus_pair_count",
-            "reduce_memory_unique_non_target_noise",
-            "compare_against_lexical_graph_semantic_ablations",
-            "demote_uncorroborated_memory_candidates",
-            "measure_real_agent_outcome_lift",
-        ],
+        "recommendedNextRAndD": recommended_next_r_and_d,
     },
     "semantic": {
         "enabled": semantic_enabled,

@@ -1026,6 +1026,14 @@ Recommendation today:
   semantic-enabled fixture run measured 12 pairs across 12 distinct target
   files, restored `memoryUniqueLiftPairs = 2`, and kept unsupported pure-memory
   noise at zero. The next promotion bar is paired real-agent outcome lift.
+- Phase 228 tightens memory-noise routing. Memory-generalization reports now
+  expose `memoryUniqueNonTargetWithCurrentSupportCount` and
+  `supportedMemoryNoiseNeedsReview`, so raw lexical-baseline-relative non-targets
+  supported by current signals route to signal-pressure review instead of
+  uncorroborated-memory demotion. The fresh four-repo semantic-enabled suite
+  measured `memoryUniqueNonTargetCount = 4`,
+  `memoryUniqueNonTargetWithCurrentSupportCount = 4`, and
+  `memoryUniqueNonTargetWithoutCurrentSupportCount = 0`.
 - Treat cloud embeddings/reranking as disabled unless an explicit repo policy
   allows them.
 

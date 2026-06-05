@@ -218,6 +218,14 @@ unique memory lifts and two unique memory target hits while keeping unsupported
 pure-memory noise at zero. Raw lexical-baseline-relative memory non-targets
 remain measurable, but the next higher bar is now real-agent outcome lift.
 
+Status: Phase 228 refines that raw-noise interpretation. Reports now expose
+`memoryUniqueNonTargetWithCurrentSupportCount` and
+`supportedMemoryNoiseNeedsReview`, and route supported memory non-targets to
+current-signal pressure review instead of uncorroborated-memory demotion. The
+fresh four-repo semantic-enabled suite still proves two unique memory lifts and
+zero unsupported pure-memory non-targets; its four raw memory non-targets all
+have current support.
+
 ### 3. Semantic/Embedding Signal Is Wired But Not Driving Lift
 
 The current product lift comes from hybrid ranking, graph/test/history/context

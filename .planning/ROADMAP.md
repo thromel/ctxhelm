@@ -108,6 +108,8 @@ Phase 226 fixes that secondary evidence miss by treating agent-run outcome, pair
 
 Phase 227 reruns that five-lane Claude Code matrix and hardens the source-free report semantics for unavailable clients. The rerun still reports `rate_limited` across all lanes, but ctxhelm evidence misses are now empty after Phase 226. The harness now clears `ctxhelmEvidenceOnlyTargets` for non-evaluation-eligible lanes and computes under-read comparisons only from eligible ctxhelm lanes, so a rate-limited client no longer produces false consumption-gap signals. `.ctxhelm/e2e/phase227-agent-run-rate-limit-accounting.json` records the skipped, source-free proof; the only recommended R&D action remains `retry_real_client_when_available`.
 
+Phase 228 tightens the memory R&D interpretation after the Phase 224 broader proof left raw lexical-baseline-relative memory non-targets visible. Single-repo and suite memory-generalization reports now expose `memoryUniqueNonTargetWithCurrentSupportCount` and `supportedMemoryNoiseNeedsReview`, and the `recommendedNextRAndD` list is evidence-conditioned. A fresh four-repo semantic-enabled suite measured 12 pairs with two unique memory lifts, four memory unique non-targets, all four supported by current signals, and zero unsupported memory non-targets. The report now routes local memory R&D to `inspect_supported_memory_non_target_pressure` and `compare_memory_noise_against_current_signal_roles` instead of blindly demoting uncorroborated memory.
+
 ## v2.5 Production Retrieval Quality
 
 ## Phases
