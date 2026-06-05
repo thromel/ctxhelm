@@ -554,3 +554,25 @@ Memory R&D is now in a much stronger state: target consumption and read
 efficiency both improve on the measured real-client slice. Future memory work
 should preserve Phase 255 as a regression guard and broaden only to hunt for
 new counterexamples.
+
+## June 6 Phase 256 Update
+
+Phase 256 tests a plausible semantic-quality hypothesis and rejects it. The
+experiment temporarily made `local_fastembed` semantic search and vector
+indexing use richer source-free documents with symbol and dependency facets,
+then bumped the semantic document text version so stale metadata-only vectors
+would not be reused.
+
+The after-gates remained source-free, but quality moved in the wrong direction:
+
+- RefactoringMiner `local_semantic` Recall@10 moved from `0.5583333` to
+  `0.5383333`, losing the small semantic lift over default.
+- RefactoringMiner `local_semantic` runtime moved from `14457ms` to `101561ms`.
+- ctxhelm `local_semantic` Recall@10 stayed neutral at `0.31237346`.
+- ctxhelm `local_semantic` runtime moved from `9938ms` to `23837ms`.
+
+The change was reverted. This is useful negative R&D evidence: adding more
+source-free facets to `local_fastembed` search documents is not the right path
+to default promotion. The remaining semantic work should focus on
+task-conditioned query construction, alternate local model/fusion evaluation, or
+safe local metadata reranker promotion constraints.

@@ -4,10 +4,10 @@ milestone: v2.5
 milestone_name: Production Retrieval Quality
 status: active
 last_updated: "2026-06-06T00:00:00Z"
-last_activity: 2026-06-06 -- Phase 255 records cross-repo Codex memory target-consumption and read-efficiency lift
+last_activity: 2026-06-06 -- Phase 256 rejects richer local_fastembed semantic search documents
 progress:
-  total_phases: 142
-  completed_phases: 142
+  total_phases: 143
+  completed_phases: 143
   total_plans: 7
   completed_plans: 7
   percent: 100
@@ -17,10 +17,10 @@ progress:
 
 ## Current Position
 
-Phase: 255 - Codex Memory Efficiency
-Plan: 255-codex-memory-efficiency
+Phase: 256 - Semantic Rich-Document Rejection
+Plan: 256-semantic-rich-document-rejection
 Status: Complete
-Last activity: 2026-06-06 -- Phase 255 tightens the Codex memory lane into a focused memory-efficiency probe and reruns the three-repo Phase 253 suite. Memory target-read improvement remains 3/3, memory irrelevant-read improvement moves from 0/3 to 3/3, and the run stays source-free with no evidence misses, under-read targets, client failures, rate limits, forbidden commands, or malformed required ctxhelm calls. Phase 254 also refreshed Claude Code `2.1.163` breadth-suite evidence and confirms the client is still rate-limited, so Claude outcome proof remains unavailable rather than negative retrieval evidence.
+Last activity: 2026-06-06 -- Phase 256 tests richer source-free `local_fastembed` semantic search documents and rejects the change. Adding symbol/dependency facets preserved privacy but removed the RefactoringMiner semantic lift, kept ctxhelm neutral, and made semantic runtime materially worse, so the code change was reverted. Semantic remains opt-in; the next semantic R&D should target query construction, alternate local model/fusion, or safe local metadata-reranker promotion constraints rather than richer default semantic documents.
 
 ## Project Reference
 

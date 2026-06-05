@@ -209,6 +209,14 @@ RefactoringMiner shows a small semantic lift, while ctxhelm is neutral. The gate
 now keeps eval-only local metadata reranker regressions visible without letting
 those unrelated regressions misclassify semantic as blocked.
 
+Phase 256 rejects richer `local_fastembed` search documents as a default path.
+Adding source-free symbol and dependency facets to semantic search/index
+documents preserved privacy but removed the RefactoringMiner semantic lift,
+kept ctxhelm neutral, and materially increased semantic runtime. Do not promote
+semantic by stuffing more facets into search documents. Future semantic R&D
+should target task-conditioned query construction, alternate local model/fusion
+evaluation, or safe local metadata reranker promotion constraints.
+
 ## When To Avoid It
 
 Avoid semantic retrieval for exact identifier, stack trace, route, config-key, or single-file edit tasks where lexical or explicit path anchors are stronger. Use it when the task is conceptual, such as finding payment webhook validation, retry logic, normalization flows, or analogous feature patterns.
