@@ -4992,15 +4992,21 @@ fn evaluate_historical_commit_sample(
         .iter()
         .map(|command| command.command.clone())
         .collect::<Vec<_>>();
+    let default_context_files = context_file_ranking(
+        &recommended_files,
+        &recommended_tests,
+        ranking_budget,
+        !multi_area_task,
+    );
     let recommended_context_files = if options.local_metadata_reranker {
-        local_metadata_reranked_context_files(&plan, ranking_budget)
-    } else {
-        context_file_ranking(
-            &recommended_files,
-            &recommended_tests,
+        local_metadata_reranked_context_files(
+            &plan,
             ranking_budget,
+            &default_context_files,
             !multi_area_task,
         )
+    } else {
+        default_context_files
     };
     let lexical_baseline_files = lexical_baseline_context_files(eval_root, &task, ranking_budget)?;
     let retrieval_target_files = retrieval_target_files(eval_root, &sample.safe_changed_files);
@@ -6169,7 +6175,31 @@ fn retrieval_target_files(eval_root: &Path, safe_changed_files: &[String]) -> Ve
         .collect()
 }
 
-fn local_metadata_reranked_context_files(plan: &ContextPlan, ranking_budget: usize) -> Vec<String> {
+fn local_metadata_reranked_context_files(
+    plan: &ContextPlan,
+    ranking_budget: usize,
+    default_context_files: &[String],
+    reserve_validation_tests: bool,
+) -> Vec<String> {
+    let ranking_budget = ranking_budget.max(1);
+    let recommended_files = plan
+        .target_files
+        .iter()
+        .map(|target| target.path.clone())
+        .collect::<Vec<_>>();
+    let recommended_tests = plan
+        .related_tests
+        .iter()
+        .map(|test| test.path.clone())
+        .collect::<Vec<_>>();
+    let test_reserve = if reserve_validation_tests {
+        validation_test_reserve(&recommended_files, &recommended_tests, ranking_budget)
+    } else {
+        0
+    };
+    let file_budget = ranking_budget.saturating_sub(test_reserve).max(1);
+    let protected_floor =
+        local_metadata_protected_floor_paths(plan, default_context_files, file_budget);
     let mut candidates = plan
         .retrieval_candidates
         .iter()
@@ -6187,11 +6217,85 @@ fn local_metadata_reranked_context_files(plan: &ContextPlan, ranking_budget: usi
     });
 
     let mut seen = BTreeSet::new();
-    candidates
+    let mut ranking = protected_floor
         .into_iter()
-        .filter_map(|(path, _)| seen.insert(path.clone()).then_some(path))
-        .take(ranking_budget.max(1))
-        .collect()
+        .filter_map(|path| seen.insert(path.clone()).then_some(path))
+        .take(file_budget)
+        .collect::<Vec<_>>();
+    ranking.extend(
+        candidates
+            .iter()
+            .filter(|(path, _)| {
+                plan.retrieval_candidates
+                    .iter()
+                    .find(|candidate| candidate.path.as_ref() == Some(path))
+                    .and_then(|candidate| candidate.role.clone())
+                    != Some(FileRole::Test)
+            })
+            .filter_map(|(path, _)| seen.insert(path.clone()).then_some(path.clone()))
+            .take(file_budget.saturating_sub(ranking.len())),
+    );
+    ranking.extend(
+        recommended_tests
+            .into_iter()
+            .filter_map(|path| seen.insert(path.clone()).then_some(path))
+            .take(test_reserve),
+    );
+    ranking.extend(
+        candidates
+            .into_iter()
+            .filter_map(|(path, _)| seen.insert(path.clone()).then_some(path))
+            .take(ranking_budget.saturating_sub(ranking.len())),
+    );
+    ranking.truncate(ranking_budget);
+    ranking
+}
+
+fn local_metadata_protected_floor_paths(
+    plan: &ContextPlan,
+    default_context_files: &[String],
+    ranking_budget: usize,
+) -> Vec<String> {
+    let mut seen = BTreeSet::new();
+    let ranking_budget = ranking_budget.max(1);
+    let candidate_by_path = plan
+        .retrieval_candidates
+        .iter()
+        .filter_map(|candidate| candidate.path.as_ref().map(|path| (path, candidate)))
+        .collect::<BTreeMap<_, _>>();
+    let mut floor = default_context_files
+        .iter()
+        .filter_map(|path| {
+            let candidate = candidate_by_path.get(path)?;
+            (metadata_candidate_has_protected_source_signal(candidate) && seen.insert(path.clone()))
+                .then_some(path.clone())
+        })
+        .take(ranking_budget)
+        .collect::<Vec<_>>();
+    floor.extend(
+        plan.retrieval_candidates
+            .iter()
+            .filter_map(|candidate| {
+                let path = candidate.path.as_ref()?;
+                (metadata_candidate_has_protected_source_signal(candidate)
+                    && seen.insert(path.clone()))
+                .then_some(path.clone())
+            })
+            .take(ranking_budget.saturating_sub(floor.len())),
+    );
+    floor
+}
+
+fn metadata_candidate_has_protected_source_signal(candidate: &RetrievalCandidate) -> bool {
+    if candidate.role == Some(FileRole::Test) {
+        return false;
+    }
+    candidate
+        .signal_scores
+        .iter()
+        .map(|score| &score.signal)
+        .chain(candidate.evidence.iter().map(|evidence| &evidence.signal))
+        .any(is_protected_evidence_signal)
 }
 
 fn local_metadata_candidate_score(candidate: &RetrievalCandidate) -> f32 {
@@ -9580,6 +9684,114 @@ mod tests {
         assert!(files[0].selected_at_10);
         assert!(files[0].retrieval_target);
         assert_eq!(files[0].role, Some(FileRole::Source));
+    }
+
+    #[test]
+    fn local_metadata_reranker_preserves_protected_source_floor() {
+        let mut plan = crate::planning::empty_plan_for_task(TaskType::BugFix);
+        plan.retrieval_candidates = vec![RetrievalCandidate {
+            kind: RetrievalCandidateKind::File,
+            path: Some("src/exact.rs".to_string()),
+            role: Some(FileRole::Source),
+            reason_code: "lexical_match".to_string(),
+            confidence: 0.1,
+            signal_scores: vec![RetrievalSignalScore {
+                signal: RetrievalSignalKind::Lexical,
+                score: 0.1,
+                weight: 1.0,
+            }],
+            evidence: Vec::new(),
+        }];
+        for index in 0..12 {
+            plan.retrieval_candidates.push(RetrievalCandidate {
+                kind: RetrievalCandidateKind::File,
+                path: Some(format!("src/semantic_{index}.rs")),
+                role: Some(FileRole::Source),
+                reason_code: "semantic_neighbor".to_string(),
+                confidence: 0.95,
+                signal_scores: vec![RetrievalSignalScore {
+                    signal: RetrievalSignalKind::Semantic,
+                    score: 0.95,
+                    weight: 1.0,
+                }],
+                evidence: vec![RetrievalEvidence {
+                    signal: RetrievalSignalKind::Semantic,
+                    score: 0.95,
+                    reason_code: "semantic_neighbor".to_string(),
+                    path: Some(format!("src/semantic_{index}.rs")),
+                    role: Some(FileRole::Source),
+                    edge_label: None,
+                    commit_ids: Vec::new(),
+                    commit_count: 0,
+                }],
+            });
+        }
+
+        let default_context_files = vec!["src/semantic_0.rs".to_string()];
+        let ranking =
+            local_metadata_reranked_context_files(&plan, 10, &default_context_files, true);
+
+        assert_eq!(ranking.first(), Some(&"src/exact.rs".to_string()));
+        assert!(ranking.contains(&"src/exact.rs".to_string()));
+        assert_eq!(ranking.len(), 10);
+    }
+
+    #[test]
+    fn local_metadata_protected_floor_excludes_tests() {
+        let mut plan = crate::planning::empty_plan_for_task(TaskType::BugFix);
+        plan.target_files = vec![ctxhelm_core::TargetFile {
+            path: "src/exact.rs".to_string(),
+            reason: "symbol match".to_string(),
+            line_range: None,
+            confidence: 0.2,
+            attribution: Vec::new(),
+        }];
+        plan.related_tests = vec![ctxhelm_core::RelatedTest {
+            path: "tests/exact_test.rs".to_string(),
+            confidence: 0.99,
+            command: Some("cargo test exact_test".to_string()),
+            reason: "lexical test match".to_string(),
+            attribution: Vec::new(),
+        }];
+        plan.retrieval_candidates = vec![
+            RetrievalCandidate {
+                kind: RetrievalCandidateKind::File,
+                path: Some("tests/exact_test.rs".to_string()),
+                role: Some(FileRole::Test),
+                reason_code: "lexical_match".to_string(),
+                confidence: 0.99,
+                signal_scores: vec![RetrievalSignalScore {
+                    signal: RetrievalSignalKind::Lexical,
+                    score: 0.99,
+                    weight: 1.0,
+                }],
+                evidence: Vec::new(),
+            },
+            RetrievalCandidate {
+                kind: RetrievalCandidateKind::File,
+                path: Some("src/exact.rs".to_string()),
+                role: Some(FileRole::Source),
+                reason_code: "symbol_match".to_string(),
+                confidence: 0.2,
+                signal_scores: vec![RetrievalSignalScore {
+                    signal: RetrievalSignalKind::Symbol,
+                    score: 0.2,
+                    weight: 1.0,
+                }],
+                evidence: Vec::new(),
+            },
+        ];
+
+        let default_context_files = vec![
+            "tests/exact_test.rs".to_string(),
+            "src/exact.rs".to_string(),
+        ];
+        let floor = local_metadata_protected_floor_paths(&plan, &default_context_files, 10);
+        let ranking =
+            local_metadata_reranked_context_files(&plan, 10, &default_context_files, true);
+
+        assert_eq!(floor, vec!["src/exact.rs".to_string()]);
+        assert!(ranking.contains(&"tests/exact_test.rs".to_string()));
     }
 
     #[test]
