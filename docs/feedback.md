@@ -104,7 +104,20 @@ CTXHELM_RUN_REAL_CLIENT=1 bash scripts/e2e-agent-run.sh \
 ctxhelm eval agent-run --report .ctxhelm/e2e/agent-run-claude.json
 ```
 
-The script runs five read-only Claude Code lanes: native baseline,
+For Codex CLI, use the Codex-specific harness:
+
+```bash
+CTXHELM_RUN_REAL_CLIENT=1 bash scripts/e2e-agent-run-codex.sh \
+  --repo "$REPO" \
+  --task "Identify files relevant to improving the paired agent-run matrix" \
+  --target-file scripts/e2e-agent-run.sh \
+  --target-file docs/feedback.md \
+  --output .ctxhelm/e2e/agent-run-codex.json
+
+ctxhelm eval agent-run --report .ctxhelm/e2e/agent-run-codex.json
+```
+
+The Claude script runs five read-only Claude Code lanes: native baseline,
 `prepare_task`, `prepare_task` plus a brief `get_pack`, `prepare_task` plus a
 standard `get_pack`, and a memory-guided standard-pack lane. It records
 one source-free `clientPreflight` result before the lane matrix by default
@@ -144,6 +157,17 @@ evidence, evidence misses route to retrieval/query fixes, evidence-only targets
 route to consumption guidance, malformed observed ctxhelm calls route to
 required-call guidance, and comparable no-lift results route to native-baseline
 analysis.
+
+The Codex script runs the same five lane modes, but measures native consumption
+through Codex `command_execution` events. It stores command hashes, command
+verbs, exit statuses, path labels, read/discovery counts, and forbidden-command
+counts; it does not store raw command output, raw prompts, raw transcripts, raw
+MCP traffic, or source text. On current Codex CLI versions, the script uses
+`--ignore-user-config`/`--ephemeral` when available while preserving the normal
+auth home. Do not force a temporary `CODEX_HOME` unless the installed client
+requires it; doing so can remove auth and create false stream-disconnect
+failures.
+
 Historical eval and product-proof reports use the same
 `recommendedResearchActions` shape for report-level R&D routing. Historical
 reports can recommend candidate generation, ranking or budget allocation,

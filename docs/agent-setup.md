@@ -6,7 +6,7 @@ ctxhelm is an agent-native, read-only context broker. It generates repo-local gu
 
 | Agent | Generated artifact/snippet | Default write scope | Mutates global config by default | setup-check coverage | deterministic protocol proof | Optional real-client proof status | Verified-version/evidence notes |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| Codex CLI | Managed `AGENTS.md` section plus printed MCP setup guidance | Repo-local guidance only; user copies any MCP config manually | No global config mutation | Verifies managed `AGENTS.md` and `.ctxhelm/ctxhelm.toml` | Supported through direct JSON-RPC/MCP smoke against `ctxhelm serve-mcp` | Optional Codex smoke can require server-side `prepare_task` and `get_pack` request-log evidence; current local proof passes with explicit-repo tool-call evidence | Local command available: Codex CLI `0.137.0`; current local smoke records two explicit-repo ctxhelm tool calls without raw stderr, raw MCP traffic, prompts, transcripts, or source text |
+| Codex CLI | Managed `AGENTS.md` section plus printed MCP setup guidance | Repo-local guidance only; user copies any MCP config manually | No global config mutation | Verifies managed `AGENTS.md` and `.ctxhelm/ctxhelm.toml` | Supported through direct JSON-RPC/MCP smoke against `ctxhelm serve-mcp` | Optional Codex smoke can require server-side `prepare_task` and `get_pack` request-log evidence; current local outcome proof passes with explicit-repo tool-call evidence | Local command available: Codex CLI `0.137.0`; current local matrix records five source-free lanes, four comparable ctxhelm lanes, no forbidden commands, and outcome claim `ctxhelm_improved` |
 | Claude Code | `.claude/commands/ctxhelm-bugfix.md` and `.ctxhelm/adapters/claude-mcp.json` | Repo/project-local command and mergeable MCP snippet | No global config mutation; user merges project MCP config when desired | Verifies Claude command and adapter snippet when `--claude` is requested | Supported through direct JSON-RPC/MCP smoke against `ctxhelm serve-mcp` | Optional Claude smoke and workflow eval can require server-side `prepare_task` and `get_pack` request-log evidence; current availability preflight is rate-limited | Local command available: Claude Code `2.1.163`; current availability proof classifies API status `429` separately from ctxhelm protocol and retrieval behavior |
 | Cursor | `.cursor/rules/ctxhelm.mdc` | Repo-local rule file | No global config mutation | Verifies Cursor rule when `--cursor` is requested | Supported through direct JSON-RPC/MCP smoke against `ctxhelm serve-mcp` | Not claimed as machine-checkable tool-call evidence in v1.1 | Local command available: Cursor `3.3.30`; version presence is not tool-call proof |
 | OpenCode | `.ctxhelm/adapters/opencode.jsonc.snippet` | Repo-local snippet for manual merge | No global config mutation | Verifies OpenCode snippet when `--opencode` is requested | Supported through direct JSON-RPC/MCP smoke against `ctxhelm serve-mcp` | Not claimed as machine-checkable tool-call evidence in v1.1 | Local command available: OpenCode `1.14.25`; version presence is not tool-call proof |
@@ -66,14 +66,18 @@ still source-free: raw tasks are hashed, raw
 prompts/transcripts/MCP traffic are not persisted, and the report stores only
 target path labels, lane metrics, privacy flags, and sanitized request evidence.
 
-Latest local real-client availability refresh: 2026-06-05. Codex CLI
-`0.137.0` passed the source-free MCP smoke with two explicit-repo ctxhelm tool
-calls: `prepare_task` and `get_pack` with `budget = "brief"`,
-`format = "json"`, and `recordTrace = false`. Claude Code `2.1.163` was
-classified as unavailable because the preflight hit API status `429` and
-reported `clientFailureKind = rate_limited`. See
-`.planning/e2e/2026-06-05-phase236-agent-client-availability.md` and
-`.ctxhelm/e2e/phase236-agent-client-availability.json`.
+Latest local real-client outcome refresh: 2026-06-05. Codex CLI `0.137.0`
+passed the source-free five-lane agent-run matrix with four comparable
+ctxhelm-assisted lanes, valid explicit-repo `prepare_task` and `get_pack`
+calls, no forbidden commands, no client failures, no ctxhelm evidence misses,
+and outcome claim `ctxhelm_improved`. Best lane `ctxhelm-memory` improved
+target coverage by `+0.33`, reduced irrelevant reads by `2`, reduced command
+executions by `14`, and reduced read-file count by `2`. See
+`.planning/e2e/2026-06-05-phase237-codex-agent-run-outcome.md` and
+`.ctxhelm/e2e/phase237-agent-run-codex.json`. Claude Code `2.1.163` remains
+separately classified as unavailable because the preflight hit API status `429`
+and reported `clientFailureKind = rate_limited`; see
+`.planning/e2e/2026-06-05-phase236-agent-client-availability.md`.
 
 Historical Claude workflow evidence is still useful but should not be mistaken
 for current availability. The 2026-06-01 Claude Code `2.1.159` workflow passed

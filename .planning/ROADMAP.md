@@ -133,6 +133,17 @@ Phase 236 adds source-free real-agent client availability proof. Codex CLI
 evidence, Claude Code `2.1.163` is classified as rate-limited with API status
 `429`, and the next action is a Codex-backed real-agent outcome matrix.
 
+Phase 237 adds that Codex-backed outcome matrix. `scripts/e2e-agent-run-codex.sh`
+uses Codex `command_execution` events to measure read-only shell consumption
+without storing raw command output, prompts, transcripts, MCP traffic, or source
+text. The fresh Codex CLI `0.137.0` proof passes with four comparable ctxhelm
+lanes, valid explicit-repo ctxhelm calls, no forbidden commands, no client
+failures, no ctxhelm evidence misses, and outcome claim `ctxhelm_improved`.
+Best lane `ctxhelm-memory` improves target coverage by `+0.33`, reduces
+irrelevant reads by `2`, reduces command executions by `14`, and reduces
+read-file count by `2`; remaining R&D is Codex consumption guidance for
+evidence-only doc targets in weaker lanes.
+
 ## v2.5 Production Retrieval Quality
 
 ## Phases
@@ -1144,6 +1155,7 @@ Phases execute in numeric order: 61 -> 62 -> 63 -> 64 -> 65 -> 66 -> 67 -> 69 ->
 | 232. Memory Repository Diversity | Evidence artifact | Complete | 2026-06-05 |
 | 233. Memory Corroboration Policy | Evidence artifact | Complete | 2026-06-05 |
 | 236. Agent Client Availability | Evidence artifact | Complete | 2026-06-05 |
+| 237. Codex Agent-Run Outcome Matrix | Evidence artifact | Complete | 2026-06-05 |
 
 ---
 *Roadmap created: 2026-05-22*

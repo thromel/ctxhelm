@@ -1551,7 +1551,7 @@ fn release_docs_script_contract() {
         "agent-evidence retrieval channel",
         "Claude Code \\`2.1.163\\`",
         "Codex CLI \\`0.137.0\\`",
-        "2026-06-05-phase236-agent-client-availability.md",
+        "2026-06-05-phase237-codex-agent-run-outcome.md",
         "ctxhelm init --repo",
         "ctxhelm setup-check --repo",
         "ctxhelm prepare-task",
@@ -1888,6 +1888,50 @@ fn agent_client_availability_script_contract() {
         assert!(
             script_text.contains(required),
             "agent client availability script missing {required}"
+        );
+    }
+}
+
+#[test]
+fn codex_agent_run_e2e_script_contract() {
+    let repo_root = workspace_root();
+    let script = repo_root.join("scripts/e2e-agent-run-codex.sh");
+    assert!(script.exists(), "codex agent-run script is missing");
+
+    let syntax = Command::new("bash")
+        .arg("-n")
+        .arg(&script)
+        .current_dir(&repo_root)
+        .output()
+        .unwrap();
+    assert!(
+        syntax.status.success(),
+        "bash -n failed: {}",
+        String::from_utf8_lossy(&syntax.stderr)
+    );
+
+    let script_text = fs::read_to_string(&script).unwrap();
+    for required in [
+        "ctxhelm-agent-run-eval-v1",
+        "paired-agent-context-run",
+        "Codex CLI",
+        "command_execution",
+        "commandSha256",
+        "rawCommandOutputStored",
+        "forbiddenCommandCount",
+        "harden_codex_read_only_prompt",
+        "prepare_task",
+        "get_pack",
+        "mcp_servers.ctxhelm.command",
+        "CTXHELM_RUN_REAL_CLIENT=1",
+        "source edits",
+        "user project tests",
+        "global agent config mutation",
+        "cloud upload",
+    ] {
+        assert!(
+            script_text.contains(required),
+            "codex agent-run script missing {required}"
         );
     }
 }

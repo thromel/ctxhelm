@@ -4,7 +4,7 @@ milestone: v2.5
 milestone_name: Production Retrieval Quality
 status: active
 last_updated: "2026-06-03T00:00:00Z"
-last_activity: 2026-06-05 -- Phase 236 proves Codex real-client MCP availability and classifies Claude rate limits separately
+last_activity: 2026-06-05 -- Phase 237 adds a Codex real-agent outcome matrix and proves source-free improvement
 progress:
   total_phases: 134
   completed_phases: 134
@@ -17,10 +17,10 @@ progress:
 
 ## Current Position
 
-Phase: 236 - Agent Client Availability
-Plan: 236-agent-client-availability
+Phase: 237 - Codex Agent-Run Outcome Matrix
+Plan: 237-codex-agent-run-outcome-matrix
 Status: Complete
-Last activity: 2026-06-05 -- Phase 236 adds source-free real-agent client availability proof. Codex CLI `0.137.0` now produces explicit-repo `prepare_task` and `get_pack` MCP evidence with two tool calls and no raw prompts, transcripts, MCP traffic, or source text stored. Claude Code `2.1.163` is separately classified as rate-limited with API status `429`, so current Claude unavailability is not treated as ctxhelm retrieval or protocol failure. The next action is a Codex-backed real-agent outcome matrix.
+Last activity: 2026-06-05 -- Phase 237 adds `scripts/e2e-agent-run-codex.sh` and runs a real Codex CLI `0.137.0` five-lane outcome matrix. The source-free artifact `.ctxhelm/e2e/phase237-agent-run-codex.json` passes with four comparable ctxhelm lanes, valid explicit-repo `prepare_task`/`get_pack` calls, no forbidden commands, no client failures, no ctxhelm evidence misses, and outcome claim `ctxhelm_improved`. Best lane `ctxhelm-memory` improves target coverage by `+0.33`, reduces irrelevant reads by `2`, reduces command executions by `14`, and reduces read-file count by `2`; remaining follow-up is Codex consumption guidance because some lanes surfaced docs that Codex did not read.
 
 ## Project Reference
 

@@ -3943,7 +3943,7 @@ fn render_agent_run_report(report: &serde_json::Value) -> String {
     }
     if let Some(delta) = report.get("comparison") {
         output.push_str(&format!(
-            "- Best lane: `{}`\n- Comparison eligible: `{}`\n- Comparable ctxhelm lanes: `{}`\n- Target coverage delta: `{}`\n- Target read coverage delta: `{}`\n- Irrelevant read delta: `{}`\n- Missing required ctxhelm calls observed: `{}`\n- Missing required ctxhelm calls: `{}`\n- Invalid required ctxhelm calls observed: `{}`\n- Invalid required ctxhelm calls: `{}`\n- Client failures observed: `{}`\n- Rate limits observed: `{}`\n- ctxhelm evidence misses observed: `{}`\n- ctxhelm evidence misses: `{}`\n- ctxhelm evidence-only targets observed: `{}`\n- ctxhelm evidence-only targets: `{}`\n- Forbidden tool calls observed: `{}`\n- ctxhelm under-read targets observed: `{}`\n- Source text logged: `{}`\n",
+            "- Best lane: `{}`\n- Comparison eligible: `{}`\n- Comparable ctxhelm lanes: `{}`\n- Target coverage delta: `{}`\n- Target read coverage delta: `{}`\n- Irrelevant read delta: `{}`\n- Command execution delta: `{}`\n- Read file delta: `{}`\n- Missing required ctxhelm calls observed: `{}`\n- Missing required ctxhelm calls: `{}`\n- Invalid required ctxhelm calls observed: `{}`\n- Invalid required ctxhelm calls: `{}`\n- Client failures observed: `{}`\n- Rate limits observed: `{}`\n- ctxhelm evidence misses observed: `{}`\n- ctxhelm evidence misses: `{}`\n- ctxhelm evidence-only targets observed: `{}`\n- ctxhelm evidence-only targets: `{}`\n- Forbidden tool calls observed: `{}`\n- ctxhelm under-read targets observed: `{}`\n- Source text logged: `{}`\n",
             delta.get("bestLane")
                 .and_then(serde_json::Value::as_str)
                 .unwrap_or("unknown"),
@@ -3967,6 +3967,16 @@ fn render_agent_run_report(report: &serde_json::Value) -> String {
                 .map(|value| format!("{value:.2}"))
                 .unwrap_or_else(|| "n/a".to_string()),
             delta.get("irrelevantReadDelta")
+                .and_then(serde_json::Value::as_i64)
+                .map(|value| value.to_string())
+                .unwrap_or_else(|| "n/a".to_string()),
+            delta
+                .get("commandExecutionDelta")
+                .and_then(serde_json::Value::as_i64)
+                .map(|value| value.to_string())
+                .unwrap_or_else(|| "n/a".to_string()),
+            delta
+                .get("readFileDelta")
                 .and_then(serde_json::Value::as_i64)
                 .map(|value| value.to_string())
                 .unwrap_or_else(|| "n/a".to_string()),
@@ -4006,6 +4016,7 @@ fn render_agent_run_report(report: &serde_json::Value) -> String {
             render_missing_required_calls(delta.get("ctxhelmEvidenceOnlyTargets")),
             delta
                 .get("forbiddenToolCallsObserved")
+                .or_else(|| delta.get("forbiddenCommandsObserved"))
                 .and_then(serde_json::Value::as_bool)
                 .map(|value| value.to_string())
                 .unwrap_or_else(|| "n/a".to_string()),
@@ -4160,10 +4171,7 @@ fn render_agent_run_report(report: &serde_json::Value) -> String {
                         .and_then(serde_json::Value::as_u64)
                         .map(|value| value.to_string())
                         .unwrap_or_else(|| "n/a".to_string()),
-                    lane.get("toolCallCount")
-                        .and_then(serde_json::Value::as_u64)
-                        .map(|value| value.to_string())
-                        .unwrap_or_else(|| "n/a".to_string()),
+                    json_u64_fallback(lane, &["toolCallCount", "commandExecutionCount"]),
                     lane.get("ctxhelmToolCallCount")
                         .and_then(serde_json::Value::as_u64)
                         .map(|value| value.to_string())
@@ -4208,10 +4216,7 @@ fn render_agent_run_report(report: &serde_json::Value) -> String {
                         .and_then(serde_json::Value::as_u64)
                         .map(|value| value.to_string())
                         .unwrap_or_else(|| "n/a".to_string()),
-                    lane.get("forbiddenToolCallCount")
-                        .and_then(serde_json::Value::as_u64)
-                        .map(|value| value.to_string())
-                        .unwrap_or_else(|| "n/a".to_string()),
+                    json_u64_fallback(lane, &["forbiddenToolCallCount", "forbiddenCommandCount"]),
                     render_json_count_map(lane.get("readRoleCounts")),
                     render_json_count_map(lane.get("missedTargetRoleCounts")),
                 ));
@@ -4287,11 +4292,7 @@ fn render_agent_run_report(report: &serde_json::Value) -> String {
                     .and_then(serde_json::Value::as_u64)
                     .map(|value| value.to_string())
                     .unwrap_or_else(|| "n/a".to_string()),
-                metrics
-                    .get("toolCallCount")
-                    .and_then(serde_json::Value::as_u64)
-                    .map(|value| value.to_string())
-                    .unwrap_or_else(|| "n/a".to_string()),
+                json_u64_fallback(metrics, &["toolCallCount", "commandExecutionCount"]),
                 metrics
                     .get("ctxhelmToolCallCount")
                     .and_then(serde_json::Value::as_u64)
@@ -4337,11 +4338,7 @@ fn render_agent_run_report(report: &serde_json::Value) -> String {
                     .and_then(serde_json::Value::as_u64)
                     .map(|value| value.to_string())
                     .unwrap_or_else(|| "n/a".to_string()),
-                metrics
-                    .get("forbiddenToolCallCount")
-                    .and_then(serde_json::Value::as_u64)
-                    .map(|value| value.to_string())
-                    .unwrap_or_else(|| "n/a".to_string()),
+                json_u64_fallback(metrics, &["forbiddenToolCallCount", "forbiddenCommandCount"]),
                 render_json_count_map(lane.get("readRoleCounts")),
                 render_json_count_map(lane.get("missedTargetRoleCounts")),
             ));
@@ -4392,6 +4389,17 @@ fn render_recommended_research_actions(value: Option<&serde_json::Value>) -> Str
         })
         .collect::<Vec<_>>()
         .join(", ")
+}
+
+fn json_u64_fallback(value: &serde_json::Value, keys: &[&str]) -> String {
+    keys.iter()
+        .find_map(|key| {
+            value
+                .get(*key)
+                .and_then(serde_json::Value::as_u64)
+                .map(|number| number.to_string())
+        })
+        .unwrap_or_else(|| "n/a".to_string())
 }
 
 fn render_json_string_array(value: Option<&serde_json::Value>) -> String {
