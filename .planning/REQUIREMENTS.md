@@ -50,7 +50,7 @@ Deferred into later milestones from the remaining product vision.
 ### v2.6 Agent-Native Deep Integrations
 
 - [x] **AGENT-01**: User can verify Codex and Claude Code real-client tool-call evidence from release docs.
-- **AGENT-02**: User can verify Cursor and OpenCode integration behavior where clients expose machine-checkable proof.
+- [x] **AGENT-02**: User can verify Cursor and OpenCode integration behavior where clients expose machine-checkable proof.
 - [x] **AGENT-03**: User can install thin prompts/hooks/rules without broad static context injection.
 - [x] **AGENT-04**: User can use disconnected/cloud fallback cards when local MCP is unavailable.
 
@@ -104,6 +104,7 @@ Deferred into later milestones from the remaining product vision.
 | PROOF-03 | Phase 65 | Complete |
 | PROOF-04 | Phase 65 | Complete |
 | AGENT-01 | Phase 70 | Complete |
+| AGENT-02 | Phase 247 | Complete |
 | AGENT-03 | Phase 246 | Complete |
 | AGENT-04 | Phase 246 | Complete |
 | GAP-01 | Phase 71 | Complete |
@@ -118,9 +119,12 @@ Deferred into later milestones from the remaining product vision.
 - Future integration requirement AGENT-01 has current Phase 70 evidence.
 - Future integration requirements AGENT-03 and AGENT-04 have current Phase 246
   release-gated evidence through `scripts/smoke-agent-native-fallback.sh`.
-- AGENT-02 stays open because Cursor and OpenCode real-client tool-call
-  transcripts are still not claimed; current proof remains setup plus
-  deterministic MCP protocol evidence.
+- Future integration requirement AGENT-02 has current Phase 247 evidence.
+  OpenCode `1.14.25` passes a source-free real-client proof with server-side
+  `prepare_task` and `get_pack` request evidence for the explicit repo. Cursor
+  Agent CLI `3.6.21` has the same optional proof path; current local required
+  proof records an auth-blocked skip because `cursor agent status` reports not
+  logged in.
 - Phase 71 adds follow-up evidence for existing gap/ranking requirements by
   reducing archive-artifact noise without excluding archived evidence.
 

@@ -81,7 +81,7 @@ ctxhelm setup-check --repo "$REPO" --cursor --claude --opencode
 
 The hard automated proof for v1.1 is deterministic JSON-RPC/MCP protocol smoke through `ctxhelm serve-mcp`. That proof starts the ctxhelm MCP server, sends machine-checkable `prepare_task` and `get_pack` calls with an explicit `repo`, and inspects structured responses.
 
-Real-client proof is separate and optional. Codex CLI and Claude Code smokes can be tied to exact local client versions and request logs. Cursor and OpenCode setup is validated through generated artifact checks plus deterministic protocol proof; v1.1 docs do not claim machine-checkable tool-call proof for those two clients.
+Real-client proof is separate and optional. Codex CLI, Claude Code, Cursor Agent CLI, and OpenCode smokes can be tied to exact local client versions and source-free request evidence when the local client exposes machine-checkable behavior. Cursor and OpenCode setup is still validated through generated artifact checks plus deterministic protocol proof, while their real-client wrappers remain optional because local auth/provider state can block a client run.
 
 ## First Prepare Task
 

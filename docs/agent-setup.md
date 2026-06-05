@@ -8,8 +8,8 @@ ctxhelm is an agent-native, read-only context broker. It generates repo-local gu
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | Codex CLI | Managed `AGENTS.md` section plus printed MCP setup guidance | Repo-local guidance only; user copies any MCP config manually | No global config mutation | Verifies managed `AGENTS.md` and `.ctxhelm/ctxhelm.toml` | Supported through direct JSON-RPC/MCP smoke against `ctxhelm serve-mcp` | Optional Codex smoke can require server-side `prepare_task` and `get_pack` request-log evidence; current local outcome proof passes with explicit-repo tool-call evidence | Local command available: Codex CLI `0.137.0`; current local matrix records five source-free lanes, four comparable ctxhelm lanes, no forbidden commands, and outcome claim `ctxhelm_improved` |
 | Claude Code | `.claude/commands/ctxhelm-bugfix.md` and `.ctxhelm/adapters/claude-mcp.json` | Repo/project-local command and mergeable MCP snippet | No global config mutation; user merges project MCP config when desired | Verifies Claude command and adapter snippet when `--claude` is requested | Supported through direct JSON-RPC/MCP smoke against `ctxhelm serve-mcp` | Optional Claude smoke and workflow eval can require server-side `prepare_task` and `get_pack` request-log evidence; current availability preflight is rate-limited | Local command available: Claude Code `2.1.163`; current availability proof classifies API status `429` separately from ctxhelm protocol and retrieval behavior |
-| Cursor | `.cursor/rules/ctxhelm.mdc` | Repo-local rule file | No global config mutation | Verifies Cursor rule when `--cursor` is requested | Supported through direct JSON-RPC/MCP smoke against `ctxhelm serve-mcp` | Not claimed as machine-checkable tool-call evidence in v1.1 | Local command available: Cursor `3.3.30`; version presence is not tool-call proof |
-| OpenCode | `.ctxhelm/adapters/opencode.jsonc.snippet` | Repo-local snippet for manual merge | No global config mutation | Verifies OpenCode snippet when `--opencode` is requested | Supported through direct JSON-RPC/MCP smoke against `ctxhelm serve-mcp` | Not claimed as machine-checkable tool-call evidence in v1.1 | Local command available: OpenCode `1.14.25`; version presence is not tool-call proof |
+| Cursor | `.cursor/rules/ctxhelm.mdc` | Repo-local rule file | No global config mutation | Verifies Cursor rule when `--cursor` is requested | Supported through direct JSON-RPC/MCP smoke against `ctxhelm serve-mcp` | Optional Cursor Agent CLI smoke can require server-side `prepare_task` and `get_pack` request-log evidence; current local proof is skipped because Cursor Agent is not logged in | Local command available: Cursor `3.6.21`; version presence alone is not tool-call proof |
+| OpenCode | `.ctxhelm/adapters/opencode.jsonc.snippet` | Repo-local snippet for manual merge | No global config mutation | Verifies OpenCode snippet when `--opencode` is requested | Supported through direct JSON-RPC/MCP smoke against `ctxhelm serve-mcp` | Optional OpenCode smoke passes locally with server-side `prepare_task` and `get_pack` request-log evidence | Local command available: OpenCode `1.14.25`; current proof records two explicit-repo MCP tool calls |
 
 ## Proof Taxonomy
 
@@ -17,7 +17,7 @@ ctxhelm is an agent-native, read-only context broker. It generates repo-local gu
 
 **deterministic protocol proof** means direct JSON-RPC/MCP smoke through `ctxhelm serve-mcp`. The smoke sends machine-checkable tool calls with an explicit `repo`, verifies `prepare_task` returns target files and pack options, verifies `get_pack` returns a structured pack, reads context-area resources from a non-repo server cwd, and can read a pack resource during the same MCP server session.
 
-**real-client proof** means an actual agent client starts ctxhelm as an MCP server and produces request-log evidence for tool calls. For v1.1, this optional proof path is maintained for Codex CLI and Claude Code because the smoke scripts can inspect server-side requests for explicit-repo `prepare_task` and `get_pack` calls tied to exact client versions.
+**real-client proof** means an actual agent client starts ctxhelm as an MCP server and produces request-log evidence for tool calls. For v1.1, this optional proof path is maintained for Codex CLI, Claude Code, Cursor Agent CLI, and OpenCode because the smoke scripts can inspect server-side requests for explicit-repo `prepare_task` and `get_pack` calls tied to exact client versions.
 
 For Claude Code, maintainers can run the deeper workflow eval:
 
@@ -89,7 +89,18 @@ target coverage while the `ctxhelm-brief` lane reduced irrelevant reads from 5
 to 2 and read-file count from 7 to 4; see
 `.planning/e2e/2026-06-01-phase143-agent-run-outcome-harness.md`.
 
-Cursor and OpenCode setup can be checked through generated artifacts plus deterministic protocol proof, including source-free context-area resource reads. v1.1 does not claim machine-checkable Cursor tool-call proof, and it does not claim machine-checkable OpenCode tool-call proof.
+Cursor and OpenCode setup can be checked through generated artifacts plus deterministic protocol proof, including source-free context-area resource reads. Their optional real-client wrappers are separate from setup proof:
+
+```bash
+CTXHELM_RUN_CURSOR_REAL_CLIENT=1 bash scripts/smoke-cursor-real-client.sh
+CTXHELM_RUN_OPENCODE_REAL_CLIENT=1 bash scripts/smoke-opencode-real-client.sh
+```
+
+Current local evidence: `scripts/smoke-opencode-real-client.sh` passes with
+OpenCode `1.14.25` and records `prepare_task` plus `get_pack` calls with the
+explicit repo. `scripts/smoke-cursor-real-client.sh` is available but currently
+skips because `cursor agent status` reports not logged in. Required mode fails
+instead of silently passing when those client preconditions are missing.
 
 The setup-proof wrappers are:
 

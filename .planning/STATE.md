@@ -3,11 +3,11 @@ gsd_state_version: 1.0
 milestone: v2.5
 milestone_name: Production Retrieval Quality
 status: active
-last_updated: "2026-06-03T00:00:00Z"
-last_activity: 2026-06-05 -- Phase 246 release-gates thin agent-native setup and disconnected fallback cards
+last_updated: "2026-06-06T00:00:00Z"
+last_activity: 2026-06-06 -- Phase 247 adds Cursor/OpenCode optional real-client proof paths and release-gates OpenCode source-free request evidence
 progress:
-  total_phases: 135
-  completed_phases: 135
+  total_phases: 136
+  completed_phases: 136
   total_plans: 7
   completed_plans: 7
   percent: 100
@@ -17,10 +17,10 @@ progress:
 
 ## Current Position
 
-Phase: 246 - Agent-Native Fallback Proof Gate
-Plan: 246-agent-native-fallback-proof
+Phase: 247 - Cursor/OpenCode Real-Client Proof Paths
+Plan: 247-cursor-opencode-real-client-proof
 Status: Complete
-Last activity: 2026-06-05 -- Phase 246 adds `scripts/smoke-agent-native-fallback.sh` and wires it into `scripts/release-gate.sh`, `scripts/check-release-docs.sh`, and release packaging contracts. The smoke proves `ctxhelm init --cursor --claude --opencode`, `setup-check`, and `cards fallback --target-agent codex` produce repo-local, bounded, source-free agent guidance/cards without broad static source injection or source sentinel leakage. This closes top-level future requirements AGENT-03 and AGENT-04. AGENT-02 remains open because Cursor/OpenCode real-client tool-call transcripts are still not claimed; current Cursor/OpenCode proof remains setup plus deterministic MCP protocol evidence.
+Last activity: 2026-06-06 -- Phase 247 adds optional Cursor Agent CLI and OpenCode real-client smoke wrappers with source-free server-side request evidence. `scripts/smoke-opencode-real-client.sh` passes locally with OpenCode `1.14.25` and records explicit-repo `prepare_task` plus `get_pack` tool calls. `scripts/smoke-cursor-real-client.sh` has the same proof boundary and uses an isolated temporary Cursor workspace, but current local required proof is auth-blocked because Cursor Agent CLI `3.6.21` reports not logged in. The release gate now records Cursor/OpenCode optional proof status and can require OpenCode proof without requiring Cursor auth.
 
 ## Project Reference
 

@@ -251,10 +251,16 @@ fn release_gate_script_contract() {
         "scripts/smoke-mcp-protocol.sh",
         "scripts/smoke-codex-mcp.sh",
         "scripts/smoke-claude-mcp.sh",
+        "scripts/smoke-cursor-real-client.sh",
+        "scripts/smoke-opencode-real-client.sh",
         "scripts/e2e-claude-workflow.sh",
         "CTXHELM_BIN",
         "CTXHELM_SKIP_REAL_CLIENT",
         "CTXHELM_REQUIRE_REAL_CLIENT",
+        "CTXHELM_RUN_CURSOR_REAL_CLIENT",
+        "CTXHELM_REQUIRE_CURSOR_REAL_CLIENT",
+        "CTXHELM_RUN_OPENCODE_REAL_CLIENT",
+        "CTXHELM_REQUIRE_OPENCODE_REAL_CLIENT",
         "CTXHELM_RUN_CLAUDE_WORKFLOW_EVAL",
         "CTXHELM_REQUIRE_CLAUDE_WORKFLOW_EVAL",
         "CTXHELM_CLEAN_FIXTURE_CONFIG",
@@ -1602,9 +1608,15 @@ fn release_docs_script_contract() {
         "scripts/smoke-mcp-protocol.sh",
         "scripts/smoke-codex-mcp.sh",
         "scripts/smoke-claude-mcp.sh",
+        "scripts/smoke-cursor-real-client.sh",
+        "scripts/smoke-opencode-real-client.sh",
         "CTXHELM_BIN",
         "CTXHELM_REQUIRE_REAL_CLIENT",
         "CTXHELM_SKIP_REAL_CLIENT",
+        "CTXHELM_RUN_CURSOR_REAL_CLIENT",
+        "CTXHELM_REQUIRE_CURSOR_REAL_CLIENT",
+        "CTXHELM_RUN_OPENCODE_REAL_CLIENT",
+        "CTXHELM_REQUIRE_OPENCODE_REAL_CLIENT",
         "CTXHELM_REAL_CLIENT_EVIDENCE_DIR",
         "CTXHELM_RUN_CLAUDE_WORKFLOW_EVAL",
         "CTXHELM_REQUIRE_CLAUDE_WORKFLOW_EVAL",
@@ -1615,7 +1627,9 @@ fn release_docs_script_contract() {
         "scripts/prepare-proof-fixtures.sh",
         "does not publish",
         "does not create tags",
-        "Cursor and OpenCode real-client proof is not claimed",
+        "Cursor and OpenCode real-client proof is optional and source-free",
+        "opencode-real-client",
+        "cursor-real-client",
         "--proof-summary",
         "archive checksum",
         "binary checksum",
@@ -1696,6 +1710,64 @@ fn public_real_client_smoke_script_contract() {
             script_text.contains(required),
             "public real-client script missing {required}"
         );
+    }
+}
+
+#[test]
+fn cursor_and_opencode_real_client_smoke_script_contracts() {
+    let repo_root = workspace_root();
+    for (script_name, client_command, run_env, require_env, schema) in [
+        (
+            "scripts/smoke-cursor-real-client.sh",
+            "cursor agent --print",
+            "CTXHELM_RUN_CURSOR_REAL_CLIENT",
+            "CTXHELM_REQUIRE_CURSOR_REAL_CLIENT",
+            "ctxhelm-cursor-real-client-evidence-v1",
+        ),
+        (
+            "scripts/smoke-opencode-real-client.sh",
+            "opencode run",
+            "CTXHELM_RUN_OPENCODE_REAL_CLIENT",
+            "CTXHELM_REQUIRE_OPENCODE_REAL_CLIENT",
+            "ctxhelm-opencode-real-client-evidence-v1",
+        ),
+    ] {
+        let script = repo_root.join(script_name);
+        assert!(script.exists(), "{script_name} is missing");
+        let syntax = Command::new("bash")
+            .arg("-n")
+            .arg(&script)
+            .current_dir(&repo_root)
+            .output()
+            .unwrap();
+        assert!(
+            syntax.status.success(),
+            "bash -n failed for {script_name}: {}",
+            String::from_utf8_lossy(&syntax.stderr)
+        );
+        let script_text = fs::read_to_string(&script).unwrap();
+        for required in [
+            client_command,
+            run_env,
+            require_env,
+            "smoke-mcp-protocol.sh",
+            "CTXHELM_REAL_CLIENT_REQUEST_LOG",
+            "tee -a \"$CTXHELM_REAL_CLIENT_REQUEST_LOG\"",
+            "serve-mcp",
+            "prepare_task",
+            "get_pack",
+            "explicitRepoToolCallCount",
+            "observedToolCalls",
+            "serverSideRequestLog",
+            "requestLogSha256",
+            "source-free",
+            schema,
+        ] {
+            assert!(
+                script_text.contains(required),
+                "{script_name} missing {required}"
+            );
+        }
     }
 }
 

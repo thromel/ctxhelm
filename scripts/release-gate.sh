@@ -35,6 +35,8 @@ smoke_claude_mcp_script="$repo_root/scripts/smoke-claude-mcp.sh"
 claude_workflow_eval_script="$repo_root/scripts/e2e-claude-workflow.sh"
 smoke_cursor_mcp_script="$repo_root/scripts/smoke-cursor-mcp.sh"
 smoke_opencode_mcp_script="$repo_root/scripts/smoke-opencode-mcp.sh"
+smoke_cursor_real_client_script="$repo_root/scripts/smoke-cursor-real-client.sh"
+smoke_opencode_real_client_script="$repo_root/scripts/smoke-opencode-real-client.sh"
 clean_fixture_config_default="$repo_root/.planning/e2e/2026-06-03-phase183-clean-fixture-refresh-config.json"
 
 work_dir="$(mktemp -d)"
@@ -189,6 +191,8 @@ real_client_skip="${CTXHELM_SKIP_REAL_CLIENT:-}"
 if [[ -z "$real_client_skip" ]]; then
   if [[ "$real_client_required" == "1" ]]; then
     real_client_skip="0"
+  elif [[ "${CTXHELM_REQUIRE_CURSOR_REAL_CLIENT:-0}" == "1" || "${CTXHELM_RUN_CURSOR_REAL_CLIENT:-0}" == "1" || "${CTXHELM_REQUIRE_OPENCODE_REAL_CLIENT:-0}" == "1" || "${CTXHELM_RUN_OPENCODE_REAL_CLIENT:-0}" == "1" ]]; then
+    real_client_skip="0"
   else
     real_client_skip="1"
   fi
@@ -273,6 +277,8 @@ log_step "v2.4 semantic/precision gate smoke"
 CTXHELM_BIN="$ctxhelm_bin" bash "$smoke_v24_gate_script"
 
 mkdir -p "$proof_dir"
+real_client_evidence_dir="${CTXHELM_REAL_CLIENT_EVIDENCE_DIR:-"$proof_dir/real-client-evidence"}"
+mkdir -p "$real_client_evidence_dir"
 
 log_step "wrong-cwd MCP protocol smoke"
 CTXHELM_BIN="$ctxhelm_bin" \
@@ -294,6 +300,66 @@ CTXHELM_BIN="$ctxhelm_bin" \
   CTXHELM_ROOT="$repo_root" \
   CTXHELM_REAL_CLIENT_EVIDENCE_DIR="${CTXHELM_REAL_CLIENT_EVIDENCE_DIR:-}" \
   bash "$smoke_opencode_mcp_script"
+
+log_step "optional Cursor real-client evidence"
+CTXHELM_BIN="$ctxhelm_bin" \
+  CTXHELM_ROOT="$repo_root" \
+  CTXHELM_SMOKE_REPO="$repo_root" \
+  CTXHELM_SMOKE_TASK="verify release gate Cursor real-client MCP proof" \
+  CTXHELM_SMOKE_PATH="crates/ctxhelm-mcp/src/lib.rs" \
+  CTXHELM_SMOKE_QUERY="prepare_task" \
+  CTXHELM_SKIP_REAL_CLIENT="$real_client_skip" \
+  CTXHELM_REQUIRE_CURSOR_REAL_CLIENT="${CTXHELM_REQUIRE_CURSOR_REAL_CLIENT:-0}" \
+  CTXHELM_REAL_CLIENT_EVIDENCE_DIR="$real_client_evidence_dir" \
+  bash "$smoke_cursor_real_client_script"
+cursor_real_client_status="$(python3 - "$real_client_evidence_dir/cursor-real-client-evidence.json" <<'PY'
+import json
+import pathlib
+import sys
+
+path = pathlib.Path(sys.argv[1])
+if not path.exists():
+    print("missing_evidence")
+    raise SystemExit
+payload = json.loads(path.read_text(encoding="utf-8"))
+status = payload.get("status", "unknown")
+if status == "passed":
+    print("passed")
+else:
+    reason = payload.get("skipReason") or payload.get("clientFailureKind") or "unknown"
+    print(f"{status}:{reason}")
+PY
+)"
+
+log_step "optional OpenCode real-client evidence"
+CTXHELM_BIN="$ctxhelm_bin" \
+  CTXHELM_ROOT="$repo_root" \
+  CTXHELM_SMOKE_REPO="$repo_root" \
+  CTXHELM_SMOKE_TASK="verify release gate OpenCode real-client MCP proof" \
+  CTXHELM_SMOKE_PATH="crates/ctxhelm-mcp/src/lib.rs" \
+  CTXHELM_SMOKE_QUERY="prepare_task" \
+  CTXHELM_SKIP_REAL_CLIENT="$real_client_skip" \
+  CTXHELM_REQUIRE_OPENCODE_REAL_CLIENT="${CTXHELM_REQUIRE_OPENCODE_REAL_CLIENT:-0}" \
+  CTXHELM_REAL_CLIENT_EVIDENCE_DIR="$real_client_evidence_dir" \
+  bash "$smoke_opencode_real_client_script"
+opencode_real_client_status="$(python3 - "$real_client_evidence_dir/opencode-real-client-evidence.json" <<'PY'
+import json
+import pathlib
+import sys
+
+path = pathlib.Path(sys.argv[1])
+if not path.exists():
+    print("missing_evidence")
+    raise SystemExit
+payload = json.loads(path.read_text(encoding="utf-8"))
+status = payload.get("status", "unknown")
+if status == "passed":
+    print("passed")
+else:
+    reason = payload.get("skipReason") or payload.get("clientFailureKind") or "unknown"
+    print(f"{status}:{reason}")
+PY
+)"
 
 log_step "optional benchmark product proof"
 if [[ -n "${CTXHELM_BENCHMARK_CONFIG:-}" ]]; then
@@ -390,7 +456,7 @@ else
 fi
 
 log_step "release proof bundle"
-python3 - "$proof_summary_path" "$ctxhelm_version" "$(basename "$ctxhelm_bin")" "$binary_source" "$binary_sha256" "$(basename "$archive_path")" "$archive_sha256" "$(basename "$manifest_path")" "$(basename "$audit_report_path")" "$benchmark_status" "$clean_fixture_status" "$clean_fixture_required" "$codex_status" "$claude_status" "$claude_workflow_status" "$claude_workflow_required" "$real_client_required" <<'PY'
+python3 - "$proof_summary_path" "$ctxhelm_version" "$(basename "$ctxhelm_bin")" "$binary_source" "$binary_sha256" "$(basename "$archive_path")" "$archive_sha256" "$(basename "$manifest_path")" "$(basename "$audit_report_path")" "$benchmark_status" "$clean_fixture_status" "$clean_fixture_required" "$codex_status" "$claude_status" "$claude_workflow_status" "$claude_workflow_required" "$real_client_required" "$cursor_real_client_status" "$opencode_real_client_status" <<'PY'
 import json
 import sys
 
@@ -412,6 +478,8 @@ import sys
     claude_workflow_status,
     claude_workflow_required,
     real_client_required,
+    cursor_real_client_status,
+    opencode_real_client_status,
 ) = sys.argv[1:]
 
 required_checks = [
@@ -480,8 +548,8 @@ payload = {
         "claudeWorkflowEval": claude_workflow_status,
         "claudeWorkflowEvalRequired": claude_workflow_required == "1",
         "realClientRequired": real_client_required == "1",
-        "cursorRealClientProof": "not_claimed",
-        "opencodeRealClientProof": "not_claimed",
+        "cursorRealClientProof": cursor_real_client_status,
+        "opencodeRealClientProof": opencode_real_client_status,
     },
     "privacyStatus": {
         "localOnly": True,

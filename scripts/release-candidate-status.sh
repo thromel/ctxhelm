@@ -141,8 +141,8 @@ payload = {
         "benchmarkProof": "optional",
         "codexRealClient": "optional",
         "claudeRealClient": "optional",
-        "cursorRealClient": "not_claimed",
-        "opencodeRealClient": "not_claimed",
+        "cursorRealClient": "optional",
+        "opencodeRealClient": "optional",
     },
     "releaseProof": release_proof,
     "distributionDecision": {
@@ -157,7 +157,7 @@ payload = {
         "reason": "v1.1.12 production candidate supports local archives, the Apple Silicon Homebrew tap, and a tag-publishing multi-platform archive workflow; crates.io publication, signed installers, and self-update remain future work.",
     },
     "knownLimitations": [
-        "Cursor and OpenCode real-client proof is not claimed for v1.1.12.",
+        "Cursor and OpenCode real-client proof is optional and source-free; unavailable auth/provider state is recorded as a skip.",
         "crates.io publication, signed installers, self-update, and hosted sync are future work.",
     ],
     "privacyStatus": {
@@ -202,8 +202,8 @@ checks = payload.get("checks", {})
 for key in ["workspaceTests", "releaseDocs", "releasePackage", "archiveVerification", "demoArtifacts", "distributionMetadata"]:
     if checks.get(key) != "required":
         raise SystemExit(f"{key} must be required")
-if checks.get("cursorRealClient") != "not_claimed" or checks.get("opencodeRealClient") != "not_claimed":
-    raise SystemExit("Cursor/OpenCode real-client proof must be not_claimed")
+if checks.get("cursorRealClient") != "optional" or checks.get("opencodeRealClient") != "optional":
+    raise SystemExit("Cursor/OpenCode real-client proof must be optional")
 release_proof = payload.get("releaseProof", {})
 if payload.get("status") == "ready":
     if release_proof.get("status") != "passed":

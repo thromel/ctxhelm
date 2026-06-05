@@ -173,7 +173,7 @@ than generated guidance files.
 
 ## Deterministic Proof Versus Client Proof
 
-The deterministic protocol proof talks directly to `ctxhelm serve-mcp` and checks machine-readable `prepare_task` and `get_pack` responses. Optional real-client proof is separate and version-specific. v1.1 does not claim machine-checkable Cursor or OpenCode tool-call proof.
+The deterministic protocol proof talks directly to `ctxhelm serve-mcp` and checks machine-readable `prepare_task` and `get_pack` responses. Optional real-client proof is separate and version-specific. Codex, Claude Code, Cursor Agent CLI, and OpenCode wrappers pass only when server-side instrumentation records explicit-repo `prepare_task` and `get_pack` calls; unavailable auth/provider state is recorded as a source-free skip.
 
 When Codex or Claude real-client evidence is enabled with
 `CTXHELM_REAL_CLIENT_EVIDENCE_DIR`, inspect `*-mcp-evidence.json` first. The
@@ -183,7 +183,9 @@ and `requestSummaryFile`. Codex skip evidence also includes
 `clientFailureKind`, `clientExitStatus`, `stderrSha256`, and
 `stderrLineCount`; for example, `stream_disconnected` means the Codex client
 failed before producing machine-checkable tool calls, while the deterministic
-ctxhelm MCP protocol proof may still have passed. The request summary sidecar
-is sanitized and source-free; it is intended to prove which ctxhelm tools were
+protocol check may still pass. Cursor and OpenCode real-client wrappers write
+`cursor-real-client-evidence.json` and `opencode-real-client-evidence.json`
+when `CTXHELM_REAL_CLIENT_EVIDENCE_DIR` is set.
+The request summary sidecar is sanitized and source-free; it is intended to prove which ctxhelm tools were
 observed without preserving raw MCP traffic, raw stderr, task text, or source
 snippets.

@@ -10,11 +10,12 @@ The deterministic protocol proof is required. It exercises ctxhelm through
 direct JSON-RPC/MCP calls and verifies the stable tool/resource behavior without
 depending on a particular interactive agent client.
 
-Optional real-client proof can be added for Codex CLI and Claude Code by setting
-the release-gate real-client environment variables documented in
-`docs/release.md`. Cursor and OpenCode real-client proof is not claimed for
-v1.1.12; their public support remains config/rules plus deterministic MCP
-compatibility.
+Optional real-client proof can be added for Codex CLI, Claude Code, Cursor, and
+OpenCode by setting the release-gate real-client environment variables
+documented in `docs/release.md`. Cursor and OpenCode proof is still treated as
+optional: a pass requires server-side `prepare_task` and `get_pack` request
+evidence with the explicit repo, while unavailable auth/provider state is
+recorded as a source-free skip.
 
 When `CTXHELM_REAL_CLIENT_EVIDENCE_DIR` is set, the real-client wrappers write
 source-free evidence only: client/version metadata, a request-log SHA-256,
@@ -163,5 +164,5 @@ bash scripts/smoke-release-governance.sh
 
 The smoke covers ready, deferred, and blocked candidate status metadata,
 deterministic protocol proof language, optional real-client proof language,
-Cursor/OpenCode non-claims, public release freshness metadata, multi-platform
-archive workflow governance, and rollback safety.
+Cursor/OpenCode source-free proof boundaries, public release freshness metadata,
+multi-platform archive workflow governance, and rollback safety.

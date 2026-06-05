@@ -174,7 +174,9 @@ This check downloads and verifies the same public release assets, then runs the
 Codex and Claude Code real-client wrappers with the extracted binary. Passing
 clients write source-free `prepare_task`/`get_pack` request evidence. Skipped or
 unavailable clients write source-free skip evidence instead unless
-`CTXHELM_REQUIRE_REAL_CLIENT=1` makes them required.
+`CTXHELM_REQUIRE_REAL_CLIENT=1` makes them required. Cursor and OpenCode have
+separate local wrappers, `scripts/smoke-cursor-real-client.sh` and
+`scripts/smoke-opencode-real-client.sh`, for client-specific proof.
 
 Maintainers can verify the published Homebrew tap path on Apple Silicon macOS:
 
@@ -263,6 +265,8 @@ The release gate runs these required checks:
 - `scripts/smoke-mcp-protocol.sh` from a wrong cwd with an explicit `--repo`/MCP `repo` argument
 - optional `ctxhelm eval proof` benchmark product proof when `CTXHELM_BENCHMARK_CONFIG` is set
 - clean cold fixture product proof when the Phase 110 detached fixtures are present
+- optional `scripts/smoke-cursor-real-client.sh` when Cursor Agent CLI is logged in
+- optional `scripts/smoke-opencode-real-client.sh` when OpenCode has usable provider credentials
 
 For broad workflow/eval/lint tasks, `prepare-task` and generated packs include
 `contextAreas`. This field is source-free and additive: it gives agents
@@ -557,13 +561,15 @@ and are not a self-update implementation.
 
 The release governance smoke proves source-free candidate status metadata,
 ready/deferred/blocked lifecycle states, deterministic protocol proof language,
-optional real-client proof boundaries, Cursor/OpenCode non-claims, and rollback
+optional real-client proof boundaries, Cursor/OpenCode source-free proof boundaries, and rollback
 safety for marked local candidate directories.
 
 The gate passes the same selected or extracted `CTXHELM_BIN` into the first-pack, storage, memory, feedback, workspace, shared-artifact, inspector, retrieval-health, graph, policy/embedding, agent-preview, semantic, precision, v2.3 eval, v2.4 semantic/precision gate, MCP protocol, Cursor/OpenCode setup-proof wrappers, and optional real-client smokes. It also passes `CTXHELM_DIST_DIR` to the distribution metadata smoke so Homebrew formula renderability is checked against the exact packaged archive digest. Demo, distribution metadata, and release governance smokes are source-free metadata checks and do not need the binary. Real-client proof is not required by default. Use these environment variables when needed:
 
 - `CTXHELM_SKIP_REAL_CLIENT=1` keeps Codex and Claude checks deterministic-only after the protocol proof.
 - `CTXHELM_REQUIRE_REAL_CLIENT=1` makes missing Codex or Claude tool-call evidence fail the gate.
+- `CTXHELM_RUN_CURSOR_REAL_CLIENT=1` or `CTXHELM_REQUIRE_CURSOR_REAL_CLIENT=1` runs or requires Cursor Agent CLI request evidence.
+- `CTXHELM_RUN_OPENCODE_REAL_CLIENT=1` or `CTXHELM_REQUIRE_OPENCODE_REAL_CLIENT=1` runs or requires OpenCode request evidence.
 - `CTXHELM_REAL_CLIENT_EVIDENCE_DIR=/absolute/path/to/evidence` writes stable JSON evidence files with client version, ctxhelm version, repo path, `prepare_task`, and `get_pack` proof when real-client checks run. These files also include a source-free request-log hash, request line count, MCP request `methodCounts`, explicit repo tool-call count, sanitized observed tool-call metadata, and a separate sanitized request-summary JSON. If Codex is skipped or fails in optional mode, the wrapper writes `status: skipped` plus `clientFailureKind`, `clientExitStatus`, `stderrSha256`, and `stderrLineCount` diagnostics so client stream-disconnects are not confused with ctxhelm protocol failures. Raw request logs, raw stderr, prompts, task text, and source snippets are not persisted by the wrapper.
 - `CTXHELM_BENCHMARK_CONFIG=/absolute/path/to/suite.json` runs `ctxhelm eval proof --config ... --format json` and fails on report-generation, local-only privacy regressions, missing embedded repository reports, history-unavailable insufficient-evidence reports, missing v2.3 product proof summary, missing paired baseline verdict contract, feature-export privacy regressions, learned-policy status regressions, missing proof-boundary language, missing resource-backed current-reachable gap summaries, pinned broad fixed-corpus regressions, or a non-promote `releaseGate.decision`. Neutral, mixed, unsafe, or too-expensive default retrieval proof blocks publication.
 
@@ -951,8 +957,11 @@ and reduced read-file count by `2`. See
 `.planning/e2e/2026-06-05-phase237-codex-agent-run-outcome.md` and
 `.ctxhelm/e2e/phase237-agent-run-codex.json`. Claude Code `2.1.163` is still
 classified separately as rate-limited with API status `429`, so current Claude
-availability is not treated as ctxhelm retrieval or protocol failure. Cursor
-and OpenCode real-client proof is still not claimed for v1.1.
+availability is not treated as ctxhelm retrieval or protocol failure. OpenCode
+`1.14.25` has source-free real-client MCP evidence for `prepare_task` and
+`get_pack` through `scripts/smoke-opencode-real-client.sh`; Cursor `3.6.21`
+has the same optional proof path but is currently skipped locally because
+`cursor agent status` reports not logged in.
 
 RefactoringMiner and multi-repo proof are optional external gates. They are
 skipped by default because they require a separate local checkout and longer
@@ -968,7 +977,7 @@ record the skip reason as "external corpus unavailable" rather than treating it
 as a product regression. The mandatory gate remains `scripts/smoke-v23-eval.sh`,
 which proves the v2.3 contract without external repos.
 
-The release gate does not publish, upload, or create GitHub releases, and does not create tags. It does not mutate global agent config and does not run user project tests. Cursor and OpenCode real-client proof is not claimed for v1.1.12.
+The release gate does not publish, upload, or create GitHub releases, and does not create tags. It does not mutate global agent config and does not run user project tests. Cursor and OpenCode real-client proof is optional and source-free: a pass requires server-side `prepare_task` and `get_pack` request evidence with the explicit repo, while unavailable auth/provider state is recorded as a skip.
 
 Phase 203 improves pack consumption of validation evidence without changing the
 release artifact contract. Generated packs now include a source-free `Related
