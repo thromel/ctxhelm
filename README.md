@@ -167,6 +167,7 @@ For the longer walkthrough, including setup validation, deterministic MCP proof 
 - [Retrieval health](docs/retrieval-health.md)
 - [Graph neighborhoods](docs/graph.md)
 - [Policy and embedding controls](docs/policy-embedding.md)
+- [Context governor](docs/context-governor.md)
 - [Retrieval benchmarking](docs/benchmarking.md)
 - [Storage](docs/storage.md)
 - [Repo memory](docs/memory.md)
@@ -236,7 +237,7 @@ ctxhelm index --repo /path/to/repo --semantic
 ctxhelm search "payment webhook validation" --repo /path/to/repo --semantic
 ```
 
-See [docs/storage.md](docs/storage.md), [docs/semantic.md](docs/semantic.md), and [docs/precision.md](docs/precision.md) for storage location, privacy guarantees, semantic provider details, parser/precision-edge support, repair/reset commands, and release-gate smoke coverage.
+See [docs/storage.md](docs/storage.md), [docs/semantic.md](docs/semantic.md), [docs/precision.md](docs/precision.md), and [docs/context-governor.md](docs/context-governor.md) for storage location, privacy guarantees, semantic provider details, parser/precision-edge support, adaptive policy decisions, repair/reset commands, and release-gate smoke coverage.
 
 Generated and sensitive files require explicit opt-in:
 
@@ -350,6 +351,24 @@ ctxhelm get-pack "fix requireSession bug" --repo /path/to/repo --mode bug-fix --
 
 Use `--format json` for structured output. `get-pack` also accepts repeatable `--path <file>` anchors, and the MCP `get_pack` tool accepts the same `paths` array.
 Structured and Markdown packs include source-free provenance fields: `repoId`, `taskHash`, and `targetAgent`.
+
+## Context Governor
+
+Inspect the task-conditioned retrieval, budget, memory, validation, semantic,
+and policy-profile decision before handing work to an agent:
+
+```bash
+ctxhelm governor decide "fix requireSession bug" \
+  --repo /path/to/repo \
+  --mode bug-fix \
+  --path src/auth/session.ts
+```
+
+Use `--format json` for the source-free
+`ctxhelm-context-governor-report-v1` contract. The report includes selected
+evidence, omitted evidence, rollout controls, active policy profile state, and
+privacy metadata without source snippets. See
+[docs/context-governor.md](docs/context-governor.md).
 
 ## Context Cards
 

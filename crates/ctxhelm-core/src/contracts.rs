@@ -1341,6 +1341,55 @@ pub struct PolicyProfileActionReport {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
+pub struct ContextGovernorReport {
+    pub schema_version: String,
+    pub repo_id: String,
+    pub task_hash: String,
+    pub task_type: TaskType,
+    pub selected_policy_profile_id: Option<String>,
+    pub profile_count: usize,
+    pub feedback_event_count: usize,
+    pub recommended_budget: PackBudget,
+    #[serde(default)]
+    pub decisions: Vec<ContextGovernorDecision>,
+    #[serde(default)]
+    pub selected_evidence: Vec<ContextGovernorEvidence>,
+    #[serde(default)]
+    pub omitted_evidence: Vec<ContextGovernorEvidence>,
+    #[serde(default)]
+    pub rollout_controls: Vec<ContextGovernorRolloutControl>,
+    #[serde(default)]
+    pub diagnostics: Vec<Diagnostic>,
+    pub source_text_logged: bool,
+    pub privacy_status: PrivacyStatus,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct ContextGovernorDecision {
+    pub area: String,
+    pub decision: String,
+    pub reason: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct ContextGovernorEvidence {
+    pub kind: String,
+    pub label: String,
+    pub reason: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct ContextGovernorRolloutControl {
+    pub action: String,
+    pub command: String,
+    pub reason: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
 pub struct WorkspaceManifest {
     pub schema_version: u32,
     pub workspace_id: Option<String>,

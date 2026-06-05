@@ -63,10 +63,10 @@ Deferred into later milestones from the remaining product vision.
 
 ### v3.0 Context Governor
 
-- **GOVERN-01**: ctxhelm can adapt retrieval/budget/memory/validation policy per task.
-- **GOVERN-02**: ctxhelm can learn from source-free agent sessions and eval outcomes.
-- **GOVERN-03**: Maintainer can roll out, compare, and roll back context policies across repos.
-- **GOVERN-04**: Maintainer can inspect why a context policy selected or omitted evidence.
+- [x] **GOVERN-01**: ctxhelm can adapt retrieval/budget/memory/validation policy per task.
+- [x] **GOVERN-02**: ctxhelm can learn from source-free agent sessions and eval outcomes.
+- [x] **GOVERN-03**: Maintainer can roll out, compare, and roll back context policies across repos.
+- [x] **GOVERN-04**: Maintainer can inspect why a context policy selected or omitted evidence.
 
 ## Out of Scope
 
@@ -111,6 +111,10 @@ Deferred into later milestones from the remaining product vision.
 | UX-02 | Phase 248 | Complete |
 | UX-03 | Phase 248 | Complete |
 | UX-04 | Phase 248 | Complete |
+| GOVERN-01 | Phase 249 | Complete |
+| GOVERN-02 | Phase 249 | Complete |
+| GOVERN-03 | Phase 249 | Complete |
+| GOVERN-04 | Phase 249 | Complete |
 | GAP-01 | Phase 71 | Complete |
 | GAP-02 | Phase 71 | Complete |
 | RANK-02 | Phase 71 | Complete |
@@ -134,6 +138,12 @@ Deferred into later milestones from the remaining product vision.
   read-only diagnostic shell with pack inspector, graph neighborhood, setup
   status, and health routes; `scripts/smoke-inspector.sh` proves the shell and
   rejects source sentinel leakage.
+- Future context governor requirements GOVERN-01 through GOVERN-04 have current
+  Phase 249 release-gated evidence. `ctxhelm governor decide` reports
+  task-conditioned retrieval, budget, memory, validation, semantic, and
+  policy-profile decisions, including selected/omitted evidence and rollout
+  controls. `scripts/smoke-governor.sh` proves source-free decision output and
+  policy apply/rollback visibility.
 - Phase 71 adds follow-up evidence for existing gap/ranking requirements by
   reducing archive-artifact noise without excluding archived evidence.
 

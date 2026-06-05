@@ -23,14 +23,15 @@ use ctxhelm_compiler::{
 };
 use ctxhelm_core::{
     run_init, run_setup_check, AgentAdapter, AgentOutcomeComparisonReport, AgentPreviewReport,
-    CandidateFeatureExport, Diagnostic, DiagnosticSeverity, EvalTrace, FeedbackOutcome,
-    FeedbackSummary, GraphNeighborhoodReport, InitAction, InitOptions, InitReport,
-    MemoryReviewStatus, PackBudget, PolicyProfileActionReport, PolicyQualityReport, PrivacyStatus,
-    RepoRoot, RetrievalHealthReport, RetrievalPolicyExperimentReport, RetrievalPolicyProfile,
-    SemanticProviderStatusReport, SessionFeedbackEvent, SetupCheckReport, SetupCheckStatus,
-    SharedArtifactInspectionReport, SharedArtifactManifest, TaskType, TeamPolicyReport,
-    WorkspaceContextPack, WorkspaceContextPlan, WorkspaceInventoryReport, WorkspaceManifest,
-    WorkspaceRepo,
+    CandidateFeatureExport, ContextGovernorDecision, ContextGovernorEvidence,
+    ContextGovernorReport, ContextGovernorRolloutControl, ContextPlan, Diagnostic,
+    DiagnosticSeverity, EvalTrace, FeedbackOutcome, FeedbackSummary, GraphNeighborhoodReport,
+    InitAction, InitOptions, InitReport, MemoryReviewStatus, PackBudget, PolicyProfileActionReport,
+    PolicyProfileStatus, PolicyQualityReport, PrivacyStatus, RepoRoot, RetrievalHealthReport,
+    RetrievalPolicyExperimentReport, RetrievalPolicyProfile, SemanticProviderStatusReport,
+    SessionFeedbackEvent, SetupCheckReport, SetupCheckStatus, SharedArtifactInspectionReport,
+    SharedArtifactManifest, TaskType, TeamPolicyReport, WorkspaceContextPack, WorkspaceContextPlan,
+    WorkspaceInventoryReport, WorkspaceManifest, WorkspaceRepo,
 };
 use ctxhelm_index::{
     apply_policy_profile, co_change_hints, current_diff_summary, dependency_edges,
@@ -40,7 +41,7 @@ use ctxhelm_index::{
     policy_quality_report, propose_learned_policy_profile, propose_policy_profile,
     related_dependency_edges, related_tests, rollback_policy_profile, semantic_search,
     storage_status_for_repo, summarize_feedback_events, symbol_search, sync_inventory_to_store,
-    sync_semantic_index_to_store, try_append_eval_trace, try_append_feedback_event,
+    sync_semantic_index_to_store, task_hash, try_append_eval_trace, try_append_feedback_event,
     update_memory_card_review_status, vacuum_store, write_inventory, CoChangeOptions,
     CurrentDiffOptions, DependencyOptions, InventoryOptions, InventoryReport, LearnedPolicyOptions,
     PrecisionDiscoverOptions, PrecisionDiscoverReport, PrecisionImportReport, SearchOptions,
@@ -104,6 +105,8 @@ enum Command {
     Memory(MemoryArgs),
     Eval(EvalArgs),
     Workspace(WorkspaceArgs),
+    #[command(about = "Inspect task-conditioned context governor decisions.")]
+    Governor(GovernorArgs),
     Inspector(InspectorArgs),
     Agent(AgentArgs),
     Graph(GraphArgs),
@@ -243,6 +246,12 @@ struct StorageResetArgs {
 struct WorkspaceArgs {
     #[command(subcommand)]
     command: WorkspaceCommand,
+}
+
+#[derive(Debug, Args)]
+struct GovernorArgs {
+    #[command(subcommand)]
+    command: GovernorCommand,
 }
 
 #[derive(Debug, Args)]
@@ -448,6 +457,40 @@ enum WorkspaceCommand {
     Policy(WorkspacePolicyArgs),
     #[command(about = "Inspect source-free local workspace inventory status.")]
     Status(WorkspaceStatusArgs),
+}
+
+#[derive(Debug, Subcommand)]
+enum GovernorCommand {
+    #[command(about = "Explain the adaptive policy decision for a task.")]
+    Decide(GovernorDecideArgs),
+}
+
+#[derive(Debug, Args)]
+struct GovernorDecideArgs {
+    task: String,
+    #[arg(long)]
+    repo: Option<PathBuf>,
+    #[arg(long, value_enum, default_value_t = Mode::Explain)]
+    mode: Mode,
+    #[arg(
+        long = "path",
+        help = "Active/open file path to pin as a context anchor. Repeatable."
+    )]
+    paths: Vec<String>,
+    #[arg(
+        long = "current-diff",
+        help = "Add safe changed paths from the current local diff as context anchors."
+    )]
+    include_current_diff: bool,
+    #[arg(
+        long,
+        help = "Enable explicit local semantic retrieval in the governor planner."
+    )]
+    semantic: bool,
+    #[command(flatten)]
+    semantic_provider: SemanticProviderArgs,
+    #[arg(long, value_enum, default_value_t = PackFormat::Markdown)]
+    format: PackFormat,
 }
 
 #[derive(Debug, Args)]
@@ -1675,6 +1718,15 @@ fn main() -> Result<()> {
                     PackFormat::Markdown => {
                         println!("{}", render_semantic_provider_status(&report))
                     }
+                    PackFormat::Json => println!("{}", serde_json::to_string_pretty(&report)?),
+                }
+            }
+        },
+        Command::Governor(args) => match args.command {
+            GovernorCommand::Decide(args) => {
+                let report = build_context_governor_report(&args)?;
+                match args.format {
+                    PackFormat::Markdown => println!("{}", render_context_governor_report(&report)),
                     PackFormat::Json => println!("{}", serde_json::to_string_pretty(&report)?),
                 }
             }
@@ -3541,6 +3593,353 @@ fn semantic_index_limit(args: &SemanticProviderArgs, explicit_limit: Option<usiz
     })
 }
 
+fn build_context_governor_report(args: &GovernorDecideArgs) -> Result<ContextGovernorReport> {
+    let start = args.repo.clone().unwrap_or(std::env::current_dir()?);
+    let repo = RepoRoot::discover_from(&start)?;
+    let canonical_repo = fs::canonicalize(&repo.path)?;
+    let repo_id = ctxhelm_index::repo_id_for_path(&canonical_repo);
+    let paths = context_anchor_paths(&repo.path, args.paths.clone(), args.include_current_diff)?;
+    let task_type: TaskType = args.mode.clone().into();
+    let plan = prepare_context_plan_with_paths_and_semantic_provider(
+        &repo.path,
+        &args.task,
+        task_type.clone(),
+        &paths,
+        args.semantic,
+        semantic_provider_config(&args.semantic_provider),
+    )?;
+    let profiles = list_policy_profiles(&repo.path)?;
+    let active_profile = profiles
+        .iter()
+        .find(|profile| profile.status == PolicyProfileStatus::Active);
+    let feedback_events = list_feedback_events(&repo.path, 100)?;
+    let feedback_report = policy_quality_report(&repo.path, 100)?;
+    let recommended_budget = governor_recommended_budget(&plan, &feedback_report);
+    let mut diagnostics = plan.diagnostics.clone();
+    diagnostics.extend(
+        feedback_report
+            .sample_warning
+            .iter()
+            .map(|warning| Diagnostic {
+                code: "governor_feedback_sample_warning".to_string(),
+                severity: DiagnosticSeverity::Warning,
+                message: warning.clone(),
+                paths: Vec::new(),
+                count: feedback_report.event_count,
+            }),
+    );
+    let source_text_logged = plan.privacy_status.remote_embeddings_used
+        || plan.privacy_status.remote_reranking_used
+        || plan
+            .query_trace
+            .as_ref()
+            .is_some_and(|trace| trace.source_text_logged)
+        || plan
+            .provider_policy
+            .as_ref()
+            .is_some_and(|policy| policy.source_text_logged)
+        || profiles.iter().any(|profile| profile.source_text_logged)
+        || feedback_events.iter().any(|event| event.source_text_logged);
+
+    Ok(ContextGovernorReport {
+        schema_version: "ctxhelm-context-governor-report-v1".to_string(),
+        repo_id,
+        task_hash: plan
+            .query_trace
+            .as_ref()
+            .map(|trace| trace.task_hash.clone())
+            .unwrap_or_else(|| task_hash(&args.task)),
+        task_type,
+        selected_policy_profile_id: active_profile.map(|profile| profile.id.clone()),
+        profile_count: profiles.len(),
+        feedback_event_count: feedback_events.len(),
+        recommended_budget: recommended_budget.clone(),
+        decisions: governor_decisions(
+            &plan,
+            &feedback_report,
+            active_profile,
+            args.semantic,
+            &args.semantic_provider,
+        ),
+        selected_evidence: governor_selected_evidence(&plan),
+        omitted_evidence: governor_omitted_evidence(&plan, &recommended_budget),
+        rollout_controls: governor_rollout_controls(&repo.path, active_profile),
+        diagnostics,
+        source_text_logged,
+        privacy_status: PrivacyStatus::local_only(),
+    })
+}
+
+fn governor_recommended_budget(plan: &ContextPlan, feedback: &PolicyQualityReport) -> PackBudget {
+    if plan.target_files.len() >= 6
+        || plan.context_areas.len() >= 6
+        || plan.risk_flags.len() >= 2
+        || matches!(plan.task_type, TaskType::Refactor) && plan.retrieval_candidates.len() >= 20
+    {
+        PackBudget::Deep
+    } else if matches!(
+        plan.task_type,
+        TaskType::BugFix | TaskType::Feature | TaskType::Review | TaskType::Test
+    ) || plan.related_tests.len() >= 2
+        || feedback.validation_coverage < 0.5 && feedback.event_count >= 3
+    {
+        PackBudget::Standard
+    } else {
+        PackBudget::Brief
+    }
+}
+
+fn governor_decisions(
+    plan: &ContextPlan,
+    feedback: &PolicyQualityReport,
+    active_profile: Option<&RetrievalPolicyProfile>,
+    semantic_enabled: bool,
+    semantic_provider: &SemanticProviderArgs,
+) -> Vec<ContextGovernorDecision> {
+    let mut decisions = Vec::new();
+    decisions.push(ContextGovernorDecision {
+        area: "retrieval".to_string(),
+        decision: format!(
+            "selected {} target file(s), {} related test(s), {} candidate(s)",
+            plan.target_files.len(),
+            plan.related_tests.len(),
+            plan.retrieval_candidates.len()
+        ),
+        reason: "Task-conditioned planner fused anchors, lexical/symbol signals, graph neighbors, tests, history, memory, and optional semantic candidates."
+            .to_string(),
+    });
+    decisions.push(ContextGovernorDecision {
+        area: "budget".to_string(),
+        decision: format!("{:?}", governor_recommended_budget(plan, feedback)),
+        reason: format!(
+            "Based on task type {:?}, {} target file(s), {} context area(s), {} risk flag(s), and {} feedback event(s).",
+            plan.task_type,
+            plan.target_files.len(),
+            plan.context_areas.len(),
+            plan.risk_flags.len(),
+            feedback.event_count
+        ),
+    });
+    decisions.push(ContextGovernorDecision {
+        area: "memory".to_string(),
+        decision: format!("selected {} memory card(s)", plan.selected_memory.len()),
+        reason: if plan.selected_memory.is_empty() {
+            "No approved, relevant, source-free memory beat current repository evidence strongly enough."
+                .to_string()
+        } else {
+            "Memory is used as a supporting signal and remains source-free in the governor report."
+                .to_string()
+        },
+    });
+    decisions.push(ContextGovernorDecision {
+        area: "validation".to_string(),
+        decision: format!(
+            "{} command(s), {} related test(s)",
+            plan.recommended_commands.len(),
+            plan.related_tests.len()
+        ),
+        reason: "Bug-fix and test-writing tasks prioritize related tests and minimal verification commands."
+            .to_string(),
+    });
+    decisions.push(ContextGovernorDecision {
+        area: "semantic".to_string(),
+        decision: if semantic_enabled {
+            format!("enabled provider `{}`", semantic_provider.provider)
+        } else {
+            "disabled for this decision".to_string()
+        },
+        reason: plan
+            .provider_policy
+            .as_ref()
+            .and_then(|policy| policy.decisions.first())
+            .map(|decision| decision.reason.clone())
+            .unwrap_or_else(|| {
+                "Default source-free policy keeps cloud embeddings/reranking disabled unless explicitly enabled."
+                    .to_string()
+            }),
+    });
+    decisions.push(ContextGovernorDecision {
+        area: "policy_profile".to_string(),
+        decision: active_profile
+            .map(|profile| format!("active `{}`", profile.id))
+            .unwrap_or_else(|| "no active learned profile".to_string()),
+        reason: active_profile
+            .map(|profile| profile.rationale.clone())
+            .unwrap_or_else(|| {
+                "Run `ctxhelm eval policy learn` or `ctxhelm eval policy tune`, then apply a candidate profile to alter ranking policy."
+                    .to_string()
+            }),
+    });
+    decisions
+}
+
+fn governor_selected_evidence(plan: &ContextPlan) -> Vec<ContextGovernorEvidence> {
+    let mut evidence = Vec::new();
+    for target in &plan.target_files {
+        evidence.push(ContextGovernorEvidence {
+            kind: "target_file".to_string(),
+            label: target.path.clone(),
+            reason: format!(
+                "{} confidence {:.2}; {} attribution signal(s)",
+                target.reason,
+                target.confidence,
+                target.attribution.len()
+            ),
+        });
+    }
+    for test in &plan.related_tests {
+        evidence.push(ContextGovernorEvidence {
+            kind: "related_test".to_string(),
+            label: test.path.clone(),
+            reason: format!(
+                "{} confidence {:.2}; command `{}`",
+                test.reason,
+                test.confidence,
+                test.command.as_deref().unwrap_or("none")
+            ),
+        });
+    }
+    for command in &plan.recommended_commands {
+        evidence.push(ContextGovernorEvidence {
+            kind: "validation_command".to_string(),
+            label: command.command.clone(),
+            reason: command.reason.clone(),
+        });
+    }
+    for memory in &plan.selected_memory {
+        evidence.push(ContextGovernorEvidence {
+            kind: "memory_card".to_string(),
+            label: memory.card.title.clone(),
+            reason: format!(
+                "{} score {:.2}; review {:?}",
+                memory.reason, memory.score, memory.card.review_status
+            ),
+        });
+    }
+    evidence
+}
+
+fn governor_omitted_evidence(
+    plan: &ContextPlan,
+    recommended_budget: &PackBudget,
+) -> Vec<ContextGovernorEvidence> {
+    let mut omitted = Vec::new();
+    let selected_paths = plan
+        .target_files
+        .iter()
+        .map(|target| target.path.as_str())
+        .chain(plan.related_tests.iter().map(|test| test.path.as_str()))
+        .collect::<BTreeSet<_>>();
+    for candidate in plan
+        .retrieval_candidates
+        .iter()
+        .filter(|candidate| match candidate.path.as_deref() {
+            Some(path) => !selected_paths.contains(path),
+            None => true,
+        })
+        .take(12)
+    {
+        omitted.push(ContextGovernorEvidence {
+            kind: format!("candidate_{:?}", candidate.kind),
+            label: candidate
+                .path
+                .clone()
+                .unwrap_or_else(|| candidate.reason_code.clone()),
+            reason: format!(
+                "Not selected under budget; reason `{}` confidence {:.2}; {} signal(s).",
+                candidate.reason_code,
+                candidate.confidence,
+                candidate.signal_scores.len()
+            ),
+        });
+    }
+    for area in plan
+        .context_areas
+        .iter()
+        .filter(|area| area.unselected_count > 0)
+        .take(6)
+    {
+        omitted.push(ContextGovernorEvidence {
+            kind: "context_area".to_string(),
+            label: area.area.clone(),
+            reason: format!(
+                "{} unselected candidate(s), inspection pressure {}, coverage {}%.",
+                area.unselected_count, area.inspection_pressure, area.coverage_percent
+            ),
+        });
+    }
+    for option in plan
+        .pack_options
+        .iter()
+        .filter(|option| option.budget != *recommended_budget)
+    {
+        omitted.push(ContextGovernorEvidence {
+            kind: "pack_budget_option".to_string(),
+            label: format!("{:?}", option.budget),
+            reason: format!(
+                "Available at `{}`, but governor recommended {:?} for this task.",
+                option.resource_uri, recommended_budget
+            ),
+        });
+    }
+    for question in &plan.missing_info_questions {
+        omitted.push(ContextGovernorEvidence {
+            kind: "missing_info".to_string(),
+            label: question.clone(),
+            reason:
+                "Deferred to the agent/user because current repository evidence is insufficient."
+                    .to_string(),
+        });
+    }
+    omitted
+}
+
+fn governor_rollout_controls(
+    repo: &Path,
+    active_profile: Option<&RetrievalPolicyProfile>,
+) -> Vec<ContextGovernorRolloutControl> {
+    let repo_arg = shell_quote_path(repo);
+    let apply_command = active_profile
+        .map(|profile| format!("ctxhelm eval policy apply {} --repo {repo_arg}", profile.id))
+        .unwrap_or_else(|| format!("ctxhelm eval policy apply <profile-id> --repo {repo_arg}"));
+    vec![
+        ContextGovernorRolloutControl {
+            action: "learn".to_string(),
+            command: format!("ctxhelm eval policy learn --repo {repo_arg} --limit 100"),
+            reason: "Generate a candidate policy from source-free feedback/eval outcomes."
+                .to_string(),
+        },
+        ContextGovernorRolloutControl {
+            action: "compare".to_string(),
+            command: format!("ctxhelm eval policy experiments --repo {repo_arg}"),
+            reason: "Compare policy candidates before changing the active profile.".to_string(),
+        },
+        ContextGovernorRolloutControl {
+            action: "apply".to_string(),
+            command: apply_command,
+            reason: "Activate a selected policy profile for future context decisions.".to_string(),
+        },
+        ContextGovernorRolloutControl {
+            action: "rollback".to_string(),
+            command: format!("ctxhelm eval policy rollback --repo {repo_arg}"),
+            reason: "Return to the default policy if a profile regresses context quality."
+                .to_string(),
+        },
+    ]
+}
+
+fn shell_quote_path(path: &Path) -> String {
+    let value = path.display().to_string();
+    if value
+        .chars()
+        .all(|ch| ch.is_ascii_alphanumeric() || matches!(ch, '/' | '.' | '_' | '-'))
+    {
+        value
+    } else {
+        format!("'{}'", value.replace('\'', "'\\''"))
+    }
+}
+
 fn write_or_print(output_path: Option<&Path>, artifact: &str) -> Result<()> {
     if let Some(path) = output_path {
         fs::write(path, artifact)?;
@@ -5186,6 +5585,80 @@ fn render_semantic_provider_status(report: &SemanticProviderStatusReport) -> Str
             ));
         }
     }
+    output
+}
+
+fn render_context_governor_report(report: &ContextGovernorReport) -> String {
+    let mut output = String::from("# ctxhelm Context Governor\n\n");
+    output.push_str(&format!(
+        "- Repo ID: `{}`\n- Task hash: `{}`\n- Task type: `{:?}`\n- Active policy profile: `{}`\n- Policy profiles: `{}`\n- Feedback events: `{}`\n- Recommended budget: `{:?}`\n- Source text logged: `{}`\n- Privacy: local-only `{}`\n\n",
+        report.repo_id,
+        report.task_hash,
+        report.task_type,
+        report
+            .selected_policy_profile_id
+            .as_deref()
+            .unwrap_or("none"),
+        report.profile_count,
+        report.feedback_event_count,
+        report.recommended_budget,
+        report.source_text_logged,
+        report.privacy_status.local_only
+    ));
+
+    output.push_str("## Decisions\n\n");
+    if report.decisions.is_empty() {
+        output.push_str("- No decisions recorded.\n");
+    } else {
+        for decision in &report.decisions {
+            output.push_str(&format!(
+                "- `{}`: {} — {}\n",
+                decision.area, decision.decision, decision.reason
+            ));
+        }
+    }
+
+    output.push_str("\n## Selected Evidence\n\n");
+    if report.selected_evidence.is_empty() {
+        output.push_str("- No selected evidence.\n");
+    } else {
+        for evidence in &report.selected_evidence {
+            output.push_str(&format!(
+                "- `{}` `{}`: {}\n",
+                evidence.kind, evidence.label, evidence.reason
+            ));
+        }
+    }
+
+    output.push_str("\n## Omitted Evidence\n\n");
+    if report.omitted_evidence.is_empty() {
+        output.push_str("- No omitted evidence recorded.\n");
+    } else {
+        for evidence in &report.omitted_evidence {
+            output.push_str(&format!(
+                "- `{}` `{}`: {}\n",
+                evidence.kind, evidence.label, evidence.reason
+            ));
+        }
+    }
+
+    output.push_str("\n## Rollout Controls\n\n");
+    if report.rollout_controls.is_empty() {
+        output.push_str("- No rollout controls recorded.\n");
+    } else {
+        for control in &report.rollout_controls {
+            output.push_str(&format!(
+                "- `{}`: `{}` — {}\n",
+                control.action, control.command, control.reason
+            ));
+        }
+    }
+
+    if !report.diagnostics.is_empty() {
+        output.push_str("\n## Diagnostics\n\n");
+        print_diagnostics_to_string(&mut output, &report.diagnostics);
+    }
+
     output
 }
 
@@ -7414,6 +7887,47 @@ mod tests {
         assert!(matches!(args.mode, Mode::BugFix));
         assert!(matches!(args.budget, Budget::Standard));
         assert_eq!(args.target_agent, "claude-code");
+        assert!(matches!(args.format, PackFormat::Json));
+    }
+
+    #[test]
+    fn governor_decide_command_parses_policy_inputs() {
+        let cli = Cli::try_parse_from([
+            "ctxhelm",
+            "governor",
+            "decide",
+            "fix auth redirect",
+            "--mode",
+            "bug-fix",
+            "--path",
+            "src/auth/session.ts",
+            "--current-diff",
+            "--semantic",
+            "--semantic-provider",
+            "local_fastembed",
+            "--semantic-model",
+            "bge-small",
+            "--semantic-dimensions",
+            "384",
+            "--format",
+            "json",
+        ])
+        .unwrap();
+
+        let Command::Governor(GovernorArgs {
+            command: GovernorCommand::Decide(args),
+        }) = cli.command
+        else {
+            panic!("expected governor decide command");
+        };
+        assert_eq!(args.task, "fix auth redirect");
+        assert!(matches!(args.mode, Mode::BugFix));
+        assert_eq!(args.paths, vec!["src/auth/session.ts"]);
+        assert!(args.include_current_diff);
+        assert!(args.semantic);
+        assert_eq!(args.semantic_provider.provider, "local_fastembed");
+        assert_eq!(args.semantic_provider.model.as_deref(), Some("bge-small"));
+        assert_eq!(args.semantic_provider.dimensions, Some(384));
         assert!(matches!(args.format, PackFormat::Json));
     }
 

@@ -14,6 +14,7 @@ smoke_memory_history_lift_script="$repo_root/scripts/smoke-memory-history-lift.s
 smoke_memory_parent_snapshot_lift_script="$repo_root/scripts/smoke-memory-parent-snapshot-lift.sh"
 smoke_memory_benchmark_lift_script="$repo_root/scripts/smoke-memory-benchmark-lift.sh"
 smoke_feedback_script="$repo_root/scripts/smoke-feedback.sh"
+smoke_governor_script="$repo_root/scripts/smoke-governor.sh"
 smoke_workspace_script="$repo_root/scripts/smoke-workspace.sh"
 smoke_shared_artifacts_script="$repo_root/scripts/smoke-shared-artifacts.sh"
 smoke_inspector_script="$repo_root/scripts/smoke-inspector.sh"
@@ -230,6 +231,9 @@ CTXHELM_BIN="$ctxhelm_bin" bash "$smoke_memory_benchmark_lift_script"
 
 log_step "feedback smoke"
 CTXHELM_BIN="$ctxhelm_bin" bash "$smoke_feedback_script"
+
+log_step "context governor smoke"
+CTXHELM_BIN="$ctxhelm_bin" bash "$smoke_governor_script"
 
 log_step "workspace smoke"
 CTXHELM_BIN="$ctxhelm_bin" bash "$smoke_workspace_script"
@@ -497,6 +501,7 @@ required_checks = [
     "scripts/smoke-memory-parent-snapshot-lift.sh",
     "scripts/smoke-memory-benchmark-lift.sh",
     "scripts/smoke-feedback.sh",
+    "scripts/smoke-governor.sh",
     "scripts/smoke-workspace.sh",
     "scripts/smoke-shared-artifacts.sh",
     "scripts/smoke-inspector.sh",

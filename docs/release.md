@@ -247,6 +247,7 @@ The release gate runs these required checks:
 - `scripts/smoke-memory-parent-snapshot-lift.sh`
 - `scripts/smoke-memory-benchmark-lift.sh`
 - `scripts/smoke-feedback.sh`
+- `scripts/smoke-governor.sh`
 - `scripts/smoke-workspace.sh`
 - `scripts/smoke-shared-artifacts.sh`
 - `scripts/smoke-inspector.sh`

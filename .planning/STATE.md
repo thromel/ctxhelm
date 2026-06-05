@@ -4,10 +4,10 @@ milestone: v2.5
 milestone_name: Production Retrieval Quality
 status: active
 last_updated: "2026-06-06T00:00:00Z"
-last_activity: 2026-06-06 -- Phase 248 adds a localhost-only read-only inspector shell for pack, graph, setup, and health diagnostics
+last_activity: 2026-06-06 -- Phase 249 adds source-free context governor decisions and release-gated policy rollout proof
 progress:
-  total_phases: 137
-  completed_phases: 137
+  total_phases: 138
+  completed_phases: 138
   total_plans: 7
   completed_plans: 7
   percent: 100
@@ -17,10 +17,10 @@ progress:
 
 ## Current Position
 
-Phase: 248 - Local Inspector Shell
-Plan: 248-local-inspector-shell
+Phase: 249 - Context Governor Decisions
+Plan: 249-context-governor-decisions
 Status: Complete
-Last activity: 2026-06-06 -- Phase 248 adds `ctxhelm inspector serve`, a localhost-only, read-only diagnostic shell for pack inspector, graph neighborhood, setup status, and shell health routes. The shell reuses the existing context planner/compiler, graph report, and setup-check contracts; it renders source-free interactive HTML for pack and graph diagnostics, exposes JSON routes for automation, and keeps daily coding inside existing agents. `scripts/smoke-inspector.sh` now starts the shell, fetches `/`, `/pack-inspector.json`, `/graph.html`, `/graph.json`, `/setup-status.json`, and `/health.json`, and rejects source sentinel leakage.
+Last activity: 2026-06-06 -- Phase 249 adds `ctxhelm governor decide`, a source-free context-governor report that explains retrieval, budget, memory, validation, semantic, and policy-profile decisions for a task. The report exposes selected evidence, omitted evidence, active learned profile state, feedback/profile counts, rollout controls, and privacy metadata without source snippets. `scripts/smoke-governor.sh` proves the report, policy apply/rollback visibility, release-gate wiring, and source sentinel rejection.
 
 ## Project Reference
 
