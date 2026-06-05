@@ -4,7 +4,7 @@ milestone: v2.5
 milestone_name: Production Retrieval Quality
 status: active
 last_updated: "2026-06-03T00:00:00Z"
-last_activity: 2026-06-05 -- Phase 231 validates memory tuning at larger pair count
+last_activity: 2026-06-05 -- Phase 232 validates memory repository diversity and exposes unsupported JS memory noise
 progress:
   total_phases: 134
   completed_phases: 134
@@ -17,10 +17,10 @@ progress:
 
 ## Current Position
 
-Phase: 231 - Larger Memory Pair Validation
-Plan: 231-larger-memory-pair-validation
+Phase: 232 - Memory Repository Diversity
+Plan: 232-memory-repository-diversity
 Status: Complete
-Last activity: 2026-06-05 -- Phase 231 validates the tuned memory policy at a larger pair count. Memory-generalization reports now expose `largerPairValidationTargetMet`; the fresh four-repo semantic-enabled suite requested five pairs per repo and measured 20 pairs across 20 distinct target files. It preserved `memoryUniqueLiftPairs = 2`, kept `memoryUniqueNonTargetWithoutCurrentSupportCount = 0`, kept `weakSupportedMemoryNoiseNeedsTuning = false`, and localized the remaining two strong-signal memory non-targets to VeriSchema. The next local memory R&D is repository diversity and strong-signal overlap inspection; real-agent outcome lift still waits on non-rate-limited Claude Code evidence.
+Last activity: 2026-06-05 -- Phase 232 adds an explicit six-repo memory diversity target and reruns the semantic-enabled suite across VeriSchema, ReAgent, ctxhelm, flask, fd, and express. The report measured 30 pairs across 30 distinct target files, set `repositoryDiversityTargetMet = true`, preserved `memoryUniqueLiftPairs = 2`, and exposed one unsupported memory non-target in express. The next local memory R&D is demoting or re-corroborating uncorroborated memory candidates, then rerunning the six-repo suite; real-agent outcome lift still waits on non-rate-limited Claude Code evidence.
 
 ## Project Reference
 

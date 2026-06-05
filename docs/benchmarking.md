@@ -1061,6 +1061,17 @@ Recommendation today:
   non-targets are both supported by strong current signals and localized to
   VeriSchema, so the next local R&D route is repository diversity plus
   strong-signal overlap inspection, not more same-corpus pair-count expansion.
+- Phase 232 adds an explicit repository-diversity target to the suite. Reports
+  now expose `repositoryDiversityTarget`, `repositoryDiversityTargetMet`,
+  `repositoryDiversityNeedsExpansion`, `memoryLiftRepositoryCount`,
+  `memoryNonTargetRepositoryCount`, `unsupportedMemoryNoiseRepositoryCount`, and
+  `strongSupportedMemoryNoiseRepositoryCount`. The six-repo semantic-enabled
+  run over VeriSchema, ReAgent, ctxhelm, flask, fd, and express evaluates 30
+  pairs across 30 distinct target files and sets
+  `repositoryDiversityTargetMet = true`. It preserves `memoryUniqueLiftPairs =
+  2`, but finds one unsupported memory non-target in express, so the next local
+  memory R&D route is `demote_uncorroborated_memory_candidates` and
+  `test_memory_candidate_corroboration_policy`, not further diversity expansion.
 - Treat cloud embeddings/reranking as disabled unless an explicit repo policy
   allows them.
 

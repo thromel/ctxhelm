@@ -264,11 +264,33 @@ memory_targets_without_graph_or_semantic = aggregate_value(
 graph_edge_removed_target_hits = aggregate_value("graphEdgeAblationRemovedTargetHitCount")
 semantic_selected_target_pairs = aggregate_value("semanticSelectedTargetPairs")
 semantic_ablation_lift_pairs = aggregate_value("semanticAblationLiftPairs")
+repository_diversity_target = 6
+memory_lift_repository_count = sum(
+    1 for report in reports if report.get("aggregate", {}).get("memoryUniqueLiftPairs", 0) > 0
+)
+memory_non_target_repository_count = sum(
+    1 for report in reports if report.get("aggregate", {}).get("memoryUniqueNonTargetCount", 0) > 0
+)
+unsupported_memory_noise_repository_count = sum(
+    1
+    for report in reports
+    if report.get("aggregate", {}).get("memoryUniqueNonTargetWithoutCurrentSupportCount", 0) > 0
+)
+strong_supported_memory_noise_repository_count = sum(
+    1
+    for report in reports
+    if report.get("aggregate", {}).get("memoryUniqueNonTargetWithCurrentSupportCount", 0) > 0
+    and report.get("aggregate", {}).get("memoryUniqueNonTargetWithoutCurrentSupportCount", 0) == 0
+)
 larger_pair_validation_target_met = (
     int(pairs) >= 5
     and evaluated_repos > 1
     and evaluated_pairs >= evaluated_repos * 5
     and evaluated_target_files >= evaluated_repos * 5
+)
+repository_diversity_target_met = (
+    evaluated_repos >= repository_diversity_target
+    and evaluated_pairs >= repository_diversity_target * min(int(pairs), 5)
 )
 
 unsupported_memory_precision_needs_work = (
@@ -279,28 +301,28 @@ supported_memory_noise_needs_review = (
     memory_unique_non_targets_with_current_support > 0
     and memory_unique_non_targets_without_current_support == 0
 )
-recommended_next_r_and_d = [
-    "expand_repository_diversity"
-    if larger_pair_validation_target_met
-    else "increase_pairs_per_repo"
-]
 if unsupported_memory_precision_needs_work:
-    recommended_next_r_and_d.extend(
-        [
-            "demote_uncorroborated_memory_candidates",
-            "test_memory_candidate_corroboration_policy",
-        ]
-    )
+    recommended_next_r_and_d = [
+        "demote_uncorroborated_memory_candidates",
+        "test_memory_candidate_corroboration_policy",
+    ]
+elif not larger_pair_validation_target_met:
+    recommended_next_r_and_d = ["increase_pairs_per_repo"]
+elif not repository_diversity_target_met:
+    recommended_next_r_and_d = ["expand_repository_diversity"]
 elif supported_memory_noise_needs_review:
     if weak_supported_memory_noise:
-        recommended_next_r_and_d.append("tune_memory_weight_against_supported_signal_pressure")
+        recommended_next_r_and_d = ["tune_memory_weight_against_supported_signal_pressure"]
     else:
-        recommended_next_r_and_d.append("inspect_remaining_strong_signal_memory_overlap")
+        recommended_next_r_and_d = ["inspect_remaining_strong_signal_memory_overlap"]
+else:
+    recommended_next_r_and_d = ["measure_real_agent_outcome_lift"]
 if memory_unique_non_targets > 0:
     recommended_next_r_and_d.append("compare_memory_noise_against_current_signal_roles")
 if semantic_enabled:
     recommended_next_r_and_d.append("compare_against_lexical_graph_semantic_ablations")
-recommended_next_r_and_d.append("measure_real_agent_outcome_lift")
+if "measure_real_agent_outcome_lift" not in recommended_next_r_and_d:
+    recommended_next_r_and_d.append("measure_real_agent_outcome_lift")
 
 payload = {
     "schemaVersion": "ctxhelm-memory-generalization-suite-v2",
@@ -317,6 +339,7 @@ payload = {
         "discoveredPairs": discovered_pairs,
         "evaluatedPairs": evaluated_pairs,
         "evaluatedTargetFileCount": evaluated_target_files,
+        "repositoryDiversityTarget": repository_diversity_target,
     },
     "aggregate": {
         "memoryCandidatePairs": memory_candidate_pairs,
@@ -338,6 +361,10 @@ payload = {
         "graphEdgeAblationRemovedTargetHitCount": graph_edge_removed_target_hits,
         "semanticSelectedTargetPairs": semantic_selected_target_pairs,
         "semanticAblationLiftPairs": semantic_ablation_lift_pairs,
+        "memoryLiftRepositoryCount": memory_lift_repository_count,
+        "memoryNonTargetRepositoryCount": memory_non_target_repository_count,
+        "unsupportedMemoryNoiseRepositoryCount": unsupported_memory_noise_repository_count,
+        "strongSupportedMemoryNoiseRepositoryCount": strong_supported_memory_noise_repository_count,
         "memoryUniqueNonTargetPerUniqueTarget": (
             round(memory_unique_non_targets / memory_unique_target_hits, 4)
             if memory_unique_target_hits
@@ -348,6 +375,9 @@ payload = {
         "multiRepoMeasured": evaluated_repos > 1,
         "largerPairCountMeasured": evaluated_pairs > evaluated_repos,
         "largerPairValidationTargetMet": larger_pair_validation_target_met,
+        "repositoryDiversityTargetMet": repository_diversity_target_met,
+        "repositoryDiversityNeedsExpansion": larger_pair_validation_target_met
+        and not repository_diversity_target_met,
         "pairDiversityMeasured": evaluated_target_files > evaluated_repos,
         "generalizationProven": evaluated_repos > 1 and memory_unique_lift_pairs > 1,
         "precisionNeedsWork": memory_unique_non_targets > 0

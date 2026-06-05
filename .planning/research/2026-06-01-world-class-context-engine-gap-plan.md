@@ -254,6 +254,16 @@ memory R&D gap is repository diversity plus inspection of the VeriSchema
 strong-signal overlap; real-agent outcome lift remains a separate client
 availability/evaluation issue.
 
+Status: Phase 232 closes the first repository-diversity measurement step and
+reopens memory precision work under broader evidence. The suite now has an
+explicit six-repo diversity target and repository-level lift/noise counters.
+The fresh six-repo semantic-enabled run over VeriSchema, ReAgent, ctxhelm,
+flask, fd, and express measures 30 pairs across 30 distinct target files, sets
+`repositoryDiversityTargetMet = true`, preserves two memory-unique target hits,
+and uncovers one unsupported memory non-target in express. The next local memory
+R&D step is no longer broad expansion; it is demoting or re-corroborating
+uncorroborated memory candidates and rerunning the six-repo suite.
+
 ### 3. Semantic/Embedding Signal Is Wired But Not Driving Lift
 
 The current product lift comes from hybrid ranking, graph/test/history/context

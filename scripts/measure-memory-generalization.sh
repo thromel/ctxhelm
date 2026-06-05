@@ -690,28 +690,26 @@ supported_memory_noise_needs_review = (
     total_unique_non_targets_with_current_support > 0
     and total_unique_non_targets_without_current_support == 0
 )
-recommended_next_r_and_d = [
-    "expand_repository_diversity"
-    if larger_pair_validation_target_met
-    else "increase_real_corpus_pair_count"
-]
 if unsupported_memory_precision_needs_work:
-    recommended_next_r_and_d.extend(
-        [
-            "demote_uncorroborated_memory_candidates",
-            "test_memory_candidate_corroboration_policy",
-        ]
-    )
+    recommended_next_r_and_d = [
+        "demote_uncorroborated_memory_candidates",
+        "test_memory_candidate_corroboration_policy",
+    ]
+elif not larger_pair_validation_target_met:
+    recommended_next_r_and_d = ["increase_real_corpus_pair_count"]
 elif supported_memory_noise_needs_review:
     if weak_supported_memory_noise:
-        recommended_next_r_and_d.append("tune_memory_weight_against_supported_signal_pressure")
+        recommended_next_r_and_d = ["tune_memory_weight_against_supported_signal_pressure"]
     else:
-        recommended_next_r_and_d.append("inspect_remaining_strong_signal_memory_overlap")
+        recommended_next_r_and_d = ["inspect_remaining_strong_signal_memory_overlap"]
+else:
+    recommended_next_r_and_d = ["expand_repository_diversity"]
 if total_unique_non_targets > 0:
     recommended_next_r_and_d.append("compare_memory_noise_against_current_signal_roles")
 if semantic_enabled:
     recommended_next_r_and_d.append("compare_against_lexical_graph_semantic_ablations")
-recommended_next_r_and_d.append("measure_real_agent_outcome_lift")
+if "measure_real_agent_outcome_lift" not in recommended_next_r_and_d:
+    recommended_next_r_and_d.append("measure_real_agent_outcome_lift")
 
 status = "measured" if evaluated else "insufficient_evidence"
 payload = {
