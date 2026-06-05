@@ -3674,6 +3674,49 @@ mod tests {
     }
 
     #[test]
+    fn prepare_plan_applies_policy_enabled_local_metadata_reranker() {
+        let temp = tempfile::tempdir().unwrap();
+        let repo = temp.path();
+        fs::create_dir(repo.join(".git")).unwrap();
+        fs::create_dir_all(repo.join(".ctxhelm")).unwrap();
+        fs::create_dir_all(repo.join("src")).unwrap();
+        fs::write(repo.join("src/lib.ts"), "export function auth() {}\n").unwrap();
+        fs::write(
+            repo.join(".ctxhelm/provider-policy.json"),
+            r#"{
+  "schemaVersion": 1,
+  "name": "test-local-metadata-reranker",
+  "allowLocalProviders": true,
+  "allowCloudEmbeddings": false,
+  "allowCloudReranking": false,
+  "allowSourceTransfer": false,
+  "enableLocalMetadataReranker": true,
+  "sourceTextLogged": false
+}"#,
+        )
+        .unwrap();
+
+        let plan = prepare_context_plan_with_paths_history_and_semantic(
+            repo,
+            "fix src/lib.ts auth",
+            TaskType::BugFix,
+            &[],
+            false,
+            true,
+            SemanticProviderConfig::default(),
+        )
+        .unwrap();
+        let policy = plan.provider_policy.as_ref().expect("provider policy");
+
+        assert!(policy.decisions.iter().any(|decision| decision.status
+            == ProviderDecisionStatus::Allowed
+            && decision.provider == "local_metadata"));
+        assert!(plan.diagnostics.iter().any(|diagnostic| diagnostic.code
+            == "local_metadata_reranker_applied"
+            && diagnostic.severity == DiagnosticSeverity::Info));
+    }
+
+    #[test]
     fn broad_validation_tasks_add_suite_fallback_command() {
         let mut plan = base_plan(TaskType::BugFix);
         plan.related_tests = [

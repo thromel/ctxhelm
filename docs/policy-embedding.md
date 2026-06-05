@@ -65,6 +65,12 @@ Example local metadata policy:
 }
 ```
 
+When the local metadata reranker is enabled, runtime ranking keeps a protected
+source floor for anchor, current-diff, lexical, and symbol evidence before it
+applies metadata reordering to the remaining candidates. Tests are not treated
+as protected source-floor entries; validation/test placement stays controlled by
+the normal test budget. Reranking remains disabled by default.
+
 Cloud settings still require the team privacy policy to allow cloud use and
 source transfer; absent or restrictive team policy keeps remote provider
 decisions denied. Policy-denied paths emit structured decisions and diagnostics

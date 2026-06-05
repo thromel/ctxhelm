@@ -284,16 +284,39 @@ fn dependency_ranked_score(confidence: f32, rank: usize) -> f32 {
     (confidence - (rank.min(200) as f32 * 0.001)).clamp(0.05, confidence)
 }
 
-pub(crate) fn rerank_with_local_metadata(
-    mut candidates: Vec<RankedCandidate>,
-) -> Vec<RankedCandidate> {
-    candidates.sort_by(|left, right| {
-        local_metadata_rerank_score(right)
-            .total_cmp(&local_metadata_rerank_score(left))
-            .then_with(|| right.rank_score.total_cmp(&left.rank_score))
-            .then_with(|| left.candidate.path.cmp(&right.candidate.path))
-    });
-    candidates
+pub(crate) fn rerank_with_local_metadata(candidates: Vec<RankedCandidate>) -> Vec<RankedCandidate> {
+    let (mut protected, mut remaining): (Vec<_>, Vec<_>) = candidates
+        .into_iter()
+        .partition(local_metadata_protected_source_candidate);
+    protected.sort_by(local_metadata_rerank_order);
+    remaining.sort_by(local_metadata_rerank_order);
+    protected.extend(remaining);
+    protected
+}
+
+fn local_metadata_rerank_order(
+    left: &RankedCandidate,
+    right: &RankedCandidate,
+) -> std::cmp::Ordering {
+    local_metadata_rerank_score(right)
+        .total_cmp(&local_metadata_rerank_score(left))
+        .then_with(|| right.rank_score.total_cmp(&left.rank_score))
+        .then_with(|| left.candidate.path.cmp(&right.candidate.path))
+}
+
+fn local_metadata_protected_source_candidate(candidate: &RankedCandidate) -> bool {
+    if candidate.candidate.role != Some(FileRole::Source) {
+        return false;
+    }
+    candidate.candidate.signal_scores.iter().any(|score| {
+        matches!(
+            score.signal,
+            RetrievalSignalKind::Anchor
+                | RetrievalSignalKind::CurrentDiff
+                | RetrievalSignalKind::Lexical
+                | RetrievalSignalKind::Symbol
+        )
+    })
 }
 
 fn local_metadata_rerank_score(candidate: &RankedCandidate) -> f32 {
@@ -3980,6 +4003,84 @@ mod tests {
         .unwrap();
         assert!(!serialized.contains("symbol name match"));
         assert!(!serialized.contains("source code"));
+    }
+
+    #[test]
+    fn local_metadata_reranker_preserves_protected_source_floor() {
+        let candidates = rank_candidates(RankingInput {
+            lexical_results: vec![lexical("src/exact.ts", 0.1)],
+            semantic_results: (0..5)
+                .map(|index| SemanticSearchResult {
+                    path: format!("src/semantic-{index}.ts"),
+                    role: FileRole::Source,
+                    language: Some("typescript".to_string()),
+                    score: 0.95,
+                    reason: "local semantic similarity".to_string(),
+                    provider: SemanticProviderConfig::default(),
+                    document_id: Some(format!("sem_doc_{index}")),
+                    matched_facets: Vec::new(),
+                    precision_status: None,
+                })
+                .collect(),
+            roles: roles([
+                ("src/exact.ts", FileRole::Source),
+                ("src/semantic-0.ts", FileRole::Source),
+                ("src/semantic-1.ts", FileRole::Source),
+                ("src/semantic-2.ts", FileRole::Source),
+                ("src/semantic-3.ts", FileRole::Source),
+                ("src/semantic-4.ts", FileRole::Source),
+            ]),
+            ..RankingInput::default()
+        });
+
+        let reranked = rerank_with_local_metadata(candidates);
+
+        assert_eq!(candidate_paths(&reranked).first(), Some(&"src/exact.ts"));
+    }
+
+    #[test]
+    fn local_metadata_reranker_does_not_protect_tests_as_source_floor() {
+        let candidates = rank_candidates(RankingInput {
+            lexical_results: vec![SearchResult {
+                path: "tests/exact.test.ts".to_string(),
+                role: FileRole::Test,
+                language: Some("typescript".to_string()),
+                score: 20.0,
+                reason: "term match".to_string(),
+            }],
+            semantic_results: vec![SemanticSearchResult {
+                path: "src/semantic.ts".to_string(),
+                role: FileRole::Source,
+                language: Some("typescript".to_string()),
+                score: 0.95,
+                reason: "local semantic similarity".to_string(),
+                provider: SemanticProviderConfig::default(),
+                document_id: Some("sem_doc".to_string()),
+                matched_facets: Vec::new(),
+                precision_status: None,
+            }],
+            roles: roles([
+                ("tests/exact.test.ts", FileRole::Test),
+                ("src/semantic.ts", FileRole::Source),
+            ]),
+            ..RankingInput::default()
+        });
+
+        let reranked = rerank_with_local_metadata(candidates);
+
+        assert_eq!(
+            candidate_paths(&reranked).first(),
+            Some(&"tests/exact.test.ts")
+        );
+        assert!(
+            !local_metadata_protected_source_candidate(
+                reranked
+                    .iter()
+                    .find(|candidate| candidate.candidate.path.as_deref()
+                        == Some("tests/exact.test.ts"))
+                    .unwrap()
+            )
+        );
     }
 
     fn lexical(path: &str, score: f32) -> SearchResult {
