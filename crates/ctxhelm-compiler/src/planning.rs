@@ -1773,6 +1773,9 @@ fn extend_project_governance_docs(
     let mut paths = Vec::new();
     if project_governance_task {
         paths.extend(project_governance_doc_paths());
+        if is_release_proof_task(task) {
+            paths.extend(release_proof_artifact_paths());
+        }
     }
     if agent_outcome_task {
         paths.extend(agent_outcome_doc_paths());
@@ -1781,24 +1784,34 @@ fn extend_project_governance_docs(
         let Some(role) = roles.get(path).cloned() else {
             continue;
         };
-        if !matches!(role, FileRole::Docs | FileRole::Config | FileRole::Unknown) {
+        if !matches!(
+            role,
+            FileRole::Docs | FileRole::Config | FileRole::Source | FileRole::Unknown
+        ) {
             continue;
         }
         if !seen.insert(path.to_string()) {
             continue;
         }
         let is_agent_outcome_doc = agent_outcome_task && agent_outcome_doc_paths().contains(&path);
+        let is_release_proof_artifact = project_governance_task
+            && release_proof_artifact_paths().contains(&path)
+            && is_release_proof_task(task);
         search_results.push(SearchResult {
             path: path.to_string(),
-            role,
+            role: project_governance_candidate_role(path, &role),
             language: language_for_governance_doc(path),
             score: if is_agent_outcome_doc {
                 26.0 - index.min(10) as f32
+            } else if is_release_proof_artifact {
+                30.0 - index.min(10) as f32
             } else {
                 16.0 - index.min(10) as f32
             },
             reason: if is_agent_outcome_doc {
                 "agent-run workflow documentation for outcome-eval task".to_string()
+            } else if is_release_proof_artifact {
+                "release proof/governor artifact for project governance task".to_string()
             } else {
                 "project governance artifact for planning/eval/release task".to_string()
             },
@@ -1842,6 +1855,20 @@ fn is_project_governance_task(task: &str) -> bool {
                 | "validation"
         )
     })
+}
+
+fn is_release_proof_task(task: &str) -> bool {
+    let task_terms = terms(task);
+    let has_release_or_gate = task_terms
+        .iter()
+        .any(|term| matches!(term.as_str(), "gate" | "gates" | "release"));
+    let has_proof_or_governor = task_terms.iter().any(|term| {
+        matches!(
+            term.as_str(),
+            "governor" | "governors" | "proof" | "decision" | "decisions"
+        )
+    });
+    has_release_or_gate && has_proof_or_governor
 }
 
 fn is_agent_outcome_task(task: &str) -> bool {
@@ -1957,6 +1984,17 @@ fn agent_guidance_candidate_role(path: &str, role: &FileRole) -> FileRole {
     }
 }
 
+fn project_governance_candidate_role(path: &str, role: &FileRole) -> FileRole {
+    if path == "scripts/smoke-governor.sh"
+        && matches!(role, FileRole::Unknown)
+        && (path.ends_with(".sh") || path.ends_with(".bash") || path.ends_with(".zsh"))
+    {
+        FileRole::Source
+    } else {
+        role.clone()
+    }
+}
+
 fn project_governance_doc_paths() -> [&'static str; 10] {
     [
         ".planning/STATE.md",
@@ -1969,6 +2007,15 @@ fn project_governance_doc_paths() -> [&'static str; 10] {
         "docs/benchmarking.md",
         "docs/release.md",
         "docs/semantic.md",
+    ]
+}
+
+fn release_proof_artifact_paths() -> [&'static str; 4] {
+    [
+        "docs/context-governor.md",
+        "crates/ctxhelm-core/src/contracts.rs",
+        "scripts/smoke-governor.sh",
+        "scripts/release-gate.sh",
     ]
 }
 
@@ -2805,8 +2852,64 @@ mod tests {
         assert!(paths.contains(&".planning/ROADMAP.md"));
         assert!(paths.contains(&".planning/MILESTONES.md"));
         assert!(paths.contains(&"docs/benchmarking.md"));
+        assert!(!paths.contains(&"docs/context-governor.md"));
+        assert!(!paths.contains(&"scripts/smoke-governor.sh"));
         assert!(!paths.contains(&"docs/feedback.md"));
         assert!(!paths.contains(&"src/auth.ts"));
+    }
+
+    #[test]
+    fn release_proof_tasks_add_governor_docs_and_smoke_artifacts() {
+        let mut search_results = vec![SearchResult {
+            path: "crates/ctxhelm/src/main.rs".to_string(),
+            role: FileRole::Source,
+            language: Some("rust".to_string()),
+            score: 20.0,
+            reason: "source match".to_string(),
+        }];
+        let roles = [
+            (".planning/STATE.md".to_string(), FileRole::Docs),
+            ("docs/context-governor.md".to_string(), FileRole::Docs),
+            (
+                "crates/ctxhelm-core/src/contracts.rs".to_string(),
+                FileRole::Source,
+            ),
+            ("docs/release.md".to_string(), FileRole::Docs),
+            ("scripts/smoke-governor.sh".to_string(), FileRole::Unknown),
+            ("scripts/release-gate.sh".to_string(), FileRole::Unknown),
+        ]
+        .into_iter()
+        .collect::<BTreeMap<_, _>>();
+
+        extend_project_governance_docs(
+            &mut search_results,
+            &roles,
+            "improve context governor decision reports and release-gate proof",
+        );
+        let result_by_path = search_results
+            .iter()
+            .map(|result| (result.path.as_str(), result))
+            .collect::<BTreeMap<_, _>>();
+
+        assert!(result_by_path.contains_key("docs/context-governor.md"));
+        assert!(result_by_path.contains_key("crates/ctxhelm-core/src/contracts.rs"));
+        assert_eq!(
+            result_by_path["crates/ctxhelm-core/src/contracts.rs"].role,
+            FileRole::Source
+        );
+        assert_eq!(
+            result_by_path["scripts/smoke-governor.sh"].role,
+            FileRole::Source
+        );
+        assert_eq!(
+            result_by_path["scripts/release-gate.sh"].role,
+            FileRole::Unknown
+        );
+        assert!(result_by_path["docs/context-governor.md"].score >= 20.0);
+        assert_eq!(
+            result_by_path["docs/context-governor.md"].reason,
+            "release proof/governor artifact for project governance task"
+        );
     }
 
     #[test]

@@ -4,7 +4,7 @@ milestone: v2.5
 milestone_name: Production Retrieval Quality
 status: active
 last_updated: "2026-06-06T00:00:00Z"
-last_activity: 2026-06-06 -- Phase 249 adds source-free context governor decisions and release-gated policy rollout proof
+last_activity: 2026-06-06 -- Phase 250 fixes governor/release artifact retrieval after a real Codex under-read regression
 progress:
   total_phases: 138
   completed_phases: 138
@@ -17,10 +17,10 @@ progress:
 
 ## Current Position
 
-Phase: 249 - Context Governor Decisions
-Plan: 249-context-governor-decisions
+Phase: 250 - Governor Artifact Retrieval
+Plan: 250-governor-artifact-retrieval
 Status: Complete
-Last activity: 2026-06-06 -- Phase 249 adds `ctxhelm governor decide`, a source-free context-governor report that explains retrieval, budget, memory, validation, semantic, and policy-profile decisions for a task. The report exposes selected evidence, omitted evidence, active learned profile state, feedback/profile counts, rollout controls, and privacy metadata without source snippets. `scripts/smoke-governor.sh` proves the report, policy apply/rollback visibility, release-gate wiring, and source sentinel rejection.
+Last activity: 2026-06-06 -- Phase 250 fixes a real Codex agent-run under-read regression for context-governor/release-gate R&D tasks. Release/gate/proof/governor tasks now promote `docs/context-governor.md`, `crates/ctxhelm-core/src/contracts.rs`, `scripts/smoke-governor.sh`, and `scripts/release-gate.sh` as source-free artifact candidates. The before/after Codex proof moved the comparison outcome from `ctxhelm_matched` with ctxhelm evidence misses to `ctxhelm_improved`, with all four ctxhelm lanes reaching `1.00` target read coverage.
 
 ## Project Reference
 

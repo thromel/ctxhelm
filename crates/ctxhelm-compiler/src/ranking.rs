@@ -1277,18 +1277,19 @@ fn governance_doc_priority(candidate: &RankedCandidate) -> u8 {
 
 fn root_governance_doc_priority(path: &str) -> u8 {
     match path {
-        ".planning/STATE.md" => 0,
-        ".planning/ROADMAP.md" => 1,
-        ".planning/MILESTONES.md" => 2,
-        "docs/benchmarking.md" => 3,
-        ".planning/REQUIREMENTS.md" => 4,
-        ".planning/PROJECT.md" => 5,
-        "AGENTS.md" => 6,
-        "docs/release.md" => 7,
-        "docs/agent-setup.md" => 8,
-        "docs/feedback.md" => 9,
-        "docs/semantic.md" => 10,
-        "README.md" => 11,
+        "docs/context-governor.md" => 0,
+        ".planning/STATE.md" => 1,
+        ".planning/ROADMAP.md" => 2,
+        ".planning/MILESTONES.md" => 3,
+        "docs/benchmarking.md" => 4,
+        "docs/release.md" => 5,
+        ".planning/REQUIREMENTS.md" => 6,
+        ".planning/PROJECT.md" => 7,
+        "AGENTS.md" => 8,
+        "docs/agent-setup.md" => 9,
+        "docs/feedback.md" => 10,
+        "docs/semantic.md" => 11,
+        "README.md" => 12,
         _ => 99,
     }
 }
@@ -1305,6 +1306,7 @@ fn is_root_governance_doc_path(path: &str) -> bool {
             | "README.md"
             | "docs/agent-setup.md"
             | "docs/benchmarking.md"
+            | "docs/context-governor.md"
             | "docs/feedback.md"
             | "docs/release.md"
             | "docs/semantic.md"
@@ -3298,6 +3300,46 @@ mod tests {
             .collect::<Vec<_>>();
 
         assert!(paths.contains(&"docs/agent-setup.md"));
+    }
+
+    #[test]
+    fn selection_treats_context_governor_as_governance_context() {
+        let candidates = rank_candidates(RankingInput {
+            lexical_results: vec![
+                SearchResult {
+                    path: ".planning/STATE.md".to_string(),
+                    role: FileRole::Docs,
+                    language: Some("markdown".to_string()),
+                    score: 40.0,
+                    reason: "planning match".to_string(),
+                },
+                SearchResult {
+                    path: "docs/context-governor.md".to_string(),
+                    role: FileRole::Docs,
+                    language: Some("markdown".to_string()),
+                    score: 18.0,
+                    reason: "governor report match".to_string(),
+                },
+                lexical("src/main.ts", 17.0),
+                lexical("scripts/smoke-governor.sh", 16.0),
+            ],
+            roles: roles([
+                (".planning/STATE.md", FileRole::Docs),
+                ("docs/context-governor.md", FileRole::Docs),
+                ("src/main.ts", FileRole::Source),
+                ("scripts/smoke-governor.sh", FileRole::Unknown),
+            ]),
+            ..RankingInput::default()
+        });
+
+        let selection = select_ranked_candidates(&candidates, 4, 0);
+        let paths = selection
+            .target_files
+            .iter()
+            .map(|target| target.path.as_str())
+            .collect::<Vec<_>>();
+
+        assert!(paths.contains(&"docs/context-governor.md"));
     }
 
     #[test]
