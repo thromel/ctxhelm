@@ -646,7 +646,15 @@ mod tests {
         assert!(response["result"]["content"][0]["text"]
             .as_str()
             .unwrap()
-            .contains("Read the returned targetFiles"));
+            .contains("first up to 5 returned targetFiles"));
+        assert!(response["result"]["content"][0]["text"]
+            .as_str()
+            .unwrap()
+            .contains("docs, config, schema, and script entries in that initial target set"));
+        assert!(response["result"]["content"][0]["text"]
+            .as_str()
+            .unwrap()
+            .contains("Stop after those native reads if they answer the task"));
         std::env::remove_var("CTXHELM_HOME");
     }
 

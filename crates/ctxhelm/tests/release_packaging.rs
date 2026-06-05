@@ -1922,6 +1922,8 @@ fn codex_agent_run_e2e_script_contract() {
         "harden_codex_read_only_prompt",
         "prepare_task",
         "get_pack",
+        "targetFiles first",
+        "first-class targets",
         "mcp_servers.ctxhelm.command",
         "CTXHELM_RUN_REAL_CLIENT=1",
         "source edits",

@@ -265,7 +265,8 @@ EOF
     prompt=$(cat <<EOF
 Do not edit files, do not write files, do not run tests, and do not mutate git or global config.
 First call ctxhelm prepare_task with explicit repo "$repo" and task "$task".
-Then use only read-only shell commands such as pwd, ls, find, rg, grep, sed, cat, nl, head, tail, and wc to inspect the most relevant implementation and validation files before answering.
+Identify the returned targetFiles paths. Read the first up to 5 targetFiles first with read-only shell commands such as sed, cat, nl, head, tail, wc, ls, find, rg, and grep before broader exploration.
+Treat docs, config, schema, and script targetFiles in that initial set as first-class targets, not optional background. Stop after those reads if they answer the task.
 Return a short JSON object with keyFiles.
 EOF
 )
@@ -274,7 +275,8 @@ EOF
 Do not edit files, do not write files, do not run tests, and do not mutate git or global config.
 First call ctxhelm prepare_task with explicit repo "$repo" and task "$task".
 Then call ctxhelm get_pack with explicit repo "$repo", the same task, budget "brief", format "json", and recordTrace false.
-Then use only read-only shell commands such as pwd, ls, find, rg, grep, sed, cat, nl, head, tail, and wc to inspect the most relevant implementation and validation files before answering.
+Identify targetFiles from prepare_task and high-confidence target paths from get_pack. Read the first up to 5 target files first with read-only shell commands such as sed, cat, nl, head, tail, wc, ls, find, rg, and grep before broader exploration.
+Treat docs, config, schema, and script targetFiles in that initial set as first-class targets, not optional background. Stop after those reads if they answer the task.
 Return a short JSON object with keyFiles.
 EOF
 )
@@ -283,7 +285,8 @@ EOF
 Do not edit files, do not write files, do not run tests, and do not mutate git or global config.
 First call ctxhelm prepare_task with explicit repo "$repo" and task "$task".
 Then call ctxhelm get_pack with explicit repo "$repo", the same task, budget "standard", format "json", and recordTrace false.
-Then use only read-only shell commands such as pwd, ls, find, rg, grep, sed, cat, nl, head, tail, and wc to inspect the most relevant implementation and validation files before answering.
+Identify targetFiles from prepare_task and high-confidence target paths from get_pack. Read the first up to 5 target files first with read-only shell commands such as sed, cat, nl, head, tail, wc, ls, find, rg, and grep before broader exploration.
+Treat docs, config, schema, and script targetFiles in that initial set as first-class targets, not optional background. Stop after those reads if they answer the task.
 Return a short JSON object with keyFiles.
 EOF
 )
@@ -292,6 +295,8 @@ EOF
 Do not edit files, do not write files, do not run tests, and do not mutate git or global config.
 First call ctxhelm prepare_task with explicit repo "$repo" and task "$task".
 Then call ctxhelm get_pack with explicit repo "$repo", the same task, budget "standard", format "json", and recordTrace false.
+Identify targetFiles from prepare_task and high-confidence target paths from get_pack. Read the first up to 5 target files first with read-only shell commands such as sed, cat, nl, head, tail, wc, ls, find, rg, and grep before broader exploration.
+Treat docs, config, schema, and script targetFiles in that initial set as first-class targets, not optional background. Stop after those reads if they answer the task.
 If ctxhelm returns memory or experience-card evidence, use it only as guidance for which current files to inspect; still consume current files using read-only shell commands before answering.
 Return a short JSON object with keyFiles.
 EOF

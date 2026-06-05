@@ -24,7 +24,7 @@
   },
   "homebrewFormulaRender": {
     "archiveName": "ctxhelm-v1.1.12-aarch64-apple-darwin.tar.gz",
-    "archiveSha256": "2d5ca04a558febbe30df29bee45a132cbd1d635e75968abdcce9cf7ff5fa322b",
+    "archiveSha256": "75b417425ff7a779e050b2dbc75189b692b98d6e03047efab6e9523000714c50",
     "published": false,
     "status": "passed"
   },

@@ -1045,6 +1045,8 @@ mod tests {
         assert!(markdown.contains(
             "discovering a path or seeing a pack snippet is not the same as consuming the current file"
         ));
+        assert!(markdown
+            .contains("including docs, config, schema, and script targets when they appear"));
         assert!(markdown.contains("## Related test evidence"));
         assert!(markdown.contains("Area: `tests/auth`"));
         assert!(markdown.contains(

@@ -237,7 +237,7 @@ fn call_prepare_task(arguments: Value) -> Result<Value, RpcError> {
 fn render_prepare_task_text(plan: &ContextPlan) -> Result<String, serde_json::Error> {
     let json = serde_json::to_string_pretty(plan)?;
     Ok(format!(
-        "Consumption guidance:\n- Read the returned targetFiles with native file tools before answering or editing; discovering a path is not the same as consuming it.\n- Read relatedTests before deciding validation strategy when they are present.\n- Use get_pack progressively only after native reads or this plan are insufficient.\n\nContextPlan JSON:\n{json}"
+        "Consumption guidance:\n- Start by reading the first up to 5 returned targetFiles with native file tools before answering or editing; discovering a path is not the same as consuming it.\n- Treat docs, config, schema, and script entries in that initial target set as first-class targets, not optional background.\n- Stop after those native reads if they answer the task; read broader targetFiles or relatedTests only when the initial evidence is insufficient or validation strategy is needed.\n- Use get_pack progressively only after native reads or this plan are insufficient.\n\nContextPlan JSON:\n{json}"
     ))
 }
 

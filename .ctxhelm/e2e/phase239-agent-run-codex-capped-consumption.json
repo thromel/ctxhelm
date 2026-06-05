@@ -1,0 +1,1174 @@
+{
+  "client": {
+    "name": "codex",
+    "version": "codex-cli 0.137.0"
+  },
+  "comparison": {
+    "baselineEligible": true,
+    "baselineLane": "baseline",
+    "bestLane": "ctxhelm-brief",
+    "clientFailuresObserved": false,
+    "commandExecutionDelta": 10,
+    "comparableCtxhelmLaneCount": 4,
+    "comparisonEligible": true,
+    "ctxhelmEvidenceMisses": {},
+    "ctxhelmEvidenceMissesObserved": false,
+    "ctxhelmEvidenceOnlyTargets": {},
+    "ctxhelmEvidenceOnlyTargetsObserved": false,
+    "ctxhelmToolCallsObserved": true,
+    "ctxhelmUnderReadTargetsObserved": false,
+    "forbiddenCommandsObserved": false,
+    "invalidRequiredCtxhelmCalls": {},
+    "invalidRequiredCtxhelmCallsObserved": false,
+    "irrelevantReadDelta": 2,
+    "missingRequiredCtxhelmCalls": {},
+    "missingRequiredCtxhelmCallsObserved": false,
+    "outcomeClaim": "ctxhelm_improved",
+    "rateLimitsObserved": false,
+    "readFileDelta": 2,
+    "recommendedResearchActions": [
+      {
+        "action": "preserve_current_agent_contract",
+        "priority": 3,
+        "reason": "Comparable lanes produced stable source-free outcome evidence."
+      }
+    ],
+    "targetCoverageDelta": 0.0,
+    "targetReadCoverageDelta": 0.0
+  },
+  "ctxhelmVersion": "ctxhelm 1.1.12",
+  "lanes": [
+    {
+      "clientApiErrorStatus": null,
+      "clientExitStatus": 0,
+      "clientFailureKind": null,
+      "commandExecutions": [
+        {
+          "commandSha256": "8a32ceecdd9edfde1f72c1a374698e196b0e6c5adae948c6960da779e0b966e3",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 0,
+          "paths": [],
+          "status": "completed",
+          "verb": "cat"
+        },
+        {
+          "commandSha256": "47d0315b306ea8525186dd9db0e864afe4736ff9c09ad411b870d3692da2ea8e",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 0,
+          "paths": [],
+          "status": "completed",
+          "verb": "pwd"
+        },
+        {
+          "commandSha256": "0bd76de2432319ed5e19c389a2af3619f929f1ac7202ba09da8645b0d817ddf1",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 0,
+          "paths": [],
+          "status": "completed",
+          "verb": "rg"
+        },
+        {
+          "commandSha256": "4a9de0cf84e38b5a2653fa9d3c7fe8885d2541a0db6fc67da64c18a0333ac39d",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 0,
+          "paths": [],
+          "status": "completed",
+          "verb": "rg"
+        },
+        {
+          "commandSha256": "9549d0f19fff8b5ac72f36a3b685bc519268f104137156d80001ba154afbe7a3",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 1,
+          "paths": [
+            "scripts/e2e-agent-run.sh"
+          ],
+          "status": "completed",
+          "verb": "nl"
+        },
+        {
+          "commandSha256": "2459c129d9ac2be6936b6b5d81b5b2d94f90c24462e52029573de371c54070c0",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 1,
+          "paths": [
+            "scripts/e2e-agent-run.sh"
+          ],
+          "status": "completed",
+          "verb": "nl"
+        },
+        {
+          "commandSha256": "046abfd633bf6ff7f04f16a2f86e5c571b10b6fb2b775bd4d32aa8cb03d5703e",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 1,
+          "paths": [
+            "scripts/e2e-agent-run.sh"
+          ],
+          "status": "completed",
+          "verb": "nl"
+        },
+        {
+          "commandSha256": "c7c9fe22a8bd2c2fd9415837cad2005ea9d9ced6d8475c02a201c7c6356154e9",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 1,
+          "paths": [
+            "scripts/e2e-agent-run-codex.sh"
+          ],
+          "status": "completed",
+          "verb": "nl"
+        },
+        {
+          "commandSha256": "0ba2bc0e89ebba5774403992b966fa55bf08e6d3d2a26b04104d65014ab06eea",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 1,
+          "paths": [
+            "scripts/e2e-agent-run-codex.sh"
+          ],
+          "status": "completed",
+          "verb": "nl"
+        },
+        {
+          "commandSha256": "b6481b5594c7b1782784db581741053e0c0624026fdbab6c0c100cbd20692918",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 1,
+          "paths": [
+            "crates/ctxhelm/src/main.rs"
+          ],
+          "status": "completed",
+          "verb": "nl"
+        },
+        {
+          "commandSha256": "81581bab48e153a326286082d4415b3cbe76c252ea174e76aeb650efe1b21075",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 1,
+          "paths": [
+            "crates/ctxhelm/tests/release_packaging.rs"
+          ],
+          "status": "completed",
+          "verb": "nl"
+        },
+        {
+          "commandSha256": "62b8492a2e9e51d3473ed5fa55f3fe2b08b1f63d79e0fb1c6103e4d2074f5594",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 1,
+          "paths": [
+            "crates/ctxhelm/src/main.rs"
+          ],
+          "status": "completed",
+          "verb": "nl"
+        },
+        {
+          "commandSha256": "7faf404b408de1ff50d52dcf2e34b547b23b8dfac8ede5988ef1e14bd3b36e06",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 1,
+          "paths": [
+            "docs/agent-setup.md"
+          ],
+          "status": "completed",
+          "verb": "nl"
+        },
+        {
+          "commandSha256": "a5c9552a76f8c775f8046a922022dc3e5af439c6661d38a3877a80512e001702",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 1,
+          "paths": [
+            "docs/feedback.md"
+          ],
+          "status": "completed",
+          "verb": "nl"
+        },
+        {
+          "commandSha256": "25d4fd7ba81b38a2031989d159d7875c8195bf5bf0485f24d5e473e51481e91f",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 1,
+          "paths": [
+            "scripts/e2e-agent-client-availability.sh"
+          ],
+          "status": "completed",
+          "verb": "nl"
+        },
+        {
+          "commandSha256": "f5147592e01f2c4b23a50b655d3834e16251eaee0d7f217259d66097e7711d77",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 1,
+          "paths": [
+            "scripts/e2e-agent-client-availability.sh"
+          ],
+          "status": "completed",
+          "verb": "nl"
+        }
+      ],
+      "ctxhelmCallCompliance": "not_required",
+      "ctxhelmEvidenceFiles": [],
+      "ctxhelmEvidenceMissedTargets": [
+        "docs/agent-setup.md",
+        "docs/feedback.md",
+        "scripts/e2e-agent-run.sh"
+      ],
+      "ctxhelmEvidenceOnlyTargets": [],
+      "ctxhelmEvidenceTargetHits": [],
+      "ctxhelmToolCalls": [],
+      "discoveredFiles": [
+        "scripts/e2e-agent-run.sh",
+        "scripts/e2e-agent-run-codex.sh",
+        "crates/ctxhelm/src/main.rs",
+        "crates/ctxhelm/tests/release_packaging.rs",
+        "docs/agent-setup.md",
+        "docs/feedback.md",
+        "scripts/e2e-agent-client-availability.sh"
+      ],
+      "discoveredOnlyTargets": [],
+      "evaluationEligible": true,
+      "evaluationStatus": "eligible",
+      "evidenceHashes": {
+        "ctxhelmRequestLogSha256": null,
+        "stderrSha256": "e2f6824a634fe4416f3327e4440d73b83a1ac7a92ebd67079208092309556b2e",
+        "streamJsonSha256": "645d233eecea57b50097547f7b4630a746280586bef198e22e432d957272a53d"
+      },
+      "forbiddenCommands": [],
+      "invalidRequiredCtxhelmCalls": [],
+      "irrelevantReads": [
+        "crates/ctxhelm/src/main.rs",
+        "crates/ctxhelm/tests/release_packaging.rs",
+        "scripts/e2e-agent-client-availability.sh",
+        "scripts/e2e-agent-run-codex.sh"
+      ],
+      "lane": "baseline",
+      "metrics": {
+        "commandExecutionCount": 16,
+        "ctxhelmEvidenceFileCount": 0,
+        "ctxhelmEvidenceMissedTargetCount": 3,
+        "ctxhelmEvidenceOnlyTargetCount": 0,
+        "ctxhelmEvidenceTargetHitCount": 0,
+        "ctxhelmToolCallCount": 0,
+        "discoveredFileCount": 7,
+        "forbiddenCommandCount": 0,
+        "invalidRequiredCtxhelmCallCount": 0,
+        "irrelevantReadCount": 4,
+        "missedTargetCount": 0,
+        "missingRequiredCtxhelmCallCount": 0,
+        "observedRequiredCtxhelmCallCount": 0,
+        "readFileCount": 7,
+        "requiredCtxhelmCallCount": 0,
+        "targetCount": 3,
+        "targetCoverage": 1.0,
+        "targetDiscoveredOnlyCount": 0,
+        "targetHitCount": 3,
+        "targetReadCount": 3,
+        "targetReadCoverage": 1.0
+      },
+      "missedTargetRoleCounts": {},
+      "missedTargets": [],
+      "missingRequiredCtxhelmCalls": [],
+      "mode": "baseline",
+      "observedRequiredCtxhelmCalls": [],
+      "rateLimitObserved": false,
+      "rawCommandOutputStored": false,
+      "rawMcpTrafficStored": false,
+      "rawPromptStored": false,
+      "rawTranscriptStored": false,
+      "readFiles": [
+        "scripts/e2e-agent-run.sh",
+        "scripts/e2e-agent-run-codex.sh",
+        "crates/ctxhelm/src/main.rs",
+        "crates/ctxhelm/tests/release_packaging.rs",
+        "docs/agent-setup.md",
+        "docs/feedback.md",
+        "scripts/e2e-agent-client-availability.sh"
+      ],
+      "readRoleCounts": {
+        "docs": 2,
+        "source": 5
+      },
+      "requiredCtxhelmCallSpecs": [],
+      "requiredCtxhelmCalls": [],
+      "sourceTextLogged": false,
+      "status": "passed",
+      "targetHits": [
+        "docs/agent-setup.md",
+        "docs/feedback.md",
+        "scripts/e2e-agent-run.sh"
+      ],
+      "targetReads": [
+        "docs/agent-setup.md",
+        "docs/feedback.md",
+        "scripts/e2e-agent-run.sh"
+      ]
+    },
+    {
+      "clientApiErrorStatus": null,
+      "clientExitStatus": 0,
+      "clientFailureKind": null,
+      "commandExecutions": [
+        {
+          "commandSha256": "a3b11629bb9692e1de0020d2d6141b74a3ae99d4b06da4ebc2ae9c83a7a38831",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 1,
+          "paths": [
+            "crates/ctxhelm-compiler/src/planning.rs"
+          ],
+          "status": "completed",
+          "verb": "sed"
+        },
+        {
+          "commandSha256": "fe06140b9a775e5b0d47f7e81ed88d7e8f733f118ee2615d008850f19d3854c9",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 1,
+          "paths": [
+            "crates/ctxhelm/src/main.rs"
+          ],
+          "status": "completed",
+          "verb": "sed"
+        },
+        {
+          "commandSha256": "feda7803ae9508548eb0437d0e8fadec8142c9fe9c75fd35d4c3752626e268ae",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 1,
+          "paths": [
+            "docs/agent-setup.md"
+          ],
+          "status": "completed",
+          "verb": "sed"
+        },
+        {
+          "commandSha256": "a5441578eb1c91e4c55a2e6023905fe779f4d46443ccfc9f8c3fee197e64a54c",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 1,
+          "paths": [
+            "docs/feedback.md"
+          ],
+          "status": "completed",
+          "verb": "sed"
+        },
+        {
+          "commandSha256": "690cf29a1c307912a96d59fa422953a8d41a71822a473a744d88d763ef63da3c",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 1,
+          "paths": [
+            "scripts/e2e-agent-run.sh"
+          ],
+          "status": "completed",
+          "verb": "sed"
+        }
+      ],
+      "ctxhelmCallCompliance": "satisfied",
+      "ctxhelmEvidenceFiles": [
+        "crates/ctxhelm-compiler/src/planning.rs",
+        "crates/ctxhelm/src/main.rs",
+        "docs/agent-setup.md",
+        "docs/feedback.md",
+        "scripts/e2e-agent-run.sh",
+        "crates/ctxhelm-compiler/src/lib.rs",
+        ".planning/MILESTONES.md",
+        ".planning/ROADMAP.md",
+        ".planning/STATE.md",
+        "docs/benchmarking.md",
+        "crates/ctxhelm/tests/cli_compat.rs",
+        "crates/ctxhelm/tests/release_packaging.rs",
+        "crates/ctxhelm/tests/common/mod.rs",
+        "docs/release.md",
+        "scripts/e2e-agent-run-codex.sh",
+        ".planning/e2e/2026-06-03-phase204-agent-run-forbidden-tool-accounting.md",
+        ".planning/e2e/2026-06-03-phase207-agent-run-lane-comparability.md",
+        ".planning/e2e/2026-06-05-phase225-agent-run-lane-matrix.md",
+        ".planning/e2e/2026-06-05-phase227-agent-run-rate-limit-accounting.md",
+        ".planning/e2e/2026-06-05-phase235-agent-run-preflight.md",
+        ".planning/e2e/2026-06-05-phase237-codex-agent-run-outcome.md"
+      ],
+      "ctxhelmEvidenceMissedTargets": [],
+      "ctxhelmEvidenceOnlyTargets": [],
+      "ctxhelmEvidenceTargetHits": [
+        "docs/agent-setup.md",
+        "docs/feedback.md",
+        "scripts/e2e-agent-run.sh"
+      ],
+      "ctxhelmToolCalls": [
+        {
+          "budget": null,
+          "format": null,
+          "hasRepo": true,
+          "hasTask": true,
+          "name": "prepare_task",
+          "recordTrace": null
+        }
+      ],
+      "discoveredFiles": [
+        "crates/ctxhelm-compiler/src/planning.rs",
+        "crates/ctxhelm/src/main.rs",
+        "docs/agent-setup.md",
+        "docs/feedback.md",
+        "scripts/e2e-agent-run.sh"
+      ],
+      "discoveredOnlyTargets": [],
+      "evaluationEligible": true,
+      "evaluationStatus": "eligible",
+      "evidenceHashes": {
+        "ctxhelmRequestLogSha256": "4b4810e32449e73fabd03bc9e24376fa17dcd321609c61c7e8c42af9c9c71f41",
+        "stderrSha256": "876073f325b194b4ada70c71d5b03869c34ff053f173a3ac6b73f4b4d922eaa7",
+        "streamJsonSha256": "5f358db37a9942668f120fa075e9e76c2bf770a7057828e297e3a5b7374fe827"
+      },
+      "forbiddenCommands": [],
+      "invalidRequiredCtxhelmCalls": [],
+      "irrelevantReads": [
+        "crates/ctxhelm-compiler/src/planning.rs",
+        "crates/ctxhelm/src/main.rs"
+      ],
+      "lane": "ctxhelm-plan",
+      "metrics": {
+        "commandExecutionCount": 5,
+        "ctxhelmEvidenceFileCount": 21,
+        "ctxhelmEvidenceMissedTargetCount": 0,
+        "ctxhelmEvidenceOnlyTargetCount": 0,
+        "ctxhelmEvidenceTargetHitCount": 3,
+        "ctxhelmToolCallCount": 1,
+        "discoveredFileCount": 5,
+        "forbiddenCommandCount": 0,
+        "invalidRequiredCtxhelmCallCount": 0,
+        "irrelevantReadCount": 2,
+        "missedTargetCount": 0,
+        "missingRequiredCtxhelmCallCount": 0,
+        "observedRequiredCtxhelmCallCount": 1,
+        "readFileCount": 5,
+        "requiredCtxhelmCallCount": 1,
+        "targetCount": 3,
+        "targetCoverage": 1.0,
+        "targetDiscoveredOnlyCount": 0,
+        "targetHitCount": 3,
+        "targetReadCount": 3,
+        "targetReadCoverage": 1.0
+      },
+      "missedTargetRoleCounts": {},
+      "missedTargets": [],
+      "missingRequiredCtxhelmCalls": [],
+      "mode": "plan",
+      "observedRequiredCtxhelmCalls": [
+        "prepare_task"
+      ],
+      "rateLimitObserved": false,
+      "rawCommandOutputStored": false,
+      "rawMcpTrafficStored": false,
+      "rawPromptStored": false,
+      "rawTranscriptStored": false,
+      "readFiles": [
+        "crates/ctxhelm-compiler/src/planning.rs",
+        "crates/ctxhelm/src/main.rs",
+        "docs/agent-setup.md",
+        "docs/feedback.md",
+        "scripts/e2e-agent-run.sh"
+      ],
+      "readRoleCounts": {
+        "docs": 2,
+        "source": 3
+      },
+      "requiredCtxhelmCallSpecs": [
+        {
+          "name": "prepare_task",
+          "requiresRepo": true,
+          "requiresTask": true
+        }
+      ],
+      "requiredCtxhelmCalls": [
+        "prepare_task"
+      ],
+      "sourceTextLogged": false,
+      "status": "passed",
+      "targetHits": [
+        "docs/agent-setup.md",
+        "docs/feedback.md",
+        "scripts/e2e-agent-run.sh"
+      ],
+      "targetReads": [
+        "docs/agent-setup.md",
+        "docs/feedback.md",
+        "scripts/e2e-agent-run.sh"
+      ]
+    },
+    {
+      "clientApiErrorStatus": null,
+      "clientExitStatus": 0,
+      "clientFailureKind": null,
+      "commandExecutions": [
+        {
+          "commandSha256": "228fd6ff6d071bd95fb7fdeae910d58be717be2407d3677a511779a8b1ddc1c1",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 0,
+          "paths": [],
+          "status": "completed",
+          "verb": "superpowers-codex"
+        },
+        {
+          "commandSha256": "2a285e0db4d95e5c4b16ea0b203557479e38053b6a656c6c5e71a6abfa2b19df",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 1,
+          "paths": [
+            "crates/ctxhelm-compiler/src/planning.rs"
+          ],
+          "status": "completed",
+          "verb": "sed"
+        },
+        {
+          "commandSha256": "8542d3f00238240c4b0b1fca2fd7a76ee8b4d84350929348a6bcae513ddd5f07",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 1,
+          "paths": [
+            "crates/ctxhelm/src/main.rs"
+          ],
+          "status": "completed",
+          "verb": "sed"
+        },
+        {
+          "commandSha256": "690cf29a1c307912a96d59fa422953a8d41a71822a473a744d88d763ef63da3c",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 1,
+          "paths": [
+            "scripts/e2e-agent-run.sh"
+          ],
+          "status": "completed",
+          "verb": "sed"
+        },
+        {
+          "commandSha256": "972453eca3aa9ba5921ffae8b9686ad7998ce4f30703adfca63caf3c8251fa03",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 1,
+          "paths": [
+            "docs/agent-setup.md"
+          ],
+          "status": "completed",
+          "verb": "sed"
+        },
+        {
+          "commandSha256": "658f564116e7e22ea3dafdf75a1e1331ebe7c39a7b8d07d363c9a89abe5a0465",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 1,
+          "paths": [
+            "docs/feedback.md"
+          ],
+          "status": "completed",
+          "verb": "sed"
+        }
+      ],
+      "ctxhelmCallCompliance": "satisfied",
+      "ctxhelmEvidenceFiles": [
+        "crates/ctxhelm-compiler/src/planning.rs",
+        "crates/ctxhelm/src/main.rs",
+        "docs/agent-setup.md",
+        "docs/feedback.md",
+        "scripts/e2e-agent-run.sh",
+        "crates/ctxhelm-compiler/src/lib.rs",
+        ".planning/MILESTONES.md",
+        ".planning/ROADMAP.md",
+        ".planning/STATE.md",
+        "docs/benchmarking.md",
+        "crates/ctxhelm/tests/cli_compat.rs",
+        "crates/ctxhelm/tests/release_packaging.rs",
+        "crates/ctxhelm/tests/common/mod.rs"
+      ],
+      "ctxhelmEvidenceMissedTargets": [],
+      "ctxhelmEvidenceOnlyTargets": [],
+      "ctxhelmEvidenceTargetHits": [
+        "docs/agent-setup.md",
+        "docs/feedback.md",
+        "scripts/e2e-agent-run.sh"
+      ],
+      "ctxhelmToolCalls": [
+        {
+          "budget": null,
+          "format": null,
+          "hasRepo": true,
+          "hasTask": true,
+          "name": "prepare_task",
+          "recordTrace": null
+        },
+        {
+          "budget": "brief",
+          "format": "json",
+          "hasRepo": true,
+          "hasTask": true,
+          "name": "get_pack",
+          "recordTrace": false
+        }
+      ],
+      "discoveredFiles": [
+        "crates/ctxhelm-compiler/src/planning.rs",
+        "crates/ctxhelm/src/main.rs",
+        "scripts/e2e-agent-run.sh",
+        "docs/agent-setup.md",
+        "docs/feedback.md"
+      ],
+      "discoveredOnlyTargets": [],
+      "evaluationEligible": true,
+      "evaluationStatus": "eligible",
+      "evidenceHashes": {
+        "ctxhelmRequestLogSha256": "60ec77a81b759557681aee6ee3108ae521f309fb9f8bd8882271f34b173c7019",
+        "stderrSha256": "4a709047d096505cf2f583597ed82af9376e44e0c52f875301d8d2ea971d1241",
+        "streamJsonSha256": "66a85da51eb843a991d615898894b2424a5cbc1512d614a769f1f8d445d8dfc0"
+      },
+      "forbiddenCommands": [],
+      "invalidRequiredCtxhelmCalls": [],
+      "irrelevantReads": [
+        "crates/ctxhelm-compiler/src/planning.rs",
+        "crates/ctxhelm/src/main.rs"
+      ],
+      "lane": "ctxhelm-brief",
+      "metrics": {
+        "commandExecutionCount": 6,
+        "ctxhelmEvidenceFileCount": 13,
+        "ctxhelmEvidenceMissedTargetCount": 0,
+        "ctxhelmEvidenceOnlyTargetCount": 0,
+        "ctxhelmEvidenceTargetHitCount": 3,
+        "ctxhelmToolCallCount": 2,
+        "discoveredFileCount": 5,
+        "forbiddenCommandCount": 0,
+        "invalidRequiredCtxhelmCallCount": 0,
+        "irrelevantReadCount": 2,
+        "missedTargetCount": 0,
+        "missingRequiredCtxhelmCallCount": 0,
+        "observedRequiredCtxhelmCallCount": 2,
+        "readFileCount": 5,
+        "requiredCtxhelmCallCount": 2,
+        "targetCount": 3,
+        "targetCoverage": 1.0,
+        "targetDiscoveredOnlyCount": 0,
+        "targetHitCount": 3,
+        "targetReadCount": 3,
+        "targetReadCoverage": 1.0
+      },
+      "missedTargetRoleCounts": {},
+      "missedTargets": [],
+      "missingRequiredCtxhelmCalls": [],
+      "mode": "brief",
+      "observedRequiredCtxhelmCalls": [
+        "prepare_task",
+        "get_pack"
+      ],
+      "rateLimitObserved": false,
+      "rawCommandOutputStored": false,
+      "rawMcpTrafficStored": false,
+      "rawPromptStored": false,
+      "rawTranscriptStored": false,
+      "readFiles": [
+        "crates/ctxhelm-compiler/src/planning.rs",
+        "crates/ctxhelm/src/main.rs",
+        "scripts/e2e-agent-run.sh",
+        "docs/agent-setup.md",
+        "docs/feedback.md"
+      ],
+      "readRoleCounts": {
+        "docs": 2,
+        "source": 3
+      },
+      "requiredCtxhelmCallSpecs": [
+        {
+          "name": "prepare_task",
+          "requiresRepo": true,
+          "requiresTask": true
+        },
+        {
+          "budget": "brief",
+          "format": "json",
+          "name": "get_pack",
+          "recordTrace": false,
+          "requiresRepo": true,
+          "requiresTask": true
+        }
+      ],
+      "requiredCtxhelmCalls": [
+        "prepare_task",
+        "get_pack"
+      ],
+      "sourceTextLogged": false,
+      "status": "passed",
+      "targetHits": [
+        "docs/agent-setup.md",
+        "docs/feedback.md",
+        "scripts/e2e-agent-run.sh"
+      ],
+      "targetReads": [
+        "docs/agent-setup.md",
+        "docs/feedback.md",
+        "scripts/e2e-agent-run.sh"
+      ]
+    },
+    {
+      "clientApiErrorStatus": null,
+      "clientExitStatus": 0,
+      "clientFailureKind": null,
+      "commandExecutions": [
+        {
+          "commandSha256": "228fd6ff6d071bd95fb7fdeae910d58be717be2407d3677a511779a8b1ddc1c1",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 0,
+          "paths": [],
+          "status": "completed",
+          "verb": "superpowers-codex"
+        },
+        {
+          "commandSha256": "dc468c73258da583d350fc1dd4b0645c53a6bfaa1f642cd4e5b20c80ec7dba24",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 1,
+          "paths": [
+            "crates/ctxhelm-compiler/src/planning.rs"
+          ],
+          "status": "completed",
+          "verb": "sed"
+        },
+        {
+          "commandSha256": "8542d3f00238240c4b0b1fca2fd7a76ee8b4d84350929348a6bcae513ddd5f07",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 1,
+          "paths": [
+            "crates/ctxhelm/src/main.rs"
+          ],
+          "status": "completed",
+          "verb": "sed"
+        },
+        {
+          "commandSha256": "658f564116e7e22ea3dafdf75a1e1331ebe7c39a7b8d07d363c9a89abe5a0465",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 1,
+          "paths": [
+            "docs/feedback.md"
+          ],
+          "status": "completed",
+          "verb": "sed"
+        },
+        {
+          "commandSha256": "690cf29a1c307912a96d59fa422953a8d41a71822a473a744d88d763ef63da3c",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 1,
+          "paths": [
+            "scripts/e2e-agent-run.sh"
+          ],
+          "status": "completed",
+          "verb": "sed"
+        },
+        {
+          "commandSha256": "733d794d3b89d2645aa795f9ab181f5740478e323248da4a8b374b5b4066eaff",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 1,
+          "paths": [
+            "docs/agent-setup.md"
+          ],
+          "status": "completed",
+          "verb": "sed"
+        }
+      ],
+      "ctxhelmCallCompliance": "satisfied",
+      "ctxhelmEvidenceFiles": [
+        "crates/ctxhelm-compiler/src/planning.rs",
+        "crates/ctxhelm/src/main.rs",
+        "docs/agent-setup.md",
+        "docs/feedback.md",
+        "scripts/e2e-agent-run.sh",
+        "crates/ctxhelm-compiler/src/lib.rs",
+        ".planning/MILESTONES.md",
+        ".planning/ROADMAP.md",
+        ".planning/STATE.md",
+        "docs/benchmarking.md",
+        "crates/ctxhelm/tests/cli_compat.rs",
+        "crates/ctxhelm/tests/release_packaging.rs",
+        "crates/ctxhelm/tests/common/mod.rs"
+      ],
+      "ctxhelmEvidenceMissedTargets": [],
+      "ctxhelmEvidenceOnlyTargets": [],
+      "ctxhelmEvidenceTargetHits": [
+        "docs/agent-setup.md",
+        "docs/feedback.md",
+        "scripts/e2e-agent-run.sh"
+      ],
+      "ctxhelmToolCalls": [
+        {
+          "budget": null,
+          "format": null,
+          "hasRepo": true,
+          "hasTask": true,
+          "name": "prepare_task",
+          "recordTrace": null
+        },
+        {
+          "budget": "standard",
+          "format": "json",
+          "hasRepo": true,
+          "hasTask": true,
+          "name": "get_pack",
+          "recordTrace": false
+        }
+      ],
+      "discoveredFiles": [
+        "crates/ctxhelm-compiler/src/planning.rs",
+        "crates/ctxhelm/src/main.rs",
+        "docs/feedback.md",
+        "scripts/e2e-agent-run.sh",
+        "docs/agent-setup.md"
+      ],
+      "discoveredOnlyTargets": [],
+      "evaluationEligible": true,
+      "evaluationStatus": "eligible",
+      "evidenceHashes": {
+        "ctxhelmRequestLogSha256": "4dba35ffcd2e3d9bd401bf16dc431fefe12a006535499c3807f841554ad48d72",
+        "stderrSha256": "32a1a8cf943f28b136a3d8eed5339da44935dfcd32fc26063d559dc60687f2c3",
+        "streamJsonSha256": "e97d63365d97b12c1eab53aacc59a60aed533a8e525a6c2f8a3bc279f610a103"
+      },
+      "forbiddenCommands": [],
+      "invalidRequiredCtxhelmCalls": [],
+      "irrelevantReads": [
+        "crates/ctxhelm-compiler/src/planning.rs",
+        "crates/ctxhelm/src/main.rs"
+      ],
+      "lane": "ctxhelm-standard",
+      "metrics": {
+        "commandExecutionCount": 6,
+        "ctxhelmEvidenceFileCount": 13,
+        "ctxhelmEvidenceMissedTargetCount": 0,
+        "ctxhelmEvidenceOnlyTargetCount": 0,
+        "ctxhelmEvidenceTargetHitCount": 3,
+        "ctxhelmToolCallCount": 2,
+        "discoveredFileCount": 5,
+        "forbiddenCommandCount": 0,
+        "invalidRequiredCtxhelmCallCount": 0,
+        "irrelevantReadCount": 2,
+        "missedTargetCount": 0,
+        "missingRequiredCtxhelmCallCount": 0,
+        "observedRequiredCtxhelmCallCount": 2,
+        "readFileCount": 5,
+        "requiredCtxhelmCallCount": 2,
+        "targetCount": 3,
+        "targetCoverage": 1.0,
+        "targetDiscoveredOnlyCount": 0,
+        "targetHitCount": 3,
+        "targetReadCount": 3,
+        "targetReadCoverage": 1.0
+      },
+      "missedTargetRoleCounts": {},
+      "missedTargets": [],
+      "missingRequiredCtxhelmCalls": [],
+      "mode": "standard",
+      "observedRequiredCtxhelmCalls": [
+        "prepare_task",
+        "get_pack"
+      ],
+      "rateLimitObserved": false,
+      "rawCommandOutputStored": false,
+      "rawMcpTrafficStored": false,
+      "rawPromptStored": false,
+      "rawTranscriptStored": false,
+      "readFiles": [
+        "crates/ctxhelm-compiler/src/planning.rs",
+        "crates/ctxhelm/src/main.rs",
+        "docs/feedback.md",
+        "scripts/e2e-agent-run.sh",
+        "docs/agent-setup.md"
+      ],
+      "readRoleCounts": {
+        "docs": 2,
+        "source": 3
+      },
+      "requiredCtxhelmCallSpecs": [
+        {
+          "name": "prepare_task",
+          "requiresRepo": true,
+          "requiresTask": true
+        },
+        {
+          "budget": "standard",
+          "format": "json",
+          "name": "get_pack",
+          "recordTrace": false,
+          "requiresRepo": true,
+          "requiresTask": true
+        }
+      ],
+      "requiredCtxhelmCalls": [
+        "prepare_task",
+        "get_pack"
+      ],
+      "sourceTextLogged": false,
+      "status": "passed",
+      "targetHits": [
+        "docs/agent-setup.md",
+        "docs/feedback.md",
+        "scripts/e2e-agent-run.sh"
+      ],
+      "targetReads": [
+        "docs/agent-setup.md",
+        "docs/feedback.md",
+        "scripts/e2e-agent-run.sh"
+      ]
+    },
+    {
+      "clientApiErrorStatus": null,
+      "clientExitStatus": 0,
+      "clientFailureKind": null,
+      "commandExecutions": [
+        {
+          "commandSha256": "228fd6ff6d071bd95fb7fdeae910d58be717be2407d3677a511779a8b1ddc1c1",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 0,
+          "paths": [],
+          "status": "completed",
+          "verb": "superpowers-codex"
+        },
+        {
+          "commandSha256": "0d0cf241cbb369733129b660ee7e772dd078e884d7791ed25a1ce20973f4e384",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 1,
+          "paths": [
+            "crates/ctxhelm-compiler/src/planning.rs"
+          ],
+          "status": "completed",
+          "verb": "nl"
+        },
+        {
+          "commandSha256": "491b649b09361f88033de99884984f375b8877758ac602b0d8a865ae8e4d8553",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 1,
+          "paths": [
+            "crates/ctxhelm/src/main.rs"
+          ],
+          "status": "completed",
+          "verb": "nl"
+        },
+        {
+          "commandSha256": "2a1c6e56c9318ae2c1d968a140be28a6a417aa668c340a12eb15fd6be410dc15",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 1,
+          "paths": [
+            "docs/agent-setup.md"
+          ],
+          "status": "completed",
+          "verb": "nl"
+        },
+        {
+          "commandSha256": "b862551c5823329611c6bfd19909ef73f22b29751e10a4e9f3a5420091637252",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 1,
+          "paths": [
+            "docs/feedback.md"
+          ],
+          "status": "completed",
+          "verb": "nl"
+        },
+        {
+          "commandSha256": "c62cdc9c0c12d80fdce6c4e60bdd4260b9f302e7e26d625f06f0e77bfcbca908",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 1,
+          "paths": [
+            "scripts/e2e-agent-run.sh"
+          ],
+          "status": "completed",
+          "verb": "nl"
+        }
+      ],
+      "ctxhelmCallCompliance": "satisfied",
+      "ctxhelmEvidenceFiles": [
+        "crates/ctxhelm-compiler/src/planning.rs",
+        "crates/ctxhelm/src/main.rs",
+        "docs/agent-setup.md",
+        "docs/feedback.md",
+        "scripts/e2e-agent-run.sh",
+        "crates/ctxhelm-compiler/src/lib.rs",
+        ".planning/MILESTONES.md",
+        ".planning/ROADMAP.md",
+        ".planning/STATE.md",
+        "docs/benchmarking.md",
+        "crates/ctxhelm/tests/cli_compat.rs",
+        "crates/ctxhelm/tests/release_packaging.rs",
+        "crates/ctxhelm/tests/common/mod.rs"
+      ],
+      "ctxhelmEvidenceMissedTargets": [],
+      "ctxhelmEvidenceOnlyTargets": [],
+      "ctxhelmEvidenceTargetHits": [
+        "docs/agent-setup.md",
+        "docs/feedback.md",
+        "scripts/e2e-agent-run.sh"
+      ],
+      "ctxhelmToolCalls": [
+        {
+          "budget": null,
+          "format": null,
+          "hasRepo": true,
+          "hasTask": true,
+          "name": "prepare_task",
+          "recordTrace": null
+        },
+        {
+          "budget": "standard",
+          "format": "json",
+          "hasRepo": true,
+          "hasTask": true,
+          "name": "get_pack",
+          "recordTrace": false
+        }
+      ],
+      "discoveredFiles": [
+        "crates/ctxhelm-compiler/src/planning.rs",
+        "crates/ctxhelm/src/main.rs",
+        "docs/agent-setup.md",
+        "docs/feedback.md",
+        "scripts/e2e-agent-run.sh"
+      ],
+      "discoveredOnlyTargets": [],
+      "evaluationEligible": true,
+      "evaluationStatus": "eligible",
+      "evidenceHashes": {
+        "ctxhelmRequestLogSha256": "77229acea2dbab9d873c308be6ba5cb0348e7268b1ceec808d9e149f87af4880",
+        "stderrSha256": "28ece653340b982eb892f10fe1ae375f77c8e69f612c25fd168a2f50d779f3e3",
+        "streamJsonSha256": "ed855696ca275128f17545aad355573d552b24ba25026aec0ed1c6f2754a307b"
+      },
+      "forbiddenCommands": [],
+      "invalidRequiredCtxhelmCalls": [],
+      "irrelevantReads": [
+        "crates/ctxhelm-compiler/src/planning.rs",
+        "crates/ctxhelm/src/main.rs"
+      ],
+      "lane": "ctxhelm-memory",
+      "metrics": {
+        "commandExecutionCount": 6,
+        "ctxhelmEvidenceFileCount": 13,
+        "ctxhelmEvidenceMissedTargetCount": 0,
+        "ctxhelmEvidenceOnlyTargetCount": 0,
+        "ctxhelmEvidenceTargetHitCount": 3,
+        "ctxhelmToolCallCount": 2,
+        "discoveredFileCount": 5,
+        "forbiddenCommandCount": 0,
+        "invalidRequiredCtxhelmCallCount": 0,
+        "irrelevantReadCount": 2,
+        "missedTargetCount": 0,
+        "missingRequiredCtxhelmCallCount": 0,
+        "observedRequiredCtxhelmCallCount": 2,
+        "readFileCount": 5,
+        "requiredCtxhelmCallCount": 2,
+        "targetCount": 3,
+        "targetCoverage": 1.0,
+        "targetDiscoveredOnlyCount": 0,
+        "targetHitCount": 3,
+        "targetReadCount": 3,
+        "targetReadCoverage": 1.0
+      },
+      "missedTargetRoleCounts": {},
+      "missedTargets": [],
+      "missingRequiredCtxhelmCalls": [],
+      "mode": "memory",
+      "observedRequiredCtxhelmCalls": [
+        "prepare_task",
+        "get_pack"
+      ],
+      "rateLimitObserved": false,
+      "rawCommandOutputStored": false,
+      "rawMcpTrafficStored": false,
+      "rawPromptStored": false,
+      "rawTranscriptStored": false,
+      "readFiles": [
+        "crates/ctxhelm-compiler/src/planning.rs",
+        "crates/ctxhelm/src/main.rs",
+        "docs/agent-setup.md",
+        "docs/feedback.md",
+        "scripts/e2e-agent-run.sh"
+      ],
+      "readRoleCounts": {
+        "docs": 2,
+        "source": 3
+      },
+      "requiredCtxhelmCallSpecs": [
+        {
+          "name": "prepare_task",
+          "requiresRepo": true,
+          "requiresTask": true
+        },
+        {
+          "budget": "standard",
+          "format": "json",
+          "name": "get_pack",
+          "recordTrace": false,
+          "requiresRepo": true,
+          "requiresTask": true
+        }
+      ],
+      "requiredCtxhelmCalls": [
+        "prepare_task",
+        "get_pack"
+      ],
+      "sourceTextLogged": false,
+      "status": "passed",
+      "targetHits": [
+        "docs/agent-setup.md",
+        "docs/feedback.md",
+        "scripts/e2e-agent-run.sh"
+      ],
+      "targetReads": [
+        "docs/agent-setup.md",
+        "docs/feedback.md",
+        "scripts/e2e-agent-run.sh"
+      ]
+    }
+  ],
+  "privacyStatus": {
+    "localOnly": true,
+    "rawCommandOutputStored": false,
+    "rawMcpTrafficStored": false,
+    "rawPromptStored": false,
+    "rawTranscriptStored": false,
+    "remoteEmbeddingsUsed": false,
+    "remoteRerankingUsed": false,
+    "sourceTextLogged": false
+  },
+  "repo": {
+    "label": "ctxhelm",
+    "pathSha256": "823da75306f1c50f536e28905ec7405c88ec43b87fbf3f2afb37d7bf17d143a2"
+  },
+  "schemaVersion": "ctxhelm-agent-run-eval-v1",
+  "status": "passed",
+  "targetFiles": [
+    "scripts/e2e-agent-run.sh",
+    "docs/feedback.md",
+    "docs/agent-setup.md"
+  ],
+  "task": {
+    "rawTaskStored": false,
+    "taskSha256": "feab5db82cc10aef383e27473b0d760de515b5dc58aa41e6e957010d3421e1fb"
+  },
+  "unsupportedActions": [
+    "source edits",
+    "user project tests",
+    "global agent config mutation",
+    "cloud upload"
+  ],
+  "workflowKind": "paired-agent-context-run"
+}

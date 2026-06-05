@@ -4,7 +4,7 @@ milestone: v2.5
 milestone_name: Production Retrieval Quality
 status: active
 last_updated: "2026-06-03T00:00:00Z"
-last_activity: 2026-06-05 -- Phase 237 adds a Codex real-agent outcome matrix and proves source-free improvement
+last_activity: 2026-06-05 -- Phase 239 closes Codex consumption follow-up with capped native target reads and source-free improvement proof
 progress:
   total_phases: 134
   completed_phases: 134
@@ -17,10 +17,10 @@ progress:
 
 ## Current Position
 
-Phase: 237 - Codex Agent-Run Outcome Matrix
-Plan: 237-codex-agent-run-outcome-matrix
+Phase: 239 - Codex Capped Target Consumption
+Plan: 239-codex-capped-target-consumption
 Status: Complete
-Last activity: 2026-06-05 -- Phase 237 adds `scripts/e2e-agent-run-codex.sh` and runs a real Codex CLI `0.137.0` five-lane outcome matrix. The source-free artifact `.ctxhelm/e2e/phase237-agent-run-codex.json` passes with four comparable ctxhelm lanes, valid explicit-repo `prepare_task`/`get_pack` calls, no forbidden commands, no client failures, no ctxhelm evidence misses, and outcome claim `ctxhelm_improved`. Best lane `ctxhelm-memory` improves target coverage by `+0.33`, reduces irrelevant reads by `2`, reduces command executions by `14`, and reduces read-file count by `2`; remaining follow-up is Codex consumption guidance because some lanes surfaced docs that Codex did not read.
+Last activity: 2026-06-05 -- Phase 239 strengthens Codex/native consumption guidance after Phase 237 exposed docs that were surfaced but not read and Phase 238 showed that read-all target guidance was too broad. The source-free artifact `.ctxhelm/e2e/phase239-agent-run-codex-capped-consumption.json` passes with four comparable ctxhelm lanes, valid explicit-repo `prepare_task`/`get_pack` calls, no forbidden commands, no client failures, no ctxhelm evidence misses, and outcome claim `ctxhelm_improved`. Baseline and all ctxhelm lanes read all three expected target files; best lane `ctxhelm-brief` reduces irrelevant reads by `2`, command executions by `10`, and read-file count by `2`.
 
 ## Project Reference
 
