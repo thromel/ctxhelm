@@ -1072,6 +1072,15 @@ Recommendation today:
   2`, but finds one unsupported memory non-target in express, so the next local
   memory R&D route is `demote_uncorroborated_memory_candidates` and
   `test_memory_candidate_corroboration_policy`, not further diversity expansion.
+- Phase 233 tightens uncorroborated memory rescue. Ranking no longer adds a
+  memory-only source file when native related-test evidence is already
+  available, but still preserves memory-only rescue when memory is the only
+  available evidence. The express focused rerun drops
+  `memoryUniqueNonTargetWithoutCurrentSupportCount` from `1` to `0`. The
+  six-repo semantic-enabled rerun preserves `memoryUniqueLiftPairs = 2`, lowers
+  `memoryUniqueNonTargetCount` from `2` to `1`, sets
+  `unsupportedMemoryNoiseRepositoryCount = 0`, and routes remaining local memory
+  work to strong-signal overlap inspection.
 - Treat cloud embeddings/reranking as disabled unless an explicit repo policy
   allows them.
 

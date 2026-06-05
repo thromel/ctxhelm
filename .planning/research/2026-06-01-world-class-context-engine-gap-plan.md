@@ -264,6 +264,17 @@ and uncovers one unsupported memory non-target in express. The next local memory
 R&D step is no longer broad expansion; it is demoting or re-corroborating
 uncorroborated memory candidates and rerunning the six-repo suite.
 
+Status: Phase 233 clears that unsupported memory precision issue without losing
+the measured lift. Pair-level reproduction showed the express unsupported
+non-target was an uncorroborated memory-only source rescued while native
+semantic/related-test evidence was already available. Ranking now blocks that
+rescue shape while preserving memory-only rescue when memory is the only
+available evidence. The focused express rerun drops unsupported memory
+non-targets from one to zero, and the six-repo rerun preserves
+`memoryUniqueLiftPairs = 2` with `unsupportedMemoryNoiseRepositoryCount = 0`.
+The remaining local memory R&D target is strong-signal overlap inspection for
+the one co-change/dependency-supported express non-target.
+
 ### 3. Semantic/Embedding Signal Is Wired But Not Driving Lift
 
 The current product lift comes from hybrid ranking, graph/test/history/context

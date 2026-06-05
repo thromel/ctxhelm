@@ -4,7 +4,7 @@ milestone: v2.5
 milestone_name: Production Retrieval Quality
 status: active
 last_updated: "2026-06-03T00:00:00Z"
-last_activity: 2026-06-05 -- Phase 232 validates memory repository diversity and exposes unsupported JS memory noise
+last_activity: 2026-06-05 -- Phase 233 clears unsupported memory noise while preserving six-repo memory lift
 progress:
   total_phases: 134
   completed_phases: 134
@@ -17,10 +17,10 @@ progress:
 
 ## Current Position
 
-Phase: 232 - Memory Repository Diversity
-Plan: 232-memory-repository-diversity
+Phase: 233 - Memory Corroboration Policy
+Plan: 233-memory-corroboration-policy
 Status: Complete
-Last activity: 2026-06-05 -- Phase 232 adds an explicit six-repo memory diversity target and reruns the semantic-enabled suite across VeriSchema, ReAgent, ctxhelm, flask, fd, and express. The report measured 30 pairs across 30 distinct target files, set `repositoryDiversityTargetMet = true`, preserved `memoryUniqueLiftPairs = 2`, and exposed one unsupported memory non-target in express. The next local memory R&D is demoting or re-corroborating uncorroborated memory candidates, then rerunning the six-repo suite; real-agent outcome lift still waits on non-rate-limited Claude Code evidence.
+Last activity: 2026-06-05 -- Phase 233 blocks uncorroborated memory-only source rescue when native related-test evidence is already available. The express focused rerun drops `memoryUniqueNonTargetWithoutCurrentSupportCount` from `1` to `0`, and the six-repo semantic-enabled suite preserves `memoryUniqueLiftPairs = 2` while reducing `memoryUniqueNonTargetCount` from `2` to `1` and `unsupportedMemoryNoiseRepositoryCount` from `1` to `0`. The next local memory R&D is strong-signal overlap inspection for the remaining co-change/dependency-supported express non-target; real-agent outcome lift still waits on non-rate-limited Claude Code evidence.
 
 ## Project Reference
 

@@ -715,7 +715,7 @@ fn select_target_files(
         push_target(candidate, &mut selected, &mut selected_paths, file_budget);
     }
     let mut memory_rescue_selected = 0usize;
-    if selected.is_empty() {
+    if selected.is_empty() && !has_native_related_test_evidence(candidates) {
         for candidate in candidates
             .iter()
             .filter(|candidate| is_uncorroborated_memory_only_candidate(candidate))
@@ -743,6 +743,17 @@ fn select_target_files(
     }
 
     selected
+}
+
+fn has_native_related_test_evidence(candidates: &[RankedCandidate]) -> bool {
+    candidates.iter().any(|candidate| {
+        candidate.related_test.is_some()
+            && !candidate
+                .candidate
+                .signal_scores
+                .iter()
+                .all(|score| score.signal == RetrievalSignalKind::Memory)
+    })
 }
 
 fn is_uncorroborated_memory_only_candidate(candidate: &RankedCandidate) -> bool {
@@ -2104,6 +2115,29 @@ mod tests {
             .collect::<Vec<_>>();
 
         assert_eq!(paths, vec!["src/memory-a.ts"]);
+    }
+
+    #[test]
+    fn selection_skips_uncorroborated_memory_rescue_when_native_tests_exist() {
+        let candidates = rank_candidates(RankingInput {
+            related_tests: vec![RelatedTestResult {
+                path: "tests/native.test.ts".to_string(),
+                command: Some("pnpm vitest run tests/native.test.ts".to_string()),
+                confidence: 0.90,
+                reason: "native related test evidence".to_string(),
+            }],
+            memory_paths: vec![memory_path("src/memory-only.ts", 0.95)],
+            roles: roles([
+                ("tests/native.test.ts", FileRole::Test),
+                ("src/memory-only.ts", FileRole::Source),
+            ]),
+            ..RankingInput::default()
+        });
+
+        let selection = select_ranked_candidates(&candidates, 3, 3);
+
+        assert!(selection.target_files.is_empty());
+        assert_eq!(selection.related_tests[0].path, "tests/native.test.ts");
     }
 
     #[test]

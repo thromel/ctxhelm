@@ -1,0 +1,667 @@
+{
+  "aggregate": {
+    "afterEvalRuntimeSecondsTotal": 1.66,
+    "combinedRecoveredPairs": 0,
+    "graphEdgeAblationRemovedTargetHitCount": 3,
+    "lexicalCoveredPairs": 5,
+    "memoryCandidatePairs": 4,
+    "memoryNoisePairs": 1,
+    "memoryTargetHitPairs": 1,
+    "memoryTargetHitsWithGraphSupportUpperBound": 2,
+    "memoryTargetHitsWithSemanticSupportUpperBound": 0,
+    "memoryTargetHitsWithoutGraphOrSemanticSupportLowerBound": 0,
+    "memoryUniqueLiftPairs": 0,
+    "memoryUniqueNonTargetCount": 1,
+    "memoryUniqueNonTargetCurrentSupportSignalCounts": {
+      "co_change": 1,
+      "dependency": 1
+    },
+    "memoryUniqueNonTargetWithCurrentSupportCount": 1,
+    "memoryUniqueNonTargetWithoutCurrentSupportCount": 0,
+    "memoryUniqueTargetHitCount": 0,
+    "memoryUniqueTargetHitCurrentSupportSignalCounts": {},
+    "memoryUniqueTargetHitWithoutCurrentSupportCount": 0,
+    "memoryUniqueTargetsWithGraphOrSemanticSupportUpperBound": 0,
+    "semanticAblationLiftPairs": 0,
+    "semanticSelectedTargetPairs": 4
+  },
+  "errors": [],
+  "interpretation": {
+    "generalizationProven": false,
+    "largerPairValidationTargetMet": true,
+    "lexicalStillStrong": true,
+    "memoryNeedsCorroboration": true,
+    "pairDiversityMeasured": true,
+    "precisionNeedsWork": true,
+    "recommendedNextRAndD": [
+      "inspect_remaining_strong_signal_memory_overlap",
+      "compare_memory_noise_against_current_signal_roles",
+      "compare_against_lexical_graph_semantic_ablations",
+      "measure_real_agent_outcome_lift"
+    ],
+    "semanticMeasured": true,
+    "semanticUsefulForMemoryTasks": true,
+    "singlePairLiftObserved": false,
+    "supportedMemoryNoiseDominantSignals": [
+      "co_change",
+      "dependency"
+    ],
+    "supportedMemoryNoiseNeedsReview": true,
+    "unsupportedMemoryPrecisionNeedsWork": false,
+    "weakSupportedMemoryNoiseNeedsTuning": false
+  },
+  "pairs": [
+    {
+      "afterApproval": {
+        "memoryReuseSummary": {
+          "commitsWithMemoryCandidates": 1,
+          "memoryCandidateCount": 3,
+          "memorySelectedAt10Count": 3,
+          "memoryTargetHitAt10Count": 2,
+          "memoryTargetMissedAt10Count": 1,
+          "memoryUniqueNonTargetCount": 1,
+          "memoryUniqueNonTargetCurrentSupportSignalCounts": {
+            "co_change": 1,
+            "dependency": 1
+          },
+          "memoryUniqueNonTargetWithCurrentSupportCount": 1,
+          "memoryUniqueNonTargetWithoutCurrentSupportCount": 0,
+          "memoryUniqueTargetHitCount": 0,
+          "memoryUniqueTargetHitCurrentSupportSignalCounts": {},
+          "memoryUniqueTargetHitWithCurrentSupportCount": 0,
+          "memoryUniqueTargetHitWithoutCurrentSupportCount": 0,
+          "selectedRoleCounts": {
+            "docs": 1,
+            "source": 2
+          },
+          "sourceTextLogged": false
+        },
+        "recommendedResearchActions": [
+          "fix_retrieval_or_ranking_regression",
+          "improve_ranking_or_budget_allocation",
+          "improve_validation_test_mapping",
+          "reduce_memory_retrieval_noise"
+        ],
+        "targetInCombined": true,
+        "targetInLexical": true
+      },
+      "beforeApproval": {
+        "memoryReuseSummary": {
+          "commitsWithMemoryCandidates": 0,
+          "memoryCandidateCount": 0,
+          "memorySelectedAt10Count": 0,
+          "memoryTargetHitAt10Count": 0,
+          "memoryTargetMissedAt10Count": 0,
+          "memoryUniqueNonTargetCount": 0,
+          "memoryUniqueNonTargetCurrentSupportSignalCounts": {},
+          "memoryUniqueNonTargetWithCurrentSupportCount": 0,
+          "memoryUniqueNonTargetWithoutCurrentSupportCount": 0,
+          "memoryUniqueTargetHitCount": 0,
+          "memoryUniqueTargetHitCurrentSupportSignalCounts": {},
+          "memoryUniqueTargetHitWithCurrentSupportCount": 0,
+          "memoryUniqueTargetHitWithoutCurrentSupportCount": 0,
+          "selectedRoleCounts": {},
+          "sourceTextLogged": false
+        },
+        "recommendedResearchActions": [
+          "fix_retrieval_or_ranking_regression",
+          "improve_ranking_or_budget_allocation",
+          "improve_validation_test_mapping",
+          "collect_or_approve_experience_memory"
+        ],
+        "targetInCombined": true,
+        "targetInLexical": true
+      },
+      "evaluatedCommits": 1,
+      "experience": {
+        "approvedExperienceCardId": "experience:b847f14fad45d18067b6adb2761911f45882b06907815289bfd70d5ca63fc4fa",
+        "generatedCards": 1
+      },
+      "lift": {
+        "combinedRecoveredTarget": false,
+        "lexicalAlreadyCoveredTarget": true,
+        "memoryCandidateDelta": 3,
+        "memoryTargetHitDelta": 2,
+        "memoryUniqueTargetHitDelta": 0,
+        "targetMissedByMemory": 1,
+        "uniqueNonTargetCurrentSupportSignalCounts": {
+          "co_change": 1,
+          "dependency": 1
+        },
+        "uniqueNonTargetNoise": 1,
+        "uniqueNonTargetWithoutCurrentSupport": 0,
+        "uniqueTargetHitCurrentSupportSignalCounts": {},
+        "uniqueTargetHitWithoutCurrentSupport": 0,
+        "uniqueTargetLiftBeyondLexical": false
+      },
+      "newerShaPrefix": "caa4f68ee8d3",
+      "newerTaskSha256": "1fa109d96703db24325b4ec5ffdb93afa8786e7003c954d99655007c886dce9a",
+      "olderShaPrefix": "327af123a183",
+      "olderTaskSha256": "88a7b6cf490f22356bbb1f8189435435a6535906318677069b328bfd44944784",
+      "pairIndex": 1,
+      "rawTaskStored": false,
+      "retrievalTargetMatched": true,
+      "runtimeSeconds": {
+        "afterEval": 0.42,
+        "approve": 0.02,
+        "beforeEval": 6.06,
+        "generateExperience": 0.04,
+        "seedPrepareTask": 3.26
+      },
+      "signalComparison": {
+        "dependencyAblationRecallDeltaAt10": 0.0,
+        "graphEdgeAblationRemovedTargetHitCount": 0,
+        "graphEdgeTargetHitCount": 1,
+        "graphSelectedTargetCount": 2,
+        "lexicalSelectedTargetCount": 2,
+        "memorySelectedCount": 3,
+        "memoryTargetHitCount": 2,
+        "memoryTargetHitsWithGraphSupportUpperBound": 2,
+        "memoryTargetHitsWithSemanticSupportUpperBound": 0,
+        "memoryTargetHitsWithoutGraphOrSemanticSupportLowerBound": 0,
+        "memoryUniqueNonTargetCount": 1,
+        "memoryUniqueNonTargetCurrentSupportSignalCounts": {
+          "co_change": 1,
+          "dependency": 1
+        },
+        "memoryUniqueTargetHitCount": 0,
+        "memoryUniqueTargetHitCurrentSupportSignalCounts": {},
+        "memoryUniqueTargetsWithGraphOrSemanticSupportUpperBound": 0,
+        "semanticAblationRecallDeltaAt10": 0.0,
+        "semanticMeasured": true,
+        "semanticProvider": "local_hash",
+        "semanticSelectedTargetCount": 0
+      },
+      "targetFile": "lib/response.js"
+    },
+    {
+      "afterApproval": {
+        "memoryReuseSummary": {
+          "commitsWithMemoryCandidates": 0,
+          "memoryCandidateCount": 0,
+          "memorySelectedAt10Count": 0,
+          "memoryTargetHitAt10Count": 0,
+          "memoryTargetMissedAt10Count": 0,
+          "memoryUniqueNonTargetCount": 0,
+          "memoryUniqueNonTargetCurrentSupportSignalCounts": {},
+          "memoryUniqueNonTargetWithCurrentSupportCount": 0,
+          "memoryUniqueNonTargetWithoutCurrentSupportCount": 0,
+          "memoryUniqueTargetHitCount": 0,
+          "memoryUniqueTargetHitCurrentSupportSignalCounts": {},
+          "memoryUniqueTargetHitWithCurrentSupportCount": 0,
+          "memoryUniqueTargetHitWithoutCurrentSupportCount": 0,
+          "selectedRoleCounts": {},
+          "sourceTextLogged": false
+        },
+        "recommendedResearchActions": [
+          "fix_retrieval_or_ranking_regression",
+          "improve_candidate_generation",
+          "improve_validation_test_mapping",
+          "collect_or_approve_experience_memory"
+        ],
+        "targetInCombined": false,
+        "targetInLexical": true
+      },
+      "beforeApproval": {
+        "memoryReuseSummary": {
+          "commitsWithMemoryCandidates": 0,
+          "memoryCandidateCount": 0,
+          "memorySelectedAt10Count": 0,
+          "memoryTargetHitAt10Count": 0,
+          "memoryTargetMissedAt10Count": 0,
+          "memoryUniqueNonTargetCount": 0,
+          "memoryUniqueNonTargetCurrentSupportSignalCounts": {},
+          "memoryUniqueNonTargetWithCurrentSupportCount": 0,
+          "memoryUniqueNonTargetWithoutCurrentSupportCount": 0,
+          "memoryUniqueTargetHitCount": 0,
+          "memoryUniqueTargetHitCurrentSupportSignalCounts": {},
+          "memoryUniqueTargetHitWithCurrentSupportCount": 0,
+          "memoryUniqueTargetHitWithoutCurrentSupportCount": 0,
+          "selectedRoleCounts": {},
+          "sourceTextLogged": false
+        },
+        "recommendedResearchActions": [
+          "fix_retrieval_or_ranking_regression",
+          "improve_candidate_generation",
+          "improve_validation_test_mapping",
+          "collect_or_approve_experience_memory"
+        ],
+        "targetInCombined": false,
+        "targetInLexical": true
+      },
+      "evaluatedCommits": 1,
+      "experience": {
+        "approvedExperienceCardId": "experience:b847f14fad45d18067b6adb2761911f45882b06907815289bfd70d5ca63fc4fa",
+        "generatedCards": 1
+      },
+      "lift": {
+        "combinedRecoveredTarget": false,
+        "lexicalAlreadyCoveredTarget": true,
+        "memoryCandidateDelta": 0,
+        "memoryTargetHitDelta": 0,
+        "memoryUniqueTargetHitDelta": 0,
+        "targetMissedByMemory": 0,
+        "uniqueNonTargetCurrentSupportSignalCounts": {},
+        "uniqueNonTargetNoise": 0,
+        "uniqueNonTargetWithoutCurrentSupport": 0,
+        "uniqueTargetHitCurrentSupportSignalCounts": {},
+        "uniqueTargetHitWithoutCurrentSupport": 0,
+        "uniqueTargetLiftBeyondLexical": false
+      },
+      "newerShaPrefix": "dfd1851245aa",
+      "newerTaskSha256": "b4a50cd44006a1b849e0adc90ef4db4f329105956b4bb3ac10d0b492d6332744",
+      "olderShaPrefix": "327af123a183",
+      "olderTaskSha256": "88a7b6cf490f22356bbb1f8189435435a6535906318677069b328bfd44944784",
+      "pairIndex": 2,
+      "rawTaskStored": false,
+      "retrievalTargetMatched": true,
+      "runtimeSeconds": {
+        "afterEval": 0.21,
+        "approve": 0.02,
+        "beforeEval": 3.14,
+        "generateExperience": 0.04,
+        "seedPrepareTask": 2.87
+      },
+      "signalComparison": {
+        "dependencyAblationRecallDeltaAt10": 0.0,
+        "graphEdgeAblationRemovedTargetHitCount": 0,
+        "graphEdgeTargetHitCount": 0,
+        "graphSelectedTargetCount": 2,
+        "lexicalSelectedTargetCount": 0,
+        "memorySelectedCount": 0,
+        "memoryTargetHitCount": 0,
+        "memoryTargetHitsWithGraphSupportUpperBound": 0,
+        "memoryTargetHitsWithSemanticSupportUpperBound": 0,
+        "memoryTargetHitsWithoutGraphOrSemanticSupportLowerBound": 0,
+        "memoryUniqueNonTargetCount": 0,
+        "memoryUniqueNonTargetCurrentSupportSignalCounts": {},
+        "memoryUniqueTargetHitCount": 0,
+        "memoryUniqueTargetHitCurrentSupportSignalCounts": {},
+        "memoryUniqueTargetsWithGraphOrSemanticSupportUpperBound": 0,
+        "semanticAblationRecallDeltaAt10": 0.0,
+        "semanticMeasured": true,
+        "semanticProvider": "local_hash",
+        "semanticSelectedTargetCount": 2
+      },
+      "targetFile": "test/res.sendFile.js"
+    },
+    {
+      "afterApproval": {
+        "memoryReuseSummary": {
+          "commitsWithMemoryCandidates": 1,
+          "memoryCandidateCount": 1,
+          "memorySelectedAt10Count": 1,
+          "memoryTargetHitAt10Count": 0,
+          "memoryTargetMissedAt10Count": 14,
+          "memoryUniqueNonTargetCount": 0,
+          "memoryUniqueNonTargetCurrentSupportSignalCounts": {},
+          "memoryUniqueNonTargetWithCurrentSupportCount": 0,
+          "memoryUniqueNonTargetWithoutCurrentSupportCount": 0,
+          "memoryUniqueTargetHitCount": 0,
+          "memoryUniqueTargetHitCurrentSupportSignalCounts": {},
+          "memoryUniqueTargetHitWithCurrentSupportCount": 0,
+          "memoryUniqueTargetHitWithoutCurrentSupportCount": 0,
+          "selectedRoleCounts": {
+            "docs": 1
+          },
+          "sourceTextLogged": false
+        },
+        "recommendedResearchActions": [
+          "improve_ranking_or_budget_allocation",
+          "improve_validation_test_mapping",
+          "tune_graph_edge_budget",
+          "improve_memory_selection_policy"
+        ],
+        "targetInCombined": true,
+        "targetInLexical": true
+      },
+      "beforeApproval": {
+        "memoryReuseSummary": {
+          "commitsWithMemoryCandidates": 0,
+          "memoryCandidateCount": 0,
+          "memorySelectedAt10Count": 0,
+          "memoryTargetHitAt10Count": 0,
+          "memoryTargetMissedAt10Count": 0,
+          "memoryUniqueNonTargetCount": 0,
+          "memoryUniqueNonTargetCurrentSupportSignalCounts": {},
+          "memoryUniqueNonTargetWithCurrentSupportCount": 0,
+          "memoryUniqueNonTargetWithoutCurrentSupportCount": 0,
+          "memoryUniqueTargetHitCount": 0,
+          "memoryUniqueTargetHitCurrentSupportSignalCounts": {},
+          "memoryUniqueTargetHitWithCurrentSupportCount": 0,
+          "memoryUniqueTargetHitWithoutCurrentSupportCount": 0,
+          "selectedRoleCounts": {},
+          "sourceTextLogged": false
+        },
+        "recommendedResearchActions": [
+          "improve_ranking_or_budget_allocation",
+          "improve_validation_test_mapping",
+          "tune_graph_edge_budget",
+          "collect_or_approve_experience_memory"
+        ],
+        "targetInCombined": true,
+        "targetInLexical": true
+      },
+      "evaluatedCommits": 1,
+      "experience": {
+        "approvedExperienceCardId": "experience:ced1a6ec2625c916ab33d0c8cd19b6d107368e74a2c38d4b948e3a0e8cd7dde3",
+        "generatedCards": 1
+      },
+      "lift": {
+        "combinedRecoveredTarget": false,
+        "lexicalAlreadyCoveredTarget": true,
+        "memoryCandidateDelta": 1,
+        "memoryTargetHitDelta": 0,
+        "memoryUniqueTargetHitDelta": 0,
+        "targetMissedByMemory": 14,
+        "uniqueNonTargetCurrentSupportSignalCounts": {},
+        "uniqueNonTargetNoise": 0,
+        "uniqueNonTargetWithoutCurrentSupport": 0,
+        "uniqueTargetHitCurrentSupportSignalCounts": {},
+        "uniqueTargetHitWithoutCurrentSupport": 0,
+        "uniqueTargetLiftBeyondLexical": false
+      },
+      "newerShaPrefix": "98c85eb0dd64",
+      "newerTaskSha256": "f9b32043c2afa8e4019111083a39d0ff8a47f46c76517b9def849127405df00b",
+      "olderShaPrefix": "dfd1851245aa",
+      "olderTaskSha256": "b4a50cd44006a1b849e0adc90ef4db4f329105956b4bb3ac10d0b492d6332744",
+      "pairIndex": 3,
+      "rawTaskStored": false,
+      "retrievalTargetMatched": true,
+      "runtimeSeconds": {
+        "afterEval": 0.38,
+        "approve": 0.02,
+        "beforeEval": 3.39,
+        "generateExperience": 0.05,
+        "seedPrepareTask": 0.32
+      },
+      "signalComparison": {
+        "dependencyAblationRecallDeltaAt10": 0.0714286,
+        "graphEdgeAblationRemovedTargetHitCount": 1,
+        "graphEdgeTargetHitCount": 1,
+        "graphSelectedTargetCount": 6,
+        "lexicalSelectedTargetCount": 4,
+        "memorySelectedCount": 1,
+        "memoryTargetHitCount": 0,
+        "memoryTargetHitsWithGraphSupportUpperBound": 0,
+        "memoryTargetHitsWithSemanticSupportUpperBound": 0,
+        "memoryTargetHitsWithoutGraphOrSemanticSupportLowerBound": 0,
+        "memoryUniqueNonTargetCount": 0,
+        "memoryUniqueNonTargetCurrentSupportSignalCounts": {},
+        "memoryUniqueTargetHitCount": 0,
+        "memoryUniqueTargetHitCurrentSupportSignalCounts": {},
+        "memoryUniqueTargetsWithGraphOrSemanticSupportUpperBound": 0,
+        "semanticAblationRecallDeltaAt10": 0.0,
+        "semanticMeasured": true,
+        "semanticProvider": "local_hash",
+        "semanticSelectedTargetCount": 2
+      },
+      "targetFile": "test/express.json.js"
+    },
+    {
+      "afterApproval": {
+        "memoryReuseSummary": {
+          "commitsWithMemoryCandidates": 1,
+          "memoryCandidateCount": 1,
+          "memorySelectedAt10Count": 1,
+          "memoryTargetHitAt10Count": 0,
+          "memoryTargetMissedAt10Count": 14,
+          "memoryUniqueNonTargetCount": 0,
+          "memoryUniqueNonTargetCurrentSupportSignalCounts": {},
+          "memoryUniqueNonTargetWithCurrentSupportCount": 0,
+          "memoryUniqueNonTargetWithoutCurrentSupportCount": 0,
+          "memoryUniqueTargetHitCount": 0,
+          "memoryUniqueTargetHitCurrentSupportSignalCounts": {},
+          "memoryUniqueTargetHitWithCurrentSupportCount": 0,
+          "memoryUniqueTargetHitWithoutCurrentSupportCount": 0,
+          "selectedRoleCounts": {
+            "docs": 1
+          },
+          "sourceTextLogged": false
+        },
+        "recommendedResearchActions": [
+          "improve_ranking_or_budget_allocation",
+          "improve_validation_test_mapping",
+          "tune_graph_edge_budget",
+          "improve_memory_selection_policy"
+        ],
+        "targetInCombined": false,
+        "targetInLexical": true
+      },
+      "beforeApproval": {
+        "memoryReuseSummary": {
+          "commitsWithMemoryCandidates": 0,
+          "memoryCandidateCount": 0,
+          "memorySelectedAt10Count": 0,
+          "memoryTargetHitAt10Count": 0,
+          "memoryTargetMissedAt10Count": 0,
+          "memoryUniqueNonTargetCount": 0,
+          "memoryUniqueNonTargetCurrentSupportSignalCounts": {},
+          "memoryUniqueNonTargetWithCurrentSupportCount": 0,
+          "memoryUniqueNonTargetWithoutCurrentSupportCount": 0,
+          "memoryUniqueTargetHitCount": 0,
+          "memoryUniqueTargetHitCurrentSupportSignalCounts": {},
+          "memoryUniqueTargetHitWithCurrentSupportCount": 0,
+          "memoryUniqueTargetHitWithoutCurrentSupportCount": 0,
+          "selectedRoleCounts": {},
+          "sourceTextLogged": false
+        },
+        "recommendedResearchActions": [
+          "improve_ranking_or_budget_allocation",
+          "improve_validation_test_mapping",
+          "tune_graph_edge_budget",
+          "collect_or_approve_experience_memory"
+        ],
+        "targetInCombined": false,
+        "targetInLexical": true
+      },
+      "evaluatedCommits": 1,
+      "experience": {
+        "approvedExperienceCardId": "experience:ced1a6ec2625c916ab33d0c8cd19b6d107368e74a2c38d4b948e3a0e8cd7dde3",
+        "generatedCards": 1
+      },
+      "lift": {
+        "combinedRecoveredTarget": false,
+        "lexicalAlreadyCoveredTarget": true,
+        "memoryCandidateDelta": 1,
+        "memoryTargetHitDelta": 0,
+        "memoryUniqueTargetHitDelta": 0,
+        "targetMissedByMemory": 14,
+        "uniqueNonTargetCurrentSupportSignalCounts": {},
+        "uniqueNonTargetNoise": 0,
+        "uniqueNonTargetWithoutCurrentSupport": 0,
+        "uniqueTargetHitCurrentSupportSignalCounts": {},
+        "uniqueTargetHitWithoutCurrentSupport": 0,
+        "uniqueTargetLiftBeyondLexical": false
+      },
+      "newerShaPrefix": "98c85eb0dd64",
+      "newerTaskSha256": "f9b32043c2afa8e4019111083a39d0ff8a47f46c76517b9def849127405df00b",
+      "olderShaPrefix": "dfd1851245aa",
+      "olderTaskSha256": "b4a50cd44006a1b849e0adc90ef4db4f329105956b4bb3ac10d0b492d6332744",
+      "pairIndex": 4,
+      "rawTaskStored": false,
+      "retrievalTargetMatched": true,
+      "runtimeSeconds": {
+        "afterEval": 0.37,
+        "approve": 0.02,
+        "beforeEval": 3.69,
+        "generateExperience": 0.05,
+        "seedPrepareTask": 0.39
+      },
+      "signalComparison": {
+        "dependencyAblationRecallDeltaAt10": 0.0714286,
+        "graphEdgeAblationRemovedTargetHitCount": 1,
+        "graphEdgeTargetHitCount": 1,
+        "graphSelectedTargetCount": 6,
+        "lexicalSelectedTargetCount": 4,
+        "memorySelectedCount": 1,
+        "memoryTargetHitCount": 0,
+        "memoryTargetHitsWithGraphSupportUpperBound": 0,
+        "memoryTargetHitsWithSemanticSupportUpperBound": 0,
+        "memoryTargetHitsWithoutGraphOrSemanticSupportLowerBound": 0,
+        "memoryUniqueNonTargetCount": 0,
+        "memoryUniqueNonTargetCurrentSupportSignalCounts": {},
+        "memoryUniqueTargetHitCount": 0,
+        "memoryUniqueTargetHitCurrentSupportSignalCounts": {},
+        "memoryUniqueTargetsWithGraphOrSemanticSupportUpperBound": 0,
+        "semanticAblationRecallDeltaAt10": 0.0,
+        "semanticMeasured": true,
+        "semanticProvider": "local_hash",
+        "semanticSelectedTargetCount": 2
+      },
+      "targetFile": "test/express.raw.js"
+    },
+    {
+      "afterApproval": {
+        "memoryReuseSummary": {
+          "commitsWithMemoryCandidates": 1,
+          "memoryCandidateCount": 1,
+          "memorySelectedAt10Count": 1,
+          "memoryTargetHitAt10Count": 0,
+          "memoryTargetMissedAt10Count": 14,
+          "memoryUniqueNonTargetCount": 0,
+          "memoryUniqueNonTargetCurrentSupportSignalCounts": {},
+          "memoryUniqueNonTargetWithCurrentSupportCount": 0,
+          "memoryUniqueNonTargetWithoutCurrentSupportCount": 0,
+          "memoryUniqueTargetHitCount": 0,
+          "memoryUniqueTargetHitCurrentSupportSignalCounts": {},
+          "memoryUniqueTargetHitWithCurrentSupportCount": 0,
+          "memoryUniqueTargetHitWithoutCurrentSupportCount": 0,
+          "selectedRoleCounts": {
+            "docs": 1
+          },
+          "sourceTextLogged": false
+        },
+        "recommendedResearchActions": [
+          "improve_ranking_or_budget_allocation",
+          "improve_validation_test_mapping",
+          "tune_graph_edge_budget",
+          "improve_memory_selection_policy"
+        ],
+        "targetInCombined": false,
+        "targetInLexical": true
+      },
+      "beforeApproval": {
+        "memoryReuseSummary": {
+          "commitsWithMemoryCandidates": 0,
+          "memoryCandidateCount": 0,
+          "memorySelectedAt10Count": 0,
+          "memoryTargetHitAt10Count": 0,
+          "memoryTargetMissedAt10Count": 0,
+          "memoryUniqueNonTargetCount": 0,
+          "memoryUniqueNonTargetCurrentSupportSignalCounts": {},
+          "memoryUniqueNonTargetWithCurrentSupportCount": 0,
+          "memoryUniqueNonTargetWithoutCurrentSupportCount": 0,
+          "memoryUniqueTargetHitCount": 0,
+          "memoryUniqueTargetHitCurrentSupportSignalCounts": {},
+          "memoryUniqueTargetHitWithCurrentSupportCount": 0,
+          "memoryUniqueTargetHitWithoutCurrentSupportCount": 0,
+          "selectedRoleCounts": {},
+          "sourceTextLogged": false
+        },
+        "recommendedResearchActions": [
+          "improve_ranking_or_budget_allocation",
+          "improve_validation_test_mapping",
+          "tune_graph_edge_budget",
+          "collect_or_approve_experience_memory"
+        ],
+        "targetInCombined": false,
+        "targetInLexical": true
+      },
+      "evaluatedCommits": 1,
+      "experience": {
+        "approvedExperienceCardId": "experience:ced1a6ec2625c916ab33d0c8cd19b6d107368e74a2c38d4b948e3a0e8cd7dde3",
+        "generatedCards": 1
+      },
+      "lift": {
+        "combinedRecoveredTarget": false,
+        "lexicalAlreadyCoveredTarget": true,
+        "memoryCandidateDelta": 1,
+        "memoryTargetHitDelta": 0,
+        "memoryUniqueTargetHitDelta": 0,
+        "targetMissedByMemory": 14,
+        "uniqueNonTargetCurrentSupportSignalCounts": {},
+        "uniqueNonTargetNoise": 0,
+        "uniqueNonTargetWithoutCurrentSupport": 0,
+        "uniqueTargetHitCurrentSupportSignalCounts": {},
+        "uniqueTargetHitWithoutCurrentSupport": 0,
+        "uniqueTargetLiftBeyondLexical": false
+      },
+      "newerShaPrefix": "98c85eb0dd64",
+      "newerTaskSha256": "f9b32043c2afa8e4019111083a39d0ff8a47f46c76517b9def849127405df00b",
+      "olderShaPrefix": "dfd1851245aa",
+      "olderTaskSha256": "b4a50cd44006a1b849e0adc90ef4db4f329105956b4bb3ac10d0b492d6332744",
+      "pairIndex": 5,
+      "rawTaskStored": false,
+      "retrievalTargetMatched": true,
+      "runtimeSeconds": {
+        "afterEval": 0.28,
+        "approve": 0.01,
+        "beforeEval": 2.81,
+        "generateExperience": 0.03,
+        "seedPrepareTask": 0.21
+      },
+      "signalComparison": {
+        "dependencyAblationRecallDeltaAt10": 0.0714286,
+        "graphEdgeAblationRemovedTargetHitCount": 1,
+        "graphEdgeTargetHitCount": 1,
+        "graphSelectedTargetCount": 6,
+        "lexicalSelectedTargetCount": 4,
+        "memorySelectedCount": 1,
+        "memoryTargetHitCount": 0,
+        "memoryTargetHitsWithGraphSupportUpperBound": 0,
+        "memoryTargetHitsWithSemanticSupportUpperBound": 0,
+        "memoryTargetHitsWithoutGraphOrSemanticSupportLowerBound": 0,
+        "memoryUniqueNonTargetCount": 0,
+        "memoryUniqueNonTargetCurrentSupportSignalCounts": {},
+        "memoryUniqueTargetHitCount": 0,
+        "memoryUniqueTargetHitCurrentSupportSignalCounts": {},
+        "memoryUniqueTargetsWithGraphOrSemanticSupportUpperBound": 0,
+        "semanticAblationRecallDeltaAt10": 0.0,
+        "semanticMeasured": true,
+        "semanticProvider": "local_hash",
+        "semanticSelectedTargetCount": 2
+      },
+      "targetFile": "test/express.text.js"
+    }
+  ],
+  "privacyStatus": {
+    "localOnly": true,
+    "rawMcpTrafficStored": false,
+    "rawPromptStored": false,
+    "rawTaskTextStored": false,
+    "rawTranscriptStored": false,
+    "remoteEmbeddingsUsed": false,
+    "remoteRerankingUsed": false,
+    "repoPathStored": false,
+    "sourceTextLogged": false
+  },
+  "repo": {
+    "candidatePairCount": 24,
+    "candidateTargetFileCount": 13,
+    "discoveredPairs": 5,
+    "errorCount": 0,
+    "evaluatedPairs": 5,
+    "evaluatedTargetFileCount": 5,
+    "headShaPrefix": "dae209ae6559",
+    "label": "express",
+    "pathStored": false,
+    "requestedPairs": 5,
+    "scanCommits": 120
+  },
+  "schemaVersion": "ctxhelm-memory-generalization-measurement-v2",
+  "semantic": {
+    "enabled": true,
+    "localOnly": true,
+    "provider": "local_hash",
+    "remoteEmbeddingsUsed": false
+  },
+  "status": "measured",
+  "unsupportedActions": [
+    "source edits",
+    "model invocation",
+    "cloud upload",
+    "raw prompt storage"
+  ],
+  "workflowKind": "multi-pair-experience-memory-generalization"
+}
