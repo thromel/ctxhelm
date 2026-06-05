@@ -1761,7 +1761,8 @@ fn extend_project_governance_docs(
 ) {
     let project_governance_task = is_project_governance_task(task);
     let agent_outcome_task = is_agent_outcome_task(task);
-    if !project_governance_task && !agent_outcome_task {
+    let agent_guidance_task = is_agent_guidance_task(task);
+    if !project_governance_task && !agent_outcome_task && !agent_guidance_task {
         return;
     }
 
@@ -1802,6 +1803,10 @@ fn extend_project_governance_docs(
                 "project governance artifact for planning/eval/release task".to_string()
             },
         });
+    }
+
+    if agent_guidance_task {
+        extend_agent_guidance_source_candidates(search_results, roles, &mut seen);
     }
 }
 
@@ -1860,6 +1865,98 @@ fn is_agent_outcome_task(task: &str) -> bool {
         })
 }
 
+fn is_agent_guidance_task(task: &str) -> bool {
+    let task_terms = terms(task);
+    let guidance_terms = [
+        "consume",
+        "consumes",
+        "consumption",
+        "e2e",
+        "guidance",
+        "harness",
+        "instruction",
+        "instructions",
+        "native",
+        "read",
+        "reading",
+        "setup",
+    ];
+    let agent_surface_terms = [
+        "agent",
+        "agents",
+        "claude",
+        "codex",
+        "cursor",
+        "mcp",
+        "memory",
+        "opencode",
+        "selected",
+        "selectedmemory",
+    ];
+    task_terms
+        .iter()
+        .any(|term| guidance_terms.contains(&term.as_str()))
+        && task_terms
+            .iter()
+            .any(|term| agent_surface_terms.contains(&term.as_str()))
+}
+
+fn extend_agent_guidance_source_candidates(
+    search_results: &mut Vec<SearchResult>,
+    roles: &BTreeMap<String, FileRole>,
+    seen: &mut BTreeSet<String>,
+) {
+    let mut additions = Vec::new();
+    for (index, path) in agent_guidance_source_paths().into_iter().enumerate() {
+        let Some(role) = roles.get(path).cloned() else {
+            continue;
+        };
+        if !is_agent_guidance_implementation_role(path, &role) {
+            continue;
+        }
+
+        let boosted_score = 32.0 - index.min(10) as f32;
+        let candidate_role = agent_guidance_candidate_role(path, &role);
+        if let Some(position) = search_results.iter().position(|result| result.path == path) {
+            let mut result = search_results.remove(position);
+            result.role = candidate_role;
+            result.score = result.score.max(boosted_score);
+            result.reason = "agent-native guidance implementation surface".to_string();
+            additions.push(result);
+            continue;
+        }
+
+        if !seen.insert(path.to_string()) {
+            continue;
+        }
+
+        additions.push(SearchResult {
+            path: path.to_string(),
+            role: candidate_role,
+            language: language_for_path(path),
+            score: boosted_score,
+            reason: "agent-native guidance implementation surface".to_string(),
+        });
+    }
+    search_results.splice(0..0, additions);
+}
+
+fn is_agent_guidance_implementation_role(path: &str, role: &FileRole) -> bool {
+    matches!(role, FileRole::Source)
+        || (matches!(role, FileRole::Unknown)
+            && (path.ends_with(".sh") || path.ends_with(".bash") || path.ends_with(".zsh")))
+}
+
+fn agent_guidance_candidate_role(path: &str, role: &FileRole) -> FileRole {
+    if matches!(role, FileRole::Unknown)
+        && (path.ends_with(".sh") || path.ends_with(".bash") || path.ends_with(".zsh"))
+    {
+        FileRole::Source
+    } else {
+        role.clone()
+    }
+}
+
 fn project_governance_doc_paths() -> [&'static str; 10] {
     [
         ".planning/STATE.md",
@@ -1877,6 +1974,16 @@ fn project_governance_doc_paths() -> [&'static str; 10] {
 
 fn agent_outcome_doc_paths() -> [&'static str; 2] {
     ["docs/feedback.md", "docs/agent-setup.md"]
+}
+
+fn agent_guidance_source_paths() -> [&'static str; 5] {
+    [
+        "crates/ctxhelm-mcp/src/tools.rs",
+        "crates/ctxhelm-core/src/init.rs",
+        "crates/ctxhelm-compiler/src/packs.rs",
+        "crates/ctxhelm-compiler/src/planning.rs",
+        "scripts/e2e-agent-run-codex.sh",
+    ]
 }
 
 fn language_for_governance_doc(path: &str) -> Option<String> {
@@ -2734,6 +2841,76 @@ mod tests {
         assert!(paths.contains(&"docs/agent-setup.md"));
         assert!(!paths.contains(&"docs/benchmarking.md"));
         assert!(!paths.contains(&"src/auth.ts"));
+    }
+
+    #[test]
+    fn agent_guidance_tasks_add_implementation_surfaces_as_candidates() {
+        let mut search_results = vec![
+            SearchResult {
+                path: "crates/ctxhelm-core/src/init.rs".to_string(),
+                role: FileRole::Source,
+                language: Some("rust".to_string()),
+                score: 20.0,
+                reason: "source match".to_string(),
+            },
+            SearchResult {
+                path: "scripts/e2e-agent-run-codex.sh".to_string(),
+                role: FileRole::Unknown,
+                language: Some("bash".to_string()),
+                score: 18.0,
+                reason: "late lexical match".to_string(),
+            },
+        ];
+        let roles = [
+            (
+                "crates/ctxhelm-mcp/src/tools.rs".to_string(),
+                FileRole::Source,
+            ),
+            (
+                "crates/ctxhelm-core/src/init.rs".to_string(),
+                FileRole::Source,
+            ),
+            (
+                "crates/ctxhelm-compiler/src/packs.rs".to_string(),
+                FileRole::Source,
+            ),
+            (
+                "crates/ctxhelm-compiler/src/planning.rs".to_string(),
+                FileRole::Source,
+            ),
+            (
+                "scripts/e2e-agent-run-codex.sh".to_string(),
+                FileRole::Unknown,
+            ),
+            ("docs/agent-setup.md".to_string(), FileRole::Docs),
+        ]
+        .into_iter()
+        .collect::<BTreeMap<_, _>>();
+
+        extend_project_governance_docs(
+            &mut search_results,
+            &roles,
+            "Improve Codex agent-run harness",
+        );
+        let paths = search_results
+            .iter()
+            .map(|result| result.path.as_str())
+            .collect::<Vec<_>>();
+
+        assert!(paths
+            .iter()
+            .take(5)
+            .any(|path| *path == "scripts/e2e-agent-run-codex.sh"));
+        assert!(paths.contains(&"crates/ctxhelm-mcp/src/tools.rs"));
+        assert!(paths.contains(&"crates/ctxhelm-compiler/src/planning.rs"));
+        assert!(paths.contains(&"scripts/e2e-agent-run-codex.sh"));
+        assert_eq!(
+            paths
+                .iter()
+                .filter(|path| **path == "scripts/e2e-agent-run-codex.sh")
+                .count(),
+            1
+        );
     }
 
     #[test]

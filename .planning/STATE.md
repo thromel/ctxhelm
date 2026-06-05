@@ -4,10 +4,10 @@ milestone: v2.5
 milestone_name: Production Retrieval Quality
 status: active
 last_updated: "2026-06-03T00:00:00Z"
-last_activity: 2026-06-05 -- Phase 244 fixes selected-memory consumption in real Codex MCP e2e and removes evidence-only target gaps
+last_activity: 2026-06-05 -- Phase 245 adds a strict Codex multi-task suite and fixes agent-native harness first-read consumption
 progress:
-  total_phases: 134
-  completed_phases: 134
+  total_phases: 135
+  completed_phases: 135
   total_plans: 7
   completed_plans: 7
   percent: 100
@@ -17,10 +17,10 @@ progress:
 
 ## Current Position
 
-Phase: 244 - Codex Memory Consumption Fix
-Plan: 244-codex-memory-consumption
+Phase: 245 - Codex Agent-Run Suite And Harness Consumption
+Plan: 245-codex-agent-run-suite
 Status: Complete
-Last activity: 2026-06-05 -- Phase 244 fixes the selected-memory real-agent consumption gap exposed on VeriSchema. The source-free artifact `.ctxhelm/e2e/phase244-agent-run-codex-memory-consumption.json` passes with four comparable ctxhelm lanes, valid explicit-repo `prepare_task`/`get_pack` calls, no forbidden commands, no client failures, no ctxhelm evidence misses, no evidence-only targets, and outcome claim `ctxhelm_improved`. All ctxhelm lanes read `schema_agent/core/models.py`; best lane `ctxhelm-brief` preserves target-read coverage while reducing read files from `18` to `5`, irrelevant reads from `17` to `4`, and command executions by `16`.
+Last activity: 2026-06-05 -- Phase 245 adds `--suite` support to the Codex real-client agent-run harness, promotes bounded agent-native guidance implementation surfaces into the native first-read window, isolates spawned Codex runs from Desktop thread environment leakage, and forbids bootstrap/setup/superpowers commands in read-only proof. The source-free artifact `.ctxhelm/e2e/phase245-agent-run-codex-suite-real-bounded-final.json` passes with Codex CLI `0.137.0`, two comparison-eligible tasks, eight comparable ctxhelm lanes, no forbidden commands, no client failures, no ctxhelm evidence misses, no evidence-only targets, no ctxhelm under-read targets, and outcome claim `ctxhelm_improved`. Baseline average target-read coverage is `0.75`; every ctxhelm lane reaches `1.00`.
 
 ## Project Reference
 
