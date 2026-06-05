@@ -112,6 +112,8 @@ Phase 228 tightens the memory R&D interpretation after the Phase 224 broader pro
 
 Phase 229 completes that inspection surface. Historical memory summaries and the memory-generalization harnesses now expose `memoryUniqueNonTargetCurrentSupportSignalCounts`, `memoryUniqueTargetHitCurrentSupportSignalCounts`, and `supportedMemoryNoiseDominantSignals`. The fresh four-repo semantic-enabled suite still proves two unique memory lifts and zero unsupported memory non-targets, while showing supported memory non-target pressure dominated by `dependency = 4`, `lexical_expansion = 2`, `symbol = 2`, and `semantic = 1`. The report now routes the next local experiment to `tune_memory_weight_against_supported_signal_pressure` rather than further diagnosis or blind memory demotion.
 
+Phase 230 implements that tuning. Memory now attaches to existing candidates only when they have strong current support: anchor, current diff, lexical, semantic, or co-change. Dependency-only and symbol-only candidates keep their own evidence but no longer receive extra memory pressure. The fresh four-repo semantic-enabled suite preserves two unique memory lifts and zero unsupported memory non-targets while reducing `memoryUniqueNonTargetCount` from 4 to 1 and reporting `weakSupportedMemoryNoiseNeedsTuning = false`.
+
 ## v2.5 Production Retrieval Quality
 
 ## Phases

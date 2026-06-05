@@ -235,6 +235,17 @@ pressure dominated by dependency, lexical-expansion, and symbol support. The
 next memory R&D step is a targeted weighting experiment against supported signal
 pressure, not another broad memory demotion.
 
+Status: Phase 230 completes that targeted experiment. Ranking now attaches
+memory to existing candidates only when they have strong current support:
+anchor, current diff, lexical, semantic, or co-change. Dependency-only and
+symbol-only candidates keep their own ranking evidence but no longer receive
+extra memory pressure. The fresh four-repo semantic-enabled suite keeps two
+unique memory lifts and zero unsupported memory non-targets while reducing raw
+memory unique non-targets from four to one. The remaining memory R&D gap is now
+larger pair-count validation, inspection of the one remaining strong-signal
+overlap, and real-agent outcome lift, not local weak-signal memory-pressure
+tuning.
+
 ### 3. Semantic/Embedding Signal Is Wired But Not Driving Lift
 
 The current product lift comes from hybrid ranking, graph/test/history/context

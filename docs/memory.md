@@ -179,6 +179,12 @@ supported by another current signal. The companion
 families are creating that support, for example dependency, symbol,
 lexical-expansion, semantic, or co-change. Treat supported non-targets as
 signal-pressure review items, not as evidence that uncorroborated memory should
-be demoted. Ranking also avoids attaching memory to weak lexical-expansion-only
-paths and only allows an uncorroborated memory-only rescue when no target files
-were selected at all.
+be demoted.
+
+Ranking only attaches memory to an existing candidate when the candidate has
+strong current support: anchors, current diff, lexical, semantic, or co-change
+evidence. Dependency or symbol evidence alone can still rank the file through
+their own signals, but memory is not allowed to add extra pressure on top of
+that weak support. Ranking also avoids attaching memory to weak
+lexical-expansion-only paths and only allows an uncorroborated memory-only
+rescue when no target files were selected at all.

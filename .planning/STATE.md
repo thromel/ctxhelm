@@ -4,7 +4,7 @@ milestone: v2.5
 milestone_name: Production Retrieval Quality
 status: active
 last_updated: "2026-06-03T00:00:00Z"
-last_activity: 2026-06-05 -- Phase 229 measures supported memory-noise signal pressure
+last_activity: 2026-06-05 -- Phase 230 tunes supported memory pressure
 progress:
   total_phases: 134
   completed_phases: 134
@@ -17,10 +17,10 @@ progress:
 
 ## Current Position
 
-Phase: 229 - Memory Support-Signal Pressure
-Plan: 229-memory-support-signal-pressure
+Phase: 230 - Supported Memory-Pressure Tuning
+Plan: 230-supported-memory-pressure-tuning
 Status: Complete
-Last activity: 2026-06-05 -- Phase 229 makes supported memory-noise pressure source-free and measurable. Historical memory summaries and the single/suite memory-generalization harnesses now expose `memoryUniqueNonTargetCurrentSupportSignalCounts`, `memoryUniqueTargetHitCurrentSupportSignalCounts`, and `supportedMemoryNoiseDominantSignals`. A fresh four-repo semantic-enabled suite measured 12 pairs, `memoryUniqueLiftPairs = 2`, `memoryUniqueNonTargetCount = 4`, `memoryUniqueNonTargetWithCurrentSupportCount = 4`, `memoryUniqueNonTargetWithoutCurrentSupportCount = 0`, and supported non-target signal pressure `dependency = 4`, `lexical_expansion = 2`, `symbol = 2`, `semantic = 1`. The next local memory R&D action is therefore `tune_memory_weight_against_supported_signal_pressure`; real-agent outcome lift still waits on non-rate-limited Claude Code evidence.
+Last activity: 2026-06-05 -- Phase 230 tunes memory pressure against the Phase 229 support-signal profile. Ranking now attaches memory to existing candidates only when they have strong current support: anchor, current diff, lexical, semantic, or co-change. Dependency-only and symbol-only candidates keep their own ranking evidence but no longer receive extra memory pressure. A fresh four-repo semantic-enabled suite measured 12 pairs, preserved `memoryUniqueLiftPairs = 2`, preserved `memoryUniqueNonTargetWithoutCurrentSupportCount = 0`, reduced `memoryUniqueNonTargetCount` from 4 to 1, and reports `weakSupportedMemoryNoiseNeedsTuning = false`. The next local memory R&D is larger pair-count validation and inspection of the one remaining strong-signal overlap; real-agent outcome lift still waits on non-rate-limited Claude Code evidence.
 
 ## Project Reference
 

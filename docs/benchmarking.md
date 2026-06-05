@@ -1044,6 +1044,15 @@ Recommendation today:
   `dependency`, `lexical_expansion`, and `symbol`. The next ranking experiment is
   therefore `tune_memory_weight_against_supported_signal_pressure`, not a blind
   memory demotion.
+- Phase 230 runs that weighting experiment. Memory now attaches to existing
+  candidates only when they have strong current support: anchor, current diff,
+  lexical, semantic, or co-change. Dependency-only and symbol-only candidates
+  keep their own ranking evidence but no longer receive extra memory pressure.
+  The fresh four-repo semantic-enabled suite keeps `memoryUniqueLiftPairs = 2`,
+  keeps `memoryUniqueNonTargetWithoutCurrentSupportCount = 0`, and reduces
+  `memoryUniqueNonTargetCount` from `4` to `1`. The rerun reports
+  `weakSupportedMemoryNoiseNeedsTuning = false`, so the remaining local memory
+  work is strong-signal overlap inspection and larger pair-count validation.
 - Treat cloud embeddings/reranking as disabled unless an explicit repo policy
   allows them.
 

@@ -661,6 +661,10 @@ def dominant_signals(counts):
 supported_memory_noise_dominant_signals = dominant_signals(
     total_unique_non_target_current_support_signal_counts
 )
+weak_supported_memory_noise = any(
+    total_unique_non_target_current_support_signal_counts.get(signal, 0) > 0
+    for signal in ["lexical_expansion", "symbol"]
+)
 semantic_target_pairs = sum(
     1 for result in results if result["signalComparison"]["semanticSelectedTargetCount"] > 0
 )
@@ -690,7 +694,10 @@ if unsupported_memory_precision_needs_work:
         ]
     )
 elif supported_memory_noise_needs_review:
-    recommended_next_r_and_d.append("tune_memory_weight_against_supported_signal_pressure")
+    if weak_supported_memory_noise:
+        recommended_next_r_and_d.append("tune_memory_weight_against_supported_signal_pressure")
+    else:
+        recommended_next_r_and_d.append("inspect_remaining_strong_signal_memory_overlap")
 if total_unique_non_targets > 0:
     recommended_next_r_and_d.append("compare_memory_noise_against_current_signal_roles")
 if semantic_enabled:
@@ -744,6 +751,7 @@ payload = {
         "precisionNeedsWork": noise_pairs > 0 or total_unique_non_targets > total_unique_target_hits,
         "unsupportedMemoryPrecisionNeedsWork": unsupported_memory_precision_needs_work,
         "supportedMemoryNoiseNeedsReview": supported_memory_noise_needs_review,
+        "weakSupportedMemoryNoiseNeedsTuning": weak_supported_memory_noise,
         "supportedMemoryNoiseDominantSignals": supported_memory_noise_dominant_signals,
         "memoryNeedsCorroboration": total_memory_targets_without_graph_or_semantic > 0
         or total_unique_non_targets > 0,

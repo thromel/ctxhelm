@@ -1403,19 +1403,21 @@ struct PathSignal {
 
 impl CandidateAccumulator {
     fn add_path_signal(&mut self, signal: PathSignal) {
-        let weighted_score = signal.score * signal.weight;
         let key = CandidateKey {
             kind_rank: kind_rank(&signal.kind),
             path: Some(signal.path.clone()),
         };
-        if signal.signal == RetrievalSignalKind::Memory
-            && self
-                .candidates
-                .get(&key)
-                .is_some_and(|builder| !builder_has_memory_attach_corroboration(builder))
-        {
-            return;
+        if signal.signal == RetrievalSignalKind::Memory {
+            if let Some(builder) = self.candidates.get(&key) {
+                if !builder_has_memory_attach_corroboration(builder) {
+                    return;
+                }
+                if !builder_has_strong_memory_attach_support(builder) {
+                    return;
+                }
+            }
         }
+        let weighted_score = signal.score * signal.weight;
         let builder = self
             .candidates
             .entry(key)
@@ -1592,6 +1594,23 @@ fn builder_has_memory_attach_corroboration(builder: &CandidateBuilder) -> bool {
         RetrievalSignalKind::Symbol,
         RetrievalSignalKind::Semantic,
         RetrievalSignalKind::Dependency,
+        RetrievalSignalKind::CoChange,
+    ]
+    .into_iter()
+    .any(|signal| {
+        builder
+            .signal_scores
+            .iter()
+            .any(|score| score.signal == signal)
+    })
+}
+
+fn builder_has_strong_memory_attach_support(builder: &CandidateBuilder) -> bool {
+    [
+        RetrievalSignalKind::Anchor,
+        RetrievalSignalKind::CurrentDiff,
+        RetrievalSignalKind::Lexical,
+        RetrievalSignalKind::Semantic,
         RetrievalSignalKind::CoChange,
     ]
     .into_iter()
@@ -2126,6 +2145,64 @@ mod tests {
             .attribution
             .iter()
             .any(|evidence| evidence.signal == RetrievalSignalKind::Semantic));
+    }
+
+    #[test]
+    fn ranking_skips_memory_attachment_when_only_weak_current_signals_support_it() {
+        let candidates = rank_candidates(RankingInput {
+            semantic_results: vec![SemanticSearchResult {
+                path: "src/semantic.ts".to_string(),
+                role: FileRole::Source,
+                language: Some("typescript".to_string()),
+                score: 0.80,
+                reason: "local semantic similarity".to_string(),
+                provider: SemanticProviderConfig::default(),
+                document_id: Some("sem_doc_semantic".to_string()),
+                matched_facets: Vec::new(),
+                precision_status: None,
+            }],
+            symbol_results: vec![SymbolSearchResult {
+                symbol: CodeSymbol {
+                    name: "WeakOnly".to_string(),
+                    kind: ctxhelm_index::SymbolKind::Function,
+                    path: "src/weak.ts".to_string(),
+                    language: Some("typescript".to_string()),
+                    signature: "WeakOnly()".to_string(),
+                    start_line: 1,
+                    end_line: 1,
+                    exported: true,
+                },
+                score: 0.80,
+                reason: "symbol name match".to_string(),
+            }],
+            memory_paths: vec![
+                memory_path("src/semantic.ts", 0.80),
+                memory_path("src/weak.ts", 0.80),
+            ],
+            roles: roles([
+                ("src/semantic.ts", FileRole::Source),
+                ("src/weak.ts", FileRole::Source),
+            ]),
+            ..RankingInput::default()
+        });
+
+        let semantic = candidates
+            .iter()
+            .find(|candidate| candidate.candidate.path.as_deref() == Some("src/semantic.ts"))
+            .unwrap();
+        let weak = candidates
+            .iter()
+            .find(|candidate| candidate.candidate.path.as_deref() == Some("src/weak.ts"))
+            .unwrap();
+
+        assert_eq!(
+            weighted_signal_score(&semantic.candidate, RetrievalSignalKind::Memory),
+            Some(0.60)
+        );
+        assert_eq!(
+            weighted_signal_score(&weak.candidate, RetrievalSignalKind::Memory),
+            None
+        );
     }
 
     #[test]
@@ -3872,6 +3949,17 @@ mod tests {
             .map(|item| item.signal.clone())
             .collect::<Vec<_>>();
         assert_eq!(actual, expected);
+    }
+
+    fn weighted_signal_score(
+        candidate: &RetrievalCandidate,
+        signal: RetrievalSignalKind,
+    ) -> Option<f32> {
+        candidate
+            .signal_scores
+            .iter()
+            .find(|score| score.signal == signal)
+            .map(|score| (score.score * score.weight * 100.0).round() / 100.0)
     }
 
     fn candidate_paths(candidates: &[RankedCandidate]) -> Vec<&str> {
