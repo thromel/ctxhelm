@@ -246,6 +246,14 @@ larger pair-count validation, inspection of the one remaining strong-signal
 overlap, and real-agent outcome lift, not local weak-signal memory-pressure
 tuning.
 
+Status: Phase 231 closes the same-corpus larger pair-count validation step. The
+four-repo semantic-enabled suite now measures 20 pairs across 20 distinct target
+files, keeps two memory-unique target hits, keeps unsupported memory non-targets
+at zero, and keeps weak-supported memory noise cleared. The remaining local
+memory R&D gap is repository diversity plus inspection of the VeriSchema
+strong-signal overlap; real-agent outcome lift remains a separate client
+availability/evaluation issue.
+
 ### 3. Semantic/Embedding Signal Is Wired But Not Driving Lift
 
 The current product lift comes from hybrid ranking, graph/test/history/context

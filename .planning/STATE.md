@@ -4,7 +4,7 @@ milestone: v2.5
 milestone_name: Production Retrieval Quality
 status: active
 last_updated: "2026-06-03T00:00:00Z"
-last_activity: 2026-06-05 -- Phase 230 tunes supported memory pressure
+last_activity: 2026-06-05 -- Phase 231 validates memory tuning at larger pair count
 progress:
   total_phases: 134
   completed_phases: 134
@@ -17,10 +17,10 @@ progress:
 
 ## Current Position
 
-Phase: 230 - Supported Memory-Pressure Tuning
-Plan: 230-supported-memory-pressure-tuning
+Phase: 231 - Larger Memory Pair Validation
+Plan: 231-larger-memory-pair-validation
 Status: Complete
-Last activity: 2026-06-05 -- Phase 230 tunes memory pressure against the Phase 229 support-signal profile. Ranking now attaches memory to existing candidates only when they have strong current support: anchor, current diff, lexical, semantic, or co-change. Dependency-only and symbol-only candidates keep their own ranking evidence but no longer receive extra memory pressure. A fresh four-repo semantic-enabled suite measured 12 pairs, preserved `memoryUniqueLiftPairs = 2`, preserved `memoryUniqueNonTargetWithoutCurrentSupportCount = 0`, reduced `memoryUniqueNonTargetCount` from 4 to 1, and reports `weakSupportedMemoryNoiseNeedsTuning = false`. The next local memory R&D is larger pair-count validation and inspection of the one remaining strong-signal overlap; real-agent outcome lift still waits on non-rate-limited Claude Code evidence.
+Last activity: 2026-06-05 -- Phase 231 validates the tuned memory policy at a larger pair count. Memory-generalization reports now expose `largerPairValidationTargetMet`; the fresh four-repo semantic-enabled suite requested five pairs per repo and measured 20 pairs across 20 distinct target files. It preserved `memoryUniqueLiftPairs = 2`, kept `memoryUniqueNonTargetWithoutCurrentSupportCount = 0`, kept `weakSupportedMemoryNoiseNeedsTuning = false`, and localized the remaining two strong-signal memory non-targets to VeriSchema. The next local memory R&D is repository diversity and strong-signal overlap inspection; real-agent outcome lift still waits on non-rate-limited Claude Code evidence.
 
 ## Project Reference
 

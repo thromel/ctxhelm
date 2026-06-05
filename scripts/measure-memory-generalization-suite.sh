@@ -264,6 +264,12 @@ memory_targets_without_graph_or_semantic = aggregate_value(
 graph_edge_removed_target_hits = aggregate_value("graphEdgeAblationRemovedTargetHitCount")
 semantic_selected_target_pairs = aggregate_value("semanticSelectedTargetPairs")
 semantic_ablation_lift_pairs = aggregate_value("semanticAblationLiftPairs")
+larger_pair_validation_target_met = (
+    int(pairs) >= 5
+    and evaluated_repos > 1
+    and evaluated_pairs >= evaluated_repos * 5
+    and evaluated_target_files >= evaluated_repos * 5
+)
 
 unsupported_memory_precision_needs_work = (
     memory_unique_non_targets_without_current_support > 0
@@ -273,7 +279,11 @@ supported_memory_noise_needs_review = (
     memory_unique_non_targets_with_current_support > 0
     and memory_unique_non_targets_without_current_support == 0
 )
-recommended_next_r_and_d = ["increase_pairs_per_repo"]
+recommended_next_r_and_d = [
+    "expand_repository_diversity"
+    if larger_pair_validation_target_met
+    else "increase_pairs_per_repo"
+]
 if unsupported_memory_precision_needs_work:
     recommended_next_r_and_d.extend(
         [
@@ -337,6 +347,7 @@ payload = {
     "interpretation": {
         "multiRepoMeasured": evaluated_repos > 1,
         "largerPairCountMeasured": evaluated_pairs > evaluated_repos,
+        "largerPairValidationTargetMet": larger_pair_validation_target_met,
         "pairDiversityMeasured": evaluated_target_files > evaluated_repos,
         "generalizationProven": evaluated_repos > 1 and memory_unique_lift_pairs > 1,
         "precisionNeedsWork": memory_unique_non_targets > 0

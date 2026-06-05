@@ -1053,6 +1053,14 @@ Recommendation today:
   `memoryUniqueNonTargetCount` from `4` to `1`. The rerun reports
   `weakSupportedMemoryNoiseNeedsTuning = false`, so the remaining local memory
   work is strong-signal overlap inspection and larger pair-count validation.
+- Phase 231 runs that larger pair-count validation. The suite now reports
+  `largerPairValidationTargetMet`, and the four-repo semantic-enabled run
+  evaluates 20 pairs across 20 distinct target files. Memory lift remains
+  `memoryUniqueLiftPairs = 2`, unsupported memory non-targets remain zero, and
+  weak-supported memory noise remains cleared. The remaining two memory
+  non-targets are both supported by strong current signals and localized to
+  VeriSchema, so the next local R&D route is repository diversity plus
+  strong-signal overlap inspection, not more same-corpus pair-count expansion.
 - Treat cloud embeddings/reranking as disabled unless an explicit repo policy
   allows them.
 

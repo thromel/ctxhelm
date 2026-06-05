@@ -114,6 +114,8 @@ Phase 229 completes that inspection surface. Historical memory summaries and the
 
 Phase 230 implements that tuning. Memory now attaches to existing candidates only when they have strong current support: anchor, current diff, lexical, semantic, or co-change. Dependency-only and symbol-only candidates keep their own evidence but no longer receive extra memory pressure. The fresh four-repo semantic-enabled suite preserves two unique memory lifts and zero unsupported memory non-targets while reducing `memoryUniqueNonTargetCount` from 4 to 1 and reporting `weakSupportedMemoryNoiseNeedsTuning = false`.
 
+Phase 231 validates that tuned policy at a larger pair count. The memory-generalization harnesses now report `largerPairValidationTargetMet`, and the fresh four-repo semantic-enabled suite evaluates 20 pairs across 20 distinct target files. Memory lift stays at two unique target hits beyond lexical, unsupported memory non-targets stay at zero, weak-supported memory noise remains cleared, and the remaining two strong-signal memory non-targets are localized to VeriSchema. The next local R&D step is repository diversity and strong-signal overlap inspection rather than more same-corpus pair expansion.
+
 ## v2.5 Production Retrieval Quality
 
 ## Phases

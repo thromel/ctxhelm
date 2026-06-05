@@ -676,6 +676,11 @@ semantic_ablation_lift_pairs = sum(
 total_after_seconds = round(
     sum(result["runtimeSeconds"].get("afterEval", 0.0) for result in results), 2
 )
+larger_pair_validation_target_met = (
+    requested_pairs >= 5
+    and evaluated >= 5
+    and evaluated_target_file_count >= 5
+)
 
 unsupported_memory_precision_needs_work = (
     total_unique_non_targets_without_current_support > 0
@@ -685,7 +690,11 @@ supported_memory_noise_needs_review = (
     total_unique_non_targets_with_current_support > 0
     and total_unique_non_targets_without_current_support == 0
 )
-recommended_next_r_and_d = ["increase_real_corpus_pair_count"]
+recommended_next_r_and_d = [
+    "expand_repository_diversity"
+    if larger_pair_validation_target_met
+    else "increase_real_corpus_pair_count"
+]
 if unsupported_memory_precision_needs_work:
     recommended_next_r_and_d.extend(
         [
@@ -759,6 +768,7 @@ payload = {
         "semanticUsefulForMemoryTasks": semantic_target_pairs > 0 or semantic_ablation_lift_pairs > 0,
         "lexicalStillStrong": lexical_covered_pairs > 0,
         "pairDiversityMeasured": candidate_target_file_count > 1 or evaluated_target_file_count > 1,
+        "largerPairValidationTargetMet": larger_pair_validation_target_met,
         "recommendedNextRAndD": recommended_next_r_and_d,
     },
     "semantic": {
