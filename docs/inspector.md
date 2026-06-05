@@ -29,13 +29,46 @@ ctxhelm inspector export "fix requireSession bug" --repo /path/to/repo --format 
 ctxhelm inspector export "fix requireSession bug" --repo /path/to/repo --format html --output pack.html
 ```
 
-The command does not start a persistent server and does not require the local
-web inspector planned for later v2.1 phases.
-
 The HTML export is a static, read-only local inspector. It includes filters for
 text, category, and source-bearing sections, plus tables for target files,
 related tests, validation commands, warnings, diagnostics, retrieval
 candidates, selected memory, and section token estimates.
+
+## Local Shell
+
+Run the optional localhost-only diagnostic shell:
+
+```bash
+ctxhelm inspector serve "fix requireSession bug" \
+  --repo /path/to/repo \
+  --mode bug-fix \
+  --budget brief \
+  --target-agent codex \
+  --port 8765
+```
+
+The shell prints a loopback URL such as:
+
+```text
+ctxhelm inspector shell listening on http://127.0.0.1:8765
+```
+
+Available routes:
+
+| Route | Purpose |
+| --- | --- |
+| `/` | Source-free diagnostic shell with links and summary counts. |
+| `/pack-inspector.html` | Filterable pack inspector HTML. |
+| `/pack-inspector.json` | Machine-readable `PackInspectorView`. |
+| `/graph.html` | Filterable source-free graph neighborhood view. |
+| `/graph.json` | Machine-readable graph neighborhood report. |
+| `/setup-status.json` | Read-only generated-agent-artifact setup status. |
+| `/health.json` | Local shell health, route inventory, and privacy flags. |
+
+The shell is diagnostic only. It does not edit files, does not mutate global
+agent configuration, does not run user project tests, and does not replace the
+daily coding workflow inside Codex, Claude Code, Cursor, OpenCode, or another
+agent.
 
 ## Source Boundary
 
@@ -95,4 +128,5 @@ bash scripts/smoke-inspector.sh
 ```
 
 The smoke creates a temporary repository, exports JSON and HTML inspector
-artifacts, verifies the UI hooks, and rejects a source sentinel in both outputs.
+artifacts, starts `ctxhelm inspector serve`, verifies the shell, graph, setup,
+and health routes, and rejects a source sentinel in all inspected outputs.

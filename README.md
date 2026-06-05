@@ -134,6 +134,15 @@ ctxhelm inspector export "fix requireSession bug" \
   --format json
 ```
 
+Open the same diagnostics through a localhost-only, read-only shell:
+
+```bash
+ctxhelm inspector serve "fix requireSession bug" \
+  --repo "$REPO" \
+  --mode bug-fix \
+  --budget brief
+```
+
 For the longer walkthrough, including setup validation, deterministic MCP proof context, and how to interpret pack options, see [docs/quickstart.md](docs/quickstart.md).
 
 ## More Docs

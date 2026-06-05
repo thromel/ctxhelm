@@ -542,7 +542,7 @@ The workspace smoke proves local multi-repo manifest initialization, source-free
 
 The shared-artifacts smoke proves source-free team policy templates, shared artifact export, schema/privacy inspection, compatible manifest import, MCP workspace resources for status and shared artifacts, and absence of sensitive sentinel leakage in outputs and local ctxhelm state.
 
-The inspector smoke proves source-free JSON and static HTML inspector exports, local filter UI hooks, source-bearing section labels, and absence of source sentinel leakage in inspector artifacts.
+The inspector smoke proves source-free JSON and static HTML inspector exports, a localhost-only read-only inspector shell, local filter UI hooks, source-bearing section labels, graph/setup/health diagnostic routes, and absence of source sentinel leakage in inspector artifacts.
 
 The retrieval-health smoke proves source-free health JSON and Markdown reports from real git history, including metrics, signal contributions, gap families, and absence of source sentinel leakage.
 

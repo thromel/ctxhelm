@@ -4,10 +4,10 @@ milestone: v2.5
 milestone_name: Production Retrieval Quality
 status: active
 last_updated: "2026-06-06T00:00:00Z"
-last_activity: 2026-06-06 -- Phase 247 adds Cursor/OpenCode optional real-client proof paths and release-gates OpenCode source-free request evidence
+last_activity: 2026-06-06 -- Phase 248 adds a localhost-only read-only inspector shell for pack, graph, setup, and health diagnostics
 progress:
-  total_phases: 136
-  completed_phases: 136
+  total_phases: 137
+  completed_phases: 137
   total_plans: 7
   completed_plans: 7
   percent: 100
@@ -17,10 +17,10 @@ progress:
 
 ## Current Position
 
-Phase: 247 - Cursor/OpenCode Real-Client Proof Paths
-Plan: 247-cursor-opencode-real-client-proof
+Phase: 248 - Local Inspector Shell
+Plan: 248-local-inspector-shell
 Status: Complete
-Last activity: 2026-06-06 -- Phase 247 adds optional Cursor Agent CLI and OpenCode real-client smoke wrappers with source-free server-side request evidence. `scripts/smoke-opencode-real-client.sh` passes locally with OpenCode `1.14.25` and records explicit-repo `prepare_task` plus `get_pack` tool calls. `scripts/smoke-cursor-real-client.sh` has the same proof boundary and uses an isolated temporary Cursor workspace, but current local required proof is auth-blocked because Cursor Agent CLI `3.6.21` reports not logged in. The release gate now records Cursor/OpenCode optional proof status and can require OpenCode proof without requiring Cursor auth.
+Last activity: 2026-06-06 -- Phase 248 adds `ctxhelm inspector serve`, a localhost-only, read-only diagnostic shell for pack inspector, graph neighborhood, setup status, and shell health routes. The shell reuses the existing context planner/compiler, graph report, and setup-check contracts; it renders source-free interactive HTML for pack and graph diagnostics, exposes JSON routes for automation, and keeps daily coding inside existing agents. `scripts/smoke-inspector.sh` now starts the shell, fetches `/`, `/pack-inspector.json`, `/graph.html`, `/graph.json`, `/setup-status.json`, and `/health.json`, and rejects source sentinel leakage.
 
 ## Project Reference
 

@@ -1563,6 +1563,8 @@ fn release_docs_script_contract() {
         "ctxhelm setup-check --repo",
         "ctxhelm prepare-task",
         "ctxhelm get-pack",
+        "ctxhelm inspector serve",
+        "localhost-only diagnostic shell",
         "PATH",
         "absolute",
         "CTXHELM_HOME",

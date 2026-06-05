@@ -56,10 +56,10 @@ Deferred into later milestones from the remaining product vision.
 
 ### v2.7 Desktop Inspector & Local UX
 
-- **UX-01**: User can open an optional desktop/local inspector shell for diagnostic review.
-- **UX-02**: User can visualize graph neighborhoods and retrieval health interactively.
-- **UX-03**: User can run setup/status checks from the UX without editing source files.
-- **UX-04**: User can keep daily coding inside existing agents; the UX remains diagnostic.
+- [x] **UX-01**: User can open an optional desktop/local inspector shell for diagnostic review.
+- [x] **UX-02**: User can visualize graph neighborhoods and retrieval health interactively.
+- [x] **UX-03**: User can run setup/status checks from the UX without editing source files.
+- [x] **UX-04**: User can keep daily coding inside existing agents; the UX remains diagnostic.
 
 ### v3.0 Context Governor
 
@@ -76,7 +76,7 @@ Deferred into later milestones from the remaining product vision.
 | Hosted vector database | v2.5 must prove local quality before adding hosted infrastructure. |
 | Default semantic promotion without lift | Promotion still requires measured lift under source-free local policy gates. |
 | Autonomous edits or test execution | Existing coding agents own editing, shell permissions, and validation execution. |
-| Desktop inspector UX | v2.7 owns optional local UX. |
+| Native desktop wrapper beyond localhost shell | Current v2.7 proof covers the optional localhost diagnostic shell; native Tauri/macOS packaging is polish, not core proof. |
 | Deep native hooks | v2.6 owns agent-native deep integration proof. |
 
 ## Traceability
@@ -107,6 +107,10 @@ Deferred into later milestones from the remaining product vision.
 | AGENT-02 | Phase 247 | Complete |
 | AGENT-03 | Phase 246 | Complete |
 | AGENT-04 | Phase 246 | Complete |
+| UX-01 | Phase 248 | Complete |
+| UX-02 | Phase 248 | Complete |
+| UX-03 | Phase 248 | Complete |
+| UX-04 | Phase 248 | Complete |
 | GAP-01 | Phase 71 | Complete |
 | GAP-02 | Phase 71 | Complete |
 | RANK-02 | Phase 71 | Complete |
@@ -125,6 +129,11 @@ Deferred into later milestones from the remaining product vision.
   Agent CLI `3.6.21` has the same optional proof path; current local required
   proof records an auth-blocked skip because `cursor agent status` reports not
   logged in.
+- Future local UX requirements UX-01 through UX-04 have current Phase 248
+  release-gated evidence. `ctxhelm inspector serve` opens a localhost-only,
+  read-only diagnostic shell with pack inspector, graph neighborhood, setup
+  status, and health routes; `scripts/smoke-inspector.sh` proves the shell and
+  rejects source sentinel leakage.
 - Phase 71 adds follow-up evidence for existing gap/ranking requirements by
   reducing archive-artifact noise without excluding archived evidence.
 

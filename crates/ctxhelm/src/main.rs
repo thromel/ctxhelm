@@ -51,6 +51,8 @@ use ctxhelm_index::{
 };
 use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
+use std::io::{Read, Write};
+use std::net::{TcpListener, TcpStream};
 use std::path::Path;
 use std::path::PathBuf;
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -358,6 +360,8 @@ struct GraphNeighborhoodArgs {
 enum InspectorCommand {
     #[command(about = "Export a source-free pack inspector artifact.")]
     Export(InspectorExportArgs),
+    #[command(about = "Serve a localhost-only, read-only inspector shell.")]
+    Serve(InspectorServeArgs),
 }
 
 #[derive(Debug, Args)]
@@ -392,6 +396,42 @@ struct InspectorExportArgs {
     format: InspectorFormat,
     #[arg(long, help = "Write the artifact to a file instead of stdout.")]
     output: Option<PathBuf>,
+}
+
+#[derive(Debug, Args)]
+struct InspectorServeArgs {
+    task: String,
+    #[arg(long)]
+    repo: Option<PathBuf>,
+    #[arg(long, value_enum, default_value_t = Mode::Explain)]
+    mode: Mode,
+    #[arg(long, value_enum, default_value_t = Budget::Brief)]
+    budget: Budget,
+    #[arg(
+        long = "path",
+        help = "Active/open file path to pin as a context anchor. Repeatable."
+    )]
+    paths: Vec<String>,
+    #[arg(
+        long = "current-diff",
+        help = "Add safe changed paths from the current local diff as context anchors."
+    )]
+    include_current_diff: bool,
+    #[arg(long, default_value = "generic")]
+    target_agent: String,
+    #[arg(
+        long,
+        help = "Enable explicit local semantic retrieval in the context pack planner."
+    )]
+    semantic: bool,
+    #[command(flatten)]
+    semantic_provider: SemanticProviderArgs,
+    #[arg(
+        long,
+        default_value_t = 8765,
+        help = "Loopback port for the diagnostic shell. Use 0 to ask the OS for a free port."
+    )]
+    port: u16,
 }
 
 #[derive(Debug, Subcommand)]
@@ -1576,6 +1616,9 @@ fn main() -> Result<()> {
                     InspectorFormat::Html => render_pack_inspector_html(&view),
                 };
                 write_or_print(args.output.as_deref(), &artifact)?;
+            }
+            InspectorCommand::Serve(args) => {
+                serve_inspector_shell(args)?;
             }
         },
         Command::Agent(args) => match args.command {
@@ -3505,6 +3548,392 @@ fn write_or_print(output_path: Option<&Path>, artifact: &str) -> Result<()> {
         println!("{artifact}");
     }
     Ok(())
+}
+
+fn serve_inspector_shell(args: InspectorServeArgs) -> Result<()> {
+    let start = args.repo.clone().unwrap_or(std::env::current_dir()?);
+    let repo = RepoRoot::discover_from(&start)?;
+    let paths = context_anchor_paths(&repo.path, args.paths, args.include_current_diff)?;
+    let task_type: TaskType = args.mode.into();
+    let pack_budget: PackBudget = args.budget.into();
+    let (plan, pack) = compile_context_pack_with_plan_and_paths_for_agent_and_semantic_provider(
+        &repo.path,
+        &args.task,
+        task_type.clone(),
+        pack_budget,
+        &paths,
+        &args.target_agent,
+        args.semantic,
+        semantic_provider_config(&args.semantic_provider),
+    )?;
+    let view = compile_pack_inspector_view(&plan, &pack);
+    let graph =
+        build_graph_neighborhood_report(&repo.path, Some(&args.task), task_type, &paths, 60, 120)?;
+    let setup = run_setup_check(
+        &repo.path,
+        &InitOptions {
+            adapters: vec![
+                AgentAdapter::Cursor,
+                AgentAdapter::Claude,
+                AgentAdapter::OpenCode,
+            ],
+        },
+    )?;
+    let inspector_json = serde_json::to_string_pretty(&view)?;
+    let inspector_html = render_pack_inspector_html(&view);
+    let graph_json = serde_json::to_string_pretty(&graph)?;
+    let graph_html = render_graph_neighborhood_html(&graph);
+    let setup_json = serde_json::to_string_pretty(&setup)?;
+    let health_json = serde_json::to_string_pretty(&serde_json::json!({
+        "schemaVersion": "ctxhelm-inspector-shell-health-v1",
+        "status": "passed",
+        "repo": repo.path,
+        "localOnly": true,
+        "readOnly": true,
+        "sourceTextLogged": false,
+        "routes": [
+            "/",
+            "/pack-inspector.html",
+            "/pack-inspector.json",
+            "/graph.html",
+            "/graph.json",
+            "/setup-status.json",
+            "/health.json"
+        ]
+    }))?;
+    let shell_html = render_inspector_shell_html(&view, &graph, &setup);
+    let listener = TcpListener::bind(("127.0.0.1", args.port))?;
+    let address = listener.local_addr()?;
+    println!("ctxhelm inspector shell listening on http://{address}");
+    for stream in listener.incoming() {
+        let mut stream = stream?;
+        handle_inspector_shell_request(
+            &mut stream,
+            &shell_html,
+            &inspector_html,
+            &inspector_json,
+            &graph_html,
+            &graph_json,
+            &setup_json,
+            &health_json,
+        )?;
+    }
+    Ok(())
+}
+
+fn handle_inspector_shell_request(
+    stream: &mut TcpStream,
+    shell_html: &str,
+    inspector_html: &str,
+    inspector_json: &str,
+    graph_html: &str,
+    graph_json: &str,
+    setup_json: &str,
+    health_json: &str,
+) -> Result<()> {
+    let mut buffer = [0_u8; 4096];
+    let read = stream.read(&mut buffer)?;
+    let request = String::from_utf8_lossy(&buffer[..read]);
+    let first_line = request.lines().next().unwrap_or_default();
+    let mut parts = first_line.split_whitespace();
+    let method = parts.next().unwrap_or_default();
+    let path = parts.next().unwrap_or("/");
+    if method != "GET" {
+        return write_http_response(stream, "405 Method Not Allowed", "text/plain", "GET only\n");
+    }
+    let route = path.split('?').next().unwrap_or(path);
+    match route {
+        "/" | "/index.html" => {
+            write_http_response(stream, "200 OK", "text/html; charset=utf-8", shell_html)
+        }
+        "/pack-inspector.html" => {
+            write_http_response(stream, "200 OK", "text/html; charset=utf-8", inspector_html)
+        }
+        "/pack-inspector.json" => write_http_response(
+            stream,
+            "200 OK",
+            "application/json; charset=utf-8",
+            inspector_json,
+        ),
+        "/graph.html" => {
+            write_http_response(stream, "200 OK", "text/html; charset=utf-8", graph_html)
+        }
+        "/graph.json" => write_http_response(
+            stream,
+            "200 OK",
+            "application/json; charset=utf-8",
+            graph_json,
+        ),
+        "/setup-status.json" => write_http_response(
+            stream,
+            "200 OK",
+            "application/json; charset=utf-8",
+            setup_json,
+        ),
+        "/health.json" => write_http_response(
+            stream,
+            "200 OK",
+            "application/json; charset=utf-8",
+            health_json,
+        ),
+        "/favicon.ico" => write_http_response(stream, "204 No Content", "text/plain", ""),
+        _ => write_http_response(stream, "404 Not Found", "text/plain", "not found\n"),
+    }
+}
+
+fn write_http_response(
+    stream: &mut TcpStream,
+    status: &str,
+    content_type: &str,
+    body: &str,
+) -> Result<()> {
+    write!(
+        stream,
+        "HTTP/1.1 {status}\r\nContent-Type: {content_type}\r\nContent-Length: {}\r\nCache-Control: no-store\r\nConnection: close\r\n\r\n{}",
+        body.len(),
+        body
+    )?;
+    stream.flush()?;
+    Ok(())
+}
+
+fn render_inspector_shell_html(
+    view: &ctxhelm_core::PackInspectorView,
+    graph: &GraphNeighborhoodReport,
+    setup: &SetupCheckReport,
+) -> String {
+    let status = if setup.passed {
+        "pass"
+    } else {
+        "needs attention"
+    };
+    format!(
+        r#"<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ctxhelm Inspector Shell</title>
+  <style>
+    * {{ box-sizing: border-box; }}
+    body {{ margin: 0; font: 14px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: #17202a; background: #f7f8fa; }}
+    main {{ max-width: 1080px; margin: 0 auto; padding: 28px 18px 44px; }}
+    h1 {{ margin: 0 0 8px; font-size: 28px; letter-spacing: 0; }}
+    h2 {{ margin: 24px 0 10px; font-size: 18px; letter-spacing: 0; }}
+    .summary {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; margin: 18px 0; }}
+    .panel {{ border: 1px solid #d5dde7; border-radius: 6px; background: #fff; padding: 12px; min-width: 0; overflow-wrap: anywhere; }}
+    .routes {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; }}
+    a {{ color: #0f5ea8; text-decoration-thickness: 1px; }}
+    code {{ font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; }}
+    .note {{ border-left: 3px solid #3b82f6; padding-left: 10px; color: #465364; }}
+  </style>
+</head>
+<body data-inspector-shell-source-free="true">
+<main>
+  <h1>ctxhelm Inspector Shell</h1>
+  <p class="note">Localhost-only diagnostic shell. It is read-only, source-free, and intended for review of ctxhelm decisions while daily coding stays inside existing agents.</p>
+  <section class="summary" aria-label="Diagnostic summary">
+    <div class="panel"><strong>Repo</strong><br><code>{}</code></div>
+    <div class="panel"><strong>Pack confidence</strong><br>{:.2}</div>
+    <div class="panel"><strong>Target files</strong><br>{}</div>
+    <div class="panel"><strong>Graph</strong><br>{} nodes / {} edges</div>
+    <div class="panel"><strong>Setup status</strong><br>{}</div>
+    <div class="panel"><strong>Source text logged</strong><br>{}</div>
+  </section>
+  <h2>Diagnostics</h2>
+  <section class="routes" aria-label="Inspector routes">
+    <div class="panel"><a href="/pack-inspector.html">Pack Inspector</a><br>Filtered HTML view of target files, tests, candidates, memory, diagnostics, and source-bearing section labels.</div>
+    <div class="panel"><a href="/pack-inspector.json">Pack Inspector JSON</a><br>Machine-readable <code>PackInspectorView</code>.</div>
+    <div class="panel"><a href="/graph.html">Graph Neighborhood</a><br>Filterable source-free graph anchors, nodes, edges, and communities.</div>
+    <div class="panel"><a href="/graph.json">Graph Neighborhood JSON</a><br>Machine-readable graph diagnostics.</div>
+    <div class="panel"><a href="/setup-status.json">Setup Status JSON</a><br>Read-only generated-agent-artifact status checks.</div>
+    <div class="panel"><a href="/health.json">Shell Health JSON</a><br>Source-free local shell health and route inventory.</div>
+  </section>
+</main>
+</body>
+</html>
+"#,
+        escape_shell_html(&view.repo_id),
+        view.confidence,
+        view.target_files.len(),
+        graph.nodes.len(),
+        graph.edges.len(),
+        escape_shell_html(status),
+        view.source_text_logged
+    )
+}
+
+fn render_graph_neighborhood_html(graph: &GraphNeighborhoodReport) -> String {
+    let mut nodes = String::new();
+    for node in &graph.nodes {
+        let path = node.path.as_deref().unwrap_or("none");
+        let role = node
+            .role
+            .as_ref()
+            .map(|role| format!("{role:?}"))
+            .unwrap_or_else(|| "none".to_string());
+        let filter_text = format!(
+            "{} {:?} {} {} {}",
+            node.id, node.kind, node.label, path, node.source
+        );
+        nodes.push_str(&format!(
+            "<tr class=\"graph-row\" data-kind=\"node\" data-filter-text=\"{}\"><td><code>{}</code></td><td>{:?}</td><td>{}</td><td><code>{}</code></td><td>{}</td><td>{:.2}</td><td>{}</td></tr>",
+            escape_shell_html(&filter_text),
+            escape_shell_html(&node.id),
+            node.kind,
+            escape_shell_html(&node.label),
+            escape_shell_html(path),
+            escape_shell_html(&role),
+            node.weight,
+            escape_shell_html(&node.source)
+        ));
+    }
+    if nodes.is_empty() {
+        nodes.push_str("<tr><td colspan=\"7\">No graph nodes selected.</td></tr>");
+    }
+
+    let mut edges = String::new();
+    for edge in &graph.edges {
+        let filter_text = format!(
+            "{} {} {} {}",
+            edge.source, edge.target, edge.kind, edge.reason
+        );
+        edges.push_str(&format!(
+            "<tr class=\"graph-row\" data-kind=\"edge\" data-filter-text=\"{}\"><td><code>{}</code></td><td><code>{}</code></td><td>{}</td><td>{:.2}</td><td>{}</td></tr>",
+            escape_shell_html(&filter_text),
+            escape_shell_html(&edge.source),
+            escape_shell_html(&edge.target),
+            escape_shell_html(&edge.kind),
+            edge.weight,
+            escape_shell_html(&edge.reason)
+        ));
+    }
+    if edges.is_empty() {
+        edges.push_str("<tr><td colspan=\"5\">No graph edges selected.</td></tr>");
+    }
+
+    let mut communities = String::new();
+    for community in &graph.communities {
+        let filter_text = format!("{} {} {}", community.id, community.label, community.summary);
+        communities.push_str(&format!(
+            "<tr class=\"graph-row\" data-kind=\"community\" data-filter-text=\"{}\"><td><code>{}</code></td><td>{}</td><td>{}</td><td>{}</td><td>{}</td></tr>",
+            escape_shell_html(&filter_text),
+            escape_shell_html(&community.id),
+            escape_shell_html(&community.label),
+            community.node_count,
+            community.edge_count,
+            escape_shell_html(&community.summary)
+        ));
+    }
+    if communities.is_empty() {
+        communities.push_str("<tr><td colspan=\"5\">No graph communities selected.</td></tr>");
+    }
+
+    format!(
+        r#"<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ctxhelm Graph Neighborhood</title>
+  <style>
+    * {{ box-sizing: border-box; }}
+    body {{ margin: 0; font: 14px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: #17202a; background: #f7f8fa; }}
+    main {{ max-width: 1180px; margin: 0 auto; padding: 28px 18px 44px; }}
+    h1 {{ margin: 0 0 8px; font-size: 28px; letter-spacing: 0; }}
+    h2 {{ margin: 24px 0 10px; font-size: 18px; letter-spacing: 0; }}
+    .meta {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; margin: 18px 0; }}
+    .panel {{ border: 1px solid #d5dde7; border-radius: 6px; background: #fff; padding: 12px; min-width: 0; overflow-wrap: anywhere; }}
+    .toolbar {{ position: sticky; top: 0; display: grid; grid-template-columns: minmax(220px, 1fr) 180px; gap: 10px; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; background: #fff; }}
+    label {{ display: grid; gap: 4px; font-size: 12px; font-weight: 650; color: #465364; }}
+    input, select {{ min-height: 34px; border: 1px solid #b8c3d1; border-radius: 4px; padding: 6px 8px; font: inherit; }}
+    .table-wrap {{ overflow-x: auto; border: 1px solid #d8dee7; background: #fff; }}
+    table {{ width: 100%; min-width: 760px; border-collapse: collapse; }}
+    th, td {{ text-align: left; vertical-align: top; border-bottom: 1px solid #e6eaf0; padding: 8px 10px; overflow-wrap: anywhere; }}
+    th {{ background: #edf1f5; font-weight: 650; white-space: nowrap; }}
+    code {{ font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; }}
+    .hidden-by-filter {{ display: none; }}
+    .empty-state {{ display: none; padding: 10px; border: 1px solid #d8dee7; background: #fff; }}
+    @media (max-width: 720px) {{
+      main {{ padding: 18px 12px 32px; }}
+      h1 {{ font-size: 24px; }}
+      .toolbar {{ position: static; grid-template-columns: 1fr; }}
+      .meta {{ grid-template-columns: 1fr; }}
+    }}
+  </style>
+</head>
+<body data-graph-source-free="true">
+<main>
+  <h1>ctxhelm Graph Neighborhood</h1>
+  <p>Source-free graph diagnostics for retrieval review. Paths and labels come from safe inventory metadata; no source snippets are rendered.</p>
+  <section class="meta" aria-label="Graph summary">
+    <div class="panel"><strong>Repo</strong><br><code>{}</code></div>
+    <div class="panel"><strong>Anchors</strong><br>{}</div>
+    <div class="panel"><strong>Nodes</strong><br>{} / max {}</div>
+    <div class="panel"><strong>Edges</strong><br>{} / max {}</div>
+    <div class="panel"><strong>Capped</strong><br>{}</div>
+    <div class="panel"><strong>Source text logged</strong><br>{}</div>
+  </section>
+  <section class="toolbar" aria-label="Graph filters">
+    <label>Filter text<input id="graphFilterText" type="search" placeholder="path, edge, source, community"></label>
+    <label>Category<select id="graphKindFilter"><option value="all">All graph rows</option><option value="node">Nodes</option><option value="edge">Edges</option><option value="community">Communities</option></select></label>
+  </section>
+  <h2>Nodes</h2>
+  <div class="table-wrap"><table><thead><tr><th>ID</th><th>Kind</th><th>Label</th><th>Path</th><th>Role</th><th>Weight</th><th>Source</th></tr></thead><tbody>{}</tbody></table></div>
+  <h2>Edges</h2>
+  <div class="table-wrap"><table><thead><tr><th>Source</th><th>Target</th><th>Kind</th><th>Weight</th><th>Reason</th></tr></thead><tbody>{}</tbody></table></div>
+  <h2>Communities</h2>
+  <div class="table-wrap"><table><thead><tr><th>ID</th><th>Label</th><th>Nodes</th><th>Edges</th><th>Summary</th></tr></thead><tbody>{}</tbody></table></div>
+  <p id="graphEmptyState" class="empty-state">No graph rows match the current filters.</p>
+</main>
+<script>
+(() => {{
+  const textInput = document.getElementById('graphFilterText');
+  const kindFilter = document.getElementById('graphKindFilter');
+  const emptyState = document.getElementById('graphEmptyState');
+  const rows = Array.from(document.querySelectorAll('.graph-row'));
+  function applyFilters() {{
+    const needle = textInput.value.trim().toLowerCase();
+    const kind = kindFilter.value;
+    let visible = 0;
+    for (const row of rows) {{
+      const matchesText = !needle || (row.dataset.filterText || '').toLowerCase().includes(needle);
+      const matchesKind = kind === 'all' || row.dataset.kind === kind;
+      const show = matchesText && matchesKind;
+      row.classList.toggle('hidden-by-filter', !show);
+      if (show) visible += 1;
+    }}
+    emptyState.style.display = visible === 0 ? 'block' : 'none';
+  }}
+  textInput.addEventListener('input', applyFilters);
+  kindFilter.addEventListener('change', applyFilters);
+  applyFilters();
+}})();
+</script>
+</body>
+</html>
+"#,
+        escape_shell_html(&graph.repo_id),
+        graph.anchors.len(),
+        graph.nodes.len(),
+        graph.max_nodes,
+        graph.edges.len(),
+        graph.max_edges,
+        graph.capped,
+        graph.source_text_logged,
+        nodes,
+        edges,
+        communities
+    )
+}
+
+fn escape_shell_html(value: &str) -> String {
+    value
+        .replace('&', "&amp;")
+        .replace('<', "&lt;")
+        .replace('>', "&gt;")
+        .replace('"', "&quot;")
+        .replace('\'', "&#39;")
 }
 
 fn context_anchor_paths(
@@ -6908,6 +7337,40 @@ mod tests {
         assert!(matches!(args.format, InspectorFormat::Html));
         assert_eq!(args.target_agent, "codex");
         assert_eq!(args.output, Some(PathBuf::from("pack.html")));
+    }
+
+    #[test]
+    fn inspector_serve_command_parses_local_shell_options() {
+        let cli = Cli::try_parse_from([
+            "ctxhelm",
+            "inspector",
+            "serve",
+            "fix auth redirect",
+            "--mode",
+            "bug-fix",
+            "--budget",
+            "standard",
+            "--target-agent",
+            "codex",
+            "--path",
+            "src/auth/session.ts",
+            "--port",
+            "0",
+        ])
+        .unwrap();
+
+        let Command::Inspector(InspectorArgs {
+            command: InspectorCommand::Serve(args),
+        }) = cli.command
+        else {
+            panic!("expected inspector serve command");
+        };
+        assert_eq!(args.task, "fix auth redirect");
+        assert!(matches!(args.mode, Mode::BugFix));
+        assert!(matches!(args.budget, Budget::Standard));
+        assert_eq!(args.target_agent, "codex");
+        assert_eq!(args.paths, vec!["src/auth/session.ts"]);
+        assert_eq!(args.port, 0);
     }
 
     #[test]
