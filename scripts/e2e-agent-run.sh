@@ -1183,6 +1183,8 @@ if client_status == 124:
     client_failure_kind = client_failure_kind or "timeout"
 elif client_status != 0 and client_failure_kind is None:
     client_failure_kind = "client_exit_nonzero"
+if not evaluation_eligible:
+    ctxhelm_evidence_only_targets = []
 
 payload = {
     "lane": lane,
@@ -1326,10 +1328,12 @@ ctxhelm_evidence_misses_observed = bool(ctxhelm_evidence_misses)
 ctxhelm_evidence_only_targets = {
     lane.get("lane"): lane.get("ctxhelmEvidenceOnlyTargets", [])
     for lane in ctxhelm_lanes
-    if lane.get("ctxhelmEvidenceOnlyTargets")
+    if lane.get("evaluationEligible", False) and lane.get("ctxhelmEvidenceOnlyTargets")
 }
 ctxhelm_evidence_only_observed = bool(ctxhelm_evidence_only_targets)
 ctxhelm_under_read = any(
+    lane.get("evaluationEligible", False)
+    and
     lane.get("metrics", {}).get("targetReadCoverage", 0.0)
     < base_metrics.get("targetReadCoverage", 0.0)
     for lane in ctxhelm_lanes

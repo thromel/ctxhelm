@@ -106,6 +106,8 @@ Phase 225 expands paired real-agent outcome measurement from a three-lane probe 
 
 Phase 226 fixes that secondary evidence miss by treating agent-run outcome, paired-lane, matrix, and client comparison prompts as bounded workflow-doc retrieval tasks. `prepare-task`, brief packs, and standard packs for `Improve paired agent-run lane matrix` now surface `docs/feedback.md` and `docs/agent-setup.md`; the standard pack also includes the feedback snippet. The proof artifact is `.ctxhelm/e2e/phase226-agent-outcome-doc-retrieval.json`. This is a retrieval/packing fix only; real-agent outcome lift still needs a fresh non-rate-limited five-lane Claude Code run.
 
+Phase 227 reruns that five-lane Claude Code matrix and hardens the source-free report semantics for unavailable clients. The rerun still reports `rate_limited` across all lanes, but ctxhelm evidence misses are now empty after Phase 226. The harness now clears `ctxhelmEvidenceOnlyTargets` for non-evaluation-eligible lanes and computes under-read comparisons only from eligible ctxhelm lanes, so a rate-limited client no longer produces false consumption-gap signals. `.ctxhelm/e2e/phase227-agent-run-rate-limit-accounting.json` records the skipped, source-free proof; the only recommended R&D action remains `retry_real_client_when_available`.
+
 ## v2.5 Production Retrieval Quality
 
 ## Phases

@@ -4,7 +4,7 @@ milestone: v2.5
 milestone_name: Production Retrieval Quality
 status: active
 last_updated: "2026-06-03T00:00:00Z"
-last_activity: 2026-06-05 -- Phase 226 fixes agent outcome doc retrieval
+last_activity: 2026-06-05 -- Phase 227 hardens failed-lane evidence-only accounting
 progress:
   total_phases: 134
   completed_phases: 134
@@ -17,10 +17,10 @@ progress:
 
 ## Current Position
 
-Phase: 226 - Agent Outcome Doc Retrieval
-Plan: 226-agent-outcome-doc-retrieval
+Phase: 227 - Failed-Lane Evidence-Only Accounting
+Plan: 227-agent-run-rate-limit-accounting
 Status: Complete
-Last activity: 2026-06-05 -- Phase 226 fixes the secondary ctxhelm-evidence miss found by the Phase 225 paired-agent lane matrix. Agent-run outcome, paired-lane, matrix, and client comparison tasks now receive bounded workflow-doc candidates for `docs/feedback.md` and `docs/agent-setup.md`, without broadening generic project-governance tasks. The focused proof shows `prepare-task`, brief packs, and standard packs for `Improve paired agent-run lane matrix` now surface `docs/feedback.md`; the standard pack also includes the feedback snippet. This closes the retrieval/packing gap. Real-agent outcome lift remains unproven until Claude Code rate limits clear and the five-lane matrix can produce comparable non-skipped lanes.
+Last activity: 2026-06-05 -- Phase 227 reruns the five-lane Claude Code matrix after Phase 226 and confirms the retrieval miss is gone: ctxhelm-assisted lanes surface both `scripts/e2e-agent-run.sh` and `docs/feedback.md`. Claude Code `2.1.163` is still rate-limited, so no lane is comparable and outcome lift remains unproven. The harness now gates `ctxhelmEvidenceOnlyTargets` and `ctxhelmUnderReadTargetsObserved` to evaluation-eligible lanes, so rate-limited reports no longer look like agent-consumption failures. The remaining recommended R&D action is only `retry_real_client_when_available`.
 
 ## Project Reference
 

@@ -1781,6 +1781,7 @@ fn agent_run_e2e_script_contract() {
         "ctxhelmEvidenceOnlyTargets",
         "ctxhelmEvidenceOnlyTargetCount",
         "ctxhelmEvidenceOnlyTargetsObserved",
+        "if not evaluation_eligible",
         "ctxhelmEvidenceMissedTargets",
         "ctxhelmEvidenceMissedTargetCount",
         "ctxhelmEvidenceMissesObserved",
