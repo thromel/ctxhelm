@@ -6109,6 +6109,38 @@ fn render_semantic_precision_gate_report(report: &SemanticPrecisionGateReport) -
             output.push('\n');
         }
     }
+    output.push_str("\n## Reranker Contribution\n\n");
+    output.push_str(&format!(
+        "- Improved commits: `{}` / `{}`\n- Regressed commits: `{}` / `{}`\n- Neutral commits: `{}` / `{}`\n- Default target hits: `{}`\n- Reranked target hits: `{}`\n- Target hit delta: `{:+}`\n- Reranker-only target hits: `{}`\n- Default-only target hits: `{}`\n- Protected miss-rate delta: `{:+.3}`\n- Protected target miss-rate delta: `{:+.3}`\n",
+        report.reranker_contribution.improved_commit_count,
+        report.reranker_contribution.evaluated_commits,
+        report.reranker_contribution.regressed_commit_count,
+        report.reranker_contribution.evaluated_commits,
+        report.reranker_contribution.neutral_commit_count,
+        report.reranker_contribution.evaluated_commits,
+        report.reranker_contribution.default_target_hit_count,
+        report.reranker_contribution.reranked_target_hit_count,
+        report.reranker_contribution.target_hit_delta,
+        report.reranker_contribution.reranker_only_target_hit_count,
+        report.reranker_contribution.default_only_target_hit_count,
+        report.reranker_contribution.protected_evidence_miss_rate_delta,
+        report.reranker_contribution.protected_evidence_target_miss_rate_delta
+    ));
+    render_named_gate_cases(
+        &mut output,
+        "Reranker target gains",
+        &report.reranker_contribution.improved_cases,
+    );
+    render_named_gate_cases(
+        &mut output,
+        "Reranker target losses",
+        &report.reranker_contribution.regressed_cases,
+    );
+    render_named_gate_cases(
+        &mut output,
+        "Reranker default-only target hits",
+        &report.reranker_contribution.default_only_cases,
+    );
     render_named_gate_cases(&mut output, "Named wins", &report.named_wins);
     render_named_gate_cases(&mut output, "Named regressions", &report.named_regressions);
     render_named_gate_cases(&mut output, "Named misses", &report.named_misses);

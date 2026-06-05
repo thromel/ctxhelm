@@ -545,8 +545,8 @@ not omitted.
 
 The report includes Recall@K, precision proxy, MRR where available, Test
 Recall@10, runtime/cache fields, token efficiency, provider policy, precision
-status, protected-evidence miss rate, semantic contribution summary, named wins,
-named regressions, and named misses.
+status, protected-evidence miss rate, semantic contribution summary, reranker
+contribution summary, named wins, named regressions, and named misses.
 
 The semantic contribution summary also emits source-free diagnostics:
 
@@ -572,6 +572,24 @@ semantic-missed retrieval targets into source-free families such as
 `semantic_miss_area_context_only`,
 `semantic_miss_nonsemantic_coupled_signal`, and
 `semantic_miss_no_candidate_signal`.
+
+The reranker contribution summary compares `local_metadata_reranked` against
+`ctxhelm_default` without source text. It reports commit-level target-hit lift,
+target-hit losses, target churn, protected-evidence miss-rate deltas, and
+example paths for target gains/losses. The gate can emit these source-free
+diagnostics:
+
+- `reranker_contribution_target_lift`: the reranker retrieved additional target
+  files on measured commits.
+- `reranker_contribution_neutral`: the reranker preserved target hits but did
+  not add target hits in the gate run.
+- `reranker_contribution_regressed_commits`: the reranker lost target hits on
+  some commits; keep reranking opt-in or route by query family.
+- `reranker_contribution_protected_target_improved`: the reranker reduced
+  protected retrieval-target miss-rate.
+- `reranker_contribution_target_churn`: the reranker added target hits but also
+  replaced target files that default retrieved. Treat this as routing evidence,
+  not unconditional default-promotion evidence.
 
 Phase 176 turns the `area_context_only` diagnosis into a better progressive
 read surface for focused tasks. When a standard plan already selects

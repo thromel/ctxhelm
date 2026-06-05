@@ -348,6 +348,8 @@ pub struct SemanticPrecisionGateReport {
     pub named_misses: Vec<SemanticPrecisionNamedCase>,
     #[serde(default)]
     pub semantic_contribution: SemanticContributionSummary,
+    #[serde(default)]
+    pub reranker_contribution: RerankerContributionSummary,
     pub provider_policy: ProviderPolicyReport,
     pub precision_status: PrecisionStatusReport,
     #[serde(default)]
@@ -418,6 +420,28 @@ pub struct SemanticMissedTargetGapFamily {
     pub signal_gap: String,
     pub missed_count: usize,
     pub example_paths: Vec<String>,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct RerankerContributionSummary {
+    pub evaluated_commits: usize,
+    pub improved_commit_count: usize,
+    pub regressed_commit_count: usize,
+    pub neutral_commit_count: usize,
+    pub default_target_hit_count: usize,
+    pub reranked_target_hit_count: usize,
+    pub target_hit_delta: i32,
+    pub reranker_only_target_hit_count: usize,
+    pub default_only_target_hit_count: usize,
+    pub protected_evidence_miss_rate_delta: f32,
+    pub protected_evidence_target_miss_rate_delta: f32,
+    #[serde(default)]
+    pub improved_cases: Vec<SemanticPrecisionNamedCase>,
+    #[serde(default)]
+    pub regressed_cases: Vec<SemanticPrecisionNamedCase>,
+    #[serde(default)]
+    pub default_only_cases: Vec<SemanticPrecisionNamedCase>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -3082,6 +3106,7 @@ pub fn semantic_precision_gate_report_with_provider(
     ));
     let named_misses = named_cases(&default, &semantic, "local_semantic", NamedCaseKind::Miss);
     let semantic_contribution = semantic_contribution_summary(&semantic);
+    let reranker_contribution = reranker_contribution_summary(&default, &reranked);
     let (decision, decision_reason) =
         gate_decision_from_variants(&variants, &named_regressions, &provider_policy);
     let mut diagnostics = provider_policy.diagnostics.clone();
@@ -3089,6 +3114,7 @@ pub fn semantic_precision_gate_report_with_provider(
         &semantic_contribution,
         semantic_provider_status,
     ));
+    diagnostics.extend(reranker_contribution_diagnostics(&reranker_contribution));
     if !named_regressions.is_empty() {
         diagnostics.push(Diagnostic {
             code: "semantic_precision_named_regressions".to_string(),
@@ -3115,6 +3141,7 @@ pub fn semantic_precision_gate_report_with_provider(
         named_regressions,
         named_misses,
         semantic_contribution,
+        reranker_contribution,
         provider_policy,
         precision_status: precision,
         diagnostics,
@@ -3539,6 +3566,177 @@ fn semantic_contribution_diagnostics(
                 .flat_map(|hit| hit.paths.clone())
                 .collect(),
             count: summary.semantic_only_target_hit_count,
+        });
+    }
+    diagnostics
+}
+
+fn reranker_contribution_summary(
+    default: &HistoricalEvalReport,
+    reranked: &HistoricalEvalReport,
+) -> RerankerContributionSummary {
+    let default_by_sha = default
+        .commits
+        .iter()
+        .map(|commit| (commit.sha.as_str(), commit))
+        .collect::<BTreeMap<_, _>>();
+    let mut summary = RerankerContributionSummary {
+        evaluated_commits: reranked.commits.len(),
+        protected_evidence_miss_rate_delta: reranked.protected_evidence.miss_rate_at_10
+            - default.protected_evidence.miss_rate_at_10,
+        protected_evidence_target_miss_rate_delta: reranked
+            .protected_evidence
+            .retrieval_target_miss_rate_at_10
+            - default.protected_evidence.retrieval_target_miss_rate_at_10,
+        ..RerankerContributionSummary::default()
+    };
+
+    for commit in &reranked.commits {
+        let Some(default_commit) = default_by_sha.get(commit.sha.as_str()) else {
+            continue;
+        };
+        let default_hits = default_commit
+            .file_hits_at_10
+            .iter()
+            .cloned()
+            .collect::<BTreeSet<_>>();
+        let reranked_hits = commit
+            .file_hits_at_10
+            .iter()
+            .cloned()
+            .collect::<BTreeSet<_>>();
+        let reranker_only_hits = reranked_hits
+            .difference(&default_hits)
+            .cloned()
+            .collect::<BTreeSet<_>>();
+        let default_only_hits = default_hits
+            .difference(&reranked_hits)
+            .cloned()
+            .collect::<BTreeSet<_>>();
+
+        summary.default_target_hit_count += default_hits.len();
+        summary.reranked_target_hit_count += reranked_hits.len();
+        summary.reranker_only_target_hit_count += reranker_only_hits.len();
+        summary.default_only_target_hit_count += default_only_hits.len();
+        if !default_only_hits.is_empty() {
+            let mut paths = default_only_hits.iter().cloned().collect::<Vec<_>>();
+            paths.truncate(5);
+            summary.default_only_cases.push(SemanticPrecisionNamedCase {
+                sha: short_sha(&commit.sha),
+                variant: "local_metadata_reranked".to_string(),
+                reason: "Reranker replaced target file(s) that default retrieved.".to_string(),
+                paths,
+            });
+        }
+
+        match reranked_hits.len().cmp(&default_hits.len()) {
+            std::cmp::Ordering::Greater => {
+                summary.improved_commit_count += 1;
+                let mut paths = reranker_only_hits.into_iter().collect::<Vec<_>>();
+                paths.truncate(5);
+                summary.improved_cases.push(SemanticPrecisionNamedCase {
+                    sha: short_sha(&commit.sha),
+                    variant: "local_metadata_reranked".to_string(),
+                    reason: "Reranker retrieved additional gold changed file(s) beyond default."
+                        .to_string(),
+                    paths,
+                });
+            }
+            std::cmp::Ordering::Less => {
+                summary.regressed_commit_count += 1;
+                let mut paths = default_only_hits.into_iter().collect::<Vec<_>>();
+                paths.truncate(5);
+                summary.regressed_cases.push(SemanticPrecisionNamedCase {
+                    sha: short_sha(&commit.sha),
+                    variant: "local_metadata_reranked".to_string(),
+                    reason: "Reranker lost gold changed file(s) that default retrieved."
+                        .to_string(),
+                    paths,
+                });
+            }
+            std::cmp::Ordering::Equal => {
+                summary.neutral_commit_count += 1;
+            }
+        }
+    }
+
+    summary.target_hit_delta =
+        summary.reranked_target_hit_count as i32 - summary.default_target_hit_count as i32;
+    summary.improved_cases.truncate(10);
+    summary.regressed_cases.truncate(10);
+    summary.default_only_cases.truncate(10);
+    summary
+}
+
+fn reranker_contribution_diagnostics(summary: &RerankerContributionSummary) -> Vec<Diagnostic> {
+    if summary.evaluated_commits == 0 {
+        return Vec::new();
+    }
+    let mut diagnostics = Vec::new();
+    if summary.regressed_commit_count > 0 {
+        diagnostics.push(Diagnostic {
+            code: "reranker_contribution_regressed_commits".to_string(),
+            severity: DiagnosticSeverity::Warning,
+            message: "Local metadata reranker lost target hits on some commits; keep reranking opt-in or route by query family.".to_string(),
+            paths: summary
+                .regressed_cases
+                .iter()
+                .flat_map(|case| case.paths.clone())
+                .take(10)
+                .collect(),
+            count: summary.regressed_commit_count,
+        });
+    }
+    if summary.improved_commit_count > 0 {
+        diagnostics.push(Diagnostic {
+            code: "reranker_contribution_target_lift".to_string(),
+            severity: DiagnosticSeverity::Info,
+            message:
+                "Local metadata reranker retrieved additional target files on measured commits."
+                    .to_string(),
+            paths: summary
+                .improved_cases
+                .iter()
+                .flat_map(|case| case.paths.clone())
+                .take(10)
+                .collect(),
+            count: summary.improved_commit_count,
+        });
+    } else if summary.regressed_commit_count == 0 {
+        diagnostics.push(Diagnostic {
+            code: "reranker_contribution_neutral".to_string(),
+            severity: DiagnosticSeverity::Info,
+            message:
+                "Local metadata reranker preserved target hits but did not add target hits in this gate."
+                    .to_string(),
+            paths: Vec::new(),
+            count: summary.neutral_commit_count,
+        });
+    }
+    if summary.protected_evidence_target_miss_rate_delta < 0.0 {
+        diagnostics.push(Diagnostic {
+            code: "reranker_contribution_protected_target_improved".to_string(),
+            severity: DiagnosticSeverity::Info,
+            message: format!(
+                "Local metadata reranker reduced protected retrieval-target miss-rate by {:.3}.",
+                -summary.protected_evidence_target_miss_rate_delta
+            ),
+            paths: Vec::new(),
+            count: summary.reranked_target_hit_count,
+        });
+    }
+    if summary.default_only_target_hit_count > 0 {
+        diagnostics.push(Diagnostic {
+            code: "reranker_contribution_target_churn".to_string(),
+            severity: DiagnosticSeverity::Info,
+            message: "Local metadata reranker added target hits but also replaced some target files that default retrieved; use this as routing evidence rather than an unconditional default.".to_string(),
+            paths: summary
+                .default_only_cases
+                .iter()
+                .flat_map(|case| case.paths.clone())
+                .take(10)
+                .collect(),
+            count: summary.default_only_target_hit_count,
         });
     }
     diagnostics
@@ -9213,6 +9411,78 @@ mod tests {
             summary.semantic_missed_target_gap_families[0].example_paths,
             vec!["src/missed.ts".to_string()]
         );
+    }
+
+    #[test]
+    fn reranker_contribution_summary_counts_target_hit_deltas() {
+        let mut default = empty_historical_eval_report("rerank");
+        default.commits[0].file_hits_at_10 = vec![
+            "src/shared.rs".to_string(),
+            "src/default_only.rs".to_string(),
+        ];
+        default.protected_evidence.miss_rate_at_10 = 0.50;
+        default.protected_evidence.retrieval_target_miss_rate_at_10 = 0.25;
+
+        let mut reranked = empty_historical_eval_report("rerank");
+        reranked.commits[0].file_hits_at_10 = vec![
+            "src/shared.rs".to_string(),
+            "src/reranker_only.rs".to_string(),
+            "src/reranker_extra.rs".to_string(),
+        ];
+        reranked.protected_evidence.miss_rate_at_10 = 0.10;
+        reranked.protected_evidence.retrieval_target_miss_rate_at_10 = 0.0;
+
+        let summary = reranker_contribution_summary(&default, &reranked);
+
+        assert_eq!(summary.evaluated_commits, 1);
+        assert_eq!(summary.improved_commit_count, 1);
+        assert_eq!(summary.regressed_commit_count, 0);
+        assert_eq!(summary.neutral_commit_count, 0);
+        assert_eq!(summary.default_target_hit_count, 2);
+        assert_eq!(summary.reranked_target_hit_count, 3);
+        assert_eq!(summary.target_hit_delta, 1);
+        assert_eq!(summary.reranker_only_target_hit_count, 2);
+        assert_eq!(summary.default_only_target_hit_count, 1);
+        assert_eq!(
+            summary.improved_cases[0].paths,
+            vec!["src/reranker_extra.rs", "src/reranker_only.rs"]
+        );
+        assert_eq!(
+            summary.default_only_cases[0].paths,
+            vec!["src/default_only.rs"]
+        );
+        assert!((summary.protected_evidence_miss_rate_delta + 0.40).abs() < 0.001);
+        assert!((summary.protected_evidence_target_miss_rate_delta + 0.25).abs() < 0.001);
+    }
+
+    #[test]
+    fn reranker_contribution_diagnostics_warn_on_target_loss() {
+        let summary = RerankerContributionSummary {
+            evaluated_commits: 2,
+            improved_commit_count: 0,
+            regressed_commit_count: 1,
+            neutral_commit_count: 1,
+            default_target_hit_count: 2,
+            reranked_target_hit_count: 1,
+            target_hit_delta: -1,
+            default_only_target_hit_count: 1,
+            regressed_cases: vec![SemanticPrecisionNamedCase {
+                sha: "abc123".to_string(),
+                variant: "local_metadata_reranked".to_string(),
+                reason: "lost target".to_string(),
+                paths: vec!["src/lost.rs".to_string()],
+            }],
+            ..RerankerContributionSummary::default()
+        };
+
+        let diagnostics = reranker_contribution_diagnostics(&summary);
+
+        assert_eq!(
+            diagnostics[0].code,
+            "reranker_contribution_regressed_commits"
+        );
+        assert_eq!(diagnostics[0].severity, DiagnosticSeverity::Warning);
+        assert_eq!(diagnostics[0].paths, vec!["src/lost.rs".to_string()]);
     }
 
     #[test]
