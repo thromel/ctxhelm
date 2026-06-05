@@ -155,6 +155,15 @@ beyond lexical and one combined-target recovery, but also eight unique
 non-target memory selections. This means memory visibility works; memory
 precision and broader multi-pair/multi-repo generalization remain open.
 
+Status: Phase 220 reduces the measured memory precision noise without losing
+the observed lift. Experience cards now preserve source-free eval-trace
+recommendation order, keep recommended files before tests, and cap memory
+source-link candidate injection to a small source-like context set per card.
+The same two-pair RefactoringMiner measurement keeps one unique memory lift and
+one combined-target recovery while reducing unique non-target memory selections
+from 8 to 2. `precisionNeedsWork` remains true, so the next higher bar is more
+pairs, more repos, and a stricter memory-selection policy.
+
 ### 3. Semantic/Embedding Signal Is Wired But Not Driving Lift
 
 The current product lift comes from hybrid ranking, graph/test/history/context

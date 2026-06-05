@@ -109,3 +109,11 @@ coverage, unique non-target noise, and runtime. It is intentionally a
 measurement report rather than a release-gate pass/fail smoke: weak or noisy
 memory lift should be recorded honestly so the next ranking work is grounded in
 evidence.
+
+Experience cards preserve the original recommendation order from the eval trace:
+recommended files first, then recommended tests, with duplicates removed without
+sorting. Memory source-link candidates are capped to a small source-like context
+set per card and do not inject tests into the ranked context budget. Tests can
+still appear in selected memory source links and normal validation channels, but
+old experience memory cannot flood top-10 context with every prior test or
+auxiliary file.

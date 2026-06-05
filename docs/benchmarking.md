@@ -130,6 +130,14 @@ from the older commit, and writes a source-free aggregate report with
 generalized beyond controlled smokes, because it records both target lift and
 ranking noise.
 
+Phase 220 uses that harness as a precision regression check. On the same
+two-pair RefactoringMiner slice, preserving experience-card recommendation order
+and capping source-like memory context candidates kept `memoryUniqueLiftPairs =
+1` and `combinedRecoveredPairs = 1`, while reducing
+`memoryUniqueNonTargetCount` from `8` to `2`. The remaining report still sets
+`precisionNeedsWork = true`, so broader multi-pair and multi-repo proof is still
+required before stronger memory-generalization claims.
+
 Historical eval reports also include source-free `graphEdgeProfiles`. These
 profiles split graph candidate evidence by edge label, such as `imports`,
 `python_reexport`, or `precision:calls`, and report candidate count,

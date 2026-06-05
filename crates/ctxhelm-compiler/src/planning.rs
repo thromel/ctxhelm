@@ -1791,6 +1791,8 @@ fn memory_path_candidates(
     cards: &[MemoryCard],
     roles: &BTreeMap<String, FileRole>,
 ) -> Vec<MemoryPathCandidate> {
+    const MAX_MEMORY_CONTEXT_LINKS_PER_CARD: usize = 3;
+
     let mut candidates = Vec::new();
     let mut seen = BTreeSet::new();
     let task_terms = terms(task);
@@ -1801,10 +1803,17 @@ fn memory_path_candidates(
         let Some(score) = memory_task_overlap_score(&task_terms, card) else {
             continue;
         };
+        let mut card_link_count = 0usize;
         for link in &card.source_links {
             let Some(role) = roles.get(link) else {
                 continue;
             };
+            if !memory_path_role_is_context(role) {
+                continue;
+            }
+            if card_link_count >= MAX_MEMORY_CONTEXT_LINKS_PER_CARD {
+                break;
+            }
             if seen.insert((card.id.clone(), link.clone())) {
                 candidates.push(MemoryPathCandidate {
                     path: link.clone(),
@@ -1812,10 +1821,18 @@ fn memory_path_candidates(
                     score,
                     card_id: card.id.clone(),
                 });
+                card_link_count += 1;
             }
         }
     }
     candidates
+}
+
+fn memory_path_role_is_context(role: &FileRole) -> bool {
+    matches!(
+        role,
+        FileRole::Source | FileRole::Config | FileRole::Schema | FileRole::Docs
+    )
 }
 
 fn memory_task_overlap_score(task_terms: &BTreeSet<String>, card: &MemoryCard) -> Option<f32> {

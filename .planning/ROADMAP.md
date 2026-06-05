@@ -92,6 +92,8 @@ Phase 218 fixes parent-snapshot memory visibility for real historical evals. His
 
 Phase 219 turns that single real-corpus proof into a repeatable measurement harness. `scripts/measure-memory-generalization.sh` scans a real local repository for repeated-file historical pairs, runs before/after memory approval evals, and reports source-free aggregate lift/noise/runtime fields such as `memoryUniqueLiftPairs`, `memoryUniqueTargetHitCount`, `memoryUniqueNonTargetCount`, `precisionNeedsWork`, and `generalizationProven`. The two-pair RefactoringMiner run observed one unique memory lift beyond lexical and one combined-target recovery, but also eight unique non-target memory selections; the evidence says memory visibility works, while memory precision and broader generalization still need R&D.
 
+Phase 220 improves memory precision on that same measured slice. Experience cards now preserve eval-trace recommendation order instead of sorting source links, keep recommended files before recommended tests, and memory path candidate injection is capped to a small source-like context set per card. The RefactoringMiner two-pair rerun preserves one unique memory lift beyond lexical and one combined-target recovery while reducing unique non-target memory selections from 8 to 2. The remaining two non-targets keep `precisionNeedsWork = true`, so the next R&D step is broader pair counts plus a more selective memory-selection policy.
+
 ## v2.5 Production Retrieval Quality
 
 ## Phases

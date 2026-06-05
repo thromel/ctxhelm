@@ -9,7 +9,7 @@ use ctxhelm_index::{
     StoreConfig,
 };
 use serde::{Deserialize, Serialize};
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
 use std::path::{Path, PathBuf};
 
@@ -308,10 +308,17 @@ pub fn generate_experience_cards(
     let traces = list_eval_traces(&repo_root, options.limit.max(1))?;
     let mut cards = Vec::new();
     for trace in traces {
-        let mut links = trace.recommended_files.clone();
-        links.extend(trace.recommended_tests.clone());
-        links.sort();
-        links.dedup();
+        let mut links = Vec::new();
+        let mut seen_links = BTreeSet::new();
+        for link in trace
+            .recommended_files
+            .iter()
+            .chain(trace.recommended_tests.iter())
+        {
+            if seen_links.insert(link.clone()) {
+                links.push(link.clone());
+            }
+        }
         let title = format!(
             "Experience: {:?} {}",
             trace.task_type,

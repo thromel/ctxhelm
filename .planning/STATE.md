@@ -4,10 +4,10 @@ milestone: v2.5
 milestone_name: Production Retrieval Quality
 status: active
 last_updated: "2026-06-03T00:00:00Z"
-last_activity: 2026-06-03 -- Phase 219 measures real-corpus memory generalization
+last_activity: 2026-06-05 -- Phase 220 reduces real-corpus memory precision noise
 progress:
-  total_phases: 128
-  completed_phases: 128
+  total_phases: 129
+  completed_phases: 129
   total_plans: 7
   completed_plans: 7
   percent: 100
@@ -17,10 +17,10 @@ progress:
 
 ## Current Position
 
-Phase: 219 - Memory Generalization Measurement
-Plan: 219-memory-generalization-measurement
+Phase: 220 - Memory Precision Noise Reduction
+Plan: 220-memory-precision-noise-reduction
 Status: Complete
-Last activity: 2026-06-03 -- Phase 219 adds `scripts/measure-memory-generalization.sh`, a source-free real-corpus harness that scans repeated-file historical pairs, seeds approved experience memory from older tasks, evaluates newer tasks before and after approval, and aggregates lift/noise/runtime. The RefactoringMiner two-pair run in `.ctxhelm/e2e/phase219-refactoringminer-memory-generalization.json` measured one unique memory lift beyond lexical and one combined-target recovery, but also eight unique non-target memory selections, so broad memory generalization is not proven yet and the next R&D bottleneck is memory precision.
+Last activity: 2026-06-05 -- Phase 220 reduces memory precision noise by preserving experience-card recommendation order, keeping recommended files before tests, and capping memory source-link candidates to a small source-like context set per card. The RefactoringMiner two-pair rerun in `.ctxhelm/e2e/phase220-refactoringminer-memory-precision.json` preserves one unique memory lift beyond lexical and one combined-target recovery while reducing unique non-target memory selections from 8 to 2. Broad memory generalization remains unproven, but memory precision is measurably better on the current real-corpus slice.
 
 ## Project Reference
 

@@ -1,0 +1,209 @@
+{
+  "aggregate": {
+    "afterEvalRuntimeSecondsTotal": 0.95,
+    "combinedRecoveredPairs": 1,
+    "lexicalCoveredPairs": 1,
+    "memoryCandidatePairs": 1,
+    "memoryNoisePairs": 1,
+    "memoryTargetHitPairs": 1,
+    "memoryUniqueLiftPairs": 1,
+    "memoryUniqueNonTargetCount": 2,
+    "memoryUniqueTargetHitCount": 1
+  },
+  "errors": [],
+  "interpretation": {
+    "generalizationProven": false,
+    "lexicalStillStrong": true,
+    "precisionNeedsWork": true,
+    "recommendedNextRAndD": [
+      "increase_real_corpus_pair_count",
+      "reduce_memory_unique_non_target_noise",
+      "compare_against_lexical_graph_semantic_ablations",
+      "measure_real_agent_outcome_lift"
+    ],
+    "singlePairLiftObserved": true
+  },
+  "pairs": [
+    {
+      "afterApproval": {
+        "memoryReuseSummary": {
+          "commitsWithMemoryCandidates": 0,
+          "memoryCandidateCount": 0,
+          "memorySelectedAt10Count": 0,
+          "memoryTargetHitAt10Count": 0,
+          "memoryTargetMissedAt10Count": 0,
+          "memoryUniqueNonTargetCount": 0,
+          "memoryUniqueTargetHitCount": 0,
+          "selectedRoleCounts": {},
+          "sourceTextLogged": false
+        },
+        "recommendedResearchActions": [
+          "fix_retrieval_or_ranking_regression",
+          "protect_high_confidence_evidence",
+          "improve_ranking_or_budget_allocation",
+          "improve_validation_test_mapping",
+          "collect_or_approve_experience_memory"
+        ],
+        "targetInCombined": false,
+        "targetInLexical": true
+      },
+      "beforeApproval": {
+        "memoryReuseSummary": {
+          "commitsWithMemoryCandidates": 0,
+          "memoryCandidateCount": 0,
+          "memorySelectedAt10Count": 0,
+          "memoryTargetHitAt10Count": 0,
+          "memoryTargetMissedAt10Count": 0,
+          "memoryUniqueNonTargetCount": 0,
+          "memoryUniqueTargetHitCount": 0,
+          "selectedRoleCounts": {},
+          "sourceTextLogged": false
+        },
+        "recommendedResearchActions": [
+          "fix_retrieval_or_ranking_regression",
+          "protect_high_confidence_evidence",
+          "improve_ranking_or_budget_allocation",
+          "improve_validation_test_mapping",
+          "collect_or_approve_experience_memory"
+        ],
+        "targetInCombined": false,
+        "targetInLexical": true
+      },
+      "evaluatedCommits": 1,
+      "experience": {
+        "approvedExperienceCardId": "experience:86ad1c43f9857cf5823034f7c985dce67b37287a55c4648f5034721e04f2429f",
+        "generatedCards": 1
+      },
+      "lift": {
+        "combinedRecoveredTarget": false,
+        "lexicalAlreadyCoveredTarget": true,
+        "memoryCandidateDelta": 0,
+        "memoryTargetHitDelta": 0,
+        "memoryUniqueTargetHitDelta": 0,
+        "targetMissedByMemory": 0,
+        "uniqueNonTargetNoise": 0,
+        "uniqueTargetLiftBeyondLexical": false
+      },
+      "newerShaPrefix": "6c8d63c4e49f",
+      "newerTaskSha256": "9bbce0ef61643d44f1b6d4fe694f4bae14bda1959133b2b05dc7f12626522f1e",
+      "olderShaPrefix": "3dd243e3e1d1",
+      "olderTaskSha256": "52c9f85040bdcb29f87c9bd18e43ce1e5bdf88af1b9d76be2e086cc54e4f79f7",
+      "pairIndex": 1,
+      "rawTaskStored": false,
+      "retrievalTargetMatched": true,
+      "runtimeSeconds": {
+        "afterEval": 0.77,
+        "approve": 0.01,
+        "beforeEval": 12.0,
+        "generateExperience": 0.06,
+        "seedPrepareTask": 15.03
+      },
+      "targetFile": "src/main/java/org/refactoringminer/astDiff/matchers/wrappers/BodyMapperMatcher.java"
+    },
+    {
+      "afterApproval": {
+        "memoryReuseSummary": {
+          "commitsWithMemoryCandidates": 1,
+          "memoryCandidateCount": 3,
+          "memorySelectedAt10Count": 3,
+          "memoryTargetHitAt10Count": 1,
+          "memoryTargetMissedAt10Count": 2,
+          "memoryUniqueNonTargetCount": 2,
+          "memoryUniqueTargetHitCount": 1,
+          "selectedRoleCounts": {
+            "source": 3
+          },
+          "sourceTextLogged": false
+        },
+        "recommendedResearchActions": [
+          "improve_candidate_generation",
+          "evaluate_memory_reuse_lift",
+          "improve_validation_test_mapping",
+          "improve_memory_selection_policy"
+        ],
+        "targetInCombined": true,
+        "targetInLexical": false
+      },
+      "beforeApproval": {
+        "memoryReuseSummary": {
+          "commitsWithMemoryCandidates": 0,
+          "memoryCandidateCount": 0,
+          "memorySelectedAt10Count": 0,
+          "memoryTargetHitAt10Count": 0,
+          "memoryTargetMissedAt10Count": 0,
+          "memoryUniqueNonTargetCount": 0,
+          "memoryUniqueTargetHitCount": 0,
+          "selectedRoleCounts": {},
+          "sourceTextLogged": false
+        },
+        "recommendedResearchActions": [
+          "improve_candidate_generation",
+          "improve_validation_test_mapping",
+          "collect_or_approve_experience_memory"
+        ],
+        "targetInCombined": false,
+        "targetInLexical": false
+      },
+      "evaluatedCommits": 1,
+      "experience": {
+        "approvedExperienceCardId": "experience:d2691dd0762e6ecf82373585cf16a662937fea8d019744966f0341ae9c240e86",
+        "generatedCards": 1
+      },
+      "lift": {
+        "combinedRecoveredTarget": true,
+        "lexicalAlreadyCoveredTarget": false,
+        "memoryCandidateDelta": 3,
+        "memoryTargetHitDelta": 1,
+        "memoryUniqueTargetHitDelta": 1,
+        "targetMissedByMemory": 2,
+        "uniqueNonTargetNoise": 2,
+        "uniqueTargetLiftBeyondLexical": true
+      },
+      "newerShaPrefix": "cb3e93a1bfbd",
+      "newerTaskSha256": "0b673b7e3717f403b6f60bc02fbef52cda0f2008073bb9d84f4edae3f003af98",
+      "olderShaPrefix": "12286423ef81",
+      "olderTaskSha256": "8daf3ba13d60101f2d74d48172d0d30f089c78a134d6aa1afb82575c3af2a44e",
+      "pairIndex": 2,
+      "rawTaskStored": false,
+      "retrievalTargetMatched": true,
+      "runtimeSeconds": {
+        "afterEval": 0.18,
+        "approve": 0.01,
+        "beforeEval": 24.3,
+        "generateExperience": 0.06,
+        "seedPrepareTask": 35.24
+      },
+      "targetFile": "src/main/java/gr/uom/java/xmi/VariableDeclarationContainer.java"
+    }
+  ],
+  "privacyStatus": {
+    "localOnly": true,
+    "rawMcpTrafficStored": false,
+    "rawPromptStored": false,
+    "rawTaskTextStored": false,
+    "rawTranscriptStored": false,
+    "remoteEmbeddingsUsed": false,
+    "remoteRerankingUsed": false,
+    "repoPathStored": false,
+    "sourceTextLogged": false
+  },
+  "repo": {
+    "discoveredPairs": 2,
+    "errorCount": 0,
+    "evaluatedPairs": 2,
+    "headShaPrefix": "949bddcd3509",
+    "label": "RefactoringMiner",
+    "pathStored": false,
+    "requestedPairs": 2,
+    "scanCommits": 200
+  },
+  "schemaVersion": "ctxhelm-memory-generalization-measurement-v1",
+  "status": "measured",
+  "unsupportedActions": [
+    "source edits",
+    "model invocation",
+    "cloud upload",
+    "raw prompt storage"
+  ],
+  "workflowKind": "multi-pair-experience-memory-generalization"
+}

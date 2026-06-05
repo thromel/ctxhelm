@@ -88,7 +88,7 @@ use planning::{
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::collections::BTreeMap;
+    use std::collections::{BTreeMap, BTreeSet};
     use std::fs;
     use std::path::Path;
     use std::process::Command as ProcessCommand;
@@ -2806,6 +2806,132 @@ mod tests {
                     .iter()
                     .any(|score| score.signal == RetrievalSignalKind::Memory)
         }));
+
+        std::env::remove_var("CTXHELM_HOME");
+    }
+
+    #[test]
+    fn experience_cards_preserve_recommended_file_order_before_tests() {
+        let _guard = env_lock();
+        let temp = tempfile::tempdir().unwrap();
+        let repo = temp.path().join("repo");
+        let home = temp.path().join("ctxhelm-home");
+        fs::create_dir_all(repo.join(".git")).unwrap();
+        std::env::set_var("CTXHELM_HOME", &home);
+        let repo_id = repo_id_for_path(&fs::canonicalize(&repo).unwrap());
+        let task_hash = task_hash("fix checkout signature regression");
+
+        ctxhelm_index::append_eval_trace(
+            &repo,
+            &ctxhelm_core::EvalTrace {
+                id: uuid::Uuid::nil(),
+                repo_id,
+                task_hash,
+                task_type: TaskType::BugFix,
+                pack_id: None,
+                target_agent: "claude-code".to_string(),
+                budget: Some(PackBudget::Brief),
+                recommended_files: vec![
+                    "src/primary.ts".to_string(),
+                    "src/secondary.ts".to_string(),
+                    "src/primary.ts".to_string(),
+                ],
+                recommended_tests: vec![
+                    "tests/primary.test.ts".to_string(),
+                    "src/secondary.ts".to_string(),
+                ],
+                recommended_commands: vec!["pnpm test tests/primary.test.ts".to_string()],
+                created_at_unix_seconds: 1,
+                source_text_logged: false,
+            },
+        )
+        .unwrap();
+
+        let report =
+            generate_experience_cards(&repo, &ExperienceCardsOptions { limit: 1 }).unwrap();
+        assert_eq!(report.cards.len(), 1);
+        assert_eq!(
+            report.cards[0].source_links,
+            vec![
+                "src/primary.ts",
+                "src/secondary.ts",
+                "tests/primary.test.ts"
+            ]
+        );
+
+        std::env::remove_var("CTXHELM_HOME");
+    }
+
+    #[test]
+    fn memory_path_candidates_cap_context_links_and_skip_tests() {
+        let _guard = env_lock();
+        let temp = tempfile::tempdir().unwrap();
+        let repo = temp.path().join("repo");
+        let home = temp.path().join("ctxhelm-home");
+        for path in [
+            "src/one.ts",
+            "src/two.ts",
+            "src/three.ts",
+            "src/four.ts",
+            "tests/one.test.ts",
+        ] {
+            fs::create_dir_all(repo.join(Path::new(path).parent().unwrap())).unwrap();
+            fs::write(repo.join(path), "export const value = true;\n").unwrap();
+        }
+        std::env::set_var("CTXHELM_HOME", &home);
+
+        persist_memory_card_records(
+            &repo,
+            &StoreConfig::default(),
+            &[StorageMemoryCardRecord {
+                card: MemoryCard {
+                    id: "experience:many-links".to_string(),
+                    kind: MemoryCardKind::Experience,
+                    title: "Experience: checkout signature regression".to_string(),
+                    summary: "A prior approved run selected several files and tests.".to_string(),
+                    source_links: vec![
+                        "src/one.ts".to_string(),
+                        "src/two.ts".to_string(),
+                        "src/three.ts".to_string(),
+                        "src/four.ts".to_string(),
+                        "tests/one.test.ts".to_string(),
+                    ],
+                    input_hashes: vec!["task-hash".to_string()],
+                    freshness: MemoryFreshness::Fresh,
+                    review_status: MemoryReviewStatus::Approved,
+                    disabled: false,
+                    confidence: 0.90,
+                    reason: "test approved source-free experience card".to_string(),
+                    privacy_status: PrivacyStatus::local_only(),
+                },
+            }],
+        )
+        .unwrap();
+
+        let plan =
+            prepare_context_plan(&repo, "fix checkout signature regression", TaskType::BugFix)
+                .unwrap();
+        let memory_paths = plan
+            .retrieval_candidates
+            .iter()
+            .filter(|candidate| {
+                candidate.reason_code == "memory_source_link"
+                    && candidate
+                        .signal_scores
+                        .iter()
+                        .any(|score| score.signal == RetrievalSignalKind::Memory)
+            })
+            .filter_map(|candidate| candidate.path.as_deref())
+            .collect::<BTreeSet<_>>();
+
+        assert_eq!(
+            memory_paths,
+            ["src/one.ts", "src/two.ts", "src/three.ts"]
+                .into_iter()
+                .collect::<BTreeSet<_>>()
+        );
+        assert!(!memory_paths.contains(&"src/four.ts"));
+        assert!(!memory_paths.contains(&"tests/one.test.ts"));
 
         std::env::remove_var("CTXHELM_HOME");
     }
