@@ -14,7 +14,7 @@ EOF
 }
 
 ctxhelm_bin="${CTXHELM_BIN:-ctxhelm}"
-pairs="1"
+pairs="3"
 scan_commits="120"
 output_path="${CTXHELM_MEMORY_GENERALIZATION_SUITE_REPORT:-}"
 semantic_enabled="false"
@@ -169,6 +169,9 @@ def aggregate_value(key):
 evaluated_repos = len(reports)
 evaluated_pairs = sum(report.get("repo", {}).get("evaluatedPairs", 0) for report in reports)
 discovered_pairs = sum(report.get("repo", {}).get("discoveredPairs", 0) for report in reports)
+candidate_pairs = sum(report.get("repo", {}).get("candidatePairCount", 0) for report in reports)
+candidate_target_files = sum(report.get("repo", {}).get("candidateTargetFileCount", 0) for report in reports)
+evaluated_target_files = sum(report.get("repo", {}).get("evaluatedTargetFileCount", 0) for report in reports)
 repo_summaries = []
 for report in reports:
     repo = report.get("repo", {})
@@ -180,8 +183,11 @@ for report in reports:
             "pathStored": False,
             "headShaPrefix": repo.get("headShaPrefix"),
             "requestedPairs": repo.get("requestedPairs"),
+            "candidatePairCount": repo.get("candidatePairCount"),
+            "candidateTargetFileCount": repo.get("candidateTargetFileCount"),
             "discoveredPairs": repo.get("discoveredPairs"),
             "evaluatedPairs": repo.get("evaluatedPairs"),
+            "evaluatedTargetFileCount": repo.get("evaluatedTargetFileCount"),
             "errorCount": repo.get("errorCount"),
             "aggregate": aggregate,
             "interpretation": {
@@ -232,8 +238,11 @@ payload = {
         "errorRepositoryCount": len(errors),
         "requestedPairsPerRepo": int(pairs),
         "scanCommitsPerRepo": int(scan_commits),
+        "candidatePairCount": candidate_pairs,
+        "candidateTargetFileCount": candidate_target_files,
         "discoveredPairs": discovered_pairs,
         "evaluatedPairs": evaluated_pairs,
+        "evaluatedTargetFileCount": evaluated_target_files,
     },
     "aggregate": {
         "memoryCandidatePairs": memory_candidate_pairs,
@@ -260,6 +269,8 @@ payload = {
     },
     "interpretation": {
         "multiRepoMeasured": evaluated_repos > 1,
+        "largerPairCountMeasured": evaluated_pairs > evaluated_repos,
+        "pairDiversityMeasured": evaluated_target_files > evaluated_repos,
         "generalizationProven": evaluated_repos > 1 and memory_unique_lift_pairs > 1,
         "precisionNeedsWork": memory_unique_non_targets > 0
         or memory_target_hit_pairs < memory_candidate_pairs,

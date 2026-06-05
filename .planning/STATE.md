@@ -4,10 +4,10 @@ milestone: v2.5
 milestone_name: Production Retrieval Quality
 status: active
 last_updated: "2026-06-03T00:00:00Z"
-last_activity: 2026-06-05 -- Phase 223 tightens memory corroboration accounting
+last_activity: 2026-06-05 -- Phase 224 expands memory-generalization measurement
 progress:
-  total_phases: 132
-  completed_phases: 132
+  total_phases: 133
+  completed_phases: 133
   total_plans: 7
   completed_plans: 7
   percent: 100
@@ -17,10 +17,10 @@ progress:
 
 ## Current Position
 
-Phase: 223 - Memory Corroboration Policy
-Plan: 223-memory-corroboration-policy
+Phase: 224 - Expanded Memory Generalization Measurement
+Plan: 224-expanded-memory-generalization-measurement
 Status: Complete
-Last activity: 2026-06-05 -- Phase 223 adds a stricter memory-corroboration policy and sharper precision accounting. Ranking no longer attaches memory to lexical-expansion-only paths and only allows one uncorroborated memory-only rescue when no target files were selected. Historical memory summaries now separate lexical-baseline-relative non-targets from unsupported current-signal non-targets with `memoryUniqueNonTargetWithoutCurrentSupportCount` and related fields. The four-repo semantic-enabled rerun in `.ctxhelm/e2e/phase223-memory-corroboration-policy-suite.json` keeps `memoryUniqueLiftPairs = 1` and `memoryUniqueNonTargetCount = 1`, but reports `memoryUniqueNonTargetWithoutCurrentSupportCount = 0`, `memoryUniqueTargetHitWithoutCurrentSupportCount = 0`, and `unsupportedMemoryPrecisionNeedsWork = false`. The remaining memory non-target is supported by another current signal; larger pair counts and real-agent outcome lift remain open.
+Last activity: 2026-06-05 -- Phase 224 expands the memory-generalization measurement surface. The repeated-file harness now discovers all candidates in the scan window, prefers distinct target files before duplicate-path pairs, and reports source-free pair-diversity fields. The suite default is now three pairs per repo. The semantic-enabled four-repo fixture run in `.ctxhelm/e2e/phase224-expanded-memory-generalization-suite.json` evaluates 12 pairs across 12 distinct target files from 971 candidate repeated-file pairs and 256 candidate target files. It reports `memoryUniqueLiftPairs = 2`, `memoryUniqueTargetHitCount = 2`, `memoryUniqueNonTargetCount = 3`, `memoryUniqueNonTargetWithoutCurrentSupportCount = 0`, `memoryUniqueTargetHitWithoutCurrentSupportCount = 0`, `semanticSelectedTargetPairs = 4`, `largerPairCountMeasured = true`, and `pairDiversityMeasured = true`. This restores broader memory-lift evidence under the stricter Phase 223 policy while keeping unsupported pure-memory noise at zero; raw lexical-baseline-relative memory noise and real-agent outcome lift remain open.
 
 ## Project Reference
 

@@ -126,14 +126,19 @@ scripts/measure-memory-generalization-suite.sh \
   --repo ../ctxhelm-proof-fixtures/VeriSchema \
   --repo ../ctxhelm-proof-fixtures/ReAgent \
   --repo ../ctxhelm-proof-fixtures/ctxhelm \
-  --pairs 1 \
+  --pairs 3 \
   --scan-commits 120 \
   --output .ctxhelm/e2e/phase221-memory-generalization-suite.json
 ```
 
 The suite wrapper runs the single-repo harness for each checkout and aggregates
 only source-free labels, hashes, booleans, counters, and runtime. It should be
-used before claiming memory lift generalizes across repositories.
+used before claiming memory lift generalizes across repositories. The harness
+prefers distinct target files before filling duplicate-path repeated pairs, and
+reports `candidatePairCount`, `candidateTargetFileCount`,
+`evaluatedTargetFileCount`, `largerPairCountMeasured`, and
+`pairDiversityMeasured` so a broader run cannot silently collapse to one
+repeated file.
 
 To compare memory against local semantic and graph signals in the same repeated
 history tasks, enable the local semantic lane:
@@ -144,7 +149,7 @@ scripts/measure-memory-generalization-suite.sh \
   --repo ../ctxhelm-proof-fixtures/VeriSchema \
   --repo ../ctxhelm-proof-fixtures/ReAgent \
   --repo ../ctxhelm-proof-fixtures/ctxhelm \
-  --pairs 1 \
+  --pairs 3 \
   --scan-commits 120 \
   --semantic \
   --semantic-provider local_hash \

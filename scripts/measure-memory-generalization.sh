@@ -195,7 +195,7 @@ def discover_pairs():
     ).splitlines()
     commits = list(reversed([commit.strip() for commit in commits if commit.strip()]))
     previous_by_path = {}
-    pairs = []
+    candidates = []
     for sha in commits:
         if not commit_parent(sha):
             continue
@@ -204,17 +204,35 @@ def discover_pairs():
                 continue
             older = previous_by_path.get(path)
             if older:
-                pairs.append(
+                candidates.append(
                     {
                         "olderSha": older,
                         "newerSha": sha,
                         "targetFile": path,
                     }
                 )
-                if len(pairs) >= requested_pairs:
-                    return pairs
             previous_by_path[path] = sha
-    return pairs
+    selected = []
+    selected_paths = set()
+    for pair in candidates:
+        path = pair["targetFile"]
+        if path in selected_paths:
+            continue
+        selected.append(pair)
+        selected_paths.add(path)
+        if len(selected) >= requested_pairs:
+            break
+    if len(selected) < requested_pairs:
+        selected_keys = {(pair["olderSha"], pair["newerSha"], pair["targetFile"]) for pair in selected}
+        for pair in candidates:
+            key = (pair["olderSha"], pair["newerSha"], pair["targetFile"])
+            if key in selected_keys:
+                continue
+            selected.append(pair)
+            selected_keys.add(key)
+            if len(selected) >= requested_pairs:
+                break
+    return selected, len(candidates), len({pair["targetFile"] for pair in candidates})
 
 
 def load_json(path):
@@ -536,7 +554,7 @@ def evaluate(pair, index):
     }
 
 
-pairs = discover_pairs()
+pairs, candidate_pair_count, candidate_target_file_count = discover_pairs()
 results = []
 errors = []
 for index, pair in enumerate(pairs, start=1):
@@ -554,6 +572,7 @@ for index, pair in enumerate(pairs, start=1):
         )
 
 evaluated = len(results)
+evaluated_target_file_count = len({result["targetFile"] for result in results})
 unique_lift_pairs = sum(1 for result in results if result["lift"]["uniqueTargetLiftBeyondLexical"])
 target_hit_pairs = sum(
     1
@@ -616,8 +635,11 @@ payload = {
         "headShaPrefix": git("rev-parse", "HEAD").strip()[:12],
         "scanCommits": scan_commits,
         "requestedPairs": requested_pairs,
+        "candidatePairCount": candidate_pair_count,
+        "candidateTargetFileCount": candidate_target_file_count,
         "discoveredPairs": len(pairs),
         "evaluatedPairs": evaluated,
+        "evaluatedTargetFileCount": evaluated_target_file_count,
         "errorCount": len(errors),
     },
     "aggregate": {
@@ -651,6 +673,7 @@ payload = {
         "semanticMeasured": semantic_enabled,
         "semanticUsefulForMemoryTasks": semantic_target_pairs > 0 or semantic_ablation_lift_pairs > 0,
         "lexicalStillStrong": lexical_covered_pairs > 0,
+        "pairDiversityMeasured": candidate_target_file_count > 1 or evaluated_target_file_count > 1,
         "recommendedNextRAndD": [
             "increase_real_corpus_pair_count",
             "reduce_memory_unique_non_target_noise",

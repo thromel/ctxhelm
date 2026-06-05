@@ -197,6 +197,16 @@ non-target but reports zero unsupported memory non-targets and zero unsupported
 memory-unique target hits. The next higher bar is not another precision patch;
 it is larger repeated-history pair counts and real-agent outcome lift.
 
+Status: Phase 224 expands that repeated-history measurement. The harness now
+discovers all repeated-file candidates in the scan window, prefers distinct
+target files before duplicate-path pairs, and reports pair-diversity counters.
+The suite default is three pairs per repo. The four-repo semantic-enabled run
+measures 12 pairs across 12 distinct target files from 971 candidate pairs and
+256 candidate target files. It restores broad memory-lift evidence with two
+unique memory lifts and two unique memory target hits while keeping unsupported
+pure-memory noise at zero. Raw lexical-baseline-relative memory non-targets
+remain measurable, but the next higher bar is now real-agent outcome lift.
+
 ### 3. Semantic/Embedding Signal Is Wired But Not Driving Lift
 
 The current product lift comes from hybrid ranking, graph/test/history/context

@@ -1009,7 +1009,15 @@ Recommendation today:
   one lexical-baseline-relative memory non-target, but reports zero unsupported
   memory non-targets and zero unsupported memory-unique target hits. That means
   the remaining memory "noise" is supported by another current signal, while
-  larger pair counts are still needed before promotion.
+  raw lexical-baseline-relative noise stays visible.
+- Phase 224 expands memory-generalization measurement. The suite now defaults to
+  three pairs per repo, prefers distinct target files before duplicate-path
+  repeated pairs, and reports `candidatePairCount`,
+  `candidateTargetFileCount`, `evaluatedTargetFileCount`,
+  `largerPairCountMeasured`, and `pairDiversityMeasured`. The four-repo
+  semantic-enabled fixture run measured 12 pairs across 12 distinct target
+  files, restored `memoryUniqueLiftPairs = 2`, and kept unsupported pure-memory
+  noise at zero. The next promotion bar is paired real-agent outcome lift.
 - Treat cloud embeddings/reranking as disabled unless an explicit repo policy
   allows them.
 
