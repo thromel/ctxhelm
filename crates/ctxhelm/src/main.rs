@@ -3607,29 +3607,33 @@ fn serve_inspector_shell(args: InspectorServeArgs) -> Result<()> {
     println!("ctxhelm inspector shell listening on http://{address}");
     for stream in listener.incoming() {
         let mut stream = stream?;
-        handle_inspector_shell_request(
-            &mut stream,
-            &shell_html,
-            &inspector_html,
-            &inspector_json,
-            &graph_html,
-            &graph_json,
-            &setup_json,
-            &health_json,
-        )?;
+        let assets = InspectorShellAssets {
+            shell_html: &shell_html,
+            inspector_html: &inspector_html,
+            inspector_json: &inspector_json,
+            graph_html: &graph_html,
+            graph_json: &graph_json,
+            setup_json: &setup_json,
+            health_json: &health_json,
+        };
+        handle_inspector_shell_request(&mut stream, &assets)?;
     }
     Ok(())
 }
 
+struct InspectorShellAssets<'a> {
+    shell_html: &'a str,
+    inspector_html: &'a str,
+    inspector_json: &'a str,
+    graph_html: &'a str,
+    graph_json: &'a str,
+    setup_json: &'a str,
+    health_json: &'a str,
+}
+
 fn handle_inspector_shell_request(
     stream: &mut TcpStream,
-    shell_html: &str,
-    inspector_html: &str,
-    inspector_json: &str,
-    graph_html: &str,
-    graph_json: &str,
-    setup_json: &str,
-    health_json: &str,
+    assets: &InspectorShellAssets<'_>,
 ) -> Result<()> {
     let mut buffer = [0_u8; 4096];
     let read = stream.read(&mut buffer)?;
@@ -3643,38 +3647,47 @@ fn handle_inspector_shell_request(
     }
     let route = path.split('?').next().unwrap_or(path);
     match route {
-        "/" | "/index.html" => {
-            write_http_response(stream, "200 OK", "text/html; charset=utf-8", shell_html)
-        }
-        "/pack-inspector.html" => {
-            write_http_response(stream, "200 OK", "text/html; charset=utf-8", inspector_html)
-        }
+        "/" | "/index.html" => write_http_response(
+            stream,
+            "200 OK",
+            "text/html; charset=utf-8",
+            assets.shell_html,
+        ),
+        "/pack-inspector.html" => write_http_response(
+            stream,
+            "200 OK",
+            "text/html; charset=utf-8",
+            assets.inspector_html,
+        ),
         "/pack-inspector.json" => write_http_response(
             stream,
             "200 OK",
             "application/json; charset=utf-8",
-            inspector_json,
+            assets.inspector_json,
         ),
-        "/graph.html" => {
-            write_http_response(stream, "200 OK", "text/html; charset=utf-8", graph_html)
-        }
+        "/graph.html" => write_http_response(
+            stream,
+            "200 OK",
+            "text/html; charset=utf-8",
+            assets.graph_html,
+        ),
         "/graph.json" => write_http_response(
             stream,
             "200 OK",
             "application/json; charset=utf-8",
-            graph_json,
+            assets.graph_json,
         ),
         "/setup-status.json" => write_http_response(
             stream,
             "200 OK",
             "application/json; charset=utf-8",
-            setup_json,
+            assets.setup_json,
         ),
         "/health.json" => write_http_response(
             stream,
             "200 OK",
             "application/json; charset=utf-8",
-            health_json,
+            assets.health_json,
         ),
         "/favicon.ico" => write_http_response(stream, "204 No Content", "text/plain", ""),
         _ => write_http_response(stream, "404 Not Found", "text/plain", "not found\n"),
