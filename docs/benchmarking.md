@@ -992,6 +992,15 @@ Recommendation today:
   `requiredCtxhelmCallSpecs`, `invalidRequiredCtxhelmCalls`, invalid-call counts,
   and `invalidRequiredCtxhelmCallsObserved`, so wrong-repo or malformed MCP calls
   are not counted as ctxhelm outcome evidence.
+- Phase 222 adds memory-vs-signal R&D measurement. The multi-repo memory
+  generalization suite can run with `--semantic --semantic-provider local_hash`
+  and reports source-free semantic selected-target pairs, graph-edge ablation
+  target-hit loss, graph/semantic memory-corroboration upper bounds, and
+  uncorroborated memory lower bounds. The first four-repo semantic probe
+  measured semantic target selections on two repositories, one memory-unique
+  lift, one unique non-target memory selection, and zero semantic ablation-lift
+  pairs, so memory remains useful but not yet precise enough for an automatic
+  promotion policy.
 - Treat cloud embeddings/reranking as disabled unless an explicit repo policy
   allows them.
 

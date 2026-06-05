@@ -4,10 +4,10 @@ milestone: v2.5
 milestone_name: Production Retrieval Quality
 status: active
 last_updated: "2026-06-03T00:00:00Z"
-last_activity: 2026-06-05 -- Phase 221 measures multi-repo memory generalization
+last_activity: 2026-06-05 -- Phase 222 compares memory against graph and semantic signals
 progress:
-  total_phases: 130
-  completed_phases: 130
+  total_phases: 131
+  completed_phases: 131
   total_plans: 7
   completed_plans: 7
   percent: 100
@@ -17,10 +17,10 @@ progress:
 
 ## Current Position
 
-Phase: 221 - Multi-Repo Memory Generalization Suite
-Plan: 221-memory-generalization-suite
+Phase: 222 - Memory Signal Ablation Suite
+Plan: 222-memory-signal-ablation-suite
 Status: Complete
-Last activity: 2026-06-05 -- Phase 221 adds `scripts/measure-memory-generalization-suite.sh`, a source-free multi-repo wrapper around the real-corpus memory harness. The four-repo fixture run in `.ctxhelm/e2e/phase221-memory-generalization-suite.json` evaluates one repeated-file pair each for RefactoringMiner, VeriSchema, ReAgent, and ctxhelm: `memoryUniqueLiftPairs = 2`, `memoryUniqueTargetHitCount = 2`, `combinedRecoveredPairs = 1`, and `memoryUniqueNonTargetCount = 3`. The suite now proves bounded multi-repo memory lift under the current criterion, while `precisionNeedsWork = true` keeps broader pair counts and stricter memory selection open.
+Last activity: 2026-06-05 -- Phase 222 upgrades the memory generalization harnesses to v2 signal comparison. `scripts/measure-memory-generalization.sh` and `scripts/measure-memory-generalization-suite.sh` now accept `--semantic --semantic-provider local_hash` and report source-free semantic selected-target pairs, graph-edge ablation target-hit loss, graph/semantic memory-corroboration upper bounds, and uncorroborated memory lower bounds. The four-repo fixture run in `.ctxhelm/e2e/phase222-memory-signal-ablation-suite.json` evaluates one repeated-file pair each for RefactoringMiner, VeriSchema, ReAgent, and ctxhelm with local semantic enabled: `memoryUniqueLiftPairs = 1`, `memoryUniqueTargetHitCount = 1`, `memoryUniqueNonTargetCount = 1`, `semanticSelectedTargetPairs = 2`, `semanticAblationLiftPairs = 0`, `memoryTargetHitsWithGraphSupportUpperBound = 4`, `memoryTargetHitsWithSemanticSupportUpperBound = 3`, and `memoryTargetHitsWithoutGraphOrSemanticSupportLowerBound = 1`. This proves the comparison surface and shows memory still needs corroboration before automatic promotion.
 
 ## Project Reference
 

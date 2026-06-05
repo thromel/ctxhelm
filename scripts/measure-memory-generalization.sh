@@ -3,7 +3,7 @@ set -euo pipefail
 
 usage() {
   cat >&2 <<'EOF'
-usage: measure-memory-generalization.sh --repo PATH [--pairs N] [--scan-commits N] [--output PATH]
+usage: measure-memory-generalization.sh --repo PATH [--pairs N] [--scan-commits N] [--semantic] [--semantic-provider PROVIDER] [--output PATH]
 
 Measures source-free experience-memory reuse across multiple repeated-file
 historical pairs in a real local repository. For each pair, the script:
@@ -25,6 +25,8 @@ repo_path=""
 output_path="${CTXHELM_MEMORY_GENERALIZATION_REPORT:-}"
 pairs="3"
 scan_commits="300"
+semantic_enabled="false"
+semantic_provider="local_hash"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -38,6 +40,14 @@ while [[ $# -gt 0 ]]; do
       ;;
     --scan-commits)
       scan_commits="${2:-}"
+      shift 2
+      ;;
+    --semantic)
+      semantic_enabled="true"
+      shift
+      ;;
+    --semantic-provider)
+      semantic_provider="${2:-}"
       shift 2
       ;;
     --output)
@@ -70,7 +80,7 @@ cleanup() {
 }
 trap cleanup EXIT
 
-python3 - "$ctxhelm_bin" "$repo_path" "$pairs" "$scan_commits" "$output_path" "$work_dir" <<'PY'
+python3 - "$ctxhelm_bin" "$repo_path" "$pairs" "$scan_commits" "$output_path" "$work_dir" "$semantic_enabled" "$semantic_provider" <<'PY'
 import hashlib
 import json
 import os
@@ -85,6 +95,8 @@ requested_pairs = int(sys.argv[3])
 scan_commits = int(sys.argv[4])
 output_path = sys.argv[5]
 work = pathlib.Path(sys.argv[6]).resolve()
+semantic_enabled = sys.argv[7] == "true"
+semantic_provider = sys.argv[8]
 
 source_suffixes = {
     ".c",
@@ -228,6 +240,129 @@ def actions(report):
     ]
 
 
+def eval_history_args(base, head):
+    args = [
+        ctxhelm_bin,
+        "eval",
+        "history",
+        "--repo",
+        str(repo),
+        "--base",
+        base,
+        "--head",
+        head,
+        "--limit",
+        "1",
+        "--budget",
+        "10",
+        "--mode",
+        "bug-fix",
+        "--target-agent",
+        "claude-code",
+        "--format",
+        "json",
+        "--force",
+    ]
+    if semantic_enabled:
+        args.extend(["--semantic", "--semantic-provider", semantic_provider])
+    return args
+
+
+def selected_signal_profiles(report):
+    profiles = []
+    for commit in report.get("commits", []):
+        profiles.extend(commit.get("selectedSignalProfiles", []))
+    return profiles
+
+
+def selected_signal_count(report, signals, field):
+    signal_set = set(signals)
+    return sum(
+        int(profile.get(field, 0) or 0)
+        for profile in selected_signal_profiles(report)
+        if profile.get("signal") in signal_set
+    )
+
+
+def signal_ablation_delta(report, signal):
+    current = report.get("fileRecallAt10")
+    if current is None:
+        return None
+    for ablation in report.get("signalAblations", []):
+        if ablation.get("disabledSignal") != signal:
+            continue
+        disabled = ablation.get("metrics", {}).get("recallAtK")
+        if disabled is None:
+            return None
+        return round(float(current) - float(disabled), 7)
+    return None
+
+
+def graph_edge_target_hit_count(report):
+    return sum(
+        int(profile.get("retrievalTargetHitAt10Count", 0) or 0)
+        for profile in report.get("graphEdgeProfiles", [])
+    )
+
+
+def graph_edge_removed_target_hit_count(report):
+    return sum(
+        int(ablation.get("removedTargetHitAt10Count", 0) or 0)
+        for ablation in report.get("graphEdgeAblations", [])
+    )
+
+
+def memory_signal_comparison(report, memory_summary):
+    memory_target_hits = int(memory_summary.get("memoryTargetHitAt10Count", 0) or 0)
+    memory_unique_target_hits = int(memory_summary.get("memoryUniqueTargetHitCount", 0) or 0)
+    graph_target_hits = graph_edge_target_hit_count(report)
+    graph_signal_targets = selected_signal_count(
+        report,
+        ["dependency", "co_change", "related_test"],
+        "retrievalTargetSelectedAt10Count",
+    )
+    semantic_target_hits = selected_signal_count(
+        report,
+        ["semantic"],
+        "retrievalTargetSelectedAt10Count",
+    )
+    lexical_target_hits = selected_signal_count(
+        report,
+        ["lexical"],
+        "retrievalTargetSelectedAt10Count",
+    )
+    graph_support = max(graph_target_hits, graph_signal_targets)
+    semantic_support = semantic_target_hits
+    graph_or_semantic_support = max(graph_support, semantic_support)
+    return {
+        "semanticMeasured": semantic_enabled,
+        "semanticProvider": semantic_provider if semantic_enabled else None,
+        "memorySelectedCount": int(memory_summary.get("memorySelectedAt10Count", 0) or 0),
+        "memoryTargetHitCount": memory_target_hits,
+        "memoryUniqueTargetHitCount": memory_unique_target_hits,
+        "memoryUniqueNonTargetCount": int(memory_summary.get("memoryUniqueNonTargetCount", 0) or 0),
+        "lexicalSelectedTargetCount": lexical_target_hits,
+        "graphSelectedTargetCount": graph_signal_targets,
+        "graphEdgeTargetHitCount": graph_target_hits,
+        "semanticSelectedTargetCount": semantic_target_hits,
+        "graphEdgeAblationRemovedTargetHitCount": graph_edge_removed_target_hit_count(report),
+        "dependencyAblationRecallDeltaAt10": signal_ablation_delta(report, "dependency"),
+        "semanticAblationRecallDeltaAt10": signal_ablation_delta(report, "semantic")
+        if semantic_enabled
+        else None,
+        "memoryTargetHitsWithGraphSupportUpperBound": min(memory_target_hits, graph_support),
+        "memoryTargetHitsWithSemanticSupportUpperBound": min(memory_target_hits, semantic_support),
+        "memoryUniqueTargetsWithGraphOrSemanticSupportUpperBound": min(
+            memory_unique_target_hits,
+            graph_or_semantic_support,
+        ),
+        "memoryTargetHitsWithoutGraphOrSemanticSupportLowerBound": max(
+            0,
+            memory_target_hits - graph_or_semantic_support,
+        ),
+    }
+
+
 def evaluate(pair, index):
     pair_dir = work / f"pair-{index:02d}"
     pair_dir.mkdir(parents=True, exist_ok=True)
@@ -248,28 +383,7 @@ def evaluate(pair, index):
     start = time.monotonic()
     before_path.write_text(
         run(
-            [
-                ctxhelm_bin,
-                "eval",
-                "history",
-                "--repo",
-                str(repo),
-                "--base",
-                base,
-                "--head",
-                pair["newerSha"],
-                "--limit",
-                "1",
-                "--budget",
-                "10",
-                "--mode",
-                "bug-fix",
-                "--target-agent",
-                "claude-code",
-                "--format",
-                "json",
-                "--force",
-            ],
+            eval_history_args(base, pair["newerSha"]),
             env=env,
         )
     )
@@ -346,28 +460,7 @@ def evaluate(pair, index):
     start = time.monotonic()
     after_path.write_text(
         run(
-            [
-                ctxhelm_bin,
-                "eval",
-                "history",
-                "--repo",
-                str(repo),
-                "--base",
-                base,
-                "--head",
-                pair["newerSha"],
-                "--limit",
-                "1",
-                "--budget",
-                "10",
-                "--mode",
-                "bug-fix",
-                "--target-agent",
-                "claude-code",
-                "--format",
-                "json",
-                "--force",
-            ],
+            eval_history_args(base, pair["newerSha"]),
             env=env,
         )
     )
@@ -383,6 +476,7 @@ def evaluate(pair, index):
 
     before_memory = before.get("memoryReuseSummary", {})
     after_memory = after.get("memoryReuseSummary", {})
+    signal_comparison = memory_signal_comparison(after, after_memory)
     target_in_after_combined = target_in(after, target, "recommendedContextFiles")
     target_in_after_lexical = target_in(after, target, "lexicalBaselineFiles")
     target_in_before_combined = target_in(before, target, "recommendedContextFiles")
@@ -427,6 +521,7 @@ def evaluate(pair, index):
             "uniqueNonTargetNoise": after_memory.get("memoryUniqueNonTargetCount", 0),
             "targetMissedByMemory": after_memory.get("memoryTargetMissedAt10Count", 0),
         },
+        "signalComparison": signal_comparison,
         "runtimeSeconds": timings,
         "experience": {
             "generatedCards": len(experience.get("cards", [])),
@@ -469,13 +564,38 @@ noise_pairs = sum(1 for result in results if result["lift"]["uniqueNonTargetNois
 combined_recovered_pairs = sum(1 for result in results if result["lift"]["combinedRecoveredTarget"])
 total_unique_non_targets = sum(result["lift"]["uniqueNonTargetNoise"] for result in results)
 total_unique_target_hits = sum(result["lift"]["memoryUniqueTargetHitDelta"] for result in results)
+total_graph_supported_memory_target_hits = sum(
+    result["signalComparison"]["memoryTargetHitsWithGraphSupportUpperBound"] for result in results
+)
+total_semantic_supported_memory_target_hits = sum(
+    result["signalComparison"]["memoryTargetHitsWithSemanticSupportUpperBound"] for result in results
+)
+total_graph_or_semantic_supported_unique_targets = sum(
+    result["signalComparison"]["memoryUniqueTargetsWithGraphOrSemanticSupportUpperBound"]
+    for result in results
+)
+total_memory_targets_without_graph_or_semantic = sum(
+    result["signalComparison"]["memoryTargetHitsWithoutGraphOrSemanticSupportLowerBound"]
+    for result in results
+)
+total_graph_edge_removed_targets = sum(
+    result["signalComparison"]["graphEdgeAblationRemovedTargetHitCount"] for result in results
+)
+semantic_target_pairs = sum(
+    1 for result in results if result["signalComparison"]["semanticSelectedTargetCount"] > 0
+)
+semantic_ablation_lift_pairs = sum(
+    1
+    for result in results
+    if (result["signalComparison"]["semanticAblationRecallDeltaAt10"] or 0) > 0
+)
 total_after_seconds = round(
     sum(result["runtimeSeconds"].get("afterEval", 0.0) for result in results), 2
 )
 
 status = "measured" if evaluated else "insufficient_evidence"
 payload = {
-    "schemaVersion": "ctxhelm-memory-generalization-measurement-v1",
+    "schemaVersion": "ctxhelm-memory-generalization-measurement-v2",
     "status": status,
     "workflowKind": "multi-pair-experience-memory-generalization",
     "repo": {
@@ -497,19 +617,37 @@ payload = {
         "memoryNoisePairs": noise_pairs,
         "memoryUniqueTargetHitCount": total_unique_target_hits,
         "memoryUniqueNonTargetCount": total_unique_non_targets,
+        "memoryTargetHitsWithGraphSupportUpperBound": total_graph_supported_memory_target_hits,
+        "memoryTargetHitsWithSemanticSupportUpperBound": total_semantic_supported_memory_target_hits,
+        "memoryUniqueTargetsWithGraphOrSemanticSupportUpperBound": total_graph_or_semantic_supported_unique_targets,
+        "memoryTargetHitsWithoutGraphOrSemanticSupportLowerBound": total_memory_targets_without_graph_or_semantic,
+        "graphEdgeAblationRemovedTargetHitCount": total_graph_edge_removed_targets,
+        "semanticSelectedTargetPairs": semantic_target_pairs,
+        "semanticAblationLiftPairs": semantic_ablation_lift_pairs,
         "afterEvalRuntimeSecondsTotal": total_after_seconds,
     },
     "interpretation": {
         "generalizationProven": unique_lift_pairs > 1,
         "singlePairLiftObserved": unique_lift_pairs == 1,
         "precisionNeedsWork": noise_pairs > 0 or total_unique_non_targets > total_unique_target_hits,
+        "memoryNeedsCorroboration": total_memory_targets_without_graph_or_semantic > 0
+        or total_unique_non_targets > 0,
+        "semanticMeasured": semantic_enabled,
+        "semanticUsefulForMemoryTasks": semantic_target_pairs > 0 or semantic_ablation_lift_pairs > 0,
         "lexicalStillStrong": lexical_covered_pairs > 0,
         "recommendedNextRAndD": [
             "increase_real_corpus_pair_count",
             "reduce_memory_unique_non_target_noise",
             "compare_against_lexical_graph_semantic_ablations",
+            "demote_uncorroborated_memory_candidates",
             "measure_real_agent_outcome_lift",
         ],
+    },
+    "semantic": {
+        "enabled": semantic_enabled,
+        "provider": semantic_provider if semantic_enabled else None,
+        "localOnly": True,
+        "remoteEmbeddingsUsed": False,
     },
     "pairs": results,
     "errors": errors,

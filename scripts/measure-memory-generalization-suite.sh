@@ -3,7 +3,7 @@ set -euo pipefail
 
 usage() {
   cat >&2 <<'EOF'
-usage: measure-memory-generalization-suite.sh --repo PATH [--repo PATH ...] [--pairs N] [--scan-commits N] [--output PATH]
+usage: measure-memory-generalization-suite.sh --repo PATH [--repo PATH ...] [--pairs N] [--scan-commits N] [--semantic] [--semantic-provider PROVIDER] [--output PATH]
 
 Runs `scripts/measure-memory-generalization.sh` across multiple local git
 repositories and writes a source-free aggregate report. The suite stores repo
@@ -17,6 +17,8 @@ ctxhelm_bin="${CTXHELM_BIN:-ctxhelm}"
 pairs="1"
 scan_commits="120"
 output_path="${CTXHELM_MEMORY_GENERALIZATION_SUITE_REPORT:-}"
+semantic_enabled="false"
+semantic_provider="local_hash"
 repos=()
 
 while [[ $# -gt 0 ]]; do
@@ -31,6 +33,14 @@ while [[ $# -gt 0 ]]; do
       ;;
     --scan-commits)
       scan_commits="${2:-}"
+      shift 2
+      ;;
+    --semantic)
+      semantic_enabled="true"
+      shift
+      ;;
+    --semantic-provider)
+      semantic_provider="${2:-}"
       shift 2
       ;;
     --output)
@@ -76,7 +86,7 @@ path = pathlib.Path(sys.argv[1])
 path.write_text(json.dumps(sys.argv[2:]) + "\n")
 PY
 
-python3 - "$ctxhelm_bin" "$single_repo_script" "$repo_args_json" "$pairs" "$scan_commits" "$output_path" "$work_dir" <<'PY'
+python3 - "$ctxhelm_bin" "$single_repo_script" "$repo_args_json" "$pairs" "$scan_commits" "$output_path" "$work_dir" "$semantic_enabled" "$semantic_provider" <<'PY'
 import hashlib
 import json
 import os
@@ -92,6 +102,8 @@ pairs = sys.argv[4]
 scan_commits = sys.argv[5]
 output_path = sys.argv[6]
 work = pathlib.Path(sys.argv[7]).resolve()
+semantic_enabled = sys.argv[8] == "true"
+semantic_provider = sys.argv[9]
 
 
 def sha256(text):
@@ -104,18 +116,21 @@ def run_repo(repo_path, index):
     started = time.monotonic()
     env = os.environ.copy()
     env["CTXHELM_BIN"] = ctxhelm_bin
+    args = [
+        str(single_repo_script),
+        "--repo",
+        str(repo),
+        "--pairs",
+        pairs,
+        "--scan-commits",
+        scan_commits,
+        "--output",
+        str(report_path),
+    ]
+    if semantic_enabled:
+        args.extend(["--semantic", "--semantic-provider", semantic_provider])
     result = subprocess.run(
-        [
-            str(single_repo_script),
-            "--repo",
-            str(repo),
-            "--pairs",
-            pairs,
-            "--scan-commits",
-            scan_commits,
-            "--output",
-            str(report_path),
-        ],
+        args,
         env=env,
         text=True,
         stdout=subprocess.PIPE,
@@ -173,6 +188,9 @@ for report in reports:
                 "singlePairLiftObserved": interpretation.get("singlePairLiftObserved"),
                 "generalizationProven": interpretation.get("generalizationProven"),
                 "precisionNeedsWork": interpretation.get("precisionNeedsWork"),
+                "memoryNeedsCorroboration": interpretation.get("memoryNeedsCorroboration"),
+                "semanticMeasured": interpretation.get("semanticMeasured"),
+                "semanticUsefulForMemoryTasks": interpretation.get("semanticUsefulForMemoryTasks"),
                 "lexicalStillStrong": interpretation.get("lexicalStillStrong"),
             },
             "suiteRuntimeSeconds": report.get("suiteRuntimeSeconds"),
@@ -186,9 +204,20 @@ memory_target_hit_pairs = aggregate_value("memoryTargetHitPairs")
 memory_candidate_pairs = aggregate_value("memoryCandidatePairs")
 combined_recovered_pairs = aggregate_value("combinedRecoveredPairs")
 lexical_covered_pairs = aggregate_value("lexicalCoveredPairs")
+graph_supported_memory_target_hits = aggregate_value("memoryTargetHitsWithGraphSupportUpperBound")
+semantic_supported_memory_target_hits = aggregate_value("memoryTargetHitsWithSemanticSupportUpperBound")
+graph_or_semantic_supported_unique_targets = aggregate_value(
+    "memoryUniqueTargetsWithGraphOrSemanticSupportUpperBound"
+)
+memory_targets_without_graph_or_semantic = aggregate_value(
+    "memoryTargetHitsWithoutGraphOrSemanticSupportLowerBound"
+)
+graph_edge_removed_target_hits = aggregate_value("graphEdgeAblationRemovedTargetHitCount")
+semantic_selected_target_pairs = aggregate_value("semanticSelectedTargetPairs")
+semantic_ablation_lift_pairs = aggregate_value("semanticAblationLiftPairs")
 
 payload = {
-    "schemaVersion": "ctxhelm-memory-generalization-suite-v1",
+    "schemaVersion": "ctxhelm-memory-generalization-suite-v2",
     "status": "measured" if evaluated_pairs else "insufficient_evidence",
     "workflowKind": "multi-repo-experience-memory-generalization",
     "suite": {
@@ -208,6 +237,13 @@ payload = {
         "lexicalCoveredPairs": lexical_covered_pairs,
         "memoryUniqueTargetHitCount": memory_unique_target_hits,
         "memoryUniqueNonTargetCount": memory_unique_non_targets,
+        "memoryTargetHitsWithGraphSupportUpperBound": graph_supported_memory_target_hits,
+        "memoryTargetHitsWithSemanticSupportUpperBound": semantic_supported_memory_target_hits,
+        "memoryUniqueTargetsWithGraphOrSemanticSupportUpperBound": graph_or_semantic_supported_unique_targets,
+        "memoryTargetHitsWithoutGraphOrSemanticSupportLowerBound": memory_targets_without_graph_or_semantic,
+        "graphEdgeAblationRemovedTargetHitCount": graph_edge_removed_target_hits,
+        "semanticSelectedTargetPairs": semantic_selected_target_pairs,
+        "semanticAblationLiftPairs": semantic_ablation_lift_pairs,
         "memoryUniqueNonTargetPerUniqueTarget": (
             round(memory_unique_non_targets / memory_unique_target_hits, 4)
             if memory_unique_target_hits
@@ -219,13 +255,26 @@ payload = {
         "generalizationProven": evaluated_repos > 1 and memory_unique_lift_pairs > 1,
         "precisionNeedsWork": memory_unique_non_targets > 0
         or memory_target_hit_pairs < memory_candidate_pairs,
+        "memoryNeedsCorroboration": memory_targets_without_graph_or_semantic > 0
+        or memory_unique_non_targets > 0,
+        "semanticMeasured": semantic_enabled,
+        "semanticUsefulForMemoryTasks": semantic_selected_target_pairs > 0
+        or semantic_ablation_lift_pairs > 0,
+        "graphCorroborationMeasured": graph_supported_memory_target_hits > 0
+        or graph_edge_removed_target_hits > 0,
         "lexicalStillStrong": lexical_covered_pairs > 0,
         "recommendedNextRAndD": [
             "increase_pairs_per_repo",
-            "measure_memory_selection_against_graph_semantic_ablations",
             "demote_memory_without_target_or_correlated_context_support",
+            "test_memory_candidate_corroboration_policy",
             "measure_real_agent_outcome_lift",
         ],
+    },
+    "semantic": {
+        "enabled": semantic_enabled,
+        "provider": semantic_provider if semantic_enabled else None,
+        "localOnly": True,
+        "remoteEmbeddingsUsed": False,
     },
     "repositories": repo_summaries,
     "errors": errors,

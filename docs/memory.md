@@ -134,3 +134,27 @@ scripts/measure-memory-generalization-suite.sh \
 The suite wrapper runs the single-repo harness for each checkout and aggregates
 only source-free labels, hashes, booleans, counters, and runtime. It should be
 used before claiming memory lift generalizes across repositories.
+
+To compare memory against local semantic and graph signals in the same repeated
+history tasks, enable the local semantic lane:
+
+```bash
+scripts/measure-memory-generalization-suite.sh \
+  --repo ../ctxhelm-proof-fixtures/RefactoringMiner \
+  --repo ../ctxhelm-proof-fixtures/VeriSchema \
+  --repo ../ctxhelm-proof-fixtures/ReAgent \
+  --repo ../ctxhelm-proof-fixtures/ctxhelm \
+  --pairs 1 \
+  --scan-commits 120 \
+  --semantic \
+  --semantic-provider local_hash \
+  --output .ctxhelm/e2e/phase222-memory-signal-ablation-suite.json
+```
+
+The v2 report adds `semantic`, `signalComparison`, graph-edge ablation counters,
+semantic selected-target pairs, and memory corroboration bounds. These are
+source-free aggregate diagnostics, not path-level overlap claims: the report
+stores upper/lower bounds because it does not persist raw candidate paths or
+source text. Treat `memoryNeedsCorroboration = true` as evidence that future
+ranking should demote memory candidates without target, graph, semantic, or
+other correlated support.

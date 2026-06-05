@@ -173,6 +173,18 @@ pairs. This is bounded multi-repo lift proof under the current criterion, but
 the remaining noise and tiny pair count mean the next bar is larger pair counts
 plus graph/semantic ablation comparison.
 
+Status: Phase 222 adds graph/semantic comparison to that memory measurement.
+The single-repo and suite harnesses now support `--semantic --semantic-provider
+local_hash` and write v2 source-free signal diagnostics: semantic selected
+target pairs, graph-edge ablation target-hit loss, graph/semantic
+memory-corroboration upper bounds, and uncorroborated memory lower bounds. The
+first four-repo semantic-enabled probe shows semantic selected target evidence
+on two repositories, but zero semantic ablation-lift pairs, one memory-unique
+lift, one unique memory non-target, and one lower-bound memory target hit
+without graph-or-semantic support. This narrows the next memory R&D from
+"measure ablations" to "test a stricter memory-candidate corroboration policy
+and scale the pair count."
+
 ### 3. Semantic/Embedding Signal Is Wired But Not Driving Lift
 
 The current product lift comes from hybrid ranking, graph/test/history/context
