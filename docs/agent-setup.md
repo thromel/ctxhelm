@@ -42,11 +42,12 @@ CTXHELM_RUN_REAL_CLIENT=1 bash scripts/e2e-agent-run.sh \
 ctxhelm eval agent-run --report .ctxhelm/e2e/agent-run-claude.json
 ```
 
-That wrapper runs native baseline, `prepare_task`, and brief-pack Claude lanes.
-It reports target coverage, read-file count, irrelevant reads, tool-call count,
-and observed ctxhelm tool calls while keeping raw prompts, raw stream output,
-raw MCP traffic, source text, and user-project command output out of the
-persisted report.
+That wrapper runs native baseline, `prepare_task`, brief-pack, standard-pack,
+and memory-guided standard-pack Claude lanes. It reports target coverage,
+target-read coverage, read-file count, irrelevant reads, tool-call count,
+required ctxhelm call compliance, and observed ctxhelm tool calls while keeping
+raw prompts, raw stream output, raw MCP traffic, source text, and user-project
+command output out of the persisted report.
 
 For repeatable native-agent outcome benchmarks, use the same script with a
 suite file:
@@ -59,8 +60,9 @@ CTXHELM_RUN_REAL_CLIENT=1 bash scripts/e2e-agent-run.sh \
 ctxhelm eval agent-run --report .ctxhelm/e2e/agent-run-suite-claude.json
 ```
 
-Suite reports aggregate the native baseline, `prepare_task`, and brief-pack
-lanes across tasks. They are still source-free: raw tasks are hashed, raw
+Suite reports aggregate the native baseline, `prepare_task`, brief-pack,
+standard-pack, and memory-guided standard-pack lanes across tasks. They are
+still source-free: raw tasks are hashed, raw
 prompts/transcripts/MCP traffic are not persisted, and the report stores only
 target path labels, lane metrics, privacy flags, and sanitized request evidence.
 

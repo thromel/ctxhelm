@@ -10,6 +10,8 @@ Runs a source-free paired Claude Code agent-run evaluation:
   1. baseline native repository exploration
   2. ctxhelm prepare_task-assisted exploration
   3. ctxhelm prepare_task + get_pack-assisted exploration
+  4. ctxhelm prepare_task + standard get_pack-assisted exploration
+  5. ctxhelm prepare_task + standard get_pack with memory-consumption guidance
 
 With --suite, the script runs the same paired evaluation for each task in a
 source-free benchmark suite and writes aggregate native-vs-ctxhelm metrics.
@@ -595,6 +597,28 @@ required_call_specs_by_mode = {
             "recordTrace": False,
         },
     ],
+    "standard": [
+        {"name": "prepare_task", "requiresRepo": True, "requiresTask": True},
+        {
+            "name": "get_pack",
+            "requiresRepo": True,
+            "requiresTask": True,
+            "budget": "standard",
+            "format": "json",
+            "recordTrace": False,
+        },
+    ],
+    "memory": [
+        {"name": "prepare_task", "requiresRepo": True, "requiresTask": True},
+        {
+            "name": "get_pack",
+            "requiresRepo": True,
+            "requiresTask": True,
+            "budget": "standard",
+            "format": "json",
+            "recordTrace": False,
+        },
+    ],
 }
 required_call_specs = required_call_specs_by_mode.get(mode, [])
 required_calls = [spec["name"] for spec in required_call_specs]
@@ -718,7 +742,7 @@ EOF
   else
     mcp_config="$(write_mcp_config "$lane_dir" "$request_log")"
     allowed="Read,Glob,Grep,LS,mcp__ctxhelm__prepare_task"
-    if [[ "$mode" == "brief" ]]; then
+    if [[ "$mode" != "plan" ]]; then
       allowed="$allowed,mcp__ctxhelm__get_pack"
     fi
     if [[ "$mode" == "plan" ]]; then
@@ -729,12 +753,30 @@ Then use native Read, Glob, Grep, or LS tools to inspect the most relevant imple
 Return a short JSON object with keyFiles.
 EOF
 )
-    else
+    elif [[ "$mode" == "brief" ]]; then
       prompt=$(cat <<EOF
 Do not edit files, do not run shell commands, and do not write files.
 First call ctxhelm prepare_task with explicit repo "$repo" and task "$task".
 Then call ctxhelm get_pack with explicit repo "$repo", the same task, budget "brief", format "json", and recordTrace false.
 Then use native Read, Glob, Grep, or LS tools to inspect the most relevant implementation and validation files before answering.
+Return a short JSON object with keyFiles.
+EOF
+)
+    elif [[ "$mode" == "standard" ]]; then
+      prompt=$(cat <<EOF
+Do not edit files, do not run shell commands, and do not write files.
+First call ctxhelm prepare_task with explicit repo "$repo" and task "$task".
+Then call ctxhelm get_pack with explicit repo "$repo", the same task, budget "standard", format "json", and recordTrace false.
+Then use native Read, Glob, Grep, or LS tools to inspect the most relevant implementation and validation files before answering.
+Return a short JSON object with keyFiles.
+EOF
+)
+    else
+      prompt=$(cat <<EOF
+Do not edit files, do not run shell commands, and do not write files.
+First call ctxhelm prepare_task with explicit repo "$repo" and task "$task".
+Then call ctxhelm get_pack with explicit repo "$repo", the same task, budget "standard", format "json", and recordTrace false.
+If ctxhelm returns selected memory or experience-card evidence, use it as guidance for which current files to inspect, but still consume current files with native Read, Glob, Grep, or LS tools before answering.
 Return a short JSON object with keyFiles.
 EOF
 )
@@ -789,6 +831,8 @@ EOF
     "$ctxhelm_bin" prepare-task --repo "$repo" --no-trace "$task" >"$ctxhelm_evidence" 2>/dev/null || true
   elif [[ "$mode" == "brief" ]]; then
     "$ctxhelm_bin" get-pack --repo "$repo" --budget brief --format json --no-trace "$task" >"$ctxhelm_evidence" 2>/dev/null || true
+  elif [[ "$mode" == "standard" || "$mode" == "memory" ]]; then
+    "$ctxhelm_bin" get-pack --repo "$repo" --budget standard --format json --no-trace "$task" >"$ctxhelm_evidence" 2>/dev/null || true
   else
     : >"$ctxhelm_evidence"
   fi
@@ -1056,6 +1100,28 @@ required_call_specs_by_mode = {
             "recordTrace": False,
         },
     ],
+    "standard": [
+        {"name": "prepare_task", "requiresRepo": True, "requiresTask": True},
+        {
+            "name": "get_pack",
+            "requiresRepo": True,
+            "requiresTask": True,
+            "budget": "standard",
+            "format": "json",
+            "recordTrace": False,
+        },
+    ],
+    "memory": [
+        {"name": "prepare_task", "requiresRepo": True, "requiresTask": True},
+        {
+            "name": "get_pack",
+            "requiresRepo": True,
+            "requiresTask": True,
+            "budget": "standard",
+            "format": "json",
+            "recordTrace": False,
+        },
+    ],
 }
 required_call_specs = required_call_specs_by_mode.get(mode, [])
 required_calls = [spec["name"] for spec in required_call_specs]
@@ -1191,21 +1257,23 @@ PY
 baseline_json="$(run_lane baseline baseline)"
 plan_json="$(run_lane ctxhelm-plan plan)"
 brief_json="$(run_lane ctxhelm-brief brief)"
+standard_json="$(run_lane ctxhelm-standard standard)"
+memory_json="$(run_lane ctxhelm-memory memory)"
 
-python3 - "$repo" "$task" "$ctxhelm_version" "$client_version" "$target_json" "$baseline_json" "$plan_json" "$brief_json" "$output_path" <<'PY'
+python3 - "$repo" "$task" "$ctxhelm_version" "$client_version" "$target_json" "$baseline_json" "$plan_json" "$brief_json" "$standard_json" "$memory_json" "$output_path" <<'PY'
 import hashlib
 import json
 import pathlib
 import sys
 
 repo, task, ctxhelm_version, client_version, target_path, *rest = sys.argv[1:]
-lane_paths = rest[:3]
-output_path = rest[3]
+lane_paths = rest[:5]
+output_path = rest[5]
 targets = json.loads(pathlib.Path(target_path).read_text(encoding="utf-8"))
 lanes = [json.loads(pathlib.Path(path).read_text(encoding="utf-8")) for path in lane_paths]
 
 baseline = lanes[0]
-ctxhelm_lanes = [lane for lane in lanes if lane.get("mode") in {"plan", "brief"}]
+ctxhelm_lanes = [lane for lane in lanes if lane.get("mode") in {"plan", "brief", "standard", "memory"}]
 baseline_eligible = bool(baseline.get("evaluationEligible", baseline.get("status") == "passed"))
 eligible_ctxhelm_lanes = [
     lane for lane in ctxhelm_lanes

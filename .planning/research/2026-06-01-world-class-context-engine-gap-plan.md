@@ -89,6 +89,17 @@ reduced irrelevant reads from `5` to `2` in the `ctxhelm-brief` lane while
 keeping raw prompts, transcripts, MCP traffic, and source text out of the
 persisted report.
 
+Status: Phase 225 closes the lane-coverage gap in that proof path. The paired
+agent-run harness now evaluates native baseline, `ctxhelm-plan`,
+`ctxhelm-brief`, `ctxhelm-standard`, and `ctxhelm-memory`. Standard and memory
+lanes require explicit-repo `prepare_task` plus `get_pack` with
+`budget = "standard"`, `format = "json"`, and `recordTrace = false`; the memory
+lane instructs Claude to consume selected memory evidence only as guidance and
+still read current files natively. The first local real-client attempt with
+Claude Code `2.1.163` was rate-limited across all lanes, so it correctly
+records `insufficient_comparable_lanes` and `retry_real_client_when_available`
+rather than claiming outcome lift.
+
 ### 2. Experience Memory Is Not Yet Proven By Reuse
 
 The memory layer exists, but the product proof does not yet show that prior

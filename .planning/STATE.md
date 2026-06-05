@@ -4,10 +4,10 @@ milestone: v2.5
 milestone_name: Production Retrieval Quality
 status: active
 last_updated: "2026-06-03T00:00:00Z"
-last_activity: 2026-06-05 -- Phase 224 expands memory-generalization measurement
+last_activity: 2026-06-05 -- Phase 225 expands paired-agent lane matrix
 progress:
-  total_phases: 133
-  completed_phases: 133
+  total_phases: 134
+  completed_phases: 134
   total_plans: 7
   completed_plans: 7
   percent: 100
@@ -17,10 +17,10 @@ progress:
 
 ## Current Position
 
-Phase: 224 - Expanded Memory Generalization Measurement
-Plan: 224-expanded-memory-generalization-measurement
+Phase: 225 - Expanded Paired-Agent Lane Matrix
+Plan: 225-expanded-agent-run-lane-matrix
 Status: Complete
-Last activity: 2026-06-05 -- Phase 224 expands the memory-generalization measurement surface. The repeated-file harness now discovers all candidates in the scan window, prefers distinct target files before duplicate-path pairs, and reports source-free pair-diversity fields. The suite default is now three pairs per repo. The semantic-enabled four-repo fixture run in `.ctxhelm/e2e/phase224-expanded-memory-generalization-suite.json` evaluates 12 pairs across 12 distinct target files from 971 candidate repeated-file pairs and 256 candidate target files. It reports `memoryUniqueLiftPairs = 2`, `memoryUniqueTargetHitCount = 2`, `memoryUniqueNonTargetCount = 3`, `memoryUniqueNonTargetWithoutCurrentSupportCount = 0`, `memoryUniqueTargetHitWithoutCurrentSupportCount = 0`, `semanticSelectedTargetPairs = 4`, `largerPairCountMeasured = true`, and `pairDiversityMeasured = true`. This restores broader memory-lift evidence under the stricter Phase 223 policy while keeping unsupported pure-memory noise at zero; raw lexical-baseline-relative memory noise and real-agent outcome lift remain open.
+Last activity: 2026-06-05 -- Phase 225 expands paired real-agent outcome measurement from the old three-lane probe to the full R&D lane matrix. `scripts/e2e-agent-run.sh` now compares native baseline, `ctxhelm-plan`, `ctxhelm-brief`, `ctxhelm-standard`, and `ctxhelm-memory`. Standard and memory lanes require valid explicit-repo `prepare_task` plus `get_pack` with `budget = "standard"`, `format = "json"`, and `recordTrace = false`; the memory lane gives selected-memory consumption guidance while still requiring native reads of current files. The skipped deterministic run proves the expanded report shape. The local real-client attempt in `.ctxhelm/e2e/phase225-agent-run-lane-matrix.json` used Claude Code `2.1.163`, but all five lanes hit `rate_limited`, so the outcome claim remains `insufficient_comparable_lanes` with `retry_real_client_when_available`. The report also records a secondary ctxhelm-evidence miss for `docs/feedback.md`; revisit that after a comparable real-client run.
 
 ## Project Reference
 

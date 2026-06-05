@@ -992,6 +992,14 @@ Recommendation today:
   `requiredCtxhelmCallSpecs`, `invalidRequiredCtxhelmCalls`, invalid-call counts,
   and `invalidRequiredCtxhelmCallsObserved`, so wrong-repo or malformed MCP calls
   are not counted as ctxhelm outcome evidence.
+- Phase 225 expands paired real-agent outcome measurement to the full planned
+  lane matrix: native baseline, `ctxhelm-plan`, `ctxhelm-brief`,
+  `ctxhelm-standard`, and `ctxhelm-memory`. Standard and memory lanes require
+  valid explicit-repo `prepare_task` plus `get_pack` with
+  `budget = "standard"`, `format = "json"`, and `recordTrace = false`. The
+  first local Claude Code `2.1.163` attempt hit rate limits in every lane, so
+  the artifact records `insufficient_comparable_lanes` and
+  `retry_real_client_when_available` instead of claiming outcome lift.
 - Phase 222 adds memory-vs-signal R&D measurement. The multi-repo memory
   generalization suite can run with `--semantic --semantic-provider local_hash`
   and reports source-free semantic selected-target pairs, graph-edge ablation
