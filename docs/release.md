@@ -252,6 +252,7 @@ The release gate runs these required checks:
 - `scripts/smoke-graph.sh`
 - `scripts/smoke-policy-embedding.sh`
 - `scripts/smoke-agent-preview.sh`
+- `scripts/smoke-agent-native-fallback.sh`
 - `scripts/smoke-demo-artifacts.sh`
 - `scripts/smoke-distribution-metadata.sh`
 - `scripts/render-homebrew-formula.sh`

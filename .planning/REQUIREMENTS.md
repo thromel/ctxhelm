@@ -51,8 +51,8 @@ Deferred into later milestones from the remaining product vision.
 
 - [x] **AGENT-01**: User can verify Codex and Claude Code real-client tool-call evidence from release docs.
 - **AGENT-02**: User can verify Cursor and OpenCode integration behavior where clients expose machine-checkable proof.
-- **AGENT-03**: User can install thin prompts/hooks/rules without broad static context injection.
-- **AGENT-04**: User can use disconnected/cloud fallback cards when local MCP is unavailable.
+- [x] **AGENT-03**: User can install thin prompts/hooks/rules without broad static context injection.
+- [x] **AGENT-04**: User can use disconnected/cloud fallback cards when local MCP is unavailable.
 
 ### v2.7 Desktop Inspector & Local UX
 
@@ -104,6 +104,8 @@ Deferred into later milestones from the remaining product vision.
 | PROOF-03 | Phase 65 | Complete |
 | PROOF-04 | Phase 65 | Complete |
 | AGENT-01 | Phase 70 | Complete |
+| AGENT-03 | Phase 246 | Complete |
+| AGENT-04 | Phase 246 | Complete |
 | GAP-01 | Phase 71 | Complete |
 | GAP-02 | Phase 71 | Complete |
 | RANK-02 | Phase 71 | Complete |
@@ -113,8 +115,12 @@ Deferred into later milestones from the remaining product vision.
 - v2.5 requirements: 20 total
 - Mapped to phases: 20
 - Unmapped: 0
-- Future integration requirement AGENT-01 has current Phase 70 evidence; remaining
-  v2.6 integration requirements stay open.
+- Future integration requirement AGENT-01 has current Phase 70 evidence.
+- Future integration requirements AGENT-03 and AGENT-04 have current Phase 246
+  release-gated evidence through `scripts/smoke-agent-native-fallback.sh`.
+- AGENT-02 stays open because Cursor and OpenCode real-client tool-call
+  transcripts are still not claimed; current proof remains setup plus
+  deterministic MCP protocol evidence.
 - Phase 71 adds follow-up evidence for existing gap/ranking requirements by
   reducing archive-artifact noise without excluding archived evidence.
 

@@ -4,7 +4,7 @@ milestone: v2.5
 milestone_name: Production Retrieval Quality
 status: active
 last_updated: "2026-06-03T00:00:00Z"
-last_activity: 2026-06-05 -- Phase 245 adds a strict Codex multi-task suite and fixes agent-native harness first-read consumption
+last_activity: 2026-06-05 -- Phase 246 release-gates thin agent-native setup and disconnected fallback cards
 progress:
   total_phases: 135
   completed_phases: 135
@@ -17,10 +17,10 @@ progress:
 
 ## Current Position
 
-Phase: 245 - Codex Agent-Run Suite And Harness Consumption
-Plan: 245-codex-agent-run-suite
+Phase: 246 - Agent-Native Fallback Proof Gate
+Plan: 246-agent-native-fallback-proof
 Status: Complete
-Last activity: 2026-06-05 -- Phase 245 adds `--suite` support to the Codex real-client agent-run harness, promotes bounded agent-native guidance implementation surfaces into the native first-read window, isolates spawned Codex runs from Desktop thread environment leakage, and forbids bootstrap/setup/superpowers commands in read-only proof. The source-free artifact `.ctxhelm/e2e/phase245-agent-run-codex-suite-real-bounded-final.json` passes with Codex CLI `0.137.0`, two comparison-eligible tasks, eight comparable ctxhelm lanes, no forbidden commands, no client failures, no ctxhelm evidence misses, no evidence-only targets, no ctxhelm under-read targets, and outcome claim `ctxhelm_improved`. Baseline average target-read coverage is `0.75`; every ctxhelm lane reaches `1.00`.
+Last activity: 2026-06-05 -- Phase 246 adds `scripts/smoke-agent-native-fallback.sh` and wires it into `scripts/release-gate.sh`, `scripts/check-release-docs.sh`, and release packaging contracts. The smoke proves `ctxhelm init --cursor --claude --opencode`, `setup-check`, and `cards fallback --target-agent codex` produce repo-local, bounded, source-free agent guidance/cards without broad static source injection or source sentinel leakage. This closes top-level future requirements AGENT-03 and AGENT-04. AGENT-02 remains open because Cursor/OpenCode real-client tool-call transcripts are still not claimed; current Cursor/OpenCode proof remains setup plus deterministic MCP protocol evidence.
 
 ## Project Reference
 

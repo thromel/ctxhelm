@@ -21,6 +21,7 @@ smoke_retrieval_health_script="$repo_root/scripts/smoke-retrieval-health.sh"
 smoke_graph_script="$repo_root/scripts/smoke-graph.sh"
 smoke_policy_embedding_script="$repo_root/scripts/smoke-policy-embedding.sh"
 smoke_agent_preview_script="$repo_root/scripts/smoke-agent-preview.sh"
+smoke_agent_native_fallback_script="$repo_root/scripts/smoke-agent-native-fallback.sh"
 smoke_demo_artifacts_script="$repo_root/scripts/smoke-demo-artifacts.sh"
 smoke_distribution_metadata_script="$repo_root/scripts/smoke-distribution-metadata.sh"
 smoke_release_governance_script="$repo_root/scripts/smoke-release-governance.sh"
@@ -247,6 +248,9 @@ CTXHELM_BIN="$ctxhelm_bin" bash "$smoke_policy_embedding_script"
 log_step "agent preview smoke"
 CTXHELM_BIN="$ctxhelm_bin" bash "$smoke_agent_preview_script"
 
+log_step "agent-native fallback smoke"
+CTXHELM_BIN="$ctxhelm_bin" bash "$smoke_agent_native_fallback_script"
+
 log_step "public demo artifacts smoke"
 bash "$smoke_demo_artifacts_script"
 
@@ -432,6 +436,7 @@ required_checks = [
     "scripts/smoke-graph.sh",
     "scripts/smoke-policy-embedding.sh",
     "scripts/smoke-agent-preview.sh",
+    "scripts/smoke-agent-native-fallback.sh",
     "scripts/smoke-demo-artifacts.sh",
     "scripts/smoke-distribution-metadata.sh",
     "scripts/smoke-release-governance.sh",
