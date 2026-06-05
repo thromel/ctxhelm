@@ -1,0 +1,570 @@
+{
+  "repoId": "5bd7219b-a357-5c88-8759-2786e882ae25",
+  "evalRangeId": "semantic-precision-gate:af42b00a964909c346e14d0bebe2624caf5f09e68e512c7e44d01d00cc672506",
+  "evaluatedCommits": 8,
+  "k": 10,
+  "decision": "hold",
+  "decisionReason": "Held: local semantic recall delta +0.000, precision delta +0.000; keep opt-in.",
+  "variants": [
+    {
+      "name": "lexical_baseline",
+      "status": "evaluated",
+      "semanticEnabled": false,
+      "precisionEnabled": false,
+      "rerankerEnabled": false,
+      "metrics": {
+        "k": 10,
+        "recallAtK": 0.41451052,
+        "precisionAtK": 0.275,
+        "mrrAtK": 0.4625,
+        "roleRecall": [
+          {
+            "role": "source",
+            "recallAtK": 0.42857143,
+            "changedFileCount": 7,
+            "hitCount": 3
+          },
+          {
+            "role": "test",
+            "recallAtK": 0.75,
+            "changedFileCount": 4,
+            "hitCount": 3
+          }
+        ],
+        "testRecommendationRate": 1.0,
+        "averageRecommendedContextFiles": 10.0
+      },
+      "fileRecallAt10": 0.3212704,
+      "testRecallAt10": 1.0,
+      "runtimeMillis": 1346,
+      "cacheHits": 0,
+      "cacheMisses": 0,
+      "tokenEfficiency": 0.625,
+      "protectedEvidenceMissRateAt10": 0.5394737,
+      "protectedEvidenceTargetMissRateAt10": 0.625,
+      "providerStatus": "evaluated",
+      "note": "Exact/path lexical baseline under the same fixed K."
+    },
+    {
+      "name": "ctxhelm_default",
+      "status": "evaluated",
+      "semanticEnabled": false,
+      "precisionEnabled": false,
+      "rerankerEnabled": false,
+      "metrics": {
+        "k": 10,
+        "recallAtK": 0.3212704,
+        "precisionAtK": 0.1875,
+        "mrrAtK": 0.41979167,
+        "roleRecall": [
+          {
+            "role": "source",
+            "recallAtK": 0.71428573,
+            "changedFileCount": 7,
+            "hitCount": 5
+          },
+          {
+            "role": "test",
+            "recallAtK": 1.0,
+            "changedFileCount": 4,
+            "hitCount": 4
+          }
+        ],
+        "testRecommendationRate": 1.0,
+        "averageRecommendedContextFiles": 10.0
+      },
+      "fileRecallAt10": 0.3212704,
+      "testRecallAt10": 1.0,
+      "runtimeMillis": 1346,
+      "cacheHits": 0,
+      "cacheMisses": 0,
+      "tokenEfficiency": 0.625,
+      "protectedEvidenceMissRateAt10": 0.5394737,
+      "protectedEvidenceTargetMissRateAt10": 0.625,
+      "providerStatus": "evaluated",
+      "note": "Current default ranking without semantic default promotion."
+    },
+    {
+      "name": "local_metadata_reranked",
+      "status": "evaluated",
+      "semanticEnabled": false,
+      "precisionEnabled": false,
+      "rerankerEnabled": true,
+      "metrics": {
+        "k": 10,
+        "recallAtK": 0.49183422,
+        "precisionAtK": 0.3125,
+        "mrrAtK": 0.7447917,
+        "roleRecall": [
+          {
+            "role": "source",
+            "recallAtK": 0.71428573,
+            "changedFileCount": 7,
+            "hitCount": 5
+          },
+          {
+            "role": "test",
+            "recallAtK": 0.25,
+            "changedFileCount": 4,
+            "hitCount": 1
+          }
+        ],
+        "testRecommendationRate": 1.0,
+        "averageRecommendedContextFiles": 10.0
+      },
+      "fileRecallAt10": 0.49183422,
+      "testRecallAt10": 1.0,
+      "runtimeMillis": 1326,
+      "cacheHits": 0,
+      "cacheMisses": 0,
+      "tokenEfficiency": 1.0416666,
+      "protectedEvidenceMissRateAt10": 0.013157895,
+      "protectedEvidenceTargetMissRateAt10": 0.0,
+      "providerStatus": "evaluated",
+      "note": "Eval-only deterministic local metadata reranker over source-free candidate metadata."
+    },
+    {
+      "name": "local_semantic",
+      "status": "evaluated",
+      "semanticEnabled": true,
+      "precisionEnabled": false,
+      "rerankerEnabled": false,
+      "metrics": {
+        "k": 10,
+        "recallAtK": 0.3212704,
+        "precisionAtK": 0.1875,
+        "mrrAtK": 0.41979167,
+        "roleRecall": [
+          {
+            "role": "source",
+            "recallAtK": 0.71428573,
+            "changedFileCount": 7,
+            "hitCount": 5
+          },
+          {
+            "role": "test",
+            "recallAtK": 1.0,
+            "changedFileCount": 4,
+            "hitCount": 4
+          }
+        ],
+        "testRecommendationRate": 1.0,
+        "averageRecommendedContextFiles": 10.0
+      },
+      "fileRecallAt10": 0.3212704,
+      "testRecallAt10": 1.0,
+      "runtimeMillis": 1662,
+      "cacheHits": 0,
+      "cacheMisses": 0,
+      "tokenEfficiency": 0.625,
+      "protectedEvidenceMissRateAt10": 0.5394737,
+      "protectedEvidenceTargetMissRateAt10": 0.625,
+      "providerStatus": "local_fastembed",
+      "note": "Explicit local semantic retrieval using source-free semantic documents."
+    },
+    {
+      "name": "precision_enriched_semantic",
+      "status": "skipped",
+      "semanticEnabled": true,
+      "precisionEnabled": true,
+      "rerankerEnabled": false,
+      "metrics": null,
+      "fileRecallAt10": 0.3212704,
+      "testRecallAt10": 1.0,
+      "runtimeMillis": 1662,
+      "cacheHits": 0,
+      "cacheMisses": 0,
+      "tokenEfficiency": 0.625,
+      "protectedEvidenceMissRateAt10": 0.5394737,
+      "protectedEvidenceTargetMissRateAt10": 0.625,
+      "providerStatus": "skipped",
+      "note": "Skipped because no fresh precision overlay was available."
+    },
+    {
+      "name": "semantic_precision_full_hybrid",
+      "status": "skipped",
+      "semanticEnabled": true,
+      "precisionEnabled": true,
+      "rerankerEnabled": false,
+      "metrics": null,
+      "fileRecallAt10": 0.3212704,
+      "testRecallAt10": 1.0,
+      "runtimeMillis": 1662,
+      "cacheHits": 0,
+      "cacheMisses": 0,
+      "tokenEfficiency": 0.625,
+      "protectedEvidenceMissRateAt10": 0.5394737,
+      "protectedEvidenceTargetMissRateAt10": 0.625,
+      "providerStatus": "skipped",
+      "note": "Full hybrid is held unless semantic plus precision beats default gates."
+    },
+    {
+      "name": "policy_allowed_reranked",
+      "status": "skipped",
+      "semanticEnabled": true,
+      "precisionEnabled": false,
+      "rerankerEnabled": false,
+      "metrics": null,
+      "fileRecallAt10": 0.3212704,
+      "testRecallAt10": 1.0,
+      "runtimeMillis": 1662,
+      "cacheHits": 0,
+      "cacheMisses": 0,
+      "tokenEfficiency": 0.625,
+      "protectedEvidenceMissRateAt10": 0.5394737,
+      "protectedEvidenceTargetMissRateAt10": 0.625,
+      "providerStatus": "disabled",
+      "note": "Reranker is disabled by default."
+    }
+  ],
+  "namedWins": [],
+  "namedRegressions": [
+    {
+      "sha": "df58f03d44c9",
+      "variant": "local_metadata_reranked",
+      "reason": "Variant retrieved fewer gold changed files than default.",
+      "paths": [
+        ".planning/STATE.md",
+        "crates/ctxhelm/tests/release_packaging.rs"
+      ]
+    }
+  ],
+  "namedMisses": [
+    {
+      "sha": "15441f44dfda",
+      "variant": "local_semantic",
+      "reason": "Variant still missed gold changed files at K.",
+      "paths": [
+        ".planning/MILESTONES.md",
+        ".planning/STATE.md",
+        ".planning/e2e/2026-06-06-rd-completion-audit.md",
+        ".planning/research/2026-06-01-world-class-context-engine-gap-plan.md",
+        "scripts/e2e-agent-run-codex.sh"
+      ]
+    },
+    {
+      "sha": "8eaa6c1efbe7",
+      "variant": "local_semantic",
+      "reason": "Variant still missed gold changed files at K.",
+      "paths": [
+        ".planning/MILESTONES.md",
+        ".planning/research/2026-06-01-world-class-context-engine-gap-plan.md",
+        "docs/agent-setup.md"
+      ]
+    },
+    {
+      "sha": "1b2602cf6f7b",
+      "variant": "local_semantic",
+      "reason": "Variant still missed gold changed files at K.",
+      "paths": [
+        ".ctxhelm/distribution-metadata-smoke.json",
+        "crates/ctxhelm-compiler/src/planning.rs",
+        "crates/ctxhelm-compiler/src/ranking.rs"
+      ]
+    },
+    {
+      "sha": "1de0b55c6874",
+      "variant": "local_semantic",
+      "reason": "Variant still missed gold changed files at K.",
+      "paths": [
+        ".planning/MILESTONES.md",
+        ".planning/REQUIREMENTS.md",
+        "README.md",
+        "docs/release.md",
+        "scripts/check-release-docs.sh",
+        "scripts/release-gate.sh"
+      ]
+    },
+    {
+      "sha": "fdb969f4dec8",
+      "variant": "local_semantic",
+      "reason": "Variant still missed gold changed files at K.",
+      "paths": [
+        ".ctxhelm/distribution-metadata-smoke.json",
+        ".planning/REQUIREMENTS.md",
+        ".planning/STATE.md",
+        "README.md",
+        "docs/inspector.md",
+        "docs/release.md",
+        "scripts/check-release-docs.sh",
+        "scripts/smoke-inspector.sh"
+      ]
+    },
+    {
+      "sha": "1d888e5cdbf8",
+      "variant": "local_semantic",
+      "reason": "Variant still missed gold changed files at K.",
+      "paths": [
+        ".ctxhelm/distribution-metadata-smoke.json",
+        ".planning/REQUIREMENTS.md",
+        "docs/agent-setup.md",
+        "docs/quickstart.md",
+        "docs/release-governance.md",
+        "docs/release.md",
+        "docs/troubleshooting.md",
+        "scripts/check-release-docs.sh",
+        "scripts/release-candidate-status.sh",
+        "scripts/release-gate.sh"
+      ]
+    },
+    {
+      "sha": "df58f03d44c9",
+      "variant": "local_semantic",
+      "reason": "Variant still missed gold changed files at K.",
+      "paths": [
+        ".ctxhelm/distribution-metadata-smoke.json",
+        ".planning/MILESTONES.md",
+        ".planning/REQUIREMENTS.md",
+        "docs/release.md",
+        "scripts/check-release-docs.sh",
+        "scripts/release-gate.sh"
+      ]
+    }
+  ],
+  "semanticContribution": {
+    "evaluatedCommits": 8,
+    "commitsWithSemanticSelection": 4,
+    "semanticSelectedFileCount": 5,
+    "semanticTargetHitCount": 1,
+    "semanticOnlyTargetHitCount": 1,
+    "semanticOnlyNonTargetCount": 0,
+    "semanticLexicalOverlapCount": 4,
+    "semanticMissedTargetCount": 55,
+    "averageSemanticSelectedFiles": 0.625,
+    "semanticTargetHitRate": 0.017857144,
+    "semanticOnlyTargetHitRate": 0.017857144,
+    "semanticOnlyNonTargetRate": 0.0,
+    "semanticOnlyHits": [
+      {
+        "sha": "1de0b55c6874",
+        "variant": "local_semantic",
+        "reason": "Semantic selected retrieval-target path(s) absent from the lexical baseline top K.",
+        "paths": [
+          ".planning/STATE.md"
+        ]
+      }
+    ],
+    "semanticOnlyNonTargets": [],
+    "semanticMissedTargetGapFamilies": [
+      {
+        "signalGap": "semantic_miss_area_context_only",
+        "missedCount": 2,
+        "examplePaths": [
+          "crates/ctxhelm-compiler/src/planning.rs",
+          "crates/ctxhelm-compiler/src/ranking.rs"
+        ]
+      },
+      {
+        "signalGap": "semantic_miss_final_context_covered",
+        "missedCount": 1,
+        "examplePaths": [
+          "crates/ctxhelm-core/src/contracts.rs"
+        ]
+      },
+      {
+        "signalGap": "semantic_miss_lexical_covered",
+        "missedCount": 22,
+        "examplePaths": [
+          ".planning/e2e/2026-06-06-rd-completion-audit.md",
+          ".planning/research/2026-06-01-world-class-context-engine-gap-plan.md",
+          "scripts/e2e-agent-run-codex.sh",
+          ".planning/STATE.md",
+          ".planning/MILESTONES.md"
+        ]
+      },
+      {
+        "signalGap": "semantic_miss_no_candidate_signal",
+        "missedCount": 27,
+        "examplePaths": [
+          ".planning/MILESTONES.md",
+          ".planning/STATE.md",
+          ".planning/research/2026-06-01-world-class-context-engine-gap-plan.md",
+          "docs/agent-setup.md",
+          ".ctxhelm/distribution-metadata-smoke.json"
+        ]
+      },
+      {
+        "signalGap": "semantic_miss_nonsemantic_coupled_signal",
+        "missedCount": 3,
+        "examplePaths": [
+          "crates/ctxhelm-compiler/src/planning.rs",
+          ".planning/STATE.md",
+          "crates/ctxhelm/tests/release_packaging.rs"
+        ]
+      }
+    ]
+  },
+  "providerPolicy": {
+    "policyPath": null,
+    "policy": {
+      "schemaVersion": 1,
+      "name": "local-source-free-default",
+      "allowLocalProviders": true,
+      "allowCloudEmbeddings": false,
+      "allowCloudReranking": false,
+      "allowSourceTransfer": false,
+      "enableLocalMetadataReranker": false,
+      "enableLocalFixtureReranker": false,
+      "sourceTextLogged": false
+    },
+    "decisions": [
+      {
+        "capability": "semantic_embedding",
+        "provider": "local_hash",
+        "status": "allowed",
+        "dataClasses": [
+          "metadata",
+          "semantic_vector"
+        ],
+        "remoteAllowed": false,
+        "sourceTextAllowed": false,
+        "reason": "Default deterministic local semantic metadata provider."
+      },
+      {
+        "capability": "semantic_embedding",
+        "provider": "cloud_embedding",
+        "status": "denied",
+        "dataClasses": [
+          "metadata",
+          "source_text"
+        ],
+        "remoteAllowed": false,
+        "sourceTextAllowed": false,
+        "reason": "Cloud embeddings require both cloud and source-transfer policy."
+      },
+      {
+        "capability": "precision_graph",
+        "provider": "local_precision_overlay",
+        "status": "allowed",
+        "dataClasses": [
+          "metadata"
+        ],
+        "remoteAllowed": false,
+        "sourceTextAllowed": false,
+        "reason": "Local precision overlays are metadata-only."
+      },
+      {
+        "capability": "reranking",
+        "provider": "local_metadata",
+        "status": "disabled",
+        "dataClasses": [
+          "metadata"
+        ],
+        "remoteAllowed": false,
+        "sourceTextAllowed": false,
+        "reason": "Reranker is disabled by default."
+      },
+      {
+        "capability": "semantic_embedding",
+        "provider": "local_fastembed",
+        "status": "allowed",
+        "dataClasses": [
+          "metadata",
+          "semantic_vector"
+        ],
+        "remoteAllowed": false,
+        "sourceTextAllowed": false,
+        "reason": "Local source-free semantic provider is allowed."
+      }
+    ],
+    "diagnostics": [
+      {
+        "code": "provider_policy_absent_safe_defaults",
+        "severity": "info",
+        "message": "Provider policy file was not found; using local source-free defaults.",
+        "paths": [],
+        "count": 0
+      },
+      {
+        "code": "provider_policy_remote_denied",
+        "severity": "info",
+        "message": "Remote embedding or reranking providers are blocked by local source-free policy.",
+        "paths": [],
+        "count": 1
+      }
+    ],
+    "sourceTextLogged": false,
+    "privacyStatus": {
+      "localOnly": true,
+      "remoteEmbeddingsUsed": false,
+      "remoteRerankingUsed": false,
+      "redactionsApplied": 0
+    }
+  },
+  "precisionStatus": {
+    "status": "unavailable",
+    "provider": null,
+    "overlayPath": "/Users/romel/Documents/GitHub/ctxhelm/.ctxhelm/precision-edges.json",
+    "edgeCount": 0,
+    "rejectedEdgeCount": 0,
+    "stale": false,
+    "degraded": false,
+    "diagnostics": []
+  },
+  "diagnostics": [
+    {
+      "code": "provider_policy_absent_safe_defaults",
+      "severity": "info",
+      "message": "Provider policy file was not found; using local source-free defaults.",
+      "paths": [],
+      "count": 0
+    },
+    {
+      "code": "provider_policy_remote_denied",
+      "severity": "info",
+      "message": "Remote embedding or reranking providers are blocked by local source-free policy.",
+      "paths": [],
+      "count": 1
+    },
+    {
+      "code": "semantic_contribution_missed_targets_coupled",
+      "severity": "info",
+      "message": "Semantic provider `local_fastembed` missed target files that already had source-free graph/history/symbol signals; prioritize graph/fusion ordering before adding more semantic text.",
+      "paths": [
+        "crates/ctxhelm-compiler/src/planning.rs",
+        ".planning/STATE.md",
+        "crates/ctxhelm/tests/release_packaging.rs"
+      ],
+      "count": 3
+    },
+    {
+      "code": "semantic_contribution_missed_targets_no_signal",
+      "severity": "warning",
+      "message": "Semantic provider `local_fastembed` missed target files with no lexical, graph, history, or area signal; inspect semantic document/query construction for these path families.",
+      "paths": [
+        ".planning/MILESTONES.md",
+        ".planning/STATE.md",
+        ".planning/research/2026-06-01-world-class-context-engine-gap-plan.md",
+        "docs/agent-setup.md",
+        ".ctxhelm/distribution-metadata-smoke.json"
+      ],
+      "count": 27
+    },
+    {
+      "code": "semantic_contribution_unique_target_hits",
+      "severity": "info",
+      "message": "Semantic provider `local_fastembed` contributed target file(s) absent from the lexical baseline top K.",
+      "paths": [
+        ".planning/STATE.md"
+      ],
+      "count": 1
+    },
+    {
+      "code": "semantic_precision_named_regressions",
+      "severity": "warning",
+      "message": "Semantic/precision gate found named regressions; keep feature opt-in.",
+      "paths": [
+        ".planning/STATE.md",
+        "crates/ctxhelm/tests/release_packaging.rs"
+      ],
+      "count": 1
+    }
+  ],
+  "sourceTextLogged": false,
+  "privacyStatus": {
+    "localOnly": true,
+    "remoteEmbeddingsUsed": false,
+    "remoteRerankingUsed": false,
+    "redactionsApplied": 0
+  }
+}

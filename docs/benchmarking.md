@@ -632,6 +632,21 @@ RefactoringMiner lift, but it regressed ctxhelm Recall@10 and the gate named
 protected-evidence demotions. The next work is Phase 64 gap-family retrieval
 improvements, not default reranker promotion.
 
+Phase 252 fixes the semantic gate classification around this case. Named
+regressions from the eval-only `local_metadata_reranked` variant remain visible
+in `namedRegressions`, but they no longer force the top-level semantic decision
+to `block`. With the real local `local_fastembed` backend, the current
+source-free semantic gate state is:
+
+| Repo | Decision | Default Recall@K | Local Semantic Recall@K | Semantic Delta | Notes |
+| --- | --- | ---: | ---: | ---: | --- |
+| RefactoringMiner | `hold` | `0.48541665` | `0.5104166` | `+0.025` | Small lift, not enough for default promotion. |
+| ctxhelm | `hold` | `0.3212704` | `0.3212704` | `+0.000` | Neutral recall. |
+
+That is still not a default-promotion result. It is a more accurate result:
+semantic is local, source-free, and useful for continued R&D, while default
+ranking remains guarded until repeated query-family lift clears the gate.
+
 ## Product Proof
 
 The product proof is intentionally narrow. It does not claim universal agent improvement. It answers:

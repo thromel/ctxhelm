@@ -443,3 +443,25 @@ target-read coverage in every ctxhelm lane. This closes the current larger
 single-repo Codex suite gap. Remaining R&D should now focus on semantic
 default-lift proof, broader cross-repo memory outcome diversity, and fresh
 paired Claude outcome proof when the client is available.
+
+## June 6 Phase 252 Update
+
+Phase 252 fixes a semantic gate classification bug exposed by the next R&D
+probe. The semantic/precision gate previously mixed named regressions from the
+eval-only `local_metadata_reranked` variant into the top-level semantic
+promotion decision. That made semantic look `block` even when the actual
+semantic variant should be `hold`.
+
+The fix keeps eval-only reranker regressions visible in `namedRegressions` and
+diagnostics, but only semantic promotion variants can block the semantic
+default decision. Fresh `local_fastembed` source-free gates now report:
+
+- RefactoringMiner: `hold`, semantic Recall@K `0.5104166` vs default
+  `0.48541665`, one semantic-only target hit.
+- ctxhelm: `hold`, semantic Recall@K `0.3212704` vs default `0.3212704`, one
+  semantic-only target hit but neutral aggregate recall.
+
+The current semantic truth is therefore more precise: not blocked by an
+unrelated reranker experiment, but still not strong enough for default
+promotion. Next semantic R&D should focus on query-family lift and
+query/document construction, not default enablement.

@@ -3612,10 +3612,16 @@ fn gate_decision_from_variants(
             "Blocked because provider policy is not local/source-free.".to_string(),
         );
     }
-    if !named_regressions.is_empty() {
+    let blocking_regressions = named_regressions
+        .iter()
+        .filter(|case| is_semantic_promotion_variant(&case.variant))
+        .count();
+    if blocking_regressions > 0 {
         return (
             SemanticPrecisionGateDecision::Block,
-            "Blocked because named regressions were detected.".to_string(),
+            format!(
+                "Blocked because {blocking_regressions} semantic promotion regression(s) were detected."
+            ),
         );
     }
     let Some((default_variant, default)) = evaluated_variant_metrics(variants, "ctxhelm_default")
@@ -3678,6 +3684,13 @@ fn gate_decision_from_variants(
             ),
         )
     }
+}
+
+fn is_semantic_promotion_variant(variant: &str) -> bool {
+    matches!(
+        variant,
+        "local_semantic" | "precision_enriched_semantic" | "semantic_precision_full_hybrid"
+    )
 }
 
 fn short_sha(sha: &str) -> String {
@@ -8954,6 +8967,30 @@ mod tests {
             .0,
             SemanticPrecisionGateDecision::Block
         );
+    }
+
+    #[test]
+    fn gate_decision_does_not_block_semantic_on_eval_only_reranker_regression() {
+        let variants = vec![
+            gate_test_variant("ctxhelm_default", 0.40, 0.10),
+            gate_test_variant("local_semantic", 0.41, 0.10),
+            gate_test_variant("local_metadata_reranked", 0.35, 0.10),
+        ];
+        let eval_only_regression = vec![SemanticPrecisionNamedCase {
+            sha: "abc123".to_string(),
+            variant: "local_metadata_reranked".to_string(),
+            reason: "eval-only reranker demoted protected evidence".to_string(),
+            paths: vec!["src/lib.rs".to_string()],
+        }];
+
+        let (decision, reason) = gate_decision_from_variants(
+            &variants,
+            &eval_only_regression,
+            &source_free_provider_policy(),
+        );
+
+        assert_eq!(decision, SemanticPrecisionGateDecision::Hold);
+        assert!(reason.contains("local semantic recall delta"));
     }
 
     #[test]

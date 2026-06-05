@@ -4,7 +4,7 @@ milestone: v2.5
 milestone_name: Production Retrieval Quality
 status: active
 last_updated: "2026-06-06T00:00:00Z"
-last_activity: 2026-06-06 -- Phase 251 expands Codex R&D proof across memory, semantic, GraphRAG, and governor tasks
+last_activity: 2026-06-06 -- Phase 252 fixes semantic gate classification and records local_fastembed hold evidence
 progress:
   total_phases: 139
   completed_phases: 139
@@ -17,10 +17,10 @@ progress:
 
 ## Current Position
 
-Phase: 251 - Codex R&D Breadth Suite
-Plan: 251-codex-rd-breadth-suite
+Phase: 252 - Semantic Gate Classification
+Plan: 252-semantic-gate-classification
 Status: Complete
-Last activity: 2026-06-06 -- Phase 251 adds a four-task real Codex R&D suite covering selected-memory native reads, semantic contribution diagnostics, GraphRAG edge budget work, and governor/release proof artifacts. It fixes a dry-probe GraphRAG target-generation miss by promoting bounded graph-edge implementation surfaces, tightens the Codex harness so discovery commands do not count as native file consumption, and records a source-free real-client suite with status `passed`, outcome `ctxhelm_improved`, all 16 ctxhelm lanes at `1.00` target-read coverage, no evidence misses, no under-read targets, no forbidden commands, no client failures, and local-only privacy.
+Last activity: 2026-06-06 -- Phase 252 fixes the semantic/precision gate so eval-only local metadata reranker regressions remain visible but no longer force the top-level semantic promotion decision to `block`. Fresh source-free `local_fastembed` gates now correctly report `hold`: RefactoringMiner has small semantic lift (`0.5104166` vs default `0.48541665`) and ctxhelm is neutral (`0.3212704` vs `0.3212704`). A fresh Claude paired suite was attempted with Claude Code `2.1.163` but is correctly `degraded` because client preflight observed rate limiting.
 
 ## Project Reference
 
