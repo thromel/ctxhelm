@@ -128,6 +128,11 @@ instead of false missing required calls. The fresh Claude Code `2.1.163`
 artifact is still blocked by API status `429`, but ctxhelm evidence surfaces
 both expected targets in plan, brief, standard, and memory lanes.
 
+Phase 236 adds source-free real-agent client availability proof. Codex CLI
+`0.137.0` now produces explicit-repo `prepare_task` and `get_pack` MCP
+evidence, Claude Code `2.1.163` is classified as rate-limited with API status
+`429`, and the next action is a Codex-backed real-agent outcome matrix.
+
 ## v2.5 Production Retrieval Quality
 
 ## Phases
@@ -1138,6 +1143,7 @@ Phases execute in numeric order: 61 -> 62 -> 63 -> 64 -> 65 -> 66 -> 67 -> 69 ->
 | 192. Context Area Pressure Summary | Evidence artifact | Complete | 2026-06-03 |
 | 232. Memory Repository Diversity | Evidence artifact | Complete | 2026-06-05 |
 | 233. Memory Corroboration Policy | Evidence artifact | Complete | 2026-06-05 |
+| 236. Agent Client Availability | Evidence artifact | Complete | 2026-06-05 |
 
 ---
 *Roadmap created: 2026-05-22*

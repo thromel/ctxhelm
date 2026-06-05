@@ -4,7 +4,7 @@ milestone: v2.5
 milestone_name: Production Retrieval Quality
 status: active
 last_updated: "2026-06-03T00:00:00Z"
-last_activity: 2026-06-05 -- Phase 235 adds Claude agent-run preflight and clears false missing-call signals under rate limits
+last_activity: 2026-06-05 -- Phase 236 proves Codex real-client MCP availability and classifies Claude rate limits separately
 progress:
   total_phases: 134
   completed_phases: 134
@@ -17,10 +17,10 @@ progress:
 
 ## Current Position
 
-Phase: 235 - Agent Run Client Preflight
-Plan: 235-agent-run-client-preflight
+Phase: 236 - Agent Client Availability
+Plan: 236-agent-client-availability
 Status: Complete
-Last activity: 2026-06-05 -- Phase 235 retries the Claude Code five-lane agent-run proof and adds source-free client preflight. Claude Code `2.1.163` is still rate-limited with API status `429`, so outcome lift remains unproven and the report correctly recommends `retry_real_client_when_available`. The harness now records `clientPreflight`, short-circuits live lane execution under known client failure, keeps ctxhelm evidence collection, and reports `ctxhelmCallCompliance = client_unavailable` instead of false missing required calls. The fresh artifact has no ctxhelm evidence misses: plan, brief, standard, and memory lanes each surface both expected targets.
+Last activity: 2026-06-05 -- Phase 236 adds source-free real-agent client availability proof. Codex CLI `0.137.0` now produces explicit-repo `prepare_task` and `get_pack` MCP evidence with two tool calls and no raw prompts, transcripts, MCP traffic, or source text stored. Claude Code `2.1.163` is separately classified as rate-limited with API status `429`, so current Claude unavailability is not treated as ctxhelm retrieval or protocol failure. The next action is a Codex-backed real-agent outcome matrix.
 
 ## Project Reference
 

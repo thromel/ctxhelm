@@ -1549,9 +1549,9 @@ fn release_docs_script_contract() {
         "Current proof snapshot",
         "zero protected target misses",
         "agent-evidence retrieval channel",
-        "Claude Code \\`2.1.159\\`",
-        "Codex CLI \\`0.44.0\\`",
-        "2026-06-01-phase132-claude-workflow-eval.md",
+        "Claude Code \\`2.1.163\\`",
+        "Codex CLI \\`0.137.0\\`",
+        "2026-06-05-phase236-agent-client-availability.md",
         "ctxhelm init --repo",
         "ctxhelm setup-check --repo",
         "ctxhelm prepare-task",
@@ -1828,6 +1828,66 @@ fn agent_run_e2e_script_contract() {
         assert!(
             script_text.contains(required),
             "agent-run e2e script missing {required}"
+        );
+    }
+}
+
+#[test]
+fn agent_client_availability_script_contract() {
+    let repo_root = workspace_root();
+    let script = repo_root.join("scripts/e2e-agent-client-availability.sh");
+    assert!(
+        script.exists(),
+        "agent client availability script is missing"
+    );
+
+    let syntax = Command::new("bash")
+        .arg("-n")
+        .arg(&script)
+        .current_dir(&repo_root)
+        .output()
+        .unwrap();
+    assert!(
+        syntax.status.success(),
+        "bash -n failed: {}",
+        String::from_utf8_lossy(&syntax.stderr)
+    );
+
+    let script_text = fs::read_to_string(&script).unwrap();
+    for required in [
+        "ctxhelm-agent-client-availability-v1",
+        "agent-client-availability",
+        "Claude Code",
+        "Codex CLI",
+        "smoke-codex-mcp.sh",
+        "clientCount",
+        "readyClientCount",
+        "unavailableClientCount",
+        "rateLimitedClientCount",
+        "streamDisconnectedClientCount",
+        "realAgentOutcomeCurrentlyRunnable",
+        "run_real_agent_outcome_matrix",
+        "retry_real_client_when_available",
+        "upgrade_or_reconfigure_codex_cli",
+        "clientFailureKind",
+        "clientApiErrorStatus",
+        "rateLimitObserved",
+        "stream_disconnected",
+        "deterministicProtocol",
+        "explicitRepoToolCallCount",
+        "observedToolCalls",
+        "sourceTextLogged",
+        "rawPromptStored",
+        "rawTranscriptStored",
+        "rawMcpTrafficStored",
+        "remoteEmbeddingsUsed",
+        "remoteRerankingUsed",
+        "global agent config mutation",
+        "cloud upload",
+    ] {
+        assert!(
+            script_text.contains(required),
+            "agent client availability script missing {required}"
         );
     }
 }

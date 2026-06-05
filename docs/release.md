@@ -940,15 +940,14 @@ evidence artifact is
 `.planning/e2e/2026-05-31-phase105-history-unavailable-report.md`; the CLI proof
 fixture is `.ctxhelm/e2e/phase105-history-unavailable-proof.json`.
 
-Latest optional public-archive real-client proof: Claude Code `2.1.158` passed
-against the released `ctxhelm 1.1.0` archive binary with server-side
-`prepare_task` and `get_pack` evidence against an explicit repo path. Codex CLI
-`0.44.0` was installed but skipped in optional mode because the client exited
-before producing machine-checkable tool-call evidence; the skip is recorded as
-source-free evidence rather than treated as product proof. See
-`.planning/e2e/2026-06-01-phase116-public-real-client-smoke.md` and
-`.ctxhelm/e2e/phase116-public-real-client-smoke.json`. Cursor and OpenCode
-real-client proof is still not claimed for v1.1.0.
+Latest local real-client availability proof: Codex CLI `0.137.0` passed the
+source-free MCP smoke with server-side `prepare_task` and `get_pack` evidence
+against an explicit repo path. Claude Code `2.1.163` was classified separately
+as rate-limited with API status `429`, so current Claude availability is not
+treated as ctxhelm retrieval or protocol failure. See
+`.planning/e2e/2026-06-05-phase236-agent-client-availability.md` and
+`.ctxhelm/e2e/phase236-agent-client-availability.json`. Cursor and OpenCode
+real-client proof is still not claimed for v1.1.
 
 RefactoringMiner and multi-repo proof are optional external gates. They are
 skipped by default because they require a separate local checkout and longer

@@ -35,8 +35,10 @@ Current proof snapshot:
   RefactoringMiner, ctxhelm, ReAgent, and VeriSchema.
 - The agent-evidence retrieval channel beats or matches lexical on every
   measured corpus, with average Recall@10 delta `+0.19379663`.
-- Claude Code `2.1.159` produced real explicit-repo `prepare_task` and
-  `get_pack` MCP calls in the source-free workflow eval.
+- Codex CLI `0.137.0` currently produces real explicit-repo `prepare_task` and
+  `get_pack` MCP calls in the source-free client availability proof.
+- Claude Code `2.1.163` is currently rate-limited in availability preflight;
+  older Claude workflow proof remains historical evidence only.
 
 ## Product Surface
 
@@ -194,8 +196,8 @@ Implemented MCP resources include `ctxhelm://repo/summary`, package-aware `ctxhe
 Current local smoke status:
 
 - Deterministic protocol proof is the required release gate: direct JSON-RPC/MCP calls verify `prepare_task`, `get_pack`, `search`, `related`, `related_tests`, `current_diff`, and same-session pack-resource reads with an explicit `repo`.
-- Codex CLI `0.44.0`: currently recorded as an optional source-free skip because the client did not produce machine-checkable `prepare_task` and `get_pack` tool-call evidence.
-- Claude Code `2.1.159`: optional real-client smoke and the deeper workflow eval produce source-free server-side evidence for explicit-repo `prepare_task` and `get_pack` calls with strict MCP config.
+- Codex CLI `0.137.0`: current local real-client MCP smoke produces source-free server-side evidence for explicit-repo `prepare_task` and `get_pack` calls with strict MCP config.
+- Claude Code `2.1.163`: current availability preflight is source-free but rate-limited with API status `429`; earlier Claude workflow evidence remains historical rather than current availability proof.
 
 When using ctxhelm through MCP, pass the active repository path as `repo` whenever the client knows it. Some clients launch MCP servers from a different working directory than the project they expose.
 

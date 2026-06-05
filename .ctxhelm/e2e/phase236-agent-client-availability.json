@@ -1,0 +1,110 @@
+{
+  "clients": [
+    {
+      "client": "claude",
+      "clientApiErrorStatus": 429,
+      "clientExitStatus": 1,
+      "clientFailureKind": "rate_limited",
+      "clientVersion": "2.1.163 (Claude Code)",
+      "ctxhelmVersion": "ctxhelm 1.1.12",
+      "deterministicProtocol": null,
+      "evidenceHashes": {
+        "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "streamJsonSha256": "fdc000c7725a2416eeb32e23c3c62013df9a25617dc4f1dfc09a70fbe956cd82"
+      },
+      "explicitRepoToolCallCount": null,
+      "observedToolCalls": [],
+      "rateLimitObserved": true,
+      "rawMcpTrafficStored": false,
+      "rawPromptStored": false,
+      "rawTranscriptStored": false,
+      "realClientReady": false,
+      "sourceTextLogged": false,
+      "status": "unavailable"
+    },
+    {
+      "client": "codex",
+      "clientApiErrorStatus": null,
+      "clientExitStatus": 0,
+      "clientFailureKind": "none",
+      "clientVersion": "codex-cli 0.137.0",
+      "ctxhelmVersion": "ctxhelm 1.1.12",
+      "deterministicContextAreaResourceRead": true,
+      "deterministicProtocol": true,
+      "evidenceHashes": {
+        "evidenceSha256": "5534b083d01132f7f642d192351c1947b9946211fb52b4984f8c996a20875f82",
+        "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdoutSha256": "883db8396f5a32a0e6f6d02ad8bca976ee83b92199a0d5f03ce722e7f60e4d69"
+      },
+      "explicitRepoToolCallCount": 2,
+      "getPack": true,
+      "methodCounts": {
+        "initialize": 1,
+        "notifications/initialized": 1,
+        "tools/call": 2,
+        "tools/list": 1
+      },
+      "observedToolCalls": [
+        {
+          "hasTask": true,
+          "name": "prepare_task",
+          "repoMatched": true
+        },
+        {
+          "budget": "brief",
+          "format": "json",
+          "hasTask": true,
+          "name": "get_pack",
+          "recordTraceFalse": true,
+          "repoMatched": true
+        }
+      ],
+      "prepareTask": true,
+      "rateLimitObserved": false,
+      "rawMcpTrafficStored": false,
+      "rawPromptStored": false,
+      "rawTranscriptStored": false,
+      "realClientReady": true,
+      "sourceTextLogged": false,
+      "status": "available"
+    }
+  ],
+  "ctxhelmVersion": "ctxhelm 1.1.12",
+  "privacyStatus": {
+    "localOnly": true,
+    "rawMcpTrafficStored": false,
+    "rawPromptStored": false,
+    "rawTranscriptStored": false,
+    "remoteEmbeddingsUsed": false,
+    "remoteRerankingUsed": false,
+    "sourceTextLogged": false
+  },
+  "repo": {
+    "label": "ctxhelm",
+    "pathSha256": "823da75306f1c50f536e28905ec7405c88ec43b87fbf3f2afb37d7bf17d143a2"
+  },
+  "schemaVersion": "ctxhelm-agent-client-availability-v1",
+  "status": "passed",
+  "summary": {
+    "clientCount": 2,
+    "rateLimitedClientCount": 1,
+    "readyClientCount": 1,
+    "realAgentOutcomeCurrentlyRunnable": true,
+    "recommendedResearchActions": [
+      "run_real_agent_outcome_matrix"
+    ],
+    "streamDisconnectedClientCount": 0,
+    "unavailableClientCount": 1
+  },
+  "task": {
+    "rawTaskStored": false,
+    "taskSha256": "feab5db82cc10aef383e27473b0d760de515b5dc58aa41e6e957010d3421e1fb"
+  },
+  "unsupportedActions": [
+    "source edits",
+    "user project tests",
+    "global agent config mutation",
+    "cloud upload"
+  ],
+  "workflowKind": "agent-client-availability"
+}

@@ -6,8 +6,8 @@ ctxhelm is an agent-native, read-only context broker. It generates repo-local gu
 
 | Agent | Generated artifact/snippet | Default write scope | Mutates global config by default | setup-check coverage | deterministic protocol proof | Optional real-client proof status | Verified-version/evidence notes |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| Codex CLI | Managed `AGENTS.md` section plus printed MCP setup guidance | Repo-local guidance only; user copies any MCP config manually | No global config mutation | Verifies managed `AGENTS.md` and `.ctxhelm/ctxhelm.toml` | Supported through direct JSON-RPC/MCP smoke against `ctxhelm serve-mcp` | Optional Codex smoke can require server-side `prepare_task` and `get_pack` request-log evidence, but current public proof records a source-free skip with client failure diagnostics | Local command available: Codex CLI `0.44.0`; latest public archive smoke classified the client failure without raw stderr or MCP traffic, so Codex remains optional evidence only |
-| Claude Code | `.claude/commands/ctxhelm-bugfix.md` and `.ctxhelm/adapters/claude-mcp.json` | Repo/project-local command and mergeable MCP snippet | No global config mutation; user merges project MCP config when desired | Verifies Claude command and adapter snippet when `--claude` is requested | Supported through direct JSON-RPC/MCP smoke against `ctxhelm serve-mcp` | Optional Claude smoke and workflow eval can require server-side `prepare_task` and `get_pack` request-log evidence | Local command available: Claude Code `2.1.159`; latest workflow evidence used strict MCP config, explicit `repo`, `prepare_task`, and `get_pack` |
+| Codex CLI | Managed `AGENTS.md` section plus printed MCP setup guidance | Repo-local guidance only; user copies any MCP config manually | No global config mutation | Verifies managed `AGENTS.md` and `.ctxhelm/ctxhelm.toml` | Supported through direct JSON-RPC/MCP smoke against `ctxhelm serve-mcp` | Optional Codex smoke can require server-side `prepare_task` and `get_pack` request-log evidence; current local proof passes with explicit-repo tool-call evidence | Local command available: Codex CLI `0.137.0`; current local smoke records two explicit-repo ctxhelm tool calls without raw stderr, raw MCP traffic, prompts, transcripts, or source text |
+| Claude Code | `.claude/commands/ctxhelm-bugfix.md` and `.ctxhelm/adapters/claude-mcp.json` | Repo/project-local command and mergeable MCP snippet | No global config mutation; user merges project MCP config when desired | Verifies Claude command and adapter snippet when `--claude` is requested | Supported through direct JSON-RPC/MCP smoke against `ctxhelm serve-mcp` | Optional Claude smoke and workflow eval can require server-side `prepare_task` and `get_pack` request-log evidence; current availability preflight is rate-limited | Local command available: Claude Code `2.1.163`; current availability proof classifies API status `429` separately from ctxhelm protocol and retrieval behavior |
 | Cursor | `.cursor/rules/ctxhelm.mdc` | Repo-local rule file | No global config mutation | Verifies Cursor rule when `--cursor` is requested | Supported through direct JSON-RPC/MCP smoke against `ctxhelm serve-mcp` | Not claimed as machine-checkable tool-call evidence in v1.1 | Local command available: Cursor `3.3.30`; version presence is not tool-call proof |
 | OpenCode | `.ctxhelm/adapters/opencode.jsonc.snippet` | Repo-local snippet for manual merge | No global config mutation | Verifies OpenCode snippet when `--opencode` is requested | Supported through direct JSON-RPC/MCP smoke against `ctxhelm serve-mcp` | Not claimed as machine-checkable tool-call evidence in v1.1 | Local command available: OpenCode `1.14.25`; version presence is not tool-call proof |
 
@@ -66,21 +66,24 @@ still source-free: raw tasks are hashed, raw
 prompts/transcripts/MCP traffic are not persisted, and the report stores only
 target path labels, lane metrics, privacy flags, and sanitized request evidence.
 
-Latest local real-client workflow refresh: 2026-06-01, Claude Code `2.1.159`
-passed `scripts/e2e-claude-workflow.sh` with source-free explicit-repo
-`prepare_task` and `get_pack` evidence. See
+Latest local real-client availability refresh: 2026-06-05. Codex CLI
+`0.137.0` passed the source-free MCP smoke with two explicit-repo ctxhelm tool
+calls: `prepare_task` and `get_pack` with `budget = "brief"`,
+`format = "json"`, and `recordTrace = false`. Claude Code `2.1.163` was
+classified as unavailable because the preflight hit API status `429` and
+reported `clientFailureKind = rate_limited`. See
+`.planning/e2e/2026-06-05-phase236-agent-client-availability.md` and
+`.ctxhelm/e2e/phase236-agent-client-availability.json`.
+
+Historical Claude workflow evidence is still useful but should not be mistaken
+for current availability. The 2026-06-01 Claude Code `2.1.159` workflow passed
+`scripts/e2e-claude-workflow.sh` with source-free explicit-repo `prepare_task`
+and `get_pack` evidence; see
 `.planning/e2e/2026-06-01-phase132-claude-workflow-eval.md`. The paired
 agent-run refresh on the same date showed Claude Code `2.1.159` preserved
 target coverage while the `ctxhelm-brief` lane reduced irrelevant reads from 5
 to 2 and read-file count from 7 to 4; see
-`.planning/e2e/2026-06-01-phase143-agent-run-outcome-harness.md`. Codex CLI
-`0.44.0` remains optional evidence only because the latest public archive smoke
-recorded a source-free skip instead of machine-checkable tool-call evidence.
-Codex skip evidence includes `clientFailureKind`, `clientExitStatus`,
-`stderrSha256`, `stderrLineCount`, and MCP request `methodCounts` so maintainers
-can distinguish client stream-disconnects from ctxhelm protocol failures without
-persisting raw stderr, raw prompts, raw MCP traffic, task text, or source
-snippets.
+`.planning/e2e/2026-06-01-phase143-agent-run-outcome-harness.md`.
 
 Cursor and OpenCode setup can be checked through generated artifacts plus deterministic protocol proof, including source-free context-area resource reads. v1.1 does not claim machine-checkable Cursor tool-call proof, and it does not claim machine-checkable OpenCode tool-call proof.
 
