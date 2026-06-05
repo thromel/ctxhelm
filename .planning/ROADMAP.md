@@ -98,6 +98,8 @@ Phase 221 broadens that measurement from one repository to four. `scripts/measur
 
 Phase 222 adds that comparison surface. The memory generalization harnesses now accept `--semantic --semantic-provider local_hash` and emit v2 source-free fields for semantic selected-target pairs, graph-edge ablation target-hit loss, graph/semantic memory-corroboration upper bounds, and uncorroborated memory lower bounds. The four-repo semantic-enabled probe reports `memoryUniqueLiftPairs = 1`, `memoryUniqueTargetHitCount = 1`, `memoryUniqueNonTargetCount = 1`, `semanticSelectedTargetPairs = 2`, `semanticAblationLiftPairs = 0`, and `memoryTargetHitsWithoutGraphOrSemanticSupportLowerBound = 1`. This proves semantic/graph comparison is now measurable, while the negative result keeps the next R&D focused on a stricter memory-corroboration policy and larger pair counts.
 
+Phase 223 implements that stricter policy and fixes the precision accounting. Ranking no longer attaches memory to lexical-expansion-only paths and only lets uncorroborated memory-only evidence rescue a plan when no target files were otherwise selected. Historical reports now distinguish lexical-baseline-relative memory non-targets from unsupported current-signal memory non-targets. The four-repo semantic-enabled rerun still reports `memoryUniqueNonTargetCount = 1`, but `memoryUniqueNonTargetWithoutCurrentSupportCount = 0`, `memoryUniqueTargetHitWithoutCurrentSupportCount = 0`, and `unsupportedMemoryPrecisionNeedsWork = false`. The remaining memory non-target is therefore not pure memory noise, and the next bar is larger pair counts plus real-agent outcome lift.
+
 ## v2.5 Production Retrieval Quality
 
 ## Phases

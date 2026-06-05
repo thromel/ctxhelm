@@ -1001,6 +1001,15 @@ Recommendation today:
   lift, one unique non-target memory selection, and zero semantic ablation-lift
   pairs, so memory remains useful but not yet precise enough for an automatic
   promotion policy.
+- Phase 223 tightens memory precision accounting. Ranking no longer attaches
+  memory to lexical-expansion-only paths and only allows an uncorroborated
+  memory-only rescue when no target file was otherwise selected. Historical
+  reports now separate `memoryUniqueNonTargetCount` from
+  `memoryUniqueNonTargetWithoutCurrentSupportCount`. The four-repo rerun keeps
+  one lexical-baseline-relative memory non-target, but reports zero unsupported
+  memory non-targets and zero unsupported memory-unique target hits. That means
+  the remaining memory "noise" is supported by another current signal, while
+  larger pair counts are still needed before promotion.
 - Treat cloud embeddings/reranking as disabled unless an explicit repo policy
   allows them.
 

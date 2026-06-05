@@ -4,10 +4,10 @@ milestone: v2.5
 milestone_name: Production Retrieval Quality
 status: active
 last_updated: "2026-06-03T00:00:00Z"
-last_activity: 2026-06-05 -- Phase 222 compares memory against graph and semantic signals
+last_activity: 2026-06-05 -- Phase 223 tightens memory corroboration accounting
 progress:
-  total_phases: 131
-  completed_phases: 131
+  total_phases: 132
+  completed_phases: 132
   total_plans: 7
   completed_plans: 7
   percent: 100
@@ -17,10 +17,10 @@ progress:
 
 ## Current Position
 
-Phase: 222 - Memory Signal Ablation Suite
-Plan: 222-memory-signal-ablation-suite
+Phase: 223 - Memory Corroboration Policy
+Plan: 223-memory-corroboration-policy
 Status: Complete
-Last activity: 2026-06-05 -- Phase 222 upgrades the memory generalization harnesses to v2 signal comparison. `scripts/measure-memory-generalization.sh` and `scripts/measure-memory-generalization-suite.sh` now accept `--semantic --semantic-provider local_hash` and report source-free semantic selected-target pairs, graph-edge ablation target-hit loss, graph/semantic memory-corroboration upper bounds, and uncorroborated memory lower bounds. The four-repo fixture run in `.ctxhelm/e2e/phase222-memory-signal-ablation-suite.json` evaluates one repeated-file pair each for RefactoringMiner, VeriSchema, ReAgent, and ctxhelm with local semantic enabled: `memoryUniqueLiftPairs = 1`, `memoryUniqueTargetHitCount = 1`, `memoryUniqueNonTargetCount = 1`, `semanticSelectedTargetPairs = 2`, `semanticAblationLiftPairs = 0`, `memoryTargetHitsWithGraphSupportUpperBound = 4`, `memoryTargetHitsWithSemanticSupportUpperBound = 3`, and `memoryTargetHitsWithoutGraphOrSemanticSupportLowerBound = 1`. This proves the comparison surface and shows memory still needs corroboration before automatic promotion.
+Last activity: 2026-06-05 -- Phase 223 adds a stricter memory-corroboration policy and sharper precision accounting. Ranking no longer attaches memory to lexical-expansion-only paths and only allows one uncorroborated memory-only rescue when no target files were selected. Historical memory summaries now separate lexical-baseline-relative non-targets from unsupported current-signal non-targets with `memoryUniqueNonTargetWithoutCurrentSupportCount` and related fields. The four-repo semantic-enabled rerun in `.ctxhelm/e2e/phase223-memory-corroboration-policy-suite.json` keeps `memoryUniqueLiftPairs = 1` and `memoryUniqueNonTargetCount = 1`, but reports `memoryUniqueNonTargetWithoutCurrentSupportCount = 0`, `memoryUniqueTargetHitWithoutCurrentSupportCount = 0`, and `unsupportedMemoryPrecisionNeedsWork = false`. The remaining memory non-target is supported by another current signal; larger pair counts and real-agent outcome lift remain open.
 
 ## Project Reference
 

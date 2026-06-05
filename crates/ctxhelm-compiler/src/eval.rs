@@ -986,6 +986,14 @@ pub struct MemoryReuseSummary {
     pub memory_unique_target_hit_count: usize,
     pub memory_unique_non_target_count: usize,
     #[serde(default)]
+    pub memory_unique_target_hit_with_current_support_count: usize,
+    #[serde(default)]
+    pub memory_unique_target_hit_without_current_support_count: usize,
+    #[serde(default)]
+    pub memory_unique_non_target_with_current_support_count: usize,
+    #[serde(default)]
+    pub memory_unique_non_target_without_current_support_count: usize,
+    #[serde(default)]
     pub selected_role_counts: BTreeMap<String, usize>,
     pub source_text_logged: bool,
 }
@@ -7265,6 +7273,9 @@ fn is_protected_evidence_signal(signal: &RetrievalSignalKind) -> bool {
 
 fn signal_baseline_signals() -> Vec<RetrievalSignalKind> {
     vec![
+        RetrievalSignalKind::Lexical,
+        RetrievalSignalKind::LexicalExpansion,
+        RetrievalSignalKind::Symbol,
         RetrievalSignalKind::Semantic,
         RetrievalSignalKind::Dependency,
         RetrievalSignalKind::RelatedTest,
@@ -7735,7 +7746,21 @@ fn memory_reuse_summary(commits: &[HistoricalCommitEval]) -> MemoryReuseSummary 
         let memory_unique_non_targets = memory_files
             .difference(&target_files)
             .filter(|path| !lexical_files.contains(*path))
+            .cloned()
+            .collect::<BTreeSet<_>>();
+        let current_support_files = memory_current_support_files(commit);
+        let supported_unique_target_hits = memory_unique_target_hits
+            .intersection(&current_support_files)
             .count();
+        let unsupported_unique_target_hits = memory_unique_target_hits
+            .len()
+            .saturating_sub(supported_unique_target_hits);
+        let supported_unique_non_targets = memory_unique_non_targets
+            .intersection(&current_support_files)
+            .count();
+        let unsupported_unique_non_targets = memory_unique_non_targets
+            .len()
+            .saturating_sub(supported_unique_non_targets);
 
         summary.commits_with_memory_candidates += 1;
         summary.memory_candidate_count += memory_files.len();
@@ -7743,7 +7768,13 @@ fn memory_reuse_summary(commits: &[HistoricalCommitEval]) -> MemoryReuseSummary 
         summary.memory_target_missed_at_10_count +=
             target_files.difference(&memory_target_hits).count();
         summary.memory_unique_target_hit_count += memory_unique_target_hits.len();
-        summary.memory_unique_non_target_count += memory_unique_non_targets;
+        summary.memory_unique_non_target_count += memory_unique_non_targets.len();
+        summary.memory_unique_target_hit_with_current_support_count += supported_unique_target_hits;
+        summary.memory_unique_target_hit_without_current_support_count +=
+            unsupported_unique_target_hits;
+        summary.memory_unique_non_target_with_current_support_count += supported_unique_non_targets;
+        summary.memory_unique_non_target_without_current_support_count +=
+            unsupported_unique_non_targets;
 
         for profile in commit
             .selected_signal_profiles
@@ -7758,6 +7789,16 @@ fn memory_reuse_summary(commits: &[HistoricalCommitEval]) -> MemoryReuseSummary 
         }
     }
     summary
+}
+
+fn memory_current_support_files(commit: &HistoricalCommitEval) -> BTreeSet<String> {
+    commit
+        .signal_baseline_files
+        .iter()
+        .filter(|ranking| ranking.signal != RetrievalSignalKind::Memory)
+        .flat_map(|ranking| ranking.files.iter().cloned())
+        .chain(commit.lexical_baseline_files.iter().cloned())
+        .collect()
 }
 
 fn file_role_label(role: &FileRole) -> &'static str {
@@ -9257,13 +9298,19 @@ mod tests {
             "src/payments/signature.ts".to_string(),
         ];
         commit.lexical_baseline_files = vec!["src/payments/signature.ts".to_string()];
-        commit.signal_baseline_files = vec![HistoricalSignalRanking {
-            signal: RetrievalSignalKind::Memory,
-            files: vec![
-                "src/payments/handler.ts".to_string(),
-                "docs/checkout.md".to_string(),
-            ],
-        }];
+        commit.signal_baseline_files = vec![
+            HistoricalSignalRanking {
+                signal: RetrievalSignalKind::Memory,
+                files: vec![
+                    "src/payments/handler.ts".to_string(),
+                    "docs/checkout.md".to_string(),
+                ],
+            },
+            HistoricalSignalRanking {
+                signal: RetrievalSignalKind::Dependency,
+                files: vec!["src/payments/handler.ts".to_string()],
+            },
+        ];
         commit.selected_signal_profiles = vec![
             HistoricalSelectedSignalProfile {
                 signal: RetrievalSignalKind::Memory,
@@ -9288,6 +9335,22 @@ mod tests {
         assert_eq!(summary.memory_target_missed_at_10_count, 1);
         assert_eq!(summary.memory_unique_target_hit_count, 1);
         assert_eq!(summary.memory_unique_non_target_count, 1);
+        assert_eq!(
+            summary.memory_unique_target_hit_with_current_support_count,
+            1
+        );
+        assert_eq!(
+            summary.memory_unique_target_hit_without_current_support_count,
+            0
+        );
+        assert_eq!(
+            summary.memory_unique_non_target_with_current_support_count,
+            0
+        );
+        assert_eq!(
+            summary.memory_unique_non_target_without_current_support_count,
+            1
+        );
         assert_eq!(summary.selected_role_counts["source"], 1);
         assert_eq!(summary.selected_role_counts["docs"], 1);
         assert!(!summary.source_text_logged);

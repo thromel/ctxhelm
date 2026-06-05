@@ -200,6 +200,12 @@ for report in reports:
 memory_unique_lift_pairs = aggregate_value("memoryUniqueLiftPairs")
 memory_unique_target_hits = aggregate_value("memoryUniqueTargetHitCount")
 memory_unique_non_targets = aggregate_value("memoryUniqueNonTargetCount")
+memory_unique_target_hits_without_current_support = aggregate_value(
+    "memoryUniqueTargetHitWithoutCurrentSupportCount"
+)
+memory_unique_non_targets_without_current_support = aggregate_value(
+    "memoryUniqueNonTargetWithoutCurrentSupportCount"
+)
 memory_target_hit_pairs = aggregate_value("memoryTargetHitPairs")
 memory_candidate_pairs = aggregate_value("memoryCandidatePairs")
 combined_recovered_pairs = aggregate_value("combinedRecoveredPairs")
@@ -237,6 +243,8 @@ payload = {
         "lexicalCoveredPairs": lexical_covered_pairs,
         "memoryUniqueTargetHitCount": memory_unique_target_hits,
         "memoryUniqueNonTargetCount": memory_unique_non_targets,
+        "memoryUniqueTargetHitWithoutCurrentSupportCount": memory_unique_target_hits_without_current_support,
+        "memoryUniqueNonTargetWithoutCurrentSupportCount": memory_unique_non_targets_without_current_support,
         "memoryTargetHitsWithGraphSupportUpperBound": graph_supported_memory_target_hits,
         "memoryTargetHitsWithSemanticSupportUpperBound": semantic_supported_memory_target_hits,
         "memoryUniqueTargetsWithGraphOrSemanticSupportUpperBound": graph_or_semantic_supported_unique_targets,
@@ -255,6 +263,8 @@ payload = {
         "generalizationProven": evaluated_repos > 1 and memory_unique_lift_pairs > 1,
         "precisionNeedsWork": memory_unique_non_targets > 0
         or memory_target_hit_pairs < memory_candidate_pairs,
+        "unsupportedMemoryPrecisionNeedsWork": memory_unique_non_targets_without_current_support > 0
+        or memory_unique_target_hits_without_current_support > 0,
         "memoryNeedsCorroboration": memory_targets_without_graph_or_semantic > 0
         or memory_unique_non_targets > 0,
         "semanticMeasured": semantic_enabled,

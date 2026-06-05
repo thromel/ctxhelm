@@ -519,6 +519,12 @@ def evaluate(pair, index):
             and target_in_after_combined,
             "lexicalAlreadyCoveredTarget": target_in_after_lexical,
             "uniqueNonTargetNoise": after_memory.get("memoryUniqueNonTargetCount", 0),
+            "uniqueNonTargetWithoutCurrentSupport": after_memory.get(
+                "memoryUniqueNonTargetWithoutCurrentSupportCount", 0
+            ),
+            "uniqueTargetHitWithoutCurrentSupport": after_memory.get(
+                "memoryUniqueTargetHitWithoutCurrentSupportCount", 0
+            ),
             "targetMissedByMemory": after_memory.get("memoryTargetMissedAt10Count", 0),
         },
         "signalComparison": signal_comparison,
@@ -563,7 +569,13 @@ lexical_covered_pairs = sum(1 for result in results if result["lift"]["lexicalAl
 noise_pairs = sum(1 for result in results if result["lift"]["uniqueNonTargetNoise"] > 0)
 combined_recovered_pairs = sum(1 for result in results if result["lift"]["combinedRecoveredTarget"])
 total_unique_non_targets = sum(result["lift"]["uniqueNonTargetNoise"] for result in results)
+total_unique_non_targets_without_current_support = sum(
+    result["lift"]["uniqueNonTargetWithoutCurrentSupport"] for result in results
+)
 total_unique_target_hits = sum(result["lift"]["memoryUniqueTargetHitDelta"] for result in results)
+total_unique_target_hits_without_current_support = sum(
+    result["lift"]["uniqueTargetHitWithoutCurrentSupport"] for result in results
+)
 total_graph_supported_memory_target_hits = sum(
     result["signalComparison"]["memoryTargetHitsWithGraphSupportUpperBound"] for result in results
 )
@@ -617,6 +629,8 @@ payload = {
         "memoryNoisePairs": noise_pairs,
         "memoryUniqueTargetHitCount": total_unique_target_hits,
         "memoryUniqueNonTargetCount": total_unique_non_targets,
+        "memoryUniqueTargetHitWithoutCurrentSupportCount": total_unique_target_hits_without_current_support,
+        "memoryUniqueNonTargetWithoutCurrentSupportCount": total_unique_non_targets_without_current_support,
         "memoryTargetHitsWithGraphSupportUpperBound": total_graph_supported_memory_target_hits,
         "memoryTargetHitsWithSemanticSupportUpperBound": total_semantic_supported_memory_target_hits,
         "memoryUniqueTargetsWithGraphOrSemanticSupportUpperBound": total_graph_or_semantic_supported_unique_targets,
@@ -630,6 +644,8 @@ payload = {
         "generalizationProven": unique_lift_pairs > 1,
         "singlePairLiftObserved": unique_lift_pairs == 1,
         "precisionNeedsWork": noise_pairs > 0 or total_unique_non_targets > total_unique_target_hits,
+        "unsupportedMemoryPrecisionNeedsWork": total_unique_non_targets_without_current_support > 0
+        or total_unique_target_hits_without_current_support > 0,
         "memoryNeedsCorroboration": total_memory_targets_without_graph_or_semantic > 0
         or total_unique_non_targets > 0,
         "semanticMeasured": semantic_enabled,

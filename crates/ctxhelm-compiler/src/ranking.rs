@@ -707,20 +707,73 @@ fn select_target_files(
     for candidate in candidates
         .iter()
         .filter(|candidate| !is_archive_candidate(candidate))
+        .filter(|candidate| !is_uncorroborated_memory_only_candidate(candidate))
     {
         if selected.len() >= file_budget {
             break;
         }
         push_target(candidate, &mut selected, &mut selected_paths, file_budget);
     }
+    let mut memory_rescue_selected = 0usize;
+    if selected.is_empty() {
+        for candidate in candidates
+            .iter()
+            .filter(|candidate| is_uncorroborated_memory_only_candidate(candidate))
+        {
+            if selected.len() >= file_budget
+                || memory_rescue_selected >= memory_rescue_limit(file_budget)
+            {
+                break;
+            }
+            let before = selected.len();
+            push_target(candidate, &mut selected, &mut selected_paths, file_budget);
+            if selected.len() > before {
+                memory_rescue_selected += 1;
+            }
+        }
+    }
     for candidate in candidates {
         if selected.len() >= file_budget {
             break;
+        }
+        if is_uncorroborated_memory_only_candidate(candidate) {
+            continue;
         }
         push_target(candidate, &mut selected, &mut selected_paths, file_budget);
     }
 
     selected
+}
+
+fn is_uncorroborated_memory_only_candidate(candidate: &RankedCandidate) -> bool {
+    if candidate.target_file.is_none()
+        || signal_score(&candidate.candidate, RetrievalSignalKind::Memory).is_none()
+    {
+        return false;
+    }
+    !has_memory_corroboration(candidate)
+}
+
+fn has_memory_corroboration(candidate: &RankedCandidate) -> bool {
+    [
+        RetrievalSignalKind::Anchor,
+        RetrievalSignalKind::CurrentDiff,
+        RetrievalSignalKind::Lexical,
+        RetrievalSignalKind::Symbol,
+        RetrievalSignalKind::Semantic,
+        RetrievalSignalKind::Dependency,
+        RetrievalSignalKind::CoChange,
+    ]
+    .into_iter()
+    .any(|signal| signal_score(&candidate.candidate, signal).is_some())
+}
+
+fn memory_rescue_limit(file_budget: usize) -> usize {
+    if file_budget == 0 {
+        0
+    } else {
+        1
+    }
 }
 
 fn source_lexical_floor(candidates: &[RankedCandidate]) -> Vec<(f32, &RankedCandidate)> {
@@ -1353,6 +1406,14 @@ impl CandidateAccumulator {
             kind_rank: kind_rank(&signal.kind),
             path: Some(signal.path.clone()),
         };
+        if signal.signal == RetrievalSignalKind::Memory
+            && self
+                .candidates
+                .get(&key)
+                .is_some_and(|builder| !builder_has_memory_attach_corroboration(builder))
+        {
+            return;
+        }
         let builder = self
             .candidates
             .entry(key)
@@ -1519,6 +1580,25 @@ impl CandidateAccumulator {
         });
         candidates
     }
+}
+
+fn builder_has_memory_attach_corroboration(builder: &CandidateBuilder) -> bool {
+    [
+        RetrievalSignalKind::Anchor,
+        RetrievalSignalKind::CurrentDiff,
+        RetrievalSignalKind::Lexical,
+        RetrievalSignalKind::Symbol,
+        RetrievalSignalKind::Semantic,
+        RetrievalSignalKind::Dependency,
+        RetrievalSignalKind::CoChange,
+    ]
+    .into_iter()
+    .any(|signal| {
+        builder
+            .signal_scores
+            .iter()
+            .any(|score| score.signal == signal)
+    })
 }
 
 fn target_file_for(signal: &PathSignal, weighted_score: f32) -> Option<TargetFile> {
@@ -1942,6 +2022,134 @@ mod tests {
                 "src/lexical-4.ts",
             ]
         );
+    }
+
+    #[test]
+    fn selection_defers_uncorroborated_memory_when_supported_sources_exist() {
+        let candidates = rank_candidates(RankingInput {
+            lexical_results: vec![
+                lexical("src/lexical-a.ts", 12.0),
+                lexical("src/lexical-b.ts", 11.0),
+                lexical("src/lexical-c.ts", 10.0),
+            ],
+            memory_paths: vec![
+                memory_path("src/memory-a.ts", 0.90),
+                memory_path("src/memory-b.ts", 0.85),
+            ],
+            roles: roles([
+                ("src/lexical-a.ts", FileRole::Source),
+                ("src/lexical-b.ts", FileRole::Source),
+                ("src/lexical-c.ts", FileRole::Source),
+                ("src/memory-a.ts", FileRole::Source),
+                ("src/memory-b.ts", FileRole::Source),
+            ]),
+            ..RankingInput::default()
+        });
+
+        let selection = select_ranked_candidates(&candidates, 4, 0);
+        let paths = selection
+            .target_files
+            .iter()
+            .map(|target| target.path.as_str())
+            .collect::<Vec<_>>();
+
+        assert_eq!(
+            paths,
+            vec!["src/lexical-a.ts", "src/lexical-b.ts", "src/lexical-c.ts"]
+        );
+    }
+
+    #[test]
+    fn selection_allows_one_uncorroborated_memory_rescue_when_budget_remains() {
+        let candidates = rank_candidates(RankingInput {
+            memory_paths: vec![
+                memory_path("src/memory-a.ts", 0.90),
+                memory_path("src/memory-b.ts", 0.85),
+                memory_path("src/memory-c.ts", 0.80),
+            ],
+            roles: roles([
+                ("src/memory-a.ts", FileRole::Source),
+                ("src/memory-b.ts", FileRole::Source),
+                ("src/memory-c.ts", FileRole::Source),
+            ]),
+            ..RankingInput::default()
+        });
+
+        let selection = select_ranked_candidates(&candidates, 3, 0);
+        let paths = selection
+            .target_files
+            .iter()
+            .map(|target| target.path.as_str())
+            .collect::<Vec<_>>();
+
+        assert_eq!(paths, vec!["src/memory-a.ts"]);
+    }
+
+    #[test]
+    fn selection_keeps_semantic_corroborated_memory_as_supported_source() {
+        let candidates = rank_candidates(RankingInput {
+            semantic_results: vec![SemanticSearchResult {
+                path: "src/corroborated.ts".to_string(),
+                role: FileRole::Source,
+                language: Some("typescript".to_string()),
+                score: 0.95,
+                reason: "local semantic similarity".to_string(),
+                provider: SemanticProviderConfig::default(),
+                document_id: Some("sem_doc_corroborated".to_string()),
+                matched_facets: Vec::new(),
+                precision_status: None,
+            }],
+            memory_paths: vec![
+                memory_path("src/memory-only.ts", 0.95),
+                memory_path("src/corroborated.ts", 0.50),
+            ],
+            roles: roles([
+                ("src/corroborated.ts", FileRole::Source),
+                ("src/memory-only.ts", FileRole::Source),
+            ]),
+            ..RankingInput::default()
+        });
+
+        let selection = select_ranked_candidates(&candidates, 1, 0);
+
+        assert_eq!(selection.target_files[0].path, "src/corroborated.ts");
+        assert!(selection.target_files[0]
+            .attribution
+            .iter()
+            .any(|evidence| {
+                evidence.signal == RetrievalSignalKind::Memory
+                    && evidence.reason_code == "memory_source_link"
+            }));
+        assert!(selection.target_files[0]
+            .attribution
+            .iter()
+            .any(|evidence| evidence.signal == RetrievalSignalKind::Semantic));
+    }
+
+    #[test]
+    fn ranking_does_not_attach_memory_to_lexical_expansion_only_path() {
+        let candidates = rank_candidates(RankingInput {
+            lexical_results: vec![lexical("src/weak.ts", 4.0)],
+            protected_lexical_limit: Some(0),
+            memory_paths: vec![memory_path("src/weak.ts", 0.95)],
+            roles: roles([("src/weak.ts", FileRole::Source)]),
+            ..RankingInput::default()
+        });
+
+        let weak = candidates
+            .iter()
+            .find(|candidate| candidate.candidate.path.as_deref() == Some("src/weak.ts"))
+            .unwrap();
+
+        assert_signals(
+            &weak.candidate.signal_scores,
+            &[RetrievalSignalKind::LexicalExpansion],
+        );
+        assert!(!weak
+            .candidate
+            .evidence
+            .iter()
+            .any(|evidence| evidence.signal == RetrievalSignalKind::Memory));
     }
 
     #[test]
@@ -3626,6 +3834,15 @@ mod tests {
             language: Some("typescript".to_string()),
             score,
             reason: "term match".to_string(),
+        }
+    }
+
+    fn memory_path(path: &str, score: f32) -> MemoryPathCandidate {
+        MemoryPathCandidate {
+            path: path.to_string(),
+            role: FileRole::Source,
+            score,
+            card_id: "experience:test".to_string(),
         }
     }
 

@@ -158,3 +158,14 @@ stores upper/lower bounds because it does not persist raw candidate paths or
 source text. Treat `memoryNeedsCorroboration = true` as evidence that future
 ranking should demote memory candidates without target, graph, semantic, or
 other correlated support.
+
+Current memory precision reports also distinguish old lexical-baseline-relative
+noise from unsupported memory noise. `memoryUniqueNonTargetCount` still counts
+memory-selected files that are retrieval non-targets and absent from the lexical
+baseline. `memoryUniqueNonTargetWithoutCurrentSupportCount` is stricter: it only
+counts those memory non-targets when no other current selected signal supports
+the path. This prevents source-free R&D from misclassifying memory attached to
+current lexical, semantic, graph, symbol, or history evidence as pure memory
+noise. Ranking also avoids attaching memory to weak lexical-expansion-only paths
+and only allows an uncorroborated memory-only rescue when no target files were
+selected at all.

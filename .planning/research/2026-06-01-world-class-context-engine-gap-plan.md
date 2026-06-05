@@ -185,6 +185,18 @@ without graph-or-semantic support. This narrows the next memory R&D from
 "measure ablations" to "test a stricter memory-candidate corroboration policy
 and scale the pair count."
 
+Status: Phase 223 tests that stricter memory-corroboration policy and improves
+the metric. Ranking no longer attaches memory to lexical-expansion-only paths
+and only allows uncorroborated memory-only rescue when no target file was
+selected otherwise. Historical reports now separate old
+`memoryUniqueNonTargetCount` from
+`memoryUniqueNonTargetWithoutCurrentSupportCount`, so memory attached to current
+lexical, semantic, graph, symbol, or history evidence is not mislabeled as pure
+memory noise. The four-repo rerun keeps one lexical-baseline-relative memory
+non-target but reports zero unsupported memory non-targets and zero unsupported
+memory-unique target hits. The next higher bar is not another precision patch;
+it is larger repeated-history pair counts and real-agent outcome lift.
+
 ### 3. Semantic/Embedding Signal Is Wired But Not Driving Lift
 
 The current product lift comes from hybrid ranking, graph/test/history/context
