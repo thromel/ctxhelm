@@ -409,9 +409,10 @@ The current R&D state is therefore:
   `.ctxhelm/e2e/phase250-claude-workflow-refresh.json`, but a fresh paired
   Claude outcome suite still depends on client availability.
 - Experience memory is source-free, bounded, and has local six-repo
-  measurement, single-repo Codex consumption evidence, and three-repo Codex
-  outcome evidence. Phase 253 closes the earlier cross-repo target-consumption
-  gap while leaving memory read-efficiency work open.
+  measurement, single-repo Codex consumption evidence, three-repo Codex
+  target-consumption evidence, and three-repo Codex read-efficiency evidence.
+  Phase 255 closes the current measured memory-efficiency gap for the same
+  three-repo slice.
 - GraphRAG is implemented and measured through edge profiles, edge ablations,
   and bounded edge-family budget allocation. Future graph work should target
   ranking pressure, not unbounded edge expansion.
@@ -502,3 +503,54 @@ Codex to consume the target file across multiple repositories. It is not an
 efficiency win: `memoryIrrelevantReadImprovedPairCount = 0`. The remaining
 memory R&D target is therefore narrower and more honest: preserve target
 consumption as a regression guard while improving read efficiency.
+
+## June 6 Phase 254 Update
+
+Phase 254 refreshes the Claude Code R&D breadth-suite status with the current
+local client instead of relying on older evidence. The source-free artifact
+`.ctxhelm/e2e/phase254-agent-run-claude-rd-breadth-suite.json` uses Claude Code
+`2.1.163` and the same four-task R&D breadth suite hash as Phase 252.
+
+The result remains `degraded`: all four client preflights report rate limiting,
+there are zero comparison-eligible tasks, and zero comparable ctxhelm lanes.
+The report has no evidence misses, under-read targets, malformed required calls,
+or privacy regressions. This is current client-availability evidence, not
+retrieval-quality evidence. The correct action remains
+`retry_real_client_when_available`.
+
+## June 6 Phase 255 Update
+
+Phase 255 fixes the memory read-efficiency gap exposed by Phase 253. The
+`ctxhelm-memory` lane in `scripts/e2e-agent-run-codex.sh` now uses a tighter
+memory-efficiency prompt: at most four post-ctxhelm shell commands, at most two
+memory-backed current-file reads first, and an explicit stop rule when those
+reads answer the task. Baseline, plan, brief, and standard lane prompts are
+unchanged.
+
+The source-free artifact
+`.ctxhelm/e2e/phase255-codex-memory-efficiency-suite.json` reruns the same
+VeriSchema, ReAgent, and RefactoringMiner memory outcome suite as Phase 253. It
+reports:
+
+- `status = passed`
+- `comparisonEligibleCount = 3`
+- `improvedPairCount = 3`
+- `memoryTargetReadImprovedPairCount = 3`
+- `memoryTargetReadMatchedOrImprovedPairCount = 3`
+- `memoryIrrelevantReadImprovedPairCount = 3`
+- `ctxhelmEvidenceMissPairCount = 0`
+- `ctxhelmUnderReadPairCount = 0`
+- `clientFailurePairCount = 0`
+- `rateLimitPairCount = 0`
+- `forbiddenCommandPairCount = 0`
+- `missingRequiredCtxhelmCallPairCount = 0`
+- `invalidRequiredCtxhelmCallPairCount = 0`
+
+Compared with Phase 253, memory-lane target-read coverage stays at `1.0` for
+all three repos, while memory reads drop from `6 -> 2`, `6 -> 4`, and `5 -> 2`,
+and memory irrelevant reads drop from `5 -> 1`, `5 -> 3`, and `4 -> 1`.
+
+Memory R&D is now in a much stronger state: target consumption and read
+efficiency both improve on the measured real-client slice. Future memory work
+should preserve Phase 255 as a regression guard and broaden only to hunt for
+new counterexamples.

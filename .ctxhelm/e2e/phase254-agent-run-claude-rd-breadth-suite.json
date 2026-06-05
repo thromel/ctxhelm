@@ -1,0 +1,2532 @@
+{
+  "aggregate": {
+    "clientFailuresObserved": true,
+    "clientPreflightCount": 4,
+    "clientPreflightFailureCount": 4,
+    "clientPreflightRateLimitCount": 4,
+    "comparableCtxhelmLaneCount": 0,
+    "comparisonEligibleCount": 0,
+    "ctxhelmEvidenceMissesObserved": false,
+    "ctxhelmEvidenceOnlyTargetsObserved": false,
+    "ctxhelmToolCallsObserved": false,
+    "ctxhelmUnderReadTargetsObserved": false,
+    "forbiddenToolCallsObserved": false,
+    "invalidRequiredCtxhelmCallsObserved": false,
+    "irrelevantReadDeltaSum": 0,
+    "laneSummaries": [
+      {
+        "averageTargetCoverage": 0.0,
+        "averageTargetReadCoverage": 0.0,
+        "clientFailureCount": 4,
+        "ctxhelmEvidenceFileCount": 0,
+        "ctxhelmEvidenceMissedTargetCount": 13,
+        "ctxhelmEvidenceOnlyTargetCount": 0,
+        "ctxhelmEvidenceTargetHitCount": 0,
+        "ctxhelmToolCallCount": 0,
+        "evaluationEligibleCount": 0,
+        "forbiddenToolCallCount": 0,
+        "invalidRequiredCtxhelmCallCount": 0,
+        "irrelevantReadCount": 0,
+        "lane": "baseline",
+        "missedTargetCount": 13,
+        "missedTargetRoleCounts": {
+          "docs": 1,
+          "source": 12
+        },
+        "missingRequiredCtxhelmCallCount": 0,
+        "observedRequiredCtxhelmCallCount": 0,
+        "passedCount": 0,
+        "rateLimitCount": 4,
+        "readFileCount": 0,
+        "readRoleCounts": {},
+        "requiredCtxhelmCallCount": 0,
+        "targetDiscoveredOnlyCount": 0,
+        "targetReadCount": 0,
+        "taskCount": 4,
+        "toolCallCount": 0
+      },
+      {
+        "averageTargetCoverage": 0.0,
+        "averageTargetReadCoverage": 0.0,
+        "clientFailureCount": 4,
+        "ctxhelmEvidenceFileCount": 63,
+        "ctxhelmEvidenceMissedTargetCount": 0,
+        "ctxhelmEvidenceOnlyTargetCount": 0,
+        "ctxhelmEvidenceTargetHitCount": 13,
+        "ctxhelmToolCallCount": 0,
+        "evaluationEligibleCount": 0,
+        "forbiddenToolCallCount": 0,
+        "invalidRequiredCtxhelmCallCount": 0,
+        "irrelevantReadCount": 0,
+        "lane": "ctxhelm-brief",
+        "missedTargetCount": 13,
+        "missedTargetRoleCounts": {
+          "docs": 1,
+          "source": 12
+        },
+        "missingRequiredCtxhelmCallCount": 0,
+        "observedRequiredCtxhelmCallCount": 0,
+        "passedCount": 0,
+        "rateLimitCount": 4,
+        "readFileCount": 0,
+        "readRoleCounts": {},
+        "requiredCtxhelmCallCount": 8,
+        "targetDiscoveredOnlyCount": 0,
+        "targetReadCount": 0,
+        "taskCount": 4,
+        "toolCallCount": 0
+      },
+      {
+        "averageTargetCoverage": 0.0,
+        "averageTargetReadCoverage": 0.0,
+        "clientFailureCount": 4,
+        "ctxhelmEvidenceFileCount": 63,
+        "ctxhelmEvidenceMissedTargetCount": 0,
+        "ctxhelmEvidenceOnlyTargetCount": 0,
+        "ctxhelmEvidenceTargetHitCount": 13,
+        "ctxhelmToolCallCount": 0,
+        "evaluationEligibleCount": 0,
+        "forbiddenToolCallCount": 0,
+        "invalidRequiredCtxhelmCallCount": 0,
+        "irrelevantReadCount": 0,
+        "lane": "ctxhelm-memory",
+        "missedTargetCount": 13,
+        "missedTargetRoleCounts": {
+          "docs": 1,
+          "source": 12
+        },
+        "missingRequiredCtxhelmCallCount": 0,
+        "observedRequiredCtxhelmCallCount": 0,
+        "passedCount": 0,
+        "rateLimitCount": 4,
+        "readFileCount": 0,
+        "readRoleCounts": {},
+        "requiredCtxhelmCallCount": 8,
+        "targetDiscoveredOnlyCount": 0,
+        "targetReadCount": 0,
+        "taskCount": 4,
+        "toolCallCount": 0
+      },
+      {
+        "averageTargetCoverage": 0.0,
+        "averageTargetReadCoverage": 0.0,
+        "clientFailureCount": 4,
+        "ctxhelmEvidenceFileCount": 86,
+        "ctxhelmEvidenceMissedTargetCount": 0,
+        "ctxhelmEvidenceOnlyTargetCount": 0,
+        "ctxhelmEvidenceTargetHitCount": 13,
+        "ctxhelmToolCallCount": 0,
+        "evaluationEligibleCount": 0,
+        "forbiddenToolCallCount": 0,
+        "invalidRequiredCtxhelmCallCount": 0,
+        "irrelevantReadCount": 0,
+        "lane": "ctxhelm-plan",
+        "missedTargetCount": 13,
+        "missedTargetRoleCounts": {
+          "docs": 1,
+          "source": 12
+        },
+        "missingRequiredCtxhelmCallCount": 0,
+        "observedRequiredCtxhelmCallCount": 0,
+        "passedCount": 0,
+        "rateLimitCount": 4,
+        "readFileCount": 0,
+        "readRoleCounts": {},
+        "requiredCtxhelmCallCount": 4,
+        "targetDiscoveredOnlyCount": 0,
+        "targetReadCount": 0,
+        "taskCount": 4,
+        "toolCallCount": 0
+      },
+      {
+        "averageTargetCoverage": 0.0,
+        "averageTargetReadCoverage": 0.0,
+        "clientFailureCount": 4,
+        "ctxhelmEvidenceFileCount": 63,
+        "ctxhelmEvidenceMissedTargetCount": 0,
+        "ctxhelmEvidenceOnlyTargetCount": 0,
+        "ctxhelmEvidenceTargetHitCount": 13,
+        "ctxhelmToolCallCount": 0,
+        "evaluationEligibleCount": 0,
+        "forbiddenToolCallCount": 0,
+        "invalidRequiredCtxhelmCallCount": 0,
+        "irrelevantReadCount": 0,
+        "lane": "ctxhelm-standard",
+        "missedTargetCount": 13,
+        "missedTargetRoleCounts": {
+          "docs": 1,
+          "source": 12
+        },
+        "missingRequiredCtxhelmCallCount": 0,
+        "observedRequiredCtxhelmCallCount": 0,
+        "passedCount": 0,
+        "rateLimitCount": 4,
+        "readFileCount": 0,
+        "readRoleCounts": {},
+        "requiredCtxhelmCallCount": 8,
+        "targetDiscoveredOnlyCount": 0,
+        "targetReadCount": 0,
+        "taskCount": 4,
+        "toolCallCount": 0
+      }
+    ],
+    "missingRequiredCtxhelmCallsObserved": false,
+    "outcomeClaim": "insufficient_comparable_lanes",
+    "rateLimitsObserved": true,
+    "recommendedResearchActions": [
+      {
+        "action": "retry_real_client_when_available",
+        "priority": 1,
+        "reason": "Client availability prevented comparable outcome proof."
+      }
+    ],
+    "targetCoverageDeltaAverage": 0.0,
+    "targetReadCoverageDeltaAverage": 0.0,
+    "taskCount": 4
+  },
+  "client": {
+    "name": "claude",
+    "version": "2.1.163 (Claude Code)"
+  },
+  "ctxhelmVersion": "ctxhelm 1.1.12",
+  "privacyStatus": {
+    "localOnly": true,
+    "rawMcpTrafficStored": false,
+    "rawPromptStored": false,
+    "rawTranscriptStored": false,
+    "remoteEmbeddingsUsed": false,
+    "remoteRerankingUsed": false,
+    "sourceTextLogged": false
+  },
+  "repo": {
+    "label": "ctxhelm",
+    "pathSha256": "823da75306f1c50f536e28905ec7405c88ec43b87fbf3f2afb37d7bf17d143a2"
+  },
+  "schemaVersion": "ctxhelm-agent-run-eval-v1",
+  "status": "degraded",
+  "suite": {
+    "rawTasksStored": false,
+    "suiteSha256": "d04f86b3b8fb792a6d8dad7b493f728b1b78901a63a473dd004f2247b2b54afe",
+    "taskCount": 4
+  },
+  "tasks": [
+    {
+      "clientPreflight": {
+        "clientApiErrorStatus": null,
+        "clientExitStatus": 0,
+        "clientFailureKind": "rate_limited",
+        "enabled": true,
+        "evidenceHashes": {
+          "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "streamJsonSha256": "796df822d7ea6faadc610b299a78ea47f4230ec9f9a8aff9b4b8e589fca0aa65"
+        },
+        "rateLimitObserved": true,
+        "rawPromptStored": false,
+        "rawTranscriptStored": false,
+        "sourceTextLogged": false,
+        "status": "failed"
+      },
+      "comparison": {
+        "baselineEligible": false,
+        "baselineLane": "baseline",
+        "bestLane": "baseline",
+        "clientFailuresObserved": true,
+        "comparableCtxhelmLaneCount": 0,
+        "comparisonEligible": false,
+        "ctxhelmEvidenceMisses": {},
+        "ctxhelmEvidenceMissesObserved": false,
+        "ctxhelmEvidenceOnlyTargets": {},
+        "ctxhelmEvidenceOnlyTargetsObserved": false,
+        "ctxhelmToolCallsObserved": false,
+        "ctxhelmUnderReadTargetsObserved": false,
+        "forbiddenToolCallsObserved": false,
+        "invalidRequiredCtxhelmCalls": {},
+        "invalidRequiredCtxhelmCallsObserved": false,
+        "irrelevantReadDelta": 0,
+        "missingRequiredCtxhelmCalls": {},
+        "missingRequiredCtxhelmCallsObserved": false,
+        "outcomeClaim": "insufficient_comparable_lanes",
+        "rateLimitsObserved": true,
+        "recommendedResearchActions": [
+          {
+            "action": "retry_real_client_when_available",
+            "priority": 1,
+            "reason": "Client availability prevented comparable outcome proof."
+          }
+        ],
+        "targetCoverageDelta": 0.0,
+        "targetReadCoverageDelta": 0.0
+      },
+      "lanes": [
+        {
+          "clientApiErrorStatus": null,
+          "clientExitStatus": 0,
+          "clientFailureKind": "rate_limited",
+          "ctxhelmCallCompliance": "not_required",
+          "ctxhelmEvidenceFiles": [],
+          "ctxhelmEvidenceMissedTargets": [
+            "crates/ctxhelm-compiler/src/planning.rs",
+            "crates/ctxhelm-core/src/init.rs",
+            "crates/ctxhelm-mcp/src/tools.rs"
+          ],
+          "ctxhelmEvidenceOnlyTargets": [],
+          "ctxhelmEvidenceTargetHits": [],
+          "ctxhelmToolCalls": [],
+          "discoveredFiles": [],
+          "discoveredOnlyTargets": [],
+          "evaluationEligible": false,
+          "evaluationStatus": "failed",
+          "evidenceHashes": {
+            "ctxhelmRequestLogSha256": null,
+            "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "streamJsonSha256": "fa3b6daae45323cc0aaedcee294d1ccd0f5b47c0e5ea7efa86f918385fd10422"
+          },
+          "forbiddenToolCalls": [],
+          "invalidRequiredCtxhelmCalls": [],
+          "irrelevantReads": [],
+          "lane": "baseline",
+          "metrics": {
+            "ctxhelmEvidenceFileCount": 0,
+            "ctxhelmEvidenceMissedTargetCount": 3,
+            "ctxhelmEvidenceOnlyTargetCount": 0,
+            "ctxhelmEvidenceTargetHitCount": 0,
+            "ctxhelmToolCallCount": 0,
+            "discoveredFileCount": 0,
+            "forbiddenToolCallCount": 0,
+            "invalidRequiredCtxhelmCallCount": 0,
+            "irrelevantReadCount": 0,
+            "missedTargetCount": 3,
+            "missingRequiredCtxhelmCallCount": 0,
+            "observedRequiredCtxhelmCallCount": 0,
+            "readFileCount": 0,
+            "requiredCtxhelmCallCount": 0,
+            "targetCount": 3,
+            "targetCoverage": 0.0,
+            "targetDiscoveredOnlyCount": 0,
+            "targetHitCount": 0,
+            "targetReadCount": 0,
+            "targetReadCoverage": 0.0,
+            "toolCallCount": 0
+          },
+          "missedTargetRoleCounts": {
+            "source": 3
+          },
+          "missedTargets": [
+            "crates/ctxhelm-compiler/src/planning.rs",
+            "crates/ctxhelm-core/src/init.rs",
+            "crates/ctxhelm-mcp/src/tools.rs"
+          ],
+          "missingRequiredCtxhelmCalls": [],
+          "mode": "baseline",
+          "observedRequiredCtxhelmCalls": [],
+          "rateLimitObserved": true,
+          "rawMcpTrafficStored": false,
+          "rawPromptStored": false,
+          "rawTranscriptStored": false,
+          "readFiles": [],
+          "readRoleCounts": {},
+          "requiredCtxhelmCallSpecs": [],
+          "requiredCtxhelmCalls": [],
+          "sourceTextLogged": false,
+          "status": "failed",
+          "targetHits": [],
+          "targetReads": [],
+          "toolCalls": []
+        },
+        {
+          "clientApiErrorStatus": null,
+          "clientExitStatus": 0,
+          "clientFailureKind": "rate_limited",
+          "ctxhelmCallCompliance": "client_unavailable",
+          "ctxhelmEvidenceFiles": [
+            "crates/ctxhelm-mcp/src/tools.rs",
+            "crates/ctxhelm-core/src/init.rs",
+            "crates/ctxhelm-compiler/src/packs.rs",
+            "crates/ctxhelm-compiler/src/planning.rs",
+            "scripts/e2e-agent-run-codex.sh",
+            "crates/ctxhelm-index/src/git.rs",
+            "crates/ctxhelm-compiler/src/eval.rs",
+            "crates/ctxhelm-core/src/contracts.rs",
+            ".planning/ROADMAP.md",
+            ".planning/MILESTONES.md",
+            "crates/ctxhelm/tests/release_packaging.rs",
+            "crates/ctxhelm/tests/cli_compat.rs",
+            "crates/ctxhelm/tests/common/mod.rs",
+            "crates/ctxhelm-compiler/src/agent_preview.rs",
+            "crates/ctxhelm-compiler/src/lib.rs",
+            "crates/ctxhelm-core/src/lib.rs",
+            "crates/ctxhelm-index/src/inventory.rs",
+            "crates/ctxhelm-index/src/lib.rs",
+            ".planning/e2e/2026-06-06-phase252-semantic-gate-classification.md",
+            ".planning/e2e/2026-06-06-phase253-codex-memory-outcome-diversity.md",
+            "scripts/e2e-codex-memory-outcome-suite.sh",
+            ".planning/STATE.md",
+            ".planning/e2e/2026-06-06-rd-completion-audit.md",
+            ".planning/research/2026-06-01-world-class-context-engine-gap-plan.md",
+            "docs/benchmarking.md",
+            "docs/memory.md",
+            "docs/semantic.md",
+            "scripts/e2e-agent-run.sh",
+            "crates/ctxhelm/src/main.rs",
+            "docs/release.md"
+          ],
+          "ctxhelmEvidenceMissedTargets": [],
+          "ctxhelmEvidenceOnlyTargets": [],
+          "ctxhelmEvidenceTargetHits": [
+            "crates/ctxhelm-compiler/src/planning.rs",
+            "crates/ctxhelm-core/src/init.rs",
+            "crates/ctxhelm-mcp/src/tools.rs"
+          ],
+          "ctxhelmToolCalls": [],
+          "discoveredFiles": [],
+          "discoveredOnlyTargets": [],
+          "evaluationEligible": false,
+          "evaluationStatus": "failed",
+          "evidenceHashes": {
+            "ctxhelmRequestLogSha256": null,
+            "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "streamJsonSha256": "fa3b6daae45323cc0aaedcee294d1ccd0f5b47c0e5ea7efa86f918385fd10422"
+          },
+          "forbiddenToolCalls": [],
+          "invalidRequiredCtxhelmCalls": [],
+          "irrelevantReads": [],
+          "lane": "ctxhelm-plan",
+          "metrics": {
+            "ctxhelmEvidenceFileCount": 30,
+            "ctxhelmEvidenceMissedTargetCount": 0,
+            "ctxhelmEvidenceOnlyTargetCount": 0,
+            "ctxhelmEvidenceTargetHitCount": 3,
+            "ctxhelmToolCallCount": 0,
+            "discoveredFileCount": 0,
+            "forbiddenToolCallCount": 0,
+            "invalidRequiredCtxhelmCallCount": 0,
+            "irrelevantReadCount": 0,
+            "missedTargetCount": 3,
+            "missingRequiredCtxhelmCallCount": 0,
+            "observedRequiredCtxhelmCallCount": 0,
+            "readFileCount": 0,
+            "requiredCtxhelmCallCount": 1,
+            "targetCount": 3,
+            "targetCoverage": 0.0,
+            "targetDiscoveredOnlyCount": 0,
+            "targetHitCount": 0,
+            "targetReadCount": 0,
+            "targetReadCoverage": 0.0,
+            "toolCallCount": 0
+          },
+          "missedTargetRoleCounts": {
+            "source": 3
+          },
+          "missedTargets": [
+            "crates/ctxhelm-compiler/src/planning.rs",
+            "crates/ctxhelm-core/src/init.rs",
+            "crates/ctxhelm-mcp/src/tools.rs"
+          ],
+          "missingRequiredCtxhelmCalls": [],
+          "mode": "plan",
+          "observedRequiredCtxhelmCalls": [],
+          "rateLimitObserved": true,
+          "rawMcpTrafficStored": false,
+          "rawPromptStored": false,
+          "rawTranscriptStored": false,
+          "readFiles": [],
+          "readRoleCounts": {},
+          "requiredCtxhelmCallSpecs": [
+            {
+              "name": "prepare_task",
+              "requiresRepo": true,
+              "requiresTask": true
+            }
+          ],
+          "requiredCtxhelmCalls": [
+            "prepare_task"
+          ],
+          "sourceTextLogged": false,
+          "status": "failed",
+          "targetHits": [],
+          "targetReads": [],
+          "toolCalls": []
+        },
+        {
+          "clientApiErrorStatus": null,
+          "clientExitStatus": 0,
+          "clientFailureKind": "rate_limited",
+          "ctxhelmCallCompliance": "client_unavailable",
+          "ctxhelmEvidenceFiles": [
+            "crates/ctxhelm-mcp/src/tools.rs",
+            "crates/ctxhelm-core/src/init.rs",
+            "crates/ctxhelm-compiler/src/packs.rs",
+            "crates/ctxhelm-compiler/src/planning.rs",
+            "scripts/e2e-agent-run-codex.sh",
+            "crates/ctxhelm-index/src/git.rs",
+            "crates/ctxhelm-compiler/src/eval.rs",
+            "crates/ctxhelm-core/src/contracts.rs",
+            ".planning/ROADMAP.md",
+            ".planning/MILESTONES.md",
+            "crates/ctxhelm/tests/release_packaging.rs",
+            "crates/ctxhelm/tests/cli_compat.rs",
+            "crates/ctxhelm/tests/common/mod.rs",
+            "crates/ctxhelm-compiler/src/lib.rs",
+            "crates/ctxhelm-core/src/lib.rs",
+            "crates/ctxhelm-index/src/lib.rs",
+            "crates/ctxhelm-index/src/inventory.rs",
+            "crates/ctxhelm-compiler/src/agent_preview.rs"
+          ],
+          "ctxhelmEvidenceMissedTargets": [],
+          "ctxhelmEvidenceOnlyTargets": [],
+          "ctxhelmEvidenceTargetHits": [
+            "crates/ctxhelm-compiler/src/planning.rs",
+            "crates/ctxhelm-core/src/init.rs",
+            "crates/ctxhelm-mcp/src/tools.rs"
+          ],
+          "ctxhelmToolCalls": [],
+          "discoveredFiles": [],
+          "discoveredOnlyTargets": [],
+          "evaluationEligible": false,
+          "evaluationStatus": "failed",
+          "evidenceHashes": {
+            "ctxhelmRequestLogSha256": null,
+            "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "streamJsonSha256": "fa3b6daae45323cc0aaedcee294d1ccd0f5b47c0e5ea7efa86f918385fd10422"
+          },
+          "forbiddenToolCalls": [],
+          "invalidRequiredCtxhelmCalls": [],
+          "irrelevantReads": [],
+          "lane": "ctxhelm-brief",
+          "metrics": {
+            "ctxhelmEvidenceFileCount": 18,
+            "ctxhelmEvidenceMissedTargetCount": 0,
+            "ctxhelmEvidenceOnlyTargetCount": 0,
+            "ctxhelmEvidenceTargetHitCount": 3,
+            "ctxhelmToolCallCount": 0,
+            "discoveredFileCount": 0,
+            "forbiddenToolCallCount": 0,
+            "invalidRequiredCtxhelmCallCount": 0,
+            "irrelevantReadCount": 0,
+            "missedTargetCount": 3,
+            "missingRequiredCtxhelmCallCount": 0,
+            "observedRequiredCtxhelmCallCount": 0,
+            "readFileCount": 0,
+            "requiredCtxhelmCallCount": 2,
+            "targetCount": 3,
+            "targetCoverage": 0.0,
+            "targetDiscoveredOnlyCount": 0,
+            "targetHitCount": 0,
+            "targetReadCount": 0,
+            "targetReadCoverage": 0.0,
+            "toolCallCount": 0
+          },
+          "missedTargetRoleCounts": {
+            "source": 3
+          },
+          "missedTargets": [
+            "crates/ctxhelm-compiler/src/planning.rs",
+            "crates/ctxhelm-core/src/init.rs",
+            "crates/ctxhelm-mcp/src/tools.rs"
+          ],
+          "missingRequiredCtxhelmCalls": [],
+          "mode": "brief",
+          "observedRequiredCtxhelmCalls": [],
+          "rateLimitObserved": true,
+          "rawMcpTrafficStored": false,
+          "rawPromptStored": false,
+          "rawTranscriptStored": false,
+          "readFiles": [],
+          "readRoleCounts": {},
+          "requiredCtxhelmCallSpecs": [
+            {
+              "name": "prepare_task",
+              "requiresRepo": true,
+              "requiresTask": true
+            },
+            {
+              "budget": "brief",
+              "format": "json",
+              "name": "get_pack",
+              "recordTrace": false,
+              "requiresRepo": true,
+              "requiresTask": true
+            }
+          ],
+          "requiredCtxhelmCalls": [
+            "prepare_task",
+            "get_pack"
+          ],
+          "sourceTextLogged": false,
+          "status": "failed",
+          "targetHits": [],
+          "targetReads": [],
+          "toolCalls": []
+        },
+        {
+          "clientApiErrorStatus": null,
+          "clientExitStatus": 0,
+          "clientFailureKind": "rate_limited",
+          "ctxhelmCallCompliance": "client_unavailable",
+          "ctxhelmEvidenceFiles": [
+            "crates/ctxhelm-mcp/src/tools.rs",
+            "crates/ctxhelm-core/src/init.rs",
+            "crates/ctxhelm-compiler/src/packs.rs",
+            "crates/ctxhelm-compiler/src/planning.rs",
+            "scripts/e2e-agent-run-codex.sh",
+            "crates/ctxhelm-index/src/git.rs",
+            "crates/ctxhelm-compiler/src/eval.rs",
+            "crates/ctxhelm-core/src/contracts.rs",
+            ".planning/ROADMAP.md",
+            ".planning/MILESTONES.md",
+            "crates/ctxhelm/tests/release_packaging.rs",
+            "crates/ctxhelm/tests/cli_compat.rs",
+            "crates/ctxhelm/tests/common/mod.rs",
+            "crates/ctxhelm-compiler/src/lib.rs",
+            "crates/ctxhelm-core/src/lib.rs",
+            "crates/ctxhelm-index/src/lib.rs",
+            "crates/ctxhelm-index/src/inventory.rs",
+            "crates/ctxhelm-compiler/src/agent_preview.rs"
+          ],
+          "ctxhelmEvidenceMissedTargets": [],
+          "ctxhelmEvidenceOnlyTargets": [],
+          "ctxhelmEvidenceTargetHits": [
+            "crates/ctxhelm-compiler/src/planning.rs",
+            "crates/ctxhelm-core/src/init.rs",
+            "crates/ctxhelm-mcp/src/tools.rs"
+          ],
+          "ctxhelmToolCalls": [],
+          "discoveredFiles": [],
+          "discoveredOnlyTargets": [],
+          "evaluationEligible": false,
+          "evaluationStatus": "failed",
+          "evidenceHashes": {
+            "ctxhelmRequestLogSha256": null,
+            "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "streamJsonSha256": "fa3b6daae45323cc0aaedcee294d1ccd0f5b47c0e5ea7efa86f918385fd10422"
+          },
+          "forbiddenToolCalls": [],
+          "invalidRequiredCtxhelmCalls": [],
+          "irrelevantReads": [],
+          "lane": "ctxhelm-standard",
+          "metrics": {
+            "ctxhelmEvidenceFileCount": 18,
+            "ctxhelmEvidenceMissedTargetCount": 0,
+            "ctxhelmEvidenceOnlyTargetCount": 0,
+            "ctxhelmEvidenceTargetHitCount": 3,
+            "ctxhelmToolCallCount": 0,
+            "discoveredFileCount": 0,
+            "forbiddenToolCallCount": 0,
+            "invalidRequiredCtxhelmCallCount": 0,
+            "irrelevantReadCount": 0,
+            "missedTargetCount": 3,
+            "missingRequiredCtxhelmCallCount": 0,
+            "observedRequiredCtxhelmCallCount": 0,
+            "readFileCount": 0,
+            "requiredCtxhelmCallCount": 2,
+            "targetCount": 3,
+            "targetCoverage": 0.0,
+            "targetDiscoveredOnlyCount": 0,
+            "targetHitCount": 0,
+            "targetReadCount": 0,
+            "targetReadCoverage": 0.0,
+            "toolCallCount": 0
+          },
+          "missedTargetRoleCounts": {
+            "source": 3
+          },
+          "missedTargets": [
+            "crates/ctxhelm-compiler/src/planning.rs",
+            "crates/ctxhelm-core/src/init.rs",
+            "crates/ctxhelm-mcp/src/tools.rs"
+          ],
+          "missingRequiredCtxhelmCalls": [],
+          "mode": "standard",
+          "observedRequiredCtxhelmCalls": [],
+          "rateLimitObserved": true,
+          "rawMcpTrafficStored": false,
+          "rawPromptStored": false,
+          "rawTranscriptStored": false,
+          "readFiles": [],
+          "readRoleCounts": {},
+          "requiredCtxhelmCallSpecs": [
+            {
+              "name": "prepare_task",
+              "requiresRepo": true,
+              "requiresTask": true
+            },
+            {
+              "budget": "standard",
+              "format": "json",
+              "name": "get_pack",
+              "recordTrace": false,
+              "requiresRepo": true,
+              "requiresTask": true
+            }
+          ],
+          "requiredCtxhelmCalls": [
+            "prepare_task",
+            "get_pack"
+          ],
+          "sourceTextLogged": false,
+          "status": "failed",
+          "targetHits": [],
+          "targetReads": [],
+          "toolCalls": []
+        },
+        {
+          "clientApiErrorStatus": null,
+          "clientExitStatus": 0,
+          "clientFailureKind": "rate_limited",
+          "ctxhelmCallCompliance": "client_unavailable",
+          "ctxhelmEvidenceFiles": [
+            "crates/ctxhelm-mcp/src/tools.rs",
+            "crates/ctxhelm-core/src/init.rs",
+            "crates/ctxhelm-compiler/src/packs.rs",
+            "crates/ctxhelm-compiler/src/planning.rs",
+            "scripts/e2e-agent-run-codex.sh",
+            "crates/ctxhelm-index/src/git.rs",
+            "crates/ctxhelm-compiler/src/eval.rs",
+            "crates/ctxhelm-core/src/contracts.rs",
+            ".planning/ROADMAP.md",
+            ".planning/MILESTONES.md",
+            "crates/ctxhelm/tests/release_packaging.rs",
+            "crates/ctxhelm/tests/cli_compat.rs",
+            "crates/ctxhelm/tests/common/mod.rs",
+            "crates/ctxhelm-compiler/src/lib.rs",
+            "crates/ctxhelm-core/src/lib.rs",
+            "crates/ctxhelm-index/src/lib.rs",
+            "crates/ctxhelm-index/src/inventory.rs",
+            "crates/ctxhelm-compiler/src/agent_preview.rs"
+          ],
+          "ctxhelmEvidenceMissedTargets": [],
+          "ctxhelmEvidenceOnlyTargets": [],
+          "ctxhelmEvidenceTargetHits": [
+            "crates/ctxhelm-compiler/src/planning.rs",
+            "crates/ctxhelm-core/src/init.rs",
+            "crates/ctxhelm-mcp/src/tools.rs"
+          ],
+          "ctxhelmToolCalls": [],
+          "discoveredFiles": [],
+          "discoveredOnlyTargets": [],
+          "evaluationEligible": false,
+          "evaluationStatus": "failed",
+          "evidenceHashes": {
+            "ctxhelmRequestLogSha256": null,
+            "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "streamJsonSha256": "fa3b6daae45323cc0aaedcee294d1ccd0f5b47c0e5ea7efa86f918385fd10422"
+          },
+          "forbiddenToolCalls": [],
+          "invalidRequiredCtxhelmCalls": [],
+          "irrelevantReads": [],
+          "lane": "ctxhelm-memory",
+          "metrics": {
+            "ctxhelmEvidenceFileCount": 18,
+            "ctxhelmEvidenceMissedTargetCount": 0,
+            "ctxhelmEvidenceOnlyTargetCount": 0,
+            "ctxhelmEvidenceTargetHitCount": 3,
+            "ctxhelmToolCallCount": 0,
+            "discoveredFileCount": 0,
+            "forbiddenToolCallCount": 0,
+            "invalidRequiredCtxhelmCallCount": 0,
+            "irrelevantReadCount": 0,
+            "missedTargetCount": 3,
+            "missingRequiredCtxhelmCallCount": 0,
+            "observedRequiredCtxhelmCallCount": 0,
+            "readFileCount": 0,
+            "requiredCtxhelmCallCount": 2,
+            "targetCount": 3,
+            "targetCoverage": 0.0,
+            "targetDiscoveredOnlyCount": 0,
+            "targetHitCount": 0,
+            "targetReadCount": 0,
+            "targetReadCoverage": 0.0,
+            "toolCallCount": 0
+          },
+          "missedTargetRoleCounts": {
+            "source": 3
+          },
+          "missedTargets": [
+            "crates/ctxhelm-compiler/src/planning.rs",
+            "crates/ctxhelm-core/src/init.rs",
+            "crates/ctxhelm-mcp/src/tools.rs"
+          ],
+          "missingRequiredCtxhelmCalls": [],
+          "mode": "memory",
+          "observedRequiredCtxhelmCalls": [],
+          "rateLimitObserved": true,
+          "rawMcpTrafficStored": false,
+          "rawPromptStored": false,
+          "rawTranscriptStored": false,
+          "readFiles": [],
+          "readRoleCounts": {},
+          "requiredCtxhelmCallSpecs": [
+            {
+              "name": "prepare_task",
+              "requiresRepo": true,
+              "requiresTask": true
+            },
+            {
+              "budget": "standard",
+              "format": "json",
+              "name": "get_pack",
+              "recordTrace": false,
+              "requiresRepo": true,
+              "requiresTask": true
+            }
+          ],
+          "requiredCtxhelmCalls": [
+            "prepare_task",
+            "get_pack"
+          ],
+          "sourceTextLogged": false,
+          "status": "failed",
+          "targetHits": [],
+          "targetReads": [],
+          "toolCalls": []
+        }
+      ],
+      "privacyStatus": {
+        "localOnly": true,
+        "rawMcpTrafficStored": false,
+        "rawPromptStored": false,
+        "rawTranscriptStored": false,
+        "remoteEmbeddingsUsed": false,
+        "remoteRerankingUsed": false,
+        "sourceTextLogged": false
+      },
+      "status": "skipped",
+      "targetFiles": [
+        "crates/ctxhelm-compiler/src/planning.rs",
+        "crates/ctxhelm-mcp/src/tools.rs",
+        "crates/ctxhelm-core/src/init.rs"
+      ],
+      "taskId": "memory-native-read",
+      "taskSha256": "216bb95101998f8a4ba36512d758935870caa13b68c572d0195f9716f999ee3a"
+    },
+    {
+      "clientPreflight": {
+        "clientApiErrorStatus": null,
+        "clientExitStatus": 0,
+        "clientFailureKind": "rate_limited",
+        "enabled": true,
+        "evidenceHashes": {
+          "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "streamJsonSha256": "b2f980b3bde7c022e7d24bc2e594cfc3c6b3941e1a913c82cde41ae42920820d"
+        },
+        "rateLimitObserved": true,
+        "rawPromptStored": false,
+        "rawTranscriptStored": false,
+        "sourceTextLogged": false,
+        "status": "failed"
+      },
+      "comparison": {
+        "baselineEligible": false,
+        "baselineLane": "baseline",
+        "bestLane": "baseline",
+        "clientFailuresObserved": true,
+        "comparableCtxhelmLaneCount": 0,
+        "comparisonEligible": false,
+        "ctxhelmEvidenceMisses": {},
+        "ctxhelmEvidenceMissesObserved": false,
+        "ctxhelmEvidenceOnlyTargets": {},
+        "ctxhelmEvidenceOnlyTargetsObserved": false,
+        "ctxhelmToolCallsObserved": false,
+        "ctxhelmUnderReadTargetsObserved": false,
+        "forbiddenToolCallsObserved": false,
+        "invalidRequiredCtxhelmCalls": {},
+        "invalidRequiredCtxhelmCallsObserved": false,
+        "irrelevantReadDelta": 0,
+        "missingRequiredCtxhelmCalls": {},
+        "missingRequiredCtxhelmCallsObserved": false,
+        "outcomeClaim": "insufficient_comparable_lanes",
+        "rateLimitsObserved": true,
+        "recommendedResearchActions": [
+          {
+            "action": "retry_real_client_when_available",
+            "priority": 1,
+            "reason": "Client availability prevented comparable outcome proof."
+          }
+        ],
+        "targetCoverageDelta": 0.0,
+        "targetReadCoverageDelta": 0.0
+      },
+      "lanes": [
+        {
+          "clientApiErrorStatus": null,
+          "clientExitStatus": 0,
+          "clientFailureKind": "rate_limited",
+          "ctxhelmCallCompliance": "not_required",
+          "ctxhelmEvidenceFiles": [],
+          "ctxhelmEvidenceMissedTargets": [
+            "crates/ctxhelm-compiler/src/eval.rs",
+            "crates/ctxhelm-index/src/semantic.rs",
+            "crates/ctxhelm/src/main.rs"
+          ],
+          "ctxhelmEvidenceOnlyTargets": [],
+          "ctxhelmEvidenceTargetHits": [],
+          "ctxhelmToolCalls": [],
+          "discoveredFiles": [],
+          "discoveredOnlyTargets": [],
+          "evaluationEligible": false,
+          "evaluationStatus": "failed",
+          "evidenceHashes": {
+            "ctxhelmRequestLogSha256": null,
+            "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "streamJsonSha256": "fa3b6daae45323cc0aaedcee294d1ccd0f5b47c0e5ea7efa86f918385fd10422"
+          },
+          "forbiddenToolCalls": [],
+          "invalidRequiredCtxhelmCalls": [],
+          "irrelevantReads": [],
+          "lane": "baseline",
+          "metrics": {
+            "ctxhelmEvidenceFileCount": 0,
+            "ctxhelmEvidenceMissedTargetCount": 3,
+            "ctxhelmEvidenceOnlyTargetCount": 0,
+            "ctxhelmEvidenceTargetHitCount": 0,
+            "ctxhelmToolCallCount": 0,
+            "discoveredFileCount": 0,
+            "forbiddenToolCallCount": 0,
+            "invalidRequiredCtxhelmCallCount": 0,
+            "irrelevantReadCount": 0,
+            "missedTargetCount": 3,
+            "missingRequiredCtxhelmCallCount": 0,
+            "observedRequiredCtxhelmCallCount": 0,
+            "readFileCount": 0,
+            "requiredCtxhelmCallCount": 0,
+            "targetCount": 3,
+            "targetCoverage": 0.0,
+            "targetDiscoveredOnlyCount": 0,
+            "targetHitCount": 0,
+            "targetReadCount": 0,
+            "targetReadCoverage": 0.0,
+            "toolCallCount": 0
+          },
+          "missedTargetRoleCounts": {
+            "source": 3
+          },
+          "missedTargets": [
+            "crates/ctxhelm-compiler/src/eval.rs",
+            "crates/ctxhelm-index/src/semantic.rs",
+            "crates/ctxhelm/src/main.rs"
+          ],
+          "missingRequiredCtxhelmCalls": [],
+          "mode": "baseline",
+          "observedRequiredCtxhelmCalls": [],
+          "rateLimitObserved": true,
+          "rawMcpTrafficStored": false,
+          "rawPromptStored": false,
+          "rawTranscriptStored": false,
+          "readFiles": [],
+          "readRoleCounts": {},
+          "requiredCtxhelmCallSpecs": [],
+          "requiredCtxhelmCalls": [],
+          "sourceTextLogged": false,
+          "status": "failed",
+          "targetHits": [],
+          "targetReads": [],
+          "toolCalls": []
+        },
+        {
+          "clientApiErrorStatus": null,
+          "clientExitStatus": 0,
+          "clientFailureKind": "rate_limited",
+          "ctxhelmCallCompliance": "client_unavailable",
+          "ctxhelmEvidenceFiles": [
+            "crates/ctxhelm/src/main.rs",
+            "crates/ctxhelm-compiler/src/eval.rs",
+            "crates/ctxhelm-index/src/semantic.rs",
+            "crates/ctxhelm-compiler/src/cards.rs",
+            "crates/ctxhelm-core/src/contracts.rs",
+            ".planning/ROADMAP.md",
+            ".planning/MILESTONES.md",
+            "docs/benchmarking.md",
+            ".planning/e2e/2026-06-02-phase161-semantic-gate-contribution-diagnostics.md",
+            "crates/ctxhelm-compiler/src/lib.rs",
+            "crates/ctxhelm/tests/release_packaging.rs",
+            "crates/ctxhelm/tests/cli_compat.rs",
+            "crates/ctxhelm/tests/common/mod.rs",
+            "crates/ctxhelm-core/src/lib.rs",
+            "crates/ctxhelm-index/src/lib.rs",
+            ".planning/STATE.md"
+          ],
+          "ctxhelmEvidenceMissedTargets": [],
+          "ctxhelmEvidenceOnlyTargets": [],
+          "ctxhelmEvidenceTargetHits": [
+            "crates/ctxhelm-compiler/src/eval.rs",
+            "crates/ctxhelm-index/src/semantic.rs",
+            "crates/ctxhelm/src/main.rs"
+          ],
+          "ctxhelmToolCalls": [],
+          "discoveredFiles": [],
+          "discoveredOnlyTargets": [],
+          "evaluationEligible": false,
+          "evaluationStatus": "failed",
+          "evidenceHashes": {
+            "ctxhelmRequestLogSha256": null,
+            "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "streamJsonSha256": "fa3b6daae45323cc0aaedcee294d1ccd0f5b47c0e5ea7efa86f918385fd10422"
+          },
+          "forbiddenToolCalls": [],
+          "invalidRequiredCtxhelmCalls": [],
+          "irrelevantReads": [],
+          "lane": "ctxhelm-plan",
+          "metrics": {
+            "ctxhelmEvidenceFileCount": 16,
+            "ctxhelmEvidenceMissedTargetCount": 0,
+            "ctxhelmEvidenceOnlyTargetCount": 0,
+            "ctxhelmEvidenceTargetHitCount": 3,
+            "ctxhelmToolCallCount": 0,
+            "discoveredFileCount": 0,
+            "forbiddenToolCallCount": 0,
+            "invalidRequiredCtxhelmCallCount": 0,
+            "irrelevantReadCount": 0,
+            "missedTargetCount": 3,
+            "missingRequiredCtxhelmCallCount": 0,
+            "observedRequiredCtxhelmCallCount": 0,
+            "readFileCount": 0,
+            "requiredCtxhelmCallCount": 1,
+            "targetCount": 3,
+            "targetCoverage": 0.0,
+            "targetDiscoveredOnlyCount": 0,
+            "targetHitCount": 0,
+            "targetReadCount": 0,
+            "targetReadCoverage": 0.0,
+            "toolCallCount": 0
+          },
+          "missedTargetRoleCounts": {
+            "source": 3
+          },
+          "missedTargets": [
+            "crates/ctxhelm-compiler/src/eval.rs",
+            "crates/ctxhelm-index/src/semantic.rs",
+            "crates/ctxhelm/src/main.rs"
+          ],
+          "missingRequiredCtxhelmCalls": [],
+          "mode": "plan",
+          "observedRequiredCtxhelmCalls": [],
+          "rateLimitObserved": true,
+          "rawMcpTrafficStored": false,
+          "rawPromptStored": false,
+          "rawTranscriptStored": false,
+          "readFiles": [],
+          "readRoleCounts": {},
+          "requiredCtxhelmCallSpecs": [
+            {
+              "name": "prepare_task",
+              "requiresRepo": true,
+              "requiresTask": true
+            }
+          ],
+          "requiredCtxhelmCalls": [
+            "prepare_task"
+          ],
+          "sourceTextLogged": false,
+          "status": "failed",
+          "targetHits": [],
+          "targetReads": [],
+          "toolCalls": []
+        },
+        {
+          "clientApiErrorStatus": null,
+          "clientExitStatus": 0,
+          "clientFailureKind": "rate_limited",
+          "ctxhelmCallCompliance": "client_unavailable",
+          "ctxhelmEvidenceFiles": [
+            "crates/ctxhelm/src/main.rs",
+            "crates/ctxhelm-compiler/src/eval.rs",
+            "crates/ctxhelm-index/src/semantic.rs",
+            "crates/ctxhelm-compiler/src/cards.rs",
+            "crates/ctxhelm-core/src/contracts.rs",
+            ".planning/ROADMAP.md",
+            ".planning/MILESTONES.md",
+            "docs/benchmarking.md",
+            ".planning/e2e/2026-06-02-phase161-semantic-gate-contribution-diagnostics.md",
+            "crates/ctxhelm-compiler/src/lib.rs",
+            "crates/ctxhelm/tests/release_packaging.rs",
+            "crates/ctxhelm/tests/cli_compat.rs",
+            "crates/ctxhelm/tests/common/mod.rs",
+            "crates/ctxhelm-core/src/lib.rs",
+            "crates/ctxhelm-index/src/lib.rs"
+          ],
+          "ctxhelmEvidenceMissedTargets": [],
+          "ctxhelmEvidenceOnlyTargets": [],
+          "ctxhelmEvidenceTargetHits": [
+            "crates/ctxhelm-compiler/src/eval.rs",
+            "crates/ctxhelm-index/src/semantic.rs",
+            "crates/ctxhelm/src/main.rs"
+          ],
+          "ctxhelmToolCalls": [],
+          "discoveredFiles": [],
+          "discoveredOnlyTargets": [],
+          "evaluationEligible": false,
+          "evaluationStatus": "failed",
+          "evidenceHashes": {
+            "ctxhelmRequestLogSha256": null,
+            "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "streamJsonSha256": "fa3b6daae45323cc0aaedcee294d1ccd0f5b47c0e5ea7efa86f918385fd10422"
+          },
+          "forbiddenToolCalls": [],
+          "invalidRequiredCtxhelmCalls": [],
+          "irrelevantReads": [],
+          "lane": "ctxhelm-brief",
+          "metrics": {
+            "ctxhelmEvidenceFileCount": 15,
+            "ctxhelmEvidenceMissedTargetCount": 0,
+            "ctxhelmEvidenceOnlyTargetCount": 0,
+            "ctxhelmEvidenceTargetHitCount": 3,
+            "ctxhelmToolCallCount": 0,
+            "discoveredFileCount": 0,
+            "forbiddenToolCallCount": 0,
+            "invalidRequiredCtxhelmCallCount": 0,
+            "irrelevantReadCount": 0,
+            "missedTargetCount": 3,
+            "missingRequiredCtxhelmCallCount": 0,
+            "observedRequiredCtxhelmCallCount": 0,
+            "readFileCount": 0,
+            "requiredCtxhelmCallCount": 2,
+            "targetCount": 3,
+            "targetCoverage": 0.0,
+            "targetDiscoveredOnlyCount": 0,
+            "targetHitCount": 0,
+            "targetReadCount": 0,
+            "targetReadCoverage": 0.0,
+            "toolCallCount": 0
+          },
+          "missedTargetRoleCounts": {
+            "source": 3
+          },
+          "missedTargets": [
+            "crates/ctxhelm-compiler/src/eval.rs",
+            "crates/ctxhelm-index/src/semantic.rs",
+            "crates/ctxhelm/src/main.rs"
+          ],
+          "missingRequiredCtxhelmCalls": [],
+          "mode": "brief",
+          "observedRequiredCtxhelmCalls": [],
+          "rateLimitObserved": true,
+          "rawMcpTrafficStored": false,
+          "rawPromptStored": false,
+          "rawTranscriptStored": false,
+          "readFiles": [],
+          "readRoleCounts": {},
+          "requiredCtxhelmCallSpecs": [
+            {
+              "name": "prepare_task",
+              "requiresRepo": true,
+              "requiresTask": true
+            },
+            {
+              "budget": "brief",
+              "format": "json",
+              "name": "get_pack",
+              "recordTrace": false,
+              "requiresRepo": true,
+              "requiresTask": true
+            }
+          ],
+          "requiredCtxhelmCalls": [
+            "prepare_task",
+            "get_pack"
+          ],
+          "sourceTextLogged": false,
+          "status": "failed",
+          "targetHits": [],
+          "targetReads": [],
+          "toolCalls": []
+        },
+        {
+          "clientApiErrorStatus": null,
+          "clientExitStatus": 0,
+          "clientFailureKind": "rate_limited",
+          "ctxhelmCallCompliance": "client_unavailable",
+          "ctxhelmEvidenceFiles": [
+            "crates/ctxhelm/src/main.rs",
+            "crates/ctxhelm-compiler/src/eval.rs",
+            "crates/ctxhelm-index/src/semantic.rs",
+            "crates/ctxhelm-compiler/src/cards.rs",
+            "crates/ctxhelm-core/src/contracts.rs",
+            ".planning/ROADMAP.md",
+            ".planning/MILESTONES.md",
+            "docs/benchmarking.md",
+            ".planning/e2e/2026-06-02-phase161-semantic-gate-contribution-diagnostics.md",
+            "crates/ctxhelm-compiler/src/lib.rs",
+            "crates/ctxhelm/tests/release_packaging.rs",
+            "crates/ctxhelm/tests/cli_compat.rs",
+            "crates/ctxhelm/tests/common/mod.rs",
+            "crates/ctxhelm-core/src/lib.rs",
+            "crates/ctxhelm-index/src/lib.rs"
+          ],
+          "ctxhelmEvidenceMissedTargets": [],
+          "ctxhelmEvidenceOnlyTargets": [],
+          "ctxhelmEvidenceTargetHits": [
+            "crates/ctxhelm-compiler/src/eval.rs",
+            "crates/ctxhelm-index/src/semantic.rs",
+            "crates/ctxhelm/src/main.rs"
+          ],
+          "ctxhelmToolCalls": [],
+          "discoveredFiles": [],
+          "discoveredOnlyTargets": [],
+          "evaluationEligible": false,
+          "evaluationStatus": "failed",
+          "evidenceHashes": {
+            "ctxhelmRequestLogSha256": null,
+            "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "streamJsonSha256": "fa3b6daae45323cc0aaedcee294d1ccd0f5b47c0e5ea7efa86f918385fd10422"
+          },
+          "forbiddenToolCalls": [],
+          "invalidRequiredCtxhelmCalls": [],
+          "irrelevantReads": [],
+          "lane": "ctxhelm-standard",
+          "metrics": {
+            "ctxhelmEvidenceFileCount": 15,
+            "ctxhelmEvidenceMissedTargetCount": 0,
+            "ctxhelmEvidenceOnlyTargetCount": 0,
+            "ctxhelmEvidenceTargetHitCount": 3,
+            "ctxhelmToolCallCount": 0,
+            "discoveredFileCount": 0,
+            "forbiddenToolCallCount": 0,
+            "invalidRequiredCtxhelmCallCount": 0,
+            "irrelevantReadCount": 0,
+            "missedTargetCount": 3,
+            "missingRequiredCtxhelmCallCount": 0,
+            "observedRequiredCtxhelmCallCount": 0,
+            "readFileCount": 0,
+            "requiredCtxhelmCallCount": 2,
+            "targetCount": 3,
+            "targetCoverage": 0.0,
+            "targetDiscoveredOnlyCount": 0,
+            "targetHitCount": 0,
+            "targetReadCount": 0,
+            "targetReadCoverage": 0.0,
+            "toolCallCount": 0
+          },
+          "missedTargetRoleCounts": {
+            "source": 3
+          },
+          "missedTargets": [
+            "crates/ctxhelm-compiler/src/eval.rs",
+            "crates/ctxhelm-index/src/semantic.rs",
+            "crates/ctxhelm/src/main.rs"
+          ],
+          "missingRequiredCtxhelmCalls": [],
+          "mode": "standard",
+          "observedRequiredCtxhelmCalls": [],
+          "rateLimitObserved": true,
+          "rawMcpTrafficStored": false,
+          "rawPromptStored": false,
+          "rawTranscriptStored": false,
+          "readFiles": [],
+          "readRoleCounts": {},
+          "requiredCtxhelmCallSpecs": [
+            {
+              "name": "prepare_task",
+              "requiresRepo": true,
+              "requiresTask": true
+            },
+            {
+              "budget": "standard",
+              "format": "json",
+              "name": "get_pack",
+              "recordTrace": false,
+              "requiresRepo": true,
+              "requiresTask": true
+            }
+          ],
+          "requiredCtxhelmCalls": [
+            "prepare_task",
+            "get_pack"
+          ],
+          "sourceTextLogged": false,
+          "status": "failed",
+          "targetHits": [],
+          "targetReads": [],
+          "toolCalls": []
+        },
+        {
+          "clientApiErrorStatus": null,
+          "clientExitStatus": 0,
+          "clientFailureKind": "rate_limited",
+          "ctxhelmCallCompliance": "client_unavailable",
+          "ctxhelmEvidenceFiles": [
+            "crates/ctxhelm/src/main.rs",
+            "crates/ctxhelm-compiler/src/eval.rs",
+            "crates/ctxhelm-index/src/semantic.rs",
+            "crates/ctxhelm-compiler/src/cards.rs",
+            "crates/ctxhelm-core/src/contracts.rs",
+            ".planning/ROADMAP.md",
+            ".planning/MILESTONES.md",
+            "docs/benchmarking.md",
+            ".planning/e2e/2026-06-02-phase161-semantic-gate-contribution-diagnostics.md",
+            "crates/ctxhelm-compiler/src/lib.rs",
+            "crates/ctxhelm/tests/release_packaging.rs",
+            "crates/ctxhelm/tests/cli_compat.rs",
+            "crates/ctxhelm/tests/common/mod.rs",
+            "crates/ctxhelm-core/src/lib.rs",
+            "crates/ctxhelm-index/src/lib.rs"
+          ],
+          "ctxhelmEvidenceMissedTargets": [],
+          "ctxhelmEvidenceOnlyTargets": [],
+          "ctxhelmEvidenceTargetHits": [
+            "crates/ctxhelm-compiler/src/eval.rs",
+            "crates/ctxhelm-index/src/semantic.rs",
+            "crates/ctxhelm/src/main.rs"
+          ],
+          "ctxhelmToolCalls": [],
+          "discoveredFiles": [],
+          "discoveredOnlyTargets": [],
+          "evaluationEligible": false,
+          "evaluationStatus": "failed",
+          "evidenceHashes": {
+            "ctxhelmRequestLogSha256": null,
+            "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "streamJsonSha256": "fa3b6daae45323cc0aaedcee294d1ccd0f5b47c0e5ea7efa86f918385fd10422"
+          },
+          "forbiddenToolCalls": [],
+          "invalidRequiredCtxhelmCalls": [],
+          "irrelevantReads": [],
+          "lane": "ctxhelm-memory",
+          "metrics": {
+            "ctxhelmEvidenceFileCount": 15,
+            "ctxhelmEvidenceMissedTargetCount": 0,
+            "ctxhelmEvidenceOnlyTargetCount": 0,
+            "ctxhelmEvidenceTargetHitCount": 3,
+            "ctxhelmToolCallCount": 0,
+            "discoveredFileCount": 0,
+            "forbiddenToolCallCount": 0,
+            "invalidRequiredCtxhelmCallCount": 0,
+            "irrelevantReadCount": 0,
+            "missedTargetCount": 3,
+            "missingRequiredCtxhelmCallCount": 0,
+            "observedRequiredCtxhelmCallCount": 0,
+            "readFileCount": 0,
+            "requiredCtxhelmCallCount": 2,
+            "targetCount": 3,
+            "targetCoverage": 0.0,
+            "targetDiscoveredOnlyCount": 0,
+            "targetHitCount": 0,
+            "targetReadCount": 0,
+            "targetReadCoverage": 0.0,
+            "toolCallCount": 0
+          },
+          "missedTargetRoleCounts": {
+            "source": 3
+          },
+          "missedTargets": [
+            "crates/ctxhelm-compiler/src/eval.rs",
+            "crates/ctxhelm-index/src/semantic.rs",
+            "crates/ctxhelm/src/main.rs"
+          ],
+          "missingRequiredCtxhelmCalls": [],
+          "mode": "memory",
+          "observedRequiredCtxhelmCalls": [],
+          "rateLimitObserved": true,
+          "rawMcpTrafficStored": false,
+          "rawPromptStored": false,
+          "rawTranscriptStored": false,
+          "readFiles": [],
+          "readRoleCounts": {},
+          "requiredCtxhelmCallSpecs": [
+            {
+              "name": "prepare_task",
+              "requiresRepo": true,
+              "requiresTask": true
+            },
+            {
+              "budget": "standard",
+              "format": "json",
+              "name": "get_pack",
+              "recordTrace": false,
+              "requiresRepo": true,
+              "requiresTask": true
+            }
+          ],
+          "requiredCtxhelmCalls": [
+            "prepare_task",
+            "get_pack"
+          ],
+          "sourceTextLogged": false,
+          "status": "failed",
+          "targetHits": [],
+          "targetReads": [],
+          "toolCalls": []
+        }
+      ],
+      "privacyStatus": {
+        "localOnly": true,
+        "rawMcpTrafficStored": false,
+        "rawPromptStored": false,
+        "rawTranscriptStored": false,
+        "remoteEmbeddingsUsed": false,
+        "remoteRerankingUsed": false,
+        "sourceTextLogged": false
+      },
+      "status": "skipped",
+      "targetFiles": [
+        "crates/ctxhelm/src/main.rs",
+        "crates/ctxhelm-index/src/semantic.rs",
+        "crates/ctxhelm-compiler/src/eval.rs"
+      ],
+      "taskId": "semantic-contribution",
+      "taskSha256": "1089a6d79257a410ed7ae2ac830588ee02c2e978ff55d1e83b19d2ef0cf7aec3"
+    },
+    {
+      "clientPreflight": {
+        "clientApiErrorStatus": null,
+        "clientExitStatus": 0,
+        "clientFailureKind": "rate_limited",
+        "enabled": true,
+        "evidenceHashes": {
+          "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "streamJsonSha256": "c530f79a6a8bea32c33face69901a98d7b5f1a75a344498d6f209f2c4937ead6"
+        },
+        "rateLimitObserved": true,
+        "rawPromptStored": false,
+        "rawTranscriptStored": false,
+        "sourceTextLogged": false,
+        "status": "failed"
+      },
+      "comparison": {
+        "baselineEligible": false,
+        "baselineLane": "baseline",
+        "bestLane": "baseline",
+        "clientFailuresObserved": true,
+        "comparableCtxhelmLaneCount": 0,
+        "comparisonEligible": false,
+        "ctxhelmEvidenceMisses": {},
+        "ctxhelmEvidenceMissesObserved": false,
+        "ctxhelmEvidenceOnlyTargets": {},
+        "ctxhelmEvidenceOnlyTargetsObserved": false,
+        "ctxhelmToolCallsObserved": false,
+        "ctxhelmUnderReadTargetsObserved": false,
+        "forbiddenToolCallsObserved": false,
+        "invalidRequiredCtxhelmCalls": {},
+        "invalidRequiredCtxhelmCallsObserved": false,
+        "irrelevantReadDelta": 0,
+        "missingRequiredCtxhelmCalls": {},
+        "missingRequiredCtxhelmCallsObserved": false,
+        "outcomeClaim": "insufficient_comparable_lanes",
+        "rateLimitsObserved": true,
+        "recommendedResearchActions": [
+          {
+            "action": "retry_real_client_when_available",
+            "priority": 1,
+            "reason": "Client availability prevented comparable outcome proof."
+          }
+        ],
+        "targetCoverageDelta": 0.0,
+        "targetReadCoverageDelta": 0.0
+      },
+      "lanes": [
+        {
+          "clientApiErrorStatus": null,
+          "clientExitStatus": 0,
+          "clientFailureKind": "rate_limited",
+          "ctxhelmCallCompliance": "not_required",
+          "ctxhelmEvidenceFiles": [],
+          "ctxhelmEvidenceMissedTargets": [
+            "crates/ctxhelm-compiler/src/eval.rs",
+            "crates/ctxhelm-compiler/src/ranking.rs",
+            "crates/ctxhelm-index/src/dependencies.rs"
+          ],
+          "ctxhelmEvidenceOnlyTargets": [],
+          "ctxhelmEvidenceTargetHits": [],
+          "ctxhelmToolCalls": [],
+          "discoveredFiles": [],
+          "discoveredOnlyTargets": [],
+          "evaluationEligible": false,
+          "evaluationStatus": "failed",
+          "evidenceHashes": {
+            "ctxhelmRequestLogSha256": null,
+            "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "streamJsonSha256": "fa3b6daae45323cc0aaedcee294d1ccd0f5b47c0e5ea7efa86f918385fd10422"
+          },
+          "forbiddenToolCalls": [],
+          "invalidRequiredCtxhelmCalls": [],
+          "irrelevantReads": [],
+          "lane": "baseline",
+          "metrics": {
+            "ctxhelmEvidenceFileCount": 0,
+            "ctxhelmEvidenceMissedTargetCount": 3,
+            "ctxhelmEvidenceOnlyTargetCount": 0,
+            "ctxhelmEvidenceTargetHitCount": 0,
+            "ctxhelmToolCallCount": 0,
+            "discoveredFileCount": 0,
+            "forbiddenToolCallCount": 0,
+            "invalidRequiredCtxhelmCallCount": 0,
+            "irrelevantReadCount": 0,
+            "missedTargetCount": 3,
+            "missingRequiredCtxhelmCallCount": 0,
+            "observedRequiredCtxhelmCallCount": 0,
+            "readFileCount": 0,
+            "requiredCtxhelmCallCount": 0,
+            "targetCount": 3,
+            "targetCoverage": 0.0,
+            "targetDiscoveredOnlyCount": 0,
+            "targetHitCount": 0,
+            "targetReadCount": 0,
+            "targetReadCoverage": 0.0,
+            "toolCallCount": 0
+          },
+          "missedTargetRoleCounts": {
+            "source": 3
+          },
+          "missedTargets": [
+            "crates/ctxhelm-compiler/src/eval.rs",
+            "crates/ctxhelm-compiler/src/ranking.rs",
+            "crates/ctxhelm-index/src/dependencies.rs"
+          ],
+          "missingRequiredCtxhelmCalls": [],
+          "mode": "baseline",
+          "observedRequiredCtxhelmCalls": [],
+          "rateLimitObserved": true,
+          "rawMcpTrafficStored": false,
+          "rawPromptStored": false,
+          "rawTranscriptStored": false,
+          "readFiles": [],
+          "readRoleCounts": {},
+          "requiredCtxhelmCallSpecs": [],
+          "requiredCtxhelmCalls": [],
+          "sourceTextLogged": false,
+          "status": "failed",
+          "targetHits": [],
+          "targetReads": [],
+          "toolCalls": []
+        },
+        {
+          "clientApiErrorStatus": null,
+          "clientExitStatus": 0,
+          "clientFailureKind": "rate_limited",
+          "ctxhelmCallCompliance": "client_unavailable",
+          "ctxhelmEvidenceFiles": [
+            "crates/ctxhelm-compiler/src/eval.rs",
+            "crates/ctxhelm-compiler/src/ranking.rs",
+            "crates/ctxhelm-index/src/dependencies.rs",
+            "crates/ctxhelm/src/main.rs",
+            "crates/ctxhelm-index/src/git.rs",
+            "crates/ctxhelm-core/src/init.rs",
+            "crates/ctxhelm-index/src/inventory.rs",
+            ".planning/STATE.md",
+            ".planning/ROADMAP.md",
+            ".planning/MILESTONES.md",
+            "crates/ctxhelm/tests/release_packaging.rs",
+            "crates/ctxhelm/tests/cli_compat.rs",
+            "crates/ctxhelm/tests/common/mod.rs",
+            "crates/ctxhelm-index/src/lib.rs",
+            "crates/ctxhelm-compiler/src/lib.rs",
+            "crates/ctxhelm-core/src/lib.rs",
+            "docs/benchmarking.md",
+            ".planning/e2e/2026-06-02-phase179-graph-edge-profiles.md",
+            ".planning/e2e/2026-06-03-phase181-graph-edge-budget-allocation.md"
+          ],
+          "ctxhelmEvidenceMissedTargets": [],
+          "ctxhelmEvidenceOnlyTargets": [],
+          "ctxhelmEvidenceTargetHits": [
+            "crates/ctxhelm-compiler/src/eval.rs",
+            "crates/ctxhelm-compiler/src/ranking.rs",
+            "crates/ctxhelm-index/src/dependencies.rs"
+          ],
+          "ctxhelmToolCalls": [],
+          "discoveredFiles": [],
+          "discoveredOnlyTargets": [],
+          "evaluationEligible": false,
+          "evaluationStatus": "failed",
+          "evidenceHashes": {
+            "ctxhelmRequestLogSha256": null,
+            "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "streamJsonSha256": "fa3b6daae45323cc0aaedcee294d1ccd0f5b47c0e5ea7efa86f918385fd10422"
+          },
+          "forbiddenToolCalls": [],
+          "invalidRequiredCtxhelmCalls": [],
+          "irrelevantReads": [],
+          "lane": "ctxhelm-plan",
+          "metrics": {
+            "ctxhelmEvidenceFileCount": 19,
+            "ctxhelmEvidenceMissedTargetCount": 0,
+            "ctxhelmEvidenceOnlyTargetCount": 0,
+            "ctxhelmEvidenceTargetHitCount": 3,
+            "ctxhelmToolCallCount": 0,
+            "discoveredFileCount": 0,
+            "forbiddenToolCallCount": 0,
+            "invalidRequiredCtxhelmCallCount": 0,
+            "irrelevantReadCount": 0,
+            "missedTargetCount": 3,
+            "missingRequiredCtxhelmCallCount": 0,
+            "observedRequiredCtxhelmCallCount": 0,
+            "readFileCount": 0,
+            "requiredCtxhelmCallCount": 1,
+            "targetCount": 3,
+            "targetCoverage": 0.0,
+            "targetDiscoveredOnlyCount": 0,
+            "targetHitCount": 0,
+            "targetReadCount": 0,
+            "targetReadCoverage": 0.0,
+            "toolCallCount": 0
+          },
+          "missedTargetRoleCounts": {
+            "source": 3
+          },
+          "missedTargets": [
+            "crates/ctxhelm-compiler/src/eval.rs",
+            "crates/ctxhelm-compiler/src/ranking.rs",
+            "crates/ctxhelm-index/src/dependencies.rs"
+          ],
+          "missingRequiredCtxhelmCalls": [],
+          "mode": "plan",
+          "observedRequiredCtxhelmCalls": [],
+          "rateLimitObserved": true,
+          "rawMcpTrafficStored": false,
+          "rawPromptStored": false,
+          "rawTranscriptStored": false,
+          "readFiles": [],
+          "readRoleCounts": {},
+          "requiredCtxhelmCallSpecs": [
+            {
+              "name": "prepare_task",
+              "requiresRepo": true,
+              "requiresTask": true
+            }
+          ],
+          "requiredCtxhelmCalls": [
+            "prepare_task"
+          ],
+          "sourceTextLogged": false,
+          "status": "failed",
+          "targetHits": [],
+          "targetReads": [],
+          "toolCalls": []
+        },
+        {
+          "clientApiErrorStatus": null,
+          "clientExitStatus": 0,
+          "clientFailureKind": "rate_limited",
+          "ctxhelmCallCompliance": "client_unavailable",
+          "ctxhelmEvidenceFiles": [
+            "crates/ctxhelm-compiler/src/eval.rs",
+            "crates/ctxhelm-compiler/src/ranking.rs",
+            "crates/ctxhelm-index/src/dependencies.rs",
+            "crates/ctxhelm/src/main.rs",
+            "crates/ctxhelm-index/src/git.rs",
+            "crates/ctxhelm-core/src/init.rs",
+            "crates/ctxhelm-index/src/inventory.rs",
+            ".planning/STATE.md",
+            ".planning/ROADMAP.md",
+            ".planning/MILESTONES.md",
+            "crates/ctxhelm/tests/release_packaging.rs",
+            "crates/ctxhelm/tests/cli_compat.rs",
+            "crates/ctxhelm/tests/common/mod.rs",
+            "crates/ctxhelm-compiler/src/lib.rs",
+            "crates/ctxhelm-core/src/lib.rs",
+            "crates/ctxhelm-index/src/lib.rs"
+          ],
+          "ctxhelmEvidenceMissedTargets": [],
+          "ctxhelmEvidenceOnlyTargets": [],
+          "ctxhelmEvidenceTargetHits": [
+            "crates/ctxhelm-compiler/src/eval.rs",
+            "crates/ctxhelm-compiler/src/ranking.rs",
+            "crates/ctxhelm-index/src/dependencies.rs"
+          ],
+          "ctxhelmToolCalls": [],
+          "discoveredFiles": [],
+          "discoveredOnlyTargets": [],
+          "evaluationEligible": false,
+          "evaluationStatus": "failed",
+          "evidenceHashes": {
+            "ctxhelmRequestLogSha256": null,
+            "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "streamJsonSha256": "fa3b6daae45323cc0aaedcee294d1ccd0f5b47c0e5ea7efa86f918385fd10422"
+          },
+          "forbiddenToolCalls": [],
+          "invalidRequiredCtxhelmCalls": [],
+          "irrelevantReads": [],
+          "lane": "ctxhelm-brief",
+          "metrics": {
+            "ctxhelmEvidenceFileCount": 16,
+            "ctxhelmEvidenceMissedTargetCount": 0,
+            "ctxhelmEvidenceOnlyTargetCount": 0,
+            "ctxhelmEvidenceTargetHitCount": 3,
+            "ctxhelmToolCallCount": 0,
+            "discoveredFileCount": 0,
+            "forbiddenToolCallCount": 0,
+            "invalidRequiredCtxhelmCallCount": 0,
+            "irrelevantReadCount": 0,
+            "missedTargetCount": 3,
+            "missingRequiredCtxhelmCallCount": 0,
+            "observedRequiredCtxhelmCallCount": 0,
+            "readFileCount": 0,
+            "requiredCtxhelmCallCount": 2,
+            "targetCount": 3,
+            "targetCoverage": 0.0,
+            "targetDiscoveredOnlyCount": 0,
+            "targetHitCount": 0,
+            "targetReadCount": 0,
+            "targetReadCoverage": 0.0,
+            "toolCallCount": 0
+          },
+          "missedTargetRoleCounts": {
+            "source": 3
+          },
+          "missedTargets": [
+            "crates/ctxhelm-compiler/src/eval.rs",
+            "crates/ctxhelm-compiler/src/ranking.rs",
+            "crates/ctxhelm-index/src/dependencies.rs"
+          ],
+          "missingRequiredCtxhelmCalls": [],
+          "mode": "brief",
+          "observedRequiredCtxhelmCalls": [],
+          "rateLimitObserved": true,
+          "rawMcpTrafficStored": false,
+          "rawPromptStored": false,
+          "rawTranscriptStored": false,
+          "readFiles": [],
+          "readRoleCounts": {},
+          "requiredCtxhelmCallSpecs": [
+            {
+              "name": "prepare_task",
+              "requiresRepo": true,
+              "requiresTask": true
+            },
+            {
+              "budget": "brief",
+              "format": "json",
+              "name": "get_pack",
+              "recordTrace": false,
+              "requiresRepo": true,
+              "requiresTask": true
+            }
+          ],
+          "requiredCtxhelmCalls": [
+            "prepare_task",
+            "get_pack"
+          ],
+          "sourceTextLogged": false,
+          "status": "failed",
+          "targetHits": [],
+          "targetReads": [],
+          "toolCalls": []
+        },
+        {
+          "clientApiErrorStatus": null,
+          "clientExitStatus": 0,
+          "clientFailureKind": "rate_limited",
+          "ctxhelmCallCompliance": "client_unavailable",
+          "ctxhelmEvidenceFiles": [
+            "crates/ctxhelm-compiler/src/eval.rs",
+            "crates/ctxhelm-compiler/src/ranking.rs",
+            "crates/ctxhelm-index/src/dependencies.rs",
+            "crates/ctxhelm/src/main.rs",
+            "crates/ctxhelm-index/src/git.rs",
+            "crates/ctxhelm-core/src/init.rs",
+            "crates/ctxhelm-index/src/inventory.rs",
+            ".planning/STATE.md",
+            ".planning/ROADMAP.md",
+            ".planning/MILESTONES.md",
+            "crates/ctxhelm/tests/release_packaging.rs",
+            "crates/ctxhelm/tests/cli_compat.rs",
+            "crates/ctxhelm/tests/common/mod.rs",
+            "crates/ctxhelm-compiler/src/lib.rs",
+            "crates/ctxhelm-core/src/lib.rs",
+            "crates/ctxhelm-index/src/lib.rs"
+          ],
+          "ctxhelmEvidenceMissedTargets": [],
+          "ctxhelmEvidenceOnlyTargets": [],
+          "ctxhelmEvidenceTargetHits": [
+            "crates/ctxhelm-compiler/src/eval.rs",
+            "crates/ctxhelm-compiler/src/ranking.rs",
+            "crates/ctxhelm-index/src/dependencies.rs"
+          ],
+          "ctxhelmToolCalls": [],
+          "discoveredFiles": [],
+          "discoveredOnlyTargets": [],
+          "evaluationEligible": false,
+          "evaluationStatus": "failed",
+          "evidenceHashes": {
+            "ctxhelmRequestLogSha256": null,
+            "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "streamJsonSha256": "fa3b6daae45323cc0aaedcee294d1ccd0f5b47c0e5ea7efa86f918385fd10422"
+          },
+          "forbiddenToolCalls": [],
+          "invalidRequiredCtxhelmCalls": [],
+          "irrelevantReads": [],
+          "lane": "ctxhelm-standard",
+          "metrics": {
+            "ctxhelmEvidenceFileCount": 16,
+            "ctxhelmEvidenceMissedTargetCount": 0,
+            "ctxhelmEvidenceOnlyTargetCount": 0,
+            "ctxhelmEvidenceTargetHitCount": 3,
+            "ctxhelmToolCallCount": 0,
+            "discoveredFileCount": 0,
+            "forbiddenToolCallCount": 0,
+            "invalidRequiredCtxhelmCallCount": 0,
+            "irrelevantReadCount": 0,
+            "missedTargetCount": 3,
+            "missingRequiredCtxhelmCallCount": 0,
+            "observedRequiredCtxhelmCallCount": 0,
+            "readFileCount": 0,
+            "requiredCtxhelmCallCount": 2,
+            "targetCount": 3,
+            "targetCoverage": 0.0,
+            "targetDiscoveredOnlyCount": 0,
+            "targetHitCount": 0,
+            "targetReadCount": 0,
+            "targetReadCoverage": 0.0,
+            "toolCallCount": 0
+          },
+          "missedTargetRoleCounts": {
+            "source": 3
+          },
+          "missedTargets": [
+            "crates/ctxhelm-compiler/src/eval.rs",
+            "crates/ctxhelm-compiler/src/ranking.rs",
+            "crates/ctxhelm-index/src/dependencies.rs"
+          ],
+          "missingRequiredCtxhelmCalls": [],
+          "mode": "standard",
+          "observedRequiredCtxhelmCalls": [],
+          "rateLimitObserved": true,
+          "rawMcpTrafficStored": false,
+          "rawPromptStored": false,
+          "rawTranscriptStored": false,
+          "readFiles": [],
+          "readRoleCounts": {},
+          "requiredCtxhelmCallSpecs": [
+            {
+              "name": "prepare_task",
+              "requiresRepo": true,
+              "requiresTask": true
+            },
+            {
+              "budget": "standard",
+              "format": "json",
+              "name": "get_pack",
+              "recordTrace": false,
+              "requiresRepo": true,
+              "requiresTask": true
+            }
+          ],
+          "requiredCtxhelmCalls": [
+            "prepare_task",
+            "get_pack"
+          ],
+          "sourceTextLogged": false,
+          "status": "failed",
+          "targetHits": [],
+          "targetReads": [],
+          "toolCalls": []
+        },
+        {
+          "clientApiErrorStatus": null,
+          "clientExitStatus": 0,
+          "clientFailureKind": "rate_limited",
+          "ctxhelmCallCompliance": "client_unavailable",
+          "ctxhelmEvidenceFiles": [
+            "crates/ctxhelm-compiler/src/eval.rs",
+            "crates/ctxhelm-compiler/src/ranking.rs",
+            "crates/ctxhelm-index/src/dependencies.rs",
+            "crates/ctxhelm/src/main.rs",
+            "crates/ctxhelm-index/src/git.rs",
+            "crates/ctxhelm-core/src/init.rs",
+            "crates/ctxhelm-index/src/inventory.rs",
+            ".planning/STATE.md",
+            ".planning/ROADMAP.md",
+            ".planning/MILESTONES.md",
+            "crates/ctxhelm/tests/release_packaging.rs",
+            "crates/ctxhelm/tests/cli_compat.rs",
+            "crates/ctxhelm/tests/common/mod.rs",
+            "crates/ctxhelm-compiler/src/lib.rs",
+            "crates/ctxhelm-core/src/lib.rs",
+            "crates/ctxhelm-index/src/lib.rs"
+          ],
+          "ctxhelmEvidenceMissedTargets": [],
+          "ctxhelmEvidenceOnlyTargets": [],
+          "ctxhelmEvidenceTargetHits": [
+            "crates/ctxhelm-compiler/src/eval.rs",
+            "crates/ctxhelm-compiler/src/ranking.rs",
+            "crates/ctxhelm-index/src/dependencies.rs"
+          ],
+          "ctxhelmToolCalls": [],
+          "discoveredFiles": [],
+          "discoveredOnlyTargets": [],
+          "evaluationEligible": false,
+          "evaluationStatus": "failed",
+          "evidenceHashes": {
+            "ctxhelmRequestLogSha256": null,
+            "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "streamJsonSha256": "fa3b6daae45323cc0aaedcee294d1ccd0f5b47c0e5ea7efa86f918385fd10422"
+          },
+          "forbiddenToolCalls": [],
+          "invalidRequiredCtxhelmCalls": [],
+          "irrelevantReads": [],
+          "lane": "ctxhelm-memory",
+          "metrics": {
+            "ctxhelmEvidenceFileCount": 16,
+            "ctxhelmEvidenceMissedTargetCount": 0,
+            "ctxhelmEvidenceOnlyTargetCount": 0,
+            "ctxhelmEvidenceTargetHitCount": 3,
+            "ctxhelmToolCallCount": 0,
+            "discoveredFileCount": 0,
+            "forbiddenToolCallCount": 0,
+            "invalidRequiredCtxhelmCallCount": 0,
+            "irrelevantReadCount": 0,
+            "missedTargetCount": 3,
+            "missingRequiredCtxhelmCallCount": 0,
+            "observedRequiredCtxhelmCallCount": 0,
+            "readFileCount": 0,
+            "requiredCtxhelmCallCount": 2,
+            "targetCount": 3,
+            "targetCoverage": 0.0,
+            "targetDiscoveredOnlyCount": 0,
+            "targetHitCount": 0,
+            "targetReadCount": 0,
+            "targetReadCoverage": 0.0,
+            "toolCallCount": 0
+          },
+          "missedTargetRoleCounts": {
+            "source": 3
+          },
+          "missedTargets": [
+            "crates/ctxhelm-compiler/src/eval.rs",
+            "crates/ctxhelm-compiler/src/ranking.rs",
+            "crates/ctxhelm-index/src/dependencies.rs"
+          ],
+          "missingRequiredCtxhelmCalls": [],
+          "mode": "memory",
+          "observedRequiredCtxhelmCalls": [],
+          "rateLimitObserved": true,
+          "rawMcpTrafficStored": false,
+          "rawPromptStored": false,
+          "rawTranscriptStored": false,
+          "readFiles": [],
+          "readRoleCounts": {},
+          "requiredCtxhelmCallSpecs": [
+            {
+              "name": "prepare_task",
+              "requiresRepo": true,
+              "requiresTask": true
+            },
+            {
+              "budget": "standard",
+              "format": "json",
+              "name": "get_pack",
+              "recordTrace": false,
+              "requiresRepo": true,
+              "requiresTask": true
+            }
+          ],
+          "requiredCtxhelmCalls": [
+            "prepare_task",
+            "get_pack"
+          ],
+          "sourceTextLogged": false,
+          "status": "failed",
+          "targetHits": [],
+          "targetReads": [],
+          "toolCalls": []
+        }
+      ],
+      "privacyStatus": {
+        "localOnly": true,
+        "rawMcpTrafficStored": false,
+        "rawPromptStored": false,
+        "rawTranscriptStored": false,
+        "remoteEmbeddingsUsed": false,
+        "remoteRerankingUsed": false,
+        "sourceTextLogged": false
+      },
+      "status": "skipped",
+      "targetFiles": [
+        "crates/ctxhelm-compiler/src/eval.rs",
+        "crates/ctxhelm-compiler/src/ranking.rs",
+        "crates/ctxhelm-index/src/dependencies.rs"
+      ],
+      "taskId": "graph-edge-budget",
+      "taskSha256": "f958ea80b159913a5da75937890218f4d81f6684ebfdbed55f328867e17cbfc3"
+    },
+    {
+      "clientPreflight": {
+        "clientApiErrorStatus": null,
+        "clientExitStatus": 0,
+        "clientFailureKind": "rate_limited",
+        "enabled": true,
+        "evidenceHashes": {
+          "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "streamJsonSha256": "bee7e35ebdec7a04d1e401a04906ab8fdf6adac24320f8bfb11beca5ed029ccd"
+        },
+        "rateLimitObserved": true,
+        "rawPromptStored": false,
+        "rawTranscriptStored": false,
+        "sourceTextLogged": false,
+        "status": "failed"
+      },
+      "comparison": {
+        "baselineEligible": false,
+        "baselineLane": "baseline",
+        "bestLane": "baseline",
+        "clientFailuresObserved": true,
+        "comparableCtxhelmLaneCount": 0,
+        "comparisonEligible": false,
+        "ctxhelmEvidenceMisses": {},
+        "ctxhelmEvidenceMissesObserved": false,
+        "ctxhelmEvidenceOnlyTargets": {},
+        "ctxhelmEvidenceOnlyTargetsObserved": false,
+        "ctxhelmToolCallsObserved": false,
+        "ctxhelmUnderReadTargetsObserved": false,
+        "forbiddenToolCallsObserved": false,
+        "invalidRequiredCtxhelmCalls": {},
+        "invalidRequiredCtxhelmCallsObserved": false,
+        "irrelevantReadDelta": 0,
+        "missingRequiredCtxhelmCalls": {},
+        "missingRequiredCtxhelmCallsObserved": false,
+        "outcomeClaim": "insufficient_comparable_lanes",
+        "rateLimitsObserved": true,
+        "recommendedResearchActions": [
+          {
+            "action": "retry_real_client_when_available",
+            "priority": 1,
+            "reason": "Client availability prevented comparable outcome proof."
+          }
+        ],
+        "targetCoverageDelta": 0.0,
+        "targetReadCoverageDelta": 0.0
+      },
+      "lanes": [
+        {
+          "clientApiErrorStatus": null,
+          "clientExitStatus": 0,
+          "clientFailureKind": "rate_limited",
+          "ctxhelmCallCompliance": "not_required",
+          "ctxhelmEvidenceFiles": [],
+          "ctxhelmEvidenceMissedTargets": [
+            "crates/ctxhelm-core/src/contracts.rs",
+            "crates/ctxhelm/src/main.rs",
+            "docs/context-governor.md",
+            "scripts/smoke-governor.sh"
+          ],
+          "ctxhelmEvidenceOnlyTargets": [],
+          "ctxhelmEvidenceTargetHits": [],
+          "ctxhelmToolCalls": [],
+          "discoveredFiles": [],
+          "discoveredOnlyTargets": [],
+          "evaluationEligible": false,
+          "evaluationStatus": "failed",
+          "evidenceHashes": {
+            "ctxhelmRequestLogSha256": null,
+            "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "streamJsonSha256": "fa3b6daae45323cc0aaedcee294d1ccd0f5b47c0e5ea7efa86f918385fd10422"
+          },
+          "forbiddenToolCalls": [],
+          "invalidRequiredCtxhelmCalls": [],
+          "irrelevantReads": [],
+          "lane": "baseline",
+          "metrics": {
+            "ctxhelmEvidenceFileCount": 0,
+            "ctxhelmEvidenceMissedTargetCount": 4,
+            "ctxhelmEvidenceOnlyTargetCount": 0,
+            "ctxhelmEvidenceTargetHitCount": 0,
+            "ctxhelmToolCallCount": 0,
+            "discoveredFileCount": 0,
+            "forbiddenToolCallCount": 0,
+            "invalidRequiredCtxhelmCallCount": 0,
+            "irrelevantReadCount": 0,
+            "missedTargetCount": 4,
+            "missingRequiredCtxhelmCallCount": 0,
+            "observedRequiredCtxhelmCallCount": 0,
+            "readFileCount": 0,
+            "requiredCtxhelmCallCount": 0,
+            "targetCount": 4,
+            "targetCoverage": 0.0,
+            "targetDiscoveredOnlyCount": 0,
+            "targetHitCount": 0,
+            "targetReadCount": 0,
+            "targetReadCoverage": 0.0,
+            "toolCallCount": 0
+          },
+          "missedTargetRoleCounts": {
+            "docs": 1,
+            "source": 3
+          },
+          "missedTargets": [
+            "crates/ctxhelm-core/src/contracts.rs",
+            "crates/ctxhelm/src/main.rs",
+            "docs/context-governor.md",
+            "scripts/smoke-governor.sh"
+          ],
+          "missingRequiredCtxhelmCalls": [],
+          "mode": "baseline",
+          "observedRequiredCtxhelmCalls": [],
+          "rateLimitObserved": true,
+          "rawMcpTrafficStored": false,
+          "rawPromptStored": false,
+          "rawTranscriptStored": false,
+          "readFiles": [],
+          "readRoleCounts": {},
+          "requiredCtxhelmCallSpecs": [],
+          "requiredCtxhelmCalls": [],
+          "sourceTextLogged": false,
+          "status": "failed",
+          "targetHits": [],
+          "targetReads": [],
+          "toolCalls": []
+        },
+        {
+          "clientApiErrorStatus": null,
+          "clientExitStatus": 0,
+          "clientFailureKind": "rate_limited",
+          "ctxhelmCallCompliance": "client_unavailable",
+          "ctxhelmEvidenceFiles": [
+            "crates/ctxhelm/src/main.rs",
+            "crates/ctxhelm-compiler/src/eval.rs",
+            "crates/ctxhelm-core/src/contracts.rs",
+            "scripts/smoke-governor.sh",
+            "docs/context-governor.md",
+            ".planning/STATE.md",
+            ".planning/ROADMAP.md",
+            ".planning/MILESTONES.md",
+            ".planning/research/2026-06-01-world-class-context-engine-gap-plan.md",
+            "crates/ctxhelm-compiler/src/lib.rs",
+            "crates/ctxhelm/tests/release_packaging.rs",
+            "crates/ctxhelm/tests/cli_compat.rs",
+            "crates/ctxhelm/tests/common/mod.rs",
+            "crates/ctxhelm-core/src/lib.rs",
+            "docs/benchmarking.md",
+            ".planning/e2e/2026-06-06-phase250-governor-artifact-retrieval.md",
+            "docs/release.md",
+            "scripts/release-gate.sh",
+            ".planning/REQUIREMENTS.md",
+            ".planning/PROJECT.md",
+            "docs/semantic.md"
+          ],
+          "ctxhelmEvidenceMissedTargets": [],
+          "ctxhelmEvidenceOnlyTargets": [],
+          "ctxhelmEvidenceTargetHits": [
+            "crates/ctxhelm-core/src/contracts.rs",
+            "crates/ctxhelm/src/main.rs",
+            "docs/context-governor.md",
+            "scripts/smoke-governor.sh"
+          ],
+          "ctxhelmToolCalls": [],
+          "discoveredFiles": [],
+          "discoveredOnlyTargets": [],
+          "evaluationEligible": false,
+          "evaluationStatus": "failed",
+          "evidenceHashes": {
+            "ctxhelmRequestLogSha256": null,
+            "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "streamJsonSha256": "fa3b6daae45323cc0aaedcee294d1ccd0f5b47c0e5ea7efa86f918385fd10422"
+          },
+          "forbiddenToolCalls": [],
+          "invalidRequiredCtxhelmCalls": [],
+          "irrelevantReads": [],
+          "lane": "ctxhelm-plan",
+          "metrics": {
+            "ctxhelmEvidenceFileCount": 21,
+            "ctxhelmEvidenceMissedTargetCount": 0,
+            "ctxhelmEvidenceOnlyTargetCount": 0,
+            "ctxhelmEvidenceTargetHitCount": 4,
+            "ctxhelmToolCallCount": 0,
+            "discoveredFileCount": 0,
+            "forbiddenToolCallCount": 0,
+            "invalidRequiredCtxhelmCallCount": 0,
+            "irrelevantReadCount": 0,
+            "missedTargetCount": 4,
+            "missingRequiredCtxhelmCallCount": 0,
+            "observedRequiredCtxhelmCallCount": 0,
+            "readFileCount": 0,
+            "requiredCtxhelmCallCount": 1,
+            "targetCount": 4,
+            "targetCoverage": 0.0,
+            "targetDiscoveredOnlyCount": 0,
+            "targetHitCount": 0,
+            "targetReadCount": 0,
+            "targetReadCoverage": 0.0,
+            "toolCallCount": 0
+          },
+          "missedTargetRoleCounts": {
+            "docs": 1,
+            "source": 3
+          },
+          "missedTargets": [
+            "crates/ctxhelm-core/src/contracts.rs",
+            "crates/ctxhelm/src/main.rs",
+            "docs/context-governor.md",
+            "scripts/smoke-governor.sh"
+          ],
+          "missingRequiredCtxhelmCalls": [],
+          "mode": "plan",
+          "observedRequiredCtxhelmCalls": [],
+          "rateLimitObserved": true,
+          "rawMcpTrafficStored": false,
+          "rawPromptStored": false,
+          "rawTranscriptStored": false,
+          "readFiles": [],
+          "readRoleCounts": {},
+          "requiredCtxhelmCallSpecs": [
+            {
+              "name": "prepare_task",
+              "requiresRepo": true,
+              "requiresTask": true
+            }
+          ],
+          "requiredCtxhelmCalls": [
+            "prepare_task"
+          ],
+          "sourceTextLogged": false,
+          "status": "failed",
+          "targetHits": [],
+          "targetReads": [],
+          "toolCalls": []
+        },
+        {
+          "clientApiErrorStatus": null,
+          "clientExitStatus": 0,
+          "clientFailureKind": "rate_limited",
+          "ctxhelmCallCompliance": "client_unavailable",
+          "ctxhelmEvidenceFiles": [
+            "crates/ctxhelm/src/main.rs",
+            "crates/ctxhelm-compiler/src/eval.rs",
+            "crates/ctxhelm-core/src/contracts.rs",
+            "scripts/smoke-governor.sh",
+            "docs/context-governor.md",
+            ".planning/STATE.md",
+            ".planning/ROADMAP.md",
+            ".planning/MILESTONES.md",
+            ".planning/research/2026-06-01-world-class-context-engine-gap-plan.md",
+            "crates/ctxhelm-compiler/src/lib.rs",
+            "crates/ctxhelm/tests/release_packaging.rs",
+            "crates/ctxhelm/tests/cli_compat.rs",
+            "crates/ctxhelm/tests/common/mod.rs",
+            "crates/ctxhelm-core/src/lib.rs"
+          ],
+          "ctxhelmEvidenceMissedTargets": [],
+          "ctxhelmEvidenceOnlyTargets": [],
+          "ctxhelmEvidenceTargetHits": [
+            "crates/ctxhelm-core/src/contracts.rs",
+            "crates/ctxhelm/src/main.rs",
+            "docs/context-governor.md",
+            "scripts/smoke-governor.sh"
+          ],
+          "ctxhelmToolCalls": [],
+          "discoveredFiles": [],
+          "discoveredOnlyTargets": [],
+          "evaluationEligible": false,
+          "evaluationStatus": "failed",
+          "evidenceHashes": {
+            "ctxhelmRequestLogSha256": null,
+            "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "streamJsonSha256": "fa3b6daae45323cc0aaedcee294d1ccd0f5b47c0e5ea7efa86f918385fd10422"
+          },
+          "forbiddenToolCalls": [],
+          "invalidRequiredCtxhelmCalls": [],
+          "irrelevantReads": [],
+          "lane": "ctxhelm-brief",
+          "metrics": {
+            "ctxhelmEvidenceFileCount": 14,
+            "ctxhelmEvidenceMissedTargetCount": 0,
+            "ctxhelmEvidenceOnlyTargetCount": 0,
+            "ctxhelmEvidenceTargetHitCount": 4,
+            "ctxhelmToolCallCount": 0,
+            "discoveredFileCount": 0,
+            "forbiddenToolCallCount": 0,
+            "invalidRequiredCtxhelmCallCount": 0,
+            "irrelevantReadCount": 0,
+            "missedTargetCount": 4,
+            "missingRequiredCtxhelmCallCount": 0,
+            "observedRequiredCtxhelmCallCount": 0,
+            "readFileCount": 0,
+            "requiredCtxhelmCallCount": 2,
+            "targetCount": 4,
+            "targetCoverage": 0.0,
+            "targetDiscoveredOnlyCount": 0,
+            "targetHitCount": 0,
+            "targetReadCount": 0,
+            "targetReadCoverage": 0.0,
+            "toolCallCount": 0
+          },
+          "missedTargetRoleCounts": {
+            "docs": 1,
+            "source": 3
+          },
+          "missedTargets": [
+            "crates/ctxhelm-core/src/contracts.rs",
+            "crates/ctxhelm/src/main.rs",
+            "docs/context-governor.md",
+            "scripts/smoke-governor.sh"
+          ],
+          "missingRequiredCtxhelmCalls": [],
+          "mode": "brief",
+          "observedRequiredCtxhelmCalls": [],
+          "rateLimitObserved": true,
+          "rawMcpTrafficStored": false,
+          "rawPromptStored": false,
+          "rawTranscriptStored": false,
+          "readFiles": [],
+          "readRoleCounts": {},
+          "requiredCtxhelmCallSpecs": [
+            {
+              "name": "prepare_task",
+              "requiresRepo": true,
+              "requiresTask": true
+            },
+            {
+              "budget": "brief",
+              "format": "json",
+              "name": "get_pack",
+              "recordTrace": false,
+              "requiresRepo": true,
+              "requiresTask": true
+            }
+          ],
+          "requiredCtxhelmCalls": [
+            "prepare_task",
+            "get_pack"
+          ],
+          "sourceTextLogged": false,
+          "status": "failed",
+          "targetHits": [],
+          "targetReads": [],
+          "toolCalls": []
+        },
+        {
+          "clientApiErrorStatus": null,
+          "clientExitStatus": 0,
+          "clientFailureKind": "rate_limited",
+          "ctxhelmCallCompliance": "client_unavailable",
+          "ctxhelmEvidenceFiles": [
+            "crates/ctxhelm/src/main.rs",
+            "crates/ctxhelm-compiler/src/eval.rs",
+            "crates/ctxhelm-core/src/contracts.rs",
+            "scripts/smoke-governor.sh",
+            "docs/context-governor.md",
+            ".planning/STATE.md",
+            ".planning/ROADMAP.md",
+            ".planning/MILESTONES.md",
+            ".planning/research/2026-06-01-world-class-context-engine-gap-plan.md",
+            "crates/ctxhelm-compiler/src/lib.rs",
+            "crates/ctxhelm/tests/release_packaging.rs",
+            "crates/ctxhelm/tests/cli_compat.rs",
+            "crates/ctxhelm/tests/common/mod.rs",
+            "crates/ctxhelm-core/src/lib.rs"
+          ],
+          "ctxhelmEvidenceMissedTargets": [],
+          "ctxhelmEvidenceOnlyTargets": [],
+          "ctxhelmEvidenceTargetHits": [
+            "crates/ctxhelm-core/src/contracts.rs",
+            "crates/ctxhelm/src/main.rs",
+            "docs/context-governor.md",
+            "scripts/smoke-governor.sh"
+          ],
+          "ctxhelmToolCalls": [],
+          "discoveredFiles": [],
+          "discoveredOnlyTargets": [],
+          "evaluationEligible": false,
+          "evaluationStatus": "failed",
+          "evidenceHashes": {
+            "ctxhelmRequestLogSha256": null,
+            "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "streamJsonSha256": "fa3b6daae45323cc0aaedcee294d1ccd0f5b47c0e5ea7efa86f918385fd10422"
+          },
+          "forbiddenToolCalls": [],
+          "invalidRequiredCtxhelmCalls": [],
+          "irrelevantReads": [],
+          "lane": "ctxhelm-standard",
+          "metrics": {
+            "ctxhelmEvidenceFileCount": 14,
+            "ctxhelmEvidenceMissedTargetCount": 0,
+            "ctxhelmEvidenceOnlyTargetCount": 0,
+            "ctxhelmEvidenceTargetHitCount": 4,
+            "ctxhelmToolCallCount": 0,
+            "discoveredFileCount": 0,
+            "forbiddenToolCallCount": 0,
+            "invalidRequiredCtxhelmCallCount": 0,
+            "irrelevantReadCount": 0,
+            "missedTargetCount": 4,
+            "missingRequiredCtxhelmCallCount": 0,
+            "observedRequiredCtxhelmCallCount": 0,
+            "readFileCount": 0,
+            "requiredCtxhelmCallCount": 2,
+            "targetCount": 4,
+            "targetCoverage": 0.0,
+            "targetDiscoveredOnlyCount": 0,
+            "targetHitCount": 0,
+            "targetReadCount": 0,
+            "targetReadCoverage": 0.0,
+            "toolCallCount": 0
+          },
+          "missedTargetRoleCounts": {
+            "docs": 1,
+            "source": 3
+          },
+          "missedTargets": [
+            "crates/ctxhelm-core/src/contracts.rs",
+            "crates/ctxhelm/src/main.rs",
+            "docs/context-governor.md",
+            "scripts/smoke-governor.sh"
+          ],
+          "missingRequiredCtxhelmCalls": [],
+          "mode": "standard",
+          "observedRequiredCtxhelmCalls": [],
+          "rateLimitObserved": true,
+          "rawMcpTrafficStored": false,
+          "rawPromptStored": false,
+          "rawTranscriptStored": false,
+          "readFiles": [],
+          "readRoleCounts": {},
+          "requiredCtxhelmCallSpecs": [
+            {
+              "name": "prepare_task",
+              "requiresRepo": true,
+              "requiresTask": true
+            },
+            {
+              "budget": "standard",
+              "format": "json",
+              "name": "get_pack",
+              "recordTrace": false,
+              "requiresRepo": true,
+              "requiresTask": true
+            }
+          ],
+          "requiredCtxhelmCalls": [
+            "prepare_task",
+            "get_pack"
+          ],
+          "sourceTextLogged": false,
+          "status": "failed",
+          "targetHits": [],
+          "targetReads": [],
+          "toolCalls": []
+        },
+        {
+          "clientApiErrorStatus": null,
+          "clientExitStatus": 0,
+          "clientFailureKind": "rate_limited",
+          "ctxhelmCallCompliance": "client_unavailable",
+          "ctxhelmEvidenceFiles": [
+            "crates/ctxhelm/src/main.rs",
+            "crates/ctxhelm-compiler/src/eval.rs",
+            "crates/ctxhelm-core/src/contracts.rs",
+            "scripts/smoke-governor.sh",
+            "docs/context-governor.md",
+            ".planning/STATE.md",
+            ".planning/ROADMAP.md",
+            ".planning/MILESTONES.md",
+            ".planning/research/2026-06-01-world-class-context-engine-gap-plan.md",
+            "crates/ctxhelm-compiler/src/lib.rs",
+            "crates/ctxhelm/tests/release_packaging.rs",
+            "crates/ctxhelm/tests/cli_compat.rs",
+            "crates/ctxhelm/tests/common/mod.rs",
+            "crates/ctxhelm-core/src/lib.rs"
+          ],
+          "ctxhelmEvidenceMissedTargets": [],
+          "ctxhelmEvidenceOnlyTargets": [],
+          "ctxhelmEvidenceTargetHits": [
+            "crates/ctxhelm-core/src/contracts.rs",
+            "crates/ctxhelm/src/main.rs",
+            "docs/context-governor.md",
+            "scripts/smoke-governor.sh"
+          ],
+          "ctxhelmToolCalls": [],
+          "discoveredFiles": [],
+          "discoveredOnlyTargets": [],
+          "evaluationEligible": false,
+          "evaluationStatus": "failed",
+          "evidenceHashes": {
+            "ctxhelmRequestLogSha256": null,
+            "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "streamJsonSha256": "fa3b6daae45323cc0aaedcee294d1ccd0f5b47c0e5ea7efa86f918385fd10422"
+          },
+          "forbiddenToolCalls": [],
+          "invalidRequiredCtxhelmCalls": [],
+          "irrelevantReads": [],
+          "lane": "ctxhelm-memory",
+          "metrics": {
+            "ctxhelmEvidenceFileCount": 14,
+            "ctxhelmEvidenceMissedTargetCount": 0,
+            "ctxhelmEvidenceOnlyTargetCount": 0,
+            "ctxhelmEvidenceTargetHitCount": 4,
+            "ctxhelmToolCallCount": 0,
+            "discoveredFileCount": 0,
+            "forbiddenToolCallCount": 0,
+            "invalidRequiredCtxhelmCallCount": 0,
+            "irrelevantReadCount": 0,
+            "missedTargetCount": 4,
+            "missingRequiredCtxhelmCallCount": 0,
+            "observedRequiredCtxhelmCallCount": 0,
+            "readFileCount": 0,
+            "requiredCtxhelmCallCount": 2,
+            "targetCount": 4,
+            "targetCoverage": 0.0,
+            "targetDiscoveredOnlyCount": 0,
+            "targetHitCount": 0,
+            "targetReadCount": 0,
+            "targetReadCoverage": 0.0,
+            "toolCallCount": 0
+          },
+          "missedTargetRoleCounts": {
+            "docs": 1,
+            "source": 3
+          },
+          "missedTargets": [
+            "crates/ctxhelm-core/src/contracts.rs",
+            "crates/ctxhelm/src/main.rs",
+            "docs/context-governor.md",
+            "scripts/smoke-governor.sh"
+          ],
+          "missingRequiredCtxhelmCalls": [],
+          "mode": "memory",
+          "observedRequiredCtxhelmCalls": [],
+          "rateLimitObserved": true,
+          "rawMcpTrafficStored": false,
+          "rawPromptStored": false,
+          "rawTranscriptStored": false,
+          "readFiles": [],
+          "readRoleCounts": {},
+          "requiredCtxhelmCallSpecs": [
+            {
+              "name": "prepare_task",
+              "requiresRepo": true,
+              "requiresTask": true
+            },
+            {
+              "budget": "standard",
+              "format": "json",
+              "name": "get_pack",
+              "recordTrace": false,
+              "requiresRepo": true,
+              "requiresTask": true
+            }
+          ],
+          "requiredCtxhelmCalls": [
+            "prepare_task",
+            "get_pack"
+          ],
+          "sourceTextLogged": false,
+          "status": "failed",
+          "targetHits": [],
+          "targetReads": [],
+          "toolCalls": []
+        }
+      ],
+      "privacyStatus": {
+        "localOnly": true,
+        "rawMcpTrafficStored": false,
+        "rawPromptStored": false,
+        "rawTranscriptStored": false,
+        "remoteEmbeddingsUsed": false,
+        "remoteRerankingUsed": false,
+        "sourceTextLogged": false
+      },
+      "status": "skipped",
+      "targetFiles": [
+        "crates/ctxhelm/src/main.rs",
+        "crates/ctxhelm-core/src/contracts.rs",
+        "scripts/smoke-governor.sh",
+        "docs/context-governor.md"
+      ],
+      "taskId": "governor-release-proof",
+      "taskSha256": "aa83fa90917a35640c0338a27f337c3c06ac69259f3488366e54e3d73190352a"
+    }
+  ],
+  "unsupportedActions": [
+    "source edits",
+    "user project tests",
+    "global agent config mutation",
+    "cloud upload"
+  ],
+  "workflowKind": "paired-agent-context-suite"
+}

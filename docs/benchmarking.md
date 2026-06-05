@@ -98,7 +98,10 @@ forbidden command counts, required ctxhelm-call compliance, and client
 availability. Phase 253's three-repo run reports 3/3 memory target-read
 improvements with no evidence or client failures, but zero irrelevant-read
 improvements, so it is a target-consumption proof rather than an efficiency
-proof.
+proof. Phase 255 tightens the memory-lane prompt and reruns that same
+three-repo suite; target-read improvement remains 3/3 and
+`memoryIrrelevantReadImprovedPairCount` moves to 3/3, so the current measured
+memory outcome guard covers both target consumption and read efficiency.
 
 Historical eval and product-proof reports also expose
 `recommendedResearchActions`. Historical reports route candidate gaps to
@@ -1062,6 +1065,11 @@ Recommendation today:
   `429`, but `missingRequiredCtxhelmCallsObserved = false`,
   `ctxhelmEvidenceMissesObserved = false`, and plan/brief/standard/memory lanes
   each surface both expected targets.
+- Phase 254 refreshes that status with the current Claude Code `2.1.163`
+  client and the four-task R&D breadth suite. All four current preflights still
+  report rate limiting, so the artifact is `degraded` with zero
+  comparison-eligible tasks and zero comparable ctxhelm lanes. This remains
+  client-availability evidence, not retrieval-quality evidence.
 - Phase 222 adds memory-vs-signal R&D measurement. The multi-repo memory
   generalization suite can run with `--semantic --semantic-provider local_hash`
   and reports source-free semantic selected-target pairs, graph-edge ablation

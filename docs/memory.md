@@ -213,7 +213,14 @@ source snippets, or raw repository paths.
 
 Phase 253 measured VeriSchema, ReAgent, and RefactoringMiner and reported
 `memoryTargetReadImprovedPairCount = 3` across three comparison-eligible pairs.
-That proves cross-repo target-consumption lift for the measured slice. It does
+That proved cross-repo target-consumption lift for the measured slice, but did
 not prove read-efficiency lift because
-`memoryIrrelevantReadImprovedPairCount = 0`; optimize irrelevant-read behavior
-as a separate R&D lane.
+`memoryIrrelevantReadImprovedPairCount = 0`.
+
+Phase 255 tightens the Codex `ctxhelm-memory` lane into a memory-efficiency
+probe: the lane reads at most two memory-backed current files first, stops early
+when those files answer the task, and avoids broad exploration unless the
+memory-backed path is missing, stale, or needs one immediate neighbor. The same
+three-repo suite then reports `memoryTargetReadImprovedPairCount = 3` and
+`memoryIrrelevantReadImprovedPairCount = 3`. Treat Phase 255 as the current
+memory outcome regression guard.

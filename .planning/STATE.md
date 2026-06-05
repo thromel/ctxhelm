@@ -4,10 +4,10 @@ milestone: v2.5
 milestone_name: Production Retrieval Quality
 status: active
 last_updated: "2026-06-06T00:00:00Z"
-last_activity: 2026-06-06 -- Phase 253 records cross-repo Codex memory target-consumption lift
+last_activity: 2026-06-06 -- Phase 255 records cross-repo Codex memory target-consumption and read-efficiency lift
 progress:
-  total_phases: 140
-  completed_phases: 140
+  total_phases: 142
+  completed_phases: 142
   total_plans: 7
   completed_plans: 7
   percent: 100
@@ -17,10 +17,10 @@ progress:
 
 ## Current Position
 
-Phase: 253 - Codex Memory Outcome Diversity
-Plan: 253-codex-memory-outcome-diversity
+Phase: 255 - Codex Memory Efficiency
+Plan: 255-codex-memory-efficiency
 Status: Complete
-Last activity: 2026-06-06 -- Phase 253 adds a source-free cross-repo Codex memory outcome suite. The committed run covers VeriSchema, ReAgent, and RefactoringMiner with three comparison-eligible repeated-file memory pairs; all three improve memory-lane target-read coverage, with no evidence misses, under-read targets, client failures, rate limits, forbidden commands, or malformed required ctxhelm calls. This proves cross-repo memory target-consumption lift but not memory read-efficiency lift.
+Last activity: 2026-06-06 -- Phase 255 tightens the Codex memory lane into a focused memory-efficiency probe and reruns the three-repo Phase 253 suite. Memory target-read improvement remains 3/3, memory irrelevant-read improvement moves from 0/3 to 3/3, and the run stays source-free with no evidence misses, under-read targets, client failures, rate limits, forbidden commands, or malformed required ctxhelm calls. Phase 254 also refreshed Claude Code `2.1.163` breadth-suite evidence and confirms the client is still rate-limited, so Claude outcome proof remains unavailable rather than negative retrieval evidence.
 
 ## Project Reference
 
