@@ -1026,6 +1026,14 @@ Recommendation today:
   first local Claude Code `2.1.163` attempt hit rate limits in every lane, so
   the artifact records `insufficient_comparable_lanes` and
   `retry_real_client_when_available` instead of claiming outcome lift.
+- Phase 235 adds a source-free Claude Code client preflight to that lane matrix.
+  When preflight detects a client failure, live lane execution is short-circuited
+  while ctxhelm evidence is still collected. Rate-limited lanes now report
+  `ctxhelmCallCompliance = client_unavailable` instead of false missing required
+  calls. The fresh Claude Code `2.1.163` artifact still observes API status
+  `429`, but `missingRequiredCtxhelmCallsObserved = false`,
+  `ctxhelmEvidenceMissesObserved = false`, and plan/brief/standard/memory lanes
+  each surface both expected targets.
 - Phase 222 adds memory-vs-signal R&D measurement. The multi-repo memory
   generalization suite can run with `--semantic --semantic-provider local_hash`
   and reports source-free semantic selected-target pairs, graph-edge ablation

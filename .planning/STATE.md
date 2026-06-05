@@ -4,7 +4,7 @@ milestone: v2.5
 milestone_name: Production Retrieval Quality
 status: active
 last_updated: "2026-06-03T00:00:00Z"
-last_activity: 2026-06-05 -- Phase 234 separates signal-only memory overlap from final-pack impact
+last_activity: 2026-06-05 -- Phase 235 adds Claude agent-run preflight and clears false missing-call signals under rate limits
 progress:
   total_phases: 134
   completed_phases: 134
@@ -17,10 +17,10 @@ progress:
 
 ## Current Position
 
-Phase: 234 - Memory Pack Impact Accounting
-Plan: 234-memory-pack-impact-accounting
+Phase: 235 - Agent Run Client Preflight
+Plan: 235-agent-run-client-preflight
 Status: Complete
-Last activity: 2026-06-05 -- Phase 234 fixes memory-generalization accounting so signal-only memory overlap is not treated as final-pack precision work. The express rerun has `memoryPackChangedPairs = 0`, `memoryPackAddedNonTargetCount = 0`, `memorySignalOnlyNonTargetCount = 1`, and `precisionNeedsWork = false`. The six-repo semantic-enabled suite preserves `memoryUniqueLiftPairs = 2`, reports `memoryPackChangedPairs = 0`, `memoryPackAddedNonTargetCount = 0`, `unsupportedMemoryNoiseRepositoryCount = 0`, and `generalizationProven = true`. The next R&D step is real-agent outcome lift, while signal-only overlap remains tracked.
+Last activity: 2026-06-05 -- Phase 235 retries the Claude Code five-lane agent-run proof and adds source-free client preflight. Claude Code `2.1.163` is still rate-limited with API status `429`, so outcome lift remains unproven and the report correctly recommends `retry_real_client_when_available`. The harness now records `clientPreflight`, short-circuits live lane execution under known client failure, keeps ctxhelm evidence collection, and reports `ctxhelmCallCompliance = client_unavailable` instead of false missing required calls. The fresh artifact has no ctxhelm evidence misses: plan, brief, standard, and memory lanes each surface both expected targets.
 
 ## Project Reference
 

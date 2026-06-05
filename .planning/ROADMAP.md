@@ -118,6 +118,16 @@ Phase 231 validates that tuned policy at a larger pair count. The memory-general
 
 Phase 234 fixes the next layer of memory-eval accounting. After Phase 233 cleared unsupported memory noise, the remaining express non-target was reproduced as signal-only overlap: memory selected a co-change/dependency-supported file already present in the native pack, so the final context pack did not change. The memory-generalization harnesses now report pack-impact fields including `memoryPackChangedPairs`, `memoryPackAddedTargetCount`, `memoryPackAddedNonTargetCount`, and `memorySignalOnlyNonTargetCount`. The fresh six-repo semantic-enabled suite preserves `memoryUniqueLiftPairs = 2`, reports `memoryPackChangedPairs = 0`, `memoryPackAddedNonTargetCount = 0`, and sets `precisionNeedsWork = false`. The next local R&D step is real-agent outcome lift, with signal-only overlap tracked separately.
 
+Phase 235 retries that real-agent outcome lane and hardens it against client
+availability failures. The paired Claude Code harness now performs a
+source-free preflight before launching the five-lane matrix, records
+`clientPreflight`, aggregates suite-level preflight failure counts, and
+short-circuits live lane execution when the client is already rate-limited.
+Rate-limited lanes now report `ctxhelmCallCompliance = client_unavailable`
+instead of false missing required calls. The fresh Claude Code `2.1.163`
+artifact is still blocked by API status `429`, but ctxhelm evidence surfaces
+both expected targets in plan, brief, standard, and memory lanes.
+
 ## v2.5 Production Retrieval Quality
 
 ## Phases

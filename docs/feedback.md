@@ -107,7 +107,12 @@ ctxhelm eval agent-run --report .ctxhelm/e2e/agent-run-claude.json
 The script runs five read-only Claude Code lanes: native baseline,
 `prepare_task`, `prepare_task` plus a brief `get_pack`, `prepare_task` plus a
 standard `get_pack`, and a memory-guided standard-pack lane. It records
-source-free lane metrics such as target coverage, read-file count, irrelevant
+one source-free `clientPreflight` result before the lane matrix by default
+(`CTXHELM_AGENT_RUN_PREFLIGHT=0` disables it). If preflight detects a rate
+limit, API error, timeout, or non-zero client exit, the report records that
+client failure once and skips live lane execution while still collecting
+ctxhelm evidence for assisted lanes. It records source-free lane metrics such as
+target coverage, read-file count, irrelevant
 read count, target-read coverage, discovered-only targets, missed-target counts,
 source-free read-role counts, tool-call count, ctxhelm tool-call count, and
 forbidden tool-call count. The ctxhelm-assisted lanes also record required,
@@ -187,7 +192,8 @@ ctxhelm eval agent-run --report .ctxhelm/e2e/agent-run-suite-claude.json
 Suite reports keep the same source-free contract and add aggregate lane
 summaries: task count, average target-coverage delta, average target-read
 coverage delta, total irrelevant-read delta, per-lane target-read/missed-target
-counts, read-role counts, tool counts, required-call compliance, eligible-lane
+counts, read-role counts, tool counts, required-call compliance, preflight
+failure/rate-limit counts, eligible-lane
 counts, ctxhelm evidence hit/miss/evidence-only counts, and the aggregate
 outcome claim. If no baseline plus ctxhelm-assisted lane is comparable, the
 outcome claim is `insufficient_comparable_lanes`. This is the preferred path

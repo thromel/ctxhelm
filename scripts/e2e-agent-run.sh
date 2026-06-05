@@ -36,6 +36,8 @@ output_path="${CTXHELM_AGENT_RUN_REPORT:-}"
 run_real="${CTXHELM_RUN_REAL_CLIENT:-0}"
 require_real="${CTXHELM_REQUIRE_REAL_CLIENT:-0}"
 client_timeout_seconds="${CTXHELM_AGENT_RUN_TIMEOUT_SECONDS:-90}"
+client_preflight_enabled="${CTXHELM_AGENT_RUN_PREFLIGHT:-1}"
+client_preflight_timeout_seconds="${CTXHELM_AGENT_RUN_PREFLIGHT_TIMEOUT_SECONDS:-30}"
 suite_path=""
 target_files=()
 
@@ -115,6 +117,164 @@ client_version="unavailable"
 if command -v claude >/dev/null 2>&1; then
   client_version="$(claude --version 2>&1 | head -n 1)"
 fi
+
+client_preflight_json="$work_dir/client-preflight.json"
+client_preflight_failure_kind=""
+client_preflight_api_status=""
+client_preflight_exit_status=0
+client_preflight_rate_limit=0
+
+write_client_preflight_report() {
+  local status="$1"
+  local out="$2"
+  local exit_status="${3:-0}"
+  local failure_kind="${4:-}"
+  local api_status="${5:-}"
+  local rate_limit="${6:-0}"
+  local skip_reason="${7:-}"
+  python3 - "$status" "$out" "$exit_status" "$failure_kind" "$api_status" "$rate_limit" "$skip_reason" <<'PY'
+import json
+import sys
+import pathlib
+
+status, out, exit_status, failure_kind, api_status, rate_limit, skip_reason = sys.argv[1:]
+payload = {
+    "status": status,
+    "enabled": status in {"passed", "failed"},
+    "clientExitStatus": int(exit_status or 0),
+    "clientFailureKind": failure_kind or None,
+    "clientApiErrorStatus": int(api_status) if api_status else None,
+    "rateLimitObserved": rate_limit == "1",
+    "skipReason": skip_reason or None,
+    "sourceTextLogged": False,
+    "rawPromptStored": False,
+    "rawTranscriptStored": False,
+}
+pathlib.Path(out).write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+PY
+}
+
+run_client_preflight() {
+  if [[ "$run_real" != "1" && "$require_real" != "1" ]]; then
+    write_client_preflight_report "not_requested" "$client_preflight_json" 0 "" "" 0 "real Claude Code execution not requested"
+    return
+  fi
+  if [[ "$client_preflight_enabled" != "1" ]]; then
+    write_client_preflight_report "disabled" "$client_preflight_json" 0 "" "" 0 "CTXHELM_AGENT_RUN_PREFLIGHT disabled"
+    return
+  fi
+  if ! command -v claude >/dev/null 2>&1; then
+    write_client_preflight_report "failed" "$client_preflight_json" 69 "client_unavailable" "" 0 "claude is not installed"
+    client_preflight_failure_kind="client_unavailable"
+    client_preflight_exit_status=69
+    return
+  fi
+
+  local preflight_dir="$work_dir/client-preflight"
+  mkdir -p "$preflight_dir"
+  local events="$preflight_dir/events.jsonl"
+  local stderr_log="$preflight_dir/stderr.log"
+  local prompt='Return a short JSON object {"ok":true}. Do not use tools.'
+  set +e
+  (
+    cd "$repo"
+    claude -p \
+      --no-session-persistence \
+      --allowedTools Read \
+      --permission-mode bypassPermissions \
+      --verbose \
+      --output-format stream-json \
+      "$prompt"
+  ) >"$events" 2>"$stderr_log" &
+  local pid=$!
+  local exit_status=0
+  local deadline=$((SECONDS + client_preflight_timeout_seconds))
+  while kill -0 "$pid" 2>/dev/null; do
+    if (( SECONDS >= deadline )); then
+      kill "$pid" >/dev/null 2>&1 || true
+      wait "$pid" >/dev/null 2>&1 || true
+      exit_status=124
+      break
+    fi
+    sleep 2
+  done
+  if [[ "$exit_status" == "0" ]]; then
+    wait "$pid"
+    exit_status=$?
+  fi
+  set -e
+
+  python3 - "$events" "$stderr_log" "$exit_status" "$client_preflight_json" <<'PY'
+import hashlib
+import json
+import pathlib
+import sys
+
+events_path, stderr_path, exit_status_text, output_path = sys.argv[1:]
+events_file = pathlib.Path(events_path)
+stderr_file = pathlib.Path(stderr_path)
+exit_status = int(exit_status_text)
+failure_kind = None
+api_status = None
+rate_limited = False
+success = False
+
+if events_file.exists():
+    for line in events_file.read_text(encoding="utf-8", errors="replace").splitlines():
+        if not line.strip():
+            continue
+        try:
+            payload = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if payload.get("type") == "result" and payload.get("subtype") == "success":
+            success = True
+        if payload.get("type") == "rate_limit_event":
+            rate_limited = True
+            failure_kind = "rate_limited"
+        if payload.get("type") == "result" and payload.get("is_error"):
+            value = payload.get("api_error_status")
+            if isinstance(value, int):
+                api_status = value
+            if value == 429:
+                rate_limited = True
+                failure_kind = "rate_limited"
+            elif failure_kind is None:
+                failure_kind = "api_error" if value else "client_error"
+
+if exit_status == 124:
+    failure_kind = failure_kind or "timeout"
+elif exit_status != 0 and failure_kind is None:
+    failure_kind = "client_exit_nonzero"
+
+status = "passed" if exit_status == 0 and success and failure_kind is None else "failed"
+payload = {
+    "status": status,
+    "enabled": True,
+    "clientExitStatus": exit_status,
+    "clientFailureKind": failure_kind,
+    "clientApiErrorStatus": api_status,
+    "rateLimitObserved": rate_limited,
+    "evidenceHashes": {
+        "streamJsonSha256": hashlib.sha256(events_file.read_bytes()).hexdigest() if events_file.exists() else None,
+        "stderrSha256": hashlib.sha256(stderr_file.read_bytes()).hexdigest() if stderr_file.exists() else None,
+    },
+    "sourceTextLogged": False,
+    "rawPromptStored": False,
+    "rawTranscriptStored": False,
+}
+pathlib.Path(output_path).write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+PY
+
+  local report
+  report="$(cat "$client_preflight_json")"
+  client_preflight_failure_kind="$(python3 -c 'import json,sys; print(json.load(sys.stdin).get("clientFailureKind") or "")' <<<"$report")"
+  client_preflight_api_status="$(python3 -c 'import json,sys; value=json.load(sys.stdin).get("clientApiErrorStatus"); print("" if value is None else value)' <<<"$report")"
+  client_preflight_exit_status="$(python3 -c 'import json,sys; print(json.load(sys.stdin).get("clientExitStatus") or 0)' <<<"$report")"
+  client_preflight_rate_limit="$(python3 -c 'import json,sys; print(1 if json.load(sys.stdin).get("rateLimitObserved") else 0)' <<<"$report")"
+}
+
+run_client_preflight
 
 if [[ -n "$suite_path" ]]; then
   if [[ ! -f "$suite_path" ]]; then
@@ -265,6 +425,7 @@ for entry in entries:
         "status": report.get("status", "unknown"),
         "taskSha256": report.get("task", {}).get("taskSha256"),
         "targetFiles": report.get("targetFiles", []),
+        "clientPreflight": report.get("clientPreflight", {}),
         "comparison": report.get("comparison", {}),
         "lanes": report.get("lanes", []),
         "privacyStatus": report.get("privacyStatus", {}),
@@ -380,6 +541,13 @@ for lane_id, bucket in sorted(lane_totals.items()):
     })
 
 task_count = len(tasks)
+client_preflight_count = sum(1 for task in tasks if task.get("clientPreflight", {}).get("enabled"))
+client_preflight_failure_count = sum(
+    1 for task in tasks if task.get("clientPreflight", {}).get("clientFailureKind")
+)
+client_preflight_rate_limit_count = sum(
+    1 for task in tasks if task.get("clientPreflight", {}).get("rateLimitObserved")
+)
 target_delta_avg = comparison["targetCoverageDeltaSum"] / task_count if task_count else 0.0
 target_read_delta_avg = comparison["targetReadCoverageDeltaSum"] / task_count if task_count else 0.0
 irrelevant_delta_sum = comparison["irrelevantReadDeltaSum"]
@@ -503,6 +671,9 @@ payload = {
         "irrelevantReadDeltaSum": irrelevant_delta_sum,
         "comparisonEligibleCount": comparison_eligible_count,
         "comparableCtxhelmLaneCount": comparison["comparableCtxhelmLaneCount"],
+        "clientPreflightCount": client_preflight_count,
+        "clientPreflightFailureCount": client_preflight_failure_count,
+        "clientPreflightRateLimitCount": client_preflight_rate_limit_count,
         "ctxhelmToolCallsObserved": comparison["ctxhelmToolCallsObserved"],
         "forbiddenToolCallsObserved": comparison["forbiddenToolCallsObserved"],
         "missingRequiredCtxhelmCallsObserved": comparison["missingRequiredCtxhelmCallsObserved"],
@@ -804,28 +975,51 @@ EOF
     stream-json
   )
 
-  set +e
-  (
-    cd "$repo"
-    claude "${claude_args[@]}" "$prompt"
-  ) >"$events" 2>"$stderr_log" &
-  local pid=$!
   local client_status=0
-  local deadline=$((SECONDS + client_timeout_seconds))
-  while kill -0 "$pid" 2>/dev/null; do
-    if (( SECONDS >= deadline )); then
-      kill "$pid" >/dev/null 2>&1 || true
-      wait "$pid" >/dev/null 2>&1 || true
-      client_status=124
-      break
+  if [[ -n "$client_preflight_failure_kind" ]]; then
+    client_status="$client_preflight_exit_status"
+    python3 - "$events" "$client_preflight_failure_kind" "$client_preflight_api_status" "$client_preflight_rate_limit" <<'PY'
+import json
+import pathlib
+import sys
+
+events_path, failure_kind, api_status, rate_limit = sys.argv[1:]
+events = []
+if rate_limit == "1" or failure_kind == "rate_limited":
+    events.append({"type": "rate_limit_event"})
+if api_status:
+    events.append({"type": "result", "is_error": True, "api_error_status": int(api_status)})
+elif failure_kind and failure_kind not in {"timeout", "client_exit_nonzero"}:
+    events.append({"type": "result", "is_error": True})
+pathlib.Path(events_path).write_text(
+    "".join(json.dumps(event, sort_keys=True) + "\n" for event in events),
+    encoding="utf-8",
+)
+PY
+    : >"$stderr_log"
+  else
+    set +e
+    (
+      cd "$repo"
+      claude "${claude_args[@]}" "$prompt"
+    ) >"$events" 2>"$stderr_log" &
+    local pid=$!
+    local deadline=$((SECONDS + client_timeout_seconds))
+    while kill -0 "$pid" 2>/dev/null; do
+      if (( SECONDS >= deadline )); then
+        kill "$pid" >/dev/null 2>&1 || true
+        wait "$pid" >/dev/null 2>&1 || true
+        client_status=124
+        break
+      fi
+      sleep 2
+    done
+    if [[ "$client_status" == "0" ]]; then
+      wait "$pid"
+      client_status=$?
     fi
-    sleep 2
-  done
-  if [[ "$client_status" == "0" ]]; then
-    wait "$pid"
-    client_status=$?
+    set -e
   fi
-  set -e
 
   if [[ "$mode" == "plan" ]]; then
     "$ctxhelm_bin" prepare-task --repo "$repo" --no-trace "$task" >"$ctxhelm_evidence" 2>/dev/null || true
@@ -1183,6 +1377,12 @@ if client_status == 124:
     client_failure_kind = client_failure_kind or "timeout"
 elif client_status != 0 and client_failure_kind is None:
     client_failure_kind = "client_exit_nonzero"
+if client_failure_kind:
+    missing_required_calls = []
+    invalid_required_calls = []
+    ctxhelm_call_compliance = "client_unavailable" if required_calls else "not_required"
+    evaluation_eligible = False
+    evaluation_status = "failed"
 if not evaluation_eligible:
     ctxhelm_evidence_only_targets = []
 
@@ -1262,7 +1462,7 @@ brief_json="$(run_lane ctxhelm-brief brief)"
 standard_json="$(run_lane ctxhelm-standard standard)"
 memory_json="$(run_lane ctxhelm-memory memory)"
 
-python3 - "$repo" "$task" "$ctxhelm_version" "$client_version" "$target_json" "$baseline_json" "$plan_json" "$brief_json" "$standard_json" "$memory_json" "$output_path" <<'PY'
+python3 - "$repo" "$task" "$ctxhelm_version" "$client_version" "$target_json" "$baseline_json" "$plan_json" "$brief_json" "$standard_json" "$memory_json" "$client_preflight_json" "$output_path" <<'PY'
 import hashlib
 import json
 import pathlib
@@ -1270,9 +1470,11 @@ import sys
 
 repo, task, ctxhelm_version, client_version, target_path, *rest = sys.argv[1:]
 lane_paths = rest[:5]
-output_path = rest[5]
+client_preflight_path = rest[5]
+output_path = rest[6]
 targets = json.loads(pathlib.Path(target_path).read_text(encoding="utf-8"))
 lanes = [json.loads(pathlib.Path(path).read_text(encoding="utf-8")) for path in lane_paths]
+client_preflight = json.loads(pathlib.Path(client_preflight_path).read_text(encoding="utf-8"))
 
 baseline = lanes[0]
 ctxhelm_lanes = [lane for lane in lanes if lane.get("mode") in {"plan", "brief", "standard", "memory"}]
@@ -1443,6 +1645,7 @@ payload = {
         "rawTaskStored": False,
     },
     "targetFiles": targets,
+    "clientPreflight": client_preflight,
     "lanes": lanes,
     "comparison": {
         "baselineLane": baseline.get("lane"),
