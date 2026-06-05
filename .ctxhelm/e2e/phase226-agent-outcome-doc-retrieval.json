@@ -1,0 +1,37 @@
+{
+  "schemaVersion": "ctxhelm-phase226-agent-outcome-doc-retrieval-v1",
+  "phase": 226,
+  "task": "Improve paired agent-run lane matrix",
+  "generatedAt": "2026-06-05",
+  "sourceFree": true,
+  "plan": {
+    "targetFiles": [
+      "crates/ctxhelm-compiler/src/lib.rs",
+      "crates/ctxhelm-compiler/src/planning.rs",
+      "crates/ctxhelm/src/main.rs",
+      "docs/agent-setup.md",
+      "docs/feedback.md",
+      "scripts/e2e-agent-run.sh",
+      ".planning/MILESTONES.md",
+      ".planning/ROADMAP.md",
+      ".planning/STATE.md",
+      "docs/benchmarking.md"
+    ],
+    "feedbackTargetHit": true,
+    "agentSetupTargetHit": true,
+    "feedbackCandidateHit": true,
+    "agentSetupCandidateHit": true
+  },
+  "briefPack": {
+    "feedbackTargetHit": true,
+    "agentSetupTargetHit": true,
+    "feedbackSnippetIncluded": false
+  },
+  "standardPack": {
+    "feedbackTargetHit": true,
+    "agentSetupTargetHit": true,
+    "feedbackSnippetIncluded": true
+  },
+  "decision": "promote",
+  "claimBoundary": "retrieval_and_packing_fix_only_real_agent_outcome_lift_requires_non_rate_limited_five_lane_rerun"
+}

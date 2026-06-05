@@ -1641,7 +1641,9 @@ fn extend_project_governance_docs(
     roles: &BTreeMap<String, FileRole>,
     task: &str,
 ) {
-    if !is_project_governance_task(task) {
+    let project_governance_task = is_project_governance_task(task);
+    let agent_outcome_task = is_agent_outcome_task(task);
+    if !project_governance_task && !agent_outcome_task {
         return;
     }
 
@@ -1649,7 +1651,14 @@ fn extend_project_governance_docs(
         .iter()
         .map(|result| result.path.clone())
         .collect::<BTreeSet<_>>();
-    for (index, path) in project_governance_doc_paths().into_iter().enumerate() {
+    let mut paths = Vec::new();
+    if project_governance_task {
+        paths.extend(project_governance_doc_paths());
+    }
+    if agent_outcome_task {
+        paths.extend(agent_outcome_doc_paths());
+    }
+    for (index, path) in paths.into_iter().enumerate() {
         let Some(role) = roles.get(path).cloned() else {
             continue;
         };
@@ -1659,12 +1668,21 @@ fn extend_project_governance_docs(
         if !seen.insert(path.to_string()) {
             continue;
         }
+        let is_agent_outcome_doc = agent_outcome_task && agent_outcome_doc_paths().contains(&path);
         search_results.push(SearchResult {
             path: path.to_string(),
             role,
             language: language_for_governance_doc(path),
-            score: 16.0 - index.min(10) as f32,
-            reason: "project governance artifact for planning/eval/release task".to_string(),
+            score: if is_agent_outcome_doc {
+                26.0 - index.min(10) as f32
+            } else {
+                16.0 - index.min(10) as f32
+            },
+            reason: if is_agent_outcome_doc {
+                "agent-run workflow documentation for outcome-eval task".to_string()
+            } else {
+                "project governance artifact for planning/eval/release task".to_string()
+            },
         });
     }
 }
@@ -1703,6 +1721,27 @@ fn is_project_governance_task(task: &str) -> bool {
     })
 }
 
+fn is_agent_outcome_task(task: &str) -> bool {
+    let task_terms = terms(task);
+    let has_agent_run = task_terms
+        .iter()
+        .any(|term| term == "agent_run" || term == "agent-run")
+        || (task_terms.iter().any(|term| term == "agent")
+            && task_terms.iter().any(|term| term == "run"));
+    has_agent_run
+        || task_terms.iter().any(|term| {
+            matches!(
+                term.as_str(),
+                "outcome" | "outcomes" | "lane" | "lanes" | "matrix" | "paired"
+            )
+        }) && task_terms.iter().any(|term| {
+            matches!(
+                term.as_str(),
+                "agent" | "agents" | "claude" | "codex" | "client" | "clients"
+            )
+        })
+}
+
 fn project_governance_doc_paths() -> [&'static str; 10] {
     [
         ".planning/STATE.md",
@@ -1716,6 +1755,10 @@ fn project_governance_doc_paths() -> [&'static str; 10] {
         "docs/release.md",
         "docs/semantic.md",
     ]
+}
+
+fn agent_outcome_doc_paths() -> [&'static str; 2] {
+    ["docs/feedback.md", "docs/agent-setup.md"]
 }
 
 fn language_for_governance_doc(path: &str) -> Option<String> {
@@ -2382,6 +2425,7 @@ mod tests {
         fs::create_dir(repo.join(".git")).unwrap();
         fs::create_dir_all(repo.join("crates/ctxhelm/src")).unwrap();
         fs::create_dir_all(repo.join("scripts")).unwrap();
+        fs::create_dir_all(repo.join("docs")).unwrap();
         fs::write(
             repo.join("crates/ctxhelm/src/main.rs"),
             "fn render_agent_run_report() {}\nfn render_feedback_report() {}\n",
@@ -2395,6 +2439,11 @@ mod tests {
         fs::write(
             repo.join("crates/ctxhelm/src/other.rs"),
             "fn render_unrelated_report() {}\n",
+        )
+        .unwrap();
+        fs::write(
+            repo.join("docs/feedback.md"),
+            "paired agent-run feedback and outcome eval docs\n",
         )
         .unwrap();
 
@@ -2413,6 +2462,7 @@ mod tests {
             .collect::<Vec<_>>();
 
         assert!(paths.contains(&"crates/ctxhelm/src/main.rs"));
+        assert!(paths.contains(&"docs/feedback.md"));
     }
 
     #[test]
@@ -2510,6 +2560,7 @@ mod tests {
             (".planning/ROADMAP.md".to_string(), FileRole::Docs),
             (".planning/MILESTONES.md".to_string(), FileRole::Docs),
             ("docs/benchmarking.md".to_string(), FileRole::Docs),
+            ("docs/feedback.md".to_string(), FileRole::Docs),
             ("src/auth.ts".to_string(), FileRole::Source),
         ]
         .into_iter()
@@ -2529,6 +2580,41 @@ mod tests {
         assert!(paths.contains(&".planning/ROADMAP.md"));
         assert!(paths.contains(&".planning/MILESTONES.md"));
         assert!(paths.contains(&"docs/benchmarking.md"));
+        assert!(!paths.contains(&"docs/feedback.md"));
+        assert!(!paths.contains(&"src/auth.ts"));
+    }
+
+    #[test]
+    fn agent_outcome_tasks_add_feedback_docs_as_candidates() {
+        let mut search_results = vec![SearchResult {
+            path: "scripts/e2e-agent-run.sh".to_string(),
+            role: FileRole::Unknown,
+            language: Some("bash".to_string()),
+            score: 20.0,
+            reason: "source match".to_string(),
+        }];
+        let roles = [
+            ("docs/feedback.md".to_string(), FileRole::Docs),
+            ("docs/agent-setup.md".to_string(), FileRole::Docs),
+            ("docs/benchmarking.md".to_string(), FileRole::Docs),
+            ("src/auth.ts".to_string(), FileRole::Source),
+        ]
+        .into_iter()
+        .collect::<BTreeMap<_, _>>();
+
+        extend_project_governance_docs(
+            &mut search_results,
+            &roles,
+            "Improve paired agent-run lane matrix",
+        );
+        let paths = search_results
+            .iter()
+            .map(|result| result.path.as_str())
+            .collect::<Vec<_>>();
+
+        assert!(paths.contains(&"docs/feedback.md"));
+        assert!(paths.contains(&"docs/agent-setup.md"));
+        assert!(!paths.contains(&"docs/benchmarking.md"));
         assert!(!paths.contains(&"src/auth.ts"));
     }
 

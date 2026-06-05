@@ -1275,8 +1275,9 @@ fn root_governance_doc_priority(path: &str) -> u8 {
         "AGENTS.md" => 6,
         "docs/release.md" => 7,
         "docs/agent-setup.md" => 8,
-        "docs/semantic.md" => 9,
-        "README.md" => 10,
+        "docs/feedback.md" => 9,
+        "docs/semantic.md" => 10,
+        "README.md" => 11,
         _ => 99,
     }
 }
@@ -1293,6 +1294,7 @@ fn is_root_governance_doc_path(path: &str) -> bool {
             | "README.md"
             | "docs/agent-setup.md"
             | "docs/benchmarking.md"
+            | "docs/feedback.md"
             | "docs/release.md"
             | "docs/semantic.md"
     )

@@ -4,7 +4,7 @@ milestone: v2.5
 milestone_name: Production Retrieval Quality
 status: active
 last_updated: "2026-06-03T00:00:00Z"
-last_activity: 2026-06-05 -- Phase 225 expands paired-agent lane matrix
+last_activity: 2026-06-05 -- Phase 226 fixes agent outcome doc retrieval
 progress:
   total_phases: 134
   completed_phases: 134
@@ -17,10 +17,10 @@ progress:
 
 ## Current Position
 
-Phase: 225 - Expanded Paired-Agent Lane Matrix
-Plan: 225-expanded-agent-run-lane-matrix
+Phase: 226 - Agent Outcome Doc Retrieval
+Plan: 226-agent-outcome-doc-retrieval
 Status: Complete
-Last activity: 2026-06-05 -- Phase 225 expands paired real-agent outcome measurement from the old three-lane probe to the full R&D lane matrix. `scripts/e2e-agent-run.sh` now compares native baseline, `ctxhelm-plan`, `ctxhelm-brief`, `ctxhelm-standard`, and `ctxhelm-memory`. Standard and memory lanes require valid explicit-repo `prepare_task` plus `get_pack` with `budget = "standard"`, `format = "json"`, and `recordTrace = false`; the memory lane gives selected-memory consumption guidance while still requiring native reads of current files. The skipped deterministic run proves the expanded report shape. The local real-client attempt in `.ctxhelm/e2e/phase225-agent-run-lane-matrix.json` used Claude Code `2.1.163`, but all five lanes hit `rate_limited`, so the outcome claim remains `insufficient_comparable_lanes` with `retry_real_client_when_available`. The report also records a secondary ctxhelm-evidence miss for `docs/feedback.md`; revisit that after a comparable real-client run.
+Last activity: 2026-06-05 -- Phase 226 fixes the secondary ctxhelm-evidence miss found by the Phase 225 paired-agent lane matrix. Agent-run outcome, paired-lane, matrix, and client comparison tasks now receive bounded workflow-doc candidates for `docs/feedback.md` and `docs/agent-setup.md`, without broadening generic project-governance tasks. The focused proof shows `prepare-task`, brief packs, and standard packs for `Improve paired agent-run lane matrix` now surface `docs/feedback.md`; the standard pack also includes the feedback snippet. This closes the retrieval/packing gap. Real-agent outcome lift remains unproven until Claude Code rate limits clear and the five-lane matrix can produce comparable non-skipped lanes.
 
 ## Project Reference
 
