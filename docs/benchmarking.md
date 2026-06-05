@@ -87,6 +87,19 @@ guidance when surfaced targets are not read, harden required-call guidance when
 observed ctxhelm calls are malformed or incomplete, or analyze the native
 baseline when comparable lanes show no measured lift.
 
+Experience-memory outcome suites are a paired real-agent specialization. The
+`scripts/e2e-codex-memory-outcome-suite.sh` harness seeds approved source-free
+experience cards from older repeated-file tasks, runs real read-only Codex CLI
+comparisons on newer tasks, and reports source-free aggregate fields such as
+`memoryTargetReadImprovedPairCount`,
+`memoryTargetReadMatchedOrImprovedPairCount`,
+`memoryIrrelevantReadImprovedPairCount`, evidence misses, under-read targets,
+forbidden command counts, required ctxhelm-call compliance, and client
+availability. Phase 253's three-repo run reports 3/3 memory target-read
+improvements with no evidence or client failures, but zero irrelevant-read
+improvements, so it is a target-consumption proof rather than an efficiency
+proof.
+
 Historical eval and product-proof reports also expose
 `recommendedResearchActions`. Historical reports route candidate gaps to
 candidate generation, generated-but-unselected misses to ranking or budget

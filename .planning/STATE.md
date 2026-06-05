@@ -4,10 +4,10 @@ milestone: v2.5
 milestone_name: Production Retrieval Quality
 status: active
 last_updated: "2026-06-06T00:00:00Z"
-last_activity: 2026-06-06 -- Phase 252 fixes semantic gate classification and records local_fastembed hold evidence
+last_activity: 2026-06-06 -- Phase 253 records cross-repo Codex memory target-consumption lift
 progress:
-  total_phases: 139
-  completed_phases: 139
+  total_phases: 140
+  completed_phases: 140
   total_plans: 7
   completed_plans: 7
   percent: 100
@@ -17,10 +17,10 @@ progress:
 
 ## Current Position
 
-Phase: 252 - Semantic Gate Classification
-Plan: 252-semantic-gate-classification
+Phase: 253 - Codex Memory Outcome Diversity
+Plan: 253-codex-memory-outcome-diversity
 Status: Complete
-Last activity: 2026-06-06 -- Phase 252 fixes the semantic/precision gate so eval-only local metadata reranker regressions remain visible but no longer force the top-level semantic promotion decision to `block`. Fresh source-free `local_fastembed` gates now correctly report `hold`: RefactoringMiner has small semantic lift (`0.5104166` vs default `0.48541665`) and ctxhelm is neutral (`0.3212704` vs `0.3212704`). A fresh Claude paired suite was attempted with Claude Code `2.1.163` but is correctly `degraded` because client preflight observed rate limiting.
+Last activity: 2026-06-06 -- Phase 253 adds a source-free cross-repo Codex memory outcome suite. The committed run covers VeriSchema, ReAgent, and RefactoringMiner with three comparison-eligible repeated-file memory pairs; all three improve memory-lane target-read coverage, with no evidence misses, under-read targets, client failures, rate limits, forbidden commands, or malformed required ctxhelm calls. This proves cross-repo memory target-consumption lift but not memory read-efficiency lift.
 
 ## Project Reference
 

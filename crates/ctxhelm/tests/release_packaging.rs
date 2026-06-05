@@ -2030,6 +2030,56 @@ fn codex_agent_run_e2e_script_contract() {
 }
 
 #[test]
+fn codex_memory_outcome_suite_script_contract() {
+    let repo_root = workspace_root();
+    let script = repo_root.join("scripts/e2e-codex-memory-outcome-suite.sh");
+    assert!(
+        script.exists(),
+        "codex memory outcome suite script is missing"
+    );
+
+    let syntax = Command::new("bash")
+        .arg("-n")
+        .arg(&script)
+        .current_dir(&repo_root)
+        .output()
+        .unwrap();
+    assert!(
+        syntax.status.success(),
+        "bash -n failed: {}",
+        String::from_utf8_lossy(&syntax.stderr)
+    );
+
+    let script_text = fs::read_to_string(&script).unwrap();
+    for required in [
+        "ctxhelm-codex-memory-outcome-suite-v1",
+        "cross-repo-codex-memory-outcome-suite",
+        "generate-experience",
+        "memory",
+        "approve",
+        "CTXHELM_RUN_REAL_CLIENT",
+        "CTXHELM_HOME",
+        "rawTaskStored",
+        "rawTaskTextStored",
+        "rawCommandOutputStored",
+        "rawMcpTrafficStored",
+        "remoteEmbeddingsUsed",
+        "remoteRerankingUsed",
+        "memoryTargetReadImprovedPairCount",
+        "memoryTargetReadMatchedOrImprovedPairCount",
+        "memoryIrrelevantReadImprovedPairCount",
+        "expand_memory_outcome_repository_diversity",
+        "source edits",
+        "cloud upload",
+    ] {
+        assert!(
+            script_text.contains(required),
+            "codex memory outcome suite script missing {required}"
+        );
+    }
+}
+
+#[test]
 fn memory_reuse_smoke_script_contract() {
     let repo_root = workspace_root();
     let script = repo_root.join("scripts/smoke-memory-reuse.sh");

@@ -408,9 +408,10 @@ The current R&D state is therefore:
 - Claude Code workflow proof is current again through
   `.ctxhelm/e2e/phase250-claude-workflow-refresh.json`, but a fresh paired
   Claude outcome suite still depends on client availability.
-- Experience memory is source-free, bounded, and has both local six-repo
-  measurement and Codex consumption evidence. Broad memory-specific real-agent
-  outcome lift should still be measured in a larger suite.
+- Experience memory is source-free, bounded, and has local six-repo
+  measurement, single-repo Codex consumption evidence, and three-repo Codex
+  outcome evidence. Phase 253 closes the earlier cross-repo target-consumption
+  gap while leaving memory read-efficiency work open.
 - GraphRAG is implemented and measured through edge profiles, edge ablations,
   and bounded edge-family budget allocation. Future graph work should target
   ranking pressure, not unbounded edge expansion.
@@ -442,7 +443,9 @@ targets, no forbidden commands, no client failures, and `1.00` average
 target-read coverage in every ctxhelm lane. This closes the current larger
 single-repo Codex suite gap. Remaining R&D should now focus on semantic
 default-lift proof, broader cross-repo memory outcome diversity, and fresh
-paired Claude outcome proof when the client is available.
+paired Claude outcome proof when the client is available. Phase 253 later
+closes the memory outcome-diversity item for target consumption, but not for
+read efficiency.
 
 ## June 6 Phase 252 Update
 
@@ -465,3 +468,37 @@ The current semantic truth is therefore more precise: not blocked by an
 unrelated reranker experiment, but still not strong enough for default
 promotion. Next semantic R&D should focus on query-family lift and
 query/document construction, not default enablement.
+
+## June 6 Phase 253 Update
+
+Phase 253 closes the current cross-repo real-agent memory outcome gap with a
+source-free Codex CLI suite. `scripts/e2e-codex-memory-outcome-suite.sh` scans
+each requested repository for repeated-file historical pairs, seeds one
+approved experience-memory card from the older pair task, and runs the existing
+read-only Codex paired harness against the newer pair task with isolated
+`CTXHELM_HOME`.
+
+The source-free artifact
+`.ctxhelm/e2e/phase253-codex-memory-outcome-suite.json` covers VeriSchema,
+ReAgent, and RefactoringMiner with one repeated-file memory pair per repository.
+It reports:
+
+- `status = passed`
+- `evaluatedRepositoryCount = 3`
+- `comparisonEligibleCount = 3`
+- `improvedPairCount = 3`
+- `memoryTargetReadImprovedPairCount = 3`
+- `memoryTargetReadMatchedOrImprovedPairCount = 3`
+- `ctxhelmEvidenceMissPairCount = 0`
+- `ctxhelmUnderReadPairCount = 0`
+- `clientFailurePairCount = 0`
+- `rateLimitPairCount = 0`
+- `forbiddenCommandPairCount = 0`
+- `missingRequiredCtxhelmCallPairCount = 0`
+- `invalidRequiredCtxhelmCallPairCount = 0`
+
+This is real outcome evidence that approved memory-backed ctxhelm guidance gets
+Codex to consume the target file across multiple repositories. It is not an
+efficiency win: `memoryIrrelevantReadImprovedPairCount = 0`. The remaining
+memory R&D target is therefore narrower and more honest: preserve target
+consumption as a regression guard while improving read efficiency.

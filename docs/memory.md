@@ -188,3 +188,32 @@ their own signals, but memory is not allowed to add extra pressure on top of
 that weak support. Ranking also avoids attaching memory to weak
 lexical-expansion-only paths and only allows an uncorroborated memory-only
 rescue when no target files were selected at all.
+
+For real Codex outcome measurement, use:
+
+```bash
+scripts/e2e-codex-memory-outcome-suite.sh \
+  --repo ../ctxhelm-proof-fixtures/VeriSchema \
+  --repo ../ctxhelm-proof-fixtures/ReAgent \
+  --repo ../ctxhelm-proof-fixtures/RefactoringMiner \
+  --pairs 1 \
+  --scan-commits 180 \
+  --output .ctxhelm/e2e/phase253-codex-memory-outcome-suite.json
+```
+
+This suite measures whether approved experience memory changes what a real
+Codex CLI run consumes, not just what local ranking selects. It discovers
+repeated-file historical pairs, seeds one approved source-free experience card
+from the older task, runs the paired read-only Codex harness against the newer
+task, and aggregates target-read coverage, irrelevant reads, evidence misses,
+under-read targets, required ctxhelm-call compliance, and client availability.
+The report stores source-free labels, hashes, counters, and booleans only; it
+does not store raw tasks, prompts, transcripts, MCP traffic, command output,
+source snippets, or raw repository paths.
+
+Phase 253 measured VeriSchema, ReAgent, and RefactoringMiner and reported
+`memoryTargetReadImprovedPairCount = 3` across three comparison-eligible pairs.
+That proves cross-repo target-consumption lift for the measured slice. It does
+not prove read-efficiency lift because
+`memoryIrrelevantReadImprovedPairCount = 0`; optimize irrelevant-read behavior
+as a separate R&D lane.
