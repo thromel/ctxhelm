@@ -125,7 +125,7 @@ Use ctxhelm for:
 - architecture constraints
 - validation commands
 
-Start by reading the first up to 5 returned target files with the agent's native tools before editing; discovering a path is not the same as consuming it. Docs, config, schema, and script entries in that initial target set are first-class targets, not optional background. Stop after those reads if they answer the task. Request `get_pack` progressively, starting brief or standard, only when native file reads or the plan are insufficient.
+Start by reading the first up to 5 returned target files with the agent's native tools before editing; discovering a path is not the same as consuming it. If selectedMemory appears, read up to 3 memory source/evidence paths too. Docs, config, schema, and script entries in that initial set are first-class targets, not optional background. Stop after those reads if they answer the task. Request `get_pack` progressively, starting brief or standard, only when native file reads or the plan are insufficient.
 
 Pack resources returned by `prepare_task` are session-scoped MCP resources. After reconnect or server restart, call `get_pack` with the same task and `repo` for durable materialization.
 <!-- ctxhelm:end -->
@@ -140,7 +140,7 @@ For tasks that modify code, investigate bugs, add features, or affect multiple f
 
 1. Call the ctxhelm MCP tool `prepare_task` when available, passing the active repository path as `repo` when known, or run `ctxhelm prepare-task --repo <repo>`.
 2. Prefer returned target files, related tests, examples, and constraints.
-3. Read the first up to 5 returned target files using Cursor's native file tools before editing; discovering a path is not the same as consuming it. Docs, config, schema, and script files in that initial target set are first-class targets, not optional background. Stop after those reads if they answer the task.
+3. Read the first up to 5 returned target files using Cursor's native file tools before editing; discovering a path is not the same as consuming it. If selectedMemory appears, read up to 3 memory source/evidence paths too. Docs, config, schema, and script files in that initial target set are first-class targets, not optional background. Stop after those reads if they answer the task.
 4. Call `get_pack` progressively only when direct file reads or brief context are insufficient.
 5. Run targeted validation commands returned by ctxhelm when available.
 
@@ -152,7 +152,7 @@ pub const CLAUDE_BUGFIX_COMMAND: &str = r#"# ctxhelm Bugfix
 Use this command for non-trivial bug fixes.
 
 1. Call `ctxhelm.prepare_task` for the user's task when MCP is available, passing the active repository path as `repo` when known.
-2. Read the first up to 5 returned target files with native tools; discovering a path is not the same as consuming it. Docs, config, schema, and script files in that initial target set are first-class targets, not optional background. Stop after those reads if they answer the task.
+2. Read the first up to 5 returned target files with native tools; discovering a path is not the same as consuming it. If selectedMemory appears, read up to 3 memory source/evidence paths too. Docs, config, schema, and script files in that initial target set are first-class targets, not optional background. Stop after those reads if they answer the task.
 3. Request `get_pack` progressively, starting brief or standard, only if direct file reads are insufficient.
 4. Make the smallest patch that addresses the bug.
 5. Run the related test command returned by ctxhelm when available.
@@ -173,7 +173,7 @@ pub const CLAUDE_MCP_SNIPPET: &str = r#"{
 
 pub const OPENCODE_SNIPPET: &str = r#"{
   "$schema": "https://opencode.ai/config.json",
-  "ctxhelmNote": "Registers ctxhelm as a local read-only MCP context server. Call prepare_task with the active repository path as `repo`, read the first up to 5 returned target files natively because discovering a path is not the same as consuming it, treat docs/config/schema/script targets in that initial set as first-class targets, stop if those reads answer the task, and use get_pack progressively only when needed. Pack resources are same-session only; after reconnect or restart call get_pack.",
+  "ctxhelmNote": "Registers ctxhelm as a local read-only MCP context server. Call prepare_task with the active repository path as `repo`. Read first up to 5 target files natively; discovering a path is not the same as consuming it. If selectedMemory appears, read up to 3 memory source/evidence paths too. Treat docs/config/schema/script as first-class targets. Stop if enough; use get_pack only when needed. Pack resources are same-session; after reconnect or restart call get_pack.",
   "instructions": ["AGENTS.md"],
   "mcp": {
     "ctxhelm": {
@@ -191,7 +191,7 @@ Copy/paste this local stdio MCP server setup yourself; ctxhelm does not apply it
 
   codex mcp add ctxhelm -- ctxhelm serve-mcp
 
-Call `prepare_task` first with the active repository path as `repo` when known. Read the first up to 5 returned target files with Codex native tools; discovering a path is not the same as consuming it. Docs, config, schema, and script targets in that initial set are first-class targets. Stop if those reads answer the task. Call `get_pack` progressively only when native reads or brief context are insufficient. Pack resources are session-scoped; after reconnect or restart, call `get_pack` with the same task and `repo`.
+Call `prepare_task` first with the active repository path as `repo` when known. Read first up to 5 target files with Codex native tools; discovering a path is not the same as consuming it. If selectedMemory appears, read up to 3 memory source/evidence paths too. Treat docs/config/schema/script as first-class targets. Stop if enough. Call `get_pack` only when native reads or brief context are insufficient. Pack resources are session-scoped; after reconnect or restart, call `get_pack` with the same task and `repo`.
 
 If an agent cannot spawn `ctxhelm`, replace the command with the absolute path from `which ctxhelm`. This command does not mutate global Codex config automatically.
 "#;
@@ -750,6 +750,10 @@ mod tests {
             assert!(
                 content.contains("first-class targets"),
                 "{name} guidance must treat docs/config/schema/script targets as first-class targets"
+            );
+            assert!(
+                content.contains("selectedMemory"),
+                "{name} guidance must direct native reads for selected memory evidence"
             );
             assert!(
                 content.contains("get_pack"),

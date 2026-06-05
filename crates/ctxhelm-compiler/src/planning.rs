@@ -25,6 +25,7 @@ use uuid::Uuid;
 
 pub(crate) const PREPARE_TASK_TARGET_LIMIT: usize = 10;
 pub(crate) const PREPARE_TASK_TEST_LIMIT: usize = 10;
+const SELECTED_MEMORY_INITIAL_READ_LIMIT: usize = 3;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum HistoryMode {
@@ -437,7 +438,7 @@ pub(crate) fn prepare_context_plan_with_paths_history_mode_and_semantic(
         related_tests: test_results,
         co_change_hints: ranking_co_change_hints,
         dependency_edges,
-        roles,
+        roles: roles.clone(),
         expansion_seeds: expansion_seed_paths,
         memory_paths,
     });
@@ -458,19 +459,23 @@ pub(crate) fn prepare_context_plan_with_paths_history_mode_and_semantic(
     } else {
         ranked_candidates
     };
-    let selection = select_ranked_candidates_for_scope(
+    let mut selection = select_ranked_candidates_for_scope(
         &ranked_candidates,
         PREPARE_TASK_TARGET_LIMIT,
         PREPARE_TASK_TEST_LIMIT,
         broad_target_selection,
     );
-    plan.context_areas = context_areas_for_plan(&selection, multi_area_task);
-    plan.target_files = selection.target_files;
-    plan.related_tests = selection.related_tests;
-    plan.recommended_commands = selection.recommended_commands;
-    plan.retrieval_candidates = selection.retrieval_candidates;
+    plan.target_files = selection.target_files.clone();
+    plan.related_tests = selection.related_tests.clone();
+    plan.recommended_commands = selection.recommended_commands.clone();
+    plan.retrieval_candidates = selection.retrieval_candidates.clone();
     maybe_add_broad_validation_command(task, &mut plan);
     attach_selected_memory(task, &mut plan, &memory_cards);
+    promote_selected_memory_initial_reads(&mut plan, &roles);
+    selection.target_files = plan.target_files.clone();
+    selection.related_tests = plan.related_tests.clone();
+    selection.retrieval_candidates = plan.retrieval_candidates.clone();
+    plan.context_areas = context_areas_for_plan(&selection, multi_area_task);
     plan.query_trace = Some(query_trace);
     plan.provider_policy = Some(provider_policy);
 
@@ -489,6 +494,119 @@ pub(crate) fn prepare_context_plan_with_paths_history_mode_and_semantic(
     );
 
     Ok(plan)
+}
+
+fn promote_selected_memory_initial_reads(
+    plan: &mut ContextPlan,
+    roles: &BTreeMap<String, FileRole>,
+) {
+    if plan.selected_memory.is_empty() {
+        return;
+    }
+
+    let mut seen = plan
+        .target_files
+        .iter()
+        .map(|target| target.path.clone())
+        .collect::<BTreeSet<_>>();
+    let mut promoted = Vec::new();
+
+    'memory: for memory in &plan.selected_memory {
+        for link in &memory.card.source_links {
+            if promoted.len() >= SELECTED_MEMORY_INITIAL_READ_LIMIT {
+                break 'memory;
+            }
+            if seen.contains(link) {
+                continue;
+            }
+            let Some(role) = roles.get(link) else {
+                continue;
+            };
+            if !memory_path_role_is_context(role) {
+                continue;
+            }
+            seen.insert(link.clone());
+            promoted.push(TargetFile {
+                path: link.clone(),
+                reason: "selected memory source link".to_string(),
+                line_range: None,
+                confidence: selected_memory_initial_read_confidence(memory),
+                attribution: selected_memory_initial_read_evidence(memory, link, role),
+            });
+        }
+    }
+
+    if promoted.is_empty() {
+        return;
+    }
+
+    let insert_at = plan
+        .target_files
+        .iter()
+        .position(|target| !is_active_context_target(target))
+        .unwrap_or(plan.target_files.len());
+    let promoted_count = promoted.len();
+    plan.target_files.splice(insert_at..insert_at, promoted);
+    plan.target_files.truncate(PREPARE_TASK_TARGET_LIMIT);
+    push_plan_diagnostic(
+        plan,
+        Diagnostic {
+            code: "selected_memory_initial_read_promoted".to_string(),
+            severity: DiagnosticSeverity::Info,
+            message: format!(
+                "Promoted {promoted_count} selected-memory source link(s) into targetFiles for native first-read consumption."
+            ),
+            paths: plan
+                .target_files
+                .iter()
+                .filter(|target| target.reason == "selected memory source link")
+                .map(|target| target.path.clone())
+                .collect(),
+            count: promoted_count,
+        },
+    );
+}
+
+fn selected_memory_initial_read_evidence(
+    memory: &SelectedMemory,
+    path: &str,
+    role: &FileRole,
+) -> Vec<RetrievalEvidence> {
+    let mut evidence = memory
+        .evidence
+        .iter()
+        .filter(|evidence| evidence.path.as_deref() == Some(path))
+        .cloned()
+        .collect::<Vec<_>>();
+    if !evidence
+        .iter()
+        .any(|evidence| evidence.reason_code == "selected_memory_initial_read")
+    {
+        evidence.push(RetrievalEvidence {
+            signal: RetrievalSignalKind::Memory,
+            score: selected_memory_initial_read_confidence(memory),
+            reason_code: "selected_memory_initial_read".to_string(),
+            path: Some(path.to_string()),
+            role: Some(role.clone()),
+            edge_label: Some(memory.card.id.clone()),
+            commit_ids: Vec::new(),
+            commit_count: 0,
+        });
+    }
+    evidence
+}
+
+fn selected_memory_initial_read_confidence(memory: &SelectedMemory) -> f32 {
+    memory.score.max(0.82).clamp(0.05, 0.95)
+}
+
+fn is_active_context_target(target: &TargetFile) -> bool {
+    target.attribution.iter().any(|evidence| {
+        matches!(
+            evidence.signal,
+            RetrievalSignalKind::Anchor | RetrievalSignalKind::CurrentDiff
+        )
+    }) || target.reason == "explicit path anchor from active context"
 }
 
 fn related_test_seed_paths(

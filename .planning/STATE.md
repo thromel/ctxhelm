@@ -4,7 +4,7 @@ milestone: v2.5
 milestone_name: Production Retrieval Quality
 status: active
 last_updated: "2026-06-03T00:00:00Z"
-last_activity: 2026-06-05 -- Phase 239 closes Codex consumption follow-up with capped native target reads and source-free improvement proof
+last_activity: 2026-06-05 -- Phase 244 fixes selected-memory consumption in real Codex MCP e2e and removes evidence-only target gaps
 progress:
   total_phases: 134
   completed_phases: 134
@@ -17,10 +17,10 @@ progress:
 
 ## Current Position
 
-Phase: 239 - Codex Capped Target Consumption
-Plan: 239-codex-capped-target-consumption
+Phase: 244 - Codex Memory Consumption Fix
+Plan: 244-codex-memory-consumption
 Status: Complete
-Last activity: 2026-06-05 -- Phase 239 strengthens Codex/native consumption guidance after Phase 237 exposed docs that were surfaced but not read and Phase 238 showed that read-all target guidance was too broad. The source-free artifact `.ctxhelm/e2e/phase239-agent-run-codex-capped-consumption.json` passes with four comparable ctxhelm lanes, valid explicit-repo `prepare_task`/`get_pack` calls, no forbidden commands, no client failures, no ctxhelm evidence misses, and outcome claim `ctxhelm_improved`. Baseline and all ctxhelm lanes read all three expected target files; best lane `ctxhelm-brief` reduces irrelevant reads by `2`, command executions by `10`, and read-file count by `2`.
+Last activity: 2026-06-05 -- Phase 244 fixes the selected-memory real-agent consumption gap exposed on VeriSchema. The source-free artifact `.ctxhelm/e2e/phase244-agent-run-codex-memory-consumption.json` passes with four comparable ctxhelm lanes, valid explicit-repo `prepare_task`/`get_pack` calls, no forbidden commands, no client failures, no ctxhelm evidence misses, no evidence-only targets, and outcome claim `ctxhelm_improved`. All ctxhelm lanes read `schema_agent/core/models.py`; best lane `ctxhelm-brief` preserves target-read coverage while reducing read files from `18` to `5`, irrelevant reads from `17` to `4`, and command executions by `16`.
 
 ## Project Reference
 

@@ -1924,6 +1924,7 @@ fn codex_agent_run_e2e_script_contract() {
         "get_pack",
         "targetFiles first",
         "first-class targets",
+        "selectedMemory sourceLinks",
         "mcp_servers.ctxhelm.command",
         "CTXHELM_RUN_REAL_CLIENT=1",
         "source edits",

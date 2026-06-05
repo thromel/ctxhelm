@@ -2739,7 +2739,8 @@ mod tests {
             .iter()
             .any(|candidate| candidate.kind == RetrievalCandidateKind::Memory));
         assert!(markdown.contains("## Selected memory"));
-        assert!(markdown.contains("Source links"));
+        assert!(markdown.contains("Native-read source links"));
+        assert!(markdown.contains("selected-memory source/evidence path"));
         assert!(!markdown.contains("sourceText"));
 
         std::env::remove_var("CTXHELM_HOME");
@@ -2816,6 +2817,80 @@ mod tests {
                     .signal_scores
                     .iter()
                     .any(|score| score.signal == RetrievalSignalKind::Memory)
+        }));
+
+        std::env::remove_var("CTXHELM_HOME");
+    }
+
+    #[test]
+    fn selected_memory_source_links_displace_tail_targets_for_initial_reads() {
+        let _guard = env_lock();
+        let temp = tempfile::tempdir().unwrap();
+        let repo = temp.path().join("repo");
+        let home = temp.path().join("ctxhelm-home");
+        fs::create_dir_all(repo.join("src/payments")).unwrap();
+        fs::create_dir_all(repo.join("src/noisy")).unwrap();
+        fs::write(
+            repo.join("src/payments/handler.ts"),
+            "export function handlePayment() { return true; }\n",
+        )
+        .unwrap();
+        for index in 0..12 {
+            fs::write(
+                repo.join(format!("src/noisy/candidate_{index}.ts")),
+                "export const note = 'checkout signature regression search hit';\n",
+            )
+            .unwrap();
+        }
+        std::env::set_var("CTXHELM_HOME", &home);
+
+        persist_memory_card_records(
+            &repo,
+            &StoreConfig::default(),
+            &[StorageMemoryCardRecord {
+                card: MemoryCard {
+                    id: "experience:checkout-signature-tail".to_string(),
+                    kind: MemoryCardKind::Experience,
+                    title: "Experience: checkout signature regression".to_string(),
+                    summary:
+                        "The payments handler was the useful source link for a prior checkout fix."
+                            .to_string(),
+                    source_links: vec!["src/payments/handler.ts".to_string()],
+                    input_hashes: vec!["task-hash".to_string()],
+                    freshness: MemoryFreshness::Fresh,
+                    review_status: MemoryReviewStatus::Approved,
+                    disabled: false,
+                    confidence: 0.90,
+                    reason: "test approved source-free experience card".to_string(),
+                    privacy_status: PrivacyStatus::local_only(),
+                },
+            }],
+        )
+        .unwrap();
+
+        let plan =
+            prepare_context_plan(&repo, "fix checkout signature regression", TaskType::BugFix)
+                .unwrap();
+        let promoted_index = plan
+            .target_files
+            .iter()
+            .position(|target| target.path == "src/payments/handler.ts")
+            .expect("selected memory source link should be promoted into targetFiles");
+        let promoted = &plan.target_files[promoted_index];
+        assert!(
+            promoted_index < 5,
+            "selected memory source link must land in the native first-read window"
+        );
+        assert_eq!(promoted.reason, "selected memory source link");
+        assert!(promoted.attribution.iter().any(|evidence| {
+            evidence.signal == RetrievalSignalKind::Memory
+                && evidence.reason_code == "selected_memory_initial_read"
+        }));
+        assert!(plan.diagnostics.iter().any(|diagnostic| {
+            diagnostic.code == "selected_memory_initial_read_promoted"
+                && diagnostic
+                    .paths
+                    .contains(&"src/payments/handler.ts".to_string())
         }));
 
         std::env::remove_var("CTXHELM_HOME");

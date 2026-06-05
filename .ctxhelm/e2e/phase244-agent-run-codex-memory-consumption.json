@@ -1,0 +1,1572 @@
+{
+  "client": {
+    "name": "codex",
+    "version": "codex-cli 0.137.0"
+  },
+  "comparison": {
+    "baselineEligible": true,
+    "baselineLane": "baseline",
+    "bestLane": "ctxhelm-brief",
+    "clientFailuresObserved": false,
+    "commandExecutionDelta": 16,
+    "comparableCtxhelmLaneCount": 4,
+    "comparisonEligible": true,
+    "ctxhelmEvidenceMisses": {},
+    "ctxhelmEvidenceMissesObserved": false,
+    "ctxhelmEvidenceOnlyTargets": {},
+    "ctxhelmEvidenceOnlyTargetsObserved": false,
+    "ctxhelmToolCallsObserved": true,
+    "ctxhelmUnderReadTargetsObserved": false,
+    "forbiddenCommandsObserved": false,
+    "invalidRequiredCtxhelmCalls": {},
+    "invalidRequiredCtxhelmCallsObserved": false,
+    "irrelevantReadDelta": 13,
+    "missingRequiredCtxhelmCalls": {},
+    "missingRequiredCtxhelmCallsObserved": false,
+    "outcomeClaim": "ctxhelm_improved",
+    "rateLimitsObserved": false,
+    "readFileDelta": 13,
+    "recommendedResearchActions": [
+      {
+        "action": "preserve_current_agent_contract",
+        "priority": 3,
+        "reason": "Comparable lanes produced stable source-free outcome evidence."
+      }
+    ],
+    "targetCoverageDelta": 0.0,
+    "targetReadCoverageDelta": 0.0
+  },
+  "ctxhelmVersion": "ctxhelm 1.1.12",
+  "lanes": [
+    {
+      "clientApiErrorStatus": null,
+      "clientExitStatus": 0,
+      "clientFailureKind": null,
+      "commandExecutions": [
+        {
+          "commandSha256": "47d0315b306ea8525186dd9db0e864afe4736ff9c09ad411b870d3692da2ea8e",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 0,
+          "paths": [],
+          "status": "completed",
+          "verb": "pwd"
+        },
+        {
+          "commandSha256": "88c8eebc77106aef51a957dc3b82882b48bf3dfc1c4b1b7c28bbb72f4df9a2bc",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 0,
+          "paths": [],
+          "status": "completed",
+          "verb": "ls"
+        },
+        {
+          "commandSha256": "8a32ceecdd9edfde1f72c1a374698e196b0e6c5adae948c6960da779e0b966e3",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 0,
+          "paths": [],
+          "status": "completed",
+          "verb": "cat"
+        },
+        {
+          "commandSha256": "b0381a37faa72c375f6204689557bebdc71e595d827be70f18687ce0993a12fc",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 0,
+          "paths": [],
+          "status": "completed",
+          "verb": "find"
+        },
+        {
+          "commandSha256": "1ccdddfc594a997e7095031d784feabd6a68a0c326ae98791465f3740b5581d9",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 0,
+          "paths": [],
+          "status": "completed",
+          "verb": "find"
+        },
+        {
+          "commandSha256": "cdf8e953f886279cd40b3f71b8f706daf469b1ec65bdd00b732805404719c7de",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 0,
+          "paths": [],
+          "status": "completed",
+          "verb": "rg"
+        },
+        {
+          "commandSha256": "11005d477a26e41a489c5c6dc9064e6df9ab90d91a4fe3fe77d78d32209d76ce",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 0,
+          "paths": [],
+          "status": "completed",
+          "verb": "find"
+        },
+        {
+          "commandSha256": "2ccb49499fcc2cac61e3ab946a4ca08ea9e213c2c5b25048cb79dd839ba15bf4",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 1,
+          "paths": [
+            "schema_agent/agents/base.py"
+          ],
+          "status": "completed",
+          "verb": "nl"
+        },
+        {
+          "commandSha256": "ed40ca8e3cd275963550f7ab5831074ceb13d50d0e58aa57104edace81b4e3e2",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 1,
+          "paths": [
+            "tests/agents/test_base_agent_openai_compatible.py"
+          ],
+          "status": "completed",
+          "verb": "nl"
+        },
+        {
+          "commandSha256": "d328f16e5d52aaaf68144c8c1f8a7d32e64356e78f9a1fc3c7f754a674239dc2",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 1,
+          "paths": [
+            "schema_agent/llm_output_sanitizer.py"
+          ],
+          "status": "completed",
+          "verb": "nl"
+        },
+        {
+          "commandSha256": "b2f5d8d2885f0801e5aa8e3a82adb705bf09462780221b016e785bcf15941045",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 1,
+          "paths": [
+            "schema_agent/guardrails_config.py"
+          ],
+          "status": "completed",
+          "verb": "nl"
+        },
+        {
+          "commandSha256": "576aa4e7fd7d3e38cb0018682f2510839052bf8517a9381f6f7a6ee71697c4c2",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 1,
+          "paths": [
+            "tests/guardrails/test_json_truncation.py"
+          ],
+          "status": "completed",
+          "verb": "nl"
+        },
+        {
+          "commandSha256": "6f4b34f5f15d380ce1b75e68d3f4acbee7b57052da2bafed027ab7feec32e7b3",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 1,
+          "paths": [
+            "schema_agent/agents/base.py"
+          ],
+          "status": "completed",
+          "verb": "nl"
+        },
+        {
+          "commandSha256": "c62c6ada51ae75ecd1598b138230506d525651af0e49389e9b7a6a652569a69a",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 1,
+          "paths": [
+            "schema_agent/agents/relationship_cardinality.py"
+          ],
+          "status": "completed",
+          "verb": "nl"
+        },
+        {
+          "commandSha256": "e1d4041f74334ee817bfbb55ae412e2320237b37ea6ed0dd44447d5d82107719",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 1,
+          "paths": [
+            "schema_agent/core/models.py"
+          ],
+          "status": "completed",
+          "verb": "nl"
+        },
+        {
+          "commandSha256": "1be08fdf47a6116d45b1e96f75bd40ce72ca6f1f13ade728b305b130c1a781a1",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 1,
+          "paths": [
+            "tests/agents/test_relationship_cardinality.py"
+          ],
+          "status": "completed",
+          "verb": "nl"
+        },
+        {
+          "commandSha256": "1beffd6aa3baf38e3af69ffe2c4dd545003c4defd73932393bd0b2ac49ddc2c3",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 1,
+          "paths": [
+            "schema_agent/prompts/entity_discovery.py"
+          ],
+          "status": "completed",
+          "verb": "nl"
+        },
+        {
+          "commandSha256": "9e3c0f015af43fa463802ffacecad1a7c60a038d4678c18f54376d3f91cf3237",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 1,
+          "paths": [
+            "schema_agent/agents/base.py"
+          ],
+          "status": "completed",
+          "verb": "nl"
+        },
+        {
+          "commandSha256": "81a65c5430e98f96454751077f0e0acef209c6e33d9352f3cfc062d2c12e5f49",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 1,
+          "paths": [
+            "schema_agent/prompts/relationship_cardinality.py"
+          ],
+          "status": "completed",
+          "verb": "nl"
+        },
+        {
+          "commandSha256": "5b6fec3f72be498d20361ee305226f2b3cfe7d4b1e2c72f8b8f9dfa1b69aac87",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 1,
+          "paths": [
+            "schema_agent/prompts/fd_extractor.py"
+          ],
+          "status": "completed",
+          "verb": "nl"
+        },
+        {
+          "commandSha256": "d85f7fadb31a4ea049b4ed2da7945e1fa2a294aef28df03a07911271d6180852",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 1,
+          "paths": [
+            "schema_agent/prompts/normalization.py"
+          ],
+          "status": "completed",
+          "verb": "nl"
+        },
+        {
+          "commandSha256": "9fa39573d40b51f795917abed4b72cc352fcdb43f18e51abc04d492beb40e85f",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 1,
+          "paths": [
+            "schema_agent/agents/entity_discovery.py"
+          ],
+          "status": "completed",
+          "verb": "nl"
+        },
+        {
+          "commandSha256": "4ecc52d0815956b5c4c57e60b1da61e6c80e05ae0c6d2f84d1f48654d9d96879",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 0,
+          "paths": [],
+          "status": "completed",
+          "verb": "rg"
+        },
+        {
+          "commandSha256": "726813157f873d9baa9822bcd4c67ad13b6b56106b46bfdb1003e841a5a4e788",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 1,
+          "paths": [
+            "schema_agent/agents/fd_extractor.py"
+          ],
+          "status": "completed",
+          "verb": "nl"
+        },
+        {
+          "commandSha256": "ad7da2b7f4bfa1fa830f2e99a2e7383ae1b13b4d0a467ec25d088d81bf8f1195",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 1,
+          "paths": [
+            "schema_agent/agents/normalization.py"
+          ],
+          "status": "completed",
+          "verb": "nl"
+        },
+        {
+          "commandSha256": "e7e06547fe2a64480433ccc308201dc2273159b80865c5192dd7dd5b182bd2b0",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 1,
+          "paths": [
+            "schema_agent/guardrails_config.py"
+          ],
+          "status": "completed",
+          "verb": "nl"
+        },
+        {
+          "commandSha256": "1b7ceeceb0a4d3a043fbf76938d6dd5c45d0e1051dc061253cf604dee779c977",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 2,
+          "paths": [
+            "schema_agent/guardrails_config.py",
+            "schema_agent/agents/normalization.py"
+          ],
+          "status": "completed",
+          "verb": "rg"
+        },
+        {
+          "commandSha256": "5fdb6026ee5a40b0bf10f9223e0f56014f616c5b98727ed4fa6cbc4dfff33d02",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 1,
+          "paths": [
+            "tests/core/test_llm_debug_logging.py"
+          ],
+          "status": "completed",
+          "verb": "nl"
+        },
+        {
+          "commandSha256": "cb1976226ecbca494673fd07db82f497d5f1587c432e928b9bc54f13aa0ffcf9",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 1,
+          "paths": [
+            "tests/agents/test_normalization_agent_config.py"
+          ],
+          "status": "completed",
+          "verb": "nl"
+        },
+        {
+          "commandSha256": "0a6eb5d2031e4f1e5e82937dbd98393877a880f5dbe372e35d5f42181798da7e",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 1,
+          "paths": [
+            "tests/agents/test_normalization_fds.py"
+          ],
+          "status": "completed",
+          "verb": "nl"
+        }
+      ],
+      "ctxhelmCallCompliance": "not_required",
+      "ctxhelmEvidenceFiles": [],
+      "ctxhelmEvidenceMissedTargets": [
+        "schema_agent/core/models.py"
+      ],
+      "ctxhelmEvidenceOnlyTargets": [],
+      "ctxhelmEvidenceTargetHits": [],
+      "ctxhelmToolCalls": [],
+      "discoveredFiles": [
+        "schema_agent/agents/base.py",
+        "tests/agents/test_base_agent_openai_compatible.py",
+        "schema_agent/llm_output_sanitizer.py",
+        "schema_agent/guardrails_config.py",
+        "tests/guardrails/test_json_truncation.py",
+        "schema_agent/agents/relationship_cardinality.py",
+        "schema_agent/core/models.py",
+        "tests/agents/test_relationship_cardinality.py",
+        "schema_agent/prompts/entity_discovery.py",
+        "schema_agent/prompts/relationship_cardinality.py",
+        "schema_agent/prompts/fd_extractor.py",
+        "schema_agent/prompts/normalization.py",
+        "schema_agent/agents/entity_discovery.py",
+        "schema_agent/agents/fd_extractor.py",
+        "schema_agent/agents/normalization.py",
+        "tests/core/test_llm_debug_logging.py",
+        "tests/agents/test_normalization_agent_config.py",
+        "tests/agents/test_normalization_fds.py"
+      ],
+      "discoveredOnlyTargets": [],
+      "evaluationEligible": true,
+      "evaluationStatus": "eligible",
+      "evidenceHashes": {
+        "ctxhelmRequestLogSha256": null,
+        "stderrSha256": "ec4ab835876cdb69ea7c5fcd7b7ca00f57a8dd7933a8410f4abb2451aa9ceb21",
+        "streamJsonSha256": "d3fc79a5a7d8641505eb3c66cbfb68fbfd12801cffdfaf6fe07941038e66a404"
+      },
+      "forbiddenCommands": [],
+      "invalidRequiredCtxhelmCalls": [],
+      "irrelevantReads": [
+        "schema_agent/agents/base.py",
+        "schema_agent/agents/entity_discovery.py",
+        "schema_agent/agents/fd_extractor.py",
+        "schema_agent/agents/normalization.py",
+        "schema_agent/agents/relationship_cardinality.py",
+        "schema_agent/guardrails_config.py",
+        "schema_agent/llm_output_sanitizer.py",
+        "schema_agent/prompts/entity_discovery.py",
+        "schema_agent/prompts/fd_extractor.py",
+        "schema_agent/prompts/normalization.py",
+        "schema_agent/prompts/relationship_cardinality.py",
+        "tests/agents/test_base_agent_openai_compatible.py",
+        "tests/agents/test_normalization_agent_config.py",
+        "tests/agents/test_normalization_fds.py",
+        "tests/agents/test_relationship_cardinality.py",
+        "tests/core/test_llm_debug_logging.py",
+        "tests/guardrails/test_json_truncation.py"
+      ],
+      "lane": "baseline",
+      "metrics": {
+        "commandExecutionCount": 30,
+        "ctxhelmEvidenceFileCount": 0,
+        "ctxhelmEvidenceMissedTargetCount": 1,
+        "ctxhelmEvidenceOnlyTargetCount": 0,
+        "ctxhelmEvidenceTargetHitCount": 0,
+        "ctxhelmToolCallCount": 0,
+        "discoveredFileCount": 18,
+        "forbiddenCommandCount": 0,
+        "invalidRequiredCtxhelmCallCount": 0,
+        "irrelevantReadCount": 17,
+        "missedTargetCount": 0,
+        "missingRequiredCtxhelmCallCount": 0,
+        "observedRequiredCtxhelmCallCount": 0,
+        "readFileCount": 18,
+        "requiredCtxhelmCallCount": 0,
+        "targetCount": 1,
+        "targetCoverage": 1.0,
+        "targetDiscoveredOnlyCount": 0,
+        "targetHitCount": 1,
+        "targetReadCount": 1,
+        "targetReadCoverage": 1.0
+      },
+      "missedTargetRoleCounts": {},
+      "missedTargets": [],
+      "missingRequiredCtxhelmCalls": [],
+      "mode": "baseline",
+      "observedRequiredCtxhelmCalls": [],
+      "rateLimitObserved": false,
+      "rawCommandOutputStored": false,
+      "rawMcpTrafficStored": false,
+      "rawPromptStored": false,
+      "rawTranscriptStored": false,
+      "readFiles": [
+        "schema_agent/agents/base.py",
+        "tests/agents/test_base_agent_openai_compatible.py",
+        "schema_agent/llm_output_sanitizer.py",
+        "schema_agent/guardrails_config.py",
+        "tests/guardrails/test_json_truncation.py",
+        "schema_agent/agents/relationship_cardinality.py",
+        "schema_agent/core/models.py",
+        "tests/agents/test_relationship_cardinality.py",
+        "schema_agent/prompts/entity_discovery.py",
+        "schema_agent/prompts/relationship_cardinality.py",
+        "schema_agent/prompts/fd_extractor.py",
+        "schema_agent/prompts/normalization.py",
+        "schema_agent/agents/entity_discovery.py",
+        "schema_agent/agents/fd_extractor.py",
+        "schema_agent/agents/normalization.py",
+        "tests/core/test_llm_debug_logging.py",
+        "tests/agents/test_normalization_agent_config.py",
+        "tests/agents/test_normalization_fds.py"
+      ],
+      "readRoleCounts": {
+        "source": 12,
+        "test": 6
+      },
+      "requiredCtxhelmCallSpecs": [],
+      "requiredCtxhelmCalls": [],
+      "sourceTextLogged": false,
+      "status": "passed",
+      "targetHits": [
+        "schema_agent/core/models.py"
+      ],
+      "targetReads": [
+        "schema_agent/core/models.py"
+      ]
+    },
+    {
+      "clientApiErrorStatus": null,
+      "clientExitStatus": 0,
+      "clientFailureKind": null,
+      "commandExecutions": [
+        {
+          "commandSha256": "263c8190a98212abb545cb52b4c8459ee3f1251c16bfb34d7f0eb1945b2ebff9",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 1,
+          "paths": [
+            "schema_agent/core/models.py"
+          ],
+          "status": "completed",
+          "verb": "nl"
+        },
+        {
+          "commandSha256": "577fbf822582b4c011c888c3be0b8b5b9f70cee9494d27d5573041921a4275b5",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 1,
+          "paths": [
+            "schema_agent/core/nodes.py"
+          ],
+          "status": "completed",
+          "verb": "nl"
+        },
+        {
+          "commandSha256": "4c0c3e6446ce4ff3c006d2ce0af1fbad328d3d29f3b454fda6b89aa71bfce0b5",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 1,
+          "paths": [
+            "schema_agent/agents/normalization.py"
+          ],
+          "status": "completed",
+          "verb": "nl"
+        },
+        {
+          "commandSha256": "90f74414a2863022d572ef27bc756034eb09410d87161fd7508ec4c5e91eabb2",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 1,
+          "paths": [
+            "schema_agent/agents/base.py"
+          ],
+          "status": "completed",
+          "verb": "nl"
+        },
+        {
+          "commandSha256": "a66dca25f646719434dfaa17af9adf3ad216d13aef1c93e6c6d782c7451073ab",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 1,
+          "paths": [
+            "schema_agent/core/attribute_vocabulary.py"
+          ],
+          "status": "completed",
+          "verb": "nl"
+        },
+        {
+          "commandSha256": "d19184fc434a6cd57dbc3c0eaf5ccc417c117ba97b49e42360b9ec000d9957f7",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 1,
+          "paths": [
+            "schema_agent/core/state.py"
+          ],
+          "status": "completed",
+          "verb": "nl"
+        }
+      ],
+      "ctxhelmCallCompliance": "satisfied",
+      "ctxhelmEvidenceFiles": [
+        "schema_agent/core/models.py",
+        "schema_agent/core/nodes.py",
+        "schema_agent/core/attribute_vocabulary.py",
+        "schema_agent/agents/base.py",
+        "schema_agent/agents/normalization.py",
+        "schema_agent/text2r/triplet_extractor_llm.py",
+        "docs/architecture.md",
+        "docs/LLM_EXTRACTION_FIXES.md",
+        "docs/ARCHITECTURE_COMPLETE.md",
+        "tests/agents/test_base_agent_openai_compatible.py",
+        "tests/agents/test_relationship_cardinality.py",
+        "tests/agents/test_conceptual_model_reviewer.py",
+        "tests/agents/test_entity_discovery.py",
+        "tests/agents/test_normalization_agent_config.py",
+        "tests/agents/test_normalization_fds.py",
+        "tests/agents/test_repair_agent.py",
+        "tests/agents/test_requirement_analyzer.py",
+        "tests/algorithms/test_normalization_tools.py",
+        "tests/core/__init__.py",
+        "schema_agent/core/artifacts.py",
+        "schema_agent/core/state.py",
+        "schema_agent/core/state_validator.py",
+        "schema_agent/agents/relationship_cardinality.py",
+        "schema_agent/agents/requirement_analyzer.py",
+        "tests/core/test_artifacts.py",
+        "tests/core/test_attribute_vocabulary.py",
+        "tests/core/test_llm_debug_logging.py",
+        "tests/core/test_quality_gate_node.py",
+        "tests/core/test_retry_routing.py",
+        "tests/core/test_routing_soft_violations.py",
+        "tests/core/test_run_manifest.py",
+        "tests/core/test_state_validator.py",
+        "tests/core/test_validation_nodes.py",
+        "tests/core/test_workflow_compile_cache.py",
+        "tests/evaluation/test_baseline_adapters.py",
+        "tests/evaluation/test_type_normalization.py",
+        "tests/gates/test_normalization_gate_purity.py",
+        "schema_agent/llm_debug_logging.py",
+        "schema_agent/llm_output_sanitizer.py",
+        "tests/algorithms/test_decomposition.py",
+        "tests/algorithms/test_deterministic_fd.py",
+        "tests/algorithms/test_fd_algorithms.py",
+        "tests/algorithms/test_fd_processor.py",
+        "tests/algorithms/test_fd_reconciliation.py",
+        "tests/algorithms/test_fd_reconciliation_aliases.py",
+        "tests/algorithms/test_key_algorithms.py",
+        "tests/algorithms/test_schema_synthesizer.py",
+        "tests/evaluation/test_latex_tables.py",
+        "tests/evaluation/test_matching.py",
+        "tests/evaluation/test_metrics_text2schema.py",
+        "tests/evaluation/test_pvldb_eval_manifest.py",
+        "tests/evaluation/test_pvldb_eval_runner.py",
+        "tests/evaluation/test_report_summary.py",
+        "tests/evaluation/test_score_runner.py",
+        "tests/gates/test_quality_gate_system_singleton.py",
+        "tests/guardrails/test_json_truncation.py",
+        "tests/nlp/test_attribute_classifier.py",
+        "tests/nlp/test_dependency_parser.py",
+        "tests/nlp/test_entity_extractor.py",
+        "tests/nlp/test_relation_extractor.py",
+        "tests/nlp/test_transformer_ner.py",
+        "tests/production/test_ddl_generator_sqlite.py",
+        "tests/test_graph_metrics.py",
+        "tests/test_graph_metrics_fk_handling.py",
+        "tests/verification/test_armstrong_axioms.py",
+        "tests/verification/test_z3_closure_memoization.py",
+        "tests/evaluation/test_pvldb_eval_stats.py",
+        "tests/test_currency_normalizer.py",
+        "tests/test_quantity_normalizer.py",
+        "tests/algorithms/__init__.py",
+        "tests/evaluation/test_canonical_smoke.py",
+        "tests/evaluation/test_datasets_loader.py",
+        "tests/evaluation/test_ddl_parser.py",
+        "tests/evaluation/test_executable.py",
+        "tests/evaluation/test_fetch_rschema.py",
+        "tests/evaluation/test_run_rschema.py",
+        "tests/gates/test_requirement_coverage_embedder.py",
+        "tests/nlp/test_model_cache.py",
+        "schema_agent/evaluation/text2schema/score.py",
+        "schema_agent/algorithms/fd_reconciliation.py",
+        "schema_agent/core/routing.py"
+      ],
+      "ctxhelmEvidenceMissedTargets": [],
+      "ctxhelmEvidenceOnlyTargets": [],
+      "ctxhelmEvidenceTargetHits": [
+        "schema_agent/core/models.py"
+      ],
+      "ctxhelmToolCalls": [
+        {
+          "budget": null,
+          "format": null,
+          "hasRepo": true,
+          "hasTask": true,
+          "name": "prepare_task",
+          "recordTrace": null
+        }
+      ],
+      "discoveredFiles": [
+        "schema_agent/core/models.py",
+        "schema_agent/core/nodes.py",
+        "schema_agent/agents/normalization.py",
+        "schema_agent/agents/base.py",
+        "schema_agent/core/attribute_vocabulary.py",
+        "schema_agent/core/state.py"
+      ],
+      "discoveredOnlyTargets": [],
+      "evaluationEligible": true,
+      "evaluationStatus": "eligible",
+      "evidenceHashes": {
+        "ctxhelmRequestLogSha256": "303e7c90c88e7d0de9279e819916895fd956040af80378bf6e183c3bf1f1d00a",
+        "stderrSha256": "2af3c193b66a160d440abaaeef1ed3b3915cdb13424e227d40fc097694e68ef4",
+        "streamJsonSha256": "5a804f7301905525a36c2c21e55a7b276ddbd94e29488605e12c29c186db3f04"
+      },
+      "forbiddenCommands": [],
+      "invalidRequiredCtxhelmCalls": [],
+      "irrelevantReads": [
+        "schema_agent/agents/base.py",
+        "schema_agent/agents/normalization.py",
+        "schema_agent/core/attribute_vocabulary.py",
+        "schema_agent/core/nodes.py",
+        "schema_agent/core/state.py"
+      ],
+      "lane": "ctxhelm-plan",
+      "metrics": {
+        "commandExecutionCount": 6,
+        "ctxhelmEvidenceFileCount": 81,
+        "ctxhelmEvidenceMissedTargetCount": 0,
+        "ctxhelmEvidenceOnlyTargetCount": 0,
+        "ctxhelmEvidenceTargetHitCount": 1,
+        "ctxhelmToolCallCount": 1,
+        "discoveredFileCount": 6,
+        "forbiddenCommandCount": 0,
+        "invalidRequiredCtxhelmCallCount": 0,
+        "irrelevantReadCount": 5,
+        "missedTargetCount": 0,
+        "missingRequiredCtxhelmCallCount": 0,
+        "observedRequiredCtxhelmCallCount": 1,
+        "readFileCount": 6,
+        "requiredCtxhelmCallCount": 1,
+        "targetCount": 1,
+        "targetCoverage": 1.0,
+        "targetDiscoveredOnlyCount": 0,
+        "targetHitCount": 1,
+        "targetReadCount": 1,
+        "targetReadCoverage": 1.0
+      },
+      "missedTargetRoleCounts": {},
+      "missedTargets": [],
+      "missingRequiredCtxhelmCalls": [],
+      "mode": "plan",
+      "observedRequiredCtxhelmCalls": [
+        "prepare_task"
+      ],
+      "rateLimitObserved": false,
+      "rawCommandOutputStored": false,
+      "rawMcpTrafficStored": false,
+      "rawPromptStored": false,
+      "rawTranscriptStored": false,
+      "readFiles": [
+        "schema_agent/core/models.py",
+        "schema_agent/core/nodes.py",
+        "schema_agent/agents/normalization.py",
+        "schema_agent/agents/base.py",
+        "schema_agent/core/attribute_vocabulary.py",
+        "schema_agent/core/state.py"
+      ],
+      "readRoleCounts": {
+        "source": 6
+      },
+      "requiredCtxhelmCallSpecs": [
+        {
+          "name": "prepare_task",
+          "requiresRepo": true,
+          "requiresTask": true
+        }
+      ],
+      "requiredCtxhelmCalls": [
+        "prepare_task"
+      ],
+      "sourceTextLogged": false,
+      "status": "passed",
+      "targetHits": [
+        "schema_agent/core/models.py"
+      ],
+      "targetReads": [
+        "schema_agent/core/models.py"
+      ]
+    },
+    {
+      "clientApiErrorStatus": null,
+      "clientExitStatus": 0,
+      "clientFailureKind": null,
+      "commandExecutions": [
+        {
+          "commandSha256": "228fd6ff6d071bd95fb7fdeae910d58be717be2407d3677a511779a8b1ddc1c1",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 0,
+          "paths": [],
+          "status": "completed",
+          "verb": "superpowers-codex"
+        },
+        {
+          "commandSha256": "dde740e3bdaa876edf9118bbf4848951bedc41d0a4488017d8b1bd1d08993ecd",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 0,
+          "paths": [],
+          "status": "completed",
+          "verb": "sed"
+        },
+        {
+          "commandSha256": "6fe981710ef5c5551866dc4f1c5c1848fe6c4e0bde91d4a6b1b63055da83605e",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 1,
+          "paths": [
+            "schema_agent/core/models.py"
+          ],
+          "status": "completed",
+          "verb": "rg"
+        },
+        {
+          "commandSha256": "359f409191648cdf4ca10df3777bcd025856358d7057c32c373ad969ceaa8eaf",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 1,
+          "paths": [
+            "schema_agent/core/nodes.py"
+          ],
+          "status": "completed",
+          "verb": "rg"
+        },
+        {
+          "commandSha256": "16728e93f7c2a15250bc97af361a731902f66c73f5661c758ec5f44cbc4a4b7d",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 1,
+          "paths": [
+            "schema_agent/agents/normalization.py"
+          ],
+          "status": "completed",
+          "verb": "rg"
+        },
+        {
+          "commandSha256": "7c031bd52901a4356a6272fe568ef084913ba46bf5309725f1ffe9d69d26a531",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 1,
+          "paths": [
+            "schema_agent/core/attribute_vocabulary.py"
+          ],
+          "status": "completed",
+          "verb": "rg"
+        },
+        {
+          "commandSha256": "d35736e8fba5479c519e7506c01d76c192697dff4e759213ace1abae0600b713",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 1,
+          "paths": [
+            "schema_agent/agents/base.py"
+          ],
+          "status": "completed",
+          "verb": "rg"
+        },
+        {
+          "commandSha256": "b1db099d9731402bf4818897d74496124a34e2c5b532724e448913e6da601224",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 1,
+          "paths": [
+            "schema_agent/core/state.py"
+          ],
+          "status": "completed",
+          "verb": "rg"
+        },
+        {
+          "commandSha256": "8eda0d055924bf58bd9eeaaa8ccc0ca37673e1ee0aa0acea09c42bfdd845f007",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 1,
+          "paths": [
+            "schema_agent/agents/base.py"
+          ],
+          "status": "completed",
+          "verb": "nl"
+        },
+        {
+          "commandSha256": "a04b610ab6e1c2124511f6b5777874fbd4ee0b7fbabdfc12ff32722b3320b171",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 1,
+          "paths": [
+            "schema_agent/agents/base.py"
+          ],
+          "status": "completed",
+          "verb": "nl"
+        },
+        {
+          "commandSha256": "0d1564fd1f7d18220540f4360b285864c4e81188a70412b66a074164264b142c",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 1,
+          "paths": [
+            "schema_agent/agents/normalization.py"
+          ],
+          "status": "completed",
+          "verb": "nl"
+        },
+        {
+          "commandSha256": "3b1274ac6a62142fdca77a4ad4eab623cb11c28376ef7ecf1d2d9dfc84e380c4",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 1,
+          "paths": [
+            "schema_agent/core/attribute_vocabulary.py"
+          ],
+          "status": "completed",
+          "verb": "nl"
+        },
+        {
+          "commandSha256": "b22aa94c01dfea73ce3f027926841d7ff38b30bffefbff3fb2352fa998dba4b9",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 1,
+          "paths": [
+            "schema_agent/core/models.py"
+          ],
+          "status": "completed",
+          "verb": "nl"
+        },
+        {
+          "commandSha256": "02be7506cfc334d6d7d82d569c8c2d2978828bc3a25155a9d89e86c857cb4bc4",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 1,
+          "paths": [
+            "schema_agent/core/nodes.py"
+          ],
+          "status": "completed",
+          "verb": "nl"
+        }
+      ],
+      "ctxhelmCallCompliance": "satisfied",
+      "ctxhelmEvidenceFiles": [
+        "schema_agent/core/models.py",
+        "schema_agent/core/nodes.py",
+        "schema_agent/core/attribute_vocabulary.py",
+        "schema_agent/agents/base.py",
+        "schema_agent/agents/normalization.py",
+        "schema_agent/text2r/triplet_extractor_llm.py",
+        "docs/architecture.md",
+        "docs/LLM_EXTRACTION_FIXES.md",
+        "docs/ARCHITECTURE_COMPLETE.md",
+        "tests/agents/test_base_agent_openai_compatible.py",
+        "tests/agents/test_relationship_cardinality.py",
+        "tests/agents/test_conceptual_model_reviewer.py",
+        "tests/agents/test_entity_discovery.py",
+        "tests/agents/test_normalization_agent_config.py",
+        "tests/agents/test_normalization_fds.py",
+        "tests/agents/test_repair_agent.py",
+        "tests/agents/test_requirement_analyzer.py",
+        "tests/algorithms/test_normalization_tools.py",
+        "tests/core/__init__.py",
+        "schema_agent/core/artifacts.py",
+        "schema_agent/core/state.py",
+        "schema_agent/core/state_validator.py",
+        "schema_agent/llm_debug_logging.py",
+        "schema_agent/llm_output_sanitizer.py",
+        "schema_agent/agents/relationship_cardinality.py",
+        "schema_agent/agents/requirement_analyzer.py"
+      ],
+      "ctxhelmEvidenceMissedTargets": [],
+      "ctxhelmEvidenceOnlyTargets": [],
+      "ctxhelmEvidenceTargetHits": [
+        "schema_agent/core/models.py"
+      ],
+      "ctxhelmToolCalls": [
+        {
+          "budget": null,
+          "format": null,
+          "hasRepo": true,
+          "hasTask": true,
+          "name": "prepare_task",
+          "recordTrace": null
+        },
+        {
+          "budget": "brief",
+          "format": "json",
+          "hasRepo": true,
+          "hasTask": true,
+          "name": "get_pack",
+          "recordTrace": false
+        }
+      ],
+      "discoveredFiles": [
+        "schema_agent/core/models.py",
+        "schema_agent/core/nodes.py",
+        "schema_agent/agents/normalization.py",
+        "schema_agent/core/attribute_vocabulary.py",
+        "schema_agent/agents/base.py",
+        "schema_agent/core/state.py"
+      ],
+      "discoveredOnlyTargets": [],
+      "evaluationEligible": true,
+      "evaluationStatus": "eligible",
+      "evidenceHashes": {
+        "ctxhelmRequestLogSha256": "d06c904251b8ad128c61e8e73e748953e192647068b70d5498681e76a18427d5",
+        "stderrSha256": "fc11c394c5e21feebd470c5633e3486569e4ecd295f2f2efa719bbd2bfb3561f",
+        "streamJsonSha256": "2e1c146d9f978d24995d5273d0a76130f2fdd21cf2cf46a970663748877c852a"
+      },
+      "forbiddenCommands": [],
+      "invalidRequiredCtxhelmCalls": [],
+      "irrelevantReads": [
+        "schema_agent/agents/base.py",
+        "schema_agent/agents/normalization.py",
+        "schema_agent/core/attribute_vocabulary.py",
+        "schema_agent/core/nodes.py"
+      ],
+      "lane": "ctxhelm-brief",
+      "metrics": {
+        "commandExecutionCount": 14,
+        "ctxhelmEvidenceFileCount": 26,
+        "ctxhelmEvidenceMissedTargetCount": 0,
+        "ctxhelmEvidenceOnlyTargetCount": 0,
+        "ctxhelmEvidenceTargetHitCount": 1,
+        "ctxhelmToolCallCount": 2,
+        "discoveredFileCount": 6,
+        "forbiddenCommandCount": 0,
+        "invalidRequiredCtxhelmCallCount": 0,
+        "irrelevantReadCount": 4,
+        "missedTargetCount": 0,
+        "missingRequiredCtxhelmCallCount": 0,
+        "observedRequiredCtxhelmCallCount": 2,
+        "readFileCount": 5,
+        "requiredCtxhelmCallCount": 2,
+        "targetCount": 1,
+        "targetCoverage": 1.0,
+        "targetDiscoveredOnlyCount": 0,
+        "targetHitCount": 1,
+        "targetReadCount": 1,
+        "targetReadCoverage": 1.0
+      },
+      "missedTargetRoleCounts": {},
+      "missedTargets": [],
+      "missingRequiredCtxhelmCalls": [],
+      "mode": "brief",
+      "observedRequiredCtxhelmCalls": [
+        "prepare_task",
+        "get_pack"
+      ],
+      "rateLimitObserved": false,
+      "rawCommandOutputStored": false,
+      "rawMcpTrafficStored": false,
+      "rawPromptStored": false,
+      "rawTranscriptStored": false,
+      "readFiles": [
+        "schema_agent/agents/base.py",
+        "schema_agent/agents/normalization.py",
+        "schema_agent/core/attribute_vocabulary.py",
+        "schema_agent/core/models.py",
+        "schema_agent/core/nodes.py"
+      ],
+      "readRoleCounts": {
+        "source": 5
+      },
+      "requiredCtxhelmCallSpecs": [
+        {
+          "name": "prepare_task",
+          "requiresRepo": true,
+          "requiresTask": true
+        },
+        {
+          "budget": "brief",
+          "format": "json",
+          "name": "get_pack",
+          "recordTrace": false,
+          "requiresRepo": true,
+          "requiresTask": true
+        }
+      ],
+      "requiredCtxhelmCalls": [
+        "prepare_task",
+        "get_pack"
+      ],
+      "sourceTextLogged": false,
+      "status": "passed",
+      "targetHits": [
+        "schema_agent/core/models.py"
+      ],
+      "targetReads": [
+        "schema_agent/core/models.py"
+      ]
+    },
+    {
+      "clientApiErrorStatus": null,
+      "clientExitStatus": 0,
+      "clientFailureKind": null,
+      "commandExecutions": [
+        {
+          "commandSha256": "228fd6ff6d071bd95fb7fdeae910d58be717be2407d3677a511779a8b1ddc1c1",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 0,
+          "paths": [],
+          "status": "completed",
+          "verb": "superpowers-codex"
+        },
+        {
+          "commandSha256": "788768389ccf2bd1c96132bd4fe493318cb4a1152ed24655ee2894f9ba885c6e",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 1,
+          "paths": [
+            "schema_agent/core/models.py"
+          ],
+          "status": "completed",
+          "verb": "sed"
+        },
+        {
+          "commandSha256": "8171bc57b8de20ca17173833c9a51e43cb4820802e021029843281807d678402",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 1,
+          "paths": [
+            "schema_agent/core/nodes.py"
+          ],
+          "status": "completed",
+          "verb": "sed"
+        },
+        {
+          "commandSha256": "b402cfb173ba98721f6eb1a58749a39b7945c5f34ab6681b37661a5eac18bc73",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 1,
+          "paths": [
+            "schema_agent/agents/normalization.py"
+          ],
+          "status": "completed",
+          "verb": "sed"
+        },
+        {
+          "commandSha256": "03711fa0f1804bd4870673fc208c03acdf882342938d847caf334d73eff05d1b",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 1,
+          "paths": [
+            "schema_agent/agents/base.py"
+          ],
+          "status": "completed",
+          "verb": "sed"
+        },
+        {
+          "commandSha256": "8d21cb690a20392615f1bb96446a3845152f9f5c617077731e39efd1a2fc1141",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 1,
+          "paths": [
+            "schema_agent/core/state.py"
+          ],
+          "status": "completed",
+          "verb": "sed"
+        },
+        {
+          "commandSha256": "f4a44afff03b52cbeb5cf16156662bd801365eb1ec5e923dac36280d07c404f2",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 1,
+          "paths": [
+            "schema_agent/core/attribute_vocabulary.py"
+          ],
+          "status": "completed",
+          "verb": "sed"
+        },
+        {
+          "commandSha256": "6023ccda8b618ecc5e3e017148a9fd55cc844062f7e8991fc78436799be20499",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 6,
+          "paths": [
+            "schema_agent/core/models.py",
+            "schema_agent/core/nodes.py",
+            "schema_agent/core/attribute_vocabulary.py",
+            "schema_agent/agents/base.py",
+            "schema_agent/agents/normalization.py",
+            "schema_agent/core/state.py"
+          ],
+          "status": "completed",
+          "verb": "rg"
+        }
+      ],
+      "ctxhelmCallCompliance": "satisfied",
+      "ctxhelmEvidenceFiles": [
+        "schema_agent/core/models.py",
+        "schema_agent/core/nodes.py",
+        "schema_agent/core/attribute_vocabulary.py",
+        "schema_agent/agents/base.py",
+        "schema_agent/agents/normalization.py",
+        "schema_agent/text2r/triplet_extractor_llm.py",
+        "docs/architecture.md",
+        "docs/LLM_EXTRACTION_FIXES.md",
+        "docs/ARCHITECTURE_COMPLETE.md",
+        "tests/agents/test_base_agent_openai_compatible.py",
+        "tests/agents/test_relationship_cardinality.py",
+        "tests/agents/test_conceptual_model_reviewer.py",
+        "tests/agents/test_entity_discovery.py",
+        "tests/agents/test_normalization_agent_config.py",
+        "tests/agents/test_normalization_fds.py",
+        "tests/agents/test_repair_agent.py",
+        "tests/agents/test_requirement_analyzer.py",
+        "tests/algorithms/test_normalization_tools.py",
+        "tests/core/__init__.py",
+        "schema_agent/core/artifacts.py",
+        "schema_agent/core/state.py",
+        "schema_agent/core/state_validator.py",
+        "schema_agent/llm_debug_logging.py",
+        "schema_agent/llm_output_sanitizer.py",
+        "schema_agent/agents/relationship_cardinality.py",
+        "schema_agent/agents/requirement_analyzer.py"
+      ],
+      "ctxhelmEvidenceMissedTargets": [],
+      "ctxhelmEvidenceOnlyTargets": [],
+      "ctxhelmEvidenceTargetHits": [
+        "schema_agent/core/models.py"
+      ],
+      "ctxhelmToolCalls": [
+        {
+          "budget": null,
+          "format": null,
+          "hasRepo": true,
+          "hasTask": true,
+          "name": "prepare_task",
+          "recordTrace": null
+        },
+        {
+          "budget": "standard",
+          "format": "json",
+          "hasRepo": true,
+          "hasTask": true,
+          "name": "get_pack",
+          "recordTrace": false
+        }
+      ],
+      "discoveredFiles": [
+        "schema_agent/core/models.py",
+        "schema_agent/core/nodes.py",
+        "schema_agent/agents/normalization.py",
+        "schema_agent/agents/base.py",
+        "schema_agent/core/state.py",
+        "schema_agent/core/attribute_vocabulary.py"
+      ],
+      "discoveredOnlyTargets": [],
+      "evaluationEligible": true,
+      "evaluationStatus": "eligible",
+      "evidenceHashes": {
+        "ctxhelmRequestLogSha256": "3cb10030873e9fd99f4b471af60940dd71ddf5066053ed486bd8192a07bd1641",
+        "stderrSha256": "b273e3d254cb23437c81f4b499da810fbaba8ca6bb7428c344e090f4958719ab",
+        "streamJsonSha256": "f3a4c5ae2121d72189358f1de321999d5f18116d577b07b24c75ef41ce4c3f76"
+      },
+      "forbiddenCommands": [],
+      "invalidRequiredCtxhelmCalls": [],
+      "irrelevantReads": [
+        "schema_agent/agents/base.py",
+        "schema_agent/agents/normalization.py",
+        "schema_agent/core/attribute_vocabulary.py",
+        "schema_agent/core/nodes.py",
+        "schema_agent/core/state.py"
+      ],
+      "lane": "ctxhelm-standard",
+      "metrics": {
+        "commandExecutionCount": 8,
+        "ctxhelmEvidenceFileCount": 26,
+        "ctxhelmEvidenceMissedTargetCount": 0,
+        "ctxhelmEvidenceOnlyTargetCount": 0,
+        "ctxhelmEvidenceTargetHitCount": 1,
+        "ctxhelmToolCallCount": 2,
+        "discoveredFileCount": 6,
+        "forbiddenCommandCount": 0,
+        "invalidRequiredCtxhelmCallCount": 0,
+        "irrelevantReadCount": 5,
+        "missedTargetCount": 0,
+        "missingRequiredCtxhelmCallCount": 0,
+        "observedRequiredCtxhelmCallCount": 2,
+        "readFileCount": 6,
+        "requiredCtxhelmCallCount": 2,
+        "targetCount": 1,
+        "targetCoverage": 1.0,
+        "targetDiscoveredOnlyCount": 0,
+        "targetHitCount": 1,
+        "targetReadCount": 1,
+        "targetReadCoverage": 1.0
+      },
+      "missedTargetRoleCounts": {},
+      "missedTargets": [],
+      "missingRequiredCtxhelmCalls": [],
+      "mode": "standard",
+      "observedRequiredCtxhelmCalls": [
+        "prepare_task",
+        "get_pack"
+      ],
+      "rateLimitObserved": false,
+      "rawCommandOutputStored": false,
+      "rawMcpTrafficStored": false,
+      "rawPromptStored": false,
+      "rawTranscriptStored": false,
+      "readFiles": [
+        "schema_agent/core/models.py",
+        "schema_agent/core/nodes.py",
+        "schema_agent/agents/normalization.py",
+        "schema_agent/agents/base.py",
+        "schema_agent/core/state.py",
+        "schema_agent/core/attribute_vocabulary.py"
+      ],
+      "readRoleCounts": {
+        "source": 6
+      },
+      "requiredCtxhelmCallSpecs": [
+        {
+          "name": "prepare_task",
+          "requiresRepo": true,
+          "requiresTask": true
+        },
+        {
+          "budget": "standard",
+          "format": "json",
+          "name": "get_pack",
+          "recordTrace": false,
+          "requiresRepo": true,
+          "requiresTask": true
+        }
+      ],
+      "requiredCtxhelmCalls": [
+        "prepare_task",
+        "get_pack"
+      ],
+      "sourceTextLogged": false,
+      "status": "passed",
+      "targetHits": [
+        "schema_agent/core/models.py"
+      ],
+      "targetReads": [
+        "schema_agent/core/models.py"
+      ]
+    },
+    {
+      "clientApiErrorStatus": null,
+      "clientExitStatus": 0,
+      "clientFailureKind": null,
+      "commandExecutions": [
+        {
+          "commandSha256": "788768389ccf2bd1c96132bd4fe493318cb4a1152ed24655ee2894f9ba885c6e",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 1,
+          "paths": [
+            "schema_agent/core/models.py"
+          ],
+          "status": "completed",
+          "verb": "sed"
+        },
+        {
+          "commandSha256": "228fd6ff6d071bd95fb7fdeae910d58be717be2407d3677a511779a8b1ddc1c1",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 0,
+          "paths": [],
+          "status": "completed",
+          "verb": "superpowers-codex"
+        },
+        {
+          "commandSha256": "f4a44afff03b52cbeb5cf16156662bd801365eb1ec5e923dac36280d07c404f2",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 1,
+          "paths": [
+            "schema_agent/core/attribute_vocabulary.py"
+          ],
+          "status": "completed",
+          "verb": "sed"
+        },
+        {
+          "commandSha256": "4c11c90dcc78b625049180a704ff415a215632833f5ebe5bcf8e4396d5c765cc",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 1,
+          "paths": [
+            "schema_agent/core/nodes.py"
+          ],
+          "status": "completed",
+          "verb": "sed"
+        },
+        {
+          "commandSha256": "8d21cb690a20392615f1bb96446a3845152f9f5c617077731e39efd1a2fc1141",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 1,
+          "paths": [
+            "schema_agent/core/state.py"
+          ],
+          "status": "completed",
+          "verb": "sed"
+        },
+        {
+          "commandSha256": "e83c5877f14dd734c8c1f6310c9b3e3d440a1cf7f4ec0d8ce92726910af17483",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 1,
+          "paths": [
+            "schema_agent/agents/base.py"
+          ],
+          "status": "completed",
+          "verb": "sed"
+        },
+        {
+          "commandSha256": "b402cfb173ba98721f6eb1a58749a39b7945c5f34ab6681b37661a5eac18bc73",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 1,
+          "paths": [
+            "schema_agent/agents/normalization.py"
+          ],
+          "status": "completed",
+          "verb": "sed"
+        }
+      ],
+      "ctxhelmCallCompliance": "satisfied",
+      "ctxhelmEvidenceFiles": [
+        "schema_agent/core/models.py",
+        "schema_agent/core/nodes.py",
+        "schema_agent/core/attribute_vocabulary.py",
+        "schema_agent/agents/base.py",
+        "schema_agent/agents/normalization.py",
+        "schema_agent/text2r/triplet_extractor_llm.py",
+        "docs/architecture.md",
+        "docs/LLM_EXTRACTION_FIXES.md",
+        "docs/ARCHITECTURE_COMPLETE.md",
+        "tests/agents/test_base_agent_openai_compatible.py",
+        "tests/agents/test_relationship_cardinality.py",
+        "tests/agents/test_conceptual_model_reviewer.py",
+        "tests/agents/test_entity_discovery.py",
+        "tests/agents/test_normalization_agent_config.py",
+        "tests/agents/test_normalization_fds.py",
+        "tests/agents/test_repair_agent.py",
+        "tests/agents/test_requirement_analyzer.py",
+        "tests/algorithms/test_normalization_tools.py",
+        "tests/core/__init__.py",
+        "schema_agent/core/artifacts.py",
+        "schema_agent/core/state.py",
+        "schema_agent/core/state_validator.py",
+        "schema_agent/llm_debug_logging.py",
+        "schema_agent/llm_output_sanitizer.py",
+        "schema_agent/agents/relationship_cardinality.py",
+        "schema_agent/agents/requirement_analyzer.py"
+      ],
+      "ctxhelmEvidenceMissedTargets": [],
+      "ctxhelmEvidenceOnlyTargets": [],
+      "ctxhelmEvidenceTargetHits": [
+        "schema_agent/core/models.py"
+      ],
+      "ctxhelmToolCalls": [
+        {
+          "budget": null,
+          "format": null,
+          "hasRepo": true,
+          "hasTask": true,
+          "name": "prepare_task",
+          "recordTrace": null
+        },
+        {
+          "budget": "standard",
+          "format": "json",
+          "hasRepo": true,
+          "hasTask": true,
+          "name": "get_pack",
+          "recordTrace": false
+        }
+      ],
+      "discoveredFiles": [
+        "schema_agent/core/models.py",
+        "schema_agent/core/attribute_vocabulary.py",
+        "schema_agent/core/nodes.py",
+        "schema_agent/core/state.py",
+        "schema_agent/agents/base.py",
+        "schema_agent/agents/normalization.py"
+      ],
+      "discoveredOnlyTargets": [],
+      "evaluationEligible": true,
+      "evaluationStatus": "eligible",
+      "evidenceHashes": {
+        "ctxhelmRequestLogSha256": "bebebce9afe926c8b5f03825c46e1bab1a3367434252f897dd164fd7218b8262",
+        "stderrSha256": "8f5b8f087f15d940a858b4b04c0c3aba8a79b33a9e128df7f83b7bb72c44c168",
+        "streamJsonSha256": "1f73fce9b3b9584bf8fe9603c96882f1d60b07d682e39ddfa994ef1cdf301530"
+      },
+      "forbiddenCommands": [],
+      "invalidRequiredCtxhelmCalls": [],
+      "irrelevantReads": [
+        "schema_agent/agents/base.py",
+        "schema_agent/agents/normalization.py",
+        "schema_agent/core/attribute_vocabulary.py",
+        "schema_agent/core/nodes.py",
+        "schema_agent/core/state.py"
+      ],
+      "lane": "ctxhelm-memory",
+      "metrics": {
+        "commandExecutionCount": 7,
+        "ctxhelmEvidenceFileCount": 26,
+        "ctxhelmEvidenceMissedTargetCount": 0,
+        "ctxhelmEvidenceOnlyTargetCount": 0,
+        "ctxhelmEvidenceTargetHitCount": 1,
+        "ctxhelmToolCallCount": 2,
+        "discoveredFileCount": 6,
+        "forbiddenCommandCount": 0,
+        "invalidRequiredCtxhelmCallCount": 0,
+        "irrelevantReadCount": 5,
+        "missedTargetCount": 0,
+        "missingRequiredCtxhelmCallCount": 0,
+        "observedRequiredCtxhelmCallCount": 2,
+        "readFileCount": 6,
+        "requiredCtxhelmCallCount": 2,
+        "targetCount": 1,
+        "targetCoverage": 1.0,
+        "targetDiscoveredOnlyCount": 0,
+        "targetHitCount": 1,
+        "targetReadCount": 1,
+        "targetReadCoverage": 1.0
+      },
+      "missedTargetRoleCounts": {},
+      "missedTargets": [],
+      "missingRequiredCtxhelmCalls": [],
+      "mode": "memory",
+      "observedRequiredCtxhelmCalls": [
+        "prepare_task",
+        "get_pack"
+      ],
+      "rateLimitObserved": false,
+      "rawCommandOutputStored": false,
+      "rawMcpTrafficStored": false,
+      "rawPromptStored": false,
+      "rawTranscriptStored": false,
+      "readFiles": [
+        "schema_agent/core/models.py",
+        "schema_agent/core/attribute_vocabulary.py",
+        "schema_agent/core/nodes.py",
+        "schema_agent/core/state.py",
+        "schema_agent/agents/base.py",
+        "schema_agent/agents/normalization.py"
+      ],
+      "readRoleCounts": {
+        "source": 6
+      },
+      "requiredCtxhelmCallSpecs": [
+        {
+          "name": "prepare_task",
+          "requiresRepo": true,
+          "requiresTask": true
+        },
+        {
+          "budget": "standard",
+          "format": "json",
+          "name": "get_pack",
+          "recordTrace": false,
+          "requiresRepo": true,
+          "requiresTask": true
+        }
+      ],
+      "requiredCtxhelmCalls": [
+        "prepare_task",
+        "get_pack"
+      ],
+      "sourceTextLogged": false,
+      "status": "passed",
+      "targetHits": [
+        "schema_agent/core/models.py"
+      ],
+      "targetReads": [
+        "schema_agent/core/models.py"
+      ]
+    }
+  ],
+  "privacyStatus": {
+    "localOnly": true,
+    "rawCommandOutputStored": false,
+    "rawMcpTrafficStored": false,
+    "rawPromptStored": false,
+    "rawTranscriptStored": false,
+    "remoteEmbeddingsUsed": false,
+    "remoteRerankingUsed": false,
+    "sourceTextLogged": false
+  },
+  "repo": {
+    "label": "VeriSchema",
+    "pathSha256": "49a89525dd2d0306c3eb4ea939bdc24c1a33eda89e3fd382e86b443b987818e6"
+  },
+  "schemaVersion": "ctxhelm-agent-run-eval-v1",
+  "status": "passed",
+  "targetFiles": [
+    "schema_agent/core/models.py"
+  ],
+  "task": {
+    "rawTaskStored": false,
+    "taskSha256": "2d982086f9724c7df7ddaa11cc49f39396b050ec8db4f7b82b12ca853d728163"
+  },
+  "unsupportedActions": [
+    "source edits",
+    "user project tests",
+    "global agent config mutation",
+    "cloud upload"
+  ],
+  "workflowKind": "paired-agent-context-run"
+}

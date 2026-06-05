@@ -981,8 +981,21 @@ fn render_target_files(plan: &ContextPlan) -> String {
 fn render_consumption_guidance(plan: &ContextPlan) -> String {
     let target_count = plan.target_files.len().min(5);
     let test_count = plan.related_tests.len().min(3);
+    let memory_count = plan
+        .selected_memory
+        .iter()
+        .flat_map(|memory| memory.card.source_links.iter())
+        .take(3)
+        .count();
+    let memory_sentence = if memory_count > 0 {
+        format!(
+            " Include up to {memory_count} selected-memory source/evidence path(s) in that initial native-read set."
+        )
+    } else {
+        String::new()
+    };
     format!(
-        "Read the returned target files with native file tools before answering or editing; discovering a path or seeing a pack snippet is not the same as consuming the current file. Start with up to {target_count} high-confidence target file(s), including docs, config, schema, and script targets when they appear, then read up to {test_count} related test file(s) when validation evidence is present. Use broader context-area next reads only after those native reads do not explain the task."
+        "Read the returned target files with native file tools before answering or editing; discovering a path or seeing a pack snippet is not the same as consuming the current file. Start with up to {target_count} high-confidence target file(s), including docs, config, schema, and script targets when they appear.{memory_sentence} Then read up to {test_count} related test file(s) when validation evidence is present. Use broader context-area next reads only after those native reads do not explain the task."
     )
 }
 
@@ -1190,7 +1203,7 @@ fn render_selected_memory(plan: &ContextPlan, limit: usize) -> String {
                     .join(", ")
             };
             format!(
-                "- `{}` ({:?}, score {:.2})\n  - Summary: {}\n  - Reason: {}\n  - Source links: {}",
+                "- `{}` ({:?}, score {:.2})\n  - Summary: {}\n  - Reason: {}\n  - Native-read source links: {}",
                 memory.card.title,
                 memory.card.kind,
                 memory.score,

@@ -650,7 +650,11 @@ mod tests {
         assert!(response["result"]["content"][0]["text"]
             .as_str()
             .unwrap()
-            .contains("docs, config, schema, and script entries in that initial target set"));
+            .contains("selected-memory sourceLinks or evidence paths"));
+        assert!(response["result"]["content"][0]["text"]
+            .as_str()
+            .unwrap()
+            .contains("docs, config, schema, and script entries in that initial set"));
         assert!(response["result"]["content"][0]["text"]
             .as_str()
             .unwrap()

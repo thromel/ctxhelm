@@ -236,9 +236,36 @@ fn call_prepare_task(arguments: Value) -> Result<Value, RpcError> {
 
 fn render_prepare_task_text(plan: &ContextPlan) -> Result<String, serde_json::Error> {
     let json = serde_json::to_string_pretty(plan)?;
+    let read_queue = render_native_read_queue(plan);
     Ok(format!(
-        "Consumption guidance:\n- Start by reading the first up to 5 returned targetFiles with native file tools before answering or editing; discovering a path is not the same as consuming it.\n- Treat docs, config, schema, and script entries in that initial target set as first-class targets, not optional background.\n- Stop after those native reads if they answer the task; read broader targetFiles or relatedTests only when the initial evidence is insufficient or validation strategy is needed.\n- Use get_pack progressively only after native reads or this plan are insufficient.\n\nContextPlan JSON:\n{json}"
+        "Consumption guidance:\n- Start by reading the first up to 5 returned targetFiles with native file tools before answering or editing; discovering a path is not the same as consuming it.\n- Execute the Native read queue before broader exploration unless the task is already answered.\n- If selectedMemory is present, also read up to 3 selected-memory sourceLinks or evidence paths before broader exploration.\n- Treat docs, config, schema, and script entries in that initial set as first-class targets, not optional background.\n- Stop after those native reads if they answer the task; read broader targetFiles or relatedTests only when the initial evidence is insufficient or validation strategy is needed.\n- Use get_pack progressively only after native reads or this plan are insufficient.\n\nNative read queue:\n{read_queue}\n\nContextPlan JSON:\n{json}"
     ))
+}
+
+fn render_native_read_queue(plan: &ContextPlan) -> String {
+    if plan.target_files.is_empty() {
+        return "- No targetFiles were selected.".to_string();
+    }
+    plan.target_files
+        .iter()
+        .take(5)
+        .enumerate()
+        .map(|(index, target)| {
+            format!(
+                "{}. `{}` ({}, confidence {:.2})\n   - Suggested read: `sed -n '1,220p' -- {}`",
+                index + 1,
+                target.path,
+                target.reason,
+                target.confidence,
+                shell_quote_path(&target.path)
+            )
+        })
+        .collect::<Vec<_>>()
+        .join("\n")
+}
+
+fn shell_quote_path(path: &str) -> String {
+    format!("'{}'", path.replace('\'', "'\\''"))
 }
 
 fn call_search(arguments: Value) -> Result<Value, RpcError> {
