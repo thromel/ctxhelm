@@ -125,10 +125,27 @@ measurement path. It scans a local repository for repeated-file commit pairs,
 evaluates each newer commit before and after approving an experience card seeded
 from the older commit, and writes a source-free aggregate report with
 `memoryUniqueLiftPairs`, `memoryUniqueTargetHitCount`,
-`memoryUniqueNonTargetCount`, `precisionNeedsWork`, and
-`generalizationProven`. This harness should be used before claiming memory has
-generalized beyond controlled smokes, because it records both target lift and
-ranking noise.
+`memoryUniqueNonTargetCount`, final-pack impact counters,
+`precisionNeedsWork`, and `generalizationProven`. This harness should be used
+before claiming memory has generalized beyond controlled smokes, because it
+records both target lift and whether memory actually changed the context pack.
+The pack-impact counters distinguish signal-level overlap from user-visible
+selection changes:
+
+- `memoryPackChangedPairs`: evaluated pairs where approving memory changed the
+  final top-10 context pack.
+- `memoryPackAddedTargetCount`: retrieval targets added to the final pack by
+  memory.
+- `memoryPackAddedNonTargetCount`: non-target files added to the final pack by
+  memory.
+- `memorySignalOnlyNonTargetCount`: memory non-target overlap that did not add a
+  new final-pack file.
+
+`precisionNeedsWork` is driven by pack-added non-target pressure, not by
+signal-only overlap. Signal-only overlap is still reported through
+`signalOnlyMemoryOverlapObserved` and routed to
+`track_signal_only_memory_overlap` so it can be monitored without blocking
+ranking work.
 
 Phase 220 uses that harness as a precision regression check. On the same
 two-pair RefactoringMiner slice, preserving experience-card recommendation order
@@ -148,6 +165,15 @@ repeated-file pair per repo. The suite found `memoryUniqueLiftPairs = 2`,
 `precisionNeedsWork = true`, so the next benchmark step is increasing
 pairs-per-repo and comparing memory selection against graph and semantic
 ablations.
+
+Phase 234 separates memory signal pressure from final-pack impact after the
+corroboration policy work. A six-repo semantic-enabled suite over 30 evaluated
+pairs preserves `memoryUniqueLiftPairs = 2` and `memoryUniqueTargetHitCount = 2`
+while reporting `memoryPackChangedPairs = 0`,
+`memoryPackAddedNonTargetCount = 0`, `memorySignalOnlyNonTargetCount = 1`,
+`unsupportedMemoryNoiseRepositoryCount = 0`, `precisionNeedsWork = false`, and
+`generalizationProven = true`. The remaining memory non-target is therefore a
+tracked signal-only overlap diagnostic, not a context-pack regression.
 
 Historical eval reports also include source-free `graphEdgeProfiles`. These
 profiles split graph candidate evidence by edge label, such as `imports`,

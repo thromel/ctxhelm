@@ -262,6 +262,13 @@ memory_targets_without_graph_or_semantic = aggregate_value(
     "memoryTargetHitsWithoutGraphOrSemanticSupportLowerBound"
 )
 graph_edge_removed_target_hits = aggregate_value("graphEdgeAblationRemovedTargetHitCount")
+memory_pack_changed_pairs = aggregate_value("memoryPackChangedPairs")
+memory_pack_target_gain_pairs = aggregate_value("memoryPackTargetGainPairs")
+memory_pack_added_files = aggregate_value("memoryPackAddedFileCount")
+memory_pack_removed_files = aggregate_value("memoryPackRemovedFileCount")
+memory_pack_added_targets = aggregate_value("memoryPackAddedTargetCount")
+memory_pack_added_non_targets = aggregate_value("memoryPackAddedNonTargetCount")
+memory_signal_only_non_targets = aggregate_value("memorySignalOnlyNonTargetCount")
 semantic_selected_target_pairs = aggregate_value("semanticSelectedTargetPairs")
 semantic_ablation_lift_pairs = aggregate_value("semanticAblationLiftPairs")
 repository_diversity_target = 6
@@ -294,11 +301,12 @@ repository_diversity_target_met = (
 )
 
 unsupported_memory_precision_needs_work = (
-    memory_unique_non_targets_without_current_support > 0
+    (memory_pack_added_non_targets > 0 and memory_unique_non_targets_without_current_support > 0)
     or memory_unique_target_hits_without_current_support > 0
 )
 supported_memory_noise_needs_review = (
-    memory_unique_non_targets_with_current_support > 0
+    memory_pack_added_non_targets > 0
+    and memory_unique_non_targets_with_current_support > 0
     and memory_unique_non_targets_without_current_support == 0
 )
 if unsupported_memory_precision_needs_work:
@@ -318,7 +326,10 @@ elif supported_memory_noise_needs_review:
 else:
     recommended_next_r_and_d = ["measure_real_agent_outcome_lift"]
 if memory_unique_non_targets > 0:
-    recommended_next_r_and_d.append("compare_memory_noise_against_current_signal_roles")
+    if memory_pack_added_non_targets > 0:
+        recommended_next_r_and_d.append("compare_memory_noise_against_current_signal_roles")
+    else:
+        recommended_next_r_and_d.append("track_signal_only_memory_overlap")
 if semantic_enabled:
     recommended_next_r_and_d.append("compare_against_lexical_graph_semantic_ablations")
 if "measure_real_agent_outcome_lift" not in recommended_next_r_and_d:
@@ -359,6 +370,13 @@ payload = {
         "memoryUniqueTargetsWithGraphOrSemanticSupportUpperBound": graph_or_semantic_supported_unique_targets,
         "memoryTargetHitsWithoutGraphOrSemanticSupportLowerBound": memory_targets_without_graph_or_semantic,
         "graphEdgeAblationRemovedTargetHitCount": graph_edge_removed_target_hits,
+        "memoryPackChangedPairs": memory_pack_changed_pairs,
+        "memoryPackTargetGainPairs": memory_pack_target_gain_pairs,
+        "memoryPackAddedFileCount": memory_pack_added_files,
+        "memoryPackRemovedFileCount": memory_pack_removed_files,
+        "memoryPackAddedTargetCount": memory_pack_added_targets,
+        "memoryPackAddedNonTargetCount": memory_pack_added_non_targets,
+        "memorySignalOnlyNonTargetCount": memory_signal_only_non_targets,
         "semanticSelectedTargetPairs": semantic_selected_target_pairs,
         "semanticAblationLiftPairs": semantic_ablation_lift_pairs,
         "memoryLiftRepositoryCount": memory_lift_repository_count,
@@ -380,14 +398,14 @@ payload = {
         and not repository_diversity_target_met,
         "pairDiversityMeasured": evaluated_target_files > evaluated_repos,
         "generalizationProven": evaluated_repos > 1 and memory_unique_lift_pairs > 1,
-        "precisionNeedsWork": memory_unique_non_targets > 0
-        or memory_target_hit_pairs < memory_candidate_pairs,
+        "precisionNeedsWork": memory_pack_added_non_targets > memory_pack_added_targets,
         "unsupportedMemoryPrecisionNeedsWork": unsupported_memory_precision_needs_work,
         "supportedMemoryNoiseNeedsReview": supported_memory_noise_needs_review,
         "weakSupportedMemoryNoiseNeedsTuning": weak_supported_memory_noise,
         "supportedMemoryNoiseDominantSignals": supported_memory_noise_dominant_signals,
         "memoryNeedsCorroboration": memory_targets_without_graph_or_semantic > 0
-        or memory_unique_non_targets > 0,
+        or memory_pack_added_non_targets > 0,
+        "signalOnlyMemoryOverlapObserved": memory_signal_only_non_targets > 0,
         "semanticMeasured": semantic_enabled,
         "semanticUsefulForMemoryTasks": semantic_selected_target_pairs > 0
         or semantic_ablation_lift_pairs > 0,

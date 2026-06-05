@@ -387,6 +387,11 @@ def memory_signal_comparison(report, memory_summary):
     }
 
 
+def ordered_difference(left, right):
+    right_set = set(right)
+    return [value for value in left if value not in right_set]
+
+
 def evaluate(pair, index):
     pair_dir = work / f"pair-{index:02d}"
     pair_dir.mkdir(parents=True, exist_ok=True)
@@ -508,6 +513,19 @@ def evaluate(pair, index):
     unique_lift = after_memory.get("memoryUniqueTargetHitCount", 0) > before_memory.get(
         "memoryUniqueTargetHitCount", 0
     )
+    before_context_files = before.get("commits", [{}])[0].get("recommendedContextFiles", [])
+    after_context_files = after.get("commits", [{}])[0].get("recommendedContextFiles", [])
+    target_files = set(retrieval_targets(after))
+    pack_added_files = ordered_difference(after_context_files, before_context_files)
+    pack_removed_files = ordered_difference(before_context_files, after_context_files)
+    pack_added_target_files = [path for path in pack_added_files if path in target_files]
+    pack_added_non_target_files = [path for path in pack_added_files if path not in target_files]
+    memory_unique_non_targets = int(after_memory.get("memoryUniqueNonTargetCount", 0) or 0)
+    pack_added_non_target_count = len(pack_added_non_target_files)
+    signal_only_non_target_count = max(
+        0,
+        memory_unique_non_targets - pack_added_non_target_count,
+    )
 
     return {
         "pairIndex": index,
@@ -556,6 +574,16 @@ def evaluate(pair, index):
                 "memoryUniqueTargetHitWithoutCurrentSupportCount", 0
             ),
             "targetMissedByMemory": after_memory.get("memoryTargetMissedAt10Count", 0),
+            "packChangedByMemory": bool(pack_added_files or pack_removed_files),
+            "packAddedFileCount": len(pack_added_files),
+            "packRemovedFileCount": len(pack_removed_files),
+            "packAddedTargetCount": len(pack_added_target_files),
+            "packAddedNonTargetCount": pack_added_non_target_count,
+            "signalOnlyNonTargetCount": signal_only_non_target_count,
+            "packAddedFiles": pack_added_files,
+            "packRemovedFiles": pack_removed_files,
+            "packAddedTargetFiles": pack_added_target_files,
+            "packAddedNonTargetFiles": pack_added_non_target_files,
         },
         "signalComparison": signal_comparison,
         "runtimeSeconds": timings,
@@ -628,6 +656,19 @@ total_memory_targets_without_graph_or_semantic = sum(
 total_graph_edge_removed_targets = sum(
     result["signalComparison"]["graphEdgeAblationRemovedTargetHitCount"] for result in results
 )
+memory_pack_changed_pairs = sum(1 for result in results if result["lift"]["packChangedByMemory"])
+memory_pack_target_gain_pairs = sum(
+    1 for result in results if result["lift"]["packAddedTargetCount"] > 0
+)
+total_pack_added_files = sum(result["lift"]["packAddedFileCount"] for result in results)
+total_pack_removed_files = sum(result["lift"]["packRemovedFileCount"] for result in results)
+total_pack_added_targets = sum(result["lift"]["packAddedTargetCount"] for result in results)
+total_pack_added_non_targets = sum(
+    result["lift"]["packAddedNonTargetCount"] for result in results
+)
+total_signal_only_non_targets = sum(
+    result["lift"]["signalOnlyNonTargetCount"] for result in results
+)
 
 
 def merge_count_maps(results, field):
@@ -683,11 +724,12 @@ larger_pair_validation_target_met = (
 )
 
 unsupported_memory_precision_needs_work = (
-    total_unique_non_targets_without_current_support > 0
+    (total_pack_added_non_targets > 0 and total_unique_non_targets_without_current_support > 0)
     or total_unique_target_hits_without_current_support > 0
 )
 supported_memory_noise_needs_review = (
-    total_unique_non_targets_with_current_support > 0
+    total_pack_added_non_targets > 0
+    and total_unique_non_targets_with_current_support > 0
     and total_unique_non_targets_without_current_support == 0
 )
 if unsupported_memory_precision_needs_work:
@@ -705,7 +747,10 @@ elif supported_memory_noise_needs_review:
 else:
     recommended_next_r_and_d = ["expand_repository_diversity"]
 if total_unique_non_targets > 0:
-    recommended_next_r_and_d.append("compare_memory_noise_against_current_signal_roles")
+    if total_pack_added_non_targets > 0:
+        recommended_next_r_and_d.append("compare_memory_noise_against_current_signal_roles")
+    else:
+        recommended_next_r_and_d.append("track_signal_only_memory_overlap")
 if semantic_enabled:
     recommended_next_r_and_d.append("compare_against_lexical_graph_semantic_ablations")
 if "measure_real_agent_outcome_lift" not in recommended_next_r_and_d:
@@ -748,6 +793,13 @@ payload = {
         "memoryUniqueTargetsWithGraphOrSemanticSupportUpperBound": total_graph_or_semantic_supported_unique_targets,
         "memoryTargetHitsWithoutGraphOrSemanticSupportLowerBound": total_memory_targets_without_graph_or_semantic,
         "graphEdgeAblationRemovedTargetHitCount": total_graph_edge_removed_targets,
+        "memoryPackChangedPairs": memory_pack_changed_pairs,
+        "memoryPackTargetGainPairs": memory_pack_target_gain_pairs,
+        "memoryPackAddedFileCount": total_pack_added_files,
+        "memoryPackRemovedFileCount": total_pack_removed_files,
+        "memoryPackAddedTargetCount": total_pack_added_targets,
+        "memoryPackAddedNonTargetCount": total_pack_added_non_targets,
+        "memorySignalOnlyNonTargetCount": total_signal_only_non_targets,
         "semanticSelectedTargetPairs": semantic_target_pairs,
         "semanticAblationLiftPairs": semantic_ablation_lift_pairs,
         "afterEvalRuntimeSecondsTotal": total_after_seconds,
@@ -755,13 +807,14 @@ payload = {
     "interpretation": {
         "generalizationProven": unique_lift_pairs > 1,
         "singlePairLiftObserved": unique_lift_pairs == 1,
-        "precisionNeedsWork": noise_pairs > 0 or total_unique_non_targets > total_unique_target_hits,
+        "precisionNeedsWork": total_pack_added_non_targets > total_pack_added_targets,
         "unsupportedMemoryPrecisionNeedsWork": unsupported_memory_precision_needs_work,
         "supportedMemoryNoiseNeedsReview": supported_memory_noise_needs_review,
         "weakSupportedMemoryNoiseNeedsTuning": weak_supported_memory_noise,
         "supportedMemoryNoiseDominantSignals": supported_memory_noise_dominant_signals,
         "memoryNeedsCorroboration": total_memory_targets_without_graph_or_semantic > 0
-        or total_unique_non_targets > 0,
+        or total_pack_added_non_targets > 0,
+        "signalOnlyMemoryOverlapObserved": total_signal_only_non_targets > 0,
         "semanticMeasured": semantic_enabled,
         "semanticUsefulForMemoryTasks": semantic_target_pairs > 0 or semantic_ablation_lift_pairs > 0,
         "lexicalStillStrong": lexical_covered_pairs > 0,

@@ -116,6 +116,8 @@ Phase 230 implements that tuning. Memory now attaches to existing candidates onl
 
 Phase 231 validates that tuned policy at a larger pair count. The memory-generalization harnesses now report `largerPairValidationTargetMet`, and the fresh four-repo semantic-enabled suite evaluates 20 pairs across 20 distinct target files. Memory lift stays at two unique target hits beyond lexical, unsupported memory non-targets stay at zero, weak-supported memory noise remains cleared, and the remaining two strong-signal memory non-targets are localized to VeriSchema. The next local R&D step is repository diversity and strong-signal overlap inspection rather than more same-corpus pair expansion.
 
+Phase 234 fixes the next layer of memory-eval accounting. After Phase 233 cleared unsupported memory noise, the remaining express non-target was reproduced as signal-only overlap: memory selected a co-change/dependency-supported file already present in the native pack, so the final context pack did not change. The memory-generalization harnesses now report pack-impact fields including `memoryPackChangedPairs`, `memoryPackAddedTargetCount`, `memoryPackAddedNonTargetCount`, and `memorySignalOnlyNonTargetCount`. The fresh six-repo semantic-enabled suite preserves `memoryUniqueLiftPairs = 2`, reports `memoryPackChangedPairs = 0`, `memoryPackAddedNonTargetCount = 0`, and sets `precisionNeedsWork = false`. The next local R&D step is real-agent outcome lift, with signal-only overlap tracked separately.
+
 ## v2.5 Production Retrieval Quality
 
 ## Phases

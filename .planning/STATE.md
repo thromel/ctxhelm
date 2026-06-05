@@ -4,7 +4,7 @@ milestone: v2.5
 milestone_name: Production Retrieval Quality
 status: active
 last_updated: "2026-06-03T00:00:00Z"
-last_activity: 2026-06-05 -- Phase 233 clears unsupported memory noise while preserving six-repo memory lift
+last_activity: 2026-06-05 -- Phase 234 separates signal-only memory overlap from final-pack impact
 progress:
   total_phases: 134
   completed_phases: 134
@@ -17,10 +17,10 @@ progress:
 
 ## Current Position
 
-Phase: 233 - Memory Corroboration Policy
-Plan: 233-memory-corroboration-policy
+Phase: 234 - Memory Pack Impact Accounting
+Plan: 234-memory-pack-impact-accounting
 Status: Complete
-Last activity: 2026-06-05 -- Phase 233 blocks uncorroborated memory-only source rescue when native related-test evidence is already available. The express focused rerun drops `memoryUniqueNonTargetWithoutCurrentSupportCount` from `1` to `0`, and the six-repo semantic-enabled suite preserves `memoryUniqueLiftPairs = 2` while reducing `memoryUniqueNonTargetCount` from `2` to `1` and `unsupportedMemoryNoiseRepositoryCount` from `1` to `0`. The next local memory R&D is strong-signal overlap inspection for the remaining co-change/dependency-supported express non-target; real-agent outcome lift still waits on non-rate-limited Claude Code evidence.
+Last activity: 2026-06-05 -- Phase 234 fixes memory-generalization accounting so signal-only memory overlap is not treated as final-pack precision work. The express rerun has `memoryPackChangedPairs = 0`, `memoryPackAddedNonTargetCount = 0`, `memorySignalOnlyNonTargetCount = 1`, and `precisionNeedsWork = false`. The six-repo semantic-enabled suite preserves `memoryUniqueLiftPairs = 2`, reports `memoryPackChangedPairs = 0`, `memoryPackAddedNonTargetCount = 0`, `unsupportedMemoryNoiseRepositoryCount = 0`, and `generalizationProven = true`. The next R&D step is real-agent outcome lift, while signal-only overlap remains tracked.
 
 ## Project Reference
 

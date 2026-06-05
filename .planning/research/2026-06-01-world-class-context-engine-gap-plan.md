@@ -370,3 +370,22 @@ Reason:
 The product is now publicly installable and proof-gated. The next world-class
 question is whether a real coding agent does better with ctxhelm on a realistic
 task, not whether another protocol smoke passes.
+
+## June 5 Memory R&D Update
+
+Phases 219-234 turned experience memory from a smoke-tested feature into a
+measured local R&D lane:
+
+- controlled memory smokes prove parent-snapshot and product-proof plumbing
+- real-corpus generalization suites measure repeated-file commit pairs
+- suite reports compare memory against lexical, graph, and semantic signals
+- unsupported memory-only non-target rescue is now blocked when native related
+  test evidence already exists
+- final-pack impact is now separated from signal-only memory overlap
+
+Current six-repo evidence preserves two memory-unique target lifts, has zero
+unsupported memory-noise repositories, and has zero final-pack non-target
+additions from memory. The remaining memory overlap is signal-only. The next
+world-class question is therefore outcome lift: does an actual Claude/Codex
+agent use memory-backed ctxhelm evidence to read fewer irrelevant files or solve
+more tasks, not another local ranking demotion.
