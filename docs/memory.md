@@ -117,3 +117,20 @@ set per card and do not inject tests into the ranked context budget. Tests can
 still appear in selected memory source links and normal validation channels, but
 old experience memory cannot flood top-10 context with every prior test or
 auxiliary file.
+
+For multi-repo R&D, run:
+
+```bash
+scripts/measure-memory-generalization-suite.sh \
+  --repo ../ctxhelm-proof-fixtures/RefactoringMiner \
+  --repo ../ctxhelm-proof-fixtures/VeriSchema \
+  --repo ../ctxhelm-proof-fixtures/ReAgent \
+  --repo ../ctxhelm-proof-fixtures/ctxhelm \
+  --pairs 1 \
+  --scan-commits 120 \
+  --output .ctxhelm/e2e/phase221-memory-generalization-suite.json
+```
+
+The suite wrapper runs the single-repo harness for each checkout and aggregates
+only source-free labels, hashes, booleans, counters, and runtime. It should be
+used before claiming memory lift generalizes across repositories.

@@ -164,6 +164,15 @@ one combined-target recovery while reducing unique non-target memory selections
 from 8 to 2. `precisionNeedsWork` remains true, so the next higher bar is more
 pairs, more repos, and a stricter memory-selection policy.
 
+Status: Phase 221 adds the multi-repo measurement layer. The suite wrapper runs
+the real-corpus memory harness across RefactoringMiner, VeriSchema, ReAgent,
+and ctxhelm fixtures with one repeated-file pair per repo. The source-free
+aggregate reports two unique memory lifts, two unique target hits, one combined
+target recovery, and three unique non-target selections across four evaluated
+pairs. This is bounded multi-repo lift proof under the current criterion, but
+the remaining noise and tiny pair count mean the next bar is larger pair counts
+plus graph/semantic ablation comparison.
+
 ### 3. Semantic/Embedding Signal Is Wired But Not Driving Lift
 
 The current product lift comes from hybrid ranking, graph/test/history/context

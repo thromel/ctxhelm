@@ -1,0 +1,164 @@
+{
+  "aggregate": {
+    "combinedRecoveredPairs": 1,
+    "lexicalCoveredPairs": 3,
+    "memoryCandidatePairs": 4,
+    "memoryTargetHitPairs": 4,
+    "memoryUniqueLiftPairs": 2,
+    "memoryUniqueNonTargetCount": 3,
+    "memoryUniqueNonTargetPerUniqueTarget": 1.5,
+    "memoryUniqueTargetHitCount": 2
+  },
+  "errors": [],
+  "interpretation": {
+    "generalizationProven": true,
+    "lexicalStillStrong": true,
+    "multiRepoMeasured": true,
+    "precisionNeedsWork": true,
+    "recommendedNextRAndD": [
+      "increase_pairs_per_repo",
+      "measure_memory_selection_against_graph_semantic_ablations",
+      "demote_memory_without_target_or_correlated_context_support",
+      "measure_real_agent_outcome_lift"
+    ]
+  },
+  "privacyStatus": {
+    "localOnly": true,
+    "rawMcpTrafficStored": false,
+    "rawPromptStored": false,
+    "rawTaskTextStored": false,
+    "rawTranscriptStored": false,
+    "remoteEmbeddingsUsed": false,
+    "remoteRerankingUsed": false,
+    "repoPathStored": false,
+    "sourceTextLogged": false
+  },
+  "repositories": [
+    {
+      "aggregate": {
+        "afterEvalRuntimeSecondsTotal": 0.18,
+        "combinedRecoveredPairs": 1,
+        "lexicalCoveredPairs": 0,
+        "memoryCandidatePairs": 1,
+        "memoryNoisePairs": 1,
+        "memoryTargetHitPairs": 1,
+        "memoryUniqueLiftPairs": 1,
+        "memoryUniqueNonTargetCount": 2,
+        "memoryUniqueTargetHitCount": 1
+      },
+      "discoveredPairs": 1,
+      "errorCount": 0,
+      "evaluatedPairs": 1,
+      "headShaPrefix": "949bddcd3509",
+      "interpretation": {
+        "generalizationProven": false,
+        "lexicalStillStrong": false,
+        "precisionNeedsWork": true,
+        "singlePairLiftObserved": true
+      },
+      "label": "RefactoringMiner",
+      "pathStored": false,
+      "requestedPairs": 1,
+      "suiteRuntimeSeconds": 42.01
+    },
+    {
+      "aggregate": {
+        "afterEvalRuntimeSecondsTotal": 0.15,
+        "combinedRecoveredPairs": 0,
+        "lexicalCoveredPairs": 1,
+        "memoryCandidatePairs": 1,
+        "memoryNoisePairs": 0,
+        "memoryTargetHitPairs": 1,
+        "memoryUniqueLiftPairs": 1,
+        "memoryUniqueNonTargetCount": 0,
+        "memoryUniqueTargetHitCount": 1
+      },
+      "discoveredPairs": 1,
+      "errorCount": 0,
+      "evaluatedPairs": 1,
+      "headShaPrefix": "335786673044",
+      "interpretation": {
+        "generalizationProven": false,
+        "lexicalStillStrong": true,
+        "precisionNeedsWork": false,
+        "singlePairLiftObserved": true
+      },
+      "label": "VeriSchema",
+      "pathStored": false,
+      "requestedPairs": 1,
+      "suiteRuntimeSeconds": 4.48
+    },
+    {
+      "aggregate": {
+        "afterEvalRuntimeSecondsTotal": 0.18,
+        "combinedRecoveredPairs": 0,
+        "lexicalCoveredPairs": 1,
+        "memoryCandidatePairs": 1,
+        "memoryNoisePairs": 0,
+        "memoryTargetHitPairs": 1,
+        "memoryUniqueLiftPairs": 0,
+        "memoryUniqueNonTargetCount": 0,
+        "memoryUniqueTargetHitCount": 0
+      },
+      "discoveredPairs": 1,
+      "errorCount": 0,
+      "evaluatedPairs": 1,
+      "headShaPrefix": "44277ff7d89a",
+      "interpretation": {
+        "generalizationProven": false,
+        "lexicalStillStrong": true,
+        "precisionNeedsWork": false,
+        "singlePairLiftObserved": false
+      },
+      "label": "ReAgent",
+      "pathStored": false,
+      "requestedPairs": 1,
+      "suiteRuntimeSeconds": 5.07
+    },
+    {
+      "aggregate": {
+        "afterEvalRuntimeSecondsTotal": 0.16,
+        "combinedRecoveredPairs": 0,
+        "lexicalCoveredPairs": 1,
+        "memoryCandidatePairs": 1,
+        "memoryNoisePairs": 1,
+        "memoryTargetHitPairs": 1,
+        "memoryUniqueLiftPairs": 0,
+        "memoryUniqueNonTargetCount": 1,
+        "memoryUniqueTargetHitCount": 0
+      },
+      "discoveredPairs": 1,
+      "errorCount": 0,
+      "evaluatedPairs": 1,
+      "headShaPrefix": "7f439fa1b1f2",
+      "interpretation": {
+        "generalizationProven": false,
+        "lexicalStillStrong": true,
+        "precisionNeedsWork": true,
+        "singlePairLiftObserved": false
+      },
+      "label": "ctxhelm",
+      "pathStored": false,
+      "requestedPairs": 1,
+      "suiteRuntimeSeconds": 2.98
+    }
+  ],
+  "schemaVersion": "ctxhelm-memory-generalization-suite-v1",
+  "status": "measured",
+  "suite": {
+    "discoveredPairs": 4,
+    "errorRepositoryCount": 0,
+    "evaluatedPairs": 4,
+    "evaluatedRepositoryCount": 4,
+    "requestedPairsPerRepo": 1,
+    "requestedRepositoryCount": 4,
+    "scanCommitsPerRepo": 120
+  },
+  "unsupportedActions": [
+    "source edits",
+    "model invocation",
+    "cloud upload",
+    "raw prompt storage"
+  ],
+  "workflowKind": "multi-repo-experience-memory-generalization"
+}

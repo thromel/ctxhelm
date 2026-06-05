@@ -94,6 +94,8 @@ Phase 219 turns that single real-corpus proof into a repeatable measurement harn
 
 Phase 220 improves memory precision on that same measured slice. Experience cards now preserve eval-trace recommendation order instead of sorting source links, keep recommended files before recommended tests, and memory path candidate injection is capped to a small source-like context set per card. The RefactoringMiner two-pair rerun preserves one unique memory lift beyond lexical and one combined-target recovery while reducing unique non-target memory selections from 8 to 2. The remaining two non-targets keep `precisionNeedsWork = true`, so the next R&D step is broader pair counts plus a more selective memory-selection policy.
 
+Phase 221 broadens that measurement from one repository to four. `scripts/measure-memory-generalization-suite.sh` runs the real-corpus memory harness across multiple local repos and aggregates source-free counters without storing raw repo paths or task text. The RefactoringMiner, VeriSchema, ReAgent, and ctxhelm fixture run evaluates four repeated-file pairs and reports `memoryUniqueLiftPairs = 2`, `memoryUniqueTargetHitCount = 2`, `combinedRecoveredPairs = 1`, and `memoryUniqueNonTargetCount = 3`. This is the first bounded multi-repo memory-generalization proof, but `precisionNeedsWork = true` means the next R&D should increase pair counts and compare memory selection against graph/semantic ablations.
+
 ## v2.5 Production Retrieval Quality
 
 ## Phases

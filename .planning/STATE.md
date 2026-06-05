@@ -4,10 +4,10 @@ milestone: v2.5
 milestone_name: Production Retrieval Quality
 status: active
 last_updated: "2026-06-03T00:00:00Z"
-last_activity: 2026-06-05 -- Phase 220 reduces real-corpus memory precision noise
+last_activity: 2026-06-05 -- Phase 221 measures multi-repo memory generalization
 progress:
-  total_phases: 129
-  completed_phases: 129
+  total_phases: 130
+  completed_phases: 130
   total_plans: 7
   completed_plans: 7
   percent: 100
@@ -17,10 +17,10 @@ progress:
 
 ## Current Position
 
-Phase: 220 - Memory Precision Noise Reduction
-Plan: 220-memory-precision-noise-reduction
+Phase: 221 - Multi-Repo Memory Generalization Suite
+Plan: 221-memory-generalization-suite
 Status: Complete
-Last activity: 2026-06-05 -- Phase 220 reduces memory precision noise by preserving experience-card recommendation order, keeping recommended files before tests, and capping memory source-link candidates to a small source-like context set per card. The RefactoringMiner two-pair rerun in `.ctxhelm/e2e/phase220-refactoringminer-memory-precision.json` preserves one unique memory lift beyond lexical and one combined-target recovery while reducing unique non-target memory selections from 8 to 2. Broad memory generalization remains unproven, but memory precision is measurably better on the current real-corpus slice.
+Last activity: 2026-06-05 -- Phase 221 adds `scripts/measure-memory-generalization-suite.sh`, a source-free multi-repo wrapper around the real-corpus memory harness. The four-repo fixture run in `.ctxhelm/e2e/phase221-memory-generalization-suite.json` evaluates one repeated-file pair each for RefactoringMiner, VeriSchema, ReAgent, and ctxhelm: `memoryUniqueLiftPairs = 2`, `memoryUniqueTargetHitCount = 2`, `combinedRecoveredPairs = 1`, and `memoryUniqueNonTargetCount = 3`. The suite now proves bounded multi-repo memory lift under the current criterion, while `precisionNeedsWork = true` keeps broader pair counts and stricter memory selection open.
 
 ## Project Reference
 

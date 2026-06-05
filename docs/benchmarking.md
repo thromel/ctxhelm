@@ -138,6 +138,17 @@ and capping source-like memory context candidates kept `memoryUniqueLiftPairs =
 `precisionNeedsWork = true`, so broader multi-pair and multi-repo proof is still
 required before stronger memory-generalization claims.
 
+`scripts/measure-memory-generalization-suite.sh` runs the same measurement
+across multiple local repositories and aggregates the source-free reports.
+Phase 221 measured RefactoringMiner, VeriSchema, ReAgent, and ctxhelm with one
+repeated-file pair per repo. The suite found `memoryUniqueLiftPairs = 2`,
+`memoryUniqueTargetHitCount = 2`, `combinedRecoveredPairs = 1`, and
+`memoryUniqueNonTargetCount = 3`, with `multiRepoMeasured = true` and
+`generalizationProven = true` under the current bounded criterion. It also kept
+`precisionNeedsWork = true`, so the next benchmark step is increasing
+pairs-per-repo and comparing memory selection against graph and semantic
+ablations.
+
 Historical eval reports also include source-free `graphEdgeProfiles`. These
 profiles split graph candidate evidence by edge label, such as `imports`,
 `python_reexport`, or `precision:calls`, and report candidate count,
