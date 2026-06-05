@@ -420,3 +420,26 @@ The current R&D state is therefore:
   lexical evidence without semantic-only target hits.
 
 Tracked audit: `.planning/e2e/2026-06-06-rd-completion-audit.md`.
+
+## June 6 Phase 251 Update
+
+Phase 251 adds the larger single-repo Codex R&D suite requested by the audit:
+one selected-memory native-read task, one semantic contribution diagnostics
+task, one GraphRAG edge-budget task, and one governor/release proof task. The
+suite exposed and fixed two issues before the final proof:
+
+- GraphRAG edge-budget tasks did not initially surface
+  `crates/ctxhelm-compiler/src/ranking.rs` or
+  `crates/ctxhelm-index/src/dependencies.rs` in the top target window.
+- The Codex harness prompt allowed discovery commands to be interpreted as
+  target consumption and did not explicitly forbid `awk`/redirection.
+
+The final source-free report
+`.ctxhelm/e2e/phase251-agent-run-codex-rd-breadth-suite.json` passes with four
+comparison-eligible tasks, 16 comparable ctxhelm lanes, outcome
+`ctxhelm_improved`, no evidence misses, no evidence-only targets, no under-read
+targets, no forbidden commands, no client failures, and `1.00` average
+target-read coverage in every ctxhelm lane. This closes the current larger
+single-repo Codex suite gap. Remaining R&D should now focus on semantic
+default-lift proof, broader cross-repo memory outcome diversity, and fresh
+paired Claude outcome proof when the client is available.

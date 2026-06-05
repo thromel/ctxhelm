@@ -655,7 +655,7 @@ run_lane() {
   local prompt
   if [[ "$mode" == "baseline" ]]; then
     prompt=$(cat <<EOF
-Do not edit files, do not write files, do not run tests, and do not mutate git or global config. Do not run bootstrap, setup, install, hook, or superpowers commands.
+Do not edit files, do not write files, do not use shell redirection, do not run tests, and do not mutate git or global config. Do not run awk, bootstrap, setup, install, hook, or superpowers commands.
 Use only read-only shell commands such as pwd, ls, find, rg, grep, sed, cat, nl, head, tail, and wc.
 Use at most 8 shell commands total. After reading up to 5 relevant files, stop exploring and answer.
 Task: $task
@@ -664,10 +664,10 @@ EOF
 )
   elif [[ "$mode" == "plan" ]]; then
     prompt=$(cat <<EOF
-Do not edit files, do not write files, do not run tests, and do not mutate git or global config. Do not run bootstrap, setup, install, hook, or superpowers commands.
+Do not edit files, do not write files, do not use shell redirection, do not run tests, and do not mutate git or global config. Do not run awk, bootstrap, setup, install, hook, or superpowers commands.
 First call ctxhelm prepare_task with explicit repo "$repo" and task "$task".
 Use at most 8 shell commands total after ctxhelm calls.
-Identify the returned targetFiles paths. Read the first up to 5 targetFiles first with read-only shell commands such as sed, cat, nl, head, tail, wc, ls, find, rg, and grep before broader exploration.
+Identify the returned targetFiles paths. Consume the first up to 5 targetFiles first with read commands such as sed, cat, nl, head, or tail before broader exploration. rg, grep, find, ls, and wc may locate or count evidence, but they do not count as consuming a target file.
 If selectedMemory appears, also read up to 3 selectedMemory sourceLinks or evidence paths with read-only shell commands before broader exploration.
 Treat docs, config, schema, script, and selected-memory paths in that initial set as first-class targets, not optional background. Stop after those reads if they answer the task.
 Return a short JSON object with keyFiles.
@@ -675,11 +675,11 @@ EOF
 )
   elif [[ "$mode" == "brief" ]]; then
     prompt=$(cat <<EOF
-Do not edit files, do not write files, do not run tests, and do not mutate git or global config. Do not run bootstrap, setup, install, hook, or superpowers commands.
+Do not edit files, do not write files, do not use shell redirection, do not run tests, and do not mutate git or global config. Do not run awk, bootstrap, setup, install, hook, or superpowers commands.
 First call ctxhelm prepare_task with explicit repo "$repo" and task "$task".
 Then call ctxhelm get_pack with explicit repo "$repo", the same task, budget "brief", format "json", and recordTrace false.
 Use at most 8 shell commands total after ctxhelm calls.
-Identify targetFiles from prepare_task and high-confidence target paths from get_pack. Read the first up to 5 target files first with read-only shell commands such as sed, cat, nl, head, tail, wc, ls, find, rg, and grep before broader exploration.
+Identify targetFiles from prepare_task and high-confidence target paths from get_pack. Consume the first up to 5 target files first with read commands such as sed, cat, nl, head, or tail before broader exploration. rg, grep, find, ls, and wc may locate or count evidence, but they do not count as consuming a target file.
 If selectedMemory appears, also read up to 3 selectedMemory sourceLinks or evidence paths with read-only shell commands before broader exploration.
 Treat docs, config, schema, script, and selected-memory paths in that initial set as first-class targets, not optional background. Stop after those reads if they answer the task.
 Return a short JSON object with keyFiles.
@@ -687,11 +687,11 @@ EOF
 )
   elif [[ "$mode" == "standard" ]]; then
     prompt=$(cat <<EOF
-Do not edit files, do not write files, do not run tests, and do not mutate git or global config. Do not run bootstrap, setup, install, hook, or superpowers commands.
+Do not edit files, do not write files, do not use shell redirection, do not run tests, and do not mutate git or global config. Do not run awk, bootstrap, setup, install, hook, or superpowers commands.
 First call ctxhelm prepare_task with explicit repo "$repo" and task "$task".
 Then call ctxhelm get_pack with explicit repo "$repo", the same task, budget "standard", format "json", and recordTrace false.
 Use at most 8 shell commands total after ctxhelm calls.
-Identify targetFiles from prepare_task and high-confidence target paths from get_pack. Read the first up to 5 target files first with read-only shell commands such as sed, cat, nl, head, tail, wc, ls, find, rg, and grep before broader exploration.
+Identify targetFiles from prepare_task and high-confidence target paths from get_pack. Consume the first up to 5 target files first with read commands such as sed, cat, nl, head, or tail before broader exploration. rg, grep, find, ls, and wc may locate or count evidence, but they do not count as consuming a target file.
 If selectedMemory appears, also read up to 3 selectedMemory sourceLinks or evidence paths with read-only shell commands before broader exploration.
 Treat docs, config, schema, script, and selected-memory paths in that initial set as first-class targets, not optional background. Stop after those reads if they answer the task.
 Return a short JSON object with keyFiles.
@@ -699,11 +699,11 @@ EOF
 )
   else
     prompt=$(cat <<EOF
-Do not edit files, do not write files, do not run tests, and do not mutate git or global config. Do not run bootstrap, setup, install, hook, or superpowers commands.
+Do not edit files, do not write files, do not use shell redirection, do not run tests, and do not mutate git or global config. Do not run awk, bootstrap, setup, install, hook, or superpowers commands.
 First call ctxhelm prepare_task with explicit repo "$repo" and task "$task".
 Then call ctxhelm get_pack with explicit repo "$repo", the same task, budget "standard", format "json", and recordTrace false.
 Use at most 8 shell commands total after ctxhelm calls.
-Identify targetFiles from prepare_task and high-confidence target paths from get_pack. Read the first up to 5 target files first with read-only shell commands such as sed, cat, nl, head, tail, wc, ls, find, rg, and grep before broader exploration.
+Identify targetFiles from prepare_task and high-confidence target paths from get_pack. Consume the first up to 5 target files first with read commands such as sed, cat, nl, head, or tail before broader exploration. rg, grep, find, ls, and wc may locate or count evidence, but they do not count as consuming a target file.
 If selectedMemory appears, also read up to 3 selectedMemory sourceLinks or evidence paths with read-only shell commands before broader exploration.
 Treat docs, config, schema, script, and selected-memory paths in that initial set as first-class targets, not optional background. Stop after those reads if they answer the task.
 If ctxhelm returns memory or experience-card evidence, use it only as guidance for which current files to inspect; still consume current files using read-only shell commands before answering.

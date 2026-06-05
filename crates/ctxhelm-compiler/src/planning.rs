@@ -1762,7 +1762,8 @@ fn extend_project_governance_docs(
     let project_governance_task = is_project_governance_task(task);
     let agent_outcome_task = is_agent_outcome_task(task);
     let agent_guidance_task = is_agent_guidance_task(task);
-    if !project_governance_task && !agent_outcome_task && !agent_guidance_task {
+    let graph_rag_task = is_graph_rag_rnd_task(task);
+    if !project_governance_task && !agent_outcome_task && !agent_guidance_task && !graph_rag_task {
         return;
     }
 
@@ -1820,6 +1821,9 @@ fn extend_project_governance_docs(
 
     if agent_guidance_task {
         extend_agent_guidance_source_candidates(search_results, roles, &mut seen);
+    }
+    if graph_rag_task {
+        extend_graph_rag_source_candidates(search_results, roles, &mut seen);
     }
 }
 
@@ -1928,6 +1932,39 @@ fn is_agent_guidance_task(task: &str) -> bool {
             .any(|term| agent_surface_terms.contains(&term.as_str()))
 }
 
+fn is_graph_rag_rnd_task(task: &str) -> bool {
+    let task_terms = terms(task);
+    let graph_terms = [
+        "dependency",
+        "dependencies",
+        "edge",
+        "edges",
+        "graph",
+        "graphrag",
+        "neighborhood",
+        "neighborhoods",
+    ];
+    let graph_quality_terms = [
+        "ablation",
+        "ablations",
+        "allocation",
+        "budget",
+        "budgets",
+        "family",
+        "families",
+        "profile",
+        "profiles",
+        "ranking",
+        "retrieval",
+    ];
+    task_terms
+        .iter()
+        .any(|term| graph_terms.contains(&term.as_str()))
+        && task_terms
+            .iter()
+            .any(|term| graph_quality_terms.contains(&term.as_str()))
+}
+
 fn extend_agent_guidance_source_candidates(
     search_results: &mut Vec<SearchResult>,
     roles: &BTreeMap<String, FileRole>,
@@ -1963,6 +2000,46 @@ fn extend_agent_guidance_source_candidates(
             language: language_for_path(path),
             score: boosted_score,
             reason: "agent-native guidance implementation surface".to_string(),
+        });
+    }
+    search_results.splice(0..0, additions);
+}
+
+fn extend_graph_rag_source_candidates(
+    search_results: &mut Vec<SearchResult>,
+    roles: &BTreeMap<String, FileRole>,
+    seen: &mut BTreeSet<String>,
+) {
+    let mut additions = Vec::new();
+    for (index, path) in graph_rag_source_paths().into_iter().enumerate() {
+        let Some(role) = roles.get(path).cloned() else {
+            continue;
+        };
+        if !matches!(role, FileRole::Source) {
+            continue;
+        }
+
+        let boosted_score = 34.0 - index.min(10) as f32;
+        if let Some(position) = search_results.iter().position(|result| result.path == path) {
+            let mut result = search_results.remove(position);
+            result.role = FileRole::Source;
+            result.score = result.score.max(boosted_score);
+            result.reason =
+                "GraphRAG implementation surface for graph-edge retrieval task".to_string();
+            additions.push(result);
+            continue;
+        }
+
+        if !seen.insert(path.to_string()) {
+            continue;
+        }
+
+        additions.push(SearchResult {
+            path: path.to_string(),
+            role: FileRole::Source,
+            language: language_for_path(path),
+            score: boosted_score,
+            reason: "GraphRAG implementation surface for graph-edge retrieval task".to_string(),
         });
     }
     search_results.splice(0..0, additions);
@@ -2030,6 +2107,14 @@ fn agent_guidance_source_paths() -> [&'static str; 5] {
         "crates/ctxhelm-compiler/src/packs.rs",
         "crates/ctxhelm-compiler/src/planning.rs",
         "scripts/e2e-agent-run-codex.sh",
+    ]
+}
+
+fn graph_rag_source_paths() -> [&'static str; 3] {
+    [
+        "crates/ctxhelm-compiler/src/eval.rs",
+        "crates/ctxhelm-compiler/src/ranking.rs",
+        "crates/ctxhelm-index/src/dependencies.rs",
     ]
 }
 
@@ -2909,6 +2994,54 @@ mod tests {
         assert_eq!(
             result_by_path["docs/context-governor.md"].reason,
             "release proof/governor artifact for project governance task"
+        );
+    }
+
+    #[test]
+    fn graph_rag_tasks_add_edge_retrieval_implementation_surfaces() {
+        let mut search_results = vec![SearchResult {
+            path: ".planning/ROADMAP.md".to_string(),
+            role: FileRole::Docs,
+            language: Some("markdown".to_string()),
+            score: 20.0,
+            reason: "planning match".to_string(),
+        }];
+        let roles = [
+            (
+                "crates/ctxhelm-compiler/src/eval.rs".to_string(),
+                FileRole::Source,
+            ),
+            (
+                "crates/ctxhelm-compiler/src/ranking.rs".to_string(),
+                FileRole::Source,
+            ),
+            (
+                "crates/ctxhelm-index/src/dependencies.rs".to_string(),
+                FileRole::Source,
+            ),
+            (".planning/ROADMAP.md".to_string(), FileRole::Docs),
+            ("docs/graph.md".to_string(), FileRole::Docs),
+        ]
+        .into_iter()
+        .collect::<BTreeMap<_, _>>();
+
+        extend_project_governance_docs(
+            &mut search_results,
+            &roles,
+            "graph edge profiles ablations and dependency edge-family budget allocation",
+        );
+        let result_by_path = search_results
+            .iter()
+            .map(|result| (result.path.as_str(), result))
+            .collect::<BTreeMap<_, _>>();
+
+        assert!(result_by_path.contains_key("crates/ctxhelm-compiler/src/eval.rs"));
+        assert!(result_by_path.contains_key("crates/ctxhelm-compiler/src/ranking.rs"));
+        assert!(result_by_path.contains_key("crates/ctxhelm-index/src/dependencies.rs"));
+        assert!(!result_by_path.contains_key("docs/graph.md"));
+        assert_eq!(
+            result_by_path["crates/ctxhelm-compiler/src/ranking.rs"].reason,
+            "GraphRAG implementation surface for graph-edge retrieval task"
         );
     }
 

@@ -1,0 +1,4845 @@
+{
+  "aggregate": {
+    "clientFailuresObserved": false,
+    "commandExecutionDeltaSum": 5,
+    "comparableCtxhelmLaneCount": 16,
+    "comparisonEligibleCount": 4,
+    "ctxhelmEvidenceMissesObserved": false,
+    "ctxhelmEvidenceOnlyTargetsObserved": false,
+    "ctxhelmToolCallsObserved": true,
+    "ctxhelmUnderReadTargetsObserved": false,
+    "forbiddenCommandsObserved": false,
+    "invalidRequiredCtxhelmCallsObserved": false,
+    "irrelevantReadDeltaSum": -1,
+    "laneSummaries": [
+      {
+        "averageTargetCoverage": 0.625,
+        "averageTargetReadCoverage": 0.4583333333333333,
+        "clientFailureCount": 0,
+        "commandExecutionCount": 33,
+        "ctxhelmEvidenceFileCount": 0,
+        "ctxhelmEvidenceMissedTargetCount": 13,
+        "ctxhelmEvidenceOnlyTargetCount": 0,
+        "ctxhelmEvidenceTargetHitCount": 0,
+        "ctxhelmToolCallCount": 0,
+        "evaluationEligibleCount": 4,
+        "forbiddenCommandCount": 0,
+        "invalidRequiredCtxhelmCallCount": 0,
+        "irrelevantReadCount": 6,
+        "lane": "baseline",
+        "missedTargetCount": 5,
+        "missedTargetRoleCounts": {
+          "docs": 1,
+          "source": 4
+        },
+        "missingRequiredCtxhelmCallCount": 0,
+        "observedRequiredCtxhelmCallCount": 0,
+        "passedCount": 4,
+        "rateLimitCount": 0,
+        "readFileCount": 12,
+        "readRoleCounts": {
+          "source": 12
+        },
+        "requiredCtxhelmCallCount": 0,
+        "targetDiscoveredOnlyCount": 2,
+        "targetReadCount": 6,
+        "taskCount": 4,
+        "toolCallCount": 33
+      },
+      {
+        "averageTargetCoverage": 1.0,
+        "averageTargetReadCoverage": 1.0,
+        "clientFailureCount": 0,
+        "commandExecutionCount": 31,
+        "ctxhelmEvidenceFileCount": 63,
+        "ctxhelmEvidenceMissedTargetCount": 0,
+        "ctxhelmEvidenceOnlyTargetCount": 0,
+        "ctxhelmEvidenceTargetHitCount": 13,
+        "ctxhelmToolCallCount": 8,
+        "evaluationEligibleCount": 4,
+        "forbiddenCommandCount": 0,
+        "invalidRequiredCtxhelmCallCount": 0,
+        "irrelevantReadCount": 9,
+        "lane": "ctxhelm-brief",
+        "missedTargetCount": 0,
+        "missedTargetRoleCounts": {},
+        "missingRequiredCtxhelmCallCount": 0,
+        "observedRequiredCtxhelmCallCount": 8,
+        "passedCount": 4,
+        "rateLimitCount": 0,
+        "readFileCount": 22,
+        "readRoleCounts": {
+          "docs": 1,
+          "source": 21
+        },
+        "requiredCtxhelmCallCount": 8,
+        "targetDiscoveredOnlyCount": 0,
+        "targetReadCount": 13,
+        "taskCount": 4,
+        "toolCallCount": 31
+      },
+      {
+        "averageTargetCoverage": 1.0,
+        "averageTargetReadCoverage": 1.0,
+        "clientFailureCount": 0,
+        "commandExecutionCount": 29,
+        "ctxhelmEvidenceFileCount": 63,
+        "ctxhelmEvidenceMissedTargetCount": 0,
+        "ctxhelmEvidenceOnlyTargetCount": 0,
+        "ctxhelmEvidenceTargetHitCount": 13,
+        "ctxhelmToolCallCount": 8,
+        "evaluationEligibleCount": 4,
+        "forbiddenCommandCount": 0,
+        "invalidRequiredCtxhelmCallCount": 0,
+        "irrelevantReadCount": 10,
+        "lane": "ctxhelm-memory",
+        "missedTargetCount": 0,
+        "missedTargetRoleCounts": {},
+        "missingRequiredCtxhelmCallCount": 0,
+        "observedRequiredCtxhelmCallCount": 8,
+        "passedCount": 4,
+        "rateLimitCount": 0,
+        "readFileCount": 23,
+        "readRoleCounts": {
+          "docs": 4,
+          "source": 19
+        },
+        "requiredCtxhelmCallCount": 8,
+        "targetDiscoveredOnlyCount": 0,
+        "targetReadCount": 13,
+        "taskCount": 4,
+        "toolCallCount": 29
+      },
+      {
+        "averageTargetCoverage": 1.0,
+        "averageTargetReadCoverage": 1.0,
+        "clientFailureCount": 0,
+        "commandExecutionCount": 32,
+        "ctxhelmEvidenceFileCount": 79,
+        "ctxhelmEvidenceMissedTargetCount": 0,
+        "ctxhelmEvidenceOnlyTargetCount": 0,
+        "ctxhelmEvidenceTargetHitCount": 13,
+        "ctxhelmToolCallCount": 4,
+        "evaluationEligibleCount": 4,
+        "forbiddenCommandCount": 0,
+        "invalidRequiredCtxhelmCallCount": 0,
+        "irrelevantReadCount": 11,
+        "lane": "ctxhelm-plan",
+        "missedTargetCount": 0,
+        "missedTargetRoleCounts": {},
+        "missingRequiredCtxhelmCallCount": 0,
+        "observedRequiredCtxhelmCallCount": 4,
+        "passedCount": 4,
+        "rateLimitCount": 0,
+        "readFileCount": 24,
+        "readRoleCounts": {
+          "docs": 2,
+          "source": 22
+        },
+        "requiredCtxhelmCallCount": 4,
+        "targetDiscoveredOnlyCount": 0,
+        "targetReadCount": 13,
+        "taskCount": 4,
+        "toolCallCount": 32
+      },
+      {
+        "averageTargetCoverage": 1.0,
+        "averageTargetReadCoverage": 1.0,
+        "clientFailureCount": 0,
+        "commandExecutionCount": 22,
+        "ctxhelmEvidenceFileCount": 63,
+        "ctxhelmEvidenceMissedTargetCount": 0,
+        "ctxhelmEvidenceOnlyTargetCount": 0,
+        "ctxhelmEvidenceTargetHitCount": 13,
+        "ctxhelmToolCallCount": 8,
+        "evaluationEligibleCount": 4,
+        "forbiddenCommandCount": 0,
+        "invalidRequiredCtxhelmCallCount": 0,
+        "irrelevantReadCount": 7,
+        "lane": "ctxhelm-standard",
+        "missedTargetCount": 0,
+        "missedTargetRoleCounts": {},
+        "missingRequiredCtxhelmCallCount": 0,
+        "observedRequiredCtxhelmCallCount": 8,
+        "passedCount": 4,
+        "rateLimitCount": 0,
+        "readFileCount": 20,
+        "readRoleCounts": {
+          "docs": 1,
+          "source": 19
+        },
+        "requiredCtxhelmCallCount": 8,
+        "targetDiscoveredOnlyCount": 0,
+        "targetReadCount": 13,
+        "taskCount": 4,
+        "toolCallCount": 22
+      }
+    ],
+    "missingRequiredCtxhelmCallsObserved": false,
+    "outcomeClaim": "ctxhelm_improved",
+    "rateLimitsObserved": false,
+    "readFileDeltaSum": -8,
+    "recommendedResearchActions": [
+      {
+        "action": "preserve_current_agent_contract",
+        "priority": 3,
+        "reason": "Comparable lanes produced stable source-free outcome evidence."
+      }
+    ],
+    "targetCoverageDeltaAverage": 0.375,
+    "targetReadCoverageDeltaAverage": 0.5416666666666667,
+    "taskCount": 4
+  },
+  "client": {
+    "name": "codex",
+    "version": "codex-cli 0.137.0"
+  },
+  "ctxhelmVersion": "ctxhelm 1.1.12",
+  "privacyStatus": {
+    "localOnly": true,
+    "rawCommandOutputStored": false,
+    "rawMcpTrafficStored": false,
+    "rawPromptStored": false,
+    "rawTranscriptStored": false,
+    "remoteEmbeddingsUsed": false,
+    "remoteRerankingUsed": false,
+    "sourceTextLogged": false
+  },
+  "repo": {
+    "label": "ctxhelm",
+    "pathSha256": "823da75306f1c50f536e28905ec7405c88ec43b87fbf3f2afb37d7bf17d143a2"
+  },
+  "schemaVersion": "ctxhelm-agent-run-eval-v1",
+  "status": "passed",
+  "suite": {
+    "rawTasksStored": false,
+    "suiteSha256": "d04f86b3b8fb792a6d8dad7b493f728b1b78901a63a473dd004f2247b2b54afe",
+    "taskCount": 4
+  },
+  "tasks": [
+    {
+      "comparison": {
+        "baselineEligible": true,
+        "baselineLane": "baseline",
+        "bestLane": "ctxhelm-brief",
+        "clientFailuresObserved": false,
+        "commandExecutionDelta": 0,
+        "comparableCtxhelmLaneCount": 4,
+        "comparisonEligible": true,
+        "ctxhelmEvidenceMisses": {},
+        "ctxhelmEvidenceMissesObserved": false,
+        "ctxhelmEvidenceOnlyTargets": {},
+        "ctxhelmEvidenceOnlyTargetsObserved": false,
+        "ctxhelmToolCallsObserved": true,
+        "ctxhelmUnderReadTargetsObserved": false,
+        "forbiddenCommandsObserved": false,
+        "invalidRequiredCtxhelmCalls": {},
+        "invalidRequiredCtxhelmCallsObserved": false,
+        "irrelevantReadDelta": 0,
+        "missingRequiredCtxhelmCalls": {},
+        "missingRequiredCtxhelmCallsObserved": false,
+        "outcomeClaim": "ctxhelm_improved",
+        "rateLimitsObserved": false,
+        "readFileDelta": -2,
+        "recommendedResearchActions": [
+          {
+            "action": "preserve_current_agent_contract",
+            "priority": 3,
+            "reason": "Comparable lanes produced stable source-free outcome evidence."
+          }
+        ],
+        "targetCoverageDelta": 0.0,
+        "targetReadCoverageDelta": 0.6666666666666667
+      },
+      "lanes": [
+        {
+          "clientApiErrorStatus": null,
+          "clientExitStatus": 0,
+          "clientFailureKind": null,
+          "commandExecutions": [
+            {
+              "commandSha256": "68818007c56ba72d4a6983a7a0015c470b5ebe106f4a963302535be289525d1d",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 0,
+              "paths": [],
+              "status": "completed",
+              "verb": "pwd"
+            },
+            {
+              "commandSha256": "509bd3d9b4c4cbb2ca1e108b216f6435248a6e870af7776b3f5458877aa41b0b",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 0,
+              "paths": [],
+              "status": "completed",
+              "verb": "rg"
+            },
+            {
+              "commandSha256": "a45150d1b1f40a652fc2ac01f50d29eebc9f9891fe36579c68893e5932eb745a",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 0,
+              "paths": [],
+              "status": "completed",
+              "verb": "rg"
+            },
+            {
+              "commandSha256": "0bbb1745b6bb1c7e7d8d9262dd74fb075aca31a6091f6dea3975d5b3992e129d",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 1,
+              "paths": [
+                "crates/ctxhelm-compiler/src/planning.rs"
+              ],
+              "status": "completed",
+              "verb": "sed"
+            },
+            {
+              "commandSha256": "b4352f6d797a2eb62976cc9182ebeccbf9c657f6a15243940defdb267d572bb1",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 1,
+              "paths": [
+                "crates/ctxhelm-compiler/src/planning.rs"
+              ],
+              "status": "completed",
+              "verb": "sed"
+            },
+            {
+              "commandSha256": "8ff5d965830d23048604c4ec6483dfb88db1dbd979b6dcd34c66318a5363ac3a",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 1,
+              "paths": [
+                "crates/ctxhelm-compiler/src/lib.rs"
+              ],
+              "status": "completed",
+              "verb": "sed"
+            },
+            {
+              "commandSha256": "8175876f07c9e6b3fddaf514ba5692e76cff7e022829f387fca4cdf68161057d",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 2,
+              "paths": [
+                "crates/ctxhelm-compiler/src/lib.rs",
+                "crates/ctxhelm-compiler/src/packs.rs"
+              ],
+              "status": "completed",
+              "verb": "sed"
+            },
+            {
+              "commandSha256": "d659732188939eab095fd8dc5e0daa3beb921d79c6e223c7116c933312d3c32a",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 2,
+              "paths": [
+                "crates/ctxhelm-mcp/src/tools.rs",
+                "crates/ctxhelm-core/src/init.rs"
+              ],
+              "status": "completed",
+              "verb": "rg"
+            }
+          ],
+          "ctxhelmCallCompliance": "not_required",
+          "ctxhelmEvidenceFiles": [],
+          "ctxhelmEvidenceMissedTargets": [
+            "crates/ctxhelm-compiler/src/planning.rs",
+            "crates/ctxhelm-core/src/init.rs",
+            "crates/ctxhelm-mcp/src/tools.rs"
+          ],
+          "ctxhelmEvidenceOnlyTargets": [],
+          "ctxhelmEvidenceTargetHits": [],
+          "ctxhelmToolCalls": [],
+          "discoveredFiles": [
+            "crates/ctxhelm-compiler/src/planning.rs",
+            "crates/ctxhelm-compiler/src/lib.rs",
+            "crates/ctxhelm-compiler/src/packs.rs",
+            "crates/ctxhelm-mcp/src/tools.rs",
+            "crates/ctxhelm-core/src/init.rs"
+          ],
+          "discoveredOnlyTargets": [
+            "crates/ctxhelm-core/src/init.rs",
+            "crates/ctxhelm-mcp/src/tools.rs"
+          ],
+          "evaluationEligible": true,
+          "evaluationStatus": "eligible",
+          "evidenceHashes": {
+            "ctxhelmRequestLogSha256": null,
+            "stderrSha256": "8a71edce265012d993c1c6fd59a841e8a62d5f3e6ed99a72fac1d2f2617a2e77",
+            "streamJsonSha256": "b136e6c61331266c58aed961aa2a167cedf2db584797d3e2f3d4b629336f8354"
+          },
+          "forbiddenCommands": [],
+          "invalidRequiredCtxhelmCalls": [],
+          "irrelevantReads": [
+            "crates/ctxhelm-compiler/src/lib.rs",
+            "crates/ctxhelm-compiler/src/packs.rs"
+          ],
+          "lane": "baseline",
+          "metrics": {
+            "commandExecutionCount": 8,
+            "ctxhelmEvidenceFileCount": 0,
+            "ctxhelmEvidenceMissedTargetCount": 3,
+            "ctxhelmEvidenceOnlyTargetCount": 0,
+            "ctxhelmEvidenceTargetHitCount": 0,
+            "ctxhelmToolCallCount": 0,
+            "discoveredFileCount": 5,
+            "forbiddenCommandCount": 0,
+            "invalidRequiredCtxhelmCallCount": 0,
+            "irrelevantReadCount": 2,
+            "missedTargetCount": 0,
+            "missingRequiredCtxhelmCallCount": 0,
+            "observedRequiredCtxhelmCallCount": 0,
+            "readFileCount": 3,
+            "requiredCtxhelmCallCount": 0,
+            "targetCount": 3,
+            "targetCoverage": 1.0,
+            "targetDiscoveredOnlyCount": 2,
+            "targetHitCount": 3,
+            "targetReadCount": 1,
+            "targetReadCoverage": 0.3333333333333333
+          },
+          "missedTargetRoleCounts": {},
+          "missedTargets": [],
+          "missingRequiredCtxhelmCalls": [],
+          "mode": "baseline",
+          "observedRequiredCtxhelmCalls": [],
+          "rateLimitObserved": false,
+          "rawCommandOutputStored": false,
+          "rawMcpTrafficStored": false,
+          "rawPromptStored": false,
+          "rawTranscriptStored": false,
+          "readFiles": [
+            "crates/ctxhelm-compiler/src/planning.rs",
+            "crates/ctxhelm-compiler/src/lib.rs",
+            "crates/ctxhelm-compiler/src/packs.rs"
+          ],
+          "readRoleCounts": {
+            "source": 3
+          },
+          "requiredCtxhelmCallSpecs": [],
+          "requiredCtxhelmCalls": [],
+          "sourceTextLogged": false,
+          "status": "passed",
+          "targetHits": [
+            "crates/ctxhelm-compiler/src/planning.rs",
+            "crates/ctxhelm-core/src/init.rs",
+            "crates/ctxhelm-mcp/src/tools.rs"
+          ],
+          "targetReads": [
+            "crates/ctxhelm-compiler/src/planning.rs"
+          ]
+        },
+        {
+          "clientApiErrorStatus": null,
+          "clientExitStatus": 0,
+          "clientFailureKind": null,
+          "commandExecutions": [
+            {
+              "commandSha256": "2346de697a4178e7caa30c100bdf1cd2f66008ff9ab00849b4328c0a0bcf451b",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 1,
+              "paths": [
+                "crates/ctxhelm-mcp/src/tools.rs"
+              ],
+              "status": "completed",
+              "verb": "sed"
+            },
+            {
+              "commandSha256": "ff7a45487850e148d3f36ef5b9aef564887e84e695fad6ebfe822bf6fe431eec",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 1,
+              "paths": [
+                "crates/ctxhelm-core/src/init.rs"
+              ],
+              "status": "completed",
+              "verb": "sed"
+            },
+            {
+              "commandSha256": "ddc6886bc29f74cf718169db665b6a570725f15aa0ef7608d636cc3e8fa0279a",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 1,
+              "paths": [
+                "crates/ctxhelm-compiler/src/packs.rs"
+              ],
+              "status": "completed",
+              "verb": "sed"
+            },
+            {
+              "commandSha256": "37c8a74f37a5b04afefdcaf92d6e1b48b6b0e9b792fbde1b41ddcfe474237c33",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 1,
+              "paths": [
+                "scripts/e2e-agent-run-codex.sh"
+              ],
+              "status": "completed",
+              "verb": "sed"
+            },
+            {
+              "commandSha256": "5e502f786a93ceb320887a9b7420be2155cd68bc1b2b29b8c81be3dcf7be0120",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 1,
+              "paths": [
+                "crates/ctxhelm-compiler/src/planning.rs"
+              ],
+              "status": "completed",
+              "verb": "sed"
+            },
+            {
+              "commandSha256": "8722300d31db9f89c7c971ba50c51d6a7b5c72b2db77ad85756d37666e99c51a",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 5,
+              "paths": [
+                "crates/ctxhelm-mcp/src/tools.rs",
+                "crates/ctxhelm-core/src/init.rs",
+                "crates/ctxhelm-compiler/src/packs.rs",
+                "crates/ctxhelm-compiler/src/planning.rs",
+                "scripts/e2e-agent-run-codex.sh"
+              ],
+              "status": "completed",
+              "verb": "rg"
+            },
+            {
+              "commandSha256": "36abb187a4444aa7632775cae8c43f5cbac40f0bccdf85833c8ea39f8220ee6a",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 1,
+              "paths": [
+                "crates/ctxhelm-compiler/src/planning.rs"
+              ],
+              "status": "completed",
+              "verb": "sed"
+            },
+            {
+              "commandSha256": "94c21096488b88b94e826ca9d12466b9f0c293919dea05c9c7029f5e5d5bb35f",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 1,
+              "paths": [
+                "crates/ctxhelm-compiler/src/packs.rs"
+              ],
+              "status": "completed",
+              "verb": "sed"
+            }
+          ],
+          "ctxhelmCallCompliance": "satisfied",
+          "ctxhelmEvidenceFiles": [
+            "crates/ctxhelm-mcp/src/tools.rs",
+            "crates/ctxhelm-core/src/init.rs",
+            "crates/ctxhelm-compiler/src/packs.rs",
+            "crates/ctxhelm-compiler/src/planning.rs",
+            "scripts/e2e-agent-run-codex.sh",
+            "crates/ctxhelm-index/src/git.rs",
+            "crates/ctxhelm-compiler/src/eval.rs",
+            "crates/ctxhelm-core/src/contracts.rs",
+            ".planning/ROADMAP.md",
+            ".planning/MILESTONES.md",
+            "crates/ctxhelm/tests/release_packaging.rs",
+            "crates/ctxhelm/tests/cli_compat.rs",
+            "crates/ctxhelm/tests/common/mod.rs",
+            "crates/ctxhelm-compiler/src/agent_preview.rs",
+            "crates/ctxhelm-compiler/src/lib.rs",
+            "crates/ctxhelm-core/src/lib.rs",
+            "crates/ctxhelm-index/src/inventory.rs",
+            "crates/ctxhelm-index/src/lib.rs",
+            "docs/benchmarking.md",
+            ".planning/STATE.md",
+            "scripts/e2e-agent-run.sh",
+            "crates/ctxhelm/src/main.rs",
+            "docs/release.md"
+          ],
+          "ctxhelmEvidenceMissedTargets": [],
+          "ctxhelmEvidenceOnlyTargets": [],
+          "ctxhelmEvidenceTargetHits": [
+            "crates/ctxhelm-compiler/src/planning.rs",
+            "crates/ctxhelm-core/src/init.rs",
+            "crates/ctxhelm-mcp/src/tools.rs"
+          ],
+          "ctxhelmToolCalls": [
+            {
+              "budget": null,
+              "format": null,
+              "hasRepo": true,
+              "hasTask": true,
+              "name": "prepare_task",
+              "recordTrace": true
+            }
+          ],
+          "discoveredFiles": [
+            "crates/ctxhelm-mcp/src/tools.rs",
+            "crates/ctxhelm-core/src/init.rs",
+            "crates/ctxhelm-compiler/src/packs.rs",
+            "scripts/e2e-agent-run-codex.sh",
+            "crates/ctxhelm-compiler/src/planning.rs"
+          ],
+          "discoveredOnlyTargets": [],
+          "evaluationEligible": true,
+          "evaluationStatus": "eligible",
+          "evidenceHashes": {
+            "ctxhelmRequestLogSha256": "3a730c2a3ef0f87546116a33965404bd4fc3108b8c2ad663dcbfe63c7eb66de8",
+            "stderrSha256": "e33215651f37241ca50e9c87b2b61f80f75be86c52934b229fbcab50e8f0bc13",
+            "streamJsonSha256": "c9622630fad7a9ba1289a0550fde6455b57a313a0fafcfe46df2e9614014957e"
+          },
+          "forbiddenCommands": [],
+          "invalidRequiredCtxhelmCalls": [],
+          "irrelevantReads": [
+            "crates/ctxhelm-compiler/src/packs.rs",
+            "scripts/e2e-agent-run-codex.sh"
+          ],
+          "lane": "ctxhelm-plan",
+          "metrics": {
+            "commandExecutionCount": 8,
+            "ctxhelmEvidenceFileCount": 23,
+            "ctxhelmEvidenceMissedTargetCount": 0,
+            "ctxhelmEvidenceOnlyTargetCount": 0,
+            "ctxhelmEvidenceTargetHitCount": 3,
+            "ctxhelmToolCallCount": 1,
+            "discoveredFileCount": 5,
+            "forbiddenCommandCount": 0,
+            "invalidRequiredCtxhelmCallCount": 0,
+            "irrelevantReadCount": 2,
+            "missedTargetCount": 0,
+            "missingRequiredCtxhelmCallCount": 0,
+            "observedRequiredCtxhelmCallCount": 1,
+            "readFileCount": 5,
+            "requiredCtxhelmCallCount": 1,
+            "targetCount": 3,
+            "targetCoverage": 1.0,
+            "targetDiscoveredOnlyCount": 0,
+            "targetHitCount": 3,
+            "targetReadCount": 3,
+            "targetReadCoverage": 1.0
+          },
+          "missedTargetRoleCounts": {},
+          "missedTargets": [],
+          "missingRequiredCtxhelmCalls": [],
+          "mode": "plan",
+          "observedRequiredCtxhelmCalls": [
+            "prepare_task"
+          ],
+          "rateLimitObserved": false,
+          "rawCommandOutputStored": false,
+          "rawMcpTrafficStored": false,
+          "rawPromptStored": false,
+          "rawTranscriptStored": false,
+          "readFiles": [
+            "crates/ctxhelm-mcp/src/tools.rs",
+            "crates/ctxhelm-core/src/init.rs",
+            "crates/ctxhelm-compiler/src/packs.rs",
+            "scripts/e2e-agent-run-codex.sh",
+            "crates/ctxhelm-compiler/src/planning.rs"
+          ],
+          "readRoleCounts": {
+            "source": 5
+          },
+          "requiredCtxhelmCallSpecs": [
+            {
+              "name": "prepare_task",
+              "requiresRepo": true,
+              "requiresTask": true
+            }
+          ],
+          "requiredCtxhelmCalls": [
+            "prepare_task"
+          ],
+          "sourceTextLogged": false,
+          "status": "passed",
+          "targetHits": [
+            "crates/ctxhelm-compiler/src/planning.rs",
+            "crates/ctxhelm-core/src/init.rs",
+            "crates/ctxhelm-mcp/src/tools.rs"
+          ],
+          "targetReads": [
+            "crates/ctxhelm-compiler/src/planning.rs",
+            "crates/ctxhelm-core/src/init.rs",
+            "crates/ctxhelm-mcp/src/tools.rs"
+          ]
+        },
+        {
+          "clientApiErrorStatus": null,
+          "clientExitStatus": 0,
+          "clientFailureKind": null,
+          "commandExecutions": [
+            {
+              "commandSha256": "26174997c7a58226fd11bb18c18ffdcb446d1fb44d620fdbeacc7cb96b6cf47f",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 1,
+              "paths": [
+                "crates/ctxhelm-mcp/src/tools.rs"
+              ],
+              "status": "completed",
+              "verb": "sed"
+            },
+            {
+              "commandSha256": "9f23dbab4bc9c218ac76a1748b8dbe22c840140157f368d9c2f98c354fa7215f",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 1,
+              "paths": [
+                "crates/ctxhelm-core/src/init.rs"
+              ],
+              "status": "completed",
+              "verb": "sed"
+            },
+            {
+              "commandSha256": "37c8a74f37a5b04afefdcaf92d6e1b48b6b0e9b792fbde1b41ddcfe474237c33",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 1,
+              "paths": [
+                "scripts/e2e-agent-run-codex.sh"
+              ],
+              "status": "completed",
+              "verb": "sed"
+            },
+            {
+              "commandSha256": "ddc6886bc29f74cf718169db665b6a570725f15aa0ef7608d636cc3e8fa0279a",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 1,
+              "paths": [
+                "crates/ctxhelm-compiler/src/packs.rs"
+              ],
+              "status": "completed",
+              "verb": "sed"
+            },
+            {
+              "commandSha256": "bcc620532e9999af657f5d46c195cc3a3b730a828c5a317683253dedb84cd3c3",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 1,
+              "paths": [
+                "crates/ctxhelm-compiler/src/planning.rs"
+              ],
+              "status": "completed",
+              "verb": "sed"
+            },
+            {
+              "commandSha256": "65c65df5761e95b0e6a1d81521ba005254d7fe6ae517c5e37869fe8e9487319f",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 1,
+              "paths": [
+                "crates/ctxhelm-compiler/src/packs.rs"
+              ],
+              "status": "completed",
+              "verb": "sed"
+            },
+            {
+              "commandSha256": "f5dc875e9ef09c9d4d3b1838ee2de3dea83188e7983317593fd47357205cc48f",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 1,
+              "paths": [
+                "crates/ctxhelm-mcp/src/tools.rs"
+              ],
+              "status": "completed",
+              "verb": "sed"
+            },
+            {
+              "commandSha256": "7d8caa951f65dcd71fefd4f4645c520a7de292af7167a4ffcd25e91f6eb79b66",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 1,
+              "paths": [
+                "crates/ctxhelm-compiler/src/planning.rs"
+              ],
+              "status": "completed",
+              "verb": "sed"
+            }
+          ],
+          "ctxhelmCallCompliance": "satisfied",
+          "ctxhelmEvidenceFiles": [
+            "crates/ctxhelm-mcp/src/tools.rs",
+            "crates/ctxhelm-core/src/init.rs",
+            "crates/ctxhelm-compiler/src/packs.rs",
+            "crates/ctxhelm-compiler/src/planning.rs",
+            "scripts/e2e-agent-run-codex.sh",
+            "crates/ctxhelm-index/src/git.rs",
+            "crates/ctxhelm-compiler/src/eval.rs",
+            "crates/ctxhelm-core/src/contracts.rs",
+            ".planning/ROADMAP.md",
+            ".planning/MILESTONES.md",
+            "crates/ctxhelm/tests/release_packaging.rs",
+            "crates/ctxhelm/tests/cli_compat.rs",
+            "crates/ctxhelm/tests/common/mod.rs",
+            "crates/ctxhelm-compiler/src/lib.rs",
+            "crates/ctxhelm-core/src/lib.rs",
+            "crates/ctxhelm-index/src/lib.rs",
+            "crates/ctxhelm-index/src/inventory.rs",
+            "crates/ctxhelm-compiler/src/agent_preview.rs"
+          ],
+          "ctxhelmEvidenceMissedTargets": [],
+          "ctxhelmEvidenceOnlyTargets": [],
+          "ctxhelmEvidenceTargetHits": [
+            "crates/ctxhelm-compiler/src/planning.rs",
+            "crates/ctxhelm-core/src/init.rs",
+            "crates/ctxhelm-mcp/src/tools.rs"
+          ],
+          "ctxhelmToolCalls": [
+            {
+              "budget": null,
+              "format": null,
+              "hasRepo": true,
+              "hasTask": true,
+              "name": "prepare_task",
+              "recordTrace": null
+            },
+            {
+              "budget": "brief",
+              "format": "json",
+              "hasRepo": true,
+              "hasTask": true,
+              "name": "get_pack",
+              "recordTrace": false
+            }
+          ],
+          "discoveredFiles": [
+            "crates/ctxhelm-mcp/src/tools.rs",
+            "crates/ctxhelm-core/src/init.rs",
+            "scripts/e2e-agent-run-codex.sh",
+            "crates/ctxhelm-compiler/src/packs.rs",
+            "crates/ctxhelm-compiler/src/planning.rs"
+          ],
+          "discoveredOnlyTargets": [],
+          "evaluationEligible": true,
+          "evaluationStatus": "eligible",
+          "evidenceHashes": {
+            "ctxhelmRequestLogSha256": "fd417c4d18dca5663d45eab2bee9187ddd746a0e044625adec4257206d3a3b8f",
+            "stderrSha256": "107174815c8fa838491bf28c3097491334334eea9206b5e23dacb3eaf47c3432",
+            "streamJsonSha256": "bc0a77615064e6e21ac1edf019285f62dcfa95ec560c1e30e2ffb2605b9edc28"
+          },
+          "forbiddenCommands": [],
+          "invalidRequiredCtxhelmCalls": [],
+          "irrelevantReads": [
+            "crates/ctxhelm-compiler/src/packs.rs",
+            "scripts/e2e-agent-run-codex.sh"
+          ],
+          "lane": "ctxhelm-brief",
+          "metrics": {
+            "commandExecutionCount": 8,
+            "ctxhelmEvidenceFileCount": 18,
+            "ctxhelmEvidenceMissedTargetCount": 0,
+            "ctxhelmEvidenceOnlyTargetCount": 0,
+            "ctxhelmEvidenceTargetHitCount": 3,
+            "ctxhelmToolCallCount": 2,
+            "discoveredFileCount": 5,
+            "forbiddenCommandCount": 0,
+            "invalidRequiredCtxhelmCallCount": 0,
+            "irrelevantReadCount": 2,
+            "missedTargetCount": 0,
+            "missingRequiredCtxhelmCallCount": 0,
+            "observedRequiredCtxhelmCallCount": 2,
+            "readFileCount": 5,
+            "requiredCtxhelmCallCount": 2,
+            "targetCount": 3,
+            "targetCoverage": 1.0,
+            "targetDiscoveredOnlyCount": 0,
+            "targetHitCount": 3,
+            "targetReadCount": 3,
+            "targetReadCoverage": 1.0
+          },
+          "missedTargetRoleCounts": {},
+          "missedTargets": [],
+          "missingRequiredCtxhelmCalls": [],
+          "mode": "brief",
+          "observedRequiredCtxhelmCalls": [
+            "prepare_task",
+            "get_pack"
+          ],
+          "rateLimitObserved": false,
+          "rawCommandOutputStored": false,
+          "rawMcpTrafficStored": false,
+          "rawPromptStored": false,
+          "rawTranscriptStored": false,
+          "readFiles": [
+            "crates/ctxhelm-mcp/src/tools.rs",
+            "crates/ctxhelm-core/src/init.rs",
+            "scripts/e2e-agent-run-codex.sh",
+            "crates/ctxhelm-compiler/src/packs.rs",
+            "crates/ctxhelm-compiler/src/planning.rs"
+          ],
+          "readRoleCounts": {
+            "source": 5
+          },
+          "requiredCtxhelmCallSpecs": [
+            {
+              "name": "prepare_task",
+              "requiresRepo": true,
+              "requiresTask": true
+            },
+            {
+              "budget": "brief",
+              "format": "json",
+              "name": "get_pack",
+              "recordTrace": false,
+              "requiresRepo": true,
+              "requiresTask": true
+            }
+          ],
+          "requiredCtxhelmCalls": [
+            "prepare_task",
+            "get_pack"
+          ],
+          "sourceTextLogged": false,
+          "status": "passed",
+          "targetHits": [
+            "crates/ctxhelm-compiler/src/planning.rs",
+            "crates/ctxhelm-core/src/init.rs",
+            "crates/ctxhelm-mcp/src/tools.rs"
+          ],
+          "targetReads": [
+            "crates/ctxhelm-compiler/src/planning.rs",
+            "crates/ctxhelm-core/src/init.rs",
+            "crates/ctxhelm-mcp/src/tools.rs"
+          ]
+        },
+        {
+          "clientApiErrorStatus": null,
+          "clientExitStatus": 0,
+          "clientFailureKind": null,
+          "commandExecutions": [
+            {
+              "commandSha256": "2346de697a4178e7caa30c100bdf1cd2f66008ff9ab00849b4328c0a0bcf451b",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 1,
+              "paths": [
+                "crates/ctxhelm-mcp/src/tools.rs"
+              ],
+              "status": "completed",
+              "verb": "sed"
+            },
+            {
+              "commandSha256": "ddc6886bc29f74cf718169db665b6a570725f15aa0ef7608d636cc3e8fa0279a",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 1,
+              "paths": [
+                "crates/ctxhelm-compiler/src/packs.rs"
+              ],
+              "status": "completed",
+              "verb": "sed"
+            },
+            {
+              "commandSha256": "bcc620532e9999af657f5d46c195cc3a3b730a828c5a317683253dedb84cd3c3",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 1,
+              "paths": [
+                "crates/ctxhelm-compiler/src/planning.rs"
+              ],
+              "status": "completed",
+              "verb": "sed"
+            },
+            {
+              "commandSha256": "59c0dbf24bbc124f164ebb65c3d987d2bbfdf00ff81d5e62171d9ffece5457aa",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 1,
+              "paths": [
+                "crates/ctxhelm-core/src/init.rs"
+              ],
+              "status": "completed",
+              "verb": "sed"
+            },
+            {
+              "commandSha256": "37c8a74f37a5b04afefdcaf92d6e1b48b6b0e9b792fbde1b41ddcfe474237c33",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 1,
+              "paths": [
+                "scripts/e2e-agent-run-codex.sh"
+              ],
+              "status": "completed",
+              "verb": "sed"
+            }
+          ],
+          "ctxhelmCallCompliance": "satisfied",
+          "ctxhelmEvidenceFiles": [
+            "crates/ctxhelm-mcp/src/tools.rs",
+            "crates/ctxhelm-core/src/init.rs",
+            "crates/ctxhelm-compiler/src/packs.rs",
+            "crates/ctxhelm-compiler/src/planning.rs",
+            "scripts/e2e-agent-run-codex.sh",
+            "crates/ctxhelm-index/src/git.rs",
+            "crates/ctxhelm-compiler/src/eval.rs",
+            "crates/ctxhelm-core/src/contracts.rs",
+            ".planning/ROADMAP.md",
+            ".planning/MILESTONES.md",
+            "crates/ctxhelm/tests/release_packaging.rs",
+            "crates/ctxhelm/tests/cli_compat.rs",
+            "crates/ctxhelm/tests/common/mod.rs",
+            "crates/ctxhelm-compiler/src/lib.rs",
+            "crates/ctxhelm-core/src/lib.rs",
+            "crates/ctxhelm-index/src/lib.rs",
+            "crates/ctxhelm-index/src/inventory.rs",
+            "crates/ctxhelm-compiler/src/agent_preview.rs"
+          ],
+          "ctxhelmEvidenceMissedTargets": [],
+          "ctxhelmEvidenceOnlyTargets": [],
+          "ctxhelmEvidenceTargetHits": [
+            "crates/ctxhelm-compiler/src/planning.rs",
+            "crates/ctxhelm-core/src/init.rs",
+            "crates/ctxhelm-mcp/src/tools.rs"
+          ],
+          "ctxhelmToolCalls": [
+            {
+              "budget": null,
+              "format": null,
+              "hasRepo": true,
+              "hasTask": true,
+              "name": "prepare_task",
+              "recordTrace": null
+            },
+            {
+              "budget": "standard",
+              "format": "json",
+              "hasRepo": true,
+              "hasTask": true,
+              "name": "get_pack",
+              "recordTrace": false
+            }
+          ],
+          "discoveredFiles": [
+            "crates/ctxhelm-mcp/src/tools.rs",
+            "crates/ctxhelm-compiler/src/packs.rs",
+            "crates/ctxhelm-compiler/src/planning.rs",
+            "crates/ctxhelm-core/src/init.rs",
+            "scripts/e2e-agent-run-codex.sh"
+          ],
+          "discoveredOnlyTargets": [],
+          "evaluationEligible": true,
+          "evaluationStatus": "eligible",
+          "evidenceHashes": {
+            "ctxhelmRequestLogSha256": "cd73f9107e9f4d035f96d513c0de0b8953340026ef54cc7b7ed54ecda888dcf4",
+            "stderrSha256": "2dcc07d54eae439ba789037a80ab090699fea123691aa57c2e72140e35f6ffa1",
+            "streamJsonSha256": "e3610fabaf58d2fba5332697a951d33d1913e93536af8ff0d6591f2cb3e71ea1"
+          },
+          "forbiddenCommands": [],
+          "invalidRequiredCtxhelmCalls": [],
+          "irrelevantReads": [
+            "crates/ctxhelm-compiler/src/packs.rs",
+            "scripts/e2e-agent-run-codex.sh"
+          ],
+          "lane": "ctxhelm-standard",
+          "metrics": {
+            "commandExecutionCount": 5,
+            "ctxhelmEvidenceFileCount": 18,
+            "ctxhelmEvidenceMissedTargetCount": 0,
+            "ctxhelmEvidenceOnlyTargetCount": 0,
+            "ctxhelmEvidenceTargetHitCount": 3,
+            "ctxhelmToolCallCount": 2,
+            "discoveredFileCount": 5,
+            "forbiddenCommandCount": 0,
+            "invalidRequiredCtxhelmCallCount": 0,
+            "irrelevantReadCount": 2,
+            "missedTargetCount": 0,
+            "missingRequiredCtxhelmCallCount": 0,
+            "observedRequiredCtxhelmCallCount": 2,
+            "readFileCount": 5,
+            "requiredCtxhelmCallCount": 2,
+            "targetCount": 3,
+            "targetCoverage": 1.0,
+            "targetDiscoveredOnlyCount": 0,
+            "targetHitCount": 3,
+            "targetReadCount": 3,
+            "targetReadCoverage": 1.0
+          },
+          "missedTargetRoleCounts": {},
+          "missedTargets": [],
+          "missingRequiredCtxhelmCalls": [],
+          "mode": "standard",
+          "observedRequiredCtxhelmCalls": [
+            "prepare_task",
+            "get_pack"
+          ],
+          "rateLimitObserved": false,
+          "rawCommandOutputStored": false,
+          "rawMcpTrafficStored": false,
+          "rawPromptStored": false,
+          "rawTranscriptStored": false,
+          "readFiles": [
+            "crates/ctxhelm-mcp/src/tools.rs",
+            "crates/ctxhelm-compiler/src/packs.rs",
+            "crates/ctxhelm-compiler/src/planning.rs",
+            "crates/ctxhelm-core/src/init.rs",
+            "scripts/e2e-agent-run-codex.sh"
+          ],
+          "readRoleCounts": {
+            "source": 5
+          },
+          "requiredCtxhelmCallSpecs": [
+            {
+              "name": "prepare_task",
+              "requiresRepo": true,
+              "requiresTask": true
+            },
+            {
+              "budget": "standard",
+              "format": "json",
+              "name": "get_pack",
+              "recordTrace": false,
+              "requiresRepo": true,
+              "requiresTask": true
+            }
+          ],
+          "requiredCtxhelmCalls": [
+            "prepare_task",
+            "get_pack"
+          ],
+          "sourceTextLogged": false,
+          "status": "passed",
+          "targetHits": [
+            "crates/ctxhelm-compiler/src/planning.rs",
+            "crates/ctxhelm-core/src/init.rs",
+            "crates/ctxhelm-mcp/src/tools.rs"
+          ],
+          "targetReads": [
+            "crates/ctxhelm-compiler/src/planning.rs",
+            "crates/ctxhelm-core/src/init.rs",
+            "crates/ctxhelm-mcp/src/tools.rs"
+          ]
+        },
+        {
+          "clientApiErrorStatus": null,
+          "clientExitStatus": 0,
+          "clientFailureKind": null,
+          "commandExecutions": [
+            {
+              "commandSha256": "2346de697a4178e7caa30c100bdf1cd2f66008ff9ab00849b4328c0a0bcf451b",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 1,
+              "paths": [
+                "crates/ctxhelm-mcp/src/tools.rs"
+              ],
+              "status": "completed",
+              "verb": "sed"
+            },
+            {
+              "commandSha256": "ddc6886bc29f74cf718169db665b6a570725f15aa0ef7608d636cc3e8fa0279a",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 1,
+              "paths": [
+                "crates/ctxhelm-compiler/src/packs.rs"
+              ],
+              "status": "completed",
+              "verb": "sed"
+            },
+            {
+              "commandSha256": "59c0dbf24bbc124f164ebb65c3d987d2bbfdf00ff81d5e62171d9ffece5457aa",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 1,
+              "paths": [
+                "crates/ctxhelm-core/src/init.rs"
+              ],
+              "status": "completed",
+              "verb": "sed"
+            },
+            {
+              "commandSha256": "13e430383ccdf657bd82d4168e145d34f08dd7c8a07097c7ea9a8bf7a74a8cd6",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 1,
+              "paths": [
+                "crates/ctxhelm-compiler/src/planning.rs"
+              ],
+              "status": "completed",
+              "verb": "sed"
+            },
+            {
+              "commandSha256": "6934c4bbd70a6a5971c40fd6e4522708b131b142a6f6f2f7ee7b103efad3c17e",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 1,
+              "paths": [
+                "scripts/e2e-agent-run-codex.sh"
+              ],
+              "status": "completed",
+              "verb": "sed"
+            }
+          ],
+          "ctxhelmCallCompliance": "satisfied",
+          "ctxhelmEvidenceFiles": [
+            "crates/ctxhelm-mcp/src/tools.rs",
+            "crates/ctxhelm-core/src/init.rs",
+            "crates/ctxhelm-compiler/src/packs.rs",
+            "crates/ctxhelm-compiler/src/planning.rs",
+            "scripts/e2e-agent-run-codex.sh",
+            "crates/ctxhelm-index/src/git.rs",
+            "crates/ctxhelm-compiler/src/eval.rs",
+            "crates/ctxhelm-core/src/contracts.rs",
+            ".planning/ROADMAP.md",
+            ".planning/MILESTONES.md",
+            "crates/ctxhelm/tests/release_packaging.rs",
+            "crates/ctxhelm/tests/cli_compat.rs",
+            "crates/ctxhelm/tests/common/mod.rs",
+            "crates/ctxhelm-compiler/src/lib.rs",
+            "crates/ctxhelm-core/src/lib.rs",
+            "crates/ctxhelm-index/src/lib.rs",
+            "crates/ctxhelm-index/src/inventory.rs",
+            "crates/ctxhelm-compiler/src/agent_preview.rs"
+          ],
+          "ctxhelmEvidenceMissedTargets": [],
+          "ctxhelmEvidenceOnlyTargets": [],
+          "ctxhelmEvidenceTargetHits": [
+            "crates/ctxhelm-compiler/src/planning.rs",
+            "crates/ctxhelm-core/src/init.rs",
+            "crates/ctxhelm-mcp/src/tools.rs"
+          ],
+          "ctxhelmToolCalls": [
+            {
+              "budget": null,
+              "format": null,
+              "hasRepo": true,
+              "hasTask": true,
+              "name": "prepare_task",
+              "recordTrace": null
+            },
+            {
+              "budget": "standard",
+              "format": "json",
+              "hasRepo": true,
+              "hasTask": true,
+              "name": "get_pack",
+              "recordTrace": false
+            }
+          ],
+          "discoveredFiles": [
+            "crates/ctxhelm-mcp/src/tools.rs",
+            "crates/ctxhelm-compiler/src/packs.rs",
+            "crates/ctxhelm-core/src/init.rs",
+            "crates/ctxhelm-compiler/src/planning.rs",
+            "scripts/e2e-agent-run-codex.sh"
+          ],
+          "discoveredOnlyTargets": [],
+          "evaluationEligible": true,
+          "evaluationStatus": "eligible",
+          "evidenceHashes": {
+            "ctxhelmRequestLogSha256": "27ea270641e21dc467ae5a3a008bb632a027e6dfe6b5a1f629444ef72cae1407",
+            "stderrSha256": "1dc1a467798feb26a1f22287e1d6e8f4bdb45c861cbbf9f3332a90d252618315",
+            "streamJsonSha256": "e6f0ef6d3e68ebe8f5591b459dbe72ea3cbfb59cd29ced0559d26f0f3294f3ad"
+          },
+          "forbiddenCommands": [],
+          "invalidRequiredCtxhelmCalls": [],
+          "irrelevantReads": [
+            "crates/ctxhelm-compiler/src/packs.rs",
+            "scripts/e2e-agent-run-codex.sh"
+          ],
+          "lane": "ctxhelm-memory",
+          "metrics": {
+            "commandExecutionCount": 5,
+            "ctxhelmEvidenceFileCount": 18,
+            "ctxhelmEvidenceMissedTargetCount": 0,
+            "ctxhelmEvidenceOnlyTargetCount": 0,
+            "ctxhelmEvidenceTargetHitCount": 3,
+            "ctxhelmToolCallCount": 2,
+            "discoveredFileCount": 5,
+            "forbiddenCommandCount": 0,
+            "invalidRequiredCtxhelmCallCount": 0,
+            "irrelevantReadCount": 2,
+            "missedTargetCount": 0,
+            "missingRequiredCtxhelmCallCount": 0,
+            "observedRequiredCtxhelmCallCount": 2,
+            "readFileCount": 5,
+            "requiredCtxhelmCallCount": 2,
+            "targetCount": 3,
+            "targetCoverage": 1.0,
+            "targetDiscoveredOnlyCount": 0,
+            "targetHitCount": 3,
+            "targetReadCount": 3,
+            "targetReadCoverage": 1.0
+          },
+          "missedTargetRoleCounts": {},
+          "missedTargets": [],
+          "missingRequiredCtxhelmCalls": [],
+          "mode": "memory",
+          "observedRequiredCtxhelmCalls": [
+            "prepare_task",
+            "get_pack"
+          ],
+          "rateLimitObserved": false,
+          "rawCommandOutputStored": false,
+          "rawMcpTrafficStored": false,
+          "rawPromptStored": false,
+          "rawTranscriptStored": false,
+          "readFiles": [
+            "crates/ctxhelm-mcp/src/tools.rs",
+            "crates/ctxhelm-compiler/src/packs.rs",
+            "crates/ctxhelm-core/src/init.rs",
+            "crates/ctxhelm-compiler/src/planning.rs",
+            "scripts/e2e-agent-run-codex.sh"
+          ],
+          "readRoleCounts": {
+            "source": 5
+          },
+          "requiredCtxhelmCallSpecs": [
+            {
+              "name": "prepare_task",
+              "requiresRepo": true,
+              "requiresTask": true
+            },
+            {
+              "budget": "standard",
+              "format": "json",
+              "name": "get_pack",
+              "recordTrace": false,
+              "requiresRepo": true,
+              "requiresTask": true
+            }
+          ],
+          "requiredCtxhelmCalls": [
+            "prepare_task",
+            "get_pack"
+          ],
+          "sourceTextLogged": false,
+          "status": "passed",
+          "targetHits": [
+            "crates/ctxhelm-compiler/src/planning.rs",
+            "crates/ctxhelm-core/src/init.rs",
+            "crates/ctxhelm-mcp/src/tools.rs"
+          ],
+          "targetReads": [
+            "crates/ctxhelm-compiler/src/planning.rs",
+            "crates/ctxhelm-core/src/init.rs",
+            "crates/ctxhelm-mcp/src/tools.rs"
+          ]
+        }
+      ],
+      "privacyStatus": {
+        "localOnly": true,
+        "rawCommandOutputStored": false,
+        "rawMcpTrafficStored": false,
+        "rawPromptStored": false,
+        "rawTranscriptStored": false,
+        "remoteEmbeddingsUsed": false,
+        "remoteRerankingUsed": false,
+        "sourceTextLogged": false
+      },
+      "status": "passed",
+      "targetFiles": [
+        "crates/ctxhelm-compiler/src/planning.rs",
+        "crates/ctxhelm-mcp/src/tools.rs",
+        "crates/ctxhelm-core/src/init.rs"
+      ],
+      "taskId": "memory-native-read",
+      "taskSha256": "216bb95101998f8a4ba36512d758935870caa13b68c572d0195f9716f999ee3a"
+    },
+    {
+      "comparison": {
+        "baselineEligible": true,
+        "baselineLane": "baseline",
+        "bestLane": "ctxhelm-standard",
+        "clientFailuresObserved": false,
+        "commandExecutionDelta": 3,
+        "comparableCtxhelmLaneCount": 4,
+        "comparisonEligible": true,
+        "ctxhelmEvidenceMisses": {},
+        "ctxhelmEvidenceMissesObserved": false,
+        "ctxhelmEvidenceOnlyTargets": {},
+        "ctxhelmEvidenceOnlyTargetsObserved": false,
+        "ctxhelmToolCallsObserved": true,
+        "ctxhelmUnderReadTargetsObserved": false,
+        "forbiddenCommandsObserved": false,
+        "invalidRequiredCtxhelmCalls": {},
+        "invalidRequiredCtxhelmCallsObserved": false,
+        "irrelevantReadDelta": 0,
+        "missingRequiredCtxhelmCalls": {},
+        "missingRequiredCtxhelmCallsObserved": false,
+        "outcomeClaim": "ctxhelm_improved",
+        "rateLimitsObserved": false,
+        "readFileDelta": -1,
+        "recommendedResearchActions": [
+          {
+            "action": "preserve_current_agent_contract",
+            "priority": 3,
+            "reason": "Comparable lanes produced stable source-free outcome evidence."
+          }
+        ],
+        "targetCoverageDelta": 0.33333333333333337,
+        "targetReadCoverageDelta": 0.33333333333333337
+      },
+      "lanes": [
+        {
+          "clientApiErrorStatus": null,
+          "clientExitStatus": 0,
+          "clientFailureKind": null,
+          "commandExecutions": [
+            {
+              "commandSha256": "7416c08634a96243b348c9c03c893f1d067d7cb3f975ae6d33f0e52743cacf52",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 0,
+              "paths": [],
+              "status": "completed",
+              "verb": "pwd"
+            },
+            {
+              "commandSha256": "5e627c2f20144704f66dfbf3fad7245d5a055e5b7e2932340558461724c3528c",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 0,
+              "paths": [],
+              "status": "completed",
+              "verb": "rg"
+            },
+            {
+              "commandSha256": "5028e70872dda31dc2269c4ba0c3e4170b6f84155335d5c0f44a851b86cafd8a",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 0,
+              "paths": [],
+              "status": "completed",
+              "verb": "rg"
+            },
+            {
+              "commandSha256": "eab430d9b9920e5a5324b2534bc3951902d92568da7e354b276ccdeeeff85391",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 1,
+              "paths": [
+                "crates/ctxhelm-index/src/semantic.rs"
+              ],
+              "status": "completed",
+              "verb": "sed"
+            },
+            {
+              "commandSha256": "4f0940fd660fb4b2ae8798d2112a09cba872fdb0f7127a045b1906c6dc51416c",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 1,
+              "paths": [
+                "crates/ctxhelm-compiler/src/policy.rs"
+              ],
+              "status": "completed",
+              "verb": "sed"
+            },
+            {
+              "commandSha256": "b2a0f2115f4647256f11c6618743fa6a2af9b935f2fdd88fc91d0a532b8d5653",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 1,
+              "paths": [
+                "crates/ctxhelm-core/src/contracts.rs"
+              ],
+              "status": "completed",
+              "verb": "sed"
+            },
+            {
+              "commandSha256": "25568673fe12ebac5dc9250cca2e8ad06ef7cd16850039170b999e8acd3e0bad",
+              "exitCode": 2,
+              "forbidden": false,
+              "pathCount": 0,
+              "paths": [],
+              "status": "failed",
+              "verb": "rg"
+            },
+            {
+              "commandSha256": "424f033b49161fe45b23137e3bc3931ebd3c2560d8f952bad50e19745761d465",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 1,
+              "paths": [
+                "crates/ctxhelm-compiler/src/eval.rs"
+              ],
+              "status": "completed",
+              "verb": "sed"
+            }
+          ],
+          "ctxhelmCallCompliance": "not_required",
+          "ctxhelmEvidenceFiles": [],
+          "ctxhelmEvidenceMissedTargets": [
+            "crates/ctxhelm-compiler/src/eval.rs",
+            "crates/ctxhelm-index/src/semantic.rs",
+            "crates/ctxhelm/src/main.rs"
+          ],
+          "ctxhelmEvidenceOnlyTargets": [],
+          "ctxhelmEvidenceTargetHits": [],
+          "ctxhelmToolCalls": [],
+          "discoveredFiles": [
+            "crates/ctxhelm-index/src/semantic.rs",
+            "crates/ctxhelm-compiler/src/policy.rs",
+            "crates/ctxhelm-core/src/contracts.rs",
+            "crates/ctxhelm-compiler/src/eval.rs"
+          ],
+          "discoveredOnlyTargets": [],
+          "evaluationEligible": true,
+          "evaluationStatus": "eligible",
+          "evidenceHashes": {
+            "ctxhelmRequestLogSha256": null,
+            "stderrSha256": "e19cff006bc4aa2a244d97db417ad0171d7165874f2eb5b8b491966de72afa63",
+            "streamJsonSha256": "0690748b6d265093e5e6b155928cbec1444be38237e1aad7c6b478c90b9dd842"
+          },
+          "forbiddenCommands": [],
+          "invalidRequiredCtxhelmCalls": [],
+          "irrelevantReads": [
+            "crates/ctxhelm-compiler/src/policy.rs",
+            "crates/ctxhelm-core/src/contracts.rs"
+          ],
+          "lane": "baseline",
+          "metrics": {
+            "commandExecutionCount": 8,
+            "ctxhelmEvidenceFileCount": 0,
+            "ctxhelmEvidenceMissedTargetCount": 3,
+            "ctxhelmEvidenceOnlyTargetCount": 0,
+            "ctxhelmEvidenceTargetHitCount": 0,
+            "ctxhelmToolCallCount": 0,
+            "discoveredFileCount": 4,
+            "forbiddenCommandCount": 0,
+            "invalidRequiredCtxhelmCallCount": 0,
+            "irrelevantReadCount": 2,
+            "missedTargetCount": 1,
+            "missingRequiredCtxhelmCallCount": 0,
+            "observedRequiredCtxhelmCallCount": 0,
+            "readFileCount": 4,
+            "requiredCtxhelmCallCount": 0,
+            "targetCount": 3,
+            "targetCoverage": 0.6666666666666666,
+            "targetDiscoveredOnlyCount": 0,
+            "targetHitCount": 2,
+            "targetReadCount": 2,
+            "targetReadCoverage": 0.6666666666666666
+          },
+          "missedTargetRoleCounts": {
+            "source": 1
+          },
+          "missedTargets": [
+            "crates/ctxhelm/src/main.rs"
+          ],
+          "missingRequiredCtxhelmCalls": [],
+          "mode": "baseline",
+          "observedRequiredCtxhelmCalls": [],
+          "rateLimitObserved": false,
+          "rawCommandOutputStored": false,
+          "rawMcpTrafficStored": false,
+          "rawPromptStored": false,
+          "rawTranscriptStored": false,
+          "readFiles": [
+            "crates/ctxhelm-index/src/semantic.rs",
+            "crates/ctxhelm-compiler/src/policy.rs",
+            "crates/ctxhelm-core/src/contracts.rs",
+            "crates/ctxhelm-compiler/src/eval.rs"
+          ],
+          "readRoleCounts": {
+            "source": 4
+          },
+          "requiredCtxhelmCallSpecs": [],
+          "requiredCtxhelmCalls": [],
+          "sourceTextLogged": false,
+          "status": "passed",
+          "targetHits": [
+            "crates/ctxhelm-compiler/src/eval.rs",
+            "crates/ctxhelm-index/src/semantic.rs"
+          ],
+          "targetReads": [
+            "crates/ctxhelm-compiler/src/eval.rs",
+            "crates/ctxhelm-index/src/semantic.rs"
+          ]
+        },
+        {
+          "clientApiErrorStatus": null,
+          "clientExitStatus": 0,
+          "clientFailureKind": null,
+          "commandExecutions": [
+            {
+              "commandSha256": "e4e032c4b29f6e9faf2f627d059a198ac02cd50b3ae670cb06d01538cd6a9b35",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 1,
+              "paths": [
+                "crates/ctxhelm/src/main.rs"
+              ],
+              "status": "completed",
+              "verb": "sed"
+            },
+            {
+              "commandSha256": "5721dcb28040fec54b676ff2591f54b8cb9464525cc3c50a81e9bd7bc36e5f7d",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 1,
+              "paths": [
+                "crates/ctxhelm-index/src/semantic.rs"
+              ],
+              "status": "completed",
+              "verb": "sed"
+            },
+            {
+              "commandSha256": "236028c31bc708e31a4f1222d198a52bfcade2fa10bcb0b1ccdca147b5e90434",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 1,
+              "paths": [
+                "crates/ctxhelm-core/src/contracts.rs"
+              ],
+              "status": "completed",
+              "verb": "sed"
+            },
+            {
+              "commandSha256": "8f252e44b0d6b9884dac9f486cb27c29e578b73d2cdf518a7c6d59e89dd0bf3a",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 1,
+              "paths": [
+                "crates/ctxhelm-compiler/src/cards.rs"
+              ],
+              "status": "completed",
+              "verb": "sed"
+            },
+            {
+              "commandSha256": "7e3fa7e5b2803d03f3017e3c8265a89db8ab698a86bb68c5e82fad5d9883f3a3",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 1,
+              "paths": [
+                "crates/ctxhelm-compiler/src/eval.rs"
+              ],
+              "status": "completed",
+              "verb": "sed"
+            },
+            {
+              "commandSha256": "c6fa839b15b481870a1c41cafacd5643f9bfe7a9bff44d996b32e8cd503cb1f6",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 0,
+              "paths": [],
+              "status": "completed",
+              "verb": "rg"
+            },
+            {
+              "commandSha256": "76531677867434431a9b1951c1e14265baf47f29cf40d89016864a21289289b5",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 1,
+              "paths": [
+                "crates/ctxhelm-compiler/src/policy.rs"
+              ],
+              "status": "completed",
+              "verb": "sed"
+            },
+            {
+              "commandSha256": "100713e5472ce48ebce723a1f4732fd5c56fb79b0e9241dcb36ad9820eb31383",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 1,
+              "paths": [
+                "crates/ctxhelm-compiler/src/policy.rs"
+              ],
+              "status": "completed",
+              "verb": "sed"
+            }
+          ],
+          "ctxhelmCallCompliance": "satisfied",
+          "ctxhelmEvidenceFiles": [
+            "crates/ctxhelm/src/main.rs",
+            "crates/ctxhelm-compiler/src/eval.rs",
+            "crates/ctxhelm-index/src/semantic.rs",
+            "crates/ctxhelm-compiler/src/cards.rs",
+            "crates/ctxhelm-core/src/contracts.rs",
+            ".planning/ROADMAP.md",
+            ".planning/MILESTONES.md",
+            "docs/benchmarking.md",
+            ".planning/e2e/2026-06-02-phase161-semantic-gate-contribution-diagnostics.md",
+            "crates/ctxhelm-compiler/src/lib.rs",
+            "crates/ctxhelm/tests/release_packaging.rs",
+            "crates/ctxhelm/tests/cli_compat.rs",
+            "crates/ctxhelm/tests/common/mod.rs",
+            "crates/ctxhelm-core/src/lib.rs",
+            "crates/ctxhelm-index/src/lib.rs",
+            ".planning/STATE.md"
+          ],
+          "ctxhelmEvidenceMissedTargets": [],
+          "ctxhelmEvidenceOnlyTargets": [],
+          "ctxhelmEvidenceTargetHits": [
+            "crates/ctxhelm-compiler/src/eval.rs",
+            "crates/ctxhelm-index/src/semantic.rs",
+            "crates/ctxhelm/src/main.rs"
+          ],
+          "ctxhelmToolCalls": [
+            {
+              "budget": null,
+              "format": null,
+              "hasRepo": true,
+              "hasTask": true,
+              "name": "prepare_task",
+              "recordTrace": true
+            }
+          ],
+          "discoveredFiles": [
+            "crates/ctxhelm/src/main.rs",
+            "crates/ctxhelm-index/src/semantic.rs",
+            "crates/ctxhelm-core/src/contracts.rs",
+            "crates/ctxhelm-compiler/src/cards.rs",
+            "crates/ctxhelm-compiler/src/eval.rs",
+            "crates/ctxhelm-compiler/src/policy.rs"
+          ],
+          "discoveredOnlyTargets": [],
+          "evaluationEligible": true,
+          "evaluationStatus": "eligible",
+          "evidenceHashes": {
+            "ctxhelmRequestLogSha256": "a107a4a238bb95d12ec8eb1dfbce075096bdd3aa4ef43bcc33b2c9584305b088",
+            "stderrSha256": "57c6c4ca6172d3305785f8e6f880302b9491ef85a5679d1c8185886e60cbc7a8",
+            "streamJsonSha256": "6671ec1262b02bb94bcdde596370a6305e4e3720ad56d3faa2fd3b74d476be26"
+          },
+          "forbiddenCommands": [],
+          "invalidRequiredCtxhelmCalls": [],
+          "irrelevantReads": [
+            "crates/ctxhelm-compiler/src/cards.rs",
+            "crates/ctxhelm-compiler/src/policy.rs",
+            "crates/ctxhelm-core/src/contracts.rs"
+          ],
+          "lane": "ctxhelm-plan",
+          "metrics": {
+            "commandExecutionCount": 8,
+            "ctxhelmEvidenceFileCount": 16,
+            "ctxhelmEvidenceMissedTargetCount": 0,
+            "ctxhelmEvidenceOnlyTargetCount": 0,
+            "ctxhelmEvidenceTargetHitCount": 3,
+            "ctxhelmToolCallCount": 1,
+            "discoveredFileCount": 6,
+            "forbiddenCommandCount": 0,
+            "invalidRequiredCtxhelmCallCount": 0,
+            "irrelevantReadCount": 3,
+            "missedTargetCount": 0,
+            "missingRequiredCtxhelmCallCount": 0,
+            "observedRequiredCtxhelmCallCount": 1,
+            "readFileCount": 6,
+            "requiredCtxhelmCallCount": 1,
+            "targetCount": 3,
+            "targetCoverage": 1.0,
+            "targetDiscoveredOnlyCount": 0,
+            "targetHitCount": 3,
+            "targetReadCount": 3,
+            "targetReadCoverage": 1.0
+          },
+          "missedTargetRoleCounts": {},
+          "missedTargets": [],
+          "missingRequiredCtxhelmCalls": [],
+          "mode": "plan",
+          "observedRequiredCtxhelmCalls": [
+            "prepare_task"
+          ],
+          "rateLimitObserved": false,
+          "rawCommandOutputStored": false,
+          "rawMcpTrafficStored": false,
+          "rawPromptStored": false,
+          "rawTranscriptStored": false,
+          "readFiles": [
+            "crates/ctxhelm/src/main.rs",
+            "crates/ctxhelm-index/src/semantic.rs",
+            "crates/ctxhelm-core/src/contracts.rs",
+            "crates/ctxhelm-compiler/src/cards.rs",
+            "crates/ctxhelm-compiler/src/eval.rs",
+            "crates/ctxhelm-compiler/src/policy.rs"
+          ],
+          "readRoleCounts": {
+            "source": 6
+          },
+          "requiredCtxhelmCallSpecs": [
+            {
+              "name": "prepare_task",
+              "requiresRepo": true,
+              "requiresTask": true
+            }
+          ],
+          "requiredCtxhelmCalls": [
+            "prepare_task"
+          ],
+          "sourceTextLogged": false,
+          "status": "passed",
+          "targetHits": [
+            "crates/ctxhelm-compiler/src/eval.rs",
+            "crates/ctxhelm-index/src/semantic.rs",
+            "crates/ctxhelm/src/main.rs"
+          ],
+          "targetReads": [
+            "crates/ctxhelm-compiler/src/eval.rs",
+            "crates/ctxhelm-index/src/semantic.rs",
+            "crates/ctxhelm/src/main.rs"
+          ]
+        },
+        {
+          "clientApiErrorStatus": null,
+          "clientExitStatus": 0,
+          "clientFailureKind": null,
+          "commandExecutions": [
+            {
+              "commandSha256": "aee593db5852414f1cbda78fec6882a4479cf5b0ae2fd1f3248b3e3a7881ded6",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 1,
+              "paths": [
+                "crates/ctxhelm/src/main.rs"
+              ],
+              "status": "completed",
+              "verb": "sed"
+            },
+            {
+              "commandSha256": "5a07f2953978fcfc3a6d3bcc4a23894eb385bff5cbeadefdc1f204b200500a63",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 1,
+              "paths": [
+                "crates/ctxhelm-compiler/src/cards.rs"
+              ],
+              "status": "completed",
+              "verb": "sed"
+            },
+            {
+              "commandSha256": "527f8acaa4c36ab3b52cab2df0095ecd9ca319fe633f103689dc2361b8b03b9c",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 1,
+              "paths": [
+                "crates/ctxhelm-core/src/contracts.rs"
+              ],
+              "status": "completed",
+              "verb": "sed"
+            },
+            {
+              "commandSha256": "b8c8cc0eea237462a44e1098db5eff588287ebbdec6ee88bb9100ca41cf648f1",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 1,
+              "paths": [
+                "crates/ctxhelm-compiler/src/eval.rs"
+              ],
+              "status": "completed",
+              "verb": "sed"
+            },
+            {
+              "commandSha256": "5721dcb28040fec54b676ff2591f54b8cb9464525cc3c50a81e9bd7bc36e5f7d",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 1,
+              "paths": [
+                "crates/ctxhelm-index/src/semantic.rs"
+              ],
+              "status": "completed",
+              "verb": "sed"
+            },
+            {
+              "commandSha256": "f14c93362bf1305a1264ceb245d9b9ae1f61192aff0eb969211cc9cceaf05084",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 1,
+              "paths": [
+                "crates/ctxhelm/src/main.rs"
+              ],
+              "status": "completed",
+              "verb": "rg"
+            },
+            {
+              "commandSha256": "5cc697750671eed14f03ef79beedb6b6ea28c76f89065c53d8afa7f7b02d9421",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 1,
+              "paths": [
+                "crates/ctxhelm/src/main.rs"
+              ],
+              "status": "completed",
+              "verb": "sed"
+            },
+            {
+              "commandSha256": "f3ad92f402ecfbb85b3b670613474609558a9dfdac4d91661baf5fc100d748b4",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 1,
+              "paths": [
+                "crates/ctxhelm-compiler/src/policy.rs"
+              ],
+              "status": "completed",
+              "verb": "sed"
+            }
+          ],
+          "ctxhelmCallCompliance": "satisfied",
+          "ctxhelmEvidenceFiles": [
+            "crates/ctxhelm/src/main.rs",
+            "crates/ctxhelm-compiler/src/eval.rs",
+            "crates/ctxhelm-index/src/semantic.rs",
+            "crates/ctxhelm-compiler/src/cards.rs",
+            "crates/ctxhelm-core/src/contracts.rs",
+            ".planning/ROADMAP.md",
+            ".planning/MILESTONES.md",
+            "docs/benchmarking.md",
+            ".planning/e2e/2026-06-02-phase161-semantic-gate-contribution-diagnostics.md",
+            "crates/ctxhelm-compiler/src/lib.rs",
+            "crates/ctxhelm/tests/release_packaging.rs",
+            "crates/ctxhelm/tests/cli_compat.rs",
+            "crates/ctxhelm/tests/common/mod.rs",
+            "crates/ctxhelm-core/src/lib.rs",
+            "crates/ctxhelm-index/src/lib.rs"
+          ],
+          "ctxhelmEvidenceMissedTargets": [],
+          "ctxhelmEvidenceOnlyTargets": [],
+          "ctxhelmEvidenceTargetHits": [
+            "crates/ctxhelm-compiler/src/eval.rs",
+            "crates/ctxhelm-index/src/semantic.rs",
+            "crates/ctxhelm/src/main.rs"
+          ],
+          "ctxhelmToolCalls": [
+            {
+              "budget": null,
+              "format": null,
+              "hasRepo": true,
+              "hasTask": true,
+              "name": "prepare_task",
+              "recordTrace": null
+            },
+            {
+              "budget": "brief",
+              "format": "json",
+              "hasRepo": true,
+              "hasTask": true,
+              "name": "get_pack",
+              "recordTrace": false
+            }
+          ],
+          "discoveredFiles": [
+            "crates/ctxhelm/src/main.rs",
+            "crates/ctxhelm-compiler/src/cards.rs",
+            "crates/ctxhelm-core/src/contracts.rs",
+            "crates/ctxhelm-compiler/src/eval.rs",
+            "crates/ctxhelm-index/src/semantic.rs",
+            "crates/ctxhelm-compiler/src/policy.rs"
+          ],
+          "discoveredOnlyTargets": [],
+          "evaluationEligible": true,
+          "evaluationStatus": "eligible",
+          "evidenceHashes": {
+            "ctxhelmRequestLogSha256": "45851fc5e5cdd71741a86324173b7cd444d04ba893346e482864421cde1aebde",
+            "stderrSha256": "74ebe2eadaa68884cdfc877a9650bdc3275c956adaadf7b8da10a0816e13d002",
+            "streamJsonSha256": "65e2248c52e71d0e9671c8118898c5409f30d8532f15b79a3d162182fe8135c9"
+          },
+          "forbiddenCommands": [],
+          "invalidRequiredCtxhelmCalls": [],
+          "irrelevantReads": [
+            "crates/ctxhelm-compiler/src/cards.rs",
+            "crates/ctxhelm-compiler/src/policy.rs",
+            "crates/ctxhelm-core/src/contracts.rs"
+          ],
+          "lane": "ctxhelm-brief",
+          "metrics": {
+            "commandExecutionCount": 8,
+            "ctxhelmEvidenceFileCount": 15,
+            "ctxhelmEvidenceMissedTargetCount": 0,
+            "ctxhelmEvidenceOnlyTargetCount": 0,
+            "ctxhelmEvidenceTargetHitCount": 3,
+            "ctxhelmToolCallCount": 2,
+            "discoveredFileCount": 6,
+            "forbiddenCommandCount": 0,
+            "invalidRequiredCtxhelmCallCount": 0,
+            "irrelevantReadCount": 3,
+            "missedTargetCount": 0,
+            "missingRequiredCtxhelmCallCount": 0,
+            "observedRequiredCtxhelmCallCount": 2,
+            "readFileCount": 6,
+            "requiredCtxhelmCallCount": 2,
+            "targetCount": 3,
+            "targetCoverage": 1.0,
+            "targetDiscoveredOnlyCount": 0,
+            "targetHitCount": 3,
+            "targetReadCount": 3,
+            "targetReadCoverage": 1.0
+          },
+          "missedTargetRoleCounts": {},
+          "missedTargets": [],
+          "missingRequiredCtxhelmCalls": [],
+          "mode": "brief",
+          "observedRequiredCtxhelmCalls": [
+            "prepare_task",
+            "get_pack"
+          ],
+          "rateLimitObserved": false,
+          "rawCommandOutputStored": false,
+          "rawMcpTrafficStored": false,
+          "rawPromptStored": false,
+          "rawTranscriptStored": false,
+          "readFiles": [
+            "crates/ctxhelm/src/main.rs",
+            "crates/ctxhelm-compiler/src/cards.rs",
+            "crates/ctxhelm-core/src/contracts.rs",
+            "crates/ctxhelm-compiler/src/eval.rs",
+            "crates/ctxhelm-index/src/semantic.rs",
+            "crates/ctxhelm-compiler/src/policy.rs"
+          ],
+          "readRoleCounts": {
+            "source": 6
+          },
+          "requiredCtxhelmCallSpecs": [
+            {
+              "name": "prepare_task",
+              "requiresRepo": true,
+              "requiresTask": true
+            },
+            {
+              "budget": "brief",
+              "format": "json",
+              "name": "get_pack",
+              "recordTrace": false,
+              "requiresRepo": true,
+              "requiresTask": true
+            }
+          ],
+          "requiredCtxhelmCalls": [
+            "prepare_task",
+            "get_pack"
+          ],
+          "sourceTextLogged": false,
+          "status": "passed",
+          "targetHits": [
+            "crates/ctxhelm-compiler/src/eval.rs",
+            "crates/ctxhelm-index/src/semantic.rs",
+            "crates/ctxhelm/src/main.rs"
+          ],
+          "targetReads": [
+            "crates/ctxhelm-compiler/src/eval.rs",
+            "crates/ctxhelm-index/src/semantic.rs",
+            "crates/ctxhelm/src/main.rs"
+          ]
+        },
+        {
+          "clientApiErrorStatus": null,
+          "clientExitStatus": 0,
+          "clientFailureKind": null,
+          "commandExecutions": [
+            {
+              "commandSha256": "c0bbadc05a9c4a55539ef5114c08dba45ee8cb04d8dccafb51ab135326871502",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 1,
+              "paths": [
+                "crates/ctxhelm/src/main.rs"
+              ],
+              "status": "completed",
+              "verb": "sed"
+            },
+            {
+              "commandSha256": "379fc2219ef3f007b2ebc7b4f985a54cecfe42a9714cd3cba233b76504fcd643",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 1,
+              "paths": [
+                "crates/ctxhelm-compiler/src/cards.rs"
+              ],
+              "status": "completed",
+              "verb": "sed"
+            },
+            {
+              "commandSha256": "5721dcb28040fec54b676ff2591f54b8cb9464525cc3c50a81e9bd7bc36e5f7d",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 1,
+              "paths": [
+                "crates/ctxhelm-index/src/semantic.rs"
+              ],
+              "status": "completed",
+              "verb": "sed"
+            },
+            {
+              "commandSha256": "436c96dec9abff778b9d256e9dc48c4214bc8fb0931de8a75d16e7618584d2d7",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 1,
+              "paths": [
+                "crates/ctxhelm-core/src/contracts.rs"
+              ],
+              "status": "completed",
+              "verb": "sed"
+            },
+            {
+              "commandSha256": "a024ef496d26738796c61ecdf3f9e49a5b6f9a1adeeaf83c00d34081d7ff798e",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 1,
+              "paths": [
+                "crates/ctxhelm-compiler/src/eval.rs"
+              ],
+              "status": "completed",
+              "verb": "sed"
+            }
+          ],
+          "ctxhelmCallCompliance": "satisfied",
+          "ctxhelmEvidenceFiles": [
+            "crates/ctxhelm/src/main.rs",
+            "crates/ctxhelm-compiler/src/eval.rs",
+            "crates/ctxhelm-index/src/semantic.rs",
+            "crates/ctxhelm-compiler/src/cards.rs",
+            "crates/ctxhelm-core/src/contracts.rs",
+            ".planning/ROADMAP.md",
+            ".planning/MILESTONES.md",
+            "docs/benchmarking.md",
+            ".planning/e2e/2026-06-02-phase161-semantic-gate-contribution-diagnostics.md",
+            "crates/ctxhelm-compiler/src/lib.rs",
+            "crates/ctxhelm/tests/release_packaging.rs",
+            "crates/ctxhelm/tests/cli_compat.rs",
+            "crates/ctxhelm/tests/common/mod.rs",
+            "crates/ctxhelm-core/src/lib.rs",
+            "crates/ctxhelm-index/src/lib.rs"
+          ],
+          "ctxhelmEvidenceMissedTargets": [],
+          "ctxhelmEvidenceOnlyTargets": [],
+          "ctxhelmEvidenceTargetHits": [
+            "crates/ctxhelm-compiler/src/eval.rs",
+            "crates/ctxhelm-index/src/semantic.rs",
+            "crates/ctxhelm/src/main.rs"
+          ],
+          "ctxhelmToolCalls": [
+            {
+              "budget": null,
+              "format": null,
+              "hasRepo": true,
+              "hasTask": true,
+              "name": "prepare_task",
+              "recordTrace": null
+            },
+            {
+              "budget": "standard",
+              "format": "json",
+              "hasRepo": true,
+              "hasTask": true,
+              "name": "get_pack",
+              "recordTrace": false
+            }
+          ],
+          "discoveredFiles": [
+            "crates/ctxhelm/src/main.rs",
+            "crates/ctxhelm-compiler/src/cards.rs",
+            "crates/ctxhelm-index/src/semantic.rs",
+            "crates/ctxhelm-core/src/contracts.rs",
+            "crates/ctxhelm-compiler/src/eval.rs"
+          ],
+          "discoveredOnlyTargets": [],
+          "evaluationEligible": true,
+          "evaluationStatus": "eligible",
+          "evidenceHashes": {
+            "ctxhelmRequestLogSha256": "6fc5f5378db2be0b75518b4f9927a88593637187f34aa08f533ae42ecf641b1a",
+            "stderrSha256": "c894446f863f83f1dc47ebc592bcd7de1937e4b93c74a9e11b6c0e2203e28916",
+            "streamJsonSha256": "d4ba43415df097aaba9896322fc136e944265e640eb3459da39164f7af140516"
+          },
+          "forbiddenCommands": [],
+          "invalidRequiredCtxhelmCalls": [],
+          "irrelevantReads": [
+            "crates/ctxhelm-compiler/src/cards.rs",
+            "crates/ctxhelm-core/src/contracts.rs"
+          ],
+          "lane": "ctxhelm-standard",
+          "metrics": {
+            "commandExecutionCount": 5,
+            "ctxhelmEvidenceFileCount": 15,
+            "ctxhelmEvidenceMissedTargetCount": 0,
+            "ctxhelmEvidenceOnlyTargetCount": 0,
+            "ctxhelmEvidenceTargetHitCount": 3,
+            "ctxhelmToolCallCount": 2,
+            "discoveredFileCount": 5,
+            "forbiddenCommandCount": 0,
+            "invalidRequiredCtxhelmCallCount": 0,
+            "irrelevantReadCount": 2,
+            "missedTargetCount": 0,
+            "missingRequiredCtxhelmCallCount": 0,
+            "observedRequiredCtxhelmCallCount": 2,
+            "readFileCount": 5,
+            "requiredCtxhelmCallCount": 2,
+            "targetCount": 3,
+            "targetCoverage": 1.0,
+            "targetDiscoveredOnlyCount": 0,
+            "targetHitCount": 3,
+            "targetReadCount": 3,
+            "targetReadCoverage": 1.0
+          },
+          "missedTargetRoleCounts": {},
+          "missedTargets": [],
+          "missingRequiredCtxhelmCalls": [],
+          "mode": "standard",
+          "observedRequiredCtxhelmCalls": [
+            "prepare_task",
+            "get_pack"
+          ],
+          "rateLimitObserved": false,
+          "rawCommandOutputStored": false,
+          "rawMcpTrafficStored": false,
+          "rawPromptStored": false,
+          "rawTranscriptStored": false,
+          "readFiles": [
+            "crates/ctxhelm/src/main.rs",
+            "crates/ctxhelm-compiler/src/cards.rs",
+            "crates/ctxhelm-index/src/semantic.rs",
+            "crates/ctxhelm-core/src/contracts.rs",
+            "crates/ctxhelm-compiler/src/eval.rs"
+          ],
+          "readRoleCounts": {
+            "source": 5
+          },
+          "requiredCtxhelmCallSpecs": [
+            {
+              "name": "prepare_task",
+              "requiresRepo": true,
+              "requiresTask": true
+            },
+            {
+              "budget": "standard",
+              "format": "json",
+              "name": "get_pack",
+              "recordTrace": false,
+              "requiresRepo": true,
+              "requiresTask": true
+            }
+          ],
+          "requiredCtxhelmCalls": [
+            "prepare_task",
+            "get_pack"
+          ],
+          "sourceTextLogged": false,
+          "status": "passed",
+          "targetHits": [
+            "crates/ctxhelm-compiler/src/eval.rs",
+            "crates/ctxhelm-index/src/semantic.rs",
+            "crates/ctxhelm/src/main.rs"
+          ],
+          "targetReads": [
+            "crates/ctxhelm-compiler/src/eval.rs",
+            "crates/ctxhelm-index/src/semantic.rs",
+            "crates/ctxhelm/src/main.rs"
+          ]
+        },
+        {
+          "clientApiErrorStatus": null,
+          "clientExitStatus": 0,
+          "clientFailureKind": null,
+          "commandExecutions": [
+            {
+              "commandSha256": "aee593db5852414f1cbda78fec6882a4479cf5b0ae2fd1f3248b3e3a7881ded6",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 1,
+              "paths": [
+                "crates/ctxhelm/src/main.rs"
+              ],
+              "status": "completed",
+              "verb": "sed"
+            },
+            {
+              "commandSha256": "750d56c59ff0cb9a7b5dd52f93905baa9ce8de32d51f2815236eab23d7c307aa",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 1,
+              "paths": [
+                "crates/ctxhelm-compiler/src/cards.rs"
+              ],
+              "status": "completed",
+              "verb": "sed"
+            },
+            {
+              "commandSha256": "5721dcb28040fec54b676ff2591f54b8cb9464525cc3c50a81e9bd7bc36e5f7d",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 1,
+              "paths": [
+                "crates/ctxhelm-index/src/semantic.rs"
+              ],
+              "status": "completed",
+              "verb": "sed"
+            },
+            {
+              "commandSha256": "b6ef434133d51e5108b5139050194f2a5ed01044362a89ada9374112f5d90a7d",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 1,
+              "paths": [
+                "crates/ctxhelm-compiler/src/eval.rs"
+              ],
+              "status": "completed",
+              "verb": "sed"
+            },
+            {
+              "commandSha256": "e92568d66b6034d6a2918e7c1a00e6fe0b2e33d91b190c9ed06fb0a8971f47aa",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 1,
+              "paths": [
+                "crates/ctxhelm-core/src/contracts.rs"
+              ],
+              "status": "completed",
+              "verb": "sed"
+            },
+            {
+              "commandSha256": "32620c3f9d7b06cd38881f931914d62212f54832701a58ba3b5fbf48f0bdcf60",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 9,
+              "paths": [
+                "crates/ctxhelm/src/main.rs",
+                "crates/ctxhelm-compiler/src/eval.rs",
+                "crates/ctxhelm-index/src/semantic.rs",
+                "crates/ctxhelm-compiler/src/cards.rs",
+                "crates/ctxhelm-core/src/contracts.rs",
+                ".planning/ROADMAP.md",
+                ".planning/MILESTONES.md",
+                "docs/benchmarking.md",
+                ".planning/e2e/2026-06-02-phase161-semantic-gate-contribution-diagnostics.md"
+              ],
+              "status": "completed",
+              "verb": "rg"
+            },
+            {
+              "commandSha256": "cd5aebb045377a8ecddb794a71ff7be0c44fed2792893107ec5e7c7a8eda23d0",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 1,
+              "paths": [
+                "crates/ctxhelm/src/main.rs"
+              ],
+              "status": "completed",
+              "verb": "sed"
+            },
+            {
+              "commandSha256": "44d82398cf2788b6386b4b95e34da244924058c78ef3a44ef2d29a88122065d2",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 1,
+              "paths": [
+                "crates/ctxhelm-compiler/src/eval.rs"
+              ],
+              "status": "completed",
+              "verb": "sed"
+            }
+          ],
+          "ctxhelmCallCompliance": "satisfied",
+          "ctxhelmEvidenceFiles": [
+            "crates/ctxhelm/src/main.rs",
+            "crates/ctxhelm-compiler/src/eval.rs",
+            "crates/ctxhelm-index/src/semantic.rs",
+            "crates/ctxhelm-compiler/src/cards.rs",
+            "crates/ctxhelm-core/src/contracts.rs",
+            ".planning/ROADMAP.md",
+            ".planning/MILESTONES.md",
+            "docs/benchmarking.md",
+            ".planning/e2e/2026-06-02-phase161-semantic-gate-contribution-diagnostics.md",
+            "crates/ctxhelm-compiler/src/lib.rs",
+            "crates/ctxhelm/tests/release_packaging.rs",
+            "crates/ctxhelm/tests/cli_compat.rs",
+            "crates/ctxhelm/tests/common/mod.rs",
+            "crates/ctxhelm-core/src/lib.rs",
+            "crates/ctxhelm-index/src/lib.rs"
+          ],
+          "ctxhelmEvidenceMissedTargets": [],
+          "ctxhelmEvidenceOnlyTargets": [],
+          "ctxhelmEvidenceTargetHits": [
+            "crates/ctxhelm-compiler/src/eval.rs",
+            "crates/ctxhelm-index/src/semantic.rs",
+            "crates/ctxhelm/src/main.rs"
+          ],
+          "ctxhelmToolCalls": [
+            {
+              "budget": null,
+              "format": null,
+              "hasRepo": true,
+              "hasTask": true,
+              "name": "prepare_task",
+              "recordTrace": null
+            },
+            {
+              "budget": "standard",
+              "format": "json",
+              "hasRepo": true,
+              "hasTask": true,
+              "name": "get_pack",
+              "recordTrace": false
+            }
+          ],
+          "discoveredFiles": [
+            "crates/ctxhelm/src/main.rs",
+            "crates/ctxhelm-compiler/src/cards.rs",
+            "crates/ctxhelm-index/src/semantic.rs",
+            "crates/ctxhelm-compiler/src/eval.rs",
+            "crates/ctxhelm-core/src/contracts.rs",
+            ".planning/ROADMAP.md",
+            ".planning/MILESTONES.md",
+            "docs/benchmarking.md",
+            ".planning/e2e/2026-06-02-phase161-semantic-gate-contribution-diagnostics.md"
+          ],
+          "discoveredOnlyTargets": [],
+          "evaluationEligible": true,
+          "evaluationStatus": "eligible",
+          "evidenceHashes": {
+            "ctxhelmRequestLogSha256": "a34c81162f4fded98564ea124ccc99970e8c44c971086a91b44e1c8d5b64e996",
+            "stderrSha256": "cd81489dcf2a4399462236875bc2819a98446df30a21319e9eb192a7fd118f98",
+            "streamJsonSha256": "e699dcf01c52ee6347e35f543ae8d1937d670dc299ccbce9cfc72abfdc54136f"
+          },
+          "forbiddenCommands": [],
+          "invalidRequiredCtxhelmCalls": [],
+          "irrelevantReads": [
+            "crates/ctxhelm-compiler/src/cards.rs",
+            "crates/ctxhelm-core/src/contracts.rs"
+          ],
+          "lane": "ctxhelm-memory",
+          "metrics": {
+            "commandExecutionCount": 8,
+            "ctxhelmEvidenceFileCount": 15,
+            "ctxhelmEvidenceMissedTargetCount": 0,
+            "ctxhelmEvidenceOnlyTargetCount": 0,
+            "ctxhelmEvidenceTargetHitCount": 3,
+            "ctxhelmToolCallCount": 2,
+            "discoveredFileCount": 9,
+            "forbiddenCommandCount": 0,
+            "invalidRequiredCtxhelmCallCount": 0,
+            "irrelevantReadCount": 2,
+            "missedTargetCount": 0,
+            "missingRequiredCtxhelmCallCount": 0,
+            "observedRequiredCtxhelmCallCount": 2,
+            "readFileCount": 5,
+            "requiredCtxhelmCallCount": 2,
+            "targetCount": 3,
+            "targetCoverage": 1.0,
+            "targetDiscoveredOnlyCount": 0,
+            "targetHitCount": 3,
+            "targetReadCount": 3,
+            "targetReadCoverage": 1.0
+          },
+          "missedTargetRoleCounts": {},
+          "missedTargets": [],
+          "missingRequiredCtxhelmCalls": [],
+          "mode": "memory",
+          "observedRequiredCtxhelmCalls": [
+            "prepare_task",
+            "get_pack"
+          ],
+          "rateLimitObserved": false,
+          "rawCommandOutputStored": false,
+          "rawMcpTrafficStored": false,
+          "rawPromptStored": false,
+          "rawTranscriptStored": false,
+          "readFiles": [
+            "crates/ctxhelm/src/main.rs",
+            "crates/ctxhelm-compiler/src/cards.rs",
+            "crates/ctxhelm-index/src/semantic.rs",
+            "crates/ctxhelm-compiler/src/eval.rs",
+            "crates/ctxhelm-core/src/contracts.rs"
+          ],
+          "readRoleCounts": {
+            "source": 5
+          },
+          "requiredCtxhelmCallSpecs": [
+            {
+              "name": "prepare_task",
+              "requiresRepo": true,
+              "requiresTask": true
+            },
+            {
+              "budget": "standard",
+              "format": "json",
+              "name": "get_pack",
+              "recordTrace": false,
+              "requiresRepo": true,
+              "requiresTask": true
+            }
+          ],
+          "requiredCtxhelmCalls": [
+            "prepare_task",
+            "get_pack"
+          ],
+          "sourceTextLogged": false,
+          "status": "passed",
+          "targetHits": [
+            "crates/ctxhelm-compiler/src/eval.rs",
+            "crates/ctxhelm-index/src/semantic.rs",
+            "crates/ctxhelm/src/main.rs"
+          ],
+          "targetReads": [
+            "crates/ctxhelm-compiler/src/eval.rs",
+            "crates/ctxhelm-index/src/semantic.rs",
+            "crates/ctxhelm/src/main.rs"
+          ]
+        }
+      ],
+      "privacyStatus": {
+        "localOnly": true,
+        "rawCommandOutputStored": false,
+        "rawMcpTrafficStored": false,
+        "rawPromptStored": false,
+        "rawTranscriptStored": false,
+        "remoteEmbeddingsUsed": false,
+        "remoteRerankingUsed": false,
+        "sourceTextLogged": false
+      },
+      "status": "passed",
+      "targetFiles": [
+        "crates/ctxhelm/src/main.rs",
+        "crates/ctxhelm-index/src/semantic.rs",
+        "crates/ctxhelm-compiler/src/eval.rs"
+      ],
+      "taskId": "semantic-contribution",
+      "taskSha256": "1089a6d79257a410ed7ae2ac830588ee02c2e978ff55d1e83b19d2ef0cf7aec3"
+    },
+    {
+      "comparison": {
+        "baselineEligible": true,
+        "baselineLane": "baseline",
+        "bestLane": "ctxhelm-brief",
+        "clientFailuresObserved": false,
+        "commandExecutionDelta": -2,
+        "comparableCtxhelmLaneCount": 4,
+        "comparisonEligible": true,
+        "ctxhelmEvidenceMisses": {},
+        "ctxhelmEvidenceMissesObserved": false,
+        "ctxhelmEvidenceOnlyTargets": {},
+        "ctxhelmEvidenceOnlyTargetsObserved": false,
+        "ctxhelmToolCallsObserved": true,
+        "ctxhelmUnderReadTargetsObserved": false,
+        "forbiddenCommandsObserved": false,
+        "invalidRequiredCtxhelmCalls": {},
+        "invalidRequiredCtxhelmCallsObserved": false,
+        "irrelevantReadDelta": -1,
+        "missingRequiredCtxhelmCalls": {},
+        "missingRequiredCtxhelmCallsObserved": false,
+        "outcomeClaim": "ctxhelm_improved",
+        "rateLimitsObserved": false,
+        "readFileDelta": -3,
+        "recommendedResearchActions": [
+          {
+            "action": "preserve_current_agent_contract",
+            "priority": 3,
+            "reason": "Comparable lanes produced stable source-free outcome evidence."
+          }
+        ],
+        "targetCoverageDelta": 0.6666666666666667,
+        "targetReadCoverageDelta": 0.6666666666666667
+      },
+      "lanes": [
+        {
+          "clientApiErrorStatus": null,
+          "clientExitStatus": 0,
+          "clientFailureKind": null,
+          "commandExecutions": [
+            {
+              "commandSha256": "47d48f8e1aefa2713b76cb96572307331fd615b372e386384e33567c283c906c",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 0,
+              "paths": [],
+              "status": "completed",
+              "verb": "pwd"
+            },
+            {
+              "commandSha256": "71c8d371d0788e170253808fb22877a430785a1b1bb15b34e1769a6b96baac28",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 5,
+              "paths": [
+                "crates/ctxhelm-core/src/contracts.rs",
+                "crates/ctxhelm-compiler/src/eval.rs",
+                "crates/ctxhelm-compiler/src/planning.rs",
+                "crates/ctxhelm-compiler/src/lib.rs",
+                "docs/memory.md"
+              ],
+              "status": "completed",
+              "verb": "rg"
+            },
+            {
+              "commandSha256": "7a275f28ec4e9cbb9999361e71d14a31474bb4b2da5c46861236629e9cc6826c",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 1,
+              "paths": [
+                "crates/ctxhelm-compiler/src/eval.rs"
+              ],
+              "status": "completed",
+              "verb": "sed"
+            },
+            {
+              "commandSha256": "946571253376cee06d5354dabf614aed7c59f160a3eaf08f3369ec131b5f8576",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 1,
+              "paths": [
+                "crates/ctxhelm-compiler/src/eval.rs"
+              ],
+              "status": "completed",
+              "verb": "sed"
+            },
+            {
+              "commandSha256": "039466ac57450a766c4230469932d36b01b368e1bf49b840bbb4b7323660cdc6",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 1,
+              "paths": [
+                "crates/ctxhelm-compiler/src/eval.rs"
+              ],
+              "status": "completed",
+              "verb": "sed"
+            },
+            {
+              "commandSha256": "54a8059877f5f66be9032308829cc09984070b57489e9b1dfddd2d5cf40ce394",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 1,
+              "paths": [
+                "crates/ctxhelm-compiler/src/lib.rs"
+              ],
+              "status": "completed",
+              "verb": "sed"
+            },
+            {
+              "commandSha256": "4bce1156de79a83e94ab060b0b249c411a1867f32d301cfbacc1dfbf25cce537",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 1,
+              "paths": [
+                "crates/ctxhelm-compiler/src/eval.rs"
+              ],
+              "status": "completed",
+              "verb": "sed"
+            }
+          ],
+          "ctxhelmCallCompliance": "not_required",
+          "ctxhelmEvidenceFiles": [],
+          "ctxhelmEvidenceMissedTargets": [
+            "crates/ctxhelm-compiler/src/eval.rs",
+            "crates/ctxhelm-compiler/src/ranking.rs",
+            "crates/ctxhelm-index/src/dependencies.rs"
+          ],
+          "ctxhelmEvidenceOnlyTargets": [],
+          "ctxhelmEvidenceTargetHits": [],
+          "ctxhelmToolCalls": [],
+          "discoveredFiles": [
+            "crates/ctxhelm-core/src/contracts.rs",
+            "crates/ctxhelm-compiler/src/eval.rs",
+            "crates/ctxhelm-compiler/src/planning.rs",
+            "crates/ctxhelm-compiler/src/lib.rs",
+            "docs/memory.md"
+          ],
+          "discoveredOnlyTargets": [],
+          "evaluationEligible": true,
+          "evaluationStatus": "eligible",
+          "evidenceHashes": {
+            "ctxhelmRequestLogSha256": null,
+            "stderrSha256": "2ca01e0b67dc4300e5aff40875dca36c92c84d7609c94c81e8702fd00287cc87",
+            "streamJsonSha256": "1e9c082341cc2a9e93a1a343eed36c7a4d84f8ab1c9fd3e793edb1e68685b31a"
+          },
+          "forbiddenCommands": [],
+          "invalidRequiredCtxhelmCalls": [],
+          "irrelevantReads": [
+            "crates/ctxhelm-compiler/src/lib.rs"
+          ],
+          "lane": "baseline",
+          "metrics": {
+            "commandExecutionCount": 7,
+            "ctxhelmEvidenceFileCount": 0,
+            "ctxhelmEvidenceMissedTargetCount": 3,
+            "ctxhelmEvidenceOnlyTargetCount": 0,
+            "ctxhelmEvidenceTargetHitCount": 0,
+            "ctxhelmToolCallCount": 0,
+            "discoveredFileCount": 5,
+            "forbiddenCommandCount": 0,
+            "invalidRequiredCtxhelmCallCount": 0,
+            "irrelevantReadCount": 1,
+            "missedTargetCount": 2,
+            "missingRequiredCtxhelmCallCount": 0,
+            "observedRequiredCtxhelmCallCount": 0,
+            "readFileCount": 2,
+            "requiredCtxhelmCallCount": 0,
+            "targetCount": 3,
+            "targetCoverage": 0.3333333333333333,
+            "targetDiscoveredOnlyCount": 0,
+            "targetHitCount": 1,
+            "targetReadCount": 1,
+            "targetReadCoverage": 0.3333333333333333
+          },
+          "missedTargetRoleCounts": {
+            "source": 2
+          },
+          "missedTargets": [
+            "crates/ctxhelm-compiler/src/ranking.rs",
+            "crates/ctxhelm-index/src/dependencies.rs"
+          ],
+          "missingRequiredCtxhelmCalls": [],
+          "mode": "baseline",
+          "observedRequiredCtxhelmCalls": [],
+          "rateLimitObserved": false,
+          "rawCommandOutputStored": false,
+          "rawMcpTrafficStored": false,
+          "rawPromptStored": false,
+          "rawTranscriptStored": false,
+          "readFiles": [
+            "crates/ctxhelm-compiler/src/eval.rs",
+            "crates/ctxhelm-compiler/src/lib.rs"
+          ],
+          "readRoleCounts": {
+            "source": 2
+          },
+          "requiredCtxhelmCallSpecs": [],
+          "requiredCtxhelmCalls": [],
+          "sourceTextLogged": false,
+          "status": "passed",
+          "targetHits": [
+            "crates/ctxhelm-compiler/src/eval.rs"
+          ],
+          "targetReads": [
+            "crates/ctxhelm-compiler/src/eval.rs"
+          ]
+        },
+        {
+          "clientApiErrorStatus": null,
+          "clientExitStatus": 0,
+          "clientFailureKind": null,
+          "commandExecutions": [
+            {
+              "commandSha256": "2370e42a7cd5542d6691fc50837084b30cb09e6daa3458f471d8a0ae3c2e4f4e",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 1,
+              "paths": [
+                "crates/ctxhelm-compiler/src/eval.rs"
+              ],
+              "status": "completed",
+              "verb": "sed"
+            },
+            {
+              "commandSha256": "a863f0c2e845027f7088e89ab56fb409a4dd572ae41660602c590642c98b107f",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 1,
+              "paths": [
+                "crates/ctxhelm-compiler/src/ranking.rs"
+              ],
+              "status": "completed",
+              "verb": "sed"
+            },
+            {
+              "commandSha256": "b34d1f66afadda1fe9cf55eb4b427baed5d9844d9edfb1d550356b0a70ba7868",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 1,
+              "paths": [
+                "crates/ctxhelm-index/src/dependencies.rs"
+              ],
+              "status": "completed",
+              "verb": "sed"
+            },
+            {
+              "commandSha256": "e4e032c4b29f6e9faf2f627d059a198ac02cd50b3ae670cb06d01538cd6a9b35",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 1,
+              "paths": [
+                "crates/ctxhelm/src/main.rs"
+              ],
+              "status": "completed",
+              "verb": "sed"
+            },
+            {
+              "commandSha256": "a54705778f561368baa54d10e78c0ddb48f0e790322299085e61e3d9bbd2958c",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 1,
+              "paths": [
+                "crates/ctxhelm-index/src/git.rs"
+              ],
+              "status": "completed",
+              "verb": "sed"
+            },
+            {
+              "commandSha256": "a4c6ed427a90572cd3f05de7a66398e8edb5a6439f8816f646fa5333e83b0705",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 0,
+              "paths": [],
+              "status": "completed",
+              "verb": "rg"
+            },
+            {
+              "commandSha256": "7a275f28ec4e9cbb9999361e71d14a31474bb4b2da5c46861236629e9cc6826c",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 1,
+              "paths": [
+                "crates/ctxhelm-compiler/src/eval.rs"
+              ],
+              "status": "completed",
+              "verb": "sed"
+            },
+            {
+              "commandSha256": "b03a9884f922b6d1c2edfc3b53866284c7d466ac8e31ba6d821ec1bfc858cd56",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 1,
+              "paths": [
+                "crates/ctxhelm-compiler/src/ranking.rs"
+              ],
+              "status": "completed",
+              "verb": "sed"
+            }
+          ],
+          "ctxhelmCallCompliance": "satisfied",
+          "ctxhelmEvidenceFiles": [
+            "crates/ctxhelm-compiler/src/eval.rs",
+            "crates/ctxhelm-compiler/src/ranking.rs",
+            "crates/ctxhelm-index/src/dependencies.rs",
+            "crates/ctxhelm/src/main.rs",
+            "crates/ctxhelm-index/src/git.rs",
+            "crates/ctxhelm-core/src/init.rs",
+            "crates/ctxhelm-index/src/inventory.rs",
+            ".planning/STATE.md",
+            ".planning/ROADMAP.md",
+            ".planning/MILESTONES.md",
+            "crates/ctxhelm/tests/release_packaging.rs",
+            "crates/ctxhelm/tests/cli_compat.rs",
+            "crates/ctxhelm/tests/common/mod.rs",
+            "crates/ctxhelm-index/src/lib.rs",
+            "crates/ctxhelm-compiler/src/lib.rs",
+            "crates/ctxhelm-core/src/lib.rs",
+            "docs/benchmarking.md",
+            ".planning/e2e/2026-06-02-phase179-graph-edge-profiles.md",
+            ".planning/e2e/2026-06-03-phase181-graph-edge-budget-allocation.md"
+          ],
+          "ctxhelmEvidenceMissedTargets": [],
+          "ctxhelmEvidenceOnlyTargets": [],
+          "ctxhelmEvidenceTargetHits": [
+            "crates/ctxhelm-compiler/src/eval.rs",
+            "crates/ctxhelm-compiler/src/ranking.rs",
+            "crates/ctxhelm-index/src/dependencies.rs"
+          ],
+          "ctxhelmToolCalls": [
+            {
+              "budget": null,
+              "format": null,
+              "hasRepo": true,
+              "hasTask": true,
+              "name": "prepare_task",
+              "recordTrace": true
+            }
+          ],
+          "discoveredFiles": [
+            "crates/ctxhelm-compiler/src/eval.rs",
+            "crates/ctxhelm-compiler/src/ranking.rs",
+            "crates/ctxhelm-index/src/dependencies.rs",
+            "crates/ctxhelm/src/main.rs",
+            "crates/ctxhelm-index/src/git.rs"
+          ],
+          "discoveredOnlyTargets": [],
+          "evaluationEligible": true,
+          "evaluationStatus": "eligible",
+          "evidenceHashes": {
+            "ctxhelmRequestLogSha256": "a3ae1689146ee7e89903fb31a8bf11f4a5afec865ef4b36d2d74d6ebc9232971",
+            "stderrSha256": "57b66e7a3b0f164b576dd9b733d84075402972e96c45c2df223c1d023ffb5c10",
+            "streamJsonSha256": "6f4a0fd1706717ebaa24cf7c3e6537119d46fa3c4638bb078ee6ac18dd960b75"
+          },
+          "forbiddenCommands": [],
+          "invalidRequiredCtxhelmCalls": [],
+          "irrelevantReads": [
+            "crates/ctxhelm-index/src/git.rs",
+            "crates/ctxhelm/src/main.rs"
+          ],
+          "lane": "ctxhelm-plan",
+          "metrics": {
+            "commandExecutionCount": 8,
+            "ctxhelmEvidenceFileCount": 19,
+            "ctxhelmEvidenceMissedTargetCount": 0,
+            "ctxhelmEvidenceOnlyTargetCount": 0,
+            "ctxhelmEvidenceTargetHitCount": 3,
+            "ctxhelmToolCallCount": 1,
+            "discoveredFileCount": 5,
+            "forbiddenCommandCount": 0,
+            "invalidRequiredCtxhelmCallCount": 0,
+            "irrelevantReadCount": 2,
+            "missedTargetCount": 0,
+            "missingRequiredCtxhelmCallCount": 0,
+            "observedRequiredCtxhelmCallCount": 1,
+            "readFileCount": 5,
+            "requiredCtxhelmCallCount": 1,
+            "targetCount": 3,
+            "targetCoverage": 1.0,
+            "targetDiscoveredOnlyCount": 0,
+            "targetHitCount": 3,
+            "targetReadCount": 3,
+            "targetReadCoverage": 1.0
+          },
+          "missedTargetRoleCounts": {},
+          "missedTargets": [],
+          "missingRequiredCtxhelmCalls": [],
+          "mode": "plan",
+          "observedRequiredCtxhelmCalls": [
+            "prepare_task"
+          ],
+          "rateLimitObserved": false,
+          "rawCommandOutputStored": false,
+          "rawMcpTrafficStored": false,
+          "rawPromptStored": false,
+          "rawTranscriptStored": false,
+          "readFiles": [
+            "crates/ctxhelm-compiler/src/eval.rs",
+            "crates/ctxhelm-compiler/src/ranking.rs",
+            "crates/ctxhelm-index/src/dependencies.rs",
+            "crates/ctxhelm/src/main.rs",
+            "crates/ctxhelm-index/src/git.rs"
+          ],
+          "readRoleCounts": {
+            "source": 5
+          },
+          "requiredCtxhelmCallSpecs": [
+            {
+              "name": "prepare_task",
+              "requiresRepo": true,
+              "requiresTask": true
+            }
+          ],
+          "requiredCtxhelmCalls": [
+            "prepare_task"
+          ],
+          "sourceTextLogged": false,
+          "status": "passed",
+          "targetHits": [
+            "crates/ctxhelm-compiler/src/eval.rs",
+            "crates/ctxhelm-compiler/src/ranking.rs",
+            "crates/ctxhelm-index/src/dependencies.rs"
+          ],
+          "targetReads": [
+            "crates/ctxhelm-compiler/src/eval.rs",
+            "crates/ctxhelm-compiler/src/ranking.rs",
+            "crates/ctxhelm-index/src/dependencies.rs"
+          ]
+        },
+        {
+          "clientApiErrorStatus": null,
+          "clientExitStatus": 0,
+          "clientFailureKind": null,
+          "commandExecutions": [
+            {
+              "commandSha256": "f91d6c39fdc390e5ccf98de4572a065c9072f2d41687ca593d743418999ad999",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 1,
+              "paths": [
+                "crates/ctxhelm-compiler/src/eval.rs"
+              ],
+              "status": "completed",
+              "verb": "sed"
+            },
+            {
+              "commandSha256": "a863f0c2e845027f7088e89ab56fb409a4dd572ae41660602c590642c98b107f",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 1,
+              "paths": [
+                "crates/ctxhelm-compiler/src/ranking.rs"
+              ],
+              "status": "completed",
+              "verb": "sed"
+            },
+            {
+              "commandSha256": "a54705778f561368baa54d10e78c0ddb48f0e790322299085e61e3d9bbd2958c",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 1,
+              "paths": [
+                "crates/ctxhelm-index/src/git.rs"
+              ],
+              "status": "completed",
+              "verb": "sed"
+            },
+            {
+              "commandSha256": "4c77c3eafa5b99bd9d99ed2c4965b116c13cfed94b8433215eed0aae39f5afb1",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 1,
+              "paths": [
+                "crates/ctxhelm-index/src/dependencies.rs"
+              ],
+              "status": "completed",
+              "verb": "sed"
+            },
+            {
+              "commandSha256": "c395698c03cfc783573650498a178a2a690e1c1d0f2056967afae5edb07fbfb8",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 1,
+              "paths": [
+                "crates/ctxhelm/src/main.rs"
+              ],
+              "status": "completed",
+              "verb": "sed"
+            },
+            {
+              "commandSha256": "cdefbe2686c6d4096e630f9d44a8a229dfdb8ebb8d09621d3f5a6f7bcc83034e",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 0,
+              "paths": [],
+              "status": "completed",
+              "verb": "rg"
+            },
+            {
+              "commandSha256": "ed18f853f0707acf515c391acfbef724234a88a61d890feb7442bc5e1beeea11",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 1,
+              "paths": [
+                "crates/ctxhelm-compiler/src/eval.rs"
+              ],
+              "status": "completed",
+              "verb": "sed"
+            },
+            {
+              "commandSha256": "80c35a16fc13c176080e6da4d6a728fabaa3128e3928cd644544e966f0c6a037",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 1,
+              "paths": [
+                "crates/ctxhelm-compiler/src/ranking.rs"
+              ],
+              "status": "completed",
+              "verb": "sed"
+            },
+            {
+              "commandSha256": "b8a2d0d43391763e821af6e7ebfb33c9993c7c92159d60acfacce5523b61852d",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 1,
+              "paths": [
+                "crates/ctxhelm-compiler/src/eval.rs"
+              ],
+              "status": "completed",
+              "verb": "sed"
+            }
+          ],
+          "ctxhelmCallCompliance": "satisfied",
+          "ctxhelmEvidenceFiles": [
+            "crates/ctxhelm-compiler/src/eval.rs",
+            "crates/ctxhelm-compiler/src/ranking.rs",
+            "crates/ctxhelm-index/src/dependencies.rs",
+            "crates/ctxhelm/src/main.rs",
+            "crates/ctxhelm-index/src/git.rs",
+            "crates/ctxhelm-core/src/init.rs",
+            "crates/ctxhelm-index/src/inventory.rs",
+            ".planning/STATE.md",
+            ".planning/ROADMAP.md",
+            ".planning/MILESTONES.md",
+            "crates/ctxhelm/tests/release_packaging.rs",
+            "crates/ctxhelm/tests/cli_compat.rs",
+            "crates/ctxhelm/tests/common/mod.rs",
+            "crates/ctxhelm-compiler/src/lib.rs",
+            "crates/ctxhelm-core/src/lib.rs",
+            "crates/ctxhelm-index/src/lib.rs"
+          ],
+          "ctxhelmEvidenceMissedTargets": [],
+          "ctxhelmEvidenceOnlyTargets": [],
+          "ctxhelmEvidenceTargetHits": [
+            "crates/ctxhelm-compiler/src/eval.rs",
+            "crates/ctxhelm-compiler/src/ranking.rs",
+            "crates/ctxhelm-index/src/dependencies.rs"
+          ],
+          "ctxhelmToolCalls": [
+            {
+              "budget": null,
+              "format": null,
+              "hasRepo": true,
+              "hasTask": true,
+              "name": "prepare_task",
+              "recordTrace": null
+            },
+            {
+              "budget": "brief",
+              "format": "json",
+              "hasRepo": true,
+              "hasTask": true,
+              "name": "get_pack",
+              "recordTrace": false
+            }
+          ],
+          "discoveredFiles": [
+            "crates/ctxhelm-compiler/src/eval.rs",
+            "crates/ctxhelm-compiler/src/ranking.rs",
+            "crates/ctxhelm-index/src/git.rs",
+            "crates/ctxhelm-index/src/dependencies.rs",
+            "crates/ctxhelm/src/main.rs"
+          ],
+          "discoveredOnlyTargets": [],
+          "evaluationEligible": true,
+          "evaluationStatus": "eligible",
+          "evidenceHashes": {
+            "ctxhelmRequestLogSha256": "3638d7e0f3dd50f57a4298079d25762923b4fb77a51c1f888d3e3387800cc9c3",
+            "stderrSha256": "91a2d429fdb4a5a6eb1162489512ab3e7d05323a49a8af9b02cdb4371ac89233",
+            "streamJsonSha256": "47e615db585c1c0b9a3414dc0aaec5d11459e4e55317f661269ca1fefcf6eabe"
+          },
+          "forbiddenCommands": [],
+          "invalidRequiredCtxhelmCalls": [],
+          "irrelevantReads": [
+            "crates/ctxhelm-index/src/git.rs",
+            "crates/ctxhelm/src/main.rs"
+          ],
+          "lane": "ctxhelm-brief",
+          "metrics": {
+            "commandExecutionCount": 9,
+            "ctxhelmEvidenceFileCount": 16,
+            "ctxhelmEvidenceMissedTargetCount": 0,
+            "ctxhelmEvidenceOnlyTargetCount": 0,
+            "ctxhelmEvidenceTargetHitCount": 3,
+            "ctxhelmToolCallCount": 2,
+            "discoveredFileCount": 5,
+            "forbiddenCommandCount": 0,
+            "invalidRequiredCtxhelmCallCount": 0,
+            "irrelevantReadCount": 2,
+            "missedTargetCount": 0,
+            "missingRequiredCtxhelmCallCount": 0,
+            "observedRequiredCtxhelmCallCount": 2,
+            "readFileCount": 5,
+            "requiredCtxhelmCallCount": 2,
+            "targetCount": 3,
+            "targetCoverage": 1.0,
+            "targetDiscoveredOnlyCount": 0,
+            "targetHitCount": 3,
+            "targetReadCount": 3,
+            "targetReadCoverage": 1.0
+          },
+          "missedTargetRoleCounts": {},
+          "missedTargets": [],
+          "missingRequiredCtxhelmCalls": [],
+          "mode": "brief",
+          "observedRequiredCtxhelmCalls": [
+            "prepare_task",
+            "get_pack"
+          ],
+          "rateLimitObserved": false,
+          "rawCommandOutputStored": false,
+          "rawMcpTrafficStored": false,
+          "rawPromptStored": false,
+          "rawTranscriptStored": false,
+          "readFiles": [
+            "crates/ctxhelm-compiler/src/eval.rs",
+            "crates/ctxhelm-compiler/src/ranking.rs",
+            "crates/ctxhelm-index/src/git.rs",
+            "crates/ctxhelm-index/src/dependencies.rs",
+            "crates/ctxhelm/src/main.rs"
+          ],
+          "readRoleCounts": {
+            "source": 5
+          },
+          "requiredCtxhelmCallSpecs": [
+            {
+              "name": "prepare_task",
+              "requiresRepo": true,
+              "requiresTask": true
+            },
+            {
+              "budget": "brief",
+              "format": "json",
+              "name": "get_pack",
+              "recordTrace": false,
+              "requiresRepo": true,
+              "requiresTask": true
+            }
+          ],
+          "requiredCtxhelmCalls": [
+            "prepare_task",
+            "get_pack"
+          ],
+          "sourceTextLogged": false,
+          "status": "passed",
+          "targetHits": [
+            "crates/ctxhelm-compiler/src/eval.rs",
+            "crates/ctxhelm-compiler/src/ranking.rs",
+            "crates/ctxhelm-index/src/dependencies.rs"
+          ],
+          "targetReads": [
+            "crates/ctxhelm-compiler/src/eval.rs",
+            "crates/ctxhelm-compiler/src/ranking.rs",
+            "crates/ctxhelm-index/src/dependencies.rs"
+          ]
+        },
+        {
+          "clientApiErrorStatus": null,
+          "clientExitStatus": 0,
+          "clientFailureKind": null,
+          "commandExecutions": [
+            {
+              "commandSha256": "57c3b33ffac4dca0e35ea6d420a6e32397a4c408bcc9ec9176128f194687a986",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 1,
+              "paths": [
+                "crates/ctxhelm-compiler/src/ranking.rs"
+              ],
+              "status": "completed",
+              "verb": "sed"
+            },
+            {
+              "commandSha256": "2481b64e070dcefaf09d402258d74384ea0434728827e7d80a47f00a08b1a7a8",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 1,
+              "paths": [
+                "crates/ctxhelm-compiler/src/eval.rs"
+              ],
+              "status": "completed",
+              "verb": "sed"
+            },
+            {
+              "commandSha256": "e6b5d30eff73111a26f79025520f2f8f96f551b056f7e6fc13928ce3677c6fa6",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 1,
+              "paths": [
+                "crates/ctxhelm-index/src/git.rs"
+              ],
+              "status": "completed",
+              "verb": "sed"
+            },
+            {
+              "commandSha256": "b34d1f66afadda1fe9cf55eb4b427baed5d9844d9edfb1d550356b0a70ba7868",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 1,
+              "paths": [
+                "crates/ctxhelm-index/src/dependencies.rs"
+              ],
+              "status": "completed",
+              "verb": "sed"
+            },
+            {
+              "commandSha256": "e4e032c4b29f6e9faf2f627d059a198ac02cd50b3ae670cb06d01538cd6a9b35",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 1,
+              "paths": [
+                "crates/ctxhelm/src/main.rs"
+              ],
+              "status": "completed",
+              "verb": "sed"
+            },
+            {
+              "commandSha256": "0ff2e78135294eb70af0663f30db253c2c68dc8ad5a01a9c2aa23fbc976c53b0",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 1,
+              "paths": [
+                "crates/ctxhelm/src/main.rs"
+              ],
+              "status": "completed",
+              "verb": "rg"
+            }
+          ],
+          "ctxhelmCallCompliance": "satisfied",
+          "ctxhelmEvidenceFiles": [
+            "crates/ctxhelm-compiler/src/eval.rs",
+            "crates/ctxhelm-compiler/src/ranking.rs",
+            "crates/ctxhelm-index/src/dependencies.rs",
+            "crates/ctxhelm/src/main.rs",
+            "crates/ctxhelm-index/src/git.rs",
+            "crates/ctxhelm-core/src/init.rs",
+            "crates/ctxhelm-index/src/inventory.rs",
+            ".planning/STATE.md",
+            ".planning/ROADMAP.md",
+            ".planning/MILESTONES.md",
+            "crates/ctxhelm/tests/release_packaging.rs",
+            "crates/ctxhelm/tests/cli_compat.rs",
+            "crates/ctxhelm/tests/common/mod.rs",
+            "crates/ctxhelm-compiler/src/lib.rs",
+            "crates/ctxhelm-core/src/lib.rs",
+            "crates/ctxhelm-index/src/lib.rs"
+          ],
+          "ctxhelmEvidenceMissedTargets": [],
+          "ctxhelmEvidenceOnlyTargets": [],
+          "ctxhelmEvidenceTargetHits": [
+            "crates/ctxhelm-compiler/src/eval.rs",
+            "crates/ctxhelm-compiler/src/ranking.rs",
+            "crates/ctxhelm-index/src/dependencies.rs"
+          ],
+          "ctxhelmToolCalls": [
+            {
+              "budget": null,
+              "format": null,
+              "hasRepo": true,
+              "hasTask": true,
+              "name": "prepare_task",
+              "recordTrace": null
+            },
+            {
+              "budget": "standard",
+              "format": "json",
+              "hasRepo": true,
+              "hasTask": true,
+              "name": "get_pack",
+              "recordTrace": false
+            }
+          ],
+          "discoveredFiles": [
+            "crates/ctxhelm-compiler/src/ranking.rs",
+            "crates/ctxhelm-compiler/src/eval.rs",
+            "crates/ctxhelm-index/src/git.rs",
+            "crates/ctxhelm-index/src/dependencies.rs",
+            "crates/ctxhelm/src/main.rs"
+          ],
+          "discoveredOnlyTargets": [],
+          "evaluationEligible": true,
+          "evaluationStatus": "eligible",
+          "evidenceHashes": {
+            "ctxhelmRequestLogSha256": "06cda54e13aebe62c60b4fe5eab39a5934347ef5d79c1b7afc46b3a72d7dd410",
+            "stderrSha256": "25a453dab6bad87cfdf9ce99dced10b0017114caa2681fa335658a09b31ff92b",
+            "streamJsonSha256": "df99315f12c0fe19a3d518559a3827d5dfa679b4044cbad473795c206e5d94ca"
+          },
+          "forbiddenCommands": [],
+          "invalidRequiredCtxhelmCalls": [],
+          "irrelevantReads": [
+            "crates/ctxhelm-index/src/git.rs",
+            "crates/ctxhelm/src/main.rs"
+          ],
+          "lane": "ctxhelm-standard",
+          "metrics": {
+            "commandExecutionCount": 6,
+            "ctxhelmEvidenceFileCount": 16,
+            "ctxhelmEvidenceMissedTargetCount": 0,
+            "ctxhelmEvidenceOnlyTargetCount": 0,
+            "ctxhelmEvidenceTargetHitCount": 3,
+            "ctxhelmToolCallCount": 2,
+            "discoveredFileCount": 5,
+            "forbiddenCommandCount": 0,
+            "invalidRequiredCtxhelmCallCount": 0,
+            "irrelevantReadCount": 2,
+            "missedTargetCount": 0,
+            "missingRequiredCtxhelmCallCount": 0,
+            "observedRequiredCtxhelmCallCount": 2,
+            "readFileCount": 5,
+            "requiredCtxhelmCallCount": 2,
+            "targetCount": 3,
+            "targetCoverage": 1.0,
+            "targetDiscoveredOnlyCount": 0,
+            "targetHitCount": 3,
+            "targetReadCount": 3,
+            "targetReadCoverage": 1.0
+          },
+          "missedTargetRoleCounts": {},
+          "missedTargets": [],
+          "missingRequiredCtxhelmCalls": [],
+          "mode": "standard",
+          "observedRequiredCtxhelmCalls": [
+            "prepare_task",
+            "get_pack"
+          ],
+          "rateLimitObserved": false,
+          "rawCommandOutputStored": false,
+          "rawMcpTrafficStored": false,
+          "rawPromptStored": false,
+          "rawTranscriptStored": false,
+          "readFiles": [
+            "crates/ctxhelm-compiler/src/ranking.rs",
+            "crates/ctxhelm-compiler/src/eval.rs",
+            "crates/ctxhelm-index/src/git.rs",
+            "crates/ctxhelm-index/src/dependencies.rs",
+            "crates/ctxhelm/src/main.rs"
+          ],
+          "readRoleCounts": {
+            "source": 5
+          },
+          "requiredCtxhelmCallSpecs": [
+            {
+              "name": "prepare_task",
+              "requiresRepo": true,
+              "requiresTask": true
+            },
+            {
+              "budget": "standard",
+              "format": "json",
+              "name": "get_pack",
+              "recordTrace": false,
+              "requiresRepo": true,
+              "requiresTask": true
+            }
+          ],
+          "requiredCtxhelmCalls": [
+            "prepare_task",
+            "get_pack"
+          ],
+          "sourceTextLogged": false,
+          "status": "passed",
+          "targetHits": [
+            "crates/ctxhelm-compiler/src/eval.rs",
+            "crates/ctxhelm-compiler/src/ranking.rs",
+            "crates/ctxhelm-index/src/dependencies.rs"
+          ],
+          "targetReads": [
+            "crates/ctxhelm-compiler/src/eval.rs",
+            "crates/ctxhelm-compiler/src/ranking.rs",
+            "crates/ctxhelm-index/src/dependencies.rs"
+          ]
+        },
+        {
+          "clientApiErrorStatus": null,
+          "clientExitStatus": 0,
+          "clientFailureKind": null,
+          "commandExecutions": [
+            {
+              "commandSha256": "994fcee6e677dafb0e7cc8a2859b3637e8bf691b81de9eb0f7e4a4b1d2aac251",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 1,
+              "paths": [
+                "crates/ctxhelm-compiler/src/eval.rs"
+              ],
+              "status": "completed",
+              "verb": "sed"
+            },
+            {
+              "commandSha256": "e6b5d30eff73111a26f79025520f2f8f96f551b056f7e6fc13928ce3677c6fa6",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 1,
+              "paths": [
+                "crates/ctxhelm-index/src/git.rs"
+              ],
+              "status": "completed",
+              "verb": "sed"
+            },
+            {
+              "commandSha256": "a863f0c2e845027f7088e89ab56fb409a4dd572ae41660602c590642c98b107f",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 1,
+              "paths": [
+                "crates/ctxhelm-compiler/src/ranking.rs"
+              ],
+              "status": "completed",
+              "verb": "sed"
+            },
+            {
+              "commandSha256": "e4e032c4b29f6e9faf2f627d059a198ac02cd50b3ae670cb06d01538cd6a9b35",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 1,
+              "paths": [
+                "crates/ctxhelm/src/main.rs"
+              ],
+              "status": "completed",
+              "verb": "sed"
+            },
+            {
+              "commandSha256": "b34d1f66afadda1fe9cf55eb4b427baed5d9844d9edfb1d550356b0a70ba7868",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 1,
+              "paths": [
+                "crates/ctxhelm-index/src/dependencies.rs"
+              ],
+              "status": "completed",
+              "verb": "sed"
+            },
+            {
+              "commandSha256": "570e22945c1c869913484f870719dd6e8b3f68fbd464cd223a1d05d989c056f1",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 1,
+              "paths": [
+                "crates/ctxhelm/src/main.rs"
+              ],
+              "status": "completed",
+              "verb": "rg"
+            },
+            {
+              "commandSha256": "9849d2767534bbb1f34ca1e6f467cdf710946531081011676f7456c329577e30",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 3,
+              "paths": [
+                ".planning/e2e/2026-06-02-phase179-graph-edge-profiles.md",
+                ".planning/e2e/2026-06-02-phase180-graph-edge-ablations.md",
+                ".planning/e2e/2026-06-03-phase181-graph-edge-budget-allocation.md"
+              ],
+              "status": "completed",
+              "verb": "sed"
+            },
+            {
+              "commandSha256": "fa2d406a86b765f71d3f6d7654fd8d28e1ac462b01a7a3c962ace88212b27e2e",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 1,
+              "paths": [
+                "crates/ctxhelm-compiler/src/ranking.rs"
+              ],
+              "status": "completed",
+              "verb": "sed"
+            }
+          ],
+          "ctxhelmCallCompliance": "satisfied",
+          "ctxhelmEvidenceFiles": [
+            "crates/ctxhelm-compiler/src/eval.rs",
+            "crates/ctxhelm-compiler/src/ranking.rs",
+            "crates/ctxhelm-index/src/dependencies.rs",
+            "crates/ctxhelm/src/main.rs",
+            "crates/ctxhelm-index/src/git.rs",
+            "crates/ctxhelm-core/src/init.rs",
+            "crates/ctxhelm-index/src/inventory.rs",
+            ".planning/STATE.md",
+            ".planning/ROADMAP.md",
+            ".planning/MILESTONES.md",
+            "crates/ctxhelm/tests/release_packaging.rs",
+            "crates/ctxhelm/tests/cli_compat.rs",
+            "crates/ctxhelm/tests/common/mod.rs",
+            "crates/ctxhelm-compiler/src/lib.rs",
+            "crates/ctxhelm-core/src/lib.rs",
+            "crates/ctxhelm-index/src/lib.rs"
+          ],
+          "ctxhelmEvidenceMissedTargets": [],
+          "ctxhelmEvidenceOnlyTargets": [],
+          "ctxhelmEvidenceTargetHits": [
+            "crates/ctxhelm-compiler/src/eval.rs",
+            "crates/ctxhelm-compiler/src/ranking.rs",
+            "crates/ctxhelm-index/src/dependencies.rs"
+          ],
+          "ctxhelmToolCalls": [
+            {
+              "budget": null,
+              "format": null,
+              "hasRepo": true,
+              "hasTask": true,
+              "name": "prepare_task",
+              "recordTrace": null
+            },
+            {
+              "budget": "standard",
+              "format": "json",
+              "hasRepo": true,
+              "hasTask": true,
+              "name": "get_pack",
+              "recordTrace": false
+            }
+          ],
+          "discoveredFiles": [
+            "crates/ctxhelm-compiler/src/eval.rs",
+            "crates/ctxhelm-index/src/git.rs",
+            "crates/ctxhelm-compiler/src/ranking.rs",
+            "crates/ctxhelm/src/main.rs",
+            "crates/ctxhelm-index/src/dependencies.rs",
+            ".planning/e2e/2026-06-02-phase179-graph-edge-profiles.md",
+            ".planning/e2e/2026-06-02-phase180-graph-edge-ablations.md",
+            ".planning/e2e/2026-06-03-phase181-graph-edge-budget-allocation.md"
+          ],
+          "discoveredOnlyTargets": [],
+          "evaluationEligible": true,
+          "evaluationStatus": "eligible",
+          "evidenceHashes": {
+            "ctxhelmRequestLogSha256": "189b0ffc4fe99a1a58f9d47d82c0aa677de89bd2df618f60d0074c93db60afe6",
+            "stderrSha256": "a1faa2c8e86f9f18cb4a2265718b05187de658af240bb79e41f1b3429049fea8",
+            "streamJsonSha256": "8bffb8d63d0a10d19bcc9c0ea84e39c531afd5ba4a811e225407e5549fd73faa"
+          },
+          "forbiddenCommands": [],
+          "invalidRequiredCtxhelmCalls": [],
+          "irrelevantReads": [
+            ".planning/e2e/2026-06-02-phase179-graph-edge-profiles.md",
+            ".planning/e2e/2026-06-02-phase180-graph-edge-ablations.md",
+            ".planning/e2e/2026-06-03-phase181-graph-edge-budget-allocation.md",
+            "crates/ctxhelm-index/src/git.rs",
+            "crates/ctxhelm/src/main.rs"
+          ],
+          "lane": "ctxhelm-memory",
+          "metrics": {
+            "commandExecutionCount": 8,
+            "ctxhelmEvidenceFileCount": 16,
+            "ctxhelmEvidenceMissedTargetCount": 0,
+            "ctxhelmEvidenceOnlyTargetCount": 0,
+            "ctxhelmEvidenceTargetHitCount": 3,
+            "ctxhelmToolCallCount": 2,
+            "discoveredFileCount": 8,
+            "forbiddenCommandCount": 0,
+            "invalidRequiredCtxhelmCallCount": 0,
+            "irrelevantReadCount": 5,
+            "missedTargetCount": 0,
+            "missingRequiredCtxhelmCallCount": 0,
+            "observedRequiredCtxhelmCallCount": 2,
+            "readFileCount": 8,
+            "requiredCtxhelmCallCount": 2,
+            "targetCount": 3,
+            "targetCoverage": 1.0,
+            "targetDiscoveredOnlyCount": 0,
+            "targetHitCount": 3,
+            "targetReadCount": 3,
+            "targetReadCoverage": 1.0
+          },
+          "missedTargetRoleCounts": {},
+          "missedTargets": [],
+          "missingRequiredCtxhelmCalls": [],
+          "mode": "memory",
+          "observedRequiredCtxhelmCalls": [
+            "prepare_task",
+            "get_pack"
+          ],
+          "rateLimitObserved": false,
+          "rawCommandOutputStored": false,
+          "rawMcpTrafficStored": false,
+          "rawPromptStored": false,
+          "rawTranscriptStored": false,
+          "readFiles": [
+            "crates/ctxhelm-compiler/src/eval.rs",
+            "crates/ctxhelm-index/src/git.rs",
+            "crates/ctxhelm-compiler/src/ranking.rs",
+            "crates/ctxhelm/src/main.rs",
+            "crates/ctxhelm-index/src/dependencies.rs",
+            ".planning/e2e/2026-06-02-phase179-graph-edge-profiles.md",
+            ".planning/e2e/2026-06-02-phase180-graph-edge-ablations.md",
+            ".planning/e2e/2026-06-03-phase181-graph-edge-budget-allocation.md"
+          ],
+          "readRoleCounts": {
+            "docs": 3,
+            "source": 5
+          },
+          "requiredCtxhelmCallSpecs": [
+            {
+              "name": "prepare_task",
+              "requiresRepo": true,
+              "requiresTask": true
+            },
+            {
+              "budget": "standard",
+              "format": "json",
+              "name": "get_pack",
+              "recordTrace": false,
+              "requiresRepo": true,
+              "requiresTask": true
+            }
+          ],
+          "requiredCtxhelmCalls": [
+            "prepare_task",
+            "get_pack"
+          ],
+          "sourceTextLogged": false,
+          "status": "passed",
+          "targetHits": [
+            "crates/ctxhelm-compiler/src/eval.rs",
+            "crates/ctxhelm-compiler/src/ranking.rs",
+            "crates/ctxhelm-index/src/dependencies.rs"
+          ],
+          "targetReads": [
+            "crates/ctxhelm-compiler/src/eval.rs",
+            "crates/ctxhelm-compiler/src/ranking.rs",
+            "crates/ctxhelm-index/src/dependencies.rs"
+          ]
+        }
+      ],
+      "privacyStatus": {
+        "localOnly": true,
+        "rawCommandOutputStored": false,
+        "rawMcpTrafficStored": false,
+        "rawPromptStored": false,
+        "rawTranscriptStored": false,
+        "remoteEmbeddingsUsed": false,
+        "remoteRerankingUsed": false,
+        "sourceTextLogged": false
+      },
+      "status": "passed",
+      "targetFiles": [
+        "crates/ctxhelm-compiler/src/eval.rs",
+        "crates/ctxhelm-compiler/src/ranking.rs",
+        "crates/ctxhelm-index/src/dependencies.rs"
+      ],
+      "taskId": "graph-edge-budget",
+      "taskSha256": "f958ea80b159913a5da75937890218f4d81f6684ebfdbed55f328867e17cbfc3"
+    },
+    {
+      "comparison": {
+        "baselineEligible": true,
+        "baselineLane": "baseline",
+        "bestLane": "ctxhelm-standard",
+        "clientFailuresObserved": false,
+        "commandExecutionDelta": 4,
+        "comparableCtxhelmLaneCount": 4,
+        "comparisonEligible": true,
+        "ctxhelmEvidenceMisses": {},
+        "ctxhelmEvidenceMissesObserved": false,
+        "ctxhelmEvidenceOnlyTargets": {},
+        "ctxhelmEvidenceOnlyTargetsObserved": false,
+        "ctxhelmToolCallsObserved": true,
+        "ctxhelmUnderReadTargetsObserved": false,
+        "forbiddenCommandsObserved": false,
+        "invalidRequiredCtxhelmCalls": {},
+        "invalidRequiredCtxhelmCallsObserved": false,
+        "irrelevantReadDelta": 0,
+        "missingRequiredCtxhelmCalls": {},
+        "missingRequiredCtxhelmCallsObserved": false,
+        "outcomeClaim": "ctxhelm_improved",
+        "rateLimitsObserved": false,
+        "readFileDelta": -2,
+        "recommendedResearchActions": [
+          {
+            "action": "preserve_current_agent_contract",
+            "priority": 3,
+            "reason": "Comparable lanes produced stable source-free outcome evidence."
+          }
+        ],
+        "targetCoverageDelta": 0.5,
+        "targetReadCoverageDelta": 0.5
+      },
+      "lanes": [
+        {
+          "clientApiErrorStatus": null,
+          "clientExitStatus": 0,
+          "clientFailureKind": null,
+          "commandExecutions": [
+            {
+              "commandSha256": "68818007c56ba72d4a6983a7a0015c470b5ebe106f4a963302535be289525d1d",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 0,
+              "paths": [],
+              "status": "completed",
+              "verb": "pwd"
+            },
+            {
+              "commandSha256": "8e7f034851e2bd4def5dbbe57625030102f33ee8626d56af649fa65bf36514a4",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 0,
+              "paths": [],
+              "status": "completed",
+              "verb": "rg"
+            },
+            {
+              "commandSha256": "0de4d8fa740c4446de7323c4d1b836b7abfa4bb028356793f20a0d1d5a02f53e",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 0,
+              "paths": [],
+              "status": "completed",
+              "verb": "rg"
+            },
+            {
+              "commandSha256": "3c50c2f1e07b288e9989180341f1ffeb98e858710b2d1e005360a81cd3bc0dfe",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 0,
+              "paths": [],
+              "status": "completed",
+              "verb": "rg"
+            },
+            {
+              "commandSha256": "955f52e47fd4c8e0d09e2bee51758bf27c9524f21d57d2ae6ab2092cc911e044",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 1,
+              "paths": [
+                "crates/ctxhelm-core/src/contracts.rs"
+              ],
+              "status": "completed",
+              "verb": "sed"
+            },
+            {
+              "commandSha256": "5d5e4bbde514897a66f6551158d749d22520eb73c4fcd8e27883e055dc03ff25",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 1,
+              "paths": [
+                "crates/ctxhelm/src/main.rs"
+              ],
+              "status": "completed",
+              "verb": "sed"
+            },
+            {
+              "commandSha256": "1ec111a2109c0339f067b44f462c8622ebc0602c222b7a9d3a0b76fb3161c113",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 1,
+              "paths": [
+                "crates/ctxhelm/src/main.rs"
+              ],
+              "status": "completed",
+              "verb": "sed"
+            },
+            {
+              "commandSha256": "9e6280d793a652c604c72ff7d6680313812d3bd3124116ff8b92f1bff03d15f9",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 1,
+              "paths": [
+                "crates/ctxhelm/src/main.rs"
+              ],
+              "status": "completed",
+              "verb": "sed"
+            },
+            {
+              "commandSha256": "a9e4fcca01a6c60afd2889d26515a13e72c67a261a14046674d28f4c4671bbbe",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 1,
+              "paths": [
+                "crates/ctxhelm-compiler/src/eval.rs"
+              ],
+              "status": "completed",
+              "verb": "sed"
+            },
+            {
+              "commandSha256": "5a2464de2c43c0584f98595adbcba66a75ad056344491a602f2eb2ad347c8315",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 1,
+              "paths": [
+                "crates/ctxhelm-compiler/src/eval.rs"
+              ],
+              "status": "completed",
+              "verb": "sed"
+            }
+          ],
+          "ctxhelmCallCompliance": "not_required",
+          "ctxhelmEvidenceFiles": [],
+          "ctxhelmEvidenceMissedTargets": [
+            "crates/ctxhelm-core/src/contracts.rs",
+            "crates/ctxhelm/src/main.rs",
+            "docs/context-governor.md",
+            "scripts/smoke-governor.sh"
+          ],
+          "ctxhelmEvidenceOnlyTargets": [],
+          "ctxhelmEvidenceTargetHits": [],
+          "ctxhelmToolCalls": [],
+          "discoveredFiles": [
+            "crates/ctxhelm-core/src/contracts.rs",
+            "crates/ctxhelm/src/main.rs",
+            "crates/ctxhelm-compiler/src/eval.rs"
+          ],
+          "discoveredOnlyTargets": [],
+          "evaluationEligible": true,
+          "evaluationStatus": "eligible",
+          "evidenceHashes": {
+            "ctxhelmRequestLogSha256": null,
+            "stderrSha256": "4d7c99320a6fc525cd9fc9a550d44c3209b2870f834418726275c30d7f8c118a",
+            "streamJsonSha256": "0e65db71b10daff5a4e1e182b46087e14031ca2bbc9ec5ba4a233bb5b3fdfaf7"
+          },
+          "forbiddenCommands": [],
+          "invalidRequiredCtxhelmCalls": [],
+          "irrelevantReads": [
+            "crates/ctxhelm-compiler/src/eval.rs"
+          ],
+          "lane": "baseline",
+          "metrics": {
+            "commandExecutionCount": 10,
+            "ctxhelmEvidenceFileCount": 0,
+            "ctxhelmEvidenceMissedTargetCount": 4,
+            "ctxhelmEvidenceOnlyTargetCount": 0,
+            "ctxhelmEvidenceTargetHitCount": 0,
+            "ctxhelmToolCallCount": 0,
+            "discoveredFileCount": 3,
+            "forbiddenCommandCount": 0,
+            "invalidRequiredCtxhelmCallCount": 0,
+            "irrelevantReadCount": 1,
+            "missedTargetCount": 2,
+            "missingRequiredCtxhelmCallCount": 0,
+            "observedRequiredCtxhelmCallCount": 0,
+            "readFileCount": 3,
+            "requiredCtxhelmCallCount": 0,
+            "targetCount": 4,
+            "targetCoverage": 0.5,
+            "targetDiscoveredOnlyCount": 0,
+            "targetHitCount": 2,
+            "targetReadCount": 2,
+            "targetReadCoverage": 0.5
+          },
+          "missedTargetRoleCounts": {
+            "docs": 1,
+            "source": 1
+          },
+          "missedTargets": [
+            "docs/context-governor.md",
+            "scripts/smoke-governor.sh"
+          ],
+          "missingRequiredCtxhelmCalls": [],
+          "mode": "baseline",
+          "observedRequiredCtxhelmCalls": [],
+          "rateLimitObserved": false,
+          "rawCommandOutputStored": false,
+          "rawMcpTrafficStored": false,
+          "rawPromptStored": false,
+          "rawTranscriptStored": false,
+          "readFiles": [
+            "crates/ctxhelm-core/src/contracts.rs",
+            "crates/ctxhelm/src/main.rs",
+            "crates/ctxhelm-compiler/src/eval.rs"
+          ],
+          "readRoleCounts": {
+            "source": 3
+          },
+          "requiredCtxhelmCallSpecs": [],
+          "requiredCtxhelmCalls": [],
+          "sourceTextLogged": false,
+          "status": "passed",
+          "targetHits": [
+            "crates/ctxhelm-core/src/contracts.rs",
+            "crates/ctxhelm/src/main.rs"
+          ],
+          "targetReads": [
+            "crates/ctxhelm-core/src/contracts.rs",
+            "crates/ctxhelm/src/main.rs"
+          ]
+        },
+        {
+          "clientApiErrorStatus": null,
+          "clientExitStatus": 0,
+          "clientFailureKind": null,
+          "commandExecutions": [
+            {
+              "commandSha256": "aee593db5852414f1cbda78fec6882a4479cf5b0ae2fd1f3248b3e3a7881ded6",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 1,
+              "paths": [
+                "crates/ctxhelm/src/main.rs"
+              ],
+              "status": "completed",
+              "verb": "sed"
+            },
+            {
+              "commandSha256": "c1e066b6aef85682f1a52f63fd5dc9be24f5e8b3007e57eb02ec0dfc5f93b419",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 1,
+              "paths": [
+                "crates/ctxhelm-compiler/src/eval.rs"
+              ],
+              "status": "completed",
+              "verb": "sed"
+            },
+            {
+              "commandSha256": "7b09873e5e3f3750f2d06180b5d23d005b06180de80b6e5fde23265c81a57d7b",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 1,
+              "paths": [
+                "docs/context-governor.md"
+              ],
+              "status": "completed",
+              "verb": "sed"
+            },
+            {
+              "commandSha256": "b4412c6c6fdfe9509ff3efa79714da70791e1528fc4802af7d05c2d31eefb737",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 1,
+              "paths": [
+                "scripts/smoke-governor.sh"
+              ],
+              "status": "completed",
+              "verb": "sed"
+            },
+            {
+              "commandSha256": "7198bb9322354bfebf40a87599b94f7df2c7b3e9ff9f989f1cebe90006b87364",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 1,
+              "paths": [
+                "crates/ctxhelm-core/src/contracts.rs"
+              ],
+              "status": "completed",
+              "verb": "sed"
+            },
+            {
+              "commandSha256": "e502b6ca62c8a99b2297e4fa3d950c8da363a187cd99fdb92080ab3f3731847a",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 0,
+              "paths": [],
+              "status": "completed",
+              "verb": "rg"
+            },
+            {
+              "commandSha256": "9795a787d8beb468a7993c18aa1e1093240c196f2cf5fcf4ae0d4f10bc77b3ec",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 1,
+              "paths": [
+                "crates/ctxhelm/src/main.rs"
+              ],
+              "status": "completed",
+              "verb": "sed"
+            },
+            {
+              "commandSha256": "ce718f9e4908f6f8a8636df452e32d892ade75fb7f32f031b7d86c8388638481",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 3,
+              "paths": [
+                "scripts/release-gate.sh",
+                "docs/release.md",
+                "crates/ctxhelm/tests/release_packaging.rs"
+              ],
+              "status": "completed",
+              "verb": "sed"
+            }
+          ],
+          "ctxhelmCallCompliance": "satisfied",
+          "ctxhelmEvidenceFiles": [
+            "crates/ctxhelm/src/main.rs",
+            "crates/ctxhelm-compiler/src/eval.rs",
+            "crates/ctxhelm-core/src/contracts.rs",
+            "scripts/smoke-governor.sh",
+            "docs/context-governor.md",
+            ".planning/STATE.md",
+            ".planning/ROADMAP.md",
+            ".planning/MILESTONES.md",
+            "docs/release.md",
+            "crates/ctxhelm-compiler/src/lib.rs",
+            "crates/ctxhelm/tests/release_packaging.rs",
+            "crates/ctxhelm/tests/cli_compat.rs",
+            "crates/ctxhelm/tests/common/mod.rs",
+            "crates/ctxhelm-core/src/lib.rs",
+            "docs/benchmarking.md",
+            ".planning/e2e/2026-06-06-phase250-governor-artifact-retrieval.md",
+            ".planning/research/2026-06-01-world-class-context-engine-gap-plan.md",
+            "scripts/release-gate.sh",
+            ".planning/REQUIREMENTS.md",
+            ".planning/PROJECT.md",
+            "docs/semantic.md"
+          ],
+          "ctxhelmEvidenceMissedTargets": [],
+          "ctxhelmEvidenceOnlyTargets": [],
+          "ctxhelmEvidenceTargetHits": [
+            "crates/ctxhelm-core/src/contracts.rs",
+            "crates/ctxhelm/src/main.rs",
+            "docs/context-governor.md",
+            "scripts/smoke-governor.sh"
+          ],
+          "ctxhelmToolCalls": [
+            {
+              "budget": null,
+              "format": null,
+              "hasRepo": true,
+              "hasTask": true,
+              "name": "prepare_task",
+              "recordTrace": null
+            }
+          ],
+          "discoveredFiles": [
+            "crates/ctxhelm/src/main.rs",
+            "crates/ctxhelm-compiler/src/eval.rs",
+            "docs/context-governor.md",
+            "scripts/smoke-governor.sh",
+            "crates/ctxhelm-core/src/contracts.rs",
+            "scripts/release-gate.sh",
+            "docs/release.md",
+            "crates/ctxhelm/tests/release_packaging.rs"
+          ],
+          "discoveredOnlyTargets": [],
+          "evaluationEligible": true,
+          "evaluationStatus": "eligible",
+          "evidenceHashes": {
+            "ctxhelmRequestLogSha256": "5d5f2f3795339d00067e67c7714e9484cae6a1b8344a3ff3ff9a83b568338197",
+            "stderrSha256": "b87788cde5bade3798018d3683fb418ce185033efcdfecf10fff1931b9370223",
+            "streamJsonSha256": "6729d6f695375b120166c5a9815f965f7c43ee396c2757e4339308a540eea1de"
+          },
+          "forbiddenCommands": [],
+          "invalidRequiredCtxhelmCalls": [],
+          "irrelevantReads": [
+            "crates/ctxhelm-compiler/src/eval.rs",
+            "crates/ctxhelm/tests/release_packaging.rs",
+            "docs/release.md",
+            "scripts/release-gate.sh"
+          ],
+          "lane": "ctxhelm-plan",
+          "metrics": {
+            "commandExecutionCount": 8,
+            "ctxhelmEvidenceFileCount": 21,
+            "ctxhelmEvidenceMissedTargetCount": 0,
+            "ctxhelmEvidenceOnlyTargetCount": 0,
+            "ctxhelmEvidenceTargetHitCount": 4,
+            "ctxhelmToolCallCount": 1,
+            "discoveredFileCount": 8,
+            "forbiddenCommandCount": 0,
+            "invalidRequiredCtxhelmCallCount": 0,
+            "irrelevantReadCount": 4,
+            "missedTargetCount": 0,
+            "missingRequiredCtxhelmCallCount": 0,
+            "observedRequiredCtxhelmCallCount": 1,
+            "readFileCount": 8,
+            "requiredCtxhelmCallCount": 1,
+            "targetCount": 4,
+            "targetCoverage": 1.0,
+            "targetDiscoveredOnlyCount": 0,
+            "targetHitCount": 4,
+            "targetReadCount": 4,
+            "targetReadCoverage": 1.0
+          },
+          "missedTargetRoleCounts": {},
+          "missedTargets": [],
+          "missingRequiredCtxhelmCalls": [],
+          "mode": "plan",
+          "observedRequiredCtxhelmCalls": [
+            "prepare_task"
+          ],
+          "rateLimitObserved": false,
+          "rawCommandOutputStored": false,
+          "rawMcpTrafficStored": false,
+          "rawPromptStored": false,
+          "rawTranscriptStored": false,
+          "readFiles": [
+            "crates/ctxhelm/src/main.rs",
+            "crates/ctxhelm-compiler/src/eval.rs",
+            "docs/context-governor.md",
+            "scripts/smoke-governor.sh",
+            "crates/ctxhelm-core/src/contracts.rs",
+            "scripts/release-gate.sh",
+            "docs/release.md",
+            "crates/ctxhelm/tests/release_packaging.rs"
+          ],
+          "readRoleCounts": {
+            "docs": 2,
+            "source": 6
+          },
+          "requiredCtxhelmCallSpecs": [
+            {
+              "name": "prepare_task",
+              "requiresRepo": true,
+              "requiresTask": true
+            }
+          ],
+          "requiredCtxhelmCalls": [
+            "prepare_task"
+          ],
+          "sourceTextLogged": false,
+          "status": "passed",
+          "targetHits": [
+            "crates/ctxhelm-core/src/contracts.rs",
+            "crates/ctxhelm/src/main.rs",
+            "docs/context-governor.md",
+            "scripts/smoke-governor.sh"
+          ],
+          "targetReads": [
+            "crates/ctxhelm-core/src/contracts.rs",
+            "crates/ctxhelm/src/main.rs",
+            "docs/context-governor.md",
+            "scripts/smoke-governor.sh"
+          ]
+        },
+        {
+          "clientApiErrorStatus": null,
+          "clientExitStatus": 0,
+          "clientFailureKind": null,
+          "commandExecutions": [
+            {
+              "commandSha256": "aee593db5852414f1cbda78fec6882a4479cf5b0ae2fd1f3248b3e3a7881ded6",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 1,
+              "paths": [
+                "crates/ctxhelm/src/main.rs"
+              ],
+              "status": "completed",
+              "verb": "sed"
+            },
+            {
+              "commandSha256": "c402f06f63eec068bf41a5c09122569c048bee03d11dbae92614c76ac24896c0",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 1,
+              "paths": [
+                "crates/ctxhelm-compiler/src/eval.rs"
+              ],
+              "status": "completed",
+              "verb": "sed"
+            },
+            {
+              "commandSha256": "6ea9e562faa3c718e46e5ee808fc672fc6a6b42b49c9d81947ea15fc5835bdd1",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 1,
+              "paths": [
+                "crates/ctxhelm-core/src/contracts.rs"
+              ],
+              "status": "completed",
+              "verb": "sed"
+            },
+            {
+              "commandSha256": "89c3a15bd8e4f03f99390ac3c234ba81f08adcdd55b3d21c386d635139c6b692",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 1,
+              "paths": [
+                "scripts/smoke-governor.sh"
+              ],
+              "status": "completed",
+              "verb": "sed"
+            },
+            {
+              "commandSha256": "7b09873e5e3f3750f2d06180b5d23d005b06180de80b6e5fde23265c81a57d7b",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 1,
+              "paths": [
+                "docs/context-governor.md"
+              ],
+              "status": "completed",
+              "verb": "sed"
+            },
+            {
+              "commandSha256": "a560086bf3ca6a4accba1cafbf0db1a8e991929ff849b7fe251819a50e7fe6aa",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 1,
+              "paths": [
+                "scripts/release-gate.sh"
+              ],
+              "status": "completed",
+              "verb": "sed"
+            }
+          ],
+          "ctxhelmCallCompliance": "satisfied",
+          "ctxhelmEvidenceFiles": [
+            "crates/ctxhelm/src/main.rs",
+            "crates/ctxhelm-compiler/src/eval.rs",
+            "crates/ctxhelm-core/src/contracts.rs",
+            "scripts/smoke-governor.sh",
+            "docs/context-governor.md",
+            ".planning/STATE.md",
+            ".planning/ROADMAP.md",
+            ".planning/MILESTONES.md",
+            "docs/release.md",
+            "crates/ctxhelm-compiler/src/lib.rs",
+            "crates/ctxhelm/tests/release_packaging.rs",
+            "crates/ctxhelm/tests/cli_compat.rs",
+            "crates/ctxhelm/tests/common/mod.rs",
+            "crates/ctxhelm-core/src/lib.rs"
+          ],
+          "ctxhelmEvidenceMissedTargets": [],
+          "ctxhelmEvidenceOnlyTargets": [],
+          "ctxhelmEvidenceTargetHits": [
+            "crates/ctxhelm-core/src/contracts.rs",
+            "crates/ctxhelm/src/main.rs",
+            "docs/context-governor.md",
+            "scripts/smoke-governor.sh"
+          ],
+          "ctxhelmToolCalls": [
+            {
+              "budget": null,
+              "format": null,
+              "hasRepo": true,
+              "hasTask": true,
+              "name": "prepare_task",
+              "recordTrace": null
+            },
+            {
+              "budget": "brief",
+              "format": "json",
+              "hasRepo": true,
+              "hasTask": true,
+              "name": "get_pack",
+              "recordTrace": false
+            }
+          ],
+          "discoveredFiles": [
+            "crates/ctxhelm/src/main.rs",
+            "crates/ctxhelm-compiler/src/eval.rs",
+            "crates/ctxhelm-core/src/contracts.rs",
+            "scripts/smoke-governor.sh",
+            "docs/context-governor.md",
+            "scripts/release-gate.sh"
+          ],
+          "discoveredOnlyTargets": [],
+          "evaluationEligible": true,
+          "evaluationStatus": "eligible",
+          "evidenceHashes": {
+            "ctxhelmRequestLogSha256": "344a8771052359dddebac331542951d3f9762bbd8a062b4160347b7fa9ccabd4",
+            "stderrSha256": "81e303cdba2667a9413dc99bacb27e448534b66c9f2066eb4a3953e14bfb18a5",
+            "streamJsonSha256": "b5777be07d0a2e567e69f59d1d59688071bb4f43e21e085c2d696bb5b6506269"
+          },
+          "forbiddenCommands": [],
+          "invalidRequiredCtxhelmCalls": [],
+          "irrelevantReads": [
+            "crates/ctxhelm-compiler/src/eval.rs",
+            "scripts/release-gate.sh"
+          ],
+          "lane": "ctxhelm-brief",
+          "metrics": {
+            "commandExecutionCount": 6,
+            "ctxhelmEvidenceFileCount": 14,
+            "ctxhelmEvidenceMissedTargetCount": 0,
+            "ctxhelmEvidenceOnlyTargetCount": 0,
+            "ctxhelmEvidenceTargetHitCount": 4,
+            "ctxhelmToolCallCount": 2,
+            "discoveredFileCount": 6,
+            "forbiddenCommandCount": 0,
+            "invalidRequiredCtxhelmCallCount": 0,
+            "irrelevantReadCount": 2,
+            "missedTargetCount": 0,
+            "missingRequiredCtxhelmCallCount": 0,
+            "observedRequiredCtxhelmCallCount": 2,
+            "readFileCount": 6,
+            "requiredCtxhelmCallCount": 2,
+            "targetCount": 4,
+            "targetCoverage": 1.0,
+            "targetDiscoveredOnlyCount": 0,
+            "targetHitCount": 4,
+            "targetReadCount": 4,
+            "targetReadCoverage": 1.0
+          },
+          "missedTargetRoleCounts": {},
+          "missedTargets": [],
+          "missingRequiredCtxhelmCalls": [],
+          "mode": "brief",
+          "observedRequiredCtxhelmCalls": [
+            "prepare_task",
+            "get_pack"
+          ],
+          "rateLimitObserved": false,
+          "rawCommandOutputStored": false,
+          "rawMcpTrafficStored": false,
+          "rawPromptStored": false,
+          "rawTranscriptStored": false,
+          "readFiles": [
+            "crates/ctxhelm/src/main.rs",
+            "crates/ctxhelm-compiler/src/eval.rs",
+            "crates/ctxhelm-core/src/contracts.rs",
+            "scripts/smoke-governor.sh",
+            "docs/context-governor.md",
+            "scripts/release-gate.sh"
+          ],
+          "readRoleCounts": {
+            "docs": 1,
+            "source": 5
+          },
+          "requiredCtxhelmCallSpecs": [
+            {
+              "name": "prepare_task",
+              "requiresRepo": true,
+              "requiresTask": true
+            },
+            {
+              "budget": "brief",
+              "format": "json",
+              "name": "get_pack",
+              "recordTrace": false,
+              "requiresRepo": true,
+              "requiresTask": true
+            }
+          ],
+          "requiredCtxhelmCalls": [
+            "prepare_task",
+            "get_pack"
+          ],
+          "sourceTextLogged": false,
+          "status": "passed",
+          "targetHits": [
+            "crates/ctxhelm-core/src/contracts.rs",
+            "crates/ctxhelm/src/main.rs",
+            "docs/context-governor.md",
+            "scripts/smoke-governor.sh"
+          ],
+          "targetReads": [
+            "crates/ctxhelm-core/src/contracts.rs",
+            "crates/ctxhelm/src/main.rs",
+            "docs/context-governor.md",
+            "scripts/smoke-governor.sh"
+          ]
+        },
+        {
+          "clientApiErrorStatus": null,
+          "clientExitStatus": 0,
+          "clientFailureKind": null,
+          "commandExecutions": [
+            {
+              "commandSha256": "c402f06f63eec068bf41a5c09122569c048bee03d11dbae92614c76ac24896c0",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 1,
+              "paths": [
+                "crates/ctxhelm-compiler/src/eval.rs"
+              ],
+              "status": "completed",
+              "verb": "sed"
+            },
+            {
+              "commandSha256": "e4e032c4b29f6e9faf2f627d059a198ac02cd50b3ae670cb06d01538cd6a9b35",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 1,
+              "paths": [
+                "crates/ctxhelm/src/main.rs"
+              ],
+              "status": "completed",
+              "verb": "sed"
+            },
+            {
+              "commandSha256": "91f02bb50af47356084436e5eaaeb3304b6ba62744e3134f29dcce82d39d92c9",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 1,
+              "paths": [
+                "crates/ctxhelm-core/src/contracts.rs"
+              ],
+              "status": "completed",
+              "verb": "sed"
+            },
+            {
+              "commandSha256": "70e9c4d7bd1b399f6a7dc89ba86b86268802913689e1b4b9b6535b067633b942",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 1,
+              "paths": [
+                "docs/context-governor.md"
+              ],
+              "status": "completed",
+              "verb": "sed"
+            },
+            {
+              "commandSha256": "89c3a15bd8e4f03f99390ac3c234ba81f08adcdd55b3d21c386d635139c6b692",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 1,
+              "paths": [
+                "scripts/smoke-governor.sh"
+              ],
+              "status": "completed",
+              "verb": "sed"
+            },
+            {
+              "commandSha256": "e95bbdf8bde0a4a6a6810aa22866790e025654611774b505f9a234380ae83cef",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 8,
+              "paths": [
+                "crates/ctxhelm/src/main.rs",
+                "crates/ctxhelm-compiler/src/eval.rs",
+                "crates/ctxhelm-core/src/contracts.rs",
+                "docs/context-governor.md",
+                "docs/release.md",
+                "scripts/release-gate.sh",
+                "crates/ctxhelm/tests/release_packaging.rs",
+                "crates/ctxhelm/tests/cli_compat.rs"
+              ],
+              "status": "completed",
+              "verb": "rg"
+            }
+          ],
+          "ctxhelmCallCompliance": "satisfied",
+          "ctxhelmEvidenceFiles": [
+            "crates/ctxhelm/src/main.rs",
+            "crates/ctxhelm-compiler/src/eval.rs",
+            "crates/ctxhelm-core/src/contracts.rs",
+            "scripts/smoke-governor.sh",
+            "docs/context-governor.md",
+            ".planning/STATE.md",
+            ".planning/ROADMAP.md",
+            ".planning/MILESTONES.md",
+            "docs/release.md",
+            "crates/ctxhelm-compiler/src/lib.rs",
+            "crates/ctxhelm/tests/release_packaging.rs",
+            "crates/ctxhelm/tests/cli_compat.rs",
+            "crates/ctxhelm/tests/common/mod.rs",
+            "crates/ctxhelm-core/src/lib.rs"
+          ],
+          "ctxhelmEvidenceMissedTargets": [],
+          "ctxhelmEvidenceOnlyTargets": [],
+          "ctxhelmEvidenceTargetHits": [
+            "crates/ctxhelm-core/src/contracts.rs",
+            "crates/ctxhelm/src/main.rs",
+            "docs/context-governor.md",
+            "scripts/smoke-governor.sh"
+          ],
+          "ctxhelmToolCalls": [
+            {
+              "budget": null,
+              "format": null,
+              "hasRepo": true,
+              "hasTask": true,
+              "name": "prepare_task",
+              "recordTrace": null
+            },
+            {
+              "budget": "standard",
+              "format": "json",
+              "hasRepo": true,
+              "hasTask": true,
+              "name": "get_pack",
+              "recordTrace": false
+            }
+          ],
+          "discoveredFiles": [
+            "crates/ctxhelm-compiler/src/eval.rs",
+            "crates/ctxhelm/src/main.rs",
+            "crates/ctxhelm-core/src/contracts.rs",
+            "docs/context-governor.md",
+            "scripts/smoke-governor.sh",
+            "docs/release.md",
+            "scripts/release-gate.sh",
+            "crates/ctxhelm/tests/release_packaging.rs",
+            "crates/ctxhelm/tests/cli_compat.rs"
+          ],
+          "discoveredOnlyTargets": [],
+          "evaluationEligible": true,
+          "evaluationStatus": "eligible",
+          "evidenceHashes": {
+            "ctxhelmRequestLogSha256": "1c1bebabcc5e031317df92a8a29a416466620c2ec53ae0a4a06fa6facabdd0ca",
+            "stderrSha256": "38c3907ef39c0499c72dbc6d99ab7f5c6cbfd1ea054c3382f64f819065455ae8",
+            "streamJsonSha256": "92f0a08a5170ad04265fc1231efd959b78a633ea1fe7994885a0e648fd5935c3"
+          },
+          "forbiddenCommands": [],
+          "invalidRequiredCtxhelmCalls": [],
+          "irrelevantReads": [
+            "crates/ctxhelm-compiler/src/eval.rs"
+          ],
+          "lane": "ctxhelm-standard",
+          "metrics": {
+            "commandExecutionCount": 6,
+            "ctxhelmEvidenceFileCount": 14,
+            "ctxhelmEvidenceMissedTargetCount": 0,
+            "ctxhelmEvidenceOnlyTargetCount": 0,
+            "ctxhelmEvidenceTargetHitCount": 4,
+            "ctxhelmToolCallCount": 2,
+            "discoveredFileCount": 9,
+            "forbiddenCommandCount": 0,
+            "invalidRequiredCtxhelmCallCount": 0,
+            "irrelevantReadCount": 1,
+            "missedTargetCount": 0,
+            "missingRequiredCtxhelmCallCount": 0,
+            "observedRequiredCtxhelmCallCount": 2,
+            "readFileCount": 5,
+            "requiredCtxhelmCallCount": 2,
+            "targetCount": 4,
+            "targetCoverage": 1.0,
+            "targetDiscoveredOnlyCount": 0,
+            "targetHitCount": 4,
+            "targetReadCount": 4,
+            "targetReadCoverage": 1.0
+          },
+          "missedTargetRoleCounts": {},
+          "missedTargets": [],
+          "missingRequiredCtxhelmCalls": [],
+          "mode": "standard",
+          "observedRequiredCtxhelmCalls": [
+            "prepare_task",
+            "get_pack"
+          ],
+          "rateLimitObserved": false,
+          "rawCommandOutputStored": false,
+          "rawMcpTrafficStored": false,
+          "rawPromptStored": false,
+          "rawTranscriptStored": false,
+          "readFiles": [
+            "crates/ctxhelm-compiler/src/eval.rs",
+            "crates/ctxhelm/src/main.rs",
+            "crates/ctxhelm-core/src/contracts.rs",
+            "docs/context-governor.md",
+            "scripts/smoke-governor.sh"
+          ],
+          "readRoleCounts": {
+            "docs": 1,
+            "source": 4
+          },
+          "requiredCtxhelmCallSpecs": [
+            {
+              "name": "prepare_task",
+              "requiresRepo": true,
+              "requiresTask": true
+            },
+            {
+              "budget": "standard",
+              "format": "json",
+              "name": "get_pack",
+              "recordTrace": false,
+              "requiresRepo": true,
+              "requiresTask": true
+            }
+          ],
+          "requiredCtxhelmCalls": [
+            "prepare_task",
+            "get_pack"
+          ],
+          "sourceTextLogged": false,
+          "status": "passed",
+          "targetHits": [
+            "crates/ctxhelm-core/src/contracts.rs",
+            "crates/ctxhelm/src/main.rs",
+            "docs/context-governor.md",
+            "scripts/smoke-governor.sh"
+          ],
+          "targetReads": [
+            "crates/ctxhelm-core/src/contracts.rs",
+            "crates/ctxhelm/src/main.rs",
+            "docs/context-governor.md",
+            "scripts/smoke-governor.sh"
+          ]
+        },
+        {
+          "clientApiErrorStatus": null,
+          "clientExitStatus": 0,
+          "clientFailureKind": null,
+          "commandExecutions": [
+            {
+              "commandSha256": "c402f06f63eec068bf41a5c09122569c048bee03d11dbae92614c76ac24896c0",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 1,
+              "paths": [
+                "crates/ctxhelm-compiler/src/eval.rs"
+              ],
+              "status": "completed",
+              "verb": "sed"
+            },
+            {
+              "commandSha256": "aee593db5852414f1cbda78fec6882a4479cf5b0ae2fd1f3248b3e3a7881ded6",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 1,
+              "paths": [
+                "crates/ctxhelm/src/main.rs"
+              ],
+              "status": "completed",
+              "verb": "sed"
+            },
+            {
+              "commandSha256": "b392f4c98156f9afdf435e2028b89cc34470df398e1092d31ebfafaa0b025811",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 1,
+              "paths": [
+                "docs/context-governor.md"
+              ],
+              "status": "completed",
+              "verb": "sed"
+            },
+            {
+              "commandSha256": "89c3a15bd8e4f03f99390ac3c234ba81f08adcdd55b3d21c386d635139c6b692",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 1,
+              "paths": [
+                "scripts/smoke-governor.sh"
+              ],
+              "status": "completed",
+              "verb": "sed"
+            },
+            {
+              "commandSha256": "7198bb9322354bfebf40a87599b94f7df2c7b3e9ff9f989f1cebe90006b87364",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 1,
+              "paths": [
+                "crates/ctxhelm-core/src/contracts.rs"
+              ],
+              "status": "completed",
+              "verb": "sed"
+            },
+            {
+              "commandSha256": "c4e3920ddc56df65f72f664dd31580f4bdf756485f8e7e6834d03325a9515f6e",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 8,
+              "paths": [
+                "crates/ctxhelm/src/main.rs",
+                "crates/ctxhelm-compiler/src/eval.rs",
+                "crates/ctxhelm-core/src/contracts.rs",
+                "scripts/smoke-governor.sh",
+                "docs/context-governor.md",
+                "docs/release.md",
+                "crates/ctxhelm/tests/release_packaging.rs",
+                "crates/ctxhelm/tests/cli_compat.rs"
+              ],
+              "status": "completed",
+              "verb": "rg"
+            },
+            {
+              "commandSha256": "4214b1db0143b43a8bb3d1888ba6152a592bd78a5beef78287a89400c47fefe0",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 1,
+              "paths": [
+                "crates/ctxhelm-core/src/contracts.rs"
+              ],
+              "status": "completed",
+              "verb": "sed"
+            },
+            {
+              "commandSha256": "23e2274eba15ffa88007ea6b621cf6af24d77c6ec42182a10f331cf11e34009e",
+              "exitCode": 0,
+              "forbidden": false,
+              "pathCount": 1,
+              "paths": [
+                "crates/ctxhelm/src/main.rs"
+              ],
+              "status": "completed",
+              "verb": "sed"
+            }
+          ],
+          "ctxhelmCallCompliance": "satisfied",
+          "ctxhelmEvidenceFiles": [
+            "crates/ctxhelm/src/main.rs",
+            "crates/ctxhelm-compiler/src/eval.rs",
+            "crates/ctxhelm-core/src/contracts.rs",
+            "scripts/smoke-governor.sh",
+            "docs/context-governor.md",
+            ".planning/STATE.md",
+            ".planning/ROADMAP.md",
+            ".planning/MILESTONES.md",
+            "docs/release.md",
+            "crates/ctxhelm-compiler/src/lib.rs",
+            "crates/ctxhelm/tests/release_packaging.rs",
+            "crates/ctxhelm/tests/cli_compat.rs",
+            "crates/ctxhelm/tests/common/mod.rs",
+            "crates/ctxhelm-core/src/lib.rs"
+          ],
+          "ctxhelmEvidenceMissedTargets": [],
+          "ctxhelmEvidenceOnlyTargets": [],
+          "ctxhelmEvidenceTargetHits": [
+            "crates/ctxhelm-core/src/contracts.rs",
+            "crates/ctxhelm/src/main.rs",
+            "docs/context-governor.md",
+            "scripts/smoke-governor.sh"
+          ],
+          "ctxhelmToolCalls": [
+            {
+              "budget": null,
+              "format": null,
+              "hasRepo": true,
+              "hasTask": true,
+              "name": "prepare_task",
+              "recordTrace": null
+            },
+            {
+              "budget": "standard",
+              "format": "json",
+              "hasRepo": true,
+              "hasTask": true,
+              "name": "get_pack",
+              "recordTrace": false
+            }
+          ],
+          "discoveredFiles": [
+            "crates/ctxhelm-compiler/src/eval.rs",
+            "crates/ctxhelm/src/main.rs",
+            "docs/context-governor.md",
+            "scripts/smoke-governor.sh",
+            "crates/ctxhelm-core/src/contracts.rs",
+            "docs/release.md",
+            "crates/ctxhelm/tests/release_packaging.rs",
+            "crates/ctxhelm/tests/cli_compat.rs"
+          ],
+          "discoveredOnlyTargets": [],
+          "evaluationEligible": true,
+          "evaluationStatus": "eligible",
+          "evidenceHashes": {
+            "ctxhelmRequestLogSha256": "0d1ad141b594c55b86ae9394a8f9a04846fbe7cb01d78b29d534f4cdf1f2f075",
+            "stderrSha256": "8b89b99112d4f3a310ea13cb9b0d4a647e56fcf51451c425a48ed75be3edcc52",
+            "streamJsonSha256": "091b1cc3f38b51a317fc4f8c671c3301a9fdf9148c550a813e59d18861b62770"
+          },
+          "forbiddenCommands": [],
+          "invalidRequiredCtxhelmCalls": [],
+          "irrelevantReads": [
+            "crates/ctxhelm-compiler/src/eval.rs"
+          ],
+          "lane": "ctxhelm-memory",
+          "metrics": {
+            "commandExecutionCount": 8,
+            "ctxhelmEvidenceFileCount": 14,
+            "ctxhelmEvidenceMissedTargetCount": 0,
+            "ctxhelmEvidenceOnlyTargetCount": 0,
+            "ctxhelmEvidenceTargetHitCount": 4,
+            "ctxhelmToolCallCount": 2,
+            "discoveredFileCount": 8,
+            "forbiddenCommandCount": 0,
+            "invalidRequiredCtxhelmCallCount": 0,
+            "irrelevantReadCount": 1,
+            "missedTargetCount": 0,
+            "missingRequiredCtxhelmCallCount": 0,
+            "observedRequiredCtxhelmCallCount": 2,
+            "readFileCount": 5,
+            "requiredCtxhelmCallCount": 2,
+            "targetCount": 4,
+            "targetCoverage": 1.0,
+            "targetDiscoveredOnlyCount": 0,
+            "targetHitCount": 4,
+            "targetReadCount": 4,
+            "targetReadCoverage": 1.0
+          },
+          "missedTargetRoleCounts": {},
+          "missedTargets": [],
+          "missingRequiredCtxhelmCalls": [],
+          "mode": "memory",
+          "observedRequiredCtxhelmCalls": [
+            "prepare_task",
+            "get_pack"
+          ],
+          "rateLimitObserved": false,
+          "rawCommandOutputStored": false,
+          "rawMcpTrafficStored": false,
+          "rawPromptStored": false,
+          "rawTranscriptStored": false,
+          "readFiles": [
+            "crates/ctxhelm-compiler/src/eval.rs",
+            "crates/ctxhelm/src/main.rs",
+            "docs/context-governor.md",
+            "scripts/smoke-governor.sh",
+            "crates/ctxhelm-core/src/contracts.rs"
+          ],
+          "readRoleCounts": {
+            "docs": 1,
+            "source": 4
+          },
+          "requiredCtxhelmCallSpecs": [
+            {
+              "name": "prepare_task",
+              "requiresRepo": true,
+              "requiresTask": true
+            },
+            {
+              "budget": "standard",
+              "format": "json",
+              "name": "get_pack",
+              "recordTrace": false,
+              "requiresRepo": true,
+              "requiresTask": true
+            }
+          ],
+          "requiredCtxhelmCalls": [
+            "prepare_task",
+            "get_pack"
+          ],
+          "sourceTextLogged": false,
+          "status": "passed",
+          "targetHits": [
+            "crates/ctxhelm-core/src/contracts.rs",
+            "crates/ctxhelm/src/main.rs",
+            "docs/context-governor.md",
+            "scripts/smoke-governor.sh"
+          ],
+          "targetReads": [
+            "crates/ctxhelm-core/src/contracts.rs",
+            "crates/ctxhelm/src/main.rs",
+            "docs/context-governor.md",
+            "scripts/smoke-governor.sh"
+          ]
+        }
+      ],
+      "privacyStatus": {
+        "localOnly": true,
+        "rawCommandOutputStored": false,
+        "rawMcpTrafficStored": false,
+        "rawPromptStored": false,
+        "rawTranscriptStored": false,
+        "remoteEmbeddingsUsed": false,
+        "remoteRerankingUsed": false,
+        "sourceTextLogged": false
+      },
+      "status": "passed",
+      "targetFiles": [
+        "crates/ctxhelm/src/main.rs",
+        "crates/ctxhelm-core/src/contracts.rs",
+        "scripts/smoke-governor.sh",
+        "docs/context-governor.md"
+      ],
+      "taskId": "governor-release-proof",
+      "taskSha256": "aa83fa90917a35640c0338a27f337c3c06ac69259f3488366e54e3d73190352a"
+    }
+  ],
+  "unsupportedActions": [
+    "source edits",
+    "user project tests",
+    "global agent config mutation",
+    "cloud upload",
+    "raw prompt storage",
+    "raw transcript storage",
+    "raw MCP traffic storage",
+    "raw command output storage"
+  ],
+  "workflowKind": "paired-agent-context-suite"
+}

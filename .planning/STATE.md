@@ -4,10 +4,10 @@ milestone: v2.5
 milestone_name: Production Retrieval Quality
 status: active
 last_updated: "2026-06-06T00:00:00Z"
-last_activity: 2026-06-06 -- Phase 250 fixes governor/release artifact retrieval after a real Codex under-read regression
+last_activity: 2026-06-06 -- Phase 251 expands Codex R&D proof across memory, semantic, GraphRAG, and governor tasks
 progress:
-  total_phases: 138
-  completed_phases: 138
+  total_phases: 139
+  completed_phases: 139
   total_plans: 7
   completed_plans: 7
   percent: 100
@@ -17,10 +17,10 @@ progress:
 
 ## Current Position
 
-Phase: 250 - Governor Artifact Retrieval
-Plan: 250-governor-artifact-retrieval
+Phase: 251 - Codex R&D Breadth Suite
+Plan: 251-codex-rd-breadth-suite
 Status: Complete
-Last activity: 2026-06-06 -- Phase 250 fixes a real Codex agent-run under-read regression for context-governor/release-gate R&D tasks. Release/gate/proof/governor tasks now promote `docs/context-governor.md`, `crates/ctxhelm-core/src/contracts.rs`, `scripts/smoke-governor.sh`, and `scripts/release-gate.sh` as source-free artifact candidates. The before/after Codex proof moved the comparison outcome from `ctxhelm_matched` with ctxhelm evidence misses to `ctxhelm_improved`, with all four ctxhelm lanes reaching `1.00` target read coverage.
+Last activity: 2026-06-06 -- Phase 251 adds a four-task real Codex R&D suite covering selected-memory native reads, semantic contribution diagnostics, GraphRAG edge budget work, and governor/release proof artifacts. It fixes a dry-probe GraphRAG target-generation miss by promoting bounded graph-edge implementation surfaces, tightens the Codex harness so discovery commands do not count as native file consumption, and records a source-free real-client suite with status `passed`, outcome `ctxhelm_improved`, all 16 ctxhelm lanes at `1.00` target-read coverage, no evidence misses, no under-read targets, no forbidden commands, no client failures, and local-only privacy.
 
 ## Project Reference
 

@@ -1,0 +1,42 @@
+{
+  "suite": "phase251-codex-rd-breadth-suite",
+  "tasks": [
+    {
+      "id": "memory-native-read",
+      "task": "Identify the files relevant to making selected memory source links become native first-read targets and MCP/agent guidance. Do not edit files.",
+      "targetFiles": [
+        "crates/ctxhelm-compiler/src/planning.rs",
+        "crates/ctxhelm-mcp/src/tools.rs",
+        "crates/ctxhelm-core/src/init.rs"
+      ]
+    },
+    {
+      "id": "semantic-contribution",
+      "task": "Identify the files relevant to semantic provider status/search and semantic contribution diagnostics. Do not edit files.",
+      "targetFiles": [
+        "crates/ctxhelm/src/main.rs",
+        "crates/ctxhelm-index/src/semantic.rs",
+        "crates/ctxhelm-compiler/src/eval.rs"
+      ]
+    },
+    {
+      "id": "graph-edge-budget",
+      "task": "Identify the files relevant to graph edge profiles, graph edge ablations, and dependency edge-family budget allocation. Do not edit files.",
+      "targetFiles": [
+        "crates/ctxhelm-compiler/src/eval.rs",
+        "crates/ctxhelm-compiler/src/ranking.rs",
+        "crates/ctxhelm-index/src/dependencies.rs"
+      ]
+    },
+    {
+      "id": "governor-release-proof",
+      "task": "Identify the files relevant to improving ctxhelm context governor decision reports and release-gate proof. Do not edit files.",
+      "targetFiles": [
+        "crates/ctxhelm/src/main.rs",
+        "crates/ctxhelm-core/src/contracts.rs",
+        "scripts/smoke-governor.sh",
+        "docs/context-governor.md"
+      ]
+    }
+  ]
+}
