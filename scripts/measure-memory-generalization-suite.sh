@@ -166,6 +166,14 @@ def aggregate_value(key):
     return sum(report.get("aggregate", {}).get(key, 0) for report in reports)
 
 
+def aggregate_count_map(key):
+    merged = {}
+    for report in reports:
+        for map_key, value in report.get("aggregate", {}).get(key, {}).items():
+            merged[map_key] = merged.get(map_key, 0) + int(value or 0)
+    return dict(sorted(merged.items()))
+
+
 evaluated_repos = len(reports)
 evaluated_pairs = sum(report.get("repo", {}).get("evaluatedPairs", 0) for report in reports)
 discovered_pairs = sum(report.get("repo", {}).get("discoveredPairs", 0) for report in reports)
@@ -216,6 +224,27 @@ memory_unique_target_hits_without_current_support = aggregate_value(
 memory_unique_non_targets_without_current_support = aggregate_value(
     "memoryUniqueNonTargetWithoutCurrentSupportCount"
 )
+memory_unique_target_hit_current_support_signal_counts = aggregate_count_map(
+    "memoryUniqueTargetHitCurrentSupportSignalCounts"
+)
+memory_unique_non_target_current_support_signal_counts = aggregate_count_map(
+    "memoryUniqueNonTargetCurrentSupportSignalCounts"
+)
+
+
+def dominant_signals(counts):
+    return [
+        key
+        for key, _ in sorted(
+            counts.items(),
+            key=lambda item: (-int(item[1] or 0), item[0]),
+        )[:3]
+    ]
+
+
+supported_memory_noise_dominant_signals = dominant_signals(
+    memory_unique_non_target_current_support_signal_counts
+)
 memory_target_hit_pairs = aggregate_value("memoryTargetHitPairs")
 memory_candidate_pairs = aggregate_value("memoryCandidatePairs")
 combined_recovered_pairs = aggregate_value("combinedRecoveredPairs")
@@ -249,7 +278,7 @@ if unsupported_memory_precision_needs_work:
         ]
     )
 elif supported_memory_noise_needs_review:
-    recommended_next_r_and_d.append("inspect_supported_memory_non_target_pressure")
+    recommended_next_r_and_d.append("tune_memory_weight_against_supported_signal_pressure")
 if memory_unique_non_targets > 0:
     recommended_next_r_and_d.append("compare_memory_noise_against_current_signal_roles")
 if semantic_enabled:
@@ -283,6 +312,8 @@ payload = {
         "memoryUniqueNonTargetWithCurrentSupportCount": memory_unique_non_targets_with_current_support,
         "memoryUniqueTargetHitWithoutCurrentSupportCount": memory_unique_target_hits_without_current_support,
         "memoryUniqueNonTargetWithoutCurrentSupportCount": memory_unique_non_targets_without_current_support,
+        "memoryUniqueTargetHitCurrentSupportSignalCounts": memory_unique_target_hit_current_support_signal_counts,
+        "memoryUniqueNonTargetCurrentSupportSignalCounts": memory_unique_non_target_current_support_signal_counts,
         "memoryTargetHitsWithGraphSupportUpperBound": graph_supported_memory_target_hits,
         "memoryTargetHitsWithSemanticSupportUpperBound": semantic_supported_memory_target_hits,
         "memoryUniqueTargetsWithGraphOrSemanticSupportUpperBound": graph_or_semantic_supported_unique_targets,
@@ -305,6 +336,7 @@ payload = {
         or memory_target_hit_pairs < memory_candidate_pairs,
         "unsupportedMemoryPrecisionNeedsWork": unsupported_memory_precision_needs_work,
         "supportedMemoryNoiseNeedsReview": supported_memory_noise_needs_review,
+        "supportedMemoryNoiseDominantSignals": supported_memory_noise_dominant_signals,
         "memoryNeedsCorroboration": memory_targets_without_graph_or_semantic > 0
         or memory_unique_non_targets > 0,
         "semanticMeasured": semantic_enabled,

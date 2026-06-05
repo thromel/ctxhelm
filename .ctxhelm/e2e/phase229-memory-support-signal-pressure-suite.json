@@ -1,0 +1,299 @@
+{
+  "aggregate": {
+    "combinedRecoveredPairs": 0,
+    "graphEdgeAblationRemovedTargetHitCount": 0,
+    "lexicalCoveredPairs": 8,
+    "memoryCandidatePairs": 11,
+    "memoryTargetHitPairs": 8,
+    "memoryTargetHitsWithGraphSupportUpperBound": 8,
+    "memoryTargetHitsWithSemanticSupportUpperBound": 5,
+    "memoryTargetHitsWithoutGraphOrSemanticSupportLowerBound": 3,
+    "memoryUniqueLiftPairs": 2,
+    "memoryUniqueNonTargetCount": 4,
+    "memoryUniqueNonTargetCurrentSupportSignalCounts": {
+      "dependency": 4,
+      "lexical_expansion": 2,
+      "semantic": 1,
+      "symbol": 2
+    },
+    "memoryUniqueNonTargetPerUniqueTarget": 2.0,
+    "memoryUniqueNonTargetWithCurrentSupportCount": 4,
+    "memoryUniqueNonTargetWithoutCurrentSupportCount": 0,
+    "memoryUniqueTargetHitCount": 2,
+    "memoryUniqueTargetHitCurrentSupportSignalCounts": {
+      "co_change": 1,
+      "dependency": 2,
+      "semantic": 1
+    },
+    "memoryUniqueTargetHitWithoutCurrentSupportCount": 0,
+    "memoryUniqueTargetsWithGraphOrSemanticSupportUpperBound": 2,
+    "semanticAblationLiftPairs": 0,
+    "semanticSelectedTargetPairs": 7
+  },
+  "errors": [],
+  "interpretation": {
+    "generalizationProven": true,
+    "graphCorroborationMeasured": true,
+    "largerPairCountMeasured": true,
+    "lexicalStillStrong": true,
+    "memoryNeedsCorroboration": true,
+    "multiRepoMeasured": true,
+    "pairDiversityMeasured": true,
+    "precisionNeedsWork": true,
+    "recommendedNextRAndD": [
+      "increase_pairs_per_repo",
+      "tune_memory_weight_against_supported_signal_pressure",
+      "compare_memory_noise_against_current_signal_roles",
+      "compare_against_lexical_graph_semantic_ablations",
+      "measure_real_agent_outcome_lift"
+    ],
+    "semanticMeasured": true,
+    "semanticUsefulForMemoryTasks": true,
+    "supportedMemoryNoiseDominantSignals": [
+      "dependency",
+      "lexical_expansion",
+      "symbol"
+    ],
+    "supportedMemoryNoiseNeedsReview": true,
+    "unsupportedMemoryPrecisionNeedsWork": false
+  },
+  "privacyStatus": {
+    "localOnly": true,
+    "rawMcpTrafficStored": false,
+    "rawPromptStored": false,
+    "rawTaskTextStored": false,
+    "rawTranscriptStored": false,
+    "remoteEmbeddingsUsed": false,
+    "remoteRerankingUsed": false,
+    "repoPathStored": false,
+    "sourceTextLogged": false
+  },
+  "repositories": [
+    {
+      "aggregate": {
+        "afterEvalRuntimeSecondsTotal": 6.12,
+        "combinedRecoveredPairs": 0,
+        "graphEdgeAblationRemovedTargetHitCount": 0,
+        "lexicalCoveredPairs": 2,
+        "memoryCandidatePairs": 2,
+        "memoryNoisePairs": 0,
+        "memoryTargetHitPairs": 2,
+        "memoryTargetHitsWithGraphSupportUpperBound": 0,
+        "memoryTargetHitsWithSemanticSupportUpperBound": 0,
+        "memoryTargetHitsWithoutGraphOrSemanticSupportLowerBound": 2,
+        "memoryUniqueLiftPairs": 0,
+        "memoryUniqueNonTargetCount": 0,
+        "memoryUniqueNonTargetCurrentSupportSignalCounts": {},
+        "memoryUniqueNonTargetWithCurrentSupportCount": 0,
+        "memoryUniqueNonTargetWithoutCurrentSupportCount": 0,
+        "memoryUniqueTargetHitCount": 0,
+        "memoryUniqueTargetHitCurrentSupportSignalCounts": {},
+        "memoryUniqueTargetHitWithoutCurrentSupportCount": 0,
+        "memoryUniqueTargetsWithGraphOrSemanticSupportUpperBound": 0,
+        "semanticAblationLiftPairs": 0,
+        "semanticSelectedTargetPairs": 0
+      },
+      "candidatePairCount": 313,
+      "candidateTargetFileCount": 44,
+      "discoveredPairs": 3,
+      "errorCount": 0,
+      "evaluatedPairs": 3,
+      "evaluatedTargetFileCount": 3,
+      "headShaPrefix": "7e087a8e678d",
+      "interpretation": {
+        "generalizationProven": false,
+        "lexicalStillStrong": true,
+        "memoryNeedsCorroboration": true,
+        "precisionNeedsWork": false,
+        "semanticMeasured": true,
+        "semanticUsefulForMemoryTasks": false,
+        "singlePairLiftObserved": false,
+        "supportedMemoryNoiseNeedsReview": false
+      },
+      "label": "RefactoringMiner",
+      "pathStored": false,
+      "requestedPairs": 3,
+      "suiteRuntimeSeconds": 381.0
+    },
+    {
+      "aggregate": {
+        "afterEvalRuntimeSecondsTotal": 0.57,
+        "combinedRecoveredPairs": 0,
+        "graphEdgeAblationRemovedTargetHitCount": 0,
+        "lexicalCoveredPairs": 2,
+        "memoryCandidatePairs": 3,
+        "memoryNoisePairs": 1,
+        "memoryTargetHitPairs": 3,
+        "memoryTargetHitsWithGraphSupportUpperBound": 3,
+        "memoryTargetHitsWithSemanticSupportUpperBound": 3,
+        "memoryTargetHitsWithoutGraphOrSemanticSupportLowerBound": 1,
+        "memoryUniqueLiftPairs": 1,
+        "memoryUniqueNonTargetCount": 1,
+        "memoryUniqueNonTargetCurrentSupportSignalCounts": {
+          "dependency": 1,
+          "semantic": 1
+        },
+        "memoryUniqueNonTargetWithCurrentSupportCount": 1,
+        "memoryUniqueNonTargetWithoutCurrentSupportCount": 0,
+        "memoryUniqueTargetHitCount": 1,
+        "memoryUniqueTargetHitCurrentSupportSignalCounts": {
+          "dependency": 1,
+          "semantic": 1
+        },
+        "memoryUniqueTargetHitWithoutCurrentSupportCount": 0,
+        "memoryUniqueTargetsWithGraphOrSemanticSupportUpperBound": 1,
+        "semanticAblationLiftPairs": 0,
+        "semanticSelectedTargetPairs": 3
+      },
+      "candidatePairCount": 144,
+      "candidateTargetFileCount": 63,
+      "discoveredPairs": 3,
+      "errorCount": 0,
+      "evaluatedPairs": 3,
+      "evaluatedTargetFileCount": 3,
+      "headShaPrefix": "335786673044",
+      "interpretation": {
+        "generalizationProven": false,
+        "lexicalStillStrong": true,
+        "memoryNeedsCorroboration": true,
+        "precisionNeedsWork": true,
+        "semanticMeasured": true,
+        "semanticUsefulForMemoryTasks": true,
+        "singlePairLiftObserved": true,
+        "supportedMemoryNoiseNeedsReview": true
+      },
+      "label": "VeriSchema",
+      "pathStored": false,
+      "requestedPairs": 3,
+      "suiteRuntimeSeconds": 21.76
+    },
+    {
+      "aggregate": {
+        "afterEvalRuntimeSecondsTotal": 0.58,
+        "combinedRecoveredPairs": 0,
+        "graphEdgeAblationRemovedTargetHitCount": 0,
+        "lexicalCoveredPairs": 1,
+        "memoryCandidatePairs": 3,
+        "memoryNoisePairs": 1,
+        "memoryTargetHitPairs": 2,
+        "memoryTargetHitsWithGraphSupportUpperBound": 2,
+        "memoryTargetHitsWithSemanticSupportUpperBound": 1,
+        "memoryTargetHitsWithoutGraphOrSemanticSupportLowerBound": 0,
+        "memoryUniqueLiftPairs": 1,
+        "memoryUniqueNonTargetCount": 1,
+        "memoryUniqueNonTargetCurrentSupportSignalCounts": {
+          "dependency": 1
+        },
+        "memoryUniqueNonTargetWithCurrentSupportCount": 1,
+        "memoryUniqueNonTargetWithoutCurrentSupportCount": 0,
+        "memoryUniqueTargetHitCount": 1,
+        "memoryUniqueTargetHitCurrentSupportSignalCounts": {
+          "co_change": 1,
+          "dependency": 1
+        },
+        "memoryUniqueTargetHitWithoutCurrentSupportCount": 0,
+        "memoryUniqueTargetsWithGraphOrSemanticSupportUpperBound": 1,
+        "semanticAblationLiftPairs": 0,
+        "semanticSelectedTargetPairs": 1
+      },
+      "candidatePairCount": 262,
+      "candidateTargetFileCount": 95,
+      "discoveredPairs": 3,
+      "errorCount": 0,
+      "evaluatedPairs": 3,
+      "evaluatedTargetFileCount": 3,
+      "headShaPrefix": "44277ff7d89a",
+      "interpretation": {
+        "generalizationProven": false,
+        "lexicalStillStrong": true,
+        "memoryNeedsCorroboration": true,
+        "precisionNeedsWork": true,
+        "semanticMeasured": true,
+        "semanticUsefulForMemoryTasks": true,
+        "singlePairLiftObserved": true,
+        "supportedMemoryNoiseNeedsReview": true
+      },
+      "label": "ReAgent",
+      "pathStored": false,
+      "requestedPairs": 3,
+      "suiteRuntimeSeconds": 30.03
+    },
+    {
+      "aggregate": {
+        "afterEvalRuntimeSecondsTotal": 0.82,
+        "combinedRecoveredPairs": 0,
+        "graphEdgeAblationRemovedTargetHitCount": 0,
+        "lexicalCoveredPairs": 3,
+        "memoryCandidatePairs": 3,
+        "memoryNoisePairs": 2,
+        "memoryTargetHitPairs": 1,
+        "memoryTargetHitsWithGraphSupportUpperBound": 3,
+        "memoryTargetHitsWithSemanticSupportUpperBound": 1,
+        "memoryTargetHitsWithoutGraphOrSemanticSupportLowerBound": 0,
+        "memoryUniqueLiftPairs": 0,
+        "memoryUniqueNonTargetCount": 2,
+        "memoryUniqueNonTargetCurrentSupportSignalCounts": {
+          "dependency": 2,
+          "lexical_expansion": 2,
+          "symbol": 2
+        },
+        "memoryUniqueNonTargetWithCurrentSupportCount": 2,
+        "memoryUniqueNonTargetWithoutCurrentSupportCount": 0,
+        "memoryUniqueTargetHitCount": 0,
+        "memoryUniqueTargetHitCurrentSupportSignalCounts": {},
+        "memoryUniqueTargetHitWithoutCurrentSupportCount": 0,
+        "memoryUniqueTargetsWithGraphOrSemanticSupportUpperBound": 0,
+        "semanticAblationLiftPairs": 0,
+        "semanticSelectedTargetPairs": 3
+      },
+      "candidatePairCount": 232,
+      "candidateTargetFileCount": 24,
+      "discoveredPairs": 3,
+      "errorCount": 0,
+      "evaluatedPairs": 3,
+      "evaluatedTargetFileCount": 3,
+      "headShaPrefix": "7fc612fa3c9d",
+      "interpretation": {
+        "generalizationProven": false,
+        "lexicalStillStrong": true,
+        "memoryNeedsCorroboration": true,
+        "precisionNeedsWork": true,
+        "semanticMeasured": true,
+        "semanticUsefulForMemoryTasks": true,
+        "singlePairLiftObserved": false,
+        "supportedMemoryNoiseNeedsReview": true
+      },
+      "label": "ctxhelm",
+      "pathStored": false,
+      "requestedPairs": 3,
+      "suiteRuntimeSeconds": 31.29
+    }
+  ],
+  "schemaVersion": "ctxhelm-memory-generalization-suite-v2",
+  "semantic": {
+    "enabled": true,
+    "localOnly": true,
+    "provider": "local_hash",
+    "remoteEmbeddingsUsed": false
+  },
+  "status": "measured",
+  "suite": {
+    "candidatePairCount": 951,
+    "candidateTargetFileCount": 226,
+    "discoveredPairs": 12,
+    "errorRepositoryCount": 0,
+    "evaluatedPairs": 12,
+    "evaluatedRepositoryCount": 4,
+    "evaluatedTargetFileCount": 12,
+    "requestedPairsPerRepo": 3,
+    "requestedRepositoryCount": 4,
+    "scanCommitsPerRepo": 180
+  },
+  "unsupportedActions": [
+    "source edits",
+    "model invocation",
+    "cloud upload",
+    "raw prompt storage"
+  ],
+  "workflowKind": "multi-repo-experience-memory-generalization"
+}

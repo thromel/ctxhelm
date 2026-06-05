@@ -226,6 +226,15 @@ fresh four-repo semantic-enabled suite still proves two unique memory lifts and
 zero unsupported pure-memory non-targets; its four raw memory non-targets all
 have current support.
 
+Status: Phase 229 makes the pressure review measurable. Historical memory
+summaries and both memory-generalization harnesses now expose current-support
+signal count maps for memory-unique target hits and memory-unique non-targets.
+The fresh four-repo semantic-enabled suite keeps two unique memory lifts and
+zero unsupported memory non-targets, while showing supported memory non-target
+pressure dominated by dependency, lexical-expansion, and symbol support. The
+next memory R&D step is a targeted weighting experiment against supported signal
+pressure, not another broad memory demotion.
+
 ### 3. Semantic/Embedding Signal Is Wired But Not Driving Lift
 
 The current product lift comes from hybrid ranking, graph/test/history/context

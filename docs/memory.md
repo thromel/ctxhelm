@@ -173,7 +173,12 @@ the path. This prevents source-free R&D from misclassifying memory attached to
 current lexical, semantic, graph, symbol, or history evidence as pure memory
 noise. `memoryUniqueNonTargetWithCurrentSupportCount` counts the complementary
 case: memory non-targets that are absent from the lexical baseline but are still
-supported by another current signal. Treat those as signal-pressure review
-items, not as evidence that uncorroborated memory should be demoted. Ranking also
-avoids attaching memory to weak lexical-expansion-only paths and only allows an
-uncorroborated memory-only rescue when no target files were selected at all.
+supported by another current signal. The companion
+`memoryUniqueNonTargetCurrentSupportSignalCounts` and
+`memoryUniqueTargetHitCurrentSupportSignalCounts` maps show which current signal
+families are creating that support, for example dependency, symbol,
+lexical-expansion, semantic, or co-change. Treat supported non-targets as
+signal-pressure review items, not as evidence that uncorroborated memory should
+be demoted. Ranking also avoids attaching memory to weak lexical-expansion-only
+paths and only allows an uncorroborated memory-only rescue when no target files
+were selected at all.

@@ -1034,6 +1034,16 @@ Recommendation today:
   measured `memoryUniqueNonTargetCount = 4`,
   `memoryUniqueNonTargetWithCurrentSupportCount = 4`, and
   `memoryUniqueNonTargetWithoutCurrentSupportCount = 0`.
+- Phase 229 makes that signal-pressure review measurable. Historical memory
+  summaries and the single/suite harnesses now expose
+  `memoryUniqueNonTargetCurrentSupportSignalCounts`,
+  `memoryUniqueTargetHitCurrentSupportSignalCounts`, and
+  `supportedMemoryNoiseDominantSignals`. The fresh four-repo semantic-enabled
+  suite keeps `memoryUniqueLiftPairs = 2` and zero unsupported memory
+  non-targets, while showing supported memory non-target pressure dominated by
+  `dependency`, `lexical_expansion`, and `symbol`. The next ranking experiment is
+  therefore `tune_memory_weight_against_supported_signal_pressure`, not a blind
+  memory demotion.
 - Treat cloud embeddings/reranking as disabled unless an explicit repo policy
   allows them.
 

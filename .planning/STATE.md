@@ -4,7 +4,7 @@ milestone: v2.5
 milestone_name: Production Retrieval Quality
 status: active
 last_updated: "2026-06-03T00:00:00Z"
-last_activity: 2026-06-05 -- Phase 228 routes supported memory-noise R&D
+last_activity: 2026-06-05 -- Phase 229 measures supported memory-noise signal pressure
 progress:
   total_phases: 134
   completed_phases: 134
@@ -17,10 +17,10 @@ progress:
 
 ## Current Position
 
-Phase: 228 - Supported Memory-Noise Routing
-Plan: 228-memory-supported-noise-routing
+Phase: 229 - Memory Support-Signal Pressure
+Plan: 229-memory-support-signal-pressure
 Status: Complete
-Last activity: 2026-06-05 -- Phase 228 makes memory-generalization R&D routing distinguish supported lexical-baseline-relative memory non-targets from unsupported pure-memory noise. Reports now expose `memoryUniqueNonTargetWithCurrentSupportCount` and `supportedMemoryNoiseNeedsReview`. A fresh four-repo semantic-enabled suite measured 12 pairs, `memoryUniqueLiftPairs = 2`, `memoryUniqueNonTargetCount = 4`, `memoryUniqueNonTargetWithCurrentSupportCount = 4`, and `memoryUniqueNonTargetWithoutCurrentSupportCount = 0`. The next local memory R&D action is therefore `inspect_supported_memory_non_target_pressure`, not `demote_uncorroborated_memory_candidates`; real-agent outcome lift still waits on non-rate-limited Claude Code evidence.
+Last activity: 2026-06-05 -- Phase 229 makes supported memory-noise pressure source-free and measurable. Historical memory summaries and the single/suite memory-generalization harnesses now expose `memoryUniqueNonTargetCurrentSupportSignalCounts`, `memoryUniqueTargetHitCurrentSupportSignalCounts`, and `supportedMemoryNoiseDominantSignals`. A fresh four-repo semantic-enabled suite measured 12 pairs, `memoryUniqueLiftPairs = 2`, `memoryUniqueNonTargetCount = 4`, `memoryUniqueNonTargetWithCurrentSupportCount = 4`, `memoryUniqueNonTargetWithoutCurrentSupportCount = 0`, and supported non-target signal pressure `dependency = 4`, `lexical_expansion = 2`, `symbol = 2`, `semantic = 1`. The next local memory R&D action is therefore `tune_memory_weight_against_supported_signal_pressure`; real-agent outcome lift still waits on non-rate-limited Claude Code evidence.
 
 ## Project Reference
 

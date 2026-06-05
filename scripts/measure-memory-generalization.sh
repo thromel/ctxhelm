@@ -359,6 +359,12 @@ def memory_signal_comparison(report, memory_summary):
         "memoryTargetHitCount": memory_target_hits,
         "memoryUniqueTargetHitCount": memory_unique_target_hits,
         "memoryUniqueNonTargetCount": int(memory_summary.get("memoryUniqueNonTargetCount", 0) or 0),
+        "memoryUniqueTargetHitCurrentSupportSignalCounts": memory_summary.get(
+            "memoryUniqueTargetHitCurrentSupportSignalCounts", {}
+        ),
+        "memoryUniqueNonTargetCurrentSupportSignalCounts": memory_summary.get(
+            "memoryUniqueNonTargetCurrentSupportSignalCounts", {}
+        ),
         "lexicalSelectedTargetCount": lexical_target_hits,
         "graphSelectedTargetCount": graph_signal_targets,
         "graphEdgeTargetHitCount": graph_target_hits,
@@ -540,6 +546,12 @@ def evaluate(pair, index):
             "uniqueNonTargetWithoutCurrentSupport": after_memory.get(
                 "memoryUniqueNonTargetWithoutCurrentSupportCount", 0
             ),
+            "uniqueTargetHitCurrentSupportSignalCounts": after_memory.get(
+                "memoryUniqueTargetHitCurrentSupportSignalCounts", {}
+            ),
+            "uniqueNonTargetCurrentSupportSignalCounts": after_memory.get(
+                "memoryUniqueNonTargetCurrentSupportSignalCounts", {}
+            ),
             "uniqueTargetHitWithoutCurrentSupport": after_memory.get(
                 "memoryUniqueTargetHitWithoutCurrentSupportCount", 0
             ),
@@ -616,6 +628,39 @@ total_memory_targets_without_graph_or_semantic = sum(
 total_graph_edge_removed_targets = sum(
     result["signalComparison"]["graphEdgeAblationRemovedTargetHitCount"] for result in results
 )
+
+
+def merge_count_maps(results, field):
+    merged = {}
+    for result in results:
+        for key, value in result["lift"].get(field, {}).items():
+            merged[key] = merged.get(key, 0) + int(value or 0)
+    return dict(sorted(merged.items()))
+
+
+total_unique_target_hit_current_support_signal_counts = merge_count_maps(
+    results,
+    "uniqueTargetHitCurrentSupportSignalCounts",
+)
+total_unique_non_target_current_support_signal_counts = merge_count_maps(
+    results,
+    "uniqueNonTargetCurrentSupportSignalCounts",
+)
+
+
+def dominant_signals(counts):
+    return [
+        key
+        for key, _ in sorted(
+            counts.items(),
+            key=lambda item: (-int(item[1] or 0), item[0]),
+        )[:3]
+    ]
+
+
+supported_memory_noise_dominant_signals = dominant_signals(
+    total_unique_non_target_current_support_signal_counts
+)
 semantic_target_pairs = sum(
     1 for result in results if result["signalComparison"]["semanticSelectedTargetCount"] > 0
 )
@@ -645,7 +690,7 @@ if unsupported_memory_precision_needs_work:
         ]
     )
 elif supported_memory_noise_needs_review:
-    recommended_next_r_and_d.append("inspect_supported_memory_non_target_pressure")
+    recommended_next_r_and_d.append("tune_memory_weight_against_supported_signal_pressure")
 if total_unique_non_targets > 0:
     recommended_next_r_and_d.append("compare_memory_noise_against_current_signal_roles")
 if semantic_enabled:
@@ -682,6 +727,8 @@ payload = {
         "memoryUniqueNonTargetWithCurrentSupportCount": total_unique_non_targets_with_current_support,
         "memoryUniqueTargetHitWithoutCurrentSupportCount": total_unique_target_hits_without_current_support,
         "memoryUniqueNonTargetWithoutCurrentSupportCount": total_unique_non_targets_without_current_support,
+        "memoryUniqueTargetHitCurrentSupportSignalCounts": total_unique_target_hit_current_support_signal_counts,
+        "memoryUniqueNonTargetCurrentSupportSignalCounts": total_unique_non_target_current_support_signal_counts,
         "memoryTargetHitsWithGraphSupportUpperBound": total_graph_supported_memory_target_hits,
         "memoryTargetHitsWithSemanticSupportUpperBound": total_semantic_supported_memory_target_hits,
         "memoryUniqueTargetsWithGraphOrSemanticSupportUpperBound": total_graph_or_semantic_supported_unique_targets,
@@ -697,6 +744,7 @@ payload = {
         "precisionNeedsWork": noise_pairs > 0 or total_unique_non_targets > total_unique_target_hits,
         "unsupportedMemoryPrecisionNeedsWork": unsupported_memory_precision_needs_work,
         "supportedMemoryNoiseNeedsReview": supported_memory_noise_needs_review,
+        "supportedMemoryNoiseDominantSignals": supported_memory_noise_dominant_signals,
         "memoryNeedsCorroboration": total_memory_targets_without_graph_or_semantic > 0
         or total_unique_non_targets > 0,
         "semanticMeasured": semantic_enabled,

@@ -1950,6 +1950,11 @@ mod tests {
                 memory_unique_target_hit_without_current_support_count: 0,
                 memory_unique_non_target_with_current_support_count: 0,
                 memory_unique_non_target_without_current_support_count: 1,
+                memory_unique_target_hit_current_support_signal_counts: BTreeMap::from([(
+                    "dependency".to_string(),
+                    1,
+                )]),
+                memory_unique_non_target_current_support_signal_counts: BTreeMap::new(),
                 selected_role_counts: BTreeMap::from([("source".to_string(), 1)]),
                 source_text_logged: false,
             },

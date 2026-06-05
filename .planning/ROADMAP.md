@@ -110,6 +110,8 @@ Phase 227 reruns that five-lane Claude Code matrix and hardens the source-free r
 
 Phase 228 tightens the memory R&D interpretation after the Phase 224 broader proof left raw lexical-baseline-relative memory non-targets visible. Single-repo and suite memory-generalization reports now expose `memoryUniqueNonTargetWithCurrentSupportCount` and `supportedMemoryNoiseNeedsReview`, and the `recommendedNextRAndD` list is evidence-conditioned. A fresh four-repo semantic-enabled suite measured 12 pairs with two unique memory lifts, four memory unique non-targets, all four supported by current signals, and zero unsupported memory non-targets. The report now routes local memory R&D to `inspect_supported_memory_non_target_pressure` and `compare_memory_noise_against_current_signal_roles` instead of blindly demoting uncorroborated memory.
 
+Phase 229 completes that inspection surface. Historical memory summaries and the memory-generalization harnesses now expose `memoryUniqueNonTargetCurrentSupportSignalCounts`, `memoryUniqueTargetHitCurrentSupportSignalCounts`, and `supportedMemoryNoiseDominantSignals`. The fresh four-repo semantic-enabled suite still proves two unique memory lifts and zero unsupported memory non-targets, while showing supported memory non-target pressure dominated by `dependency = 4`, `lexical_expansion = 2`, `symbol = 2`, and `semantic = 1`. The report now routes the next local experiment to `tune_memory_weight_against_supported_signal_pressure` rather than further diagnosis or blind memory demotion.
+
 ## v2.5 Production Retrieval Quality
 
 ## Phases
