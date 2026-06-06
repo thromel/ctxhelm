@@ -140,6 +140,16 @@ non-target docs/planning/scripts/paper insertions displacing target source or
 test files. The next semantic R&D step should be target-preserving budget
 constraints or learned/listwise allocation, not another handwritten route.
 
+Phase 277 tests a source-free path-family budget constraint as the next
+target-preservation idea. The eval-only `semantic_family_budget_reranked`
+variant allows semantic-corroborated candidates only within the default top-K
+path-family budget and reports `familyBudgetSemanticRerankerContribution`.
+The result is mixed and rejected for promotion: RefactoringMiner and ReAgent get
+clean lift, but ctxhelm and VeriSchema still regress. This rules out another
+simple hand-written budget rule as a general semantic default and moves the
+remaining path toward learned/listwise allocation with explicit no-regress
+constraints or narrower corpus/profile-specific policy.
+
 Phase 196 reserves selected validation areas in broad context-area guidance and adds package-mirrored related-test affinity. The accepted release-binary proof promotes with selected-file/source/test/validation metrics unchanged while improving VeriSchema broad context-area recall from `0.5777778 -> 0.84444445` and next-read recovery from `16 -> 19` of `39` missed@10 files. A related-test-only intermediate proof was rejected because it did not move the product proof.
 
 Phase 197 adds source-free agent-evidence recovery accounting to context-area next-read summaries. The fresh release-binary proof promotes with selected-file/source/test/validation/broad-area metrics unchanged while showing VeriSchema has `29 / 39` missed@10 files recoverable through the full agent evidence bundle, compared with `19 / 39` through progressive next reads alone.

@@ -680,6 +680,13 @@ ctxhelm, ReAgent, and VeriSchema regressions are driven by non-target
 docs/planning/scripts/paper files entering the fixed top-K budget while target
 source or test files are lost.
 
+The gate also reports the eval-only `semantic_family_budget_reranked` variant
+and `familyBudgetSemanticRerankerContribution`. This variant constrains
+semantic-corroborated candidates to the source-free path-family counts already
+present in the default top-K ranking. It is diagnostic only. Phase 277 found
+clean lift on RefactoringMiner and ReAgent, but regressions on ctxhelm and
+VeriSchema, so the family-budget rule is not a promotion path.
+
 The same family rows also report support diagnostics for semantic-only files:
 `semanticOnlyTargetWithNonsemanticSupportCount`,
 `semanticOnlyTargetWithoutNonsemanticSupportCount`,
@@ -718,6 +725,12 @@ diagnostics:
   inserted non-target top-K files while default target files were lost. Treat
   this as evidence for target-preserving budget constraints, not as a routing
   candidate.
+- `semantic_family_budget_reranker_clean_lift`: the family-budget semantic
+  variant added target hits without default-only target churn in this gate.
+- `semantic_family_budget_reranker_regression`: the family-budget semantic
+  variant lost target hits and must remain eval-only.
+- `semantic_family_budget_reranker_neutral`: the family-budget semantic variant
+  preserved target hits without adding target hits.
 
 The `rerankerContribution.queryFamilyContributions` JSON field groups the same
 source-free evidence by primary query family, such as `explicit_path`,

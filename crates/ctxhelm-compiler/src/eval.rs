@@ -366,6 +366,8 @@ pub struct SemanticPrecisionGateReport {
     pub routed_reranker_contribution: RerankerContributionSummary,
     #[serde(default)]
     pub semantic_corroborated_reranker_contribution: RerankerContributionSummary,
+    #[serde(default)]
+    pub family_budget_semantic_reranker_contribution: RerankerContributionSummary,
     pub provider_policy: ProviderPolicyReport,
     pub precision_status: PrecisionStatusReport,
     #[serde(default)]
@@ -3333,6 +3335,14 @@ pub fn semantic_precision_gate_report_with_provider(
     let semantic_contribution = semantic_contribution_summary(&semantic);
     let support_profile_routed_semantic =
         support_profile_routed_semantic_report(&default, &semantic, &semantic_contribution);
+    let family_budget_semantic_reranked =
+        family_budget_semantic_reranked_report(&default, &semantic_corroborated_reranked);
+    named_wins.extend(named_cases(
+        &default,
+        &family_budget_semantic_reranked,
+        "semantic_family_budget_reranked",
+        NamedCaseKind::Win,
+    ));
     let mut named_regressions = named_cases(
         &default,
         &semantic,
@@ -3363,6 +3373,12 @@ pub fn semantic_precision_gate_report_with_provider(
         "support_profile_routed_semantic",
         NamedCaseKind::Regression,
     ));
+    named_regressions.extend(named_cases(
+        &default,
+        &family_budget_semantic_reranked,
+        "semantic_family_budget_reranked",
+        NamedCaseKind::Regression,
+    ));
     named_regressions.extend(protected_evidence_regressions(
         &default,
         &semantic,
@@ -3388,6 +3404,11 @@ pub fn semantic_precision_gate_report_with_provider(
         &support_profile_routed_semantic,
         "support_profile_routed_semantic",
     ));
+    named_regressions.extend(protected_evidence_regressions(
+        &default,
+        &family_budget_semantic_reranked,
+        "semantic_family_budget_reranked",
+    ));
     let named_misses = named_cases(&default, &semantic, "local_semantic", NamedCaseKind::Miss);
     let reranker_contribution = reranker_contribution_summary(
         &default,
@@ -3407,6 +3428,12 @@ pub fn semantic_precision_gate_report_with_provider(
         "semantic_corroborated_reranked",
         "Semantic-corroborated reranker",
     );
+    let family_budget_semantic_reranker_contribution = reranker_contribution_summary(
+        &default,
+        &family_budget_semantic_reranked,
+        "semantic_family_budget_reranked",
+        "Family-budget semantic reranker",
+    );
     variants.push(gate_variant(
         "support_profile_routed_semantic",
         SemanticPrecisionVariantStatus::Evaluated,
@@ -3423,6 +3450,22 @@ pub fn semantic_precision_gate_report_with_provider(
         "eval_only",
         "Eval-only synthetic route that inserts semantic candidates only for support profiles with semantic-only targets and no semantic-only non-targets.",
     ));
+    variants.push(gate_variant(
+        "semantic_family_budget_reranked",
+        SemanticPrecisionVariantStatus::Evaluated,
+        true,
+        false,
+        true,
+        Some(
+            family_budget_semantic_reranked
+                .ranking_comparison
+                .combined
+                .clone(),
+        ),
+        &family_budget_semantic_reranked,
+        "eval_only",
+        "Eval-only semantic-corroborated ranking with a source-free default source/test/script preservation budget.",
+    ));
     let (decision, decision_reason) =
         gate_decision_from_variants(&variants, &named_regressions, &provider_policy);
     let mut diagnostics = provider_policy.diagnostics.clone();
@@ -3436,6 +3479,9 @@ pub fn semantic_precision_gate_report_with_provider(
     ));
     diagnostics.extend(semantic_corroborated_reranker_contribution_diagnostics(
         &semantic_corroborated_reranker_contribution,
+    ));
+    diagnostics.extend(family_budget_semantic_reranker_contribution_diagnostics(
+        &family_budget_semantic_reranker_contribution,
     ));
     if !named_regressions.is_empty() {
         diagnostics.push(Diagnostic {
@@ -3466,6 +3512,7 @@ pub fn semantic_precision_gate_report_with_provider(
         reranker_contribution,
         routed_reranker_contribution,
         semantic_corroborated_reranker_contribution,
+        family_budget_semantic_reranker_contribution,
         provider_policy,
         precision_status: precision,
         diagnostics,
@@ -3959,6 +4006,110 @@ fn support_profile_routed_semantic_report(
     routed
 }
 
+fn family_budget_semantic_reranked_report(
+    default: &HistoricalEvalReport,
+    semantic_corroborated: &HistoricalEvalReport,
+) -> HistoricalEvalReport {
+    let semantic_by_sha = semantic_corroborated
+        .commits
+        .iter()
+        .map(|commit| (commit.sha.as_str(), commit))
+        .collect::<BTreeMap<_, _>>();
+    let mut constrained = default.clone();
+    constrained.eval_range_id = format!("{}:semantic-family-budget", default.eval_range_id);
+    constrained.effective_filters.semantic_enabled = true;
+    constrained.effective_filters.semantic_provider = semantic_corroborated
+        .effective_filters
+        .semantic_provider
+        .clone();
+    constrained.effective_filters.semantic_corroborated_reranker = true;
+    constrained.runtime.total_millis = default
+        .runtime
+        .total_millis
+        .saturating_add(semantic_corroborated.runtime.total_millis);
+
+    let ranking_budget = constrained.ranking_comparison.k.max(1);
+    for commit in &mut constrained.commits {
+        let Some(semantic_commit) = semantic_by_sha.get(commit.sha.as_str()) else {
+            refresh_commit_ranking_metrics(commit);
+            continue;
+        };
+        commit.recommended_context_files = family_budget_semantic_files(
+            &commit.recommended_context_files,
+            &semantic_commit.recommended_context_files,
+            ranking_budget,
+        );
+        refresh_commit_ranking_metrics(commit);
+    }
+
+    refresh_historical_report_ranking_metrics(&mut constrained);
+    constrained.recommended_research_actions =
+        historical_recommended_research_actions(&constrained);
+    constrained
+}
+
+fn family_budget_semantic_files(
+    default_files: &[String],
+    semantic_files: &[String],
+    ranking_budget: usize,
+) -> Vec<String> {
+    let ranking_budget = ranking_budget.max(1);
+    let family_budget = default_files
+        .iter()
+        .take(ranking_budget)
+        .map(|path| reranker_path_family(path))
+        .fold(BTreeMap::<String, usize>::new(), |mut counts, family| {
+            *counts.entry(family).or_insert(0) += 1;
+            counts
+        });
+    let mut used_family_budget = BTreeMap::<String, usize>::new();
+    let mut ranking = Vec::new();
+    let mut seen = BTreeSet::new();
+    for path in semantic_files {
+        if seen.contains(path) {
+            continue;
+        }
+        if family_budget_accepts_path(path, &family_budget, &mut used_family_budget) {
+            seen.insert(path.clone());
+            ranking.push(path.clone());
+        }
+        if ranking.len() >= ranking_budget {
+            break;
+        }
+    }
+    for path in default_files {
+        if seen.contains(path) {
+            continue;
+        }
+        if family_budget_accepts_path(path, &family_budget, &mut used_family_budget) {
+            seen.insert(path.clone());
+            ranking.push(path.clone());
+        }
+        if ranking.len() >= ranking_budget {
+            break;
+        }
+    }
+    ranking.truncate(ranking_budget);
+    ranking
+}
+
+fn family_budget_accepts_path(
+    path: &str,
+    family_budget: &BTreeMap<String, usize>,
+    used_family_budget: &mut BTreeMap<String, usize>,
+) -> bool {
+    let family = reranker_path_family(path);
+    let Some(limit) = family_budget.get(&family).copied() else {
+        return false;
+    };
+    let used = used_family_budget.entry(family).or_insert(0);
+    if *used >= limit {
+        return false;
+    }
+    *used += 1;
+    true
+}
+
 fn semantic_candidate_profile_contains_path(commit: &HistoricalCommitEval, path: &str) -> bool {
     commit
         .candidate_missed_file_profiles_at_10
@@ -4020,6 +4171,21 @@ fn refresh_commit_ranking_metrics(commit: &mut HistoricalCommitEval) {
         changed_file_hits(&source_changed_files, &commit.recommended_context_files, 5).len();
     commit.source_hits_at_10 =
         changed_file_hits(&source_changed_files, &commit.recommended_context_files, 10).len();
+    let test_changed_files = filter_changed_labels_by_role(
+        &commit.changed_path_labels,
+        &commit.retrieval_target_files,
+        |role| matches!(role, FileRole::Test),
+    );
+    commit.test_hits_at_5 =
+        changed_file_hits(&test_changed_files, &commit.recommended_context_files, 5).len();
+    commit.test_hits_at_10 =
+        changed_file_hits(&test_changed_files, &commit.recommended_context_files, 10).len();
+    commit.effective_validation_hits_at_10 = effective_validation_hit_paths(
+        &test_changed_files,
+        &commit.recommended_tests,
+        &commit.recommended_commands,
+    )
+    .len();
     let selected_at_10 = commit
         .recommended_context_files
         .iter()
@@ -5357,6 +5523,53 @@ fn semantic_corroborated_reranker_contribution_diagnostics(
                 .take(10)
                 .collect(),
             count: non_target_displacements.len(),
+        });
+    }
+    diagnostics
+}
+
+fn family_budget_semantic_reranker_contribution_diagnostics(
+    summary: &RerankerContributionSummary,
+) -> Vec<Diagnostic> {
+    if summary.evaluated_commits == 0 {
+        return Vec::new();
+    }
+    let mut diagnostics = Vec::new();
+    if summary.regressed_commit_count > 0 || summary.target_hit_delta < 0 {
+        diagnostics.push(Diagnostic {
+            code: "semantic_family_budget_reranker_regression".to_string(),
+            severity: DiagnosticSeverity::Warning,
+            message: "Family-budget semantic reranking lost target hits; keep this budget constraint eval-only.".to_string(),
+            paths: summary
+                .regressed_cases
+                .iter()
+                .flat_map(|case| case.paths.clone())
+                .take(10)
+                .collect(),
+            count: summary.regressed_commit_count,
+        });
+    } else if summary.target_hit_delta > 0 && summary.default_only_target_hit_count == 0 {
+        diagnostics.push(Diagnostic {
+            code: "semantic_family_budget_reranker_clean_lift".to_string(),
+            severity: DiagnosticSeverity::Info,
+            message: "Family-budget semantic reranking added target hits without default-only target churn in this gate.".to_string(),
+            paths: summary
+                .improved_cases
+                .iter()
+                .flat_map(|case| case.paths.clone())
+                .take(10)
+                .collect(),
+            count: summary.improved_commit_count,
+        });
+    } else {
+        diagnostics.push(Diagnostic {
+            code: "semantic_family_budget_reranker_neutral".to_string(),
+            severity: DiagnosticSeverity::Info,
+            message:
+                "Family-budget semantic reranking preserved target hits but did not add target hits in this gate."
+                    .to_string(),
+            paths: Vec::new(),
+            count: summary.neutral_commit_count,
         });
     }
     diagnostics
@@ -10699,7 +10912,8 @@ fn top_missing_files(
 mod tests {
     use super::*;
     use ctxhelm_core::{
-        ProviderPolicy, ProviderPolicyReport, RetrievalEvidence, RetrievalSignalScore,
+        PrecisionStatus, ProviderPolicy, ProviderPolicyReport, RetrievalEvidence,
+        RetrievalSignalScore,
     };
 
     #[test]
@@ -11568,6 +11782,147 @@ mod tests {
 
         assert!(decoded.displacement_contributions.is_empty());
         assert_eq!(decoded.evaluated_commits, 1);
+    }
+
+    #[test]
+    fn family_budget_semantic_files_preserve_default_path_family_counts() {
+        let default_files = vec![
+            "src/main/java/org/example/Session.java".to_string(),
+            "src/test/java/org/example/SessionTest.java".to_string(),
+            "scripts/run_second_family_end_to_end.py".to_string(),
+            "docs/default.md".to_string(),
+        ];
+        let semantic_files = vec![
+            "docs/semantic.md".to_string(),
+            "paper/main.tex".to_string(),
+            "src/main/java/org/example/Session.java".to_string(),
+            "src/test/java/org/example/SessionTest.java".to_string(),
+        ];
+
+        let ranking = family_budget_semantic_files(&default_files, &semantic_files, 5);
+
+        assert_eq!(
+            ranking,
+            vec![
+                "docs/semantic.md".to_string(),
+                "src/main/java/org/example/Session.java".to_string(),
+                "src/test/java/org/example/SessionTest.java".to_string(),
+                "scripts/run_second_family_end_to_end.py".to_string(),
+            ]
+        );
+    }
+
+    #[test]
+    fn family_budget_semantic_report_preserves_default_test_family_hit() {
+        let mut default = empty_historical_eval_report("semantic-family-budget");
+        default.commits[0].retrieval_target_files =
+            vec!["src/test/java/org/example/SessionTest.java".to_string()];
+        default.commits[0].changed_path_labels = vec![HistoricalChangedPathLabel {
+            path: "src/test/java/org/example/SessionTest.java".to_string(),
+            old_path: None,
+            change_kind: ctxhelm_index::ChangeKind::Modified,
+            role: FileRole::Test,
+            label_scope: LabelScope::Safe,
+            excluded_reason: None,
+        }];
+        default.commits[0].recommended_context_files = vec![
+            "src/test/java/org/example/SessionTest.java".to_string(),
+            "docs/default.md".to_string(),
+        ];
+        refresh_commit_ranking_metrics(&mut default.commits[0]);
+        refresh_historical_report_ranking_metrics(&mut default);
+
+        let mut semantic = default.clone();
+        semantic.commits[0].recommended_context_files =
+            vec!["docs/semantic.md".to_string(), "paper/main.tex".to_string()];
+        refresh_commit_ranking_metrics(&mut semantic.commits[0]);
+        refresh_historical_report_ranking_metrics(&mut semantic);
+
+        let constrained = family_budget_semantic_reranked_report(&default, &semantic);
+
+        assert_eq!(
+            constrained.commits[0].file_hits_at_10,
+            vec!["src/test/java/org/example/SessionTest.java".to_string()]
+        );
+        assert_eq!(constrained.commits[0].test_hits_at_10, 1);
+        assert_eq!(constrained.file_recall_at_10, 1.0);
+    }
+
+    #[test]
+    fn semantic_precision_gate_report_deserializes_without_family_budget_summary() {
+        let report = SemanticPrecisionGateReport {
+            repo_id: "repo".to_string(),
+            eval_range_id: "gate".to_string(),
+            evaluated_commits: 0,
+            k: 10,
+            decision: SemanticPrecisionGateDecision::Hold,
+            decision_reason: "held".to_string(),
+            variants: Vec::new(),
+            named_wins: Vec::new(),
+            named_regressions: Vec::new(),
+            named_misses: Vec::new(),
+            semantic_contribution: SemanticContributionSummary::default(),
+            reranker_contribution: RerankerContributionSummary::default(),
+            routed_reranker_contribution: RerankerContributionSummary::default(),
+            semantic_corroborated_reranker_contribution: RerankerContributionSummary::default(),
+            family_budget_semantic_reranker_contribution: RerankerContributionSummary::default(),
+            provider_policy: source_free_provider_policy(),
+            precision_status: PrecisionStatusReport {
+                status: PrecisionStatus::Unavailable,
+                provider: None,
+                overlay_path: None,
+                edge_count: 0,
+                rejected_edge_count: 0,
+                degraded: false,
+                stale: false,
+                diagnostics: Vec::new(),
+            },
+            diagnostics: Vec::new(),
+            source_text_logged: false,
+            privacy_status: PrivacyStatus::local_only(),
+        };
+        let mut value = serde_json::to_value(report).expect("gate report json");
+        value
+            .as_object_mut()
+            .expect("gate report object")
+            .remove("familyBudgetSemanticRerankerContribution");
+
+        let decoded: SemanticPrecisionGateReport =
+            serde_json::from_value(value).expect("missing semantic-family-budget summary defaults");
+
+        assert!(decoded
+            .family_budget_semantic_reranker_contribution
+            .displacement_contributions
+            .is_empty());
+    }
+
+    #[test]
+    fn family_budget_semantic_diagnostics_warn_on_regression() {
+        let summary = RerankerContributionSummary {
+            evaluated_commits: 2,
+            regressed_commit_count: 1,
+            neutral_commit_count: 1,
+            default_target_hit_count: 2,
+            reranked_target_hit_count: 1,
+            target_hit_delta: -1,
+            default_only_target_hit_count: 1,
+            regressed_cases: vec![SemanticPrecisionNamedCase {
+                sha: "abc123".to_string(),
+                variant: "semantic_family_budget_reranked".to_string(),
+                reason: "lost target".to_string(),
+                paths: vec!["src/lost.rs".to_string()],
+            }],
+            ..RerankerContributionSummary::default()
+        };
+
+        let diagnostics = family_budget_semantic_reranker_contribution_diagnostics(&summary);
+
+        assert_eq!(
+            diagnostics[0].code,
+            "semantic_family_budget_reranker_regression"
+        );
+        assert_eq!(diagnostics[0].severity, DiagnosticSeverity::Warning);
+        assert_eq!(diagnostics[0].paths, vec!["src/lost.rs".to_string()]);
     }
 
     #[test]
