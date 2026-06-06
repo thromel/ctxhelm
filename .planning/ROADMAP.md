@@ -183,6 +183,15 @@ in two commits. Every artifact sets `runtimePromotable = false`, so the next
 step is cross-repo or cross-slice holdout evaluation of exported policy
 profiles, not runtime/default promotion.
 
+Phase 281 evaluates that exported policy shape with a source-free leave-one-out
+holdout. The eval-only `semantic_learned_policy_holdout_reranked` variant
+requires repeated profile support from other commits before admitting
+semantic-corroborated files into the held-out commit. The result is no-regress
+but insufficient: all four repos report `appliedCommitCount = 0`, target delta
+`0`, and `insufficient_eligible_holdout_profiles`. This keeps runtime promotion
+blocked and moves the next semantic work to broader training/holdout corpora or
+separate revision slices.
+
 Phase 196 reserves selected validation areas in broad context-area guidance and adds package-mirrored related-test affinity. The accepted release-binary proof promotes with selected-file/source/test/validation metrics unchanged while improving VeriSchema broad context-area recall from `0.5777778 -> 0.84444445` and next-read recovery from `16 -> 19` of `39` missed@10 files. A related-test-only intermediate proof was rejected because it did not move the product proof.
 
 Phase 197 adds source-free agent-evidence recovery accounting to context-area next-read summaries. The fresh release-binary proof promotes with selected-file/source/test/validation/broad-area metrics unchanged while showing VeriSchema has `29 / 39` missed@10 files recoverable through the full agent evidence bundle, compared with `19 / 39` through progressive next reads alone.

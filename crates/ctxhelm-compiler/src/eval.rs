@@ -372,6 +372,10 @@ pub struct SemanticPrecisionGateReport {
     pub learned_profile_semantic_reranker_contribution: RerankerContributionSummary,
     #[serde(default)]
     pub learned_semantic_policy: LearnedSemanticPolicyReport,
+    #[serde(default)]
+    pub learned_semantic_policy_holdout: LearnedSemanticPolicyHoldoutReport,
+    #[serde(default)]
+    pub learned_policy_semantic_holdout_contribution: RerankerContributionSummary,
     pub provider_policy: ProviderPolicyReport,
     pub precision_status: PrecisionStatusReport,
     #[serde(default)]
@@ -443,6 +447,48 @@ pub struct LearnedSemanticPolicyProfile {
     pub lost_default_target_count: usize,
     pub eligible: bool,
     pub decision_reason: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct LearnedSemanticPolicyHoldoutReport {
+    pub schema_version: u32,
+    pub source_policy_id: String,
+    pub holdout_variant: String,
+    pub holdout_strategy: String,
+    pub minimum_support_commit_count: usize,
+    pub evaluated_commit_count: usize,
+    pub holdout_commit_count: usize,
+    pub applied_commit_count: usize,
+    pub applied_file_count: usize,
+    pub target_hit_delta: i32,
+    pub regressed_commit_count: usize,
+    pub decision: String,
+    pub runtime_promotable: bool,
+    pub source_text_logged: bool,
+    pub privacy_status: PrivacyStatus,
+}
+
+impl Default for LearnedSemanticPolicyHoldoutReport {
+    fn default() -> Self {
+        Self {
+            schema_version: LEARNED_SEMANTIC_POLICY_SCHEMA_VERSION,
+            source_policy_id: String::new(),
+            holdout_variant: String::new(),
+            holdout_strategy: "absent".to_string(),
+            minimum_support_commit_count: LEARNED_SEMANTIC_POLICY_MIN_SUPPORT_COMMIT_COUNT,
+            evaluated_commit_count: 0,
+            holdout_commit_count: 0,
+            applied_commit_count: 0,
+            applied_file_count: 0,
+            target_hit_delta: 0,
+            regressed_commit_count: 0,
+            decision: "absent".to_string(),
+            runtime_promotable: false,
+            source_text_logged: false,
+            privacy_status: PrivacyStatus::local_only(),
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -3408,6 +3454,11 @@ pub fn semantic_precision_gate_report_with_provider(
         family_budget_semantic_reranked_report(&default, &semantic_corroborated_reranked);
     let learned_profile_semantic_reranked =
         learned_profile_semantic_reranked_report(&default, &semantic_corroborated_reranked);
+    let learned_policy_semantic_holdout_reranked = learned_policy_holdout_semantic_reranked_report(
+        &default,
+        &semantic_corroborated_reranked,
+        LEARNED_SEMANTIC_POLICY_MIN_SUPPORT_COMMIT_COUNT,
+    );
     named_wins.extend(named_cases(
         &default,
         &family_budget_semantic_reranked,
@@ -3418,6 +3469,12 @@ pub fn semantic_precision_gate_report_with_provider(
         &default,
         &learned_profile_semantic_reranked,
         "semantic_learned_profile_reranked",
+        NamedCaseKind::Win,
+    ));
+    named_wins.extend(named_cases(
+        &default,
+        &learned_policy_semantic_holdout_reranked,
+        "semantic_learned_policy_holdout_reranked",
         NamedCaseKind::Win,
     ));
     let mut named_regressions = named_cases(
@@ -3462,6 +3519,12 @@ pub fn semantic_precision_gate_report_with_provider(
         "semantic_learned_profile_reranked",
         NamedCaseKind::Regression,
     ));
+    named_regressions.extend(named_cases(
+        &default,
+        &learned_policy_semantic_holdout_reranked,
+        "semantic_learned_policy_holdout_reranked",
+        NamedCaseKind::Regression,
+    ));
     named_regressions.extend(protected_evidence_regressions(
         &default,
         &semantic,
@@ -3497,6 +3560,11 @@ pub fn semantic_precision_gate_report_with_provider(
         &learned_profile_semantic_reranked,
         "semantic_learned_profile_reranked",
     ));
+    named_regressions.extend(protected_evidence_regressions(
+        &default,
+        &learned_policy_semantic_holdout_reranked,
+        "semantic_learned_policy_holdout_reranked",
+    ));
     let named_misses = named_cases(&default, &semantic, "local_semantic", NamedCaseKind::Miss);
     let reranker_contribution = reranker_contribution_summary(
         &default,
@@ -3528,10 +3596,22 @@ pub fn semantic_precision_gate_report_with_provider(
         "semantic_learned_profile_reranked",
         "Learned-profile semantic reranker",
     );
+    let learned_policy_semantic_holdout_contribution = reranker_contribution_summary(
+        &default,
+        &learned_policy_semantic_holdout_reranked,
+        "semantic_learned_policy_holdout_reranked",
+        "Learned semantic policy holdout reranker",
+    );
     let learned_semantic_policy = learned_semantic_policy_report(
         &default,
         &semantic_corroborated_reranked,
         LEARNED_SEMANTIC_POLICY_MIN_SUPPORT_COMMIT_COUNT,
+    );
+    let learned_semantic_policy_holdout = learned_semantic_policy_holdout_report(
+        &learned_semantic_policy,
+        &default,
+        &learned_policy_semantic_holdout_reranked,
+        &learned_policy_semantic_holdout_contribution,
     );
     variants.push(gate_variant(
         "support_profile_routed_semantic",
@@ -3581,6 +3661,22 @@ pub fn semantic_precision_gate_report_with_provider(
         "eval_only",
         "Eval-only leave-one-out source-free profile policy for semantic-corroborated candidates.",
     ));
+    variants.push(gate_variant(
+        "semantic_learned_policy_holdout_reranked",
+        SemanticPrecisionVariantStatus::Evaluated,
+        true,
+        false,
+        true,
+        Some(
+            learned_policy_semantic_holdout_reranked
+                .ranking_comparison
+                .combined
+                .clone(),
+        ),
+        &learned_policy_semantic_holdout_reranked,
+        "eval_only",
+        "Eval-only held-out application of the learned semantic policy artifact using repeated source-free profile support.",
+    ));
     let (decision, decision_reason) =
         gate_decision_from_variants(&variants, &named_regressions, &provider_policy);
     let mut diagnostics = provider_policy.diagnostics.clone();
@@ -3603,6 +3699,9 @@ pub fn semantic_precision_gate_report_with_provider(
     ));
     diagnostics.extend(learned_semantic_policy_diagnostics(
         &learned_semantic_policy,
+    ));
+    diagnostics.extend(learned_semantic_policy_holdout_diagnostics(
+        &learned_semantic_policy_holdout,
     ));
     if !named_regressions.is_empty() {
         diagnostics.push(Diagnostic {
@@ -3636,6 +3735,8 @@ pub fn semantic_precision_gate_report_with_provider(
         family_budget_semantic_reranker_contribution,
         learned_profile_semantic_reranker_contribution,
         learned_semantic_policy,
+        learned_semantic_policy_holdout,
+        learned_policy_semantic_holdout_contribution,
         provider_policy,
         precision_status: precision,
         diagnostics,
@@ -4245,13 +4346,40 @@ fn learned_profile_semantic_reranked_report(
     default: &HistoricalEvalReport,
     semantic_corroborated: &HistoricalEvalReport,
 ) -> HistoricalEvalReport {
+    learned_profile_semantic_reranked_report_with_min_support(default, semantic_corroborated, 1)
+}
+
+fn learned_policy_holdout_semantic_reranked_report(
+    default: &HistoricalEvalReport,
+    semantic_corroborated: &HistoricalEvalReport,
+    minimum_support_commit_count: usize,
+) -> HistoricalEvalReport {
+    learned_profile_semantic_reranked_report_with_min_support(
+        default,
+        semantic_corroborated,
+        minimum_support_commit_count.max(1),
+    )
+}
+
+fn learned_profile_semantic_reranked_report_with_min_support(
+    default: &HistoricalEvalReport,
+    semantic_corroborated: &HistoricalEvalReport,
+    minimum_support_commit_count: usize,
+) -> HistoricalEvalReport {
     let semantic_by_sha = semantic_corroborated
         .commits
         .iter()
         .map(|commit| (commit.sha.as_str(), commit))
         .collect::<BTreeMap<_, _>>();
     let mut learned = default.clone();
-    learned.eval_range_id = format!("{}:semantic-learned-profile", default.eval_range_id);
+    learned.eval_range_id = if minimum_support_commit_count <= 1 {
+        format!("{}:semantic-learned-profile", default.eval_range_id)
+    } else {
+        format!(
+            "{}:semantic-learned-policy-holdout-support{}",
+            default.eval_range_id, minimum_support_commit_count
+        )
+    };
     learned.effective_filters.semantic_enabled = true;
     learned.effective_filters.semantic_provider = semantic_corroborated
         .effective_filters
@@ -4275,14 +4403,83 @@ fn learned_profile_semantic_reranked_report(
             Some(commit.sha.as_str()),
             ranking_budget,
         );
-        commit.recommended_context_files =
-            learned_profile_semantic_files(commit, semantic_commit, &profile_stats, ranking_budget);
+        commit.recommended_context_files = learned_profile_semantic_files_with_min_support(
+            commit,
+            semantic_commit,
+            &profile_stats,
+            ranking_budget,
+            minimum_support_commit_count,
+        );
         refresh_commit_ranking_metrics(commit);
     }
 
     refresh_historical_report_ranking_metrics(&mut learned);
     learned.recommended_research_actions = historical_recommended_research_actions(&learned);
     learned
+}
+
+fn learned_semantic_policy_holdout_report(
+    policy: &LearnedSemanticPolicyReport,
+    default: &HistoricalEvalReport,
+    holdout: &HistoricalEvalReport,
+    contribution: &RerankerContributionSummary,
+) -> LearnedSemanticPolicyHoldoutReport {
+    let ranking_budget = default.ranking_comparison.k.max(1);
+    let holdout_by_sha = holdout
+        .commits
+        .iter()
+        .map(|commit| (commit.sha.as_str(), commit))
+        .collect::<BTreeMap<_, _>>();
+    let mut applied_commit_count = 0;
+    let mut applied_file_count = 0;
+    for default_commit in &default.commits {
+        let Some(holdout_commit) = holdout_by_sha.get(default_commit.sha.as_str()) else {
+            continue;
+        };
+        let default_selected = default_commit
+            .recommended_context_files
+            .iter()
+            .take(ranking_budget)
+            .cloned()
+            .collect::<BTreeSet<_>>();
+        let holdout_selected = holdout_commit
+            .recommended_context_files
+            .iter()
+            .take(ranking_budget)
+            .cloned()
+            .collect::<BTreeSet<_>>();
+        let inserted_count = holdout_selected.difference(&default_selected).count();
+        if inserted_count > 0 {
+            applied_commit_count += 1;
+            applied_file_count += inserted_count;
+        }
+    }
+    let decision = if contribution.regressed_commit_count > 0 || contribution.target_hit_delta < 0 {
+        "blocked_regression"
+    } else if contribution.target_hit_delta > 0 && contribution.default_only_target_hit_count == 0 {
+        "holdout_clean_lift_requires_cross_repo_repetition"
+    } else if applied_commit_count == 0 {
+        "insufficient_eligible_holdout_profiles"
+    } else {
+        "holdout_neutral"
+    };
+    LearnedSemanticPolicyHoldoutReport {
+        schema_version: LEARNED_SEMANTIC_POLICY_SCHEMA_VERSION,
+        source_policy_id: policy.policy_id.clone(),
+        holdout_variant: "semantic_learned_policy_holdout_reranked".to_string(),
+        holdout_strategy: "leave_one_out_by_commit_with_minimum_profile_support".to_string(),
+        minimum_support_commit_count: policy.minimum_support_commit_count,
+        evaluated_commit_count: default.evaluated_commits,
+        holdout_commit_count: default.commits.len(),
+        applied_commit_count,
+        applied_file_count,
+        target_hit_delta: contribution.target_hit_delta,
+        regressed_commit_count: contribution.regressed_commit_count,
+        decision: decision.to_string(),
+        runtime_promotable: false,
+        source_text_logged: false,
+        privacy_status: PrivacyStatus::local_only(),
+    }
 }
 
 fn learned_semantic_profile_stats(
@@ -4487,11 +4684,12 @@ fn update_learned_semantic_profile_stats(
     }
 }
 
-fn learned_profile_semantic_files(
+fn learned_profile_semantic_files_with_min_support(
     default_commit: &HistoricalCommitEval,
     semantic_commit: &HistoricalCommitEval,
     profile_stats: &BTreeMap<(String, String), LearnedSemanticProfileStats>,
     ranking_budget: usize,
+    minimum_support_commit_count: usize,
 ) -> Vec<String> {
     let default_selected = default_commit
         .recommended_context_files
@@ -4509,7 +4707,12 @@ fn learned_profile_semantic_files(
             let profile = (query_family.clone(), reranker_path_family(path));
             profile_stats
                 .get(&profile)
-                .map(learned_semantic_profile_is_safe)
+                .map(|stats| {
+                    learned_semantic_profile_is_safe_with_min_support(
+                        stats,
+                        minimum_support_commit_count,
+                    )
+                })
                 .unwrap_or(false)
         })
         .cloned()
@@ -4521,10 +4724,6 @@ fn learned_profile_semantic_files(
         &default_commit.recommended_context_files,
         learned_semantic_files,
     )
-}
-
-fn learned_semantic_profile_is_safe(stats: &LearnedSemanticProfileStats) -> bool {
-    learned_semantic_profile_is_safe_with_min_support(stats, 1)
 }
 
 fn learned_semantic_profile_is_safe_with_min_support(
@@ -6089,6 +6288,47 @@ fn learned_semantic_policy_diagnostics(report: &LearnedSemanticPolicyReport) -> 
         });
     }
     diagnostics
+}
+
+fn learned_semantic_policy_holdout_diagnostics(
+    report: &LearnedSemanticPolicyHoldoutReport,
+) -> Vec<Diagnostic> {
+    if report.evaluated_commit_count == 0 || report.source_policy_id.is_empty() {
+        return Vec::new();
+    }
+    let (code, severity, message, count) = match report.decision.as_str() {
+        "blocked_regression" => (
+            "semantic_learned_policy_holdout_regression",
+            DiagnosticSeverity::Warning,
+            "Learned semantic policy holdout lost target hits; keep the artifact eval-only.",
+            report.regressed_commit_count,
+        ),
+        "holdout_clean_lift_requires_cross_repo_repetition" => (
+            "semantic_learned_policy_holdout_clean_lift",
+            DiagnosticSeverity::Info,
+            "Learned semantic policy holdout added target hits without default-only target churn; repeat on cross-repo holdout before promotion.",
+            report.applied_commit_count,
+        ),
+        "holdout_neutral" => (
+            "semantic_learned_policy_holdout_neutral",
+            DiagnosticSeverity::Info,
+            "Learned semantic policy holdout applied without target-hit movement.",
+            report.applied_commit_count,
+        ),
+        _ => (
+            "semantic_learned_policy_holdout_insufficient",
+            DiagnosticSeverity::Info,
+            "Learned semantic policy holdout had no eligible held-out applications under the configured support threshold.",
+            report.minimum_support_commit_count,
+        ),
+    };
+    vec![Diagnostic {
+        code: code.to_string(),
+        severity,
+        message: message.to_string(),
+        paths: Vec::new(),
+        count,
+    }]
 }
 
 fn protected_evidence_miss_rate_delta(
@@ -12557,6 +12797,74 @@ mod tests {
     }
 
     #[test]
+    fn learned_policy_holdout_semantic_report_blocks_profiles_below_repeated_support() {
+        let mut default = empty_historical_eval_report("semantic-learned-policy-holdout");
+        default.evaluated_commits = 2;
+        default.commits[0].sha = "holdout-a".to_string();
+        default.commits[0].query_trace =
+            Some(query_trace_with_facets(vec![QueryFacetKind::DomainPhrase]));
+        default.commits[0].retrieval_target_files = vec!["docs/semantic_a.md".to_string()];
+        default.commits[0].changed_path_labels = vec![historical_changed_path_label(
+            "docs/semantic_a.md",
+            FileRole::Docs,
+        )];
+        default.commits[0].recommended_context_files = vec!["src/default_a.rs".to_string()];
+        let mut second = default.commits[0].clone();
+        second.sha = "holdout-b".to_string();
+        second.retrieval_target_files = vec!["docs/semantic_b.md".to_string()];
+        second.changed_path_labels = vec![historical_changed_path_label(
+            "docs/semantic_b.md",
+            FileRole::Docs,
+        )];
+        second.recommended_context_files = vec!["src/default_b.rs".to_string()];
+        default.commits.push(second);
+        for commit in &mut default.commits {
+            refresh_commit_ranking_metrics(commit);
+        }
+        refresh_historical_report_ranking_metrics(&mut default);
+
+        let mut semantic = default.clone();
+        semantic.commits[0].recommended_context_files = vec![
+            "src/default_a.rs".to_string(),
+            "docs/semantic_a.md".to_string(),
+        ];
+        semantic.commits[1].recommended_context_files = vec![
+            "src/default_b.rs".to_string(),
+            "docs/semantic_b.md".to_string(),
+        ];
+        for commit in &mut semantic.commits {
+            refresh_commit_ranking_metrics(commit);
+        }
+        refresh_historical_report_ranking_metrics(&mut semantic);
+
+        let holdout = learned_policy_holdout_semantic_reranked_report(&default, &semantic, 2);
+        let contribution = reranker_contribution_summary(
+            &default,
+            &holdout,
+            "semantic_learned_policy_holdout_reranked",
+            "Learned semantic policy holdout reranker",
+        );
+        let policy = learned_semantic_policy_report(&default, &semantic, 2);
+        let report =
+            learned_semantic_policy_holdout_report(&policy, &default, &holdout, &contribution);
+
+        assert_eq!(policy.eligible_profile_count, 1);
+        assert_eq!(holdout.file_recall_at_10, default.file_recall_at_10);
+        assert_eq!(
+            holdout.commits[0].recommended_context_files,
+            default.commits[0].recommended_context_files
+        );
+        assert_eq!(
+            holdout.commits[1].recommended_context_files,
+            default.commits[1].recommended_context_files
+        );
+        assert_eq!(report.applied_commit_count, 0);
+        assert_eq!(report.target_hit_delta, 0);
+        assert_eq!(report.decision, "insufficient_eligible_holdout_profiles");
+        assert!(!report.runtime_promotable);
+    }
+
+    #[test]
     fn semantic_precision_gate_report_deserializes_without_family_budget_summary() {
         let report = SemanticPrecisionGateReport {
             repo_id: "repo".to_string(),
@@ -12576,6 +12884,8 @@ mod tests {
             family_budget_semantic_reranker_contribution: RerankerContributionSummary::default(),
             learned_profile_semantic_reranker_contribution: RerankerContributionSummary::default(),
             learned_semantic_policy: LearnedSemanticPolicyReport::default(),
+            learned_semantic_policy_holdout: LearnedSemanticPolicyHoldoutReport::default(),
+            learned_policy_semantic_holdout_contribution: RerankerContributionSummary::default(),
             provider_policy: source_free_provider_policy(),
             precision_status: PrecisionStatusReport {
                 status: PrecisionStatus::Unavailable,
@@ -12604,6 +12914,14 @@ mod tests {
             .as_object_mut()
             .expect("gate report object")
             .remove("learnedSemanticPolicy");
+        value
+            .as_object_mut()
+            .expect("gate report object")
+            .remove("learnedSemanticPolicyHoldout");
+        value
+            .as_object_mut()
+            .expect("gate report object")
+            .remove("learnedPolicySemanticHoldoutContribution");
 
         let decoded: SemanticPrecisionGateReport = serde_json::from_value(value)
             .expect("missing semantic eval-only summaries use defaults");
@@ -12621,6 +12939,15 @@ mod tests {
             LEARNED_SEMANTIC_POLICY_SCHEMA_VERSION
         );
         assert!(decoded.learned_semantic_policy.policy_id.is_empty());
+        assert_eq!(
+            decoded.learned_semantic_policy_holdout.schema_version,
+            LEARNED_SEMANTIC_POLICY_SCHEMA_VERSION
+        );
+        assert_eq!(decoded.learned_semantic_policy_holdout.decision, "absent");
+        assert!(decoded
+            .learned_policy_semantic_holdout_contribution
+            .displacement_contributions
+            .is_empty());
     }
 
     #[test]

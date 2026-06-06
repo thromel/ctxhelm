@@ -721,6 +721,19 @@ The artifact is report-only: current gates set `defaultEligible = false` and
 `runtimePromotable = false` until a separate holdout proof validates the profile
 outside the training/eval snapshot.
 
+The gate also reports the eval-only
+`semantic_learned_policy_holdout_reranked` variant,
+`learnedSemanticPolicyHoldout`, and
+`learnedPolicySemanticHoldoutContribution`. This holdout variant applies the
+same source-free learned policy threshold to each measured commit while leaving
+that commit out of its own profile evidence. Current reports keep
+`runtimePromotable = false`; a holdout can only become promotion evidence after
+it applies profiles outside the training snapshot without regressions.
+`learnedSemanticPolicyHoldout` records the source policy id, holdout strategy,
+minimum support threshold, applied commit/file counts, target-hit delta,
+regressed commit count, decision, source-text logging status, and local-only
+privacy status.
+
 The same family rows also report support diagnostics for semantic-only files:
 `semanticOnlyTargetWithNonsemanticSupportCount`,
 `semanticOnlyTargetWithoutNonsemanticSupportCount`,
@@ -778,6 +791,15 @@ diagnostics:
 - `semantic_learned_policy_holdout_required`: the artifact is not
   runtime-promotable until staleness, support, and cross-repo holdout proof are
   satisfied.
+- `semantic_learned_policy_holdout_regression`: the held-out learned policy
+  lost target hits and must remain eval-only.
+- `semantic_learned_policy_holdout_clean_lift`: the held-out learned policy
+  added target hits without default-only target churn, but still needs broader
+  holdout repetition before promotion.
+- `semantic_learned_policy_holdout_neutral`: the held-out learned policy
+  applied without target-hit movement.
+- `semantic_learned_policy_holdout_insufficient`: the held-out learned policy
+  had no eligible held-out applications under the configured support threshold.
 
 The `rerankerContribution.queryFamilyContributions` JSON field groups the same
 source-free evidence by primary query family, such as `explicit_path`,
