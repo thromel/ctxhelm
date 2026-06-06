@@ -123,6 +123,23 @@ churned. The code was reverted; future VeriSchema work should focus on task
 query construction or fusion constraints around Python source targets rather
 than adding broad Python path metadata.
 
+Phase 275 adds source-free query/path shape diagnostics for the eval-only
+semantic-corroborated reranker and rejects a temporary shape-routed insertion
+experiment. RefactoringMiner's clean lift is concentrated in
+`symbol_identifier/docs`, `commit_clue/config`, `domain_phrase/java_source`, and
+`domain_phrase/java_test`, but the temporary route loses default target tests on
+RefactoringMiner and ReAgent. Shape diagnostics stay, but shape-routed semantic
+insertion is rejected.
+
+Phase 276 adds source-free displacement diagnostics to explain those losses.
+`RerankerContributionSummary.displacementContributions` groups reranked-only
+top-K files by query family and path family when default target files are lost.
+The fresh four-repo semantic-corroborated gate keeps RefactoringMiner's clean
+lift with no displacement rows, while ctxhelm, ReAgent, and VeriSchema show
+non-target docs/planning/scripts/paper insertions displacing target source or
+test files. The next semantic R&D step should be target-preserving budget
+constraints or learned/listwise allocation, not another handwritten route.
+
 Phase 196 reserves selected validation areas in broad context-area guidance and adds package-mirrored related-test affinity. The accepted release-binary proof promotes with selected-file/source/test/validation metrics unchanged while improving VeriSchema broad context-area recall from `0.5777778 -> 0.84444445` and next-read recovery from `16 -> 19` of `39` missed@10 files. A related-test-only intermediate proof was rejected because it did not move the product proof.
 
 Phase 197 adds source-free agent-evidence recovery accounting to context-area next-read summaries. The fresh release-binary proof promotes with selected-file/source/test/validation/broad-area metrics unchanged while showing VeriSchema has `29 / 39` missed@10 files recoverable through the full agent evidence bundle, compared with `19 / 39` through progressive next reads alone.

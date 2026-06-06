@@ -535,6 +535,8 @@ pub struct RerankerContributionSummary {
     pub path_family_contributions: Vec<RerankerPathFamilyContribution>,
     #[serde(default)]
     pub shape_contributions: Vec<RerankerShapeContribution>,
+    #[serde(default)]
+    pub displacement_contributions: Vec<RerankerDisplacementContribution>,
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
@@ -582,6 +584,24 @@ pub struct RerankerShapeContribution {
     pub example_reranker_only_paths: Vec<String>,
     #[serde(default)]
     pub example_default_only_paths: Vec<String>,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct RerankerDisplacementContribution {
+    pub query_family: String,
+    pub inserted_path_family: String,
+    pub affected_commit_count: usize,
+    pub selected_only_file_count: usize,
+    pub selected_only_target_file_count: usize,
+    pub selected_only_non_target_file_count: usize,
+    pub lost_target_file_count: usize,
+    #[serde(default)]
+    pub lost_target_path_family_counts: BTreeMap<String, usize>,
+    #[serde(default)]
+    pub example_inserted_paths: Vec<String>,
+    #[serde(default)]
+    pub example_lost_target_paths: Vec<String>,
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
@@ -4511,6 +4531,10 @@ fn reranker_contribution_summary(
         BTreeMap::new();
     let mut shape_contributions: BTreeMap<(String, String), RerankerShapeContribution> =
         BTreeMap::new();
+    let mut displacement_contributions: BTreeMap<
+        (String, String),
+        RerankerDisplacementContribution,
+    > = BTreeMap::new();
     let mut summary = RerankerContributionSummary {
         evaluated_commits: reranked.commits.len(),
         protected_evidence_miss_rate_delta: reranked.protected_evidence.miss_rate_at_10
@@ -4584,6 +4608,57 @@ fn reranker_contribution_summary(
                 });
             shape_entry.default_only_target_hit_count += 1;
             push_unique_limited(&mut shape_entry.example_default_only_paths, path, 5);
+        }
+        if !default_only_hits.is_empty() {
+            let default_selected = default_commit
+                .recommended_context_files
+                .iter()
+                .take(10)
+                .cloned()
+                .collect::<BTreeSet<_>>();
+            let reranked_selected = commit
+                .recommended_context_files
+                .iter()
+                .take(10)
+                .cloned()
+                .collect::<BTreeSet<_>>();
+            let selected_only = reranked_selected
+                .difference(&default_selected)
+                .cloned()
+                .collect::<BTreeSet<_>>();
+            let mut commit_displacement_groups = BTreeSet::new();
+            for inserted_path in &selected_only {
+                let inserted_path_family = reranker_path_family(inserted_path);
+                let key = (family.clone(), inserted_path_family.clone());
+                let entry = displacement_contributions.entry(key.clone()).or_insert(
+                    RerankerDisplacementContribution {
+                        query_family: family.clone(),
+                        inserted_path_family: inserted_path_family.clone(),
+                        ..RerankerDisplacementContribution::default()
+                    },
+                );
+                entry.selected_only_file_count += 1;
+                if reranked_hits.contains(inserted_path) {
+                    entry.selected_only_target_file_count += 1;
+                } else {
+                    entry.selected_only_non_target_file_count += 1;
+                }
+                push_unique_limited(&mut entry.example_inserted_paths, inserted_path, 5);
+                for lost_target in &default_only_hits {
+                    *entry
+                        .lost_target_path_family_counts
+                        .entry(reranker_path_family(lost_target))
+                        .or_insert(0) += 1;
+                    push_unique_limited(&mut entry.example_lost_target_paths, lost_target, 5);
+                }
+                entry.lost_target_file_count += default_only_hits.len();
+                commit_displacement_groups.insert(key);
+            }
+            for key in commit_displacement_groups {
+                if let Some(entry) = displacement_contributions.get_mut(&key) {
+                    entry.affected_commit_count += 1;
+                }
+            }
         }
 
         let family_entry =
@@ -4726,6 +4801,20 @@ fn reranker_contribution_summary(
             })
             .then_with(|| left.query_family.cmp(&right.query_family))
             .then_with(|| left.path_family.cmp(&right.path_family))
+    });
+    summary.displacement_contributions = displacement_contributions.into_values().collect();
+    summary.displacement_contributions.sort_by(|left, right| {
+        right
+            .selected_only_non_target_file_count
+            .cmp(&left.selected_only_non_target_file_count)
+            .then_with(|| {
+                right
+                    .lost_target_file_count
+                    .cmp(&left.lost_target_file_count)
+            })
+            .then_with(|| right.affected_commit_count.cmp(&left.affected_commit_count))
+            .then_with(|| left.query_family.cmp(&right.query_family))
+            .then_with(|| left.inserted_path_family.cmp(&right.inserted_path_family))
     });
     summary.improved_cases.truncate(10);
     summary.regressed_cases.truncate(10);
@@ -5250,6 +5339,24 @@ fn semantic_corroborated_reranker_contribution_diagnostics(
                 .take(10)
                 .collect(),
             count: blocked_shapes.len(),
+        });
+    }
+    let non_target_displacements = summary
+        .displacement_contributions
+        .iter()
+        .filter(|contribution| contribution.selected_only_non_target_file_count > 0)
+        .collect::<Vec<_>>();
+    if !non_target_displacements.is_empty() {
+        diagnostics.push(Diagnostic {
+            code: "semantic_corroborated_displacement_pressure".to_string(),
+            severity: DiagnosticSeverity::Warning,
+            message: "Semantic-corroborated reranking inserted non-target top-K files while default target files were lost; inspect budget-preservation constraints before adding more routes.".to_string(),
+            paths: non_target_displacements
+                .iter()
+                .flat_map(|contribution| contribution.example_inserted_paths.clone())
+                .take(10)
+                .collect(),
+            count: non_target_displacements.len(),
         });
     }
     diagnostics
@@ -11384,6 +11491,83 @@ mod tests {
         assert!(diagnostics
             .iter()
             .any(|diagnostic| diagnostic.code == "semantic_corroborated_shape_blocked"));
+    }
+
+    #[test]
+    fn semantic_corroborated_contribution_reports_displacement_pressure() {
+        let mut default = empty_historical_eval_report("semantic-displacement");
+        default.commits[0].query_trace =
+            Some(query_trace_with_facets(vec![QueryFacetKind::DomainPhrase]));
+        default.commits[0].recommended_context_files = vec![
+            "src/main/java/org/example/Session.java".to_string(),
+            "src/test/java/org/example/SessionTest.java".to_string(),
+            "src/main/java/org/example/Login.java".to_string(),
+        ];
+        default.commits[0].file_hits_at_10 = vec![
+            "src/main/java/org/example/Session.java".to_string(),
+            "src/test/java/org/example/SessionTest.java".to_string(),
+        ];
+
+        let mut reranked = empty_historical_eval_report("semantic-displacement");
+        reranked.commits[0].query_trace = default.commits[0].query_trace.clone();
+        reranked.commits[0].recommended_context_files = vec![
+            "src/main/java/org/example/Session.java".to_string(),
+            "docs/mcp.md".to_string(),
+            "build.gradle".to_string(),
+        ];
+        reranked.commits[0].file_hits_at_10 =
+            vec!["src/main/java/org/example/Session.java".to_string()];
+
+        let summary = reranker_contribution_summary(
+            &default,
+            &reranked,
+            "semantic_corroborated_reranked",
+            "Semantic-corroborated reranker",
+        );
+        let diagnostics = semantic_corroborated_reranker_contribution_diagnostics(&summary);
+
+        assert_eq!(summary.displacement_contributions.len(), 2);
+        let docs = summary
+            .displacement_contributions
+            .iter()
+            .find(|contribution| contribution.inserted_path_family == "docs")
+            .expect("docs insertion contribution");
+        assert_eq!(docs.query_family, "domain_phrase");
+        assert_eq!(docs.affected_commit_count, 1);
+        assert_eq!(docs.selected_only_file_count, 1);
+        assert_eq!(docs.selected_only_target_file_count, 0);
+        assert_eq!(docs.selected_only_non_target_file_count, 1);
+        assert_eq!(docs.lost_target_file_count, 1);
+        assert_eq!(docs.lost_target_path_family_counts["java_test"], 1);
+        assert_eq!(docs.example_inserted_paths, vec!["docs/mcp.md"]);
+        assert_eq!(
+            docs.example_lost_target_paths,
+            vec!["src/test/java/org/example/SessionTest.java"]
+        );
+        assert!(diagnostics.iter().any(|diagnostic| {
+            diagnostic.code == "semantic_corroborated_displacement_pressure"
+                && diagnostic.paths.contains(&"docs/mcp.md".to_string())
+        }));
+    }
+
+    #[test]
+    fn reranker_contribution_deserializes_without_displacement_contributions() {
+        let summary = RerankerContributionSummary {
+            evaluated_commits: 1,
+            neutral_commit_count: 1,
+            ..RerankerContributionSummary::default()
+        };
+        let mut value = serde_json::to_value(summary).expect("summary json");
+        value
+            .as_object_mut()
+            .expect("summary object")
+            .remove("displacementContributions");
+
+        let decoded: RerankerContributionSummary =
+            serde_json::from_value(value).expect("missing displacement field uses default");
+
+        assert!(decoded.displacement_contributions.is_empty());
+        assert_eq!(decoded.evaluated_commits, 1);
     }
 
     #[test]

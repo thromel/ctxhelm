@@ -669,6 +669,17 @@ ReAgent loses planning/scripts, and VeriSchema loses Python source. This rejects
 broad path-family routing and points remaining semantic R&D toward narrower
 corpus-shape constraints or VeriSchema-specific query/document construction.
 
+The same summary includes `shapeContributions` and
+`displacementContributions`. Shape contributions combine query family and path
+family for target-hit movement. Displacement contributions explain target churn:
+when default target files are lost, they group reranked-only top-K files by
+query family and inserted path family, then report selected-only target/non-target
+counts and lost target path-family counts. Phase 276 used this to show that
+RefactoringMiner's semantic-corroborated lift has no displacement rows, while
+ctxhelm, ReAgent, and VeriSchema regressions are driven by non-target
+docs/planning/scripts/paper files entering the fixed top-K budget while target
+source or test files are lost.
+
 The same family rows also report support diagnostics for semantic-only files:
 `semanticOnlyTargetWithNonsemanticSupportCount`,
 `semanticOnlyTargetWithoutNonsemanticSupportCount`,
@@ -703,6 +714,10 @@ diagnostics:
 - `reranker_query_family_churn_hold`: one or more query families improve net
   target hits but still churn target files that default retrieved. Hold these
   families until a routed or learned policy reduces churn.
+- `semantic_corroborated_displacement_pressure`: semantic-corroborated reranking
+  inserted non-target top-K files while default target files were lost. Treat
+  this as evidence for target-preserving budget constraints, not as a routing
+  candidate.
 
 The `rerankerContribution.queryFamilyContributions` JSON field groups the same
 source-free evidence by primary query family, such as `explicit_path`,
