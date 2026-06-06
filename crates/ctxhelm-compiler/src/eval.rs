@@ -387,17 +387,12 @@ pub struct SemanticPrecisionGateReport {
 const LEARNED_SEMANTIC_POLICY_SCHEMA_VERSION: u32 = 1;
 const LEARNED_SEMANTIC_POLICY_MIN_SUPPORT_COMMIT_COUNT: usize = 2;
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Default)]
 #[serde(rename_all = "snake_case")]
 pub enum LearnedSemanticPolicyProfileKeyMode {
+    #[default]
     QueryPath,
     PathFamilyBackoff,
-}
-
-impl Default for LearnedSemanticPolicyProfileKeyMode {
-    fn default() -> Self {
-        Self::QueryPath
-    }
 }
 
 impl LearnedSemanticPolicyProfileKeyMode {
