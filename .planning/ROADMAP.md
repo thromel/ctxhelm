@@ -107,6 +107,14 @@ path-family routing and narrows the remaining semantic work to corpus-shape
 constraints such as Java/MCP/package coherence, or to VeriSchema-specific
 query/document construction.
 
+Phase 273 probes the simplest VeriSchema candidate-generation hypothesis by
+raising `CTXHELM_FASTEMBED_DOCUMENT_LIMIT` to `256`. The metrics are unchanged:
+local semantic remains `0.39382353`, semantic-corroborated remains
+`0.36960787`, semantic candidate target hits remain `11`, and Python source
+still blocks at `-10`. This rejects larger local-fastembed prefilter caps as
+the next fix and keeps the remaining VeriSchema work focused on query/document
+construction or Python package/module facets.
+
 Phase 196 reserves selected validation areas in broad context-area guidance and adds package-mirrored related-test affinity. The accepted release-binary proof promotes with selected-file/source/test/validation metrics unchanged while improving VeriSchema broad context-area recall from `0.5777778 -> 0.84444445` and next-read recovery from `16 -> 19` of `39` missed@10 files. A related-test-only intermediate proof was rejected because it did not move the product proof.
 
 Phase 197 adds source-free agent-evidence recovery accounting to context-area next-read summaries. The fresh release-binary proof promotes with selected-file/source/test/validation/broad-area metrics unchanged while showing VeriSchema has `29 / 39` missed@10 files recoverable through the full agent evidence bundle, compared with `19 / 39` through progressive next reads alone.
