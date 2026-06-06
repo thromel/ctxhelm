@@ -533,6 +533,8 @@ pub struct RerankerContributionSummary {
     pub query_family_contributions: Vec<RerankerQueryFamilyContribution>,
     #[serde(default)]
     pub path_family_contributions: Vec<RerankerPathFamilyContribution>,
+    #[serde(default)]
+    pub shape_contributions: Vec<RerankerShapeContribution>,
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
@@ -557,6 +559,21 @@ pub struct RerankerQueryFamilyContribution {
 #[serde(rename_all = "camelCase")]
 pub struct RerankerPathFamilyContribution {
     pub family: String,
+    pub reranker_only_target_hit_count: usize,
+    pub default_only_target_hit_count: usize,
+    pub target_hit_delta: i32,
+    pub routing_recommendation: RerankerRoutingRecommendation,
+    #[serde(default)]
+    pub example_reranker_only_paths: Vec<String>,
+    #[serde(default)]
+    pub example_default_only_paths: Vec<String>,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct RerankerShapeContribution {
+    pub query_family: String,
+    pub path_family: String,
     pub reranker_only_target_hit_count: usize,
     pub default_only_target_hit_count: usize,
     pub target_hit_delta: i32,
@@ -4492,6 +4509,8 @@ fn reranker_contribution_summary(
         BTreeMap::new();
     let mut path_family_contributions: BTreeMap<String, RerankerPathFamilyContribution> =
         BTreeMap::new();
+    let mut shape_contributions: BTreeMap<(String, String), RerankerShapeContribution> =
+        BTreeMap::new();
     let mut summary = RerankerContributionSummary {
         evaluated_commits: reranked.commits.len(),
         protected_evidence_miss_rate_delta: reranked.protected_evidence.miss_rate_at_10
@@ -4525,30 +4544,48 @@ fn reranker_contribution_summary(
             .difference(&reranked_hits)
             .cloned()
             .collect::<BTreeSet<_>>();
+        let family = reranker_query_family(default_commit);
         for path in &reranker_only_hits {
-            let family = reranker_path_family(path);
-            let entry = path_family_contributions.entry(family.clone()).or_insert(
-                RerankerPathFamilyContribution {
-                    family,
+            let path_family = reranker_path_family(path);
+            let entry = path_family_contributions
+                .entry(path_family.clone())
+                .or_insert(RerankerPathFamilyContribution {
+                    family: path_family.clone(),
                     ..RerankerPathFamilyContribution::default()
-                },
-            );
+                });
             entry.reranker_only_target_hit_count += 1;
             push_unique_limited(&mut entry.example_reranker_only_paths, path, 5);
+            let shape_entry = shape_contributions
+                .entry((family.clone(), path_family.clone()))
+                .or_insert(RerankerShapeContribution {
+                    query_family: family.clone(),
+                    path_family,
+                    ..RerankerShapeContribution::default()
+                });
+            shape_entry.reranker_only_target_hit_count += 1;
+            push_unique_limited(&mut shape_entry.example_reranker_only_paths, path, 5);
         }
         for path in &default_only_hits {
-            let family = reranker_path_family(path);
-            let entry = path_family_contributions.entry(family.clone()).or_insert(
-                RerankerPathFamilyContribution {
-                    family,
+            let path_family = reranker_path_family(path);
+            let entry = path_family_contributions
+                .entry(path_family.clone())
+                .or_insert(RerankerPathFamilyContribution {
+                    family: path_family.clone(),
                     ..RerankerPathFamilyContribution::default()
-                },
-            );
+                });
             entry.default_only_target_hit_count += 1;
             push_unique_limited(&mut entry.example_default_only_paths, path, 5);
+            let shape_entry = shape_contributions
+                .entry((family.clone(), path_family.clone()))
+                .or_insert(RerankerShapeContribution {
+                    query_family: family.clone(),
+                    path_family,
+                    ..RerankerShapeContribution::default()
+                });
+            shape_entry.default_only_target_hit_count += 1;
+            push_unique_limited(&mut shape_entry.example_default_only_paths, path, 5);
         }
 
-        let family = reranker_query_family(default_commit);
         let family_entry =
             family_contributions
                 .entry(family.clone())
@@ -4670,6 +4707,26 @@ fn reranker_contribution_summary(
             })
             .then_with(|| left.family.cmp(&right.family))
     });
+    summary.shape_contributions = shape_contributions
+        .into_values()
+        .map(|mut shape| {
+            shape.target_hit_delta = shape.reranker_only_target_hit_count as i32
+                - shape.default_only_target_hit_count as i32;
+            shape.routing_recommendation = reranker_shape_recommendation(&shape);
+            shape
+        })
+        .collect();
+    summary.shape_contributions.sort_by(|left, right| {
+        right
+            .target_hit_delta
+            .cmp(&left.target_hit_delta)
+            .then_with(|| {
+                left.default_only_target_hit_count
+                    .cmp(&right.default_only_target_hit_count)
+            })
+            .then_with(|| left.query_family.cmp(&right.query_family))
+            .then_with(|| left.path_family.cmp(&right.path_family))
+    });
     summary.improved_cases.truncate(10);
     summary.regressed_cases.truncate(10);
     summary.default_only_cases.truncate(10);
@@ -4768,6 +4825,21 @@ fn reranker_path_family_recommendation(
         return RerankerRoutingRecommendation::HoldChurn;
     }
     if family.reranker_only_target_hit_count > 0 {
+        return RerankerRoutingRecommendation::RouteCandidate;
+    }
+    RerankerRoutingRecommendation::HoldNeutral
+}
+
+fn reranker_shape_recommendation(
+    shape: &RerankerShapeContribution,
+) -> RerankerRoutingRecommendation {
+    if shape.default_only_target_hit_count > 0 && shape.reranker_only_target_hit_count == 0 {
+        return RerankerRoutingRecommendation::BlockRegression;
+    }
+    if shape.default_only_target_hit_count > 0 {
+        return RerankerRoutingRecommendation::HoldChurn;
+    }
+    if shape.reranker_only_target_hit_count > 0 {
         return RerankerRoutingRecommendation::RouteCandidate;
     }
     RerankerRoutingRecommendation::HoldNeutral
@@ -5112,6 +5184,26 @@ fn semantic_corroborated_reranker_contribution_diagnostics(
             count: path_route_candidates.len(),
         });
     }
+    let shape_route_candidates = summary
+        .shape_contributions
+        .iter()
+        .filter(|shape| {
+            shape.routing_recommendation == RerankerRoutingRecommendation::RouteCandidate
+        })
+        .collect::<Vec<_>>();
+    if !shape_route_candidates.is_empty() {
+        diagnostics.push(Diagnostic {
+            code: "semantic_corroborated_shape_route_candidate".to_string(),
+            severity: DiagnosticSeverity::Info,
+            message: "Some query/path shapes show semantic-corroborated lift without default-only target churn; validate these corpus-shape constraints across repos before runtime exposure.".to_string(),
+            paths: shape_route_candidates
+                .iter()
+                .flat_map(|shape| shape.example_reranker_only_paths.clone())
+                .take(10)
+                .collect(),
+            count: shape_route_candidates.len(),
+        });
+    }
     let blocked_path_families = summary
         .path_family_contributions
         .iter()
@@ -5134,6 +5226,30 @@ fn semantic_corroborated_reranker_contribution_diagnostics(
                 .take(10)
                 .collect(),
             count: blocked_path_families.len(),
+        });
+    }
+    let blocked_shapes = summary
+        .shape_contributions
+        .iter()
+        .filter(|shape| {
+            matches!(
+                shape.routing_recommendation,
+                RerankerRoutingRecommendation::BlockRegression
+                    | RerankerRoutingRecommendation::HoldChurn
+            )
+        })
+        .collect::<Vec<_>>();
+    if !blocked_shapes.is_empty() {
+        diagnostics.push(Diagnostic {
+            code: "semantic_corroborated_shape_blocked".to_string(),
+            severity: DiagnosticSeverity::Warning,
+            message: "Some query/path shapes lose or churn default targets under semantic-corroborated reranking; exclude these shapes from routing experiments.".to_string(),
+            paths: blocked_shapes
+                .iter()
+                .flat_map(|shape| shape.example_default_only_paths.clone())
+                .take(10)
+                .collect(),
+            count: blocked_shapes.len(),
         });
     }
     diagnostics
@@ -11201,6 +11317,13 @@ mod tests {
                 && family.routing_recommendation == RerankerRoutingRecommendation::RouteCandidate
                 && family.reranker_only_target_hit_count == 1
         }));
+        assert!(summary.shape_contributions.iter().any(|shape| {
+            shape.query_family == "domain_phrase"
+                && shape.path_family == "java_source"
+                && shape.routing_recommendation == RerankerRoutingRecommendation::RouteCandidate
+                && shape.reranker_only_target_hit_count == 1
+                && shape.default_only_target_hit_count == 0
+        }));
         assert_eq!(
             summary.improved_cases[0].variant,
             "semantic_corroborated_reranked"
@@ -11216,6 +11339,9 @@ mod tests {
         }));
         assert!(diagnostics.iter().any(|diagnostic| {
             diagnostic.code == "semantic_corroborated_path_family_route_candidate"
+        }));
+        assert!(diagnostics.iter().any(|diagnostic| {
+            diagnostic.code == "semantic_corroborated_shape_route_candidate"
         }));
     }
 
@@ -11246,9 +11372,18 @@ mod tests {
                 && family.routing_recommendation == RerankerRoutingRecommendation::BlockRegression
                 && family.default_only_target_hit_count == 1
         }));
+        assert!(summary.shape_contributions.iter().any(|shape| {
+            shape.query_family == "domain_phrase"
+                && shape.path_family == "planning"
+                && shape.routing_recommendation == RerankerRoutingRecommendation::BlockRegression
+                && shape.default_only_target_hit_count == 1
+        }));
         assert!(diagnostics
             .iter()
             .any(|diagnostic| diagnostic.code == "semantic_corroborated_path_family_blocked"));
+        assert!(diagnostics
+            .iter()
+            .any(|diagnostic| diagnostic.code == "semantic_corroborated_shape_blocked"));
     }
 
     #[test]
@@ -12119,7 +12254,6 @@ mod tests {
             false,
             LocalMetadataScoreMode::SemanticCorroborated,
         );
-
         assert_eq!(standard.first(), Some(&"src/exact.rs".to_string()));
         assert_eq!(
             semantic_corroborated.first(),
