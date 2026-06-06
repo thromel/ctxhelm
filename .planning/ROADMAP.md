@@ -201,6 +201,14 @@ observations, so leave-one-out support remains below threshold on the held-out
 commits. Same-gate widening is not enough; the next policy experiment needs
 explicit train/test revision ranges or cross-repo profile aggregation.
 
+Phase 283 makes that revision-slice work reproducible by adding `--base` and
+`--head` to `ctxhelm eval gate`. Older/recent four-repo local-fastembed slices
+show that the current learned-policy signal still does not repeat: only the
+recent RefactoringMiner slice exports the `symbol_identifier/docs` row, and no
+slice has any held-out policy applications. This keeps promotion blocked and
+narrows the next experiment to cross-repo profile aggregation or a true
+train-on-range/apply-on-disjoint-test-range evaluator.
+
 Phase 196 reserves selected validation areas in broad context-area guidance and adds package-mirrored related-test affinity. The accepted release-binary proof promotes with selected-file/source/test/validation metrics unchanged while improving VeriSchema broad context-area recall from `0.5777778 -> 0.84444445` and next-read recovery from `16 -> 19` of `39` missed@10 files. A related-test-only intermediate proof was rejected because it did not move the product proof.
 
 Phase 197 adds source-free agent-evidence recovery accounting to context-area next-read summaries. The fresh release-binary proof promotes with selected-file/source/test/validation/broad-area metrics unchanged while showing VeriSchema has `29 / 39` missed@10 files recoverable through the full agent evidence bundle, compared with `19 / 39` through progressive next reads alone.

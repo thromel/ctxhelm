@@ -3185,6 +3185,26 @@ pub fn semantic_precision_gate_report_with_provider(
     task_type: TaskType,
     semantic_provider: SemanticProviderConfig,
 ) -> Result<SemanticPrecisionGateReport, InventoryError> {
+    semantic_precision_gate_report_with_provider_and_range(
+        repo_root,
+        limit,
+        ranking_budget,
+        task_type,
+        semantic_provider,
+        None,
+        None,
+    )
+}
+
+pub fn semantic_precision_gate_report_with_provider_and_range(
+    repo_root: impl AsRef<Path>,
+    limit: usize,
+    ranking_budget: usize,
+    task_type: TaskType,
+    semantic_provider: SemanticProviderConfig,
+    base: Option<String>,
+    head: Option<String>,
+) -> Result<SemanticPrecisionGateReport, InventoryError> {
     let repo_root = repo_root.as_ref();
     let mut provider_policy = provider_policy_report(repo_root)?;
     provider_policy.decisions.push(semantic_provider_decision(
@@ -3210,8 +3230,8 @@ pub fn semantic_precision_gate_report_with_provider(
             ranking_budget,
             task_type: task_type.clone(),
             target_agent: "generic".to_string(),
-            base: None,
-            head: None,
+            base: base.clone(),
+            head: head.clone(),
             semantic_enabled: false,
             semantic_provider: semantic_provider.clone(),
             local_metadata_reranker: false,
@@ -3231,8 +3251,8 @@ pub fn semantic_precision_gate_report_with_provider(
                 ranking_budget,
                 task_type: task_type.clone(),
                 target_agent: "generic".to_string(),
-                base: None,
-                head: None,
+                base: base.clone(),
+                head: head.clone(),
                 semantic_enabled: false,
                 semantic_provider: semantic_provider.clone(),
                 local_metadata_reranker: false,
@@ -3251,8 +3271,8 @@ pub fn semantic_precision_gate_report_with_provider(
             ranking_budget,
             task_type: task_type.clone(),
             target_agent: "generic".to_string(),
-            base: None,
-            head: None,
+            base: base.clone(),
+            head: head.clone(),
             semantic_enabled: false,
             semantic_provider: semantic_provider.clone(),
             local_metadata_reranker: true,
@@ -3270,8 +3290,8 @@ pub fn semantic_precision_gate_report_with_provider(
             ranking_budget,
             task_type: task_type.clone(),
             target_agent: "generic".to_string(),
-            base: None,
-            head: None,
+            base: base.clone(),
+            head: head.clone(),
             semantic_enabled: false,
             semantic_provider: semantic_provider.clone(),
             local_metadata_reranker: false,
@@ -3289,8 +3309,8 @@ pub fn semantic_precision_gate_report_with_provider(
             ranking_budget,
             task_type: task_type.clone(),
             target_agent: "generic".to_string(),
-            base: None,
-            head: None,
+            base,
+            head,
             semantic_enabled: true,
             semantic_provider: semantic_provider.clone(),
             local_metadata_reranker: false,

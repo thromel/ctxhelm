@@ -544,6 +544,18 @@ ctxhelm eval gate --repo /path/to/repo --limit 20 --budget 10 \
   --semantic-provider local_fastembed --format json
 ```
 
+Use `--base` and `--head` to evaluate a stable source-free revision slice
+instead of the implicit `HEAD` sample:
+
+```bash
+ctxhelm eval gate --repo /path/to/repo --base HEAD~40 --head HEAD \
+  --limit 20 --budget 10 --semantic-provider local_fastembed --format json
+```
+
+Every gate variant receives the same range, so default, semantic, reranked,
+learned-profile, and learned-policy holdout metrics remain comparable inside
+the slice.
+
 `local_hash` remains the deterministic scaffold. `local_fastembed` is the
 production-local backend and requires a build compiled with the
 `local-embeddings` feature.

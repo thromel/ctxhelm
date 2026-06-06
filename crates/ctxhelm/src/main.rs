@@ -13,11 +13,12 @@ use ctxhelm_compiler::{
     prepare_context_plan_with_paths_and_semantic_provider, prepare_workspace_context_plan,
     render_pack_inspector_html, render_pack_inspector_markdown, render_pack_markdown,
     retrieval_policy_experiment_report, run_benchmark_suite,
-    semantic_precision_gate_report_with_provider, semantic_provider_status_report_with_provider,
-    write_candidate_feature_export, BenchmarkComparisonReport, BenchmarkRegressionThreshold,
-    BenchmarkSuiteReport, CandidateFeatureComparisonReport, ContextCardsOptions,
-    ContextCardsReport, ExperienceCardsOptions, ExperienceCardsReport, FallbackCardsOptions,
-    FallbackCardsReport, HistoricalEvalOptions, HistoricalEvalReport, LexicalBackendCorpusOptions,
+    semantic_precision_gate_report_with_provider_and_range,
+    semantic_provider_status_report_with_provider, write_candidate_feature_export,
+    BenchmarkComparisonReport, BenchmarkRegressionThreshold, BenchmarkSuiteReport,
+    CandidateFeatureComparisonReport, ContextCardsOptions, ContextCardsReport,
+    ExperienceCardsOptions, ExperienceCardsReport, FallbackCardsOptions, FallbackCardsReport,
+    HistoricalEvalOptions, HistoricalEvalReport, LexicalBackendCorpusOptions,
     LexicalBackendCorpusReport, PairedBaselineAnalysisReport, ProductProofLexicalClaim,
     ProductProofReport, RecommendedResearchAction, SemanticPrecisionGateReport,
 };
@@ -1031,6 +1032,10 @@ struct EvalGateArgs {
     limit: usize,
     #[arg(long, default_value_t = 10)]
     budget: usize,
+    #[arg(long, help = "Start revision for a stable semantic gate range.")]
+    base: Option<String>,
+    #[arg(long, help = "End revision for a stable semantic gate range.")]
+    head: Option<String>,
     #[arg(long, value_enum, default_value_t = Mode::BugFix)]
     mode: Mode,
     #[command(flatten)]
@@ -2535,12 +2540,14 @@ fn main() -> Result<()> {
             EvalCommand::Gate(args) => {
                 let start = args.repo.clone().unwrap_or(std::env::current_dir()?);
                 let repo = RepoRoot::discover_from(&start)?;
-                let report = semantic_precision_gate_report_with_provider(
+                let report = semantic_precision_gate_report_with_provider_and_range(
                     &repo.path,
                     args.limit,
                     args.budget,
                     args.mode.into(),
                     semantic_provider_config(&args.semantic_provider),
+                    args.base,
+                    args.head,
                 )?;
                 match args.format {
                     PackFormat::Markdown => {
@@ -7850,6 +7857,44 @@ mod tests {
             panic!("expected eval history command");
         };
         assert_eq!(default_args.budget, 10);
+    }
+
+    #[test]
+    fn semantic_gate_command_parses_stable_revision_range() {
+        let cli = Cli::try_parse_from([
+            "ctxhelm",
+            "eval",
+            "gate",
+            "--repo",
+            ".",
+            "--limit",
+            "20",
+            "--budget",
+            "10",
+            "--base",
+            "abc123",
+            "--head",
+            "def456",
+            "--semantic-provider",
+            "local_fastembed",
+            "--format",
+            "json",
+        ])
+        .unwrap();
+
+        let Command::Eval(EvalArgs {
+            command: EvalCommand::Gate(args),
+        }) = cli.command
+        else {
+            panic!("expected eval gate command");
+        };
+        assert_eq!(args.repo, Some(PathBuf::from(".")));
+        assert_eq!(args.limit, 20);
+        assert_eq!(args.budget, 10);
+        assert_eq!(args.base.as_deref(), Some("abc123"));
+        assert_eq!(args.head.as_deref(), Some("def456"));
+        assert_eq!(args.semantic_provider.provider, "local_fastembed");
+        assert!(matches!(args.format, PackFormat::Json));
     }
 
     #[test]
