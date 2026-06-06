@@ -8,7 +8,8 @@ use ctxhelm_compiler::{
     compile_pack_inspector_view, compile_workspace_context_pack, delete_candidate_feature_export,
     eval_trace_for_pack, eval_trace_for_plan, evaluate_historical_commits,
     export_candidate_features_for_task, generate_context_cards, generate_experience_cards,
-    generate_fallback_cards, learned_semantic_policy_train_test_report_with_provider_and_ranges,
+    generate_fallback_cards, learned_semantic_policy_cross_repo_report,
+    learned_semantic_policy_train_test_report_with_provider_and_ranges,
     list_candidate_feature_exports, load_benchmark_suite_config, load_benchmark_suite_report,
     load_candidate_feature_export, paired_baseline_analysis_report,
     prepare_context_plan_with_paths_and_semantic_provider, prepare_workspace_context_plan,
@@ -19,11 +20,11 @@ use ctxhelm_compiler::{
     BenchmarkComparisonReport, BenchmarkRegressionThreshold, BenchmarkSuiteReport,
     CandidateFeatureComparisonReport, ContextCardsOptions, ContextCardsReport,
     ExperienceCardsOptions, ExperienceCardsReport, FallbackCardsOptions, FallbackCardsReport,
-    HistoricalEvalOptions, HistoricalEvalReport, LearnedSemanticPolicyProfileKeyMode,
-    LearnedSemanticPolicyTrainTestReport, LexicalBackendCorpusOptions, LexicalBackendCorpusReport,
-    PairedBaselineAnalysisReport, ProductProofLexicalClaim, ProductProofReport,
-    RecommendedResearchAction, SemanticPrecisionGateRangeOptions, SemanticPrecisionGateReport,
-    SemanticQueryMode,
+    HistoricalEvalOptions, HistoricalEvalReport, LearnedSemanticPolicyCrossRepoReport,
+    LearnedSemanticPolicyProfileKeyMode, LearnedSemanticPolicyTrainTestReport,
+    LexicalBackendCorpusOptions, LexicalBackendCorpusReport, PairedBaselineAnalysisReport,
+    ProductProofLexicalClaim, ProductProofReport, RecommendedResearchAction,
+    SemanticPrecisionGateRangeOptions, SemanticPrecisionGateReport, SemanticQueryMode,
 };
 use ctxhelm_core::{
     run_init, run_setup_check, AgentAdapter, AgentOutcomeComparisonReport, AgentPreviewReport,
@@ -898,6 +899,8 @@ enum EvalCommand {
     Gate(EvalGateArgs),
     #[command(about = "Apply a learned semantic policy from one source-free range to another.")]
     LearnedPolicyTrainTest(EvalLearnedPolicyTrainTestArgs),
+    #[command(about = "Aggregate source-free learned semantic policy reports across repos.")]
+    LearnedPolicyCrossRepo(EvalLearnedPolicyCrossRepoArgs),
     Benchmark(EvalBenchmarkArgs),
     Compare(EvalCompareArgs),
     Proof(EvalProofArgs),
@@ -1077,6 +1080,20 @@ struct EvalLearnedPolicyTrainTestArgs {
     semantic_provider: SemanticProviderArgs,
     #[arg(long, value_enum, default_value_t = SemanticQueryModeArg::Plain)]
     semantic_query_mode: SemanticQueryModeArg,
+    #[arg(long, value_enum, default_value_t = PackFormat::Markdown)]
+    format: PackFormat,
+}
+
+#[derive(Debug, Args)]
+struct EvalLearnedPolicyCrossRepoArgs {
+    #[arg(
+        long = "report",
+        required = true,
+        help = "Path to a source-free learned-policy train/test JSON report. Repeat for multiple repos."
+    )]
+    reports: Vec<PathBuf>,
+    #[arg(long, default_value_t = 2)]
+    minimum_repo_support: usize,
     #[arg(long, value_enum, default_value_t = PackFormat::Markdown)]
     format: PackFormat,
 }
@@ -2652,6 +2669,22 @@ fn main() -> Result<()> {
                 match args.format {
                     PackFormat::Markdown => {
                         println!("{}", render_learned_policy_train_test_report(&report))
+                    }
+                    PackFormat::Json => println!("{}", serde_json::to_string_pretty(&report)?),
+                }
+            }
+            EvalCommand::LearnedPolicyCrossRepo(args) => {
+                let mut reports = Vec::new();
+                for path in args.reports {
+                    let data = fs::read_to_string(&path)?;
+                    let report: LearnedSemanticPolicyTrainTestReport = serde_json::from_str(&data)?;
+                    reports.push(report);
+                }
+                let report =
+                    learned_semantic_policy_cross_repo_report(&reports, args.minimum_repo_support);
+                match args.format {
+                    PackFormat::Markdown => {
+                        println!("{}", render_learned_policy_cross_repo_report(&report))
                     }
                     PackFormat::Json => println!("{}", serde_json::to_string_pretty(&report)?),
                 }
@@ -6885,6 +6918,58 @@ fn render_usize_count_map(counts: &std::collections::BTreeMap<usize, usize>) -> 
         .join(", ")
 }
 
+fn render_learned_policy_cross_repo_report(
+    report: &LearnedSemanticPolicyCrossRepoReport,
+) -> String {
+    let mut output = String::from("# ctxhelm Learned Semantic Policy Cross-Repo Audit\n\n");
+    output.push_str("This source-free report aggregates saved learned-policy train/test JSON reports and checks whether profile keys remain zero-harm across repositories.\n\n");
+    output.push_str(&format!(
+        "- Source reports: `{}`\n- Source repos: `{}`\n- Profile key mode: `{}`\n- Minimum repo support: `{}`\n- Candidate profiles: `{}`\n- Eligible profiles: `{}`\n- Blocked profiles: `{}`\n- Decision: `{}`\n- Runtime promotable: `{}`\n- Source text logged: `{}`\n- Privacy: local-only `{}`\n\n",
+        report.source_report_count,
+        report.source_repo_count,
+        report.profile_key_mode,
+        report.minimum_repo_support_count,
+        report.candidate_profile_count,
+        report.eligible_profile_count,
+        report.blocked_profile_count,
+        report.decision,
+        report.runtime_promotable,
+        report.source_text_logged,
+        report.privacy_status.local_only
+    ));
+    output.push_str("## Source Reports\n\n");
+    if report.source_report_ids.is_empty() {
+        output.push_str("- None.\n\n");
+    } else {
+        for report_id in &report.source_report_ids {
+            output.push_str(&format!("- `{report_id}`\n"));
+        }
+        output.push('\n');
+    }
+    output.push_str("## Cross-Repo Profiles\n\n");
+    if report.profiles.is_empty() {
+        output.push_str("- None.\n");
+    } else {
+        for profile in &report.profiles {
+            output.push_str(&format!(
+                "- `{}/{}` repos `{}` reports `{}` observed `{}` insertedTargets `{}` insertedNonTargets `{}` lostDefaultTargets `{}` eligibleSourceRepos `{}` eligible `{}` reason: {}\n",
+                profile.query_family,
+                profile.path_family,
+                profile.source_repo_count,
+                profile.source_report_count,
+                profile.observed_commit_count,
+                profile.inserted_target_count,
+                profile.inserted_non_target_count,
+                profile.lost_default_target_count,
+                profile.eligible_source_repo_count,
+                profile.eligible,
+                profile.decision_reason
+            ));
+        }
+    }
+    output
+}
+
 fn render_learned_policy_train_test_report(
     report: &LearnedSemanticPolicyTrainTestReport,
 ) -> String {
@@ -8153,6 +8238,37 @@ mod tests {
             args.semantic_query_mode,
             SemanticQueryModeArg::SourceRoleHints
         ));
+        assert!(matches!(args.format, PackFormat::Json));
+    }
+
+    #[test]
+    fn learned_policy_cross_repo_command_parses_report_inputs() {
+        let cli = Cli::try_parse_from([
+            "ctxhelm",
+            "eval",
+            "learned-policy-cross-repo",
+            "--report",
+            "repo-a.json",
+            "--report",
+            "repo-b.json",
+            "--minimum-repo-support",
+            "3",
+            "--format",
+            "json",
+        ])
+        .unwrap();
+
+        let Command::Eval(EvalArgs {
+            command: EvalCommand::LearnedPolicyCrossRepo(args),
+        }) = cli.command
+        else {
+            panic!("expected eval learned-policy-cross-repo command");
+        };
+        assert_eq!(
+            args.reports,
+            vec![PathBuf::from("repo-a.json"), PathBuf::from("repo-b.json")]
+        );
+        assert_eq!(args.minimum_repo_support, 3);
         assert!(matches!(args.format, PackFormat::Json));
     }
 

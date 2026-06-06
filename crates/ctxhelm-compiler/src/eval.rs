@@ -581,6 +581,46 @@ pub struct LearnedSemanticPolicyTrainTestReport {
     pub privacy_status: PrivacyStatus,
 }
 
+const LEARNED_SEMANTIC_POLICY_CROSS_REPO_SCHEMA_VERSION: u32 = 1;
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct LearnedSemanticPolicyCrossRepoReport {
+    pub schema_version: u32,
+    pub source_report_count: usize,
+    pub source_repo_count: usize,
+    pub profile_key_mode: String,
+    pub minimum_repo_support_count: usize,
+    pub candidate_profile_count: usize,
+    pub eligible_profile_count: usize,
+    pub blocked_profile_count: usize,
+    pub source_report_ids: Vec<String>,
+    pub profiles: Vec<LearnedSemanticPolicyCrossRepoProfile>,
+    pub decision: String,
+    pub runtime_promotable: bool,
+    pub source_text_logged: bool,
+    pub privacy_status: PrivacyStatus,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct LearnedSemanticPolicyCrossRepoProfile {
+    pub query_family: String,
+    pub path_family: String,
+    pub source_repo_count: usize,
+    pub source_report_count: usize,
+    pub observed_commit_count: usize,
+    pub inserted_target_count: usize,
+    pub inserted_non_target_count: usize,
+    pub lost_default_target_count: usize,
+    pub eligible_source_repo_count: usize,
+    pub eligible_source_report_count: usize,
+    pub eligible: bool,
+    pub decision_reason: String,
+    pub source_repo_ids: Vec<String>,
+    pub source_decision_reasons: Vec<String>,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct SemanticPrecisionVariant {
@@ -4915,6 +4955,193 @@ fn learned_policy_support_histogram(
         *histogram.entry(profile.observed_commit_count).or_insert(0) += 1;
     }
     histogram
+}
+
+#[derive(Debug, Default)]
+struct LearnedSemanticPolicyCrossRepoProfileStats {
+    source_repo_ids: BTreeSet<String>,
+    source_report_ids: BTreeSet<String>,
+    observed_commit_count: usize,
+    inserted_target_count: usize,
+    inserted_non_target_count: usize,
+    lost_default_target_count: usize,
+    eligible_source_repo_ids: BTreeSet<String>,
+    eligible_source_report_ids: BTreeSet<String>,
+    source_decision_reasons: BTreeSet<String>,
+}
+
+pub fn learned_semantic_policy_cross_repo_report(
+    reports: &[LearnedSemanticPolicyTrainTestReport],
+    minimum_repo_support_count: usize,
+) -> LearnedSemanticPolicyCrossRepoReport {
+    let minimum_repo_support_count = minimum_repo_support_count.max(1);
+    let source_repo_ids = reports
+        .iter()
+        .map(|report| report.repo_id.clone())
+        .collect::<BTreeSet<_>>();
+    let source_report_ids = reports
+        .iter()
+        .map(|report| report.eval_range_id.clone())
+        .collect::<BTreeSet<_>>();
+    let profile_key_modes = reports
+        .iter()
+        .map(|report| report.profile_key_mode.policy_label())
+        .collect::<BTreeSet<_>>();
+    let profile_key_mode = if profile_key_modes.len() == 1 {
+        profile_key_modes
+            .iter()
+            .next()
+            .copied()
+            .unwrap_or("absent")
+            .to_string()
+    } else if profile_key_modes.is_empty() {
+        "absent".to_string()
+    } else {
+        "mixed".to_string()
+    };
+    let mut profile_stats =
+        BTreeMap::<(String, String), LearnedSemanticPolicyCrossRepoProfileStats>::new();
+    for report in reports {
+        for profile in &report.learned_semantic_policy.profiles {
+            let entry = profile_stats
+                .entry((profile.query_family.clone(), profile.path_family.clone()))
+                .or_default();
+            entry.source_repo_ids.insert(report.repo_id.clone());
+            entry.source_report_ids.insert(report.eval_range_id.clone());
+            entry.observed_commit_count += profile.observed_commit_count;
+            entry.inserted_target_count += profile.inserted_target_count;
+            entry.inserted_non_target_count += profile.inserted_non_target_count;
+            entry.lost_default_target_count += profile.lost_default_target_count;
+            if profile.eligible {
+                entry
+                    .eligible_source_repo_ids
+                    .insert(report.repo_id.clone());
+                entry
+                    .eligible_source_report_ids
+                    .insert(report.eval_range_id.clone());
+            }
+            entry
+                .source_decision_reasons
+                .insert(profile.decision_reason.clone());
+        }
+    }
+    let mut profiles = profile_stats
+        .into_iter()
+        .map(|((query_family, path_family), stats)| {
+            let source_repo_count = stats.source_repo_ids.len();
+            let source_report_count = stats.source_report_ids.len();
+            let eligible_source_repo_count = stats.eligible_source_repo_ids.len();
+            let eligible_source_report_count = stats.eligible_source_report_ids.len();
+            let eligible = source_repo_count >= minimum_repo_support_count
+                && stats.inserted_target_count > 0
+                && stats.inserted_non_target_count == 0
+                && stats.lost_default_target_count == 0;
+            let decision_reason = if eligible {
+                "Profile has cross-repo support, inserted target hits, no inserted non-targets, and no lost default targets."
+                    .to_string()
+            } else if source_repo_count < minimum_repo_support_count {
+                format!(
+                    "Profile observed in {} repo(s), below minimum repo support {}.",
+                    source_repo_count, minimum_repo_support_count
+                )
+            } else if stats.inserted_target_count == 0 {
+                "Profile has no inserted semantic target hits across source repos.".to_string()
+            } else if stats.inserted_non_target_count > 0 {
+                "Profile inserted semantic non-targets across source repos.".to_string()
+            } else {
+                "Profile lost default target hits across source repos.".to_string()
+            };
+            LearnedSemanticPolicyCrossRepoProfile {
+                query_family,
+                path_family,
+                source_repo_count,
+                source_report_count,
+                observed_commit_count: stats.observed_commit_count,
+                inserted_target_count: stats.inserted_target_count,
+                inserted_non_target_count: stats.inserted_non_target_count,
+                lost_default_target_count: stats.lost_default_target_count,
+                eligible_source_repo_count,
+                eligible_source_report_count,
+                eligible,
+                decision_reason,
+                source_repo_ids: stats.source_repo_ids.into_iter().collect(),
+                source_decision_reasons: stats.source_decision_reasons.into_iter().collect(),
+            }
+        })
+        .collect::<Vec<_>>();
+    profiles.sort_by(|left, right| {
+        right
+            .eligible
+            .cmp(&left.eligible)
+            .then_with(|| right.source_repo_count.cmp(&left.source_repo_count))
+            .then_with(|| right.inserted_target_count.cmp(&left.inserted_target_count))
+            .then_with(|| {
+                left.inserted_non_target_count
+                    .cmp(&right.inserted_non_target_count)
+            })
+            .then_with(|| {
+                left.lost_default_target_count
+                    .cmp(&right.lost_default_target_count)
+            })
+            .then_with(|| left.query_family.cmp(&right.query_family))
+            .then_with(|| left.path_family.cmp(&right.path_family))
+    });
+    let eligible_profile_count = profiles.iter().filter(|profile| profile.eligible).count();
+    let blocked_profile_count = profiles.len().saturating_sub(eligible_profile_count);
+    let source_text_logged = reports.iter().any(|report| {
+        report.source_text_logged || report.learned_semantic_policy.source_text_logged
+    });
+    let privacy_status = PrivacyStatus {
+        local_only: reports.iter().all(|report| {
+            report.privacy_status.local_only
+                && report.learned_semantic_policy.privacy_status.local_only
+        }),
+        remote_embeddings_used: reports.iter().any(|report| {
+            report.privacy_status.remote_embeddings_used
+                || report
+                    .learned_semantic_policy
+                    .privacy_status
+                    .remote_embeddings_used
+        }),
+        remote_reranking_used: reports.iter().any(|report| {
+            report.privacy_status.remote_reranking_used
+                || report
+                    .learned_semantic_policy
+                    .privacy_status
+                    .remote_reranking_used
+        }),
+        redactions_applied: reports
+            .iter()
+            .map(|report| {
+                report.privacy_status.redactions_applied
+                    + report
+                        .learned_semantic_policy
+                        .privacy_status
+                        .redactions_applied
+            })
+            .sum(),
+    };
+    let decision = if eligible_profile_count == 0 {
+        "insufficient_cross_repo_profiles".to_string()
+    } else {
+        "cross_repo_profiles_require_disjoint_holdout_application".to_string()
+    };
+    LearnedSemanticPolicyCrossRepoReport {
+        schema_version: LEARNED_SEMANTIC_POLICY_CROSS_REPO_SCHEMA_VERSION,
+        source_report_count: reports.len(),
+        source_repo_count: source_repo_ids.len(),
+        profile_key_mode,
+        minimum_repo_support_count,
+        candidate_profile_count: profiles.len(),
+        eligible_profile_count,
+        blocked_profile_count,
+        source_report_ids: source_report_ids.into_iter().collect(),
+        profiles,
+        decision,
+        runtime_promotable: false,
+        source_text_logged,
+        privacy_status,
+    }
 }
 
 fn semantic_inserted_profiles(
@@ -12323,6 +12550,83 @@ mod tests {
         RetrievalSignalScore,
     };
 
+    fn learned_policy_profile(
+        query_family: &str,
+        path_family: &str,
+        inserted_target_count: usize,
+        inserted_non_target_count: usize,
+        lost_default_target_count: usize,
+        eligible: bool,
+    ) -> LearnedSemanticPolicyProfile {
+        LearnedSemanticPolicyProfile {
+            query_family: query_family.to_string(),
+            path_family: path_family.to_string(),
+            observed_commit_count: 2,
+            inserted_target_count,
+            inserted_non_target_count,
+            lost_default_target_count,
+            query_family_breakdown: Vec::new(),
+            eligible,
+            decision_reason: if eligible {
+                "Profile has inserted target hits, sufficient commit support, no inserted non-targets, and no lost default targets."
+            } else if inserted_non_target_count > 0 {
+                "Profile inserted semantic non-targets."
+            } else if inserted_target_count == 0 {
+                "Profile has no inserted semantic target hits."
+            } else {
+                "Profile lost default target hits."
+            }
+            .to_string(),
+        }
+    }
+
+    fn learned_policy_train_test_report_fixture(
+        repo_id: &str,
+        eval_range_id: &str,
+        profiles: Vec<LearnedSemanticPolicyProfile>,
+    ) -> LearnedSemanticPolicyTrainTestReport {
+        let eligible_profile_count = profiles.iter().filter(|profile| profile.eligible).count();
+        let profile_count = profiles.len();
+        LearnedSemanticPolicyTrainTestReport {
+            schema_version: LEARNED_SEMANTIC_POLICY_SCHEMA_VERSION,
+            repo_id: repo_id.to_string(),
+            eval_range_id: eval_range_id.to_string(),
+            train_default_eval_range_id: format!("{eval_range_id}-train-default"),
+            train_semantic_eval_range_id: format!("{eval_range_id}-train-semantic"),
+            test_default_eval_range_id: format!("{eval_range_id}-test-default"),
+            test_semantic_eval_range_id: format!("{eval_range_id}-test-semantic"),
+            source_policy_id: format!("{eval_range_id}-policy"),
+            profile_key_mode: LearnedSemanticPolicyProfileKeyMode::QueryPath,
+            train_commit_count: 0,
+            test_commit_count: 0,
+            ranking_budget: 10,
+            minimum_support_commit_count: LEARNED_SEMANTIC_POLICY_MIN_SUPPORT_COMMIT_COUNT,
+            eligible_profile_count,
+            train_profile_support_histogram: BTreeMap::new(),
+            test_candidate_profile_count: 0,
+            train_test_profile_overlap_count: 0,
+            train_test_eligible_profile_overlap_count: 0,
+            applied_commit_count: 0,
+            applied_file_count: 0,
+            target_hit_delta: 0,
+            default_target_hit_count: 0,
+            reranked_target_hit_count: 0,
+            regressed_commit_count: 0,
+            decision: "test_fixture".to_string(),
+            runtime_promotable: false,
+            learned_semantic_policy: LearnedSemanticPolicyReport {
+                profile_count,
+                eligible_profile_count,
+                blocked_profile_count: profile_count.saturating_sub(eligible_profile_count),
+                profiles,
+                ..LearnedSemanticPolicyReport::default()
+            },
+            learned_policy_semantic_train_test_contribution: RerankerContributionSummary::default(),
+            source_text_logged: false,
+            privacy_status: PrivacyStatus::local_only(),
+        }
+    }
+
     #[test]
     fn parent_snapshot_command_helper_times_out_instead_of_hanging() {
         let temp = tempfile::tempdir().unwrap();
@@ -13411,6 +13715,71 @@ mod tests {
         assert_eq!(policy.profiles[0].path_family, "docs");
         assert_eq!(policy.profiles[0].observed_commit_count, 2);
         assert!(policy.profiles[0].eligible);
+    }
+
+    #[test]
+    fn learned_semantic_policy_cross_repo_report_blocks_noisy_repeated_profiles() {
+        let reports = vec![
+            learned_policy_train_test_report_fixture(
+                "repo-a",
+                "range-a",
+                vec![
+                    learned_policy_profile("symbol_identifier", "docs", 2, 0, 0, true),
+                    learned_policy_profile("domain_phrase", "scripts", 1, 0, 0, true),
+                ],
+            ),
+            learned_policy_train_test_report_fixture(
+                "repo-b",
+                "range-b",
+                vec![
+                    learned_policy_profile("symbol_identifier", "docs", 1, 3, 0, false),
+                    learned_policy_profile("domain_phrase", "scripts", 1, 0, 0, true),
+                ],
+            ),
+        ];
+
+        let report = learned_semantic_policy_cross_repo_report(&reports, 2);
+
+        assert_eq!(report.schema_version, 1);
+        assert_eq!(report.source_report_count, 2);
+        assert_eq!(report.source_repo_count, 2);
+        assert_eq!(report.profile_key_mode, "query_path");
+        assert_eq!(report.candidate_profile_count, 2);
+        assert_eq!(report.eligible_profile_count, 1);
+        assert_eq!(report.blocked_profile_count, 1);
+        assert_eq!(
+            report.decision,
+            "cross_repo_profiles_require_disjoint_holdout_application"
+        );
+        assert!(!report.runtime_promotable);
+        assert!(!report.source_text_logged);
+        assert!(report.privacy_status.local_only);
+
+        let noisy_profile = report
+            .profiles
+            .iter()
+            .find(|profile| {
+                profile.query_family == "symbol_identifier" && profile.path_family == "docs"
+            })
+            .unwrap();
+        assert!(!noisy_profile.eligible);
+        assert_eq!(noisy_profile.source_repo_count, 2);
+        assert_eq!(noisy_profile.inserted_target_count, 3);
+        assert_eq!(noisy_profile.inserted_non_target_count, 3);
+        assert_eq!(
+            noisy_profile.decision_reason,
+            "Profile inserted semantic non-targets across source repos."
+        );
+
+        let safe_profile = report
+            .profiles
+            .iter()
+            .find(|profile| {
+                profile.query_family == "domain_phrase" && profile.path_family == "scripts"
+            })
+            .unwrap();
+        assert!(safe_profile.eligible);
+        assert_eq!(safe_profile.eligible_source_repo_count, 2);
     }
 
     #[test]

@@ -788,6 +788,28 @@ for source-free query-construction probes. Treat it as diagnostic only; Phase
 287 rejected generic source-role hints on VeriSchema because they preserved a
 semantic-corroborated regression and removed semantic-only target hits.
 
+Use `ctxhelm eval learned-policy-cross-repo` to aggregate saved
+`learned-policy-train-test` JSON reports across repositories without rerunning
+the underlying semantic gates:
+
+```bash
+ctxhelm eval learned-policy-cross-repo \
+  --report repo-a-train-test.json \
+  --report repo-b-train-test.json \
+  --minimum-repo-support 2 \
+  --format json
+```
+
+The report is source-free and artifact-level. It records `profileKeyMode`,
+`sourceReportCount`, `sourceRepoCount`, `candidateProfileCount`,
+`eligibleProfileCount`, and per-profile aggregate inserted target,
+inserted non-target, and lost default target counts. A profile is eligible only
+when it has repeated repo support, positive inserted target hits, zero inserted
+non-targets, and zero lost default targets. Current reports keep
+`runtimePromotable = false`; Phase 288 rejected the existing strict and
+path-family-backoff cross-repo aggregates because every repeated profile was
+noisy or target-empty.
+
 The train/test report runs default and semantic-corroborated historical evals
 for both ranges, builds `learnedSemanticPolicy` only from the training pair, and
 then applies eligible profiles to the test pair. It records

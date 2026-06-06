@@ -262,6 +262,20 @@ targets drop `9 -> 8`, semantic-only targets drop `2 -> 0`, and
 regressed commit. Keep the flag as a reproducible eval diagnostic, not as a
 promotion path.
 
+Phase 288 tests the richer cross-repo learned-policy branch before attempting
+another runtime or default semantic change. `ctxhelm eval
+learned-policy-cross-repo` consumes saved source-free train/test JSON reports,
+aggregates profile keys across repositories, and requires repeated repo
+support, positive inserted semantic targets, zero inserted semantic
+non-targets, and zero lost default targets. The four-repo Phase 285 strict
+aggregation has `28` candidate profiles and `0` eligible profiles; the
+previously promising `symbol_identifier/docs` key aggregates to `3` inserted
+targets, `25` inserted non-targets, and `20` lost defaults. The Phase 286
+path-family backoff aggregation has `9` candidate profiles and `0` eligible
+profiles, with `*/docs` aggregating to `16` inserted targets, `140` inserted
+non-targets, and `125` lost defaults. Cross-repo aggregation is therefore
+rejected under the current zero-harm gate.
+
 Phase 196 reserves selected validation areas in broad context-area guidance and adds package-mirrored related-test affinity. The accepted release-binary proof promotes with selected-file/source/test/validation metrics unchanged while improving VeriSchema broad context-area recall from `0.5777778 -> 0.84444445` and next-read recovery from `16 -> 19` of `39` missed@10 files. A related-test-only intermediate proof was rejected because it did not move the product proof.
 
 Phase 197 adds source-free agent-evidence recovery accounting to context-area next-read summaries. The fresh release-binary proof promotes with selected-file/source/test/validation/broad-area metrics unchanged while showing VeriSchema has `29 / 39` missed@10 files recoverable through the full agent evidence bundle, compared with `19 / 39` through progressive next reads alone.

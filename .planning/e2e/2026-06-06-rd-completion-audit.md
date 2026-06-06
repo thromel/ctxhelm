@@ -3,7 +3,7 @@
 ## Scope
 
 Audit the current ctxhelm R&D roadmap against the latest source-free proof
-artifacts after Phase 284. This audit is not a release claim by itself; it
+artifacts after Phase 288. This audit is not a release claim by itself; it
 separates implemented/measured work from remaining research risk.
 
 ## Current Proof Summary
@@ -30,6 +30,21 @@ adds an eval-only path-family backoff key to the train/test evaluator and
 rejects it. Coarse train/test overlap increases, but all path-family aggregates
 are blocked by inserted semantic non-targets, missing target hits, or lost
 default targets before application.
+
+Phase 287 addendum: `.planning/e2e/2026-06-07-phase287-semantic-source-role-query.md`
+adds an eval-only `--semantic-query-mode source-role-hints` probe and rejects
+generic source-role query expansion on the targeted VeriSchema older-range
+slice. Candidate target hits rise only `13 -> 14`, while candidate misses rise,
+selected semantic target hits fall, semantic-only target hits drop to zero, and
+the semantic-corroborated regression remains.
+
+Phase 288 addendum: `.planning/e2e/2026-06-07-phase288-cross-repo-learned-policy.md`
+adds `ctxhelm eval learned-policy-cross-repo` and rejects the current
+source-free cross-repo learned-policy aggregation. Strict Phase 285 inputs have
+`28` candidate profiles and `0` eligible profiles; Phase 286 backoff inputs
+have `9` candidate profiles and `0` eligible profiles. The repeated keys are
+blocked by inserted semantic non-targets, lost default targets, or missing
+inserted target hits.
 
 ## Remaining R&D Risk
 
@@ -104,10 +119,12 @@ default targets before application.
    285 broadens those same ranges and still finds no eligible-profile overlap
    or applications, even on VeriSchema's deeper `38`/`39` split. Phase 286
    tests path-family backoff and rejects it because the coarser profiles expose
-   semantic non-targets or missing target hits instead of safe applications. The
-   next semantic learned-policy work needs a richer cross-repo rule, or a return
-   to semantic query/document construction where candidate quality is the
-   bottleneck.
+   semantic non-targets or missing target hits instead of safe applications.
+   Phase 287 rejects generic source-role query hints, and Phase 288 rejects the
+   current cross-repo learned-policy aggregation because repeated strict and
+   backoff keys both aggregate to zero eligible profiles. The next semantic work
+   needs task-specific query/document construction or a much narrower learned
+   separator.
 2. Claude has current workflow proof but not a fresh paired outcome suite on the
    same level as Codex Phase 245/250. Phase 264 confirms this is still a
    client-availability problem: Claude Code is rate-limited, while Codex remains
@@ -161,12 +178,14 @@ default targets before application.
    aggregates remain unsafe or target-empty. Phase 287 rules out generic
    source-role query hints on the targeted VeriSchema slice because they remove
    semantic-only target hits while preserving the same semantic-corroborated
-   regression. The next semantic step is richer cross-repo aggregation with a
-   pre-registered no-regress bar or task-specific query/document construction,
-   not runtime promotion. Increasing the local-fastembed document cap, adding
-   broad Python path metadata, adding generic source-role query words, adding
-   another hand-written route, and merely widening or splitting the same gate
-   are already rejected paths.
+   regression. Phase 288 rules out the current cross-repo learned-policy
+   aggregation because strict and backoff profiles both produce zero eligible
+   cross-repo keys. The next semantic step is task-specific query/document
+   construction or a materially narrower learned separator, not runtime
+   promotion. Increasing the local-fastembed document cap, adding broad Python
+   path metadata, adding generic source-role query words, adding another
+   hand-written route, merely widening or splitting the same gate, relaxing
+   profile keys, and current cross-repo aggregation are already rejected paths.
 
 ## Conclusion
 
@@ -199,10 +218,13 @@ support/overlap diagnostics showing no eligible-profile test overlap. Phase 285
 reruns broader `40`/`40` limits on the same stable ranges and remains empty, so
 Phase 286 tests and rejects path-family backoff as the simplest key relaxation.
 Phase 287 then tests and rejects generic source-role semantic query hints on
-the targeted VeriSchema older-range slice. The remaining semantic R&D path is
-richer cross-repo learned-policy aggregation or task-specific query/document
-construction work, not more same-range doubling, not coarse profile-key
-relaxation, not generic role words, and not runtime/default promotion.
+the targeted VeriSchema older-range slice. Phase 288 tests and rejects the
+current source-free cross-repo learned-policy aggregation because neither
+strict query/path profiles nor path-family backoff profiles have an eligible
+cross-repo zero-harm key. The remaining semantic R&D path is task-specific
+query/document construction or a much narrower learned separator, not more
+same-range doubling, not coarse profile-key relaxation, not generic role words,
+not current cross-repo aggregation, and not runtime/default promotion.
 Phase 253 reduces memory risk by
 proving cross-repo Codex target-consumption lift. Phase 255 further reduces
 memory risk by preserving that target consumption while improving irrelevant
