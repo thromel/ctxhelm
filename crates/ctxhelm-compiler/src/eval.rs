@@ -421,6 +421,8 @@ pub struct SemanticContributionSummary {
     pub semantic_only_non_targets: Vec<SemanticPrecisionNamedCase>,
     #[serde(default)]
     pub semantic_missed_target_gap_families: Vec<SemanticMissedTargetGapFamily>,
+    #[serde(default)]
+    pub query_family_contributions: Vec<SemanticQueryFamilyContribution>,
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
@@ -429,6 +431,25 @@ pub struct SemanticMissedTargetGapFamily {
     pub signal_gap: String,
     pub missed_count: usize,
     pub example_paths: Vec<String>,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct SemanticQueryFamilyContribution {
+    pub family: String,
+    pub evaluated_commits: usize,
+    pub commits_with_semantic_selection: usize,
+    pub semantic_selected_file_count: usize,
+    pub semantic_target_hit_count: usize,
+    pub semantic_only_target_hit_count: usize,
+    pub semantic_only_non_target_count: usize,
+    pub semantic_missed_target_count: usize,
+    pub semantic_only_target_hit_rate: f32,
+    pub semantic_only_non_target_rate: f32,
+    #[serde(default)]
+    pub missed_target_gap_families: Vec<SemanticMissedTargetGapFamily>,
+    #[serde(default)]
+    pub example_cases: Vec<SemanticPrecisionNamedCase>,
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
@@ -3395,6 +3416,7 @@ fn semantic_contribution_summary(report: &HistoricalEvalReport) -> SemanticContr
     let mut semantic_only_hits = Vec::new();
     let mut semantic_only_non_target_cases = Vec::new();
     let mut missed_gap_families = BTreeMap::<String, (usize, Vec<String>)>::new();
+    let mut family_contributions = BTreeMap::<String, SemanticQueryFamilyContribution>::new();
 
     for commit in &report.commits {
         let semantic_files = commit
@@ -3438,6 +3460,23 @@ fn semantic_contribution_summary(report: &HistoricalEvalReport) -> SemanticContr
             .difference(&target_files)
             .cloned()
             .collect::<Vec<_>>();
+        let family = reranker_query_family(commit);
+        let family_entry =
+            family_contributions
+                .entry(family.clone())
+                .or_insert(SemanticQueryFamilyContribution {
+                    family,
+                    ..SemanticQueryFamilyContribution::default()
+                });
+        family_entry.evaluated_commits += 1;
+        if !semantic_files.is_empty() {
+            family_entry.commits_with_semantic_selection += 1;
+        }
+        family_entry.semantic_selected_file_count += semantic_files.len();
+        family_entry.semantic_target_hit_count += semantic_target_hits.len();
+        family_entry.semantic_only_target_hit_count += semantic_only_target_hits.len();
+        family_entry.semantic_only_non_target_count += semantic_only_non_targets.len();
+        family_entry.semantic_missed_target_count += semantic_missed_targets.len();
 
         summary.semantic_target_hit_count += semantic_target_hits.len();
         summary.semantic_only_target_hit_count += semantic_only_target_hits.len();
@@ -3447,36 +3486,43 @@ fn semantic_contribution_summary(report: &HistoricalEvalReport) -> SemanticContr
         summary.semantic_missed_target_count += semantic_missed_targets.len();
         for missed in semantic_missed_targets {
             let gap = semantic_missed_target_gap(commit, &missed);
-            let entry = missed_gap_families.entry(gap).or_insert((0, Vec::new()));
+            let entry = missed_gap_families
+                .entry(gap.clone())
+                .or_insert((0, Vec::new()));
             entry.0 += 1;
             if entry.1.len() < 5 && !entry.1.contains(&missed) {
-                entry.1.push(missed);
+                entry.1.push(missed.clone());
             }
+            upsert_semantic_family_gap(family_entry, &gap, &missed);
         }
 
         if !semantic_only_target_hits.is_empty() {
             let mut paths = semantic_only_target_hits;
             paths.sort();
             paths.truncate(5);
-            semantic_only_hits.push(SemanticPrecisionNamedCase {
+            let case = SemanticPrecisionNamedCase {
                 sha: short_sha(&commit.sha),
                 variant: "local_semantic".to_string(),
                 reason: "Semantic selected retrieval-target path(s) absent from the lexical baseline top K.".to_string(),
                 paths,
-            });
+            };
+            push_semantic_family_case(family_entry, case.clone());
+            semantic_only_hits.push(case);
         }
         if !semantic_only_non_targets.is_empty() {
             let mut paths = semantic_only_non_targets;
             paths.sort();
             paths.truncate(5);
-            semantic_only_non_target_cases.push(SemanticPrecisionNamedCase {
+            let case = SemanticPrecisionNamedCase {
                 sha: short_sha(&commit.sha),
                 variant: "local_semantic".to_string(),
                 reason:
                     "Semantic selected non-target path(s) absent from the lexical baseline top K."
                         .to_string(),
                 paths,
-            });
+            };
+            push_semantic_family_case(family_entry, case.clone());
+            semantic_only_non_target_cases.push(case);
         }
     }
 
@@ -3512,7 +3558,78 @@ fn semantic_contribution_summary(report: &HistoricalEvalReport) -> SemanticContr
             },
         )
         .collect();
+    summary.query_family_contributions = family_contributions
+        .into_values()
+        .map(|mut family| {
+            let target_opportunity =
+                family.semantic_target_hit_count + family.semantic_missed_target_count;
+            if target_opportunity > 0 {
+                family.semantic_only_target_hit_rate =
+                    family.semantic_only_target_hit_count as f32 / target_opportunity as f32;
+            }
+            let semantic_only_opportunity =
+                family.semantic_only_target_hit_count + family.semantic_only_non_target_count;
+            if semantic_only_opportunity > 0 {
+                family.semantic_only_non_target_rate =
+                    family.semantic_only_non_target_count as f32 / semantic_only_opportunity as f32;
+            }
+            family
+                .missed_target_gap_families
+                .sort_by(|left, right| right.missed_count.cmp(&left.missed_count));
+            family.example_cases.truncate(5);
+            family
+        })
+        .collect();
+    summary.query_family_contributions.sort_by(|left, right| {
+        right
+            .semantic_only_target_hit_count
+            .cmp(&left.semantic_only_target_hit_count)
+            .then_with(|| {
+                left.semantic_only_non_target_count
+                    .cmp(&right.semantic_only_non_target_count)
+            })
+            .then_with(|| {
+                right
+                    .semantic_target_hit_count
+                    .cmp(&left.semantic_target_hit_count)
+            })
+            .then_with(|| left.family.cmp(&right.family))
+    });
     summary
+}
+
+fn upsert_semantic_family_gap(
+    family: &mut SemanticQueryFamilyContribution,
+    signal_gap: &str,
+    path: &str,
+) {
+    if let Some(existing) = family
+        .missed_target_gap_families
+        .iter_mut()
+        .find(|entry| entry.signal_gap == signal_gap)
+    {
+        existing.missed_count += 1;
+        if existing.example_paths.len() < 5 && !existing.example_paths.iter().any(|p| p == path) {
+            existing.example_paths.push(path.to_string());
+        }
+        return;
+    }
+    family
+        .missed_target_gap_families
+        .push(SemanticMissedTargetGapFamily {
+            signal_gap: signal_gap.to_string(),
+            missed_count: 1,
+            example_paths: vec![path.to_string()],
+        });
+}
+
+fn push_semantic_family_case(
+    family: &mut SemanticQueryFamilyContribution,
+    case: SemanticPrecisionNamedCase,
+) {
+    if family.example_cases.len() < 5 {
+        family.example_cases.push(case);
+    }
 }
 
 fn semantic_missed_target_gap(commit: &HistoricalCommitEval, path: &str) -> String {
@@ -3656,7 +3773,61 @@ fn semantic_contribution_diagnostics(
             count: summary.semantic_only_target_hit_count,
         });
     }
+    for family in &summary.query_family_contributions {
+        if family.semantic_only_target_hit_count > 0 && family.semantic_only_non_target_count == 0 {
+            diagnostics.push(Diagnostic {
+                code: "semantic_query_family_route_candidate".to_string(),
+                severity: DiagnosticSeverity::Info,
+                message: format!(
+                    "Semantic retrieval has unique target hits without unique non-targets for query family `{}`.",
+                    family.family
+                ),
+                paths: semantic_family_example_paths(family),
+                count: family.semantic_only_target_hit_count,
+            });
+        } else if family.semantic_only_target_hit_count > 0
+            && family.semantic_only_non_target_count > 0
+        {
+            diagnostics.push(Diagnostic {
+                code: "semantic_query_family_mixed_hold".to_string(),
+                severity: DiagnosticSeverity::Info,
+                message: format!(
+                    "Semantic retrieval has both unique target hits and unique non-targets for query family `{}`; hold for better fusion evidence.",
+                    family.family
+                ),
+                paths: semantic_family_example_paths(family),
+                count: family.semantic_only_target_hit_count
+                    + family.semantic_only_non_target_count,
+            });
+        } else if family.semantic_only_non_target_count > 0 {
+            diagnostics.push(Diagnostic {
+                code: "semantic_query_family_noise_hold".to_string(),
+                severity: DiagnosticSeverity::Warning,
+                message: format!(
+                    "Semantic retrieval produced unique non-targets without unique target hits for query family `{}`.",
+                    family.family
+                ),
+                paths: semantic_family_example_paths(family),
+                count: family.semantic_only_non_target_count,
+            });
+        }
+    }
     diagnostics
+}
+
+fn semantic_family_example_paths(family: &SemanticQueryFamilyContribution) -> Vec<String> {
+    let mut paths = Vec::new();
+    for case in &family.example_cases {
+        for path in &case.paths {
+            if paths.len() >= 5 {
+                return paths;
+            }
+            if !paths.contains(path) {
+                paths.push(path.clone());
+            }
+        }
+    }
+    paths
 }
 
 fn reranker_contribution_summary(
@@ -9700,6 +9871,8 @@ mod tests {
     #[test]
     fn semantic_contribution_summary_counts_semantic_only_target_hits() {
         let mut report = empty_historical_eval_report("semantic");
+        report.commits[0].query_trace =
+            Some(query_trace_with_facets(vec![QueryFacetKind::CommitClue]));
         report.commits[0].retrieval_target_files = vec![
             "src/semantic_only.ts".to_string(),
             "src/shared.ts".to_string(),
@@ -9755,6 +9928,24 @@ mod tests {
             summary.semantic_missed_target_gap_families[0].example_paths,
             vec!["src/missed.ts".to_string()]
         );
+        assert_eq!(summary.query_family_contributions.len(), 1);
+        let family = &summary.query_family_contributions[0];
+        assert_eq!(family.family, "commit_clue");
+        assert_eq!(family.evaluated_commits, 1);
+        assert_eq!(family.commits_with_semantic_selection, 1);
+        assert_eq!(family.semantic_selected_file_count, 3);
+        assert_eq!(family.semantic_target_hit_count, 2);
+        assert_eq!(family.semantic_only_target_hit_count, 1);
+        assert_eq!(family.semantic_only_non_target_count, 1);
+        assert_eq!(family.semantic_missed_target_count, 1);
+        assert!((family.semantic_only_target_hit_rate - 1.0 / 3.0).abs() < f32::EPSILON);
+        assert!((family.semantic_only_non_target_rate - 0.5).abs() < f32::EPSILON);
+        assert_eq!(family.missed_target_gap_families.len(), 1);
+        assert_eq!(
+            family.missed_target_gap_families[0].signal_gap,
+            "semantic_miss_no_candidate_signal"
+        );
+        assert_eq!(family.example_cases.len(), 2);
     }
 
     #[test]
@@ -10128,6 +10319,7 @@ mod tests {
                 paths: vec!["src/noise.ts".to_string()],
             }],
             semantic_missed_target_gap_families: Vec::new(),
+            query_family_contributions: Vec::new(),
         };
         let diagnostics = semantic_contribution_diagnostics(&no_unique, "local_fastembed");
         assert_eq!(diagnostics.len(), 2);
@@ -10181,6 +10373,7 @@ mod tests {
                     example_paths: vec!["src/no-signal.ts".to_string()],
                 },
             ],
+            query_family_contributions: Vec::new(),
         };
 
         let diagnostics = semantic_contribution_diagnostics(&summary, "local_fastembed");
@@ -10197,6 +10390,73 @@ mod tests {
         );
         assert_eq!(diagnostics[1].severity, DiagnosticSeverity::Warning);
         assert_eq!(diagnostics[1].paths, vec!["src/no-signal.ts".to_string()]);
+    }
+
+    #[test]
+    fn semantic_contribution_diagnostics_classify_query_family_routes() {
+        let summary = SemanticContributionSummary {
+            evaluated_commits: 3,
+            commits_with_semantic_selection: 3,
+            semantic_selected_file_count: 6,
+            semantic_only_target_hit_count: 3,
+            semantic_only_non_target_count: 3,
+            query_family_contributions: vec![
+                SemanticQueryFamilyContribution {
+                    family: "domain_phrase".to_string(),
+                    semantic_only_target_hit_count: 2,
+                    semantic_only_non_target_count: 0,
+                    example_cases: vec![SemanticPrecisionNamedCase {
+                        sha: "abc123".to_string(),
+                        variant: "local_semantic".to_string(),
+                        reason: "target".to_string(),
+                        paths: vec!["src/domain_target.ts".to_string()],
+                    }],
+                    ..SemanticQueryFamilyContribution::default()
+                },
+                SemanticQueryFamilyContribution {
+                    family: "symbol_identifier".to_string(),
+                    semantic_only_target_hit_count: 1,
+                    semantic_only_non_target_count: 2,
+                    example_cases: vec![SemanticPrecisionNamedCase {
+                        sha: "def456".to_string(),
+                        variant: "local_semantic".to_string(),
+                        reason: "mixed".to_string(),
+                        paths: vec![
+                            "src/symbol_target.ts".to_string(),
+                            "src/symbol_noise.ts".to_string(),
+                        ],
+                    }],
+                    ..SemanticQueryFamilyContribution::default()
+                },
+                SemanticQueryFamilyContribution {
+                    family: "commit_clue".to_string(),
+                    semantic_only_target_hit_count: 0,
+                    semantic_only_non_target_count: 1,
+                    example_cases: vec![SemanticPrecisionNamedCase {
+                        sha: "fedcba".to_string(),
+                        variant: "local_semantic".to_string(),
+                        reason: "noise".to_string(),
+                        paths: vec!["src/commit_noise.ts".to_string()],
+                    }],
+                    ..SemanticQueryFamilyContribution::default()
+                },
+            ],
+            ..SemanticContributionSummary::default()
+        };
+
+        let diagnostics = semantic_contribution_diagnostics(&summary, "local_fastembed");
+
+        assert!(diagnostics.iter().any(|diagnostic| diagnostic.code
+            == "semantic_query_family_route_candidate"
+            && diagnostic.message.contains("domain_phrase")
+            && diagnostic.paths == vec!["src/domain_target.ts".to_string()]));
+        assert!(diagnostics.iter().any(|diagnostic| diagnostic.code
+            == "semantic_query_family_mixed_hold"
+            && diagnostic.message.contains("symbol_identifier")));
+        assert!(diagnostics.iter().any(|diagnostic| diagnostic.code
+            == "semantic_query_family_noise_hold"
+            && diagnostic.severity == DiagnosticSeverity::Warning
+            && diagnostic.message.contains("commit_clue")));
     }
 
     #[test]

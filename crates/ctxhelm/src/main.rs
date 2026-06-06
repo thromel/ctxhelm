@@ -6113,6 +6113,29 @@ fn render_semantic_precision_gate_report(report: &SemanticPrecisionGateReport) -
             output.push('\n');
         }
     }
+    output.push_str("\n## Semantic Query Family Contributions\n\n");
+    if report
+        .semantic_contribution
+        .query_family_contributions
+        .is_empty()
+    {
+        output.push_str("- None.\n");
+    } else {
+        for family in &report.semantic_contribution.query_family_contributions {
+            output.push_str(&format!(
+                "- `{}`: commits `{}`, semantic selections `{}`, target hits `{}`, semantic-only target hits `{}`, semantic-only non-targets `{}`, missed targets `{}`, semantic-only target rate `{:.3}`, semantic-only non-target rate `{:.3}`\n",
+                family.family,
+                family.evaluated_commits,
+                family.commits_with_semantic_selection,
+                family.semantic_target_hit_count,
+                family.semantic_only_target_hit_count,
+                family.semantic_only_non_target_count,
+                family.semantic_missed_target_count,
+                family.semantic_only_target_hit_rate,
+                family.semantic_only_non_target_rate
+            ));
+        }
+    }
     output.push_str("\n## Reranker Contribution\n\n");
     output.push_str(&format!(
         "- Improved commits: `{}` / `{}`\n- Regressed commits: `{}` / `{}`\n- Neutral commits: `{}` / `{}`\n- Default target hits: `{}`\n- Reranked target hits: `{}`\n- Target hit delta: `{:+}`\n- Reranker-only target hits: `{}`\n- Default-only target hits: `{}`\n- Protected miss-rate delta: `{:+.3}`\n- Protected target miss-rate delta: `{:+.3}`\n",

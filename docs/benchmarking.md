@@ -566,12 +566,31 @@ The semantic contribution summary also emits source-free diagnostics:
 - `semantic_contribution_missed_targets_no_signal`: semantic missed target files
   that also lacked lexical, graph, history, and area signal. Treat this as a
   semantic document/query construction or index coverage problem.
+- `semantic_query_family_route_candidate`: a query family has semantic-only
+  target hits without semantic-only non-targets. Treat this as a selective
+  semantic/fusion candidate, not a default-promotion result.
+- `semantic_query_family_mixed_hold`: a query family has both semantic-only
+  target hits and semantic-only non-targets. Hold until fusion can separate
+  useful semantic evidence from noise.
+- `semantic_query_family_noise_hold`: a query family has semantic-only
+  non-targets without semantic-only target hits. Do not route semantic retrieval
+  for that family without new evidence.
 
 The `semanticContribution.semanticMissedTargetGapFamilies` JSON field groups
 semantic-missed retrieval targets into source-free families such as
 `semantic_miss_area_context_only`,
 `semantic_miss_nonsemantic_coupled_signal`, and
 `semantic_miss_no_candidate_signal`.
+
+The `semanticContribution.queryFamilyContributions` JSON field groups semantic
+selection quality by the same source-free query families used for reranker
+routing, such as `explicit_path`, `stack_or_error`, `symbol_identifier`,
+`commit_clue`, `domain_phrase`, `broad_scope`, or `low_information`. Each family
+reports semantic-selected file counts, semantic target hits, semantic-only
+target hits absent from the lexical baseline, semantic-only non-targets, missed
+targets, missed-target gap families, and short source-free example cases. This
+supports selective semantic/fusion R&D without promoting semantic retrieval
+globally.
 
 The reranker contribution summary compares `local_metadata_reranked` against
 `ctxhelm_default` without source text. It reports commit-level target-hit lift,
