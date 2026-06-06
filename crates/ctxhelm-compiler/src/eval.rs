@@ -4014,8 +4014,68 @@ fn semantic_contribution_diagnostics(
                 count: family.semantic_only_non_target_count,
             });
         }
+        for profile in &family.support_profiles {
+            if profile.semantic_only_target_count > 0 && profile.semantic_only_non_target_count == 0
+            {
+                diagnostics.push(Diagnostic {
+                    code: "semantic_support_profile_route_candidate".to_string(),
+                    severity: DiagnosticSeverity::Info,
+                    message: format!(
+                        "Semantic support profile `{}` has semantic-only target hits without semantic-only non-targets for query family `{}`.",
+                        profile.support_family, family.family
+                    ),
+                    paths: semantic_support_profile_example_paths(profile, true),
+                    count: profile.semantic_only_target_count,
+                });
+            } else if profile.semantic_only_target_count > 0
+                && profile.semantic_only_non_target_count > 0
+            {
+                diagnostics.push(Diagnostic {
+                    code: "semantic_support_profile_mixed_hold".to_string(),
+                    severity: DiagnosticSeverity::Info,
+                    message: format!(
+                        "Semantic support profile `{}` has both semantic-only targets and semantic-only non-targets for query family `{}`.",
+                        profile.support_family, family.family
+                    ),
+                    paths: semantic_support_profile_example_paths(profile, false),
+                    count: profile.semantic_only_target_count + profile.semantic_only_non_target_count,
+                });
+            } else if profile.semantic_only_non_target_count > 0 {
+                diagnostics.push(Diagnostic {
+                    code: "semantic_support_profile_noise_hold".to_string(),
+                    severity: DiagnosticSeverity::Warning,
+                    message: format!(
+                        "Semantic support profile `{}` has semantic-only non-targets without semantic-only targets for query family `{}`.",
+                        profile.support_family, family.family
+                    ),
+                    paths: semantic_support_profile_example_paths(profile, false),
+                    count: profile.semantic_only_non_target_count,
+                });
+            }
+        }
     }
     diagnostics
+}
+
+fn semantic_support_profile_example_paths(
+    profile: &SemanticOnlySupportProfile,
+    targets: bool,
+) -> Vec<String> {
+    if targets {
+        profile
+            .example_target_paths
+            .iter()
+            .take(5)
+            .cloned()
+            .collect()
+    } else {
+        profile
+            .example_non_target_paths
+            .iter()
+            .take(5)
+            .cloned()
+            .collect()
+    }
 }
 
 fn semantic_support_example_paths(
@@ -10744,6 +10804,11 @@ mod tests {
             && diagnostic.message.contains("domain_phrase")
             && diagnostic.paths == vec!["src/domain_target.ts".to_string()]));
         assert!(diagnostics.iter().any(|diagnostic| diagnostic.code
+            == "semantic_support_profile_route_candidate"
+            && diagnostic.message.contains("unsupported")
+            && diagnostic.message.contains("domain_phrase")
+            && diagnostic.paths == vec!["src/domain_target.ts".to_string()]));
+        assert!(diagnostics.iter().any(|diagnostic| diagnostic.code
             == "semantic_query_family_unsupported_target_hold"
             && diagnostic.message.contains("domain_phrase")));
         assert!(diagnostics.iter().any(|diagnostic| diagnostic.code
@@ -10756,12 +10821,21 @@ mod tests {
             == "semantic_query_family_supported_mixed_hold"
             && diagnostic.message.contains("symbol_identifier")));
         assert!(diagnostics.iter().any(|diagnostic| diagnostic.code
+            == "semantic_support_profile_mixed_hold"
+            && diagnostic.message.contains("dependency_symbol")
+            && diagnostic.message.contains("symbol_identifier")));
+        assert!(diagnostics.iter().any(|diagnostic| diagnostic.code
             == "semantic_query_family_noise_hold"
             && diagnostic.severity == DiagnosticSeverity::Warning
             && diagnostic.message.contains("commit_clue")));
         assert!(diagnostics.iter().any(|diagnostic| diagnostic.code
             == "semantic_query_family_supported_noise_hold"
             && diagnostic.severity == DiagnosticSeverity::Warning
+            && diagnostic.message.contains("commit_clue")));
+        assert!(diagnostics.iter().any(|diagnostic| diagnostic.code
+            == "semantic_support_profile_noise_hold"
+            && diagnostic.severity == DiagnosticSeverity::Warning
+            && diagnostic.message.contains("history")
             && diagnostic.message.contains("commit_clue")));
     }
 

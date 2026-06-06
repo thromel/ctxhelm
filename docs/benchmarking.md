@@ -582,6 +582,15 @@ The semantic contribution summary also emits source-free diagnostics:
 - `semantic_query_family_supported_mixed_hold`: semantic-only targets and
   semantic-only non-targets both have non-semantic source-free corroboration.
   Hold until stricter within-family features separate the two cases.
+- `semantic_support_profile_route_candidate`: a specific support profile inside
+  a query family has semantic-only targets and no semantic-only non-targets.
+  Treat this as a candidate for further proof, not a runtime policy by itself.
+- `semantic_support_profile_mixed_hold`: a specific support profile has both
+  semantic-only targets and semantic-only non-targets. Hold this profile until
+  another feature separates target and noise cases.
+- `semantic_support_profile_noise_hold`: a specific support profile has
+  semantic-only non-targets without semantic-only targets. Exclude this profile
+  from route-candidate reasoning unless future evidence changes.
 - `semantic_query_family_mixed_hold`: a query family has both semantic-only
   target hits and semantic-only non-targets. Hold until fusion can separate
   useful semantic evidence from noise.
