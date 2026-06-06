@@ -14,7 +14,7 @@ separates implemented/measured work from remaining research risk.
 | Claude workflow | `.ctxhelm/e2e/phase250-claude-workflow-refresh.json`, `.ctxhelm/e2e/phase252-agent-run-claude-rd-breadth-suite.json`, `.ctxhelm/e2e/phase254-agent-run-claude-rd-breadth-suite.json`, `.ctxhelm/e2e/phase264-agent-client-availability.json` | Current workflow proof passes with explicit-repo MCP usage and local-only privacy. Phase 254 retried the fresh paired Claude R&D suite with Claude Code `2.1.163`, but all four current preflights reported rate limiting, so the report is correctly `degraded` and not used as retrieval-quality evidence. Phase 264 rechecked client availability: Claude Code `2.1.163` is still rate-limited, while Codex CLI `0.137.0` remains available with deterministic explicit-repo evidence. |
 | Experience memory | `.ctxhelm/e2e/phase234-memory-pack-impact-suite.json`, `.ctxhelm/e2e/phase244-agent-run-codex-memory-consumption.json`, `.ctxhelm/e2e/phase253-codex-memory-outcome-suite.json`, `.ctxhelm/e2e/phase255-codex-memory-efficiency-suite.json`, `.planning/e2e/2026-06-06-phase255-codex-memory-efficiency.md` | Local memory selection is source-free and bounded. Six-repo local evidence shows final-pack memory does not add non-targets; Phase 244 proves Codex consumes selected-memory targets on one repo while reducing read-file count from 18 to 5 in the best lane. Phase 253 extends real Codex memory outcome evidence across VeriSchema, ReAgent, and RefactoringMiner: 3/3 comparison-eligible pairs improved target-read coverage in the memory lane. Phase 255 tightens the memory lane and reruns the same three-repo proof: target-read improvement remains 3/3, while memory irrelevant-read improvement moves from 0/3 to 3/3. |
 | GraphRAG | `.planning/e2e/2026-06-02-phase179-graph-edge-profiles.md`, `.planning/e2e/2026-06-02-phase180-graph-edge-ablations.md`, `.planning/e2e/2026-06-03-phase181-graph-edge-budget-allocation.md` | Implemented and measured. Edge-family profiles and ablations expose import and Python re-export pressure; Phase 181 applies bounded edge-family budget ordering and promotes on reachable fixtures. |
-| Semantic/reranker retrieval | `.planning/e2e/2026-06-02-phase160-bounded-semantic-status-search.md`, `.planning/e2e/2026-06-02-phase161-semantic-gate-contribution-diagnostics.md`, `.planning/e2e/2026-06-06-phase252-semantic-gate-classification.md`, `.planning/e2e/2026-06-06-phase256-semantic-rich-document-rejection.md`, `.planning/e2e/2026-06-06-phase257-safe-local-metadata-reranker.md`, `.planning/e2e/2026-06-06-phase258-reranker-contribution-diagnostics.md`, `.planning/e2e/2026-06-06-phase259-runtime-reranker-protected-floor.md`, `.planning/e2e/2026-06-06-phase260-query-family-reranker-routing.md`, `.planning/e2e/2026-06-06-phase261-routed-reranker-policy.md`, `.planning/e2e/2026-06-06-phase262-routed-reranker-broader-proof.md`, `.planning/e2e/2026-06-06-phase263-routed-reranker-runtime-policy.md`, `.planning/e2e/2026-06-06-phase264-semantic-family-diagnostics.md` | Integrated and measured as optional local signals. Phase 252 fixes gate classification so eval-only reranker regressions no longer make semantic look blocked. Phase 256 rejects richer symbol/dependency semantic search documents. Phase 257 makes the eval reranker preserve protected source evidence and validation-test reserves. Phase 258 adds contribution diagnostics showing RefactoringMiner is reranker-neutral while ctxhelm has strong target-hit lift plus explicit target churn. Phase 259 aligns policy-enabled runtime reranking with the same protected-source floor. Phase 260 adds query-family routing diagnostics. Phase 261 adds an eval-only routed variant. Phase 262 broadens that proof and rejects `symbol_identifier` routing after ReAgent regression, narrowing routing to `commit_clue` only. Phase 263 exposes that narrower route as opt-in runtime policy through `enableQueryFamilyRoutedReranker`, while defaults stay disabled. Phase 264 adds semantic query-family contribution diagnostics and shows selective semantic candidates, but also family-specific noise, so semantic remains opt-in. |
+| Semantic/reranker retrieval | `.planning/e2e/2026-06-02-phase160-bounded-semantic-status-search.md`, `.planning/e2e/2026-06-02-phase161-semantic-gate-contribution-diagnostics.md`, `.planning/e2e/2026-06-06-phase252-semantic-gate-classification.md`, `.planning/e2e/2026-06-06-phase256-semantic-rich-document-rejection.md`, `.planning/e2e/2026-06-06-phase257-safe-local-metadata-reranker.md`, `.planning/e2e/2026-06-06-phase258-reranker-contribution-diagnostics.md`, `.planning/e2e/2026-06-06-phase259-runtime-reranker-protected-floor.md`, `.planning/e2e/2026-06-06-phase260-query-family-reranker-routing.md`, `.planning/e2e/2026-06-06-phase261-routed-reranker-policy.md`, `.planning/e2e/2026-06-06-phase262-routed-reranker-broader-proof.md`, `.planning/e2e/2026-06-06-phase263-routed-reranker-runtime-policy.md`, `.planning/e2e/2026-06-06-phase264-semantic-family-diagnostics.md`, `.planning/e2e/2026-06-06-phase265-semantic-family-stability.md` | Integrated and measured as optional local signals. Phase 252 fixes gate classification so eval-only reranker regressions no longer make semantic look blocked. Phase 256 rejects richer symbol/dependency semantic search documents. Phase 257 makes the eval reranker preserve protected source evidence and validation-test reserves. Phase 258 adds contribution diagnostics showing RefactoringMiner is reranker-neutral while ctxhelm has strong target-hit lift plus explicit target churn. Phase 259 aligns policy-enabled runtime reranking with the same protected-source floor. Phase 260 adds query-family routing diagnostics. Phase 261 adds an eval-only routed variant. Phase 262 broadens that proof and rejects `symbol_identifier` routing after ReAgent regression, narrowing routing to `commit_clue` only. Phase 263 exposes that narrower route as opt-in runtime policy through `enableQueryFamilyRoutedReranker`, while defaults stay disabled. Phase 264 adds semantic query-family contribution diagnostics and shows selective semantic candidates. Phase 265 broadens those semantic-family checks to `limit 20`, adds commit-level stability counters, and rejects coarse semantic query-family routing because apparent candidates become unstable or noisy on the larger slice. |
 | Agent-native integrations | `.planning/e2e/2026-06-06-phase247-cursor-opencode-real-client-proof.md`, `.planning/e2e/2026-06-06-phase246-agent-native-fallback-proof.md`, `docs/agent-setup.md` | Codex, Claude, OpenCode, Cursor setup/fallback surfaces exist. OpenCode real-client proof passes. Cursor real-client proof is available but local auth-blocked. |
 | Local inspector/governor UX | `.planning/e2e/2026-06-06-phase248-local-inspector-shell.md`, `.planning/e2e/2026-06-06-phase249-context-governor.md` | Implemented with source-sentinel smokes and release-gate wiring. Phase 250 fixed the first observed real-agent retrieval gap for governor/release R&D tasks. |
 
@@ -36,9 +36,11 @@ separates implemented/measured work from remaining research risk.
    narrower route to provider policy as opt-in runtime behavior. This is still
    not unconditional semantic or full-reranker promotion. Phase 264 adds
    semantic query-family diagnostics and finds possible route candidates
-   (`domain_phrase` on VeriSchema and `broad_scope` on ctxhelm), but also
-   explicit noise/mixed-hold families on ReAgent and RefactoringMiner. Semantic
-   remains opt-in until candidate families repeat on larger samples.
+   (`domain_phrase` on VeriSchema and `broad_scope` on ctxhelm), but Phase 265
+   broadens that check and shows the candidates are unstable at `limit 20`: each
+   clean target-only family also has mixed or noise-only commits. Semantic
+   remains opt-in until stricter within-family gating or better local
+   query/document construction produces repeated clean lift.
 2. Claude has current workflow proof but not a fresh paired outcome suite on the
    same level as Codex Phase 245/250. Phase 264 confirms this is still a
    client-availability problem: Claude Code is rate-limited, while Codex remains
@@ -64,9 +66,10 @@ separates implemented/measured work from remaining research risk.
 2. Preserve the Phase 255 memory target-consumption plus read-efficiency
    contract while broadening only if new counterexamples appear.
 3. Refresh Claude paired outcome evidence when the client is available.
-4. Broaden Phase 264 semantic query-family candidate checks before adding any
-   runtime semantic routing. Candidate families need repeated lift without
-   family-specific noise or source/privacy regressions.
+4. Run the next semantic experiment against the Phase 265 stability counters:
+   stricter within-family gating features or alternate local query/document
+   construction must beat the coarse-family hold before any runtime semantic
+   routing is added.
 
 ## Conclusion
 
@@ -74,7 +77,8 @@ ctxhelm is past MVP and has real agent-outcome proof for multiple failure
 classes. It is not yet R&D complete in the world-class sense because semantic
 default lift and fresh paired Claude outcome proof remain open research
 questions. Phase 264 reduces semantic risk by exposing where semantic is a
-candidate versus a noise source, but it does not justify default promotion.
-Phase 253 reduces memory risk by proving cross-repo Codex target-consumption
-lift. Phase 255 further reduces memory risk by preserving that target
-consumption while improving irrelevant reads in all three measured memory pairs.
+candidate versus a noise source, and Phase 265 further reduces risk by proving
+the coarse candidate families are not stable enough for runtime routing. Phase
+253 reduces memory risk by proving cross-repo Codex target-consumption lift.
+Phase 255 further reduces memory risk by preserving that target consumption
+while improving irrelevant reads in all three measured memory pairs.

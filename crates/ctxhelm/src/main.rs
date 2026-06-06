@@ -6123,10 +6123,15 @@ fn render_semantic_precision_gate_report(report: &SemanticPrecisionGateReport) -
     } else {
         for family in &report.semantic_contribution.query_family_contributions {
             output.push_str(&format!(
-                "- `{}`: commits `{}`, semantic selections `{}`, target hits `{}`, semantic-only target hits `{}`, semantic-only non-targets `{}`, missed targets `{}`, semantic-only target rate `{:.3}`, semantic-only non-target rate `{:.3}`\n",
+                "- `{}`: commits `{}`, semantic selections `{}`, target-hit commits `{}`, non-target commits `{}`, clean target-only commits `{}`, mixed commits `{}`, noise-only commits `{}`, target hits `{}`, semantic-only target hits `{}`, semantic-only non-targets `{}`, missed targets `{}`, semantic-only target rate `{:.3}`, semantic-only non-target rate `{:.3}`\n",
                 family.family,
                 family.evaluated_commits,
                 family.commits_with_semantic_selection,
+                family.commits_with_semantic_only_target_hits,
+                family.commits_with_semantic_only_non_targets,
+                family.target_only_commit_count,
+                family.mixed_commit_count,
+                family.noise_only_commit_count,
                 family.semantic_target_hit_count,
                 family.semantic_only_target_hit_count,
                 family.semantic_only_non_target_count,

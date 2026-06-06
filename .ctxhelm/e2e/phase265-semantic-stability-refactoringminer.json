@@ -1,0 +1,1247 @@
+{
+  "repoId": "5dca5087-df0b-5ff8-8b2f-234b3c7de8d2",
+  "evalRangeId": "semantic-precision-gate:08452ff08ae8b98e87346f0e1fc5c25a7a5ffe092f2a225bfec3c4d34523d19f",
+  "evaluatedCommits": 20,
+  "k": 10,
+  "decision": "hold",
+  "decisionReason": "Held: local semantic recall delta +0.010, precision delta +0.005; keep opt-in.",
+  "variants": [
+    {
+      "name": "lexical_baseline",
+      "status": "evaluated",
+      "semanticEnabled": false,
+      "precisionEnabled": false,
+      "rerankerEnabled": false,
+      "metrics": {
+        "k": 10,
+        "recallAtK": 0.50744045,
+        "precisionAtK": 0.155,
+        "mrrAtK": 0.59166664,
+        "roleRecall": [
+          {
+            "role": "source",
+            "recallAtK": 0.5294118,
+            "changedFileCount": 34,
+            "hitCount": 18
+          },
+          {
+            "role": "test",
+            "recallAtK": 0.625,
+            "changedFileCount": 8,
+            "hitCount": 5
+          }
+        ],
+        "testRecommendationRate": 1.0,
+        "averageRecommendedContextFiles": 10.0
+      },
+      "fileRecallAt10": 0.41857147,
+      "testRecallAt10": 1.0,
+      "runtimeMillis": 20205,
+      "cacheHits": 0,
+      "cacheMisses": 0,
+      "tokenEfficiency": 1.125,
+      "protectedEvidenceMissRateAt10": 0.29885057,
+      "protectedEvidenceTargetMissRateAt10": 0.2413793,
+      "providerStatus": "evaluated",
+      "note": "Exact/path lexical baseline under the same fixed K."
+    },
+    {
+      "name": "ctxhelm_default",
+      "status": "evaluated",
+      "semanticEnabled": false,
+      "precisionEnabled": false,
+      "rerankerEnabled": false,
+      "metrics": {
+        "k": 10,
+        "recallAtK": 0.41857147,
+        "precisionAtK": 0.135,
+        "mrrAtK": 0.44761905,
+        "roleRecall": [
+          {
+            "role": "source",
+            "recallAtK": 0.44117647,
+            "changedFileCount": 34,
+            "hitCount": 15
+          },
+          {
+            "role": "test",
+            "recallAtK": 0.625,
+            "changedFileCount": 8,
+            "hitCount": 5
+          }
+        ],
+        "testRecommendationRate": 1.0,
+        "averageRecommendedContextFiles": 10.0
+      },
+      "fileRecallAt10": 0.41857147,
+      "testRecallAt10": 1.0,
+      "runtimeMillis": 20205,
+      "cacheHits": 0,
+      "cacheMisses": 0,
+      "tokenEfficiency": 1.125,
+      "protectedEvidenceMissRateAt10": 0.29885057,
+      "protectedEvidenceTargetMissRateAt10": 0.2413793,
+      "providerStatus": "evaluated",
+      "note": "Current default ranking without semantic default promotion."
+    },
+    {
+      "name": "local_metadata_reranked",
+      "status": "evaluated",
+      "semanticEnabled": false,
+      "precisionEnabled": false,
+      "rerankerEnabled": true,
+      "metrics": {
+        "k": 10,
+        "recallAtK": 0.55190474,
+        "precisionAtK": 0.155,
+        "mrrAtK": 0.47380954,
+        "roleRecall": [
+          {
+            "role": "source",
+            "recallAtK": 0.47058824,
+            "changedFileCount": 34,
+            "hitCount": 16
+          },
+          {
+            "role": "test",
+            "recallAtK": 0.625,
+            "changedFileCount": 8,
+            "hitCount": 5
+          }
+        ],
+        "testRecommendationRate": 1.0,
+        "averageRecommendedContextFiles": 10.0
+      },
+      "fileRecallAt10": 0.55190474,
+      "testRecallAt10": 1.0,
+      "runtimeMillis": 21543,
+      "cacheHits": 0,
+      "cacheMisses": 0,
+      "tokenEfficiency": 1.2916666,
+      "protectedEvidenceMissRateAt10": 0.18390805,
+      "protectedEvidenceTargetMissRateAt10": 0.10344828,
+      "providerStatus": "evaluated",
+      "note": "Eval-only deterministic local metadata reranker over source-free candidate metadata."
+    },
+    {
+      "name": "query_family_routed_reranked",
+      "status": "evaluated",
+      "semanticEnabled": false,
+      "precisionEnabled": false,
+      "rerankerEnabled": true,
+      "metrics": {
+        "k": 10,
+        "recallAtK": 0.44357148,
+        "precisionAtK": 0.14000002,
+        "mrrAtK": 0.44761905,
+        "roleRecall": [
+          {
+            "role": "source",
+            "recallAtK": 0.44117647,
+            "changedFileCount": 34,
+            "hitCount": 15
+          },
+          {
+            "role": "test",
+            "recallAtK": 0.625,
+            "changedFileCount": 8,
+            "hitCount": 5
+          }
+        ],
+        "testRecommendationRate": 1.0,
+        "averageRecommendedContextFiles": 10.0
+      },
+      "fileRecallAt10": 0.44357148,
+      "testRecallAt10": 1.0,
+      "runtimeMillis": 25150,
+      "cacheHits": 0,
+      "cacheMisses": 0,
+      "tokenEfficiency": 1.1666666,
+      "protectedEvidenceMissRateAt10": 0.28735632,
+      "protectedEvidenceTargetMissRateAt10": 0.20689656,
+      "providerStatus": "evaluated",
+      "note": "Eval-only local metadata reranker gated to route-safe source-free query families."
+    },
+    {
+      "name": "local_semantic",
+      "status": "evaluated",
+      "semanticEnabled": true,
+      "precisionEnabled": false,
+      "rerankerEnabled": false,
+      "metrics": {
+        "k": 10,
+        "recallAtK": 0.4285714,
+        "precisionAtK": 0.14,
+        "mrrAtK": 0.44761905,
+        "roleRecall": [
+          {
+            "role": "source",
+            "recallAtK": 0.44117647,
+            "changedFileCount": 34,
+            "hitCount": 15
+          },
+          {
+            "role": "test",
+            "recallAtK": 0.75,
+            "changedFileCount": 8,
+            "hitCount": 6
+          }
+        ],
+        "testRecommendationRate": 1.0,
+        "averageRecommendedContextFiles": 10.0
+      },
+      "fileRecallAt10": 0.4285714,
+      "testRecallAt10": 1.0,
+      "runtimeMillis": 22682,
+      "cacheHits": 0,
+      "cacheMisses": 0,
+      "tokenEfficiency": 1.1666666,
+      "protectedEvidenceMissRateAt10": 0.3045977,
+      "protectedEvidenceTargetMissRateAt10": 0.2413793,
+      "providerStatus": "local_fastembed",
+      "note": "Explicit local semantic retrieval using source-free semantic documents."
+    },
+    {
+      "name": "precision_enriched_semantic",
+      "status": "skipped",
+      "semanticEnabled": true,
+      "precisionEnabled": true,
+      "rerankerEnabled": false,
+      "metrics": null,
+      "fileRecallAt10": 0.4285714,
+      "testRecallAt10": 1.0,
+      "runtimeMillis": 22682,
+      "cacheHits": 0,
+      "cacheMisses": 0,
+      "tokenEfficiency": 1.1666666,
+      "protectedEvidenceMissRateAt10": 0.3045977,
+      "protectedEvidenceTargetMissRateAt10": 0.2413793,
+      "providerStatus": "skipped",
+      "note": "Skipped because no fresh precision overlay was available."
+    },
+    {
+      "name": "semantic_precision_full_hybrid",
+      "status": "skipped",
+      "semanticEnabled": true,
+      "precisionEnabled": true,
+      "rerankerEnabled": false,
+      "metrics": null,
+      "fileRecallAt10": 0.4285714,
+      "testRecallAt10": 1.0,
+      "runtimeMillis": 22682,
+      "cacheHits": 0,
+      "cacheMisses": 0,
+      "tokenEfficiency": 1.1666666,
+      "protectedEvidenceMissRateAt10": 0.3045977,
+      "protectedEvidenceTargetMissRateAt10": 0.2413793,
+      "providerStatus": "skipped",
+      "note": "Full hybrid is held unless semantic plus precision beats default gates."
+    },
+    {
+      "name": "policy_allowed_reranked",
+      "status": "skipped",
+      "semanticEnabled": true,
+      "precisionEnabled": false,
+      "rerankerEnabled": false,
+      "metrics": null,
+      "fileRecallAt10": 0.4285714,
+      "testRecallAt10": 1.0,
+      "runtimeMillis": 22682,
+      "cacheHits": 0,
+      "cacheMisses": 0,
+      "tokenEfficiency": 1.1666666,
+      "protectedEvidenceMissRateAt10": 0.3045977,
+      "protectedEvidenceTargetMissRateAt10": 0.2413793,
+      "providerStatus": "disabled",
+      "note": "Reranker is disabled by default."
+    }
+  ],
+  "namedWins": [
+    {
+      "sha": "949bddcd3509",
+      "variant": "local_semantic",
+      "reason": "Variant retrieved more gold changed files than default.",
+      "paths": [
+        "documentation/mcp.md",
+        "src/main/java/org/refactoringminer/mcp/RefactoringMinerMcpService.java",
+        "src/main/java/org/refactoringminer/mcp/RefactoringMinerMcpTools.java",
+        "src/test/java/org/refactoringminer/mcp/RefactoringMinerMcpServiceRepositoryTest.java",
+        "src/test/java/org/refactoringminer/mcp/RefactoringMinerMcpToolsTest.java"
+      ]
+    }
+  ],
+  "namedRegressions": [],
+  "namedMisses": [
+    {
+      "sha": "c16c031d0486",
+      "variant": "local_semantic",
+      "reason": "Variant still missed gold changed files at K.",
+      "paths": [
+        "src/main/java/org/refactoringminer/astDiff/matchers/wrappers/MethodMatcher.java"
+      ]
+    },
+    {
+      "sha": "507dc25ba023",
+      "variant": "local_semantic",
+      "reason": "Variant still missed gold changed files at K.",
+      "paths": [
+        "src/main/java/org/refactoringminer/astDiff/matchers/wrappers/MethodMatcher.java",
+        "src/main/java/org/refactoringminer/astDiff/utils/Constants.java"
+      ]
+    },
+    {
+      "sha": "7deb175ed134",
+      "variant": "local_semantic",
+      "reason": "Variant still missed gold changed files at K.",
+      "paths": [
+        "src/main/java/gr/uom/java/xmi/decomposition/AbstractCodeFragment.java",
+        "src/main/java/gr/uom/java/xmi/decomposition/ReplacementAlgorithm.java"
+      ]
+    },
+    {
+      "sha": "b3e206ee6869",
+      "variant": "local_semantic",
+      "reason": "Variant still missed gold changed files at K.",
+      "paths": [
+        "src/main/java/gr/uom/java/xmi/ModuleContainer.java"
+      ]
+    },
+    {
+      "sha": "1f4d0717c544",
+      "variant": "local_semantic",
+      "reason": "Variant still missed gold changed files at K.",
+      "paths": [
+        "src/main/java/org/refactoringminer/astDiff/matchers/wrappers/BodyMapperMatcher.java",
+        "src/main/java/org/refactoringminer/astDiff/utils/Constants.java"
+      ]
+    },
+    {
+      "sha": "5a9fd78610c7",
+      "variant": "local_semantic",
+      "reason": "Variant still missed gold changed files at K.",
+      "paths": [
+        "src/main/java/org/refactoringminer/astDiff/matchers/wrappers/MethodMatcher.java"
+      ]
+    },
+    {
+      "sha": "4fa3c1a48ad4",
+      "variant": "local_semantic",
+      "reason": "Variant still missed gold changed files at K.",
+      "paths": [
+        "docker/Dockerfile",
+        "docker/README.md",
+        "docker/native/Dockerfile-native",
+        "src/main/java/org/refactoringminer/mcp/McpDiffBrowserResult.java"
+      ]
+    },
+    {
+      "sha": "bc014a0d4392",
+      "variant": "local_semantic",
+      "reason": "Variant still missed gold changed files at K.",
+      "paths": [
+        "README.md"
+      ]
+    },
+    {
+      "sha": "bd0b2277933f",
+      "variant": "local_semantic",
+      "reason": "Variant still missed gold changed files at K.",
+      "paths": [
+        "build.gradle",
+        "src/main/java/org/refactoringminer/mcp/RefactoringMinerMcpTools.java",
+        "src/main/java/org/refactoringminer/mcp/WebDiffBrowserLauncher.java",
+        "src/main/resources/logback.xml"
+      ]
+    },
+    {
+      "sha": "1b9f2cf08b3c",
+      "variant": "local_semantic",
+      "reason": "Variant still missed gold changed files at K.",
+      "paths": [
+        "src/main/java/org/refactoringminer/mcp/RefactoringMinerMcpService.java",
+        "src/main/java/org/refactoringminer/mcp/RefactoringMinerMcpTools.java",
+        "src/test/java/org/refactoringminer/mcp/RefactoringMinerMcpToolsTest.java"
+      ]
+    }
+  ],
+  "semanticContribution": {
+    "evaluatedCommits": 20,
+    "commitsWithSemanticSelection": 16,
+    "semanticSelectedFileCount": 53,
+    "semanticTargetHitCount": 9,
+    "semanticOnlyTargetHitCount": 2,
+    "semanticOnlyNonTargetCount": 17,
+    "semanticLexicalOverlapCount": 34,
+    "semanticMissedTargetCount": 52,
+    "averageSemanticSelectedFiles": 2.65,
+    "semanticTargetHitRate": 0.14754099,
+    "semanticOnlyTargetHitRate": 0.032786883,
+    "semanticOnlyNonTargetRate": 0.8947368,
+    "semanticOnlyHits": [
+      {
+        "sha": "1f4d0717c544",
+        "variant": "local_semantic",
+        "reason": "Semantic selected retrieval-target path(s) absent from the lexical baseline top K.",
+        "paths": [
+          "src/main/java/org/refactoringminer/astDiff/utils/TreeUtilFunctions.java"
+        ]
+      },
+      {
+        "sha": "5c47005d549f",
+        "variant": "local_semantic",
+        "reason": "Semantic selected retrieval-target path(s) absent from the lexical baseline top K.",
+        "paths": [
+          "src/main/java/org/refactoringminer/RefactoringMiner.java"
+        ]
+      }
+    ],
+    "semanticOnlyNonTargets": [
+      {
+        "sha": "507dc25ba023",
+        "variant": "local_semantic",
+        "reason": "Semantic selected non-target path(s) absent from the lexical baseline top K.",
+        "paths": [
+          "src/main/java/gr/uom/java/xmi/decomposition/TypeScriptVisitor.java",
+          "src/test/java/org/refactoringminer/astDiff/tests/TypeScriptDiffTest.java"
+        ]
+      },
+      {
+        "sha": "5a9fd78610c7",
+        "variant": "local_semantic",
+        "reason": "Semantic selected non-target path(s) absent from the lexical baseline top K.",
+        "paths": [
+          "src/main/java/gr/uom/java/xmi/TypeScriptFileProcessor.java",
+          "src/main/java/gr/uom/java/xmi/decomposition/TypeScriptVisitor.java"
+        ]
+      },
+      {
+        "sha": "4fa3c1a48ad4",
+        "variant": "local_semantic",
+        "reason": "Semantic selected non-target path(s) absent from the lexical baseline top K.",
+        "paths": [
+          "src/main/java/gui/webdiff/DiffDriver.java",
+          "src/main/java/gui/webdiff/dir/DirectoryDiffView.java",
+          "src/main/java/gui/webdiff/dir/filters/DiffFilterKind.java",
+          "src/main/java/gui/webdiff/dir/filters/DiffFilterer.java",
+          "src/main/java/gui/webdiff/export/WebExporter.java"
+        ]
+      },
+      {
+        "sha": "1b9f2cf08b3c",
+        "variant": "local_semantic",
+        "reason": "Semantic selected non-target path(s) absent from the lexical baseline top K.",
+        "paths": [
+          "src/main/java/gui/webdiff/DiffDriver.java",
+          "src/main/java/gui/webdiff/dir/filters/DiffFilterKind.java",
+          "src/main/java/gui/webdiff/export/WebExporter.java"
+        ]
+      },
+      {
+        "sha": "65a2809dafe5",
+        "variant": "local_semantic",
+        "reason": "Semantic selected non-target path(s) absent from the lexical baseline top K.",
+        "paths": [
+          "src/main/java/org/refactoringminer/astDiff/matchers/wrappers/ASTDiffMappingOptimizer.java"
+        ]
+      },
+      {
+        "sha": "5c47005d549f",
+        "variant": "local_semantic",
+        "reason": "Semantic selected non-target path(s) absent from the lexical baseline top K.",
+        "paths": [
+          "src/main/java/org/refactoringminer/api/GitHistoryRefactoringMiner.java",
+          "src/main/java/org/refactoringminer/api/RefactoringMinerTimedOutException.java"
+        ]
+      },
+      {
+        "sha": "9444c83bb9db",
+        "variant": "local_semantic",
+        "reason": "Semantic selected non-target path(s) absent from the lexical baseline top K.",
+        "paths": [
+          "documentation/research.md",
+          "src/test/java/org/refactoringminer/test/TestNewDatasetRefactorings.java"
+        ]
+      }
+    ],
+    "semanticMissedTargetGapFamilies": [
+      {
+        "signalGap": "semantic_miss_area_context_only",
+        "missedCount": 12,
+        "examplePaths": [
+          "src/main/java/org/refactoringminer/astDiff/matchers/wrappers/MethodMatcher.java",
+          "src/main/java/gr/uom/java/xmi/decomposition/AbstractCodeFragment.java",
+          "src/main/java/gr/uom/java/xmi/decomposition/ReplacementAlgorithm.java",
+          "src/main/java/gr/uom/java/xmi/ModuleContainer.java",
+          "src/main/java/org/refactoringminer/astDiff/utils/Constants.java"
+        ]
+      },
+      {
+        "signalGap": "semantic_miss_final_context_covered",
+        "missedCount": 1,
+        "examplePaths": [
+          "build.gradle"
+        ]
+      },
+      {
+        "signalGap": "semantic_miss_lexical_covered",
+        "missedCount": 24,
+        "examplePaths": [
+          "src/main/java/org/refactoringminer/mcp/RefactoringMinerMcpService.java",
+          "src/main/java/org/refactoringminer/mcp/RefactoringMinerMcpTools.java",
+          "src/test/java/org/refactoringminer/mcp/RefactoringMinerMcpToolsTest.java",
+          "src/main/java/gr/uom/java/xmi/decomposition/VariableDeclaration.java",
+          "src/main/java/gr/uom/java/xmi/decomposition/UMLOperationBodyMapper.java"
+        ]
+      },
+      {
+        "signalGap": "semantic_miss_no_candidate_signal",
+        "missedCount": 14,
+        "examplePaths": [
+          "src/main/java/org/refactoringminer/astDiff/matchers/wrappers/MethodMatcher.java",
+          "src/main/java/org/refactoringminer/astDiff/utils/Constants.java",
+          "src/main/java/org/refactoringminer/astDiff/matchers/wrappers/BodyMapperMatcher.java",
+          "docker/Dockerfile",
+          "docker/README.md"
+        ]
+      },
+      {
+        "signalGap": "semantic_miss_nonsemantic_coupled_signal",
+        "missedCount": 1,
+        "examplePaths": [
+          "src/test/java/org/refactoringminer/mcp/RefactoringMinerMcpToolsTest.java"
+        ]
+      }
+    ],
+    "queryFamilyContributions": [
+      {
+        "family": "symbol_identifier",
+        "evaluatedCommits": 14,
+        "commitsWithSemanticSelection": 11,
+        "commitsWithSemanticOnlyTargetHits": 2,
+        "commitsWithSemanticOnlyNonTargets": 5,
+        "targetOnlyCommitCount": 1,
+        "mixedCommitCount": 1,
+        "noiseOnlyCommitCount": 4,
+        "semanticSelectedFileCount": 38,
+        "semanticTargetHitCount": 5,
+        "semanticOnlyTargetHitCount": 2,
+        "semanticOnlyNonTargetCount": 14,
+        "semanticMissedTargetCount": 35,
+        "semanticOnlyTargetHitRate": 0.05,
+        "semanticOnlyNonTargetRate": 0.875,
+        "targetOnlyCommitRate": 0.071428575,
+        "mixedCommitRate": 0.071428575,
+        "noiseOnlyCommitRate": 0.2857143,
+        "missedTargetGapFamilies": [
+          {
+            "signalGap": "semantic_miss_lexical_covered",
+            "missedCount": 17,
+            "examplePaths": [
+              "src/main/java/gr/uom/java/xmi/decomposition/VariableDeclaration.java",
+              "src/main/java/gr/uom/java/xmi/decomposition/UMLOperationBodyMapper.java",
+              "src/main/java/org/refactoringminer/astDiff/matchers/wrappers/BodyMapperMatcher.java",
+              "src/main/java/org/refactoringminer/astDiff/matchers/wrappers/ClassDeclarationMatcher.java",
+              "src/main/java/org/refactoringminer/astDiff/matchers/wrappers/FieldDeclarationMatcher.java"
+            ]
+          },
+          {
+            "signalGap": "semantic_miss_no_candidate_signal",
+            "missedCount": 9,
+            "examplePaths": [
+              "src/main/java/org/refactoringminer/astDiff/matchers/wrappers/MethodMatcher.java",
+              "src/main/java/org/refactoringminer/astDiff/utils/Constants.java",
+              "src/main/java/org/refactoringminer/astDiff/matchers/wrappers/BodyMapperMatcher.java",
+              "docker/Dockerfile",
+              "docker/README.md"
+            ]
+          },
+          {
+            "signalGap": "semantic_miss_area_context_only",
+            "missedCount": 9,
+            "examplePaths": [
+              "src/main/java/org/refactoringminer/astDiff/matchers/wrappers/MethodMatcher.java",
+              "src/main/java/gr/uom/java/xmi/decomposition/AbstractCodeFragment.java",
+              "src/main/java/gr/uom/java/xmi/decomposition/ReplacementAlgorithm.java",
+              "src/main/java/gr/uom/java/xmi/ModuleContainer.java",
+              "src/main/java/org/refactoringminer/astDiff/utils/Constants.java"
+            ]
+          }
+        ],
+        "exampleCases": [
+          {
+            "sha": "507dc25ba023",
+            "variant": "local_semantic",
+            "reason": "Semantic selected non-target path(s) absent from the lexical baseline top K.",
+            "paths": [
+              "src/main/java/gr/uom/java/xmi/decomposition/TypeScriptVisitor.java",
+              "src/test/java/org/refactoringminer/astDiff/tests/TypeScriptDiffTest.java"
+            ]
+          },
+          {
+            "sha": "1f4d0717c544",
+            "variant": "local_semantic",
+            "reason": "Semantic selected retrieval-target path(s) absent from the lexical baseline top K.",
+            "paths": [
+              "src/main/java/org/refactoringminer/astDiff/utils/TreeUtilFunctions.java"
+            ]
+          },
+          {
+            "sha": "5a9fd78610c7",
+            "variant": "local_semantic",
+            "reason": "Semantic selected non-target path(s) absent from the lexical baseline top K.",
+            "paths": [
+              "src/main/java/gr/uom/java/xmi/TypeScriptFileProcessor.java",
+              "src/main/java/gr/uom/java/xmi/decomposition/TypeScriptVisitor.java"
+            ]
+          },
+          {
+            "sha": "4fa3c1a48ad4",
+            "variant": "local_semantic",
+            "reason": "Semantic selected non-target path(s) absent from the lexical baseline top K.",
+            "paths": [
+              "src/main/java/gui/webdiff/DiffDriver.java",
+              "src/main/java/gui/webdiff/dir/DirectoryDiffView.java",
+              "src/main/java/gui/webdiff/dir/filters/DiffFilterKind.java",
+              "src/main/java/gui/webdiff/dir/filters/DiffFilterer.java",
+              "src/main/java/gui/webdiff/export/WebExporter.java"
+            ]
+          },
+          {
+            "sha": "1b9f2cf08b3c",
+            "variant": "local_semantic",
+            "reason": "Semantic selected non-target path(s) absent from the lexical baseline top K.",
+            "paths": [
+              "src/main/java/gui/webdiff/DiffDriver.java",
+              "src/main/java/gui/webdiff/dir/filters/DiffFilterKind.java",
+              "src/main/java/gui/webdiff/export/WebExporter.java"
+            ]
+          }
+        ]
+      },
+      {
+        "family": "domain_phrase",
+        "evaluatedCommits": 3,
+        "commitsWithSemanticSelection": 2,
+        "commitsWithSemanticOnlyTargetHits": 0,
+        "commitsWithSemanticOnlyNonTargets": 0,
+        "targetOnlyCommitCount": 0,
+        "mixedCommitCount": 0,
+        "noiseOnlyCommitCount": 0,
+        "semanticSelectedFileCount": 7,
+        "semanticTargetHitCount": 3,
+        "semanticOnlyTargetHitCount": 0,
+        "semanticOnlyNonTargetCount": 0,
+        "semanticMissedTargetCount": 9,
+        "semanticOnlyTargetHitRate": 0.0,
+        "semanticOnlyNonTargetRate": 0.0,
+        "targetOnlyCommitRate": 0.0,
+        "mixedCommitRate": 0.0,
+        "noiseOnlyCommitRate": 0.0,
+        "missedTargetGapFamilies": [
+          {
+            "signalGap": "semantic_miss_lexical_covered",
+            "missedCount": 5,
+            "examplePaths": [
+              "src/main/java/org/refactoringminer/mcp/RefactoringMinerMcpService.java",
+              "src/main/java/org/refactoringminer/mcp/RefactoringMinerMcpTools.java",
+              "src/test/java/org/refactoringminer/mcp/RefactoringMinerMcpToolsTest.java",
+              "src/main/java/gr/uom/java/xmi/decomposition/UMLOperationBodyMapper.java"
+            ]
+          },
+          {
+            "signalGap": "semantic_miss_no_candidate_signal",
+            "missedCount": 2,
+            "examplePaths": [
+              "build.gradle",
+              "src/main/resources/logback.xml"
+            ]
+          },
+          {
+            "signalGap": "semantic_miss_area_context_only",
+            "missedCount": 1,
+            "examplePaths": [
+              "src/main/java/org/refactoringminer/mcp/WebDiffBrowserLauncher.java"
+            ]
+          },
+          {
+            "signalGap": "semantic_miss_nonsemantic_coupled_signal",
+            "missedCount": 1,
+            "examplePaths": [
+              "src/test/java/org/refactoringminer/mcp/RefactoringMinerMcpToolsTest.java"
+            ]
+          }
+        ],
+        "exampleCases": []
+      },
+      {
+        "family": "broad_scope",
+        "evaluatedCommits": 1,
+        "commitsWithSemanticSelection": 1,
+        "commitsWithSemanticOnlyTargetHits": 0,
+        "commitsWithSemanticOnlyNonTargets": 0,
+        "targetOnlyCommitCount": 0,
+        "mixedCommitCount": 0,
+        "noiseOnlyCommitCount": 0,
+        "semanticSelectedFileCount": 4,
+        "semanticTargetHitCount": 1,
+        "semanticOnlyTargetHitCount": 0,
+        "semanticOnlyNonTargetCount": 0,
+        "semanticMissedTargetCount": 0,
+        "semanticOnlyTargetHitRate": 0.0,
+        "semanticOnlyNonTargetRate": 0.0,
+        "targetOnlyCommitRate": 0.0,
+        "mixedCommitRate": 0.0,
+        "noiseOnlyCommitRate": 0.0,
+        "missedTargetGapFamilies": [],
+        "exampleCases": []
+      },
+      {
+        "family": "commit_clue",
+        "evaluatedCommits": 2,
+        "commitsWithSemanticSelection": 2,
+        "commitsWithSemanticOnlyTargetHits": 0,
+        "commitsWithSemanticOnlyNonTargets": 2,
+        "targetOnlyCommitCount": 0,
+        "mixedCommitCount": 0,
+        "noiseOnlyCommitCount": 2,
+        "semanticSelectedFileCount": 4,
+        "semanticTargetHitCount": 0,
+        "semanticOnlyTargetHitCount": 0,
+        "semanticOnlyNonTargetCount": 3,
+        "semanticMissedTargetCount": 8,
+        "semanticOnlyTargetHitRate": 0.0,
+        "semanticOnlyNonTargetRate": 1.0,
+        "targetOnlyCommitRate": 0.0,
+        "mixedCommitRate": 0.0,
+        "noiseOnlyCommitRate": 1.0,
+        "missedTargetGapFamilies": [
+          {
+            "signalGap": "semantic_miss_no_candidate_signal",
+            "missedCount": 3,
+            "examplePaths": [
+              "documentation/mcp.md",
+              "src/main/java/gui/webdiff/WebDiff.java",
+              "publishToMavenCentral.gradle"
+            ]
+          },
+          {
+            "signalGap": "semantic_miss_area_context_only",
+            "missedCount": 2,
+            "examplePaths": [
+              "src/main/java/org/refactoringminer/mcp/RefactoringMinerMcpService.java",
+              "src/test/java/org/refactoringminer/mcp/RefactoringMinerMcpServiceTest.java"
+            ]
+          },
+          {
+            "signalGap": "semantic_miss_lexical_covered",
+            "missedCount": 2,
+            "examplePaths": [
+              "src/main/java/org/refactoringminer/mcp/RefactoringMinerMcpTools.java",
+              "src/test/java/org/refactoringminer/mcp/RefactoringMinerMcpToolsTest.java"
+            ]
+          },
+          {
+            "signalGap": "semantic_miss_final_context_covered",
+            "missedCount": 1,
+            "examplePaths": [
+              "build.gradle"
+            ]
+          }
+        ],
+        "exampleCases": [
+          {
+            "sha": "65a2809dafe5",
+            "variant": "local_semantic",
+            "reason": "Semantic selected non-target path(s) absent from the lexical baseline top K.",
+            "paths": [
+              "src/main/java/org/refactoringminer/astDiff/matchers/wrappers/ASTDiffMappingOptimizer.java"
+            ]
+          },
+          {
+            "sha": "9444c83bb9db",
+            "variant": "local_semantic",
+            "reason": "Semantic selected non-target path(s) absent from the lexical baseline top K.",
+            "paths": [
+              "documentation/research.md",
+              "src/test/java/org/refactoringminer/test/TestNewDatasetRefactorings.java"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "rerankerContribution": {
+    "evaluatedCommits": 20,
+    "improvedCommitCount": 4,
+    "regressedCommitCount": 0,
+    "neutralCommitCount": 16,
+    "defaultTargetHitCount": 27,
+    "rerankedTargetHitCount": 31,
+    "targetHitDelta": 4,
+    "rerankerOnlyTargetHitCount": 4,
+    "defaultOnlyTargetHitCount": 0,
+    "protectedEvidenceMissRateDelta": -0.11494252,
+    "protectedEvidenceTargetMissRateDelta": -0.13793102,
+    "improvedCases": [
+      {
+        "sha": "bc014a0d4392",
+        "variant": "local_metadata_reranked",
+        "reason": "Reranker retrieved additional gold changed file(s) beyond default.",
+        "paths": [
+          "README.md"
+        ]
+      },
+      {
+        "sha": "bd0b2277933f",
+        "variant": "local_metadata_reranked",
+        "reason": "Reranker retrieved additional gold changed file(s) beyond default.",
+        "paths": [
+          "src/main/java/org/refactoringminer/mcp/RefactoringMinerMcpTools.java"
+        ]
+      },
+      {
+        "sha": "9444c83bb9db",
+        "variant": "local_metadata_reranked",
+        "reason": "Reranker retrieved additional gold changed file(s) beyond default.",
+        "paths": [
+          "publishToMavenCentral.gradle"
+        ]
+      },
+      {
+        "sha": "9bd4387a40bb",
+        "variant": "local_metadata_reranked",
+        "reason": "Reranker retrieved additional gold changed file(s) beyond default.",
+        "paths": [
+          "README.md"
+        ]
+      }
+    ],
+    "regressedCases": [],
+    "defaultOnlyCases": [],
+    "queryFamilyContributions": [
+      {
+        "family": "symbol_identifier",
+        "evaluatedCommits": 14,
+        "improvedCommitCount": 2,
+        "regressedCommitCount": 0,
+        "neutralCommitCount": 12,
+        "defaultTargetHitCount": 16,
+        "rerankedTargetHitCount": 18,
+        "targetHitDelta": 2,
+        "rerankerOnlyTargetHitCount": 2,
+        "defaultOnlyTargetHitCount": 0,
+        "routingRecommendation": "route_candidate",
+        "exampleCases": [
+          {
+            "sha": "bc014a0d4392",
+            "variant": "local_metadata_reranked",
+            "reason": "Reranker retrieved additional gold changed file(s) beyond default.",
+            "paths": [
+              "README.md"
+            ]
+          },
+          {
+            "sha": "9bd4387a40bb",
+            "variant": "local_metadata_reranked",
+            "reason": "Reranker retrieved additional gold changed file(s) beyond default.",
+            "paths": [
+              "README.md"
+            ]
+          }
+        ]
+      },
+      {
+        "family": "commit_clue",
+        "evaluatedCommits": 2,
+        "improvedCommitCount": 1,
+        "regressedCommitCount": 0,
+        "neutralCommitCount": 1,
+        "defaultTargetHitCount": 3,
+        "rerankedTargetHitCount": 4,
+        "targetHitDelta": 1,
+        "rerankerOnlyTargetHitCount": 1,
+        "defaultOnlyTargetHitCount": 0,
+        "routingRecommendation": "route_candidate",
+        "exampleCases": [
+          {
+            "sha": "9444c83bb9db",
+            "variant": "local_metadata_reranked",
+            "reason": "Reranker retrieved additional gold changed file(s) beyond default.",
+            "paths": [
+              "publishToMavenCentral.gradle"
+            ]
+          }
+        ]
+      },
+      {
+        "family": "domain_phrase",
+        "evaluatedCommits": 3,
+        "improvedCommitCount": 1,
+        "regressedCommitCount": 0,
+        "neutralCommitCount": 2,
+        "defaultTargetHitCount": 7,
+        "rerankedTargetHitCount": 8,
+        "targetHitDelta": 1,
+        "rerankerOnlyTargetHitCount": 1,
+        "defaultOnlyTargetHitCount": 0,
+        "routingRecommendation": "route_candidate",
+        "exampleCases": [
+          {
+            "sha": "bd0b2277933f",
+            "variant": "local_metadata_reranked",
+            "reason": "Reranker retrieved additional gold changed file(s) beyond default.",
+            "paths": [
+              "src/main/java/org/refactoringminer/mcp/RefactoringMinerMcpTools.java"
+            ]
+          }
+        ]
+      },
+      {
+        "family": "broad_scope",
+        "evaluatedCommits": 1,
+        "improvedCommitCount": 0,
+        "regressedCommitCount": 0,
+        "neutralCommitCount": 1,
+        "defaultTargetHitCount": 1,
+        "rerankedTargetHitCount": 1,
+        "targetHitDelta": 0,
+        "rerankerOnlyTargetHitCount": 0,
+        "defaultOnlyTargetHitCount": 0,
+        "routingRecommendation": "hold_neutral",
+        "exampleCases": []
+      }
+    ]
+  },
+  "routedRerankerContribution": {
+    "evaluatedCommits": 20,
+    "improvedCommitCount": 1,
+    "regressedCommitCount": 0,
+    "neutralCommitCount": 19,
+    "defaultTargetHitCount": 27,
+    "rerankedTargetHitCount": 28,
+    "targetHitDelta": 1,
+    "rerankerOnlyTargetHitCount": 1,
+    "defaultOnlyTargetHitCount": 0,
+    "protectedEvidenceMissRateDelta": -0.011494249,
+    "protectedEvidenceTargetMissRateDelta": -0.034482747,
+    "improvedCases": [
+      {
+        "sha": "9444c83bb9db",
+        "variant": "local_metadata_reranked",
+        "reason": "Reranker retrieved additional gold changed file(s) beyond default.",
+        "paths": [
+          "publishToMavenCentral.gradle"
+        ]
+      }
+    ],
+    "regressedCases": [],
+    "defaultOnlyCases": [],
+    "queryFamilyContributions": [
+      {
+        "family": "commit_clue",
+        "evaluatedCommits": 2,
+        "improvedCommitCount": 1,
+        "regressedCommitCount": 0,
+        "neutralCommitCount": 1,
+        "defaultTargetHitCount": 3,
+        "rerankedTargetHitCount": 4,
+        "targetHitDelta": 1,
+        "rerankerOnlyTargetHitCount": 1,
+        "defaultOnlyTargetHitCount": 0,
+        "routingRecommendation": "route_candidate",
+        "exampleCases": [
+          {
+            "sha": "9444c83bb9db",
+            "variant": "local_metadata_reranked",
+            "reason": "Reranker retrieved additional gold changed file(s) beyond default.",
+            "paths": [
+              "publishToMavenCentral.gradle"
+            ]
+          }
+        ]
+      },
+      {
+        "family": "broad_scope",
+        "evaluatedCommits": 1,
+        "improvedCommitCount": 0,
+        "regressedCommitCount": 0,
+        "neutralCommitCount": 1,
+        "defaultTargetHitCount": 1,
+        "rerankedTargetHitCount": 1,
+        "targetHitDelta": 0,
+        "rerankerOnlyTargetHitCount": 0,
+        "defaultOnlyTargetHitCount": 0,
+        "routingRecommendation": "hold_neutral",
+        "exampleCases": []
+      },
+      {
+        "family": "domain_phrase",
+        "evaluatedCommits": 3,
+        "improvedCommitCount": 0,
+        "regressedCommitCount": 0,
+        "neutralCommitCount": 3,
+        "defaultTargetHitCount": 7,
+        "rerankedTargetHitCount": 7,
+        "targetHitDelta": 0,
+        "rerankerOnlyTargetHitCount": 0,
+        "defaultOnlyTargetHitCount": 0,
+        "routingRecommendation": "hold_neutral",
+        "exampleCases": []
+      },
+      {
+        "family": "symbol_identifier",
+        "evaluatedCommits": 14,
+        "improvedCommitCount": 0,
+        "regressedCommitCount": 0,
+        "neutralCommitCount": 14,
+        "defaultTargetHitCount": 16,
+        "rerankedTargetHitCount": 16,
+        "targetHitDelta": 0,
+        "rerankerOnlyTargetHitCount": 0,
+        "defaultOnlyTargetHitCount": 0,
+        "routingRecommendation": "hold_neutral",
+        "exampleCases": []
+      }
+    ]
+  },
+  "providerPolicy": {
+    "policyPath": null,
+    "policy": {
+      "schemaVersion": 1,
+      "name": "local-source-free-default",
+      "allowLocalProviders": true,
+      "allowCloudEmbeddings": false,
+      "allowCloudReranking": false,
+      "allowSourceTransfer": false,
+      "enableLocalMetadataReranker": false,
+      "enableQueryFamilyRoutedReranker": false,
+      "enableLocalFixtureReranker": false,
+      "sourceTextLogged": false
+    },
+    "decisions": [
+      {
+        "capability": "semantic_embedding",
+        "provider": "local_hash",
+        "status": "allowed",
+        "dataClasses": [
+          "metadata",
+          "semantic_vector"
+        ],
+        "remoteAllowed": false,
+        "sourceTextAllowed": false,
+        "reason": "Default deterministic local semantic metadata provider."
+      },
+      {
+        "capability": "semantic_embedding",
+        "provider": "cloud_embedding",
+        "status": "denied",
+        "dataClasses": [
+          "metadata",
+          "source_text"
+        ],
+        "remoteAllowed": false,
+        "sourceTextAllowed": false,
+        "reason": "Cloud embeddings require both cloud and source-transfer policy."
+      },
+      {
+        "capability": "precision_graph",
+        "provider": "local_precision_overlay",
+        "status": "allowed",
+        "dataClasses": [
+          "metadata"
+        ],
+        "remoteAllowed": false,
+        "sourceTextAllowed": false,
+        "reason": "Local precision overlays are metadata-only."
+      },
+      {
+        "capability": "reranking",
+        "provider": "local_metadata",
+        "status": "disabled",
+        "dataClasses": [
+          "metadata"
+        ],
+        "remoteAllowed": false,
+        "sourceTextAllowed": false,
+        "reason": "Reranker is disabled by default."
+      },
+      {
+        "capability": "semantic_embedding",
+        "provider": "local_fastembed",
+        "status": "allowed",
+        "dataClasses": [
+          "metadata",
+          "semantic_vector"
+        ],
+        "remoteAllowed": false,
+        "sourceTextAllowed": false,
+        "reason": "Local source-free semantic provider is allowed."
+      }
+    ],
+    "diagnostics": [
+      {
+        "code": "provider_policy_absent_safe_defaults",
+        "severity": "info",
+        "message": "Provider policy file was not found; using local source-free defaults.",
+        "paths": [],
+        "count": 0
+      },
+      {
+        "code": "provider_policy_remote_denied",
+        "severity": "info",
+        "message": "Remote embedding or reranking providers are blocked by local source-free policy.",
+        "paths": [],
+        "count": 1
+      }
+    ],
+    "sourceTextLogged": false,
+    "privacyStatus": {
+      "localOnly": true,
+      "remoteEmbeddingsUsed": false,
+      "remoteRerankingUsed": false,
+      "redactionsApplied": 0
+    }
+  },
+  "precisionStatus": {
+    "status": "unavailable",
+    "provider": null,
+    "overlayPath": "/Users/romel/Documents/GitHub/ctxhelm-proof-fixtures/RefactoringMiner/.ctxhelm/precision-edges.json",
+    "edgeCount": 0,
+    "rejectedEdgeCount": 0,
+    "stale": false,
+    "degraded": false,
+    "diagnostics": []
+  },
+  "diagnostics": [
+    {
+      "code": "provider_policy_absent_safe_defaults",
+      "severity": "info",
+      "message": "Provider policy file was not found; using local source-free defaults.",
+      "paths": [],
+      "count": 0
+    },
+    {
+      "code": "provider_policy_remote_denied",
+      "severity": "info",
+      "message": "Remote embedding or reranking providers are blocked by local source-free policy.",
+      "paths": [],
+      "count": 1
+    },
+    {
+      "code": "semantic_contribution_missed_targets_coupled",
+      "severity": "info",
+      "message": "Semantic provider `local_fastembed` missed target files that already had source-free graph/history/symbol signals; prioritize graph/fusion ordering before adding more semantic text.",
+      "paths": [
+        "src/test/java/org/refactoringminer/mcp/RefactoringMinerMcpToolsTest.java"
+      ],
+      "count": 1
+    },
+    {
+      "code": "semantic_contribution_missed_targets_no_signal",
+      "severity": "warning",
+      "message": "Semantic provider `local_fastembed` missed target files with no lexical, graph, history, or area signal; inspect semantic document/query construction for these path families.",
+      "paths": [
+        "src/main/java/org/refactoringminer/astDiff/matchers/wrappers/MethodMatcher.java",
+        "src/main/java/org/refactoringminer/astDiff/utils/Constants.java",
+        "src/main/java/org/refactoringminer/astDiff/matchers/wrappers/BodyMapperMatcher.java",
+        "docker/Dockerfile",
+        "docker/README.md"
+      ],
+      "count": 14
+    },
+    {
+      "code": "semantic_contribution_unique_target_hits",
+      "severity": "info",
+      "message": "Semantic provider `local_fastembed` contributed target file(s) absent from the lexical baseline top K.",
+      "paths": [
+        "src/main/java/org/refactoringminer/astDiff/utils/TreeUtilFunctions.java",
+        "src/main/java/org/refactoringminer/RefactoringMiner.java"
+      ],
+      "count": 2
+    },
+    {
+      "code": "semantic_query_family_unstable_hold",
+      "severity": "info",
+      "message": "Semantic retrieval has clean target-only commits for query family `symbol_identifier`, but also mixed/noise commits; validate on a larger slice before routing this family.",
+      "paths": [
+        "src/main/java/gr/uom/java/xmi/decomposition/TypeScriptVisitor.java",
+        "src/test/java/org/refactoringminer/astDiff/tests/TypeScriptDiffTest.java",
+        "src/main/java/org/refactoringminer/astDiff/utils/TreeUtilFunctions.java",
+        "src/main/java/gr/uom/java/xmi/TypeScriptFileProcessor.java",
+        "src/main/java/gui/webdiff/DiffDriver.java"
+      ],
+      "count": 6
+    },
+    {
+      "code": "semantic_query_family_mixed_hold",
+      "severity": "info",
+      "message": "Semantic retrieval has both unique target hits and unique non-targets for query family `symbol_identifier`; hold for better fusion evidence.",
+      "paths": [
+        "src/main/java/gr/uom/java/xmi/decomposition/TypeScriptVisitor.java",
+        "src/test/java/org/refactoringminer/astDiff/tests/TypeScriptDiffTest.java",
+        "src/main/java/org/refactoringminer/astDiff/utils/TreeUtilFunctions.java",
+        "src/main/java/gr/uom/java/xmi/TypeScriptFileProcessor.java",
+        "src/main/java/gui/webdiff/DiffDriver.java"
+      ],
+      "count": 16
+    },
+    {
+      "code": "semantic_query_family_noise_hold",
+      "severity": "warning",
+      "message": "Semantic retrieval produced unique non-targets without unique target hits for query family `commit_clue`.",
+      "paths": [
+        "src/main/java/org/refactoringminer/astDiff/matchers/wrappers/ASTDiffMappingOptimizer.java",
+        "documentation/research.md",
+        "src/test/java/org/refactoringminer/test/TestNewDatasetRefactorings.java"
+      ],
+      "count": 3
+    },
+    {
+      "code": "reranker_contribution_target_lift",
+      "severity": "info",
+      "message": "Local metadata reranker retrieved additional target files on measured commits.",
+      "paths": [
+        "README.md",
+        "src/main/java/org/refactoringminer/mcp/RefactoringMinerMcpTools.java",
+        "publishToMavenCentral.gradle",
+        "README.md"
+      ],
+      "count": 4
+    },
+    {
+      "code": "reranker_contribution_protected_target_improved",
+      "severity": "info",
+      "message": "Local metadata reranker reduced protected retrieval-target miss-rate by 0.138.",
+      "paths": [],
+      "count": 31
+    },
+    {
+      "code": "reranker_query_family_route_candidate",
+      "severity": "info",
+      "message": "Some query families show reranker lift without target churn; keep them as routing candidates pending repeated proof.",
+      "paths": [
+        "README.md",
+        "README.md",
+        "publishToMavenCentral.gradle",
+        "src/main/java/org/refactoringminer/mcp/RefactoringMinerMcpTools.java"
+      ],
+      "count": 3
+    },
+    {
+      "code": "routed_reranker_clean_lift",
+      "severity": "info",
+      "message": "Query-family routed reranker added target hits without default-only target churn in this gate.",
+      "paths": [
+        "publishToMavenCentral.gradle"
+      ],
+      "count": 1
+    }
+  ],
+  "sourceTextLogged": false,
+  "privacyStatus": {
+    "localOnly": true,
+    "remoteEmbeddingsUsed": false,
+    "remoteRerankingUsed": false,
+    "redactionsApplied": 0
+  }
+}

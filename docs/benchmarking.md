@@ -569,6 +569,9 @@ The semantic contribution summary also emits source-free diagnostics:
 - `semantic_query_family_route_candidate`: a query family has semantic-only
   target hits without semantic-only non-targets. Treat this as a selective
   semantic/fusion candidate, not a default-promotion result.
+- `semantic_query_family_unstable_hold`: a query family has clean target-only
+  commits, but also mixed or noise-only commits. Treat this as a larger-sample
+  hold even if a smaller gate made the family look routable.
 - `semantic_query_family_mixed_hold`: a query family has both semantic-only
   target hits and semantic-only non-targets. Hold until fusion can separate
   useful semantic evidence from noise.
@@ -588,9 +591,14 @@ routing, such as `explicit_path`, `stack_or_error`, `symbol_identifier`,
 `commit_clue`, `domain_phrase`, `broad_scope`, or `low_information`. Each family
 reports semantic-selected file counts, semantic target hits, semantic-only
 target hits absent from the lexical baseline, semantic-only non-targets, missed
-targets, missed-target gap families, and short source-free example cases. This
-supports selective semantic/fusion R&D without promoting semantic retrieval
-globally.
+targets, missed-target gap families, and short source-free example cases. It
+also reports commit-level stability counters:
+`commitsWithSemanticOnlyTargetHits`,
+`commitsWithSemanticOnlyNonTargets`, `targetOnlyCommitCount`,
+`mixedCommitCount`, `noiseOnlyCommitCount`, and matching commit rates. These
+fields distinguish repeated clean semantic evidence from one-off path-count
+artifacts or family-specific noise. They support selective semantic/fusion R&D
+without promoting semantic retrieval globally.
 
 The reranker contribution summary compares `local_metadata_reranked` against
 `ctxhelm_default` without source text. It reports commit-level target-hit lift,
