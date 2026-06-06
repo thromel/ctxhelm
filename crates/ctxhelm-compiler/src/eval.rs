@@ -3212,6 +3212,9 @@ pub fn semantic_precision_gate_report_with_provider(
     ));
 
     let named_wins = named_cases(&default, &semantic, "local_semantic", NamedCaseKind::Win);
+    let semantic_contribution = semantic_contribution_summary(&semantic);
+    let support_profile_routed_semantic =
+        support_profile_routed_semantic_report(&default, &semantic, &semantic_contribution);
     let mut named_regressions = named_cases(
         &default,
         &semantic,
@@ -3230,6 +3233,12 @@ pub fn semantic_precision_gate_report_with_provider(
         "query_family_routed_reranked",
         NamedCaseKind::Regression,
     ));
+    named_regressions.extend(named_cases(
+        &default,
+        &support_profile_routed_semantic,
+        "support_profile_routed_semantic",
+        NamedCaseKind::Regression,
+    ));
     named_regressions.extend(protected_evidence_regressions(
         &default,
         &semantic,
@@ -3245,10 +3254,30 @@ pub fn semantic_precision_gate_report_with_provider(
         &routed_reranked,
         "query_family_routed_reranked",
     ));
+    named_regressions.extend(protected_evidence_regressions(
+        &default,
+        &support_profile_routed_semantic,
+        "support_profile_routed_semantic",
+    ));
     let named_misses = named_cases(&default, &semantic, "local_semantic", NamedCaseKind::Miss);
-    let semantic_contribution = semantic_contribution_summary(&semantic);
     let reranker_contribution = reranker_contribution_summary(&default, &reranked);
     let routed_reranker_contribution = reranker_contribution_summary(&default, &routed_reranked);
+    variants.push(gate_variant(
+        "support_profile_routed_semantic",
+        SemanticPrecisionVariantStatus::Evaluated,
+        true,
+        false,
+        false,
+        Some(
+            support_profile_routed_semantic
+                .ranking_comparison
+                .combined
+                .clone(),
+        ),
+        &support_profile_routed_semantic,
+        "eval_only",
+        "Eval-only synthetic route that inserts semantic candidates only for support profiles with semantic-only targets and no semantic-only non-targets.",
+    ));
     let (decision, decision_reason) =
         gate_decision_from_variants(&variants, &named_regressions, &provider_policy);
     let mut diagnostics = provider_policy.diagnostics.clone();
@@ -3683,6 +3712,159 @@ fn semantic_contribution_summary(report: &HistoricalEvalReport) -> SemanticContr
             .then_with(|| left.family.cmp(&right.family))
     });
     summary
+}
+
+fn support_profile_routed_semantic_report(
+    default: &HistoricalEvalReport,
+    semantic: &HistoricalEvalReport,
+    summary: &SemanticContributionSummary,
+) -> HistoricalEvalReport {
+    let route_profiles = summary
+        .query_family_contributions
+        .iter()
+        .flat_map(|family| {
+            family
+                .support_profiles
+                .iter()
+                .filter(|profile| {
+                    profile.semantic_only_target_count > 0
+                        && profile.semantic_only_non_target_count == 0
+                })
+                .map(|profile| (family.family.clone(), profile.support_family.clone()))
+        })
+        .collect::<BTreeSet<_>>();
+    let semantic_by_sha = semantic
+        .commits
+        .iter()
+        .map(|commit| (commit.sha.as_str(), commit))
+        .collect::<BTreeMap<_, _>>();
+    let mut routed = default.clone();
+    routed.eval_range_id = format!("{}:support-profile-routed-semantic", default.eval_range_id);
+    routed.effective_filters.semantic_enabled = true;
+    routed.effective_filters.semantic_provider =
+        semantic.effective_filters.semantic_provider.clone();
+    routed.runtime.total_millis = default
+        .runtime
+        .total_millis
+        .saturating_add(semantic.runtime.total_millis);
+
+    for commit in &mut routed.commits {
+        let Some(semantic_commit) = semantic_by_sha.get(commit.sha.as_str()) else {
+            continue;
+        };
+        let query_family = reranker_query_family(semantic_commit);
+        let semantic_files =
+            signal_ranking_for_commit(semantic_commit, &RetrievalSignalKind::Semantic);
+        let lexical_files = semantic_commit
+            .lexical_baseline_files
+            .iter()
+            .cloned()
+            .collect::<BTreeSet<_>>();
+        let routed_semantic_files = semantic_files
+            .into_iter()
+            .filter(|path| !lexical_files.contains(path))
+            .filter(|path| {
+                let support_family = semantic_only_support_family(semantic_commit, path);
+                route_profiles.contains(&(query_family.clone(), support_family))
+            })
+            .collect::<Vec<_>>();
+        if routed_semantic_files.is_empty() {
+            refresh_commit_ranking_metrics(commit);
+            continue;
+        }
+        commit.recommended_context_files =
+            splice_routed_semantic_files(&commit.recommended_context_files, routed_semantic_files);
+        refresh_commit_ranking_metrics(commit);
+    }
+
+    refresh_historical_report_ranking_metrics(&mut routed);
+    routed.recommended_research_actions = historical_recommended_research_actions(&routed);
+    routed
+}
+
+fn splice_routed_semantic_files(
+    default_files: &[String],
+    routed_semantic_files: Vec<String>,
+) -> Vec<String> {
+    let mut ranking = Vec::new();
+    let mut seen = BTreeSet::new();
+    if let Some(first) = default_files.first() {
+        ranking.push(first.clone());
+        seen.insert(first.clone());
+    }
+    for path in routed_semantic_files {
+        if seen.insert(path.clone()) {
+            ranking.push(path);
+        }
+    }
+    for path in default_files {
+        if seen.insert(path.clone()) {
+            ranking.push(path.clone());
+        }
+    }
+    ranking
+}
+
+fn refresh_commit_ranking_metrics(commit: &mut HistoricalCommitEval) {
+    commit.file_hits_at_5 = changed_file_hits(
+        &commit.retrieval_target_files,
+        &commit.recommended_context_files,
+        5,
+    );
+    commit.file_hits_at_10 = changed_file_hits(
+        &commit.retrieval_target_files,
+        &commit.recommended_context_files,
+        10,
+    );
+    commit.missing_files_at_10 = missing_changed_files(
+        &commit.retrieval_target_files,
+        &commit.recommended_context_files,
+        10,
+    );
+    let source_changed_files = filter_changed_labels_by_role(
+        &commit.changed_path_labels,
+        &commit.retrieval_target_files,
+        |role| matches!(role, FileRole::Source),
+    );
+    commit.source_hits_at_5 =
+        changed_file_hits(&source_changed_files, &commit.recommended_context_files, 5).len();
+    commit.source_hits_at_10 =
+        changed_file_hits(&source_changed_files, &commit.recommended_context_files, 10).len();
+    let selected_at_10 = commit
+        .recommended_context_files
+        .iter()
+        .take(10)
+        .cloned()
+        .collect::<BTreeSet<_>>();
+    for protected in &mut commit.protected_evidence {
+        protected.selected_at_10 = selected_at_10.contains(&protected.path);
+    }
+}
+
+fn refresh_historical_report_ranking_metrics(report: &mut HistoricalEvalReport) {
+    let k = report.ranking_comparison.k;
+    report.file_recall_at_5 = average_recall(&report.commits, 5);
+    report.file_recall_at_10 = average_recall(&report.commits, 10);
+    report.ctxhelm_lift_at_5 = report.file_recall_at_5 - report.lexical_baseline_recall_at_5;
+    report.ctxhelm_lift_at_10 = report.file_recall_at_10 - report.lexical_baseline_recall_at_10;
+    report.source_recall_at_5 = average_role_recall(&report.commits, FileRole::Source, 5);
+    report.source_recall_at_10 = average_role_recall(&report.commits, FileRole::Source, 10);
+    report.ranking_comparison = eval_comparison(&report.commits, k);
+    report.token_roi = token_roi_metrics(&report.commits, k);
+    report.average_recommended_context_files = average_recommended_context_files(&report.commits);
+    report.protected_evidence = protected_evidence_summary(&report.commits);
+    report.top_missing_files =
+        top_missing_files(&report.commits, &roles_by_path_from_report(report), 10);
+}
+
+fn roles_by_path_from_report(report: &HistoricalEvalReport) -> BTreeMap<String, FileRole> {
+    report
+        .commits
+        .iter()
+        .flat_map(|commit| commit.changed_path_labels.iter())
+        .filter(|label| label.label_scope == LabelScope::Safe)
+        .map(|label| (label.path.clone(), label.role.clone()))
+        .collect()
 }
 
 fn semantic_only_support_family(commit: &HistoricalCommitEval, path: &str) -> String {
@@ -10273,6 +10455,66 @@ mod tests {
                 && profile.semantic_only_non_target_count == 1
                 && profile.example_non_target_paths == vec!["src/noise.ts".to_string()]));
         assert_eq!(family.example_cases.len(), 2);
+    }
+
+    #[test]
+    fn support_profile_routed_semantic_only_inserts_clean_profiles() {
+        let mut default = empty_historical_eval_report("support-route");
+        let default_commit = &mut default.commits[0];
+        default_commit.query_trace =
+            Some(query_trace_with_facets(vec![QueryFacetKind::DomainPhrase]));
+        default_commit.changed_path_labels = vec![historical_changed_path_label(
+            "src/semantic_target.ts",
+            FileRole::Source,
+        )];
+        default_commit.retrieval_target_files = vec!["src/semantic_target.ts".to_string()];
+        default_commit.lexical_baseline_files = vec!["src/anchor.ts".to_string()];
+        default_commit.recommended_context_files = vec![
+            "src/anchor.ts".to_string(),
+            "src/default_tail_1.ts".to_string(),
+            "src/default_tail_2.ts".to_string(),
+        ];
+        default_commit.source_files_changed = 1;
+        refresh_commit_ranking_metrics(default_commit);
+        refresh_historical_report_ranking_metrics(&mut default);
+
+        let mut semantic = default.clone();
+        let semantic_commit = &mut semantic.commits[0];
+        semantic_commit.signal_baseline_files = vec![
+            HistoricalSignalRanking {
+                signal: RetrievalSignalKind::Semantic,
+                files: vec![
+                    "src/semantic_target.ts".to_string(),
+                    "src/semantic_noise.ts".to_string(),
+                ],
+            },
+            HistoricalSignalRanking {
+                signal: RetrievalSignalKind::Dependency,
+                files: vec!["src/semantic_noise.ts".to_string()],
+            },
+        ];
+        let summary = semantic_contribution_summary(&semantic);
+
+        let routed = support_profile_routed_semantic_report(&default, &semantic, &summary);
+
+        assert_eq!(
+            routed.commits[0].recommended_context_files,
+            vec![
+                "src/anchor.ts".to_string(),
+                "src/semantic_target.ts".to_string(),
+                "src/default_tail_1.ts".to_string(),
+                "src/default_tail_2.ts".to_string(),
+            ]
+        );
+        assert!(!routed.commits[0]
+            .recommended_context_files
+            .contains(&"src/semantic_noise.ts".to_string()));
+        assert_eq!(
+            routed.commits[0].file_hits_at_10,
+            vec!["src/semantic_target.ts".to_string()]
+        );
+        assert_eq!(routed.file_recall_at_10, 1.0);
+        assert_eq!(routed.ranking_comparison.combined.recall_at_k, 1.0);
     }
 
     #[test]

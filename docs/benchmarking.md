@@ -619,6 +619,14 @@ fields distinguish repeated clean semantic evidence from one-off path-count
 artifacts or family-specific noise. They support selective semantic/fusion R&D
 without promoting semantic retrieval globally.
 
+The semantic gate also reports the eval-only
+`support_profile_routed_semantic` variant. This synthetic variant starts from
+the default ranking, inserts semantic-only files only for support profiles that
+had semantic-only target hits and no semantic-only non-targets, and excludes
+support-profile noise holds. It is an R&D probe, not runtime behavior. Phase
+268's four-repo `limit 20` local-fastembed proof found zero regressions but
+also zero wins, so support-profile routing remains rejected as a promotion path.
+
 The same family rows also report support diagnostics for semantic-only files:
 `semanticOnlyTargetWithNonsemanticSupportCount`,
 `semanticOnlyTargetWithoutNonsemanticSupportCount`,
