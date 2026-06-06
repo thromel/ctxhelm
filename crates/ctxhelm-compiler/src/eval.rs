@@ -405,6 +405,10 @@ pub struct SemanticContributionSummary {
     pub evaluated_commits: usize,
     pub commits_with_semantic_selection: usize,
     pub semantic_selected_file_count: usize,
+    #[serde(default)]
+    pub semantic_candidate_target_hit_count: usize,
+    #[serde(default)]
+    pub semantic_candidate_missed_target_count: usize,
     pub semantic_target_hit_count: usize,
     pub semantic_only_target_hit_count: usize,
     #[serde(default)]
@@ -412,10 +416,14 @@ pub struct SemanticContributionSummary {
     pub semantic_lexical_overlap_count: usize,
     pub semantic_missed_target_count: usize,
     pub average_semantic_selected_files: f32,
+    #[serde(default)]
+    pub semantic_candidate_target_hit_rate: f32,
     pub semantic_target_hit_rate: f32,
     pub semantic_only_target_hit_rate: f32,
     #[serde(default)]
     pub semantic_only_non_target_rate: f32,
+    #[serde(default)]
+    pub semantic_candidate_missed_target_paths: Vec<String>,
     #[serde(default)]
     pub semantic_only_hits: Vec<SemanticPrecisionNamedCase>,
     #[serde(default)]
@@ -451,6 +459,10 @@ pub struct SemanticQueryFamilyContribution {
     pub evaluated_commits: usize,
     pub commits_with_semantic_selection: usize,
     #[serde(default)]
+    pub semantic_candidate_target_hit_count: usize,
+    #[serde(default)]
+    pub semantic_candidate_missed_target_count: usize,
+    #[serde(default)]
     pub commits_with_semantic_only_target_hits: usize,
     #[serde(default)]
     pub commits_with_semantic_only_non_targets: usize,
@@ -473,6 +485,8 @@ pub struct SemanticQueryFamilyContribution {
     #[serde(default)]
     pub semantic_only_non_target_without_nonsemantic_support_count: usize,
     pub semantic_missed_target_count: usize,
+    #[serde(default)]
+    pub semantic_candidate_target_hit_rate: f32,
     pub semantic_only_target_hit_rate: f32,
     pub semantic_only_non_target_rate: f32,
     #[serde(default)]
@@ -3514,6 +3528,11 @@ fn semantic_contribution_summary(report: &HistoricalEvalReport) -> SemanticContr
             .difference(&semantic_target_hits)
             .cloned()
             .collect::<Vec<_>>();
+        let semantic_candidate_missed_targets = semantic_missed_targets
+            .iter()
+            .filter(|path| semantic_candidate_profile_contains_path(commit, path))
+            .cloned()
+            .collect::<Vec<_>>();
         let semantic_only_target_hits = semantic_target_hits
             .difference(&lexical_files)
             .cloned()
@@ -3541,6 +3560,10 @@ fn semantic_contribution_summary(report: &HistoricalEvalReport) -> SemanticContr
             family_entry.commits_with_semantic_selection += 1;
         }
         family_entry.semantic_selected_file_count += semantic_files.len();
+        family_entry.semantic_candidate_target_hit_count +=
+            semantic_target_hits.len() + semantic_candidate_missed_targets.len();
+        family_entry.semantic_candidate_missed_target_count +=
+            semantic_candidate_missed_targets.len();
         family_entry.semantic_target_hit_count += semantic_target_hits.len();
         family_entry.semantic_only_target_hit_count += semantic_only_target_hits.len();
         family_entry.semantic_only_non_target_count += semantic_only_non_targets.len();
@@ -3577,6 +3600,9 @@ fn semantic_contribution_summary(report: &HistoricalEvalReport) -> SemanticContr
         }
 
         summary.semantic_target_hit_count += semantic_target_hits.len();
+        summary.semantic_candidate_target_hit_count +=
+            semantic_target_hits.len() + semantic_candidate_missed_targets.len();
+        summary.semantic_candidate_missed_target_count += semantic_candidate_missed_targets.len();
         summary.semantic_only_target_hit_count += semantic_only_target_hits.len();
         summary.semantic_only_non_target_count += semantic_only_non_targets.len();
         summary.semantic_lexical_overlap_count +=
@@ -3592,6 +3618,18 @@ fn semantic_contribution_summary(report: &HistoricalEvalReport) -> SemanticContr
                 entry.1.push(missed.clone());
             }
             upsert_semantic_family_gap(family_entry, &gap, &missed);
+        }
+        for missed in semantic_candidate_missed_targets {
+            if summary.semantic_candidate_missed_target_paths.len() < 10
+                && !summary
+                    .semantic_candidate_missed_target_paths
+                    .iter()
+                    .any(|path| path == &missed)
+            {
+                summary
+                    .semantic_candidate_missed_target_paths
+                    .push(missed.clone());
+            }
         }
 
         if !semantic_only_target_hits.is_empty() {
@@ -3631,6 +3669,8 @@ fn semantic_contribution_summary(report: &HistoricalEvalReport) -> SemanticContr
     let target_opportunity =
         summary.semantic_target_hit_count + summary.semantic_missed_target_count;
     if target_opportunity > 0 {
+        summary.semantic_candidate_target_hit_rate =
+            summary.semantic_candidate_target_hit_count as f32 / target_opportunity as f32;
         summary.semantic_target_hit_rate =
             summary.semantic_target_hit_count as f32 / target_opportunity as f32;
         summary.semantic_only_target_hit_rate =
@@ -3662,6 +3702,8 @@ fn semantic_contribution_summary(report: &HistoricalEvalReport) -> SemanticContr
             let target_opportunity =
                 family.semantic_target_hit_count + family.semantic_missed_target_count;
             if target_opportunity > 0 {
+                family.semantic_candidate_target_hit_rate =
+                    family.semantic_candidate_target_hit_count as f32 / target_opportunity as f32;
                 family.semantic_only_target_hit_rate =
                     family.semantic_only_target_hit_count as f32 / target_opportunity as f32;
             }
@@ -3780,6 +3822,19 @@ fn support_profile_routed_semantic_report(
     refresh_historical_report_ranking_metrics(&mut routed);
     routed.recommended_research_actions = historical_recommended_research_actions(&routed);
     routed
+}
+
+fn semantic_candidate_profile_contains_path(commit: &HistoricalCommitEval, path: &str) -> bool {
+    commit
+        .candidate_missed_file_profiles_at_10
+        .iter()
+        .any(|profile| {
+            profile.path == path
+                && profile
+                    .signals
+                    .iter()
+                    .any(|signal| signal == &RetrievalSignalKind::Semantic)
+        })
 }
 
 fn splice_routed_semantic_files(
@@ -4083,6 +4138,34 @@ fn semantic_contribution_diagnostics(
             ),
             paths: no_signal.example_paths.clone(),
             count: no_signal.missed_count,
+        });
+    }
+    if summary.semantic_missed_target_count > 0
+        && summary.semantic_candidate_missed_target_count == 0
+    {
+        diagnostics.push(Diagnostic {
+            code: "semantic_candidate_generation_gap".to_string(),
+            severity: DiagnosticSeverity::Warning,
+            message: format!(
+                "Semantic provider `{provider}` missed retrieval targets before candidate selection; improve local query construction, model choice, or document coverage before tuning fusion."
+            ),
+            paths: summary
+                .semantic_missed_target_gap_families
+                .iter()
+                .flat_map(|family| family.example_paths.clone())
+                .take(10)
+                .collect(),
+            count: summary.semantic_missed_target_count,
+        });
+    } else if summary.semantic_candidate_missed_target_count > 0 {
+        diagnostics.push(Diagnostic {
+            code: "semantic_candidate_fusion_gap".to_string(),
+            severity: DiagnosticSeverity::Info,
+            message: format!(
+                "Semantic provider `{provider}` generated source-free candidates for missed retrieval targets, but final top-K selection did not include them; tune fusion, ranking, or budget before query construction."
+            ),
+            paths: summary.semantic_candidate_missed_target_paths.clone(),
+            count: summary.semantic_candidate_missed_target_count,
         });
     }
     if summary.semantic_only_target_hit_count > 0 {
@@ -10373,10 +10456,14 @@ mod tests {
         assert_eq!(summary.semantic_only_non_target_count, 1);
         assert_eq!(summary.semantic_lexical_overlap_count, 1);
         assert_eq!(summary.semantic_missed_target_count, 1);
+        assert_eq!(summary.semantic_candidate_target_hit_count, 2);
+        assert_eq!(summary.semantic_candidate_missed_target_count, 0);
         assert_eq!(summary.average_semantic_selected_files, 3.0);
         assert!((summary.semantic_target_hit_rate - 2.0 / 3.0).abs() < f32::EPSILON);
+        assert!((summary.semantic_candidate_target_hit_rate - 2.0 / 3.0).abs() < f32::EPSILON);
         assert!((summary.semantic_only_target_hit_rate - 1.0 / 3.0).abs() < f32::EPSILON);
         assert!((summary.semantic_only_non_target_rate - 0.5).abs() < f32::EPSILON);
+        assert!(summary.semantic_candidate_missed_target_paths.is_empty());
         assert_eq!(summary.semantic_only_hits.len(), 1);
         assert_eq!(
             summary.semantic_only_hits[0].paths,
@@ -10412,6 +10499,8 @@ mod tests {
         assert_eq!(family.noise_only_commit_count, 0);
         assert_eq!(family.semantic_selected_file_count, 3);
         assert_eq!(family.semantic_target_hit_count, 2);
+        assert_eq!(family.semantic_candidate_target_hit_count, 2);
+        assert_eq!(family.semantic_candidate_missed_target_count, 0);
         assert_eq!(family.semantic_only_target_hit_count, 1);
         assert_eq!(
             family.semantic_only_target_with_nonsemantic_support_count,
@@ -10431,6 +10520,7 @@ mod tests {
             0
         );
         assert_eq!(family.semantic_missed_target_count, 1);
+        assert!((family.semantic_candidate_target_hit_rate - 2.0 / 3.0).abs() < f32::EPSILON);
         assert!((family.semantic_only_target_hit_rate - 1.0 / 3.0).abs() < f32::EPSILON);
         assert!((family.semantic_only_non_target_rate - 0.5).abs() < f32::EPSILON);
         assert_eq!(family.target_only_commit_rate, 0.0);
@@ -10455,6 +10545,52 @@ mod tests {
                 && profile.semantic_only_non_target_count == 1
                 && profile.example_non_target_paths == vec!["src/noise.ts".to_string()]));
         assert_eq!(family.example_cases.len(), 2);
+    }
+
+    #[test]
+    fn semantic_contribution_summary_counts_candidate_fusion_gap_targets() {
+        let mut report = empty_historical_eval_report("semantic-candidate-gap");
+        let commit = &mut report.commits[0];
+        commit.query_trace = Some(query_trace_with_facets(vec![QueryFacetKind::DomainPhrase]));
+        commit.retrieval_target_files = vec![
+            "src/selected.rs".to_string(),
+            "src/candidate_only.rs".to_string(),
+            "src/missing.rs".to_string(),
+        ];
+        commit.signal_baseline_files = vec![HistoricalSignalRanking {
+            signal: RetrievalSignalKind::Semantic,
+            files: vec!["src/selected.rs".to_string()],
+        }];
+        commit.candidate_missed_file_profiles_at_10 = vec![CandidateMissedFileProfile {
+            path: "src/candidate_only.rs".to_string(),
+            role: FileRole::Source,
+            context_area: "src".to_string(),
+            signals: vec![RetrievalSignalKind::Semantic],
+        }];
+
+        let summary = semantic_contribution_summary(&report);
+
+        assert_eq!(summary.semantic_target_hit_count, 1);
+        assert_eq!(summary.semantic_missed_target_count, 2);
+        assert_eq!(summary.semantic_candidate_target_hit_count, 2);
+        assert_eq!(summary.semantic_candidate_missed_target_count, 1);
+        assert_eq!(
+            summary.semantic_candidate_missed_target_paths,
+            vec!["src/candidate_only.rs".to_string()]
+        );
+        assert!((summary.semantic_target_hit_rate - 1.0 / 3.0).abs() < f32::EPSILON);
+        assert!((summary.semantic_candidate_target_hit_rate - 2.0 / 3.0).abs() < f32::EPSILON);
+
+        let family = &summary.query_family_contributions[0];
+        assert_eq!(family.family, "domain_phrase");
+        assert_eq!(family.semantic_candidate_target_hit_count, 2);
+        assert_eq!(family.semantic_candidate_missed_target_count, 1);
+        assert!((family.semantic_candidate_target_hit_rate - 2.0 / 3.0).abs() < f32::EPSILON);
+
+        let diagnostics = semantic_contribution_diagnostics(&summary, "local_fastembed");
+        assert!(diagnostics.iter().any(|diagnostic| diagnostic.code
+            == "semantic_candidate_fusion_gap"
+            && diagnostic.paths == vec!["src/candidate_only.rs".to_string()]));
     }
 
     #[test]
@@ -10889,6 +11025,7 @@ mod tests {
             }],
             semantic_missed_target_gap_families: Vec::new(),
             query_family_contributions: Vec::new(),
+            ..SemanticContributionSummary::default()
         };
         let diagnostics = semantic_contribution_diagnostics(&no_unique, "local_fastembed");
         assert_eq!(diagnostics.len(), 2);
@@ -10943,11 +11080,12 @@ mod tests {
                 },
             ],
             query_family_contributions: Vec::new(),
+            ..SemanticContributionSummary::default()
         };
 
         let diagnostics = semantic_contribution_diagnostics(&summary, "local_fastembed");
 
-        assert_eq!(diagnostics.len(), 2);
+        assert_eq!(diagnostics.len(), 3);
         assert_eq!(
             diagnostics[0].code,
             "semantic_contribution_missed_targets_coupled"
@@ -10959,6 +11097,12 @@ mod tests {
         );
         assert_eq!(diagnostics[1].severity, DiagnosticSeverity::Warning);
         assert_eq!(diagnostics[1].paths, vec!["src/no-signal.ts".to_string()]);
+        assert_eq!(diagnostics[2].code, "semantic_candidate_generation_gap");
+        assert_eq!(diagnostics[2].severity, DiagnosticSeverity::Warning);
+        assert_eq!(
+            diagnostics[2].paths,
+            vec!["src/coupled.ts".to_string(), "src/no-signal.ts".to_string()]
+        );
     }
 
     #[test]

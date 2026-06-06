@@ -604,6 +604,22 @@ semantic-missed retrieval targets into source-free families such as
 `semantic_miss_nonsemantic_coupled_signal`, and
 `semantic_miss_no_candidate_signal`.
 
+The semantic contribution summary also separates selected semantic target hits
+from generated-but-unselected semantic target candidates. The fields
+`semanticCandidateTargetHitCount`, `semanticCandidateMissedTargetCount`,
+`semanticCandidateTargetHitRate`, and `semanticCandidateMissedTargetPaths`
+show whether semantic retrieval found target candidates that final top-K
+selection dropped. The same candidate counters are repeated inside
+`semanticContribution.queryFamilyContributions` for query-family routing
+analysis. Gate diagnostics use this split to route R&D:
+
+- `semantic_candidate_generation_gap`: semantic missed retrieval targets before
+  candidate selection. Improve local query construction, model choice, or
+  document coverage before tuning fusion.
+- `semantic_candidate_fusion_gap`: semantic generated source-free candidates
+  for missed retrieval targets, but final top-K selection dropped them. Tune
+  fusion, ranking, or budget before changing semantic documents.
+
 The `semanticContribution.queryFamilyContributions` JSON field groups semantic
 selection quality by the same source-free query families used for reranker
 routing, such as `explicit_path`, `stack_or_error`, `symbol_identifier`,

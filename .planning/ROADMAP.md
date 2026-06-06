@@ -68,6 +68,17 @@ Phase 267 makes those support-family constraints explicit as diagnostics. Gate r
 
 Phase 268 implements that eval-only support-profile-routed semantic variant and rejects it as a promotion path. `support_profile_routed_semantic` inserts semantic-only files only for route-candidate support profiles and excludes support-profile noise, but the four-repo `limit 20` proof is neutral: zero named regressions, zero named wins, and unchanged Recall@10 on ctxhelm, ReAgent, RefactoringMiner, and VeriSchema. The remaining semantic path is no longer "route the existing clean-looking profiles"; it needs better local query/model/fusion construction that creates repeated target lift before routing or runtime exposure.
 
+Phase 269 makes the semantic failure point machine-checkable. Gate reports now
+distinguish selected semantic target hits from generated-but-unselected semantic
+target candidates through `semanticCandidateTargetHitCount`,
+`semanticCandidateMissedTargetCount`, `semanticCandidateTargetHitRate`, and
+candidate gap diagnostics. The fresh four-repo `limit 20` local-fastembed proof
+shows a split path forward: ctxhelm, ReAgent, and RefactoringMiner have semantic
+candidate fusion gaps, while VeriSchema has a semantic candidate-generation gap.
+This rejects another blind routing pass and points the next semantic R&D to
+repo/family-specific fusion-budget experiments plus separate VeriSchema
+query/model/document coverage work.
+
 Phase 196 reserves selected validation areas in broad context-area guidance and adds package-mirrored related-test affinity. The accepted release-binary proof promotes with selected-file/source/test/validation metrics unchanged while improving VeriSchema broad context-area recall from `0.5777778 -> 0.84444445` and next-read recovery from `16 -> 19` of `39` missed@10 files. A related-test-only intermediate proof was rejected because it did not move the product proof.
 
 Phase 197 adds source-free agent-evidence recovery accounting to context-area next-read summaries. The fresh release-binary proof promotes with selected-file/source/test/validation/broad-area metrics unchanged while showing VeriSchema has `29 / 39` missed@10 files recoverable through the full agent evidence bundle, compared with `19 / 39` through progressive next reads alone.
