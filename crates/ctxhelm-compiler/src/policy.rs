@@ -1,4 +1,4 @@
-use crate::eval::{evaluate_historical_commits, HistoricalEvalOptions};
+use crate::eval::{evaluate_historical_commits, HistoricalEvalOptions, SemanticQueryMode};
 use crate::graph::build_graph_neighborhood_report;
 use crate::packs::pack_repo_id;
 use ctxhelm_core::{
@@ -446,6 +446,7 @@ pub fn retrieval_policy_experiment_report(
             local_metadata_reranker: false,
             query_family_routed_reranker: false,
             semantic_corroborated_reranker: false,
+            semantic_query_mode: SemanticQueryMode::Plain,
             cache_enabled: false,
             force_refresh: false,
             parallelism: 1,
@@ -465,6 +466,7 @@ pub fn retrieval_policy_experiment_report(
             local_metadata_reranker: false,
             query_family_routed_reranker: false,
             semantic_corroborated_reranker: false,
+            semantic_query_mode: SemanticQueryMode::Plain,
             cache_enabled: false,
             force_refresh: false,
             parallelism: 1,

@@ -14,7 +14,7 @@ use ctxhelm_compiler::{
     prepare_context_plan_with_paths_and_semantic_provider, prepare_workspace_context_plan,
     render_pack_inspector_html, render_pack_inspector_markdown, render_pack_markdown,
     retrieval_policy_experiment_report, run_benchmark_suite,
-    semantic_precision_gate_report_with_provider_and_range,
+    semantic_precision_gate_report_with_provider_and_range_options,
     semantic_provider_status_report_with_provider, write_candidate_feature_export,
     BenchmarkComparisonReport, BenchmarkRegressionThreshold, BenchmarkSuiteReport,
     CandidateFeatureComparisonReport, ContextCardsOptions, ContextCardsReport,
@@ -22,7 +22,8 @@ use ctxhelm_compiler::{
     HistoricalEvalOptions, HistoricalEvalReport, LearnedSemanticPolicyProfileKeyMode,
     LearnedSemanticPolicyTrainTestReport, LexicalBackendCorpusOptions, LexicalBackendCorpusReport,
     PairedBaselineAnalysisReport, ProductProofLexicalClaim, ProductProofReport,
-    RecommendedResearchAction, SemanticPrecisionGateReport,
+    RecommendedResearchAction, SemanticPrecisionGateRangeOptions, SemanticPrecisionGateReport,
+    SemanticQueryMode,
 };
 use ctxhelm_core::{
     run_init, run_setup_check, AgentAdapter, AgentOutcomeComparisonReport, AgentPreviewReport,
@@ -1044,6 +1045,8 @@ struct EvalGateArgs {
     mode: Mode,
     #[command(flatten)]
     semantic_provider: SemanticProviderArgs,
+    #[arg(long, value_enum, default_value_t = SemanticQueryModeArg::Plain)]
+    semantic_query_mode: SemanticQueryModeArg,
     #[arg(long, value_enum, default_value_t = PackFormat::Markdown)]
     format: PackFormat,
 }
@@ -1072,6 +1075,8 @@ struct EvalLearnedPolicyTrainTestArgs {
     profile_key_mode: LearnedPolicyProfileKeyModeArg,
     #[command(flatten)]
     semantic_provider: SemanticProviderArgs,
+    #[arg(long, value_enum, default_value_t = SemanticQueryModeArg::Plain)]
+    semantic_query_mode: SemanticQueryModeArg,
     #[arg(long, value_enum, default_value_t = PackFormat::Markdown)]
     format: PackFormat,
 }
@@ -1292,6 +1297,8 @@ struct EvalHistoryArgs {
     semantic: bool,
     #[command(flatten)]
     semantic_provider: SemanticProviderArgs,
+    #[arg(long, value_enum, default_value_t = SemanticQueryModeArg::Plain)]
+    semantic_query_mode: SemanticQueryModeArg,
     #[arg(
         long,
         help = "Reuse source-free historical eval report cache when available."
@@ -1487,11 +1494,26 @@ enum LearnedPolicyProfileKeyModeArg {
     PathFamilyBackoff,
 }
 
+#[derive(Debug, Clone, Copy, ValueEnum)]
+enum SemanticQueryModeArg {
+    Plain,
+    SourceRoleHints,
+}
+
 impl From<LearnedPolicyProfileKeyModeArg> for LearnedSemanticPolicyProfileKeyMode {
     fn from(value: LearnedPolicyProfileKeyModeArg) -> Self {
         match value {
             LearnedPolicyProfileKeyModeArg::QueryPath => Self::QueryPath,
             LearnedPolicyProfileKeyModeArg::PathFamilyBackoff => Self::PathFamilyBackoff,
+        }
+    }
+}
+
+impl From<SemanticQueryModeArg> for SemanticQueryMode {
+    fn from(value: SemanticQueryModeArg) -> Self {
+        match value {
+            SemanticQueryModeArg::Plain => Self::Plain,
+            SemanticQueryModeArg::SourceRoleHints => Self::SourceRoleHints,
         }
     }
 }
@@ -2156,6 +2178,7 @@ fn main() -> Result<()> {
                         local_metadata_reranker: false,
                         query_family_routed_reranker: false,
                         semantic_corroborated_reranker: false,
+                        semantic_query_mode: SemanticQueryMode::Plain,
                         cache_enabled: false,
                         force_refresh: false,
                         parallelism: 1,
@@ -2500,6 +2523,7 @@ fn main() -> Result<()> {
                         local_metadata_reranker: false,
                         query_family_routed_reranker: false,
                         semantic_corroborated_reranker: false,
+                        semantic_query_mode: args.semantic_query_mode.into(),
                         cache_enabled: args.cache,
                         force_refresh: args.force,
                         parallelism: args.parallelism,
@@ -2540,6 +2564,7 @@ fn main() -> Result<()> {
                         local_metadata_reranker: false,
                         query_family_routed_reranker: false,
                         semantic_corroborated_reranker: false,
+                        semantic_query_mode: SemanticQueryMode::Plain,
                         cache_enabled: args.cache,
                         force_refresh: args.force,
                         parallelism: args.parallelism,
@@ -2569,6 +2594,7 @@ fn main() -> Result<()> {
                         local_metadata_reranker: false,
                         query_family_routed_reranker: false,
                         semantic_corroborated_reranker: false,
+                        semantic_query_mode: SemanticQueryMode::Plain,
                         cache_enabled: args.cache,
                         force_refresh: args.force,
                         parallelism: args.parallelism,
@@ -2587,14 +2613,17 @@ fn main() -> Result<()> {
             EvalCommand::Gate(args) => {
                 let start = args.repo.clone().unwrap_or(std::env::current_dir()?);
                 let repo = RepoRoot::discover_from(&start)?;
-                let report = semantic_precision_gate_report_with_provider_and_range(
+                let report = semantic_precision_gate_report_with_provider_and_range_options(
                     &repo.path,
                     args.limit,
                     args.budget,
                     args.mode.into(),
                     semantic_provider_config(&args.semantic_provider),
-                    args.base,
-                    args.head,
+                    SemanticPrecisionGateRangeOptions {
+                        base: args.base,
+                        head: args.head,
+                        semantic_query_mode: args.semantic_query_mode.into(),
+                    },
                 )?;
                 match args.format {
                     PackFormat::Markdown => {
@@ -2618,6 +2647,7 @@ fn main() -> Result<()> {
                     args.test_base,
                     args.test_head,
                     args.profile_key_mode.into(),
+                    args.semantic_query_mode.into(),
                 )?;
                 match args.format {
                     PackFormat::Markdown => {
@@ -6392,7 +6422,7 @@ fn render_historical_eval_report(report: &HistoricalEvalReport) -> String {
     let mut output = String::from("# ctxhelm Historical Retrieval Eval\n\n");
     output.push_str("This source-free report replays recent commit subjects through `prepare_task` and compares recommended context paths with the safe files changed by each commit.\n\n");
     output.push_str(&format!(
-        "- Eval range ID: `{}`\n- Repo ID: `{}`\n- Evaluated commits: `{}`\n- Budget: `{:?}`\n- Effective limit: `{}`\n- Ranking budget K: `{}`\n- Effective mode: `{:?}`\n- Effective target agent: `{}`\n- Semantic enabled: `{}`\n- Semantic provider: `{}`\n- Local metadata reranker: `{}`\n- Base: `{}`\n- Head: `{}`\n- File Recall@5: `{:.2}`\n- File Recall@10: `{:.2}`\n- Lexical Baseline Recall@5: `{:.2}`\n- Lexical Baseline Recall@10: `{:.2}`\n- ctxhelm Lift@5: `{:+.2}`\n- ctxhelm Lift@10: `{:+.2}`\n- Recall@K: `{:.2}`\n- Precision@K: `{:.2}`\n- MRR@K: `{:.2}`\n- Lexical Recall@K: `{:.2}`\n- No-context Recall@K: `{:.2}`\n- ctxhelm Lift@K: `{:+.2}`\n- ctxhelm Lift vs No-context@K: `{:+.2}`\n- Source Recall@5: `{:.2}`\n- Source Recall@10: `{:.2}`\n- Test Recall@5: `{:.2}`\n- Test Recall@10: `{:.2}`\n- Validation command recall: `{:.2}`\n- Effective validation recall@10: `{:.2}`\n- Test recommendation rate: `{:.2}`\n- Average recommended context files: `{:.2}`\n- Protected evidence candidates: `{}`\n- Protected evidence missed@10: `{}`\n- Protected evidence miss rate@10: `{:.2}`\n- Protected retrieval-target evidence candidates: `{}`\n- Protected retrieval-target evidence missed@10: `{}`\n- Protected retrieval-target evidence miss rate@10: `{:.2}`\n- Runtime total ms: `{}`\n- Runtime commit-loop ms: `{}`\n- Runtime overhead ms: `{}`\n- Runtime average commit ms: `{:.2}`\n- Runtime git sample ms: `{}`\n- Runtime ranking ms: `{}`\n- Runtime pack/compiler ms: `{}`\n- Eval cache hits: `{}`\n- Eval cache misses: `{}`\n- Eval parallelism: `{}`\n- Low-information commits: `{}`\n- Broad-scope commits: `{}`\n- Broad context area recall: `{:.2}`\n- Privacy: local-only `{}`\n\n",
+        "- Eval range ID: `{}`\n- Repo ID: `{}`\n- Evaluated commits: `{}`\n- Budget: `{:?}`\n- Effective limit: `{}`\n- Ranking budget K: `{}`\n- Effective mode: `{:?}`\n- Effective target agent: `{}`\n- Semantic enabled: `{}`\n- Semantic provider: `{}`\n- Semantic query mode: `{:?}`\n- Local metadata reranker: `{}`\n- Base: `{}`\n- Head: `{}`\n- File Recall@5: `{:.2}`\n- File Recall@10: `{:.2}`\n- Lexical Baseline Recall@5: `{:.2}`\n- Lexical Baseline Recall@10: `{:.2}`\n- ctxhelm Lift@5: `{:+.2}`\n- ctxhelm Lift@10: `{:+.2}`\n- Recall@K: `{:.2}`\n- Precision@K: `{:.2}`\n- MRR@K: `{:.2}`\n- Lexical Recall@K: `{:.2}`\n- No-context Recall@K: `{:.2}`\n- ctxhelm Lift@K: `{:+.2}`\n- ctxhelm Lift vs No-context@K: `{:+.2}`\n- Source Recall@5: `{:.2}`\n- Source Recall@10: `{:.2}`\n- Test Recall@5: `{:.2}`\n- Test Recall@10: `{:.2}`\n- Validation command recall: `{:.2}`\n- Effective validation recall@10: `{:.2}`\n- Test recommendation rate: `{:.2}`\n- Average recommended context files: `{:.2}`\n- Protected evidence candidates: `{}`\n- Protected evidence missed@10: `{}`\n- Protected evidence miss rate@10: `{:.2}`\n- Protected retrieval-target evidence candidates: `{}`\n- Protected retrieval-target evidence missed@10: `{}`\n- Protected retrieval-target evidence miss rate@10: `{:.2}`\n- Runtime total ms: `{}`\n- Runtime commit-loop ms: `{}`\n- Runtime overhead ms: `{}`\n- Runtime average commit ms: `{:.2}`\n- Runtime git sample ms: `{}`\n- Runtime ranking ms: `{}`\n- Runtime pack/compiler ms: `{}`\n- Eval cache hits: `{}`\n- Eval cache misses: `{}`\n- Eval parallelism: `{}`\n- Low-information commits: `{}`\n- Broad-scope commits: `{}`\n- Broad context area recall: `{:.2}`\n- Privacy: local-only `{}`\n\n",
         report.eval_range_id,
         report.repo_id,
         report.evaluated_commits,
@@ -6407,6 +6437,7 @@ fn render_historical_eval_report(report: &HistoricalEvalReport) -> String {
             .semantic_provider
             .as_deref()
             .unwrap_or("default"),
+        report.effective_filters.semantic_query_mode,
         report.effective_filters.local_metadata_reranker,
         report.base.as_deref().unwrap_or("HEAD history"),
         report.head.as_deref().unwrap_or("HEAD"),
@@ -7601,6 +7632,7 @@ mod tests {
                 local_metadata_reranker: false,
                 query_family_routed_reranker: false,
                 semantic_corroborated_reranker: false,
+                semantic_query_mode: SemanticQueryMode::Plain,
             },
             refs: ctxhelm_compiler::HistoricalEvalRefs {
                 base: Some("abc000".to_string()),
@@ -7924,6 +7956,7 @@ mod tests {
         assert!(markdown.contains("Budget: `Standard`"));
         assert!(markdown.contains("Effective limit: `5`"));
         assert!(markdown.contains("Effective target agent: `codex`"));
+        assert!(markdown.contains("Semantic query mode: `Plain`"));
         assert!(markdown.contains("Local metadata reranker: `false`"));
         assert!(markdown.contains("Base: `abc000`"));
         assert!(markdown.contains("Head: `def111`"));
@@ -8038,6 +8071,8 @@ mod tests {
             "def456",
             "--semantic-provider",
             "local_fastembed",
+            "--semantic-query-mode",
+            "source-role-hints",
             "--format",
             "json",
         ])
@@ -8055,6 +8090,10 @@ mod tests {
         assert_eq!(args.base.as_deref(), Some("abc123"));
         assert_eq!(args.head.as_deref(), Some("def456"));
         assert_eq!(args.semantic_provider.provider, "local_fastembed");
+        assert!(matches!(
+            args.semantic_query_mode,
+            SemanticQueryModeArg::SourceRoleHints
+        ));
         assert!(matches!(args.format, PackFormat::Json));
     }
 
@@ -8084,6 +8123,8 @@ mod tests {
             "path-family-backoff",
             "--semantic-provider",
             "local_fastembed",
+            "--semantic-query-mode",
+            "source-role-hints",
             "--format",
             "json",
         ])
@@ -8108,6 +8149,10 @@ mod tests {
             LearnedPolicyProfileKeyModeArg::PathFamilyBackoff
         ));
         assert_eq!(args.semantic_provider.provider, "local_fastembed");
+        assert!(matches!(
+            args.semantic_query_mode,
+            SemanticQueryModeArg::SourceRoleHints
+        ));
         assert!(matches!(args.format, PackFormat::Json));
     }
 

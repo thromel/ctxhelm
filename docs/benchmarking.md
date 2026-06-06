@@ -349,6 +349,7 @@ ctxhelm eval benchmark --config .ctxhelm/benchmarks/retrieval-quality.json --for
 ctxhelm eval benchmark --config .ctxhelm/benchmarks/retrieval-quality.json --format json
 ctxhelm eval history --repo /path/to/repo --semantic --format json
 ctxhelm eval history --repo /path/to/repo --semantic --semantic-provider local_fastembed --format json
+ctxhelm eval history --repo /path/to/repo --semantic --semantic-provider local_fastembed --semantic-query-mode source-role-hints --format json
 ctxhelm eval history --repo /path/to/repo --cache --parallelism 4 --format markdown
 ctxhelm eval history --repo /path/to/repo --cache --force --parallelism 4 --format json
 ctxhelm eval baselines --repo /path/to/repo --limit 20 --budget 10 --format markdown
@@ -555,6 +556,18 @@ ctxhelm eval gate --repo /path/to/repo --base HEAD~40 --head HEAD \
 Every gate variant receives the same range, so default, semantic, reranked,
 learned-profile, and learned-policy holdout metrics remain comparable inside
 the slice.
+
+Use `--semantic-query-mode source-role-hints` only as an eval diagnostic when
+testing semantic query construction. It appends source-free coding-role words
+and dominant source languages to the semantic query, leaves runtime/default
+query construction unchanged at `plain`, and makes historical-eval cache keys
+mode-distinct:
+
+```bash
+ctxhelm eval gate --repo /path/to/repo --base HEAD~40 --head HEAD \
+  --limit 20 --budget 10 --semantic-provider local_fastembed \
+  --semantic-query-mode source-role-hints --format json
+```
 
 `local_hash` remains the deterministic scaffold. `local_fastembed` is the
 production-local backend and requires a build compiled with the
@@ -769,6 +782,11 @@ ctxhelm eval learned-policy-train-test --repo /path/to/repo \
   --semantic-provider local_fastembed \
   --profile-key-mode path-family-backoff --format json
 ```
+
+The same train/test evaluator accepts `--semantic-query-mode source-role-hints`
+for source-free query-construction probes. Treat it as diagnostic only; Phase
+287 rejected generic source-role hints on VeriSchema because they preserved a
+semantic-corroborated regression and removed semantic-only target hits.
 
 The train/test report runs default and semantic-corroborated historical evals
 for both ranges, builds `learnedSemanticPolicy` only from the training pair, and

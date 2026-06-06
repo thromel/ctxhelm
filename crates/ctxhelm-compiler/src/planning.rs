@@ -36,6 +36,23 @@ pub(crate) enum HistoryMode {
     Full,
 }
 
+#[derive(Debug, Clone)]
+pub(crate) struct PlannerSemanticOptions {
+    pub enabled: bool,
+    pub provider: SemanticProviderConfig,
+    pub query_source_role_hints: bool,
+}
+
+impl PlannerSemanticOptions {
+    fn plain(enabled: bool, provider: SemanticProviderConfig) -> Self {
+        Self {
+            enabled,
+            provider,
+            query_source_role_hints: false,
+        }
+    }
+}
+
 pub fn empty_plan_for_task(task_type: TaskType) -> ContextPlan {
     base_plan(task_type)
 }
@@ -88,8 +105,7 @@ pub fn prepare_context_plan_with_paths_and_semantic_provider(
         task_type,
         anchor_paths,
         true,
-        semantic_enabled,
-        semantic_provider,
+        PlannerSemanticOptions::plain(semantic_enabled, semantic_provider),
     )
 }
 
@@ -106,8 +122,7 @@ pub(crate) fn prepare_context_plan_with_paths_and_history(
         task_type,
         anchor_paths,
         include_history,
-        false,
-        SemanticProviderConfig::default(),
+        PlannerSemanticOptions::plain(false, SemanticProviderConfig::default()),
     )
 }
 
@@ -117,8 +132,7 @@ pub(crate) fn prepare_context_plan_with_paths_history_and_semantic(
     task_type: TaskType,
     anchor_paths: &[String],
     include_history: bool,
-    semantic_enabled: bool,
-    semantic_provider: SemanticProviderConfig,
+    semantic: PlannerSemanticOptions,
 ) -> Result<ContextPlan, InventoryError> {
     let history_mode = if include_history {
         HistoryMode::Full
@@ -131,8 +145,7 @@ pub(crate) fn prepare_context_plan_with_paths_history_and_semantic(
         task_type,
         anchor_paths,
         history_mode,
-        semantic_enabled,
-        semantic_provider,
+        semantic,
     )
 }
 
@@ -142,8 +155,7 @@ pub(crate) fn prepare_context_plan_with_paths_history_mode_and_semantic(
     task_type: TaskType,
     anchor_paths: &[String],
     history_mode: HistoryMode,
-    semantic_enabled: bool,
-    semantic_provider: SemanticProviderConfig,
+    semantic: PlannerSemanticOptions,
 ) -> Result<ContextPlan, InventoryError> {
     let repo_root = repo_root.as_ref();
     let mut plan = base_plan(task_type);
@@ -257,7 +269,27 @@ pub(crate) fn prepare_context_plan_with_paths_history_mode_and_semantic(
         }
     }
     let lexical_query = query_text_or_task(&query_trace.retriever_queries.lexical_terms, task);
-    let semantic_query = query_text_or_task(&query_trace.retriever_queries.semantic_phrases, task);
+    let semantic_query = semantic_query_text_or_task(
+        &query_trace.retriever_queries.semantic_phrases,
+        task,
+        &plan.task_type,
+        &roles,
+        semantic.query_source_role_hints,
+    );
+    if semantic.query_source_role_hints {
+        push_plan_diagnostic(
+            &mut plan,
+            Diagnostic {
+                code: "semantic_query_source_role_hints_applied".to_string(),
+                severity: DiagnosticSeverity::Info,
+                message:
+                    "Semantic query text included source-free coding role and dominant language hints."
+                        .to_string(),
+                paths: Vec::new(),
+                count: 1,
+            },
+        );
+    }
 
     let symbol_results = if query_trace.retriever_queries.symbol_terms.is_empty() {
         Vec::new()
@@ -287,11 +319,11 @@ pub(crate) fn prepare_context_plan_with_paths_history_mode_and_semantic(
     for result in &search_results {
         roles.insert(result.path.clone(), result.role.clone());
     }
-    let semantic_provider = normalized_provider(&semantic_provider);
+    let semantic_provider = normalized_provider(&semantic.provider);
     let semantic_decision =
-        semantic_provider_decision(&provider_policy, &semantic_provider, semantic_enabled);
+        semantic_provider_decision(&provider_policy, &semantic_provider, semantic.enabled);
     provider_policy.decisions.push(semantic_decision.clone());
-    let semantic_results = if semantic_enabled
+    let semantic_results = if semantic.enabled
         && matches!(semantic_decision.status, ProviderDecisionStatus::Allowed)
     {
         let semantic_report = semantic_search_report(
@@ -309,7 +341,7 @@ pub(crate) fn prepare_context_plan_with_paths_history_mode_and_semantic(
         }
         semantic_report.results
     } else {
-        if semantic_enabled {
+        if semantic.enabled {
             push_plan_diagnostic(
                 &mut plan,
                 Diagnostic {
@@ -1760,6 +1792,67 @@ fn query_text_or_task(values: &[String], task: &str) -> String {
     }
 }
 
+fn semantic_query_text_or_task(
+    values: &[String],
+    task: &str,
+    task_type: &TaskType,
+    roles: &BTreeMap<String, FileRole>,
+    source_role_hints: bool,
+) -> String {
+    let mut query = query_text_or_task(values, task);
+    if !source_role_hints || !semantic_source_role_hints_apply(task_type) {
+        return query;
+    }
+
+    let mut hints = vec![
+        "source".to_string(),
+        "code".to_string(),
+        "implementation".to_string(),
+        "module".to_string(),
+    ];
+    for language in dominant_source_languages(roles) {
+        push_unique(&mut hints, language);
+    }
+    for hint in hints {
+        if !query
+            .split_whitespace()
+            .any(|term| term.eq_ignore_ascii_case(&hint))
+        {
+            if !query.is_empty() {
+                query.push(' ');
+            }
+            query.push_str(&hint);
+        }
+    }
+    query
+}
+
+fn semantic_source_role_hints_apply(task_type: &TaskType) -> bool {
+    matches!(
+        task_type,
+        TaskType::BugFix | TaskType::Feature | TaskType::Refactor | TaskType::Test
+    )
+}
+
+fn dominant_source_languages(roles: &BTreeMap<String, FileRole>) -> Vec<String> {
+    let mut counts = BTreeMap::<String, usize>::new();
+    for (path, role) in roles {
+        if !matches!(role, FileRole::Source) {
+            continue;
+        }
+        if let Some(language) = language_for_path(path) {
+            *counts.entry(language).or_default() += 1;
+        }
+    }
+    let mut languages = counts.into_iter().collect::<Vec<_>>();
+    languages.sort_by(|left, right| right.1.cmp(&left.1).then_with(|| left.0.cmp(&right.0)));
+    languages
+        .into_iter()
+        .take(2)
+        .map(|(language, _)| language)
+        .collect()
+}
+
 fn extract_path_facets(task: &str) -> Vec<String> {
     task.split_whitespace()
         .filter_map(|token| {
@@ -2920,6 +3013,27 @@ mod tests {
     }
 
     #[test]
+    fn semantic_query_source_role_hints_add_dominant_source_languages() {
+        let mut roles = BTreeMap::new();
+        roles.insert("schema_agent/core/router.py".to_string(), FileRole::Source);
+        roles.insert("schema_agent/core/tools.py".to_string(), FileRole::Source);
+        roles.insert("docs/architecture.md".to_string(), FileRole::Docs);
+
+        let query = semantic_query_text_or_task(
+            &["schema".to_string(), "agent".to_string()],
+            "fix schema agent routing",
+            &TaskType::BugFix,
+            &roles,
+            true,
+        );
+
+        assert!(query.contains("schema agent"));
+        assert!(query.contains("source"));
+        assert!(query.contains("implementation"));
+        assert!(query.contains("python"));
+    }
+
+    #[test]
     fn query_trace_does_not_treat_commit_subject_acronyms_as_symbol_facets() {
         let trace = construct_query_trace("Default MCP repository path to working directory", &[]);
 
@@ -3003,8 +3117,7 @@ mod tests {
             TaskType::BugFix,
             &[],
             false,
-            false,
-            SemanticProviderConfig::default(),
+            PlannerSemanticOptions::plain(false, SemanticProviderConfig::default()),
         )
         .unwrap();
         let target_paths = plan
@@ -3089,8 +3202,7 @@ mod tests {
             TaskType::BugFix,
             &[],
             false,
-            false,
-            SemanticProviderConfig::default(),
+            PlannerSemanticOptions::plain(false, SemanticProviderConfig::default()),
         )
         .unwrap();
 
@@ -3903,8 +4015,7 @@ mod tests {
             TaskType::BugFix,
             &[],
             false,
-            true,
-            SemanticProviderConfig::default(),
+            PlannerSemanticOptions::plain(true, SemanticProviderConfig::default()),
         )
         .unwrap();
         let policy = plan.provider_policy.expect("provider policy");
@@ -3951,8 +4062,7 @@ mod tests {
             TaskType::BugFix,
             &[],
             false,
-            true,
-            SemanticProviderConfig::default(),
+            PlannerSemanticOptions::plain(true, SemanticProviderConfig::default()),
         )
         .unwrap();
         let policy = plan.provider_policy.as_ref().expect("provider policy");
@@ -3998,8 +4108,7 @@ mod tests {
             TaskType::BugFix,
             &[],
             false,
-            true,
-            SemanticProviderConfig::default(),
+            PlannerSemanticOptions::plain(true, SemanticProviderConfig::default()),
         )
         .unwrap();
         let policy = plan.provider_policy.as_ref().expect("provider policy");
@@ -4045,8 +4154,7 @@ mod tests {
             TaskType::BugFix,
             &[],
             false,
-            true,
-            SemanticProviderConfig::default(),
+            PlannerSemanticOptions::plain(true, SemanticProviderConfig::default()),
         )
         .unwrap();
 

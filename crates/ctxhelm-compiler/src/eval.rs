@@ -2,7 +2,7 @@ use crate::packs::pack_repo_id;
 use crate::planning::{
     is_low_information_task, is_multi_area_task, normalized_target_agent,
     prepare_context_plan_with_paths_history_and_semantic,
-    prepare_context_plan_with_paths_history_mode_and_semantic, HistoryMode,
+    prepare_context_plan_with_paths_history_mode_and_semantic, HistoryMode, PlannerSemanticOptions,
 };
 use crate::policy::{
     provider_policy_report, query_family_routed_reranker_enabled_for_family, reranker_decision,
@@ -93,11 +93,21 @@ pub struct HistoricalEvalOptions {
     #[serde(default)]
     pub semantic_corroborated_reranker: bool,
     #[serde(default)]
+    pub semantic_query_mode: SemanticQueryMode,
+    #[serde(default)]
     pub cache_enabled: bool,
     #[serde(default)]
     pub force_refresh: bool,
     #[serde(default)]
     pub parallelism: usize,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Default)]
+#[serde(rename_all = "snake_case")]
+pub enum SemanticQueryMode {
+    #[default]
+    Plain,
+    SourceRoleHints,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -206,6 +216,8 @@ pub struct HistoricalEvalEffectiveFilters {
     pub query_family_routed_reranker: bool,
     #[serde(default)]
     pub semantic_corroborated_reranker: bool,
+    #[serde(default)]
+    pub semantic_query_mode: SemanticQueryMode,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -382,6 +394,15 @@ pub struct SemanticPrecisionGateReport {
     pub diagnostics: Vec<Diagnostic>,
     pub source_text_logged: bool,
     pub privacy_status: PrivacyStatus,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct SemanticPrecisionGateRangeOptions {
+    pub base: Option<String>,
+    pub head: Option<String>,
+    #[serde(default)]
+    pub semantic_query_mode: SemanticQueryMode,
 }
 
 const LEARNED_SEMANTIC_POLICY_SCHEMA_VERSION: u32 = 1;
@@ -3274,7 +3295,32 @@ pub fn semantic_precision_gate_report_with_provider_and_range(
     base: Option<String>,
     head: Option<String>,
 ) -> Result<SemanticPrecisionGateReport, InventoryError> {
+    semantic_precision_gate_report_with_provider_and_range_options(
+        repo_root,
+        limit,
+        ranking_budget,
+        task_type,
+        semantic_provider,
+        SemanticPrecisionGateRangeOptions {
+            base,
+            head,
+            semantic_query_mode: SemanticQueryMode::Plain,
+        },
+    )
+}
+
+pub fn semantic_precision_gate_report_with_provider_and_range_options(
+    repo_root: impl AsRef<Path>,
+    limit: usize,
+    ranking_budget: usize,
+    task_type: TaskType,
+    semantic_provider: SemanticProviderConfig,
+    range_options: SemanticPrecisionGateRangeOptions,
+) -> Result<SemanticPrecisionGateReport, InventoryError> {
     let repo_root = repo_root.as_ref();
+    let base = range_options.base;
+    let head = range_options.head;
+    let semantic_query_mode = range_options.semantic_query_mode;
     let mut provider_policy = provider_policy_report(repo_root)?;
     provider_policy.decisions.push(semantic_provider_decision(
         &provider_policy,
@@ -3306,6 +3352,7 @@ pub fn semantic_precision_gate_report_with_provider_and_range(
             local_metadata_reranker: false,
             query_family_routed_reranker: false,
             semantic_corroborated_reranker: false,
+            semantic_query_mode: SemanticQueryMode::Plain,
             cache_enabled: false,
             force_refresh: false,
             parallelism: 1,
@@ -3327,6 +3374,7 @@ pub fn semantic_precision_gate_report_with_provider_and_range(
                 local_metadata_reranker: false,
                 query_family_routed_reranker: false,
                 semantic_corroborated_reranker: false,
+                semantic_query_mode,
                 cache_enabled: false,
                 force_refresh: false,
                 parallelism: 1,
@@ -3347,6 +3395,7 @@ pub fn semantic_precision_gate_report_with_provider_and_range(
             local_metadata_reranker: true,
             query_family_routed_reranker: false,
             semantic_corroborated_reranker: false,
+            semantic_query_mode: SemanticQueryMode::Plain,
             cache_enabled: false,
             force_refresh: false,
             parallelism: 1,
@@ -3366,6 +3415,7 @@ pub fn semantic_precision_gate_report_with_provider_and_range(
             local_metadata_reranker: false,
             query_family_routed_reranker: true,
             semantic_corroborated_reranker: false,
+            semantic_query_mode: SemanticQueryMode::Plain,
             cache_enabled: false,
             force_refresh: false,
             parallelism: 1,
@@ -3385,6 +3435,7 @@ pub fn semantic_precision_gate_report_with_provider_and_range(
             local_metadata_reranker: false,
             query_family_routed_reranker: false,
             semantic_corroborated_reranker: true,
+            semantic_query_mode,
             cache_enabled: false,
             force_refresh: false,
             parallelism: 1,
@@ -3847,6 +3898,7 @@ pub fn learned_semantic_policy_train_test_report_with_provider_and_ranges(
     test_base: Option<String>,
     test_head: Option<String>,
     profile_key_mode: LearnedSemanticPolicyProfileKeyMode,
+    semantic_query_mode: SemanticQueryMode,
 ) -> Result<LearnedSemanticPolicyTrainTestReport, InventoryError> {
     let repo_root = repo_root.as_ref();
     let train_default = evaluate_historical_commits(
@@ -3863,6 +3915,7 @@ pub fn learned_semantic_policy_train_test_report_with_provider_and_ranges(
             local_metadata_reranker: false,
             query_family_routed_reranker: false,
             semantic_corroborated_reranker: false,
+            semantic_query_mode: SemanticQueryMode::Plain,
             cache_enabled: false,
             force_refresh: false,
             parallelism: 1,
@@ -3885,6 +3938,7 @@ pub fn learned_semantic_policy_train_test_report_with_provider_and_ranges(
                 local_metadata_reranker: false,
                 query_family_routed_reranker: false,
                 semantic_corroborated_reranker: false,
+                semantic_query_mode,
                 cache_enabled: false,
                 force_refresh: false,
                 parallelism: 1,
@@ -3905,6 +3959,7 @@ pub fn learned_semantic_policy_train_test_report_with_provider_and_ranges(
             local_metadata_reranker: false,
             query_family_routed_reranker: false,
             semantic_corroborated_reranker: false,
+            semantic_query_mode: SemanticQueryMode::Plain,
             cache_enabled: false,
             force_refresh: false,
             parallelism: 1,
@@ -3927,6 +3982,7 @@ pub fn learned_semantic_policy_train_test_report_with_provider_and_ranges(
                 local_metadata_reranker: false,
                 query_family_routed_reranker: false,
                 semantic_corroborated_reranker: false,
+                semantic_query_mode,
                 cache_enabled: false,
                 force_refresh: false,
                 parallelism: 1,
@@ -7237,6 +7293,7 @@ fn run_benchmark_repo(
         local_metadata_reranker: effective_config.local_metadata_reranker,
         query_family_routed_reranker: false,
         semantic_corroborated_reranker: false,
+        semantic_query_mode: SemanticQueryMode::Plain,
         cache_enabled: effective_config.cache_enabled,
         force_refresh: effective_config.force_refresh,
         parallelism: effective_config.parallelism,
@@ -7687,6 +7744,7 @@ pub fn evaluate_historical_commits(
         local_metadata_reranker: options.local_metadata_reranker,
         query_family_routed_reranker: options.query_family_routed_reranker,
         semantic_corroborated_reranker: options.semantic_corroborated_reranker,
+        semantic_query_mode: options.semantic_query_mode,
     };
     let eval_range_id = historical_eval_range_id(&repo_id, &effective_filters, &refs);
 
@@ -8344,8 +8402,14 @@ fn evaluate_historical_commit_sample(
         options.task_type.clone(),
         &[],
         history_mode,
-        options.semantic_enabled,
-        options.semantic_provider.clone(),
+        PlannerSemanticOptions {
+            enabled: options.semantic_enabled,
+            provider: options.semantic_provider.clone(),
+            query_source_role_hints: matches!(
+                options.semantic_query_mode,
+                SemanticQueryMode::SourceRoleHints
+            ),
+        },
     )?;
     let pack_compiler_millis = elapsed_millis(plan_started);
     let ranking_started = Instant::now();
@@ -9190,8 +9254,11 @@ pub fn export_candidate_features_for_task(
         task_type.clone(),
         &[],
         true,
-        semantic_enabled,
-        SemanticProviderConfig::default(),
+        PlannerSemanticOptions {
+            enabled: semantic_enabled,
+            provider: SemanticProviderConfig::default(),
+            query_source_role_hints: false,
+        },
     )?;
     Ok(candidate_feature_export_from_plan(
         repo_root,
@@ -10141,7 +10208,7 @@ fn historical_eval_range_id(
     refs: &HistoricalEvalRefs,
 ) -> String {
     task_hash(&format!(
-        "version={HISTORICAL_EVAL_CACHE_SCHEMA_VERSION}\nrepo={repo_id}\nlimit={}\nrankingBudget={}\nmode={:?}\ntarget={}\nbudget={:?}\nsemantic={}\nsemanticProvider={}\nlocalMetadataReranker={}\nqueryFamilyRoutedReranker={}\nsemanticCorroboratedReranker={}\nbase={}\nhead={}",
+        "version={HISTORICAL_EVAL_CACHE_SCHEMA_VERSION}\nrepo={repo_id}\nlimit={}\nrankingBudget={}\nmode={:?}\ntarget={}\nbudget={:?}\nsemantic={}\nsemanticProvider={}\nlocalMetadataReranker={}\nqueryFamilyRoutedReranker={}\nsemanticCorroboratedReranker={}\nsemanticQueryMode={:?}\nbase={}\nhead={}",
         filters.limit,
         filters.ranking_budget,
         filters.mode,
@@ -10152,6 +10219,7 @@ fn historical_eval_range_id(
         filters.local_metadata_reranker,
         filters.query_family_routed_reranker,
         filters.semantic_corroborated_reranker,
+        filters.semantic_query_mode,
         refs.base.as_deref().unwrap_or(""),
         refs.head.as_deref().unwrap_or("")
     ))
@@ -15969,6 +16037,7 @@ mod tests {
                 local_metadata_reranker: false,
                 query_family_routed_reranker: false,
                 semantic_corroborated_reranker: false,
+                semantic_query_mode: SemanticQueryMode::Plain,
             },
             refs: HistoricalEvalRefs {
                 base: None,

@@ -158,12 +158,15 @@ default targets before application.
    profiles. Phase 285 rules out one more same-range doubling because broader
    `40`/`40` limits still produce zero eligible overlap and zero applications.
    Phase 286 rules out the simplest path-family backoff because the coarser
-   aggregates remain unsafe or target-empty. The next semantic step is richer
-   cross-repo aggregation with a pre-registered no-regress bar or
-   candidate-quality work, not runtime promotion. Increasing the local-fastembed
-   document cap, adding
-   broad Python path metadata, adding another hand-written route, and merely
-   widening or splitting the same gate are already rejected paths.
+   aggregates remain unsafe or target-empty. Phase 287 rules out generic
+   source-role query hints on the targeted VeriSchema slice because they remove
+   semantic-only target hits while preserving the same semantic-corroborated
+   regression. The next semantic step is richer cross-repo aggregation with a
+   pre-registered no-regress bar or task-specific query/document construction,
+   not runtime promotion. Increasing the local-fastembed document cap, adding
+   broad Python path metadata, adding generic source-role query words, adding
+   another hand-written route, and merely widening or splitting the same gate
+   are already rejected paths.
 
 ## Conclusion
 
@@ -195,9 +198,11 @@ finds the same negative result outside the training snapshot, with
 support/overlap diagnostics showing no eligible-profile test overlap. Phase 285
 reruns broader `40`/`40` limits on the same stable ranges and remains empty, so
 Phase 286 tests and rejects path-family backoff as the simplest key relaxation.
-The remaining semantic R&D path is richer cross-repo learned-policy aggregation
-or separate query/document construction work, not more same-range doubling, not
-coarse profile-key relaxation, and not runtime/default promotion.
+Phase 287 then tests and rejects generic source-role semantic query hints on
+the targeted VeriSchema older-range slice. The remaining semantic R&D path is
+richer cross-repo learned-policy aggregation or task-specific query/document
+construction work, not more same-range doubling, not coarse profile-key
+relaxation, not generic role words, and not runtime/default promotion.
 Phase 253 reduces memory risk by
 proving cross-repo Codex target-consumption lift. Phase 255 further reduces
 memory risk by preserving that target consumption while improving irrelevant
