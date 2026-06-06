@@ -370,12 +370,79 @@ pub struct SemanticPrecisionGateReport {
     pub family_budget_semantic_reranker_contribution: RerankerContributionSummary,
     #[serde(default)]
     pub learned_profile_semantic_reranker_contribution: RerankerContributionSummary,
+    #[serde(default)]
+    pub learned_semantic_policy: LearnedSemanticPolicyReport,
     pub provider_policy: ProviderPolicyReport,
     pub precision_status: PrecisionStatusReport,
     #[serde(default)]
     pub diagnostics: Vec<Diagnostic>,
     pub source_text_logged: bool,
     pub privacy_status: PrivacyStatus,
+}
+
+const LEARNED_SEMANTIC_POLICY_SCHEMA_VERSION: u32 = 1;
+const LEARNED_SEMANTIC_POLICY_MIN_SUPPORT_COMMIT_COUNT: usize = 2;
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct LearnedSemanticPolicyReport {
+    pub schema_version: u32,
+    pub policy_id: String,
+    pub source_variant: String,
+    pub generated_from_eval_range_id: String,
+    pub evaluated_commit_count: usize,
+    pub training_commit_count: usize,
+    pub ranking_budget: usize,
+    pub minimum_support_commit_count: usize,
+    pub profile_count: usize,
+    pub eligible_profile_count: usize,
+    pub blocked_profile_count: usize,
+    pub default_eligible: bool,
+    pub runtime_promotable: bool,
+    pub staleness_status: String,
+    pub holdout_status: String,
+    #[serde(default)]
+    pub profiles: Vec<LearnedSemanticPolicyProfile>,
+    pub source_text_logged: bool,
+    pub privacy_status: PrivacyStatus,
+}
+
+impl Default for LearnedSemanticPolicyReport {
+    fn default() -> Self {
+        Self {
+            schema_version: LEARNED_SEMANTIC_POLICY_SCHEMA_VERSION,
+            policy_id: String::new(),
+            source_variant: String::new(),
+            generated_from_eval_range_id: String::new(),
+            evaluated_commit_count: 0,
+            training_commit_count: 0,
+            ranking_budget: 0,
+            minimum_support_commit_count: LEARNED_SEMANTIC_POLICY_MIN_SUPPORT_COMMIT_COUNT,
+            profile_count: 0,
+            eligible_profile_count: 0,
+            blocked_profile_count: 0,
+            default_eligible: false,
+            runtime_promotable: false,
+            staleness_status: "absent".to_string(),
+            holdout_status: "absent".to_string(),
+            profiles: Vec::new(),
+            source_text_logged: false,
+            privacy_status: PrivacyStatus::local_only(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct LearnedSemanticPolicyProfile {
+    pub query_family: String,
+    pub path_family: String,
+    pub observed_commit_count: usize,
+    pub inserted_target_count: usize,
+    pub inserted_non_target_count: usize,
+    pub lost_default_target_count: usize,
+    pub eligible: bool,
+    pub decision_reason: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -3461,6 +3528,11 @@ pub fn semantic_precision_gate_report_with_provider(
         "semantic_learned_profile_reranked",
         "Learned-profile semantic reranker",
     );
+    let learned_semantic_policy = learned_semantic_policy_report(
+        &default,
+        &semantic_corroborated_reranked,
+        LEARNED_SEMANTIC_POLICY_MIN_SUPPORT_COMMIT_COUNT,
+    );
     variants.push(gate_variant(
         "support_profile_routed_semantic",
         SemanticPrecisionVariantStatus::Evaluated,
@@ -3529,6 +3601,9 @@ pub fn semantic_precision_gate_report_with_provider(
     diagnostics.extend(learned_profile_semantic_reranker_contribution_diagnostics(
         &learned_profile_semantic_reranker_contribution,
     ));
+    diagnostics.extend(learned_semantic_policy_diagnostics(
+        &learned_semantic_policy,
+    ));
     if !named_regressions.is_empty() {
         diagnostics.push(Diagnostic {
             code: "semantic_precision_named_regressions".to_string(),
@@ -3560,6 +3635,7 @@ pub fn semantic_precision_gate_report_with_provider(
         semantic_corroborated_reranker_contribution,
         family_budget_semantic_reranker_contribution,
         learned_profile_semantic_reranker_contribution,
+        learned_semantic_policy,
         provider_policy,
         precision_status: precision,
         diagnostics,
@@ -4239,6 +4315,123 @@ fn learned_semantic_profile_stats(
     stats
 }
 
+fn learned_semantic_policy_report(
+    default: &HistoricalEvalReport,
+    semantic_corroborated: &HistoricalEvalReport,
+    minimum_support_commit_count: usize,
+) -> LearnedSemanticPolicyReport {
+    let ranking_budget = default.ranking_comparison.k.max(1);
+    let minimum_support_commit_count = minimum_support_commit_count.max(1);
+    let stats =
+        learned_semantic_profile_stats(default, semantic_corroborated, None, ranking_budget);
+    let semantic_shas = semantic_corroborated
+        .commits
+        .iter()
+        .map(|commit| commit.sha.as_str())
+        .collect::<BTreeSet<_>>();
+    let training_commit_count = default
+        .commits
+        .iter()
+        .filter(|commit| semantic_shas.contains(commit.sha.as_str()))
+        .count();
+    let mut profiles = stats
+        .into_iter()
+        .map(|((query_family, path_family), stats)| {
+            let eligible =
+                learned_semantic_profile_is_safe_with_min_support(&stats, minimum_support_commit_count);
+            let decision_reason = if eligible {
+                "Profile has inserted target hits, sufficient commit support, no inserted non-targets, and no lost default targets."
+                    .to_string()
+            } else if stats.observed_commit_count < minimum_support_commit_count {
+                format!(
+                    "Profile observed in {} commit(s), below minimum support {}.",
+                    stats.observed_commit_count, minimum_support_commit_count
+                )
+            } else if stats.inserted_target_count == 0 {
+                "Profile has no inserted semantic target hits.".to_string()
+            } else if stats.inserted_non_target_count > 0 {
+                "Profile inserted semantic non-targets.".to_string()
+            } else {
+                "Profile lost default target hits.".to_string()
+            };
+            LearnedSemanticPolicyProfile {
+                query_family,
+                path_family,
+                observed_commit_count: stats.observed_commit_count,
+                inserted_target_count: stats.inserted_target_count,
+                inserted_non_target_count: stats.inserted_non_target_count,
+                lost_default_target_count: stats.lost_default_target_count,
+                eligible,
+                decision_reason,
+            }
+        })
+        .collect::<Vec<_>>();
+    profiles.sort_by(|left, right| {
+        right
+            .eligible
+            .cmp(&left.eligible)
+            .then_with(|| left.query_family.cmp(&right.query_family))
+            .then_with(|| left.path_family.cmp(&right.path_family))
+    });
+    let eligible_profile_count = profiles.iter().filter(|profile| profile.eligible).count();
+    let blocked_profile_count = profiles.len().saturating_sub(eligible_profile_count);
+    let policy_id = learned_semantic_policy_id(
+        &default.eval_range_id,
+        ranking_budget,
+        minimum_support_commit_count,
+        &profiles,
+    );
+
+    LearnedSemanticPolicyReport {
+        schema_version: LEARNED_SEMANTIC_POLICY_SCHEMA_VERSION,
+        policy_id,
+        source_variant: "semantic_corroborated_reranked".to_string(),
+        generated_from_eval_range_id: default.eval_range_id.clone(),
+        evaluated_commit_count: default.evaluated_commits,
+        training_commit_count,
+        ranking_budget,
+        minimum_support_commit_count,
+        profile_count: profiles.len(),
+        eligible_profile_count,
+        blocked_profile_count,
+        default_eligible: false,
+        runtime_promotable: false,
+        staleness_status:
+            "eval_snapshot_only; apply only to the exact measured revision range until refreshed"
+                .to_string(),
+        holdout_status:
+            "leave_one_out_only; cross-repo holdout proof is required before runtime promotion"
+                .to_string(),
+        profiles,
+        source_text_logged: false,
+        privacy_status: PrivacyStatus::local_only(),
+    }
+}
+
+fn learned_semantic_policy_id(
+    eval_range_id: &str,
+    ranking_budget: usize,
+    minimum_support_commit_count: usize,
+    profiles: &[LearnedSemanticPolicyProfile],
+) -> String {
+    let mut fingerprint = format!(
+        "semantic-learned-policy:{eval_range_id}:k={ranking_budget}:support={minimum_support_commit_count}"
+    );
+    for profile in profiles {
+        fingerprint.push_str(&format!(
+            ":{}:{}:{}:{}:{}:{}:{}",
+            profile.query_family,
+            profile.path_family,
+            profile.observed_commit_count,
+            profile.inserted_target_count,
+            profile.inserted_non_target_count,
+            profile.lost_default_target_count,
+            profile.eligible
+        ));
+    }
+    format!("semantic-learned-policy-{}", &task_hash(&fingerprint)[..16])
+}
+
 fn update_learned_semantic_profile_stats(
     default_commit: &HistoricalCommitEval,
     semantic_commit: &HistoricalCommitEval,
@@ -4331,7 +4524,15 @@ fn learned_profile_semantic_files(
 }
 
 fn learned_semantic_profile_is_safe(stats: &LearnedSemanticProfileStats) -> bool {
+    learned_semantic_profile_is_safe_with_min_support(stats, 1)
+}
+
+fn learned_semantic_profile_is_safe_with_min_support(
+    stats: &LearnedSemanticProfileStats,
+    minimum_support_commit_count: usize,
+) -> bool {
     stats.inserted_target_count > 0
+        && stats.observed_commit_count >= minimum_support_commit_count.max(1)
         && stats.inserted_non_target_count == 0
         && stats.lost_default_target_count == 0
 }
@@ -5843,6 +6044,48 @@ fn learned_profile_semantic_reranker_contribution_diagnostics(
                     .to_string(),
             paths: Vec::new(),
             count: summary.neutral_commit_count,
+        });
+    }
+    diagnostics
+}
+
+fn learned_semantic_policy_diagnostics(report: &LearnedSemanticPolicyReport) -> Vec<Diagnostic> {
+    if report.evaluated_commit_count == 0 || report.policy_id.is_empty() {
+        return Vec::new();
+    }
+    let mut diagnostics = Vec::new();
+    if report.eligible_profile_count > 0 {
+        diagnostics.push(Diagnostic {
+            code: "semantic_learned_policy_artifact_created".to_string(),
+            severity: DiagnosticSeverity::Info,
+            message: format!(
+                "Created source-free learned semantic policy artifact `{}` with {} eligible profile(s) and {} blocked profile(s).",
+                report.policy_id, report.eligible_profile_count, report.blocked_profile_count
+            ),
+            paths: Vec::new(),
+            count: report.eligible_profile_count,
+        });
+    } else {
+        diagnostics.push(Diagnostic {
+            code: "semantic_learned_policy_no_eligible_profiles".to_string(),
+            severity: DiagnosticSeverity::Info,
+            message: format!(
+                "Created source-free learned semantic policy artifact `{}` with no eligible profiles.",
+                report.policy_id
+            ),
+            paths: Vec::new(),
+            count: report.profile_count,
+        });
+    }
+    if !report.runtime_promotable {
+        diagnostics.push(Diagnostic {
+            code: "semantic_learned_policy_holdout_required".to_string(),
+            severity: DiagnosticSeverity::Info,
+            message:
+                "Learned semantic policy artifact is not runtime-promotable until staleness, support thresholds, and cross-repo holdout proof are satisfied."
+                    .to_string(),
+            paths: Vec::new(),
+            count: report.profile_count,
         });
     }
     diagnostics
@@ -12220,6 +12463,100 @@ mod tests {
     }
 
     #[test]
+    fn learned_semantic_policy_report_records_source_free_profiles() {
+        let mut default = empty_historical_eval_report("semantic-learned-policy");
+        default.evaluated_commits = 2;
+        default.commits[0].sha = "policy-a".to_string();
+        default.commits[0].query_trace =
+            Some(query_trace_with_facets(vec![QueryFacetKind::DomainPhrase]));
+        default.commits[0].retrieval_target_files = vec!["docs/semantic_a.md".to_string()];
+        default.commits[0].changed_path_labels = vec![historical_changed_path_label(
+            "docs/semantic_a.md",
+            FileRole::Docs,
+        )];
+        default.commits[0].recommended_context_files = vec!["src/default_a.rs".to_string()];
+        let mut second = default.commits[0].clone();
+        second.sha = "policy-b".to_string();
+        second.retrieval_target_files = vec!["docs/semantic_b.md".to_string()];
+        second.changed_path_labels = vec![historical_changed_path_label(
+            "docs/semantic_b.md",
+            FileRole::Docs,
+        )];
+        second.recommended_context_files = vec!["src/default_b.rs".to_string()];
+        default.commits.push(second);
+        for commit in &mut default.commits {
+            refresh_commit_ranking_metrics(commit);
+        }
+        refresh_historical_report_ranking_metrics(&mut default);
+
+        let mut semantic = default.clone();
+        semantic.commits[0].recommended_context_files = vec![
+            "src/default_a.rs".to_string(),
+            "docs/semantic_a.md".to_string(),
+        ];
+        semantic.commits[1].recommended_context_files = vec![
+            "src/default_b.rs".to_string(),
+            "docs/semantic_b.md".to_string(),
+        ];
+        for commit in &mut semantic.commits {
+            refresh_commit_ranking_metrics(commit);
+        }
+        refresh_historical_report_ranking_metrics(&mut semantic);
+
+        let policy = learned_semantic_policy_report(&default, &semantic, 1);
+
+        assert_eq!(
+            policy.schema_version,
+            LEARNED_SEMANTIC_POLICY_SCHEMA_VERSION
+        );
+        assert!(policy.policy_id.starts_with("semantic-learned-policy-"));
+        assert_eq!(policy.profile_count, 1);
+        assert_eq!(policy.eligible_profile_count, 1);
+        assert!(!policy.default_eligible);
+        assert!(!policy.runtime_promotable);
+        assert!(!policy.source_text_logged);
+        assert!(policy.privacy_status.local_only);
+        assert_eq!(policy.profiles[0].query_family, "domain_phrase");
+        assert_eq!(policy.profiles[0].path_family, "docs");
+        assert_eq!(policy.profiles[0].observed_commit_count, 2);
+        assert!(policy.profiles[0].eligible);
+    }
+
+    #[test]
+    fn learned_semantic_policy_report_blocks_profiles_below_support_threshold() {
+        let mut default = empty_historical_eval_report("semantic-learned-policy-support");
+        default.commits[0].sha = "policy-support-a".to_string();
+        default.commits[0].query_trace =
+            Some(query_trace_with_facets(vec![QueryFacetKind::DomainPhrase]));
+        default.commits[0].retrieval_target_files = vec!["docs/semantic_a.md".to_string()];
+        default.commits[0].changed_path_labels = vec![historical_changed_path_label(
+            "docs/semantic_a.md",
+            FileRole::Docs,
+        )];
+        default.commits[0].recommended_context_files = vec!["src/default_a.rs".to_string()];
+        refresh_commit_ranking_metrics(&mut default.commits[0]);
+        refresh_historical_report_ranking_metrics(&mut default);
+
+        let mut semantic = default.clone();
+        semantic.commits[0].recommended_context_files = vec![
+            "src/default_a.rs".to_string(),
+            "docs/semantic_a.md".to_string(),
+        ];
+        refresh_commit_ranking_metrics(&mut semantic.commits[0]);
+        refresh_historical_report_ranking_metrics(&mut semantic);
+
+        let policy = learned_semantic_policy_report(&default, &semantic, 2);
+
+        assert_eq!(policy.profile_count, 1);
+        assert_eq!(policy.eligible_profile_count, 0);
+        assert_eq!(policy.blocked_profile_count, 1);
+        assert!(!policy.profiles[0].eligible);
+        assert!(policy.profiles[0]
+            .decision_reason
+            .contains("below minimum support"));
+    }
+
+    #[test]
     fn semantic_precision_gate_report_deserializes_without_family_budget_summary() {
         let report = SemanticPrecisionGateReport {
             repo_id: "repo".to_string(),
@@ -12238,6 +12575,7 @@ mod tests {
             semantic_corroborated_reranker_contribution: RerankerContributionSummary::default(),
             family_budget_semantic_reranker_contribution: RerankerContributionSummary::default(),
             learned_profile_semantic_reranker_contribution: RerankerContributionSummary::default(),
+            learned_semantic_policy: LearnedSemanticPolicyReport::default(),
             provider_policy: source_free_provider_policy(),
             precision_status: PrecisionStatusReport {
                 status: PrecisionStatus::Unavailable,
@@ -12262,6 +12600,10 @@ mod tests {
             .as_object_mut()
             .expect("gate report object")
             .remove("learnedProfileSemanticRerankerContribution");
+        value
+            .as_object_mut()
+            .expect("gate report object")
+            .remove("learnedSemanticPolicy");
 
         let decoded: SemanticPrecisionGateReport = serde_json::from_value(value)
             .expect("missing semantic eval-only summaries use defaults");
@@ -12274,6 +12616,11 @@ mod tests {
             .learned_profile_semantic_reranker_contribution
             .displacement_contributions
             .is_empty());
+        assert_eq!(
+            decoded.learned_semantic_policy.schema_version,
+            LEARNED_SEMANTIC_POLICY_SCHEMA_VERSION
+        );
+        assert!(decoded.learned_semantic_policy.policy_id.is_empty());
     }
 
     #[test]

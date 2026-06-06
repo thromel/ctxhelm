@@ -709,6 +709,18 @@ hits, zero inserted semantic non-targets, and zero lost default targets. Phase
 and VeriSchema. It remains eval-only until a durable learned-policy artifact,
 staleness contract, support threshold, and broader holdout proof exist.
 
+The same gate emits `learnedSemanticPolicy`, a durable source-free artifact
+shape for future semantic policy holdouts. It records `schemaVersion`,
+`policyId`, `sourceVariant`, `generatedFromEvalRangeId`, `rankingBudget`,
+`minimumSupportCommitCount`, profile counts, per-profile eligibility/blocking
+reasons, `stalenessStatus`, `holdoutStatus`, `defaultEligible`,
+`runtimePromotable`, `sourceTextLogged`, and local-only privacy status. Profile
+rows are keyed by `(queryFamily, pathFamily)` and include observed commit count,
+inserted target count, inserted non-target count, and lost default target count.
+The artifact is report-only: current gates set `defaultEligible = false` and
+`runtimePromotable = false` until a separate holdout proof validates the profile
+outside the training/eval snapshot.
+
 The same family rows also report support diagnostics for semantic-only files:
 `semanticOnlyTargetWithNonsemanticSupportCount`,
 `semanticOnlyTargetWithoutNonsemanticSupportCount`,
@@ -759,6 +771,13 @@ diagnostics:
   variant lost target hits and must remain eval-only.
 - `semantic_learned_profile_reranker_neutral`: the learned-profile semantic
   variant preserved target hits without adding target hits.
+- `semantic_learned_policy_artifact_created`: the gate emitted a source-free
+  learned semantic policy artifact with at least one eligible profile.
+- `semantic_learned_policy_no_eligible_profiles`: the gate emitted the artifact
+  shape, but no profile passed support and safety thresholds.
+- `semantic_learned_policy_holdout_required`: the artifact is not
+  runtime-promotable until staleness, support, and cross-repo holdout proof are
+  satisfied.
 
 The `rerankerContribution.queryFamilyContributions` JSON field groups the same
 source-free evidence by primary query family, such as `explicit_path`,
