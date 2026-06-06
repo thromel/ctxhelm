@@ -3,7 +3,7 @@
 ## Scope
 
 Audit the current ctxhelm R&D roadmap against the latest source-free proof
-artifacts after Phase 288. This audit is not a release claim by itself; it
+artifacts after Phase 289. This audit is not a release claim by itself; it
 separates implemented/measured work from remaining research risk.
 
 ## Current Proof Summary
@@ -45,6 +45,14 @@ source-free cross-repo learned-policy aggregation. Strict Phase 285 inputs have
 have `9` candidate profiles and `0` eligible profiles. The repeated keys are
 blocked by inserted semantic non-targets, lost default targets, or missing
 inserted target hits.
+
+Phase 289 addendum: `.planning/e2e/2026-06-07-phase289-semantic-candidate-path-query.md`
+adds an eval-only `--semantic-query-mode candidate-path-hints` probe. It
+improves the targeted VeriSchema semantic candidate-quality counters
+(`candidateMisses = 3`, selected semantic targets `11`, semantic-only targets
+`2`, semantic-only non-targets `16`) but does not improve `local_semantic`
+recall or remove the semantic-corroborated regression, so it remains
+diagnostic-only.
 
 ## Remaining R&D Risk
 
@@ -122,9 +130,12 @@ inserted target hits.
    semantic non-targets or missing target hits instead of safe applications.
    Phase 287 rejects generic source-role query hints, and Phase 288 rejects the
    current cross-repo learned-policy aggregation because repeated strict and
-   backoff keys both aggregate to zero eligible profiles. The next semantic work
-   needs task-specific query/document construction or a much narrower learned
-   separator.
+   backoff keys both aggregate to zero eligible profiles. Phase 289 improves
+   VeriSchema semantic candidate quality with bounded candidate-path hints but
+   still does not improve recall or remove the semantic-corroborated
+   regression. The next semantic work needs target-preserving selection from
+   improved candidates, richer query/document construction for remaining
+   prompt/workflow/verification files, or a much narrower learned separator.
 2. Claude has current workflow proof but not a fresh paired outcome suite on the
    same level as Codex Phase 245/250. Phase 264 confirms this is still a
    client-availability problem: Claude Code is rate-limited, while Codex remains
@@ -180,12 +191,16 @@ inserted target hits.
    semantic-only target hits while preserving the same semantic-corroborated
    regression. Phase 288 rules out the current cross-repo learned-policy
    aggregation because strict and backoff profiles both produce zero eligible
-   cross-repo keys. The next semantic step is task-specific query/document
-   construction or a materially narrower learned separator, not runtime
-   promotion. Increasing the local-fastembed document cap, adding broad Python
-   path metadata, adding generic source-role query words, adding another
-   hand-written route, merely widening or splitting the same gate, relaxing
-   profile keys, and current cross-repo aggregation are already rejected paths.
+   cross-repo keys. Phase 289 shows candidate-path hints improve candidate
+   quality but not final recall or regression status. The next semantic step is
+   target-preserving selection from improved candidates, richer query/document
+   construction for the remaining prompt/workflow/verification gaps, or a
+   materially narrower learned separator, not runtime promotion. Increasing the
+   local-fastembed document cap, adding broad Python path metadata, adding
+   generic source-role query words, adding another hand-written route, merely
+   widening or splitting the same gate, relaxing profile keys, current
+   cross-repo aggregation, and candidate-path hints as a runtime/default policy
+   are already rejected paths.
 
 ## Conclusion
 
@@ -221,10 +236,14 @@ Phase 287 then tests and rejects generic source-role semantic query hints on
 the targeted VeriSchema older-range slice. Phase 288 tests and rejects the
 current source-free cross-repo learned-policy aggregation because neither
 strict query/path profiles nor path-family backoff profiles have an eligible
-cross-repo zero-harm key. The remaining semantic R&D path is task-specific
-query/document construction or a much narrower learned separator, not more
-same-range doubling, not coarse profile-key relaxation, not generic role words,
-not current cross-repo aggregation, and not runtime/default promotion.
+cross-repo zero-harm key. Phase 289 tests bounded candidate-path semantic query
+hints; it improves semantic candidate quality but not recall or the
+semantic-corroborated regression. The remaining semantic R&D path is
+target-preserving selection from improved candidates, richer query/document
+construction, or a much narrower learned separator, not more same-range
+doubling, not coarse profile-key relaxation, not generic role words, not
+current cross-repo aggregation, not candidate-path hints as runtime/default
+policy, and not runtime/default promotion.
 Phase 253 reduces memory risk by
 proving cross-repo Codex target-consumption lift. Phase 255 further reduces
 memory risk by preserving that target consumption while improving irrelevant

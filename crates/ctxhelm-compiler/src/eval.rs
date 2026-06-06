@@ -108,6 +108,7 @@ pub enum SemanticQueryMode {
     #[default]
     Plain,
     SourceRoleHints,
+    CandidatePathHints,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -8636,6 +8637,10 @@ fn evaluate_historical_commit_sample(
                 options.semantic_query_mode,
                 SemanticQueryMode::SourceRoleHints
             ),
+            query_candidate_path_hints: matches!(
+                options.semantic_query_mode,
+                SemanticQueryMode::CandidatePathHints
+            ),
         },
     )?;
     let pack_compiler_millis = elapsed_millis(plan_started);
@@ -9485,6 +9490,7 @@ pub fn export_candidate_features_for_task(
             enabled: semantic_enabled,
             provider: SemanticProviderConfig::default(),
             query_source_role_hints: false,
+            query_candidate_path_hints: false,
         },
     )?;
     Ok(candidate_feature_export_from_plan(

@@ -276,6 +276,19 @@ profiles, with `*/docs` aggregating to `16` inserted targets, `140` inserted
 non-targets, and `125` lost defaults. Cross-repo aggregation is therefore
 rejected under the current zero-harm gate.
 
+Phase 289 returns to task-specific query construction. `ctxhelm eval history`,
+`ctxhelm eval gate`, and `ctxhelm eval learned-policy-train-test` now accept the
+eval-only `--semantic-query-mode candidate-path-hints` flag. The mode appends a
+bounded set of source-free aliases from top lexical candidate paths to the
+semantic query after lexical search, while runtime/default behavior remains
+`plain`. On the targeted VeriSchema older-range proof, candidate-path hints
+improve candidate quality compared with plain and source-role hints: semantic
+candidate misses fall to `3`, selected semantic target hits rise to `11`, and
+semantic-only targets remain `2`. Promotion is still rejected because
+`local_semantic` recall is unchanged at `0.29122806`, the
+semantic-corroborated variant remains `0.28245613`, and the same one-commit
+corroborated regression remains.
+
 Phase 196 reserves selected validation areas in broad context-area guidance and adds package-mirrored related-test affinity. The accepted release-binary proof promotes with selected-file/source/test/validation metrics unchanged while improving VeriSchema broad context-area recall from `0.5777778 -> 0.84444445` and next-read recovery from `16 -> 19` of `39` missed@10 files. A related-test-only intermediate proof was rejected because it did not move the product proof.
 
 Phase 197 adds source-free agent-evidence recovery accounting to context-area next-read summaries. The fresh release-binary proof promotes with selected-file/source/test/validation/broad-area metrics unchanged while showing VeriSchema has `29 / 39` missed@10 files recoverable through the full agent evidence bundle, compared with `19 / 39` through progressive next reads alone.

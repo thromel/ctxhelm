@@ -29,6 +29,8 @@ use uuid::Uuid;
 pub(crate) const PREPARE_TASK_TARGET_LIMIT: usize = 10;
 pub(crate) const PREPARE_TASK_TEST_LIMIT: usize = 10;
 const SELECTED_MEMORY_INITIAL_READ_LIMIT: usize = 3;
+const SEMANTIC_CANDIDATE_PATH_HINT_PATH_LIMIT: usize = 8;
+const SEMANTIC_CANDIDATE_PATH_HINT_TERM_LIMIT: usize = 12;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum HistoryMode {
@@ -41,6 +43,7 @@ pub(crate) struct PlannerSemanticOptions {
     pub enabled: bool,
     pub provider: SemanticProviderConfig,
     pub query_source_role_hints: bool,
+    pub query_candidate_path_hints: bool,
 }
 
 impl PlannerSemanticOptions {
@@ -49,6 +52,7 @@ impl PlannerSemanticOptions {
             enabled,
             provider,
             query_source_role_hints: false,
+            query_candidate_path_hints: false,
         }
     }
 }
@@ -271,7 +275,7 @@ pub(crate) fn prepare_context_plan_with_paths_history_mode_and_semantic(
         }
     }
     let lexical_query = query_text_or_task(&query_trace.retriever_queries.lexical_terms, task);
-    let semantic_query = semantic_query_text_or_task(
+    let mut semantic_query = semantic_query_text_or_task(
         &query_trace.retriever_queries.semantic_phrases,
         task,
         &plan.task_type,
@@ -320,6 +324,21 @@ pub(crate) fn prepare_context_plan_with_paths_history_mode_and_semantic(
     extend_project_governance_docs(&mut search_results, &roles, task);
     for result in &search_results {
         roles.insert(result.path.clone(), result.role.clone());
+    }
+    if semantic.query_candidate_path_hints {
+        let hint_count = append_semantic_candidate_path_hints(&mut semantic_query, &search_results);
+        push_plan_diagnostic(
+            &mut plan,
+            Diagnostic {
+                code: "semantic_query_candidate_path_hints_applied".to_string(),
+                severity: DiagnosticSeverity::Info,
+                message:
+                    "Semantic query text included bounded source-free aliases from lexical candidate paths."
+                        .to_string(),
+                paths: Vec::new(),
+                count: hint_count,
+            },
+        );
     }
     let semantic_provider = normalized_provider(&semantic.provider);
     let semantic_decision =
@@ -1894,6 +1913,81 @@ fn semantic_query_text_or_task(
     query
 }
 
+fn append_semantic_candidate_path_hints(
+    query: &mut String,
+    search_results: &[SearchResult],
+) -> usize {
+    let mut hint_count = 0usize;
+    for result in search_results
+        .iter()
+        .take(SEMANTIC_CANDIDATE_PATH_HINT_PATH_LIMIT)
+    {
+        for hint in semantic_candidate_path_hint_terms(&result.path) {
+            if hint_count >= SEMANTIC_CANDIDATE_PATH_HINT_TERM_LIMIT {
+                return hint_count;
+            }
+            if query
+                .split_whitespace()
+                .any(|term| term.eq_ignore_ascii_case(&hint))
+            {
+                continue;
+            }
+            if !query.is_empty() {
+                query.push(' ');
+            }
+            query.push_str(&hint);
+            hint_count += 1;
+        }
+    }
+    hint_count
+}
+
+fn semantic_candidate_path_hint_terms(path: &str) -> Vec<String> {
+    let mut terms = Vec::new();
+    for raw in path.split(|character: char| {
+        !(character.is_ascii_alphanumeric() || character == '_' || character == '-')
+    }) {
+        let raw = raw.trim_matches(|character: char| {
+            !(character.is_ascii_alphanumeric() || character == '_' || character == '-')
+        });
+        if raw.is_empty() {
+            continue;
+        }
+        for part in raw.split(['_', '-']) {
+            let part = part.to_ascii_lowercase();
+            if semantic_candidate_path_hint_term_allowed(&part) && !terms.contains(&part) {
+                terms.push(part);
+            }
+        }
+    }
+    terms
+}
+
+fn semantic_candidate_path_hint_term_allowed(term: &str) -> bool {
+    if term.len() < 3 {
+        return false;
+    }
+    !matches!(
+        term,
+        "src"
+            | "lib"
+            | "main"
+            | "mod"
+            | "index"
+            | "init"
+            | "test"
+            | "tests"
+            | "schema"
+            | "agent"
+            | "agents"
+            | "python"
+            | "source"
+            | "docs"
+            | "doc"
+            | "readme"
+    )
+}
+
 fn semantic_source_role_hints_apply(task_type: &TaskType) -> bool {
     matches!(
         task_type,
@@ -3098,6 +3192,36 @@ mod tests {
         assert!(query.contains("source"));
         assert!(query.contains("implementation"));
         assert!(query.contains("python"));
+    }
+
+    #[test]
+    fn semantic_query_candidate_path_hints_add_bounded_path_aliases() {
+        let mut query = "workflow vocabulary".to_string();
+        let results = vec![
+            SearchResult {
+                path: "schema_agent/core/validated_workflow.py".to_string(),
+                role: FileRole::Source,
+                language: Some("python".to_string()),
+                score: 1.0,
+                reason: "test".to_string(),
+            },
+            SearchResult {
+                path: "tests/agents/test_normalization_fds.py".to_string(),
+                role: FileRole::Test,
+                language: Some("python".to_string()),
+                score: 0.8,
+                reason: "test".to_string(),
+            },
+        ];
+
+        let hint_count = append_semantic_candidate_path_hints(&mut query, &results);
+
+        assert!(hint_count > 0);
+        assert!(query.contains("validated"));
+        assert!(query.contains("normalization"));
+        assert!(query.contains("fds"));
+        assert!(!query.contains("schema_agent"));
+        assert!(!query.contains(" tests "));
     }
 
     #[test]

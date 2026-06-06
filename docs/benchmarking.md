@@ -350,6 +350,7 @@ ctxhelm eval benchmark --config .ctxhelm/benchmarks/retrieval-quality.json --for
 ctxhelm eval history --repo /path/to/repo --semantic --format json
 ctxhelm eval history --repo /path/to/repo --semantic --semantic-provider local_fastembed --format json
 ctxhelm eval history --repo /path/to/repo --semantic --semantic-provider local_fastembed --semantic-query-mode source-role-hints --format json
+ctxhelm eval history --repo /path/to/repo --semantic --semantic-provider local_fastembed --semantic-query-mode candidate-path-hints --format json
 ctxhelm eval history --repo /path/to/repo --cache --parallelism 4 --format markdown
 ctxhelm eval history --repo /path/to/repo --cache --force --parallelism 4 --format json
 ctxhelm eval baselines --repo /path/to/repo --limit 20 --budget 10 --format markdown
@@ -569,6 +570,20 @@ ctxhelm eval gate --repo /path/to/repo --base HEAD~40 --head HEAD \
   --semantic-query-mode source-role-hints --format json
 ```
 
+Use `--semantic-query-mode candidate-path-hints` for the narrower eval-only
+probe that appends bounded aliases from top lexical candidate paths to the
+semantic query after lexical search:
+
+```bash
+ctxhelm eval gate --repo /path/to/repo --base HEAD~40 --head HEAD \
+  --limit 20 --budget 10 --semantic-provider local_fastembed \
+  --semantic-query-mode candidate-path-hints --format json
+```
+
+This remains diagnostic-only. Phase 289 improved VeriSchema candidate-quality
+counters, but recall stayed unchanged and the semantic-corroborated regression
+remained, so it is not runtime/default policy evidence.
+
 `local_hash` remains the deterministic scaffold. `local_fastembed` is the
 production-local backend and requires a build compiled with the
 `local-embeddings` feature.
@@ -784,9 +799,11 @@ ctxhelm eval learned-policy-train-test --repo /path/to/repo \
 ```
 
 The same train/test evaluator accepts `--semantic-query-mode source-role-hints`
-for source-free query-construction probes. Treat it as diagnostic only; Phase
-287 rejected generic source-role hints on VeriSchema because they preserved a
-semantic-corroborated regression and removed semantic-only target hits.
+and `--semantic-query-mode candidate-path-hints` for source-free
+query-construction probes. Treat both as diagnostic only: Phase 287 rejected
+generic source-role hints on VeriSchema, while Phase 289 kept candidate-path
+hints eval-only because improved candidate quality did not improve recall or
+remove the semantic-corroborated regression.
 
 Use `ctxhelm eval learned-policy-cross-repo` to aggregate saved
 `learned-policy-train-test` JSON reports across repositories without rerunning
