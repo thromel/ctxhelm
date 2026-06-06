@@ -19,10 +19,10 @@ use ctxhelm_compiler::{
     BenchmarkComparisonReport, BenchmarkRegressionThreshold, BenchmarkSuiteReport,
     CandidateFeatureComparisonReport, ContextCardsOptions, ContextCardsReport,
     ExperienceCardsOptions, ExperienceCardsReport, FallbackCardsOptions, FallbackCardsReport,
-    HistoricalEvalOptions, HistoricalEvalReport, LearnedSemanticPolicyTrainTestReport,
-    LexicalBackendCorpusOptions, LexicalBackendCorpusReport, PairedBaselineAnalysisReport,
-    ProductProofLexicalClaim, ProductProofReport, RecommendedResearchAction,
-    SemanticPrecisionGateReport,
+    HistoricalEvalOptions, HistoricalEvalReport, LearnedSemanticPolicyProfileKeyMode,
+    LearnedSemanticPolicyTrainTestReport, LexicalBackendCorpusOptions, LexicalBackendCorpusReport,
+    PairedBaselineAnalysisReport, ProductProofLexicalClaim, ProductProofReport,
+    RecommendedResearchAction, SemanticPrecisionGateReport,
 };
 use ctxhelm_core::{
     run_init, run_setup_check, AgentAdapter, AgentOutcomeComparisonReport, AgentPreviewReport,
@@ -1068,6 +1068,8 @@ struct EvalLearnedPolicyTrainTestArgs {
     test_head: Option<String>,
     #[arg(long, value_enum, default_value_t = Mode::BugFix)]
     mode: Mode,
+    #[arg(long, value_enum, default_value_t = LearnedPolicyProfileKeyModeArg::QueryPath)]
+    profile_key_mode: LearnedPolicyProfileKeyModeArg,
     #[command(flatten)]
     semantic_provider: SemanticProviderArgs,
     #[arg(long, value_enum, default_value_t = PackFormat::Markdown)]
@@ -1477,6 +1479,21 @@ enum Budget {
 enum PackFormat {
     Markdown,
     Json,
+}
+
+#[derive(Debug, Clone, Copy, ValueEnum)]
+enum LearnedPolicyProfileKeyModeArg {
+    QueryPath,
+    PathFamilyBackoff,
+}
+
+impl From<LearnedPolicyProfileKeyModeArg> for LearnedSemanticPolicyProfileKeyMode {
+    fn from(value: LearnedPolicyProfileKeyModeArg) -> Self {
+        match value {
+            LearnedPolicyProfileKeyModeArg::QueryPath => Self::QueryPath,
+            LearnedPolicyProfileKeyModeArg::PathFamilyBackoff => Self::PathFamilyBackoff,
+        }
+    }
 }
 
 #[derive(Debug, Clone, ValueEnum)]
@@ -2600,6 +2617,7 @@ fn main() -> Result<()> {
                     args.train_head,
                     args.test_base,
                     args.test_head,
+                    args.profile_key_mode.into(),
                 )?;
                 match args.format {
                     PackFormat::Markdown => {
@@ -6842,7 +6860,7 @@ fn render_learned_policy_train_test_report(
     let mut output = String::from("# ctxhelm Learned Semantic Policy Train/Test\n\n");
     output.push_str("This source-free report trains learned semantic profile eligibility on one revision range and applies it to a disjoint test range.\n\n");
     output.push_str(&format!(
-        "- Repo ID: `{}`\n- Eval range ID: `{}`\n- Train default range: `{}`\n- Train semantic range: `{}`\n- Test default range: `{}`\n- Test semantic range: `{}`\n- Source policy ID: `{}`\n- Train commits: `{}`\n- Test commits: `{}`\n- K: `{}`\n- Minimum support commits: `{}`\n- Eligible profiles: `{}`\n- Train profile support histogram: `{}`\n- Test candidate profiles: `{}`\n- Train/test profile overlap: `{}`\n- Train/test eligible profile overlap: `{}`\n- Applied commits: `{}`\n- Applied files: `{}`\n- Target hit delta: `{}`\n- Regressed commits: `{}`\n- Decision: `{}`\n- Runtime promotable: `{}`\n- Source text logged: `{}`\n- Privacy: local-only `{}`\n\n",
+        "- Repo ID: `{}`\n- Eval range ID: `{}`\n- Train default range: `{}`\n- Train semantic range: `{}`\n- Test default range: `{}`\n- Test semantic range: `{}`\n- Source policy ID: `{}`\n- Profile key mode: `{:?}`\n- Train commits: `{}`\n- Test commits: `{}`\n- K: `{}`\n- Minimum support commits: `{}`\n- Eligible profiles: `{}`\n- Train profile support histogram: `{}`\n- Test candidate profiles: `{}`\n- Train/test profile overlap: `{}`\n- Train/test eligible profile overlap: `{}`\n- Applied commits: `{}`\n- Applied files: `{}`\n- Target hit delta: `{}`\n- Regressed commits: `{}`\n- Decision: `{}`\n- Runtime promotable: `{}`\n- Source text logged: `{}`\n- Privacy: local-only `{}`\n\n",
         report.repo_id,
         report.eval_range_id,
         report.train_default_eval_range_id,
@@ -6850,6 +6868,7 @@ fn render_learned_policy_train_test_report(
         report.test_default_eval_range_id,
         report.test_semantic_eval_range_id,
         report.source_policy_id,
+        report.profile_key_mode,
         report.train_commit_count,
         report.test_commit_count,
         report.ranking_budget,
@@ -6903,6 +6922,16 @@ fn render_learned_policy_train_test_report(
                 profile.eligible,
                 profile.decision_reason
             ));
+            for breakdown in &profile.query_family_breakdown {
+                output.push_str(&format!(
+                    "  - query `{}` observed `{}` insertedTargets `{}` insertedNonTargets `{}` lostDefaultTargets `{}`\n",
+                    breakdown.query_family,
+                    breakdown.observed_commit_count,
+                    breakdown.inserted_target_count,
+                    breakdown.inserted_non_target_count,
+                    breakdown.lost_default_target_count
+                ));
+            }
         }
     }
     output
@@ -8051,6 +8080,8 @@ mod tests {
             "test-base",
             "--test-head",
             "test-head",
+            "--profile-key-mode",
+            "path-family-backoff",
             "--semantic-provider",
             "local_fastembed",
             "--format",
@@ -8072,6 +8103,10 @@ mod tests {
         assert_eq!(args.train_head.as_deref(), Some("train-head"));
         assert_eq!(args.test_base.as_deref(), Some("test-base"));
         assert_eq!(args.test_head.as_deref(), Some("test-head"));
+        assert!(matches!(
+            args.profile_key_mode,
+            LearnedPolicyProfileKeyModeArg::PathFamilyBackoff
+        ));
         assert_eq!(args.semantic_provider.provider, "local_fastembed");
         assert!(matches!(args.format, PackFormat::Json));
     }

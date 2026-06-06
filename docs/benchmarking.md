@@ -757,9 +757,23 @@ ctxhelm eval learned-policy-train-test --repo /path/to/repo \
   --semantic-provider local_fastembed --format json
 ```
 
+Use `--profile-key-mode path-family-backoff` to run an eval-only relaxation
+that aggregates learned profiles by path family instead of
+`(query_family, path_family)`:
+
+```bash
+ctxhelm eval learned-policy-train-test --repo /path/to/repo \
+  --train-base HEAD~80 --train-head HEAD~40 \
+  --test-base HEAD~40 --test-head HEAD \
+  --train-limit 20 --test-limit 20 --budget 10 \
+  --semantic-provider local_fastembed \
+  --profile-key-mode path-family-backoff --format json
+```
+
 The train/test report runs default and semantic-corroborated historical evals
 for both ranges, builds `learnedSemanticPolicy` only from the training pair, and
 then applies eligible profiles to the test pair. It records
+`profileKeyMode`,
 `trainProfileSupportHistogram`, `testCandidateProfileCount`,
 `trainTestProfileOverlapCount`, `trainTestEligibleProfileOverlapCount`,
 `appliedCommitCount`, `appliedFileCount`, `targetHitDelta`,
@@ -767,6 +781,13 @@ then applies eligible profiles to the test pair. It records
 privacy. Current reports always keep `runtimePromotable = false`; clean
 train/test lift is only research evidence until it repeats under a
 pre-registered cross-repo or broader holdout bar.
+
+When `path_family_backoff` is used, profile rows use `queryFamily = "*"` and
+include `queryFamilyBreakdown` rows. These rows are diagnostic evidence for
+query-specific target hits, semantic non-targets, and lost default targets under
+the coarser path-family key. Backoff remains eval-only and must not be treated
+as runtime policy evidence unless it has disjoint applications, positive target
+delta, and zero regressions under a pre-registered holdout bar.
 
 The same family rows also report support diagnostics for semantic-only files:
 `semanticOnlyTargetWithNonsemanticSupportCount`,

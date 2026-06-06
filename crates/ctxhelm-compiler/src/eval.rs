@@ -387,12 +387,36 @@ pub struct SemanticPrecisionGateReport {
 const LEARNED_SEMANTIC_POLICY_SCHEMA_VERSION: u32 = 1;
 const LEARNED_SEMANTIC_POLICY_MIN_SUPPORT_COMMIT_COUNT: usize = 2;
 
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum LearnedSemanticPolicyProfileKeyMode {
+    QueryPath,
+    PathFamilyBackoff,
+}
+
+impl Default for LearnedSemanticPolicyProfileKeyMode {
+    fn default() -> Self {
+        Self::QueryPath
+    }
+}
+
+impl LearnedSemanticPolicyProfileKeyMode {
+    fn policy_label(self) -> &'static str {
+        match self {
+            Self::QueryPath => "query_path",
+            Self::PathFamilyBackoff => "path_family_backoff",
+        }
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct LearnedSemanticPolicyReport {
     pub schema_version: u32,
     pub policy_id: String,
     pub source_variant: String,
+    #[serde(default)]
+    pub profile_key_mode: LearnedSemanticPolicyProfileKeyMode,
     pub generated_from_eval_range_id: String,
     pub evaluated_commit_count: usize,
     pub training_commit_count: usize,
@@ -417,6 +441,7 @@ impl Default for LearnedSemanticPolicyReport {
             schema_version: LEARNED_SEMANTIC_POLICY_SCHEMA_VERSION,
             policy_id: String::new(),
             source_variant: String::new(),
+            profile_key_mode: LearnedSemanticPolicyProfileKeyMode::default(),
             generated_from_eval_range_id: String::new(),
             evaluated_commit_count: 0,
             training_commit_count: 0,
@@ -445,8 +470,20 @@ pub struct LearnedSemanticPolicyProfile {
     pub inserted_target_count: usize,
     pub inserted_non_target_count: usize,
     pub lost_default_target_count: usize,
+    #[serde(default)]
+    pub query_family_breakdown: Vec<LearnedSemanticPolicyProfileQueryBreakdown>,
     pub eligible: bool,
     pub decision_reason: String,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct LearnedSemanticPolicyProfileQueryBreakdown {
+    pub query_family: String,
+    pub observed_commit_count: usize,
+    pub inserted_target_count: usize,
+    pub inserted_non_target_count: usize,
+    pub lost_default_target_count: usize,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -502,6 +539,8 @@ pub struct LearnedSemanticPolicyTrainTestReport {
     pub test_default_eval_range_id: String,
     pub test_semantic_eval_range_id: String,
     pub source_policy_id: String,
+    #[serde(default)]
+    pub profile_key_mode: LearnedSemanticPolicyProfileKeyMode,
     pub train_commit_count: usize,
     pub test_commit_count: usize,
     pub ranking_budget: usize,
@@ -3812,6 +3851,7 @@ pub fn learned_semantic_policy_train_test_report_with_provider_and_ranges(
     train_head: Option<String>,
     test_base: Option<String>,
     test_head: Option<String>,
+    profile_key_mode: LearnedSemanticPolicyProfileKeyMode,
 ) -> Result<LearnedSemanticPolicyTrainTestReport, InventoryError> {
     let repo_root = repo_root.as_ref();
     let train_default = evaluate_historical_commits(
@@ -3905,6 +3945,7 @@ pub fn learned_semantic_policy_train_test_report_with_provider_and_ranges(
         &test_default,
         &test_semantic,
         LEARNED_SEMANTIC_POLICY_MIN_SUPPORT_COMMIT_COUNT,
+        profile_key_mode,
     ))
 }
 
@@ -4503,6 +4544,15 @@ struct LearnedSemanticProfileStats {
     inserted_non_target_count: usize,
     lost_default_target_count: usize,
     observed_commit_count: usize,
+    query_family_stats: BTreeMap<String, LearnedSemanticProfileQueryStats>,
+}
+
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+struct LearnedSemanticProfileQueryStats {
+    inserted_target_count: usize,
+    inserted_non_target_count: usize,
+    lost_default_target_count: usize,
+    observed_commit_count: usize,
 }
 
 fn learned_profile_semantic_reranked_report(
@@ -4565,6 +4615,7 @@ fn learned_profile_semantic_reranked_report_with_min_support(
             semantic_corroborated,
             Some(commit.sha.as_str()),
             ranking_budget,
+            LearnedSemanticPolicyProfileKeyMode::QueryPath,
         );
         commit.recommended_context_files = learned_profile_semantic_files_with_min_support(
             commit,
@@ -4572,6 +4623,7 @@ fn learned_profile_semantic_reranked_report_with_min_support(
             &profile_stats,
             ranking_budget,
             minimum_support_commit_count,
+            LearnedSemanticPolicyProfileKeyMode::QueryPath,
         );
         refresh_commit_ranking_metrics(commit);
     }
@@ -4651,12 +4703,14 @@ fn learned_semantic_policy_train_test_report(
     test_default: &HistoricalEvalReport,
     test_semantic_corroborated: &HistoricalEvalReport,
     minimum_support_commit_count: usize,
+    profile_key_mode: LearnedSemanticPolicyProfileKeyMode,
 ) -> LearnedSemanticPolicyTrainTestReport {
     let minimum_support_commit_count = minimum_support_commit_count.max(1);
-    let policy = learned_semantic_policy_report(
+    let policy = learned_semantic_policy_report_with_key_mode(
         train_default,
         train_semantic_corroborated,
         minimum_support_commit_count,
+        profile_key_mode,
     );
     let train_test_reranked = learned_policy_external_semantic_reranked_report(
         train_default,
@@ -4664,6 +4718,7 @@ fn learned_semantic_policy_train_test_report(
         test_default,
         test_semantic_corroborated,
         minimum_support_commit_count,
+        profile_key_mode,
     );
     let contribution = reranker_contribution_summary(
         test_default,
@@ -4676,6 +4731,7 @@ fn learned_semantic_policy_train_test_report(
         test_default,
         test_semantic_corroborated,
         test_default.ranking_comparison.k.max(1),
+        profile_key_mode,
     );
     let train_profiles = policy
         .profiles
@@ -4703,6 +4759,7 @@ fn learned_semantic_policy_train_test_report(
         test_default,
         test_semantic_corroborated,
         minimum_support_commit_count,
+        profile_key_mode,
     );
 
     LearnedSemanticPolicyTrainTestReport {
@@ -4714,6 +4771,7 @@ fn learned_semantic_policy_train_test_report(
         test_default_eval_range_id: test_default.eval_range_id.clone(),
         test_semantic_eval_range_id: test_semantic_corroborated.eval_range_id.clone(),
         source_policy_id: policy.policy_id.clone(),
+        profile_key_mode,
         train_commit_count: train_default.commits.len(),
         test_commit_count: test_default.commits.len(),
         ranking_budget: test_default.ranking_comparison.k.max(1),
@@ -4744,6 +4802,7 @@ fn learned_policy_external_semantic_reranked_report(
     test_default: &HistoricalEvalReport,
     test_semantic_corroborated: &HistoricalEvalReport,
     minimum_support_commit_count: usize,
+    profile_key_mode: LearnedSemanticPolicyProfileKeyMode,
 ) -> HistoricalEvalReport {
     let semantic_by_sha = test_semantic_corroborated
         .commits
@@ -4752,8 +4811,9 @@ fn learned_policy_external_semantic_reranked_report(
         .collect::<BTreeMap<_, _>>();
     let mut learned = test_default.clone();
     learned.eval_range_id = format!(
-        "{}:semantic-learned-policy-train-test-support{}",
+        "{}:semantic-learned-policy-train-test-{}-support{}",
         test_default.eval_range_id,
+        profile_key_mode.policy_label(),
         minimum_support_commit_count.max(1)
     );
     learned.effective_filters.semantic_enabled = true;
@@ -4773,6 +4833,7 @@ fn learned_policy_external_semantic_reranked_report(
         train_semantic_corroborated,
         None,
         ranking_budget,
+        profile_key_mode,
     );
     for commit in &mut learned.commits {
         let Some(semantic_commit) = semantic_by_sha.get(commit.sha.as_str()) else {
@@ -4785,6 +4846,7 @@ fn learned_policy_external_semantic_reranked_report(
             &profile_stats,
             ranking_budget,
             minimum_support_commit_count,
+            profile_key_mode,
         );
         refresh_commit_ranking_metrics(commit);
     }
@@ -4808,6 +4870,7 @@ fn semantic_inserted_profiles(
     default: &HistoricalEvalReport,
     semantic_corroborated: &HistoricalEvalReport,
     ranking_budget: usize,
+    profile_key_mode: LearnedSemanticPolicyProfileKeyMode,
 ) -> BTreeSet<(String, String)> {
     let semantic_by_sha = semantic_corroborated
         .commits
@@ -4832,7 +4895,12 @@ fn semantic_inserted_profiles(
             .take(ranking_budget.max(1))
             .filter(|path| !default_selected.contains(*path))
         {
-            profiles.insert((query_family.clone(), reranker_path_family(path)));
+            let path_family = reranker_path_family(path);
+            profiles.insert(learned_semantic_profile_key(
+                &query_family,
+                &path_family,
+                profile_key_mode,
+            ));
         }
     }
     profiles
@@ -4901,13 +4969,15 @@ fn learned_semantic_policy_train_test_range_id(
     test_default: &HistoricalEvalReport,
     test_semantic_corroborated: &HistoricalEvalReport,
     minimum_support_commit_count: usize,
+    profile_key_mode: LearnedSemanticPolicyProfileKeyMode,
 ) -> String {
     let fingerprint = format!(
-        "semantic-learned-policy-train-test:{}:{}:{}:{}:support={}",
+        "semantic-learned-policy-train-test:{}:{}:{}:{}:mode={}:support={}",
         train_default.eval_range_id,
         train_semantic_corroborated.eval_range_id,
         test_default.eval_range_id,
         test_semantic_corroborated.eval_range_id,
+        profile_key_mode.policy_label(),
         minimum_support_commit_count.max(1)
     );
     format!(
@@ -4921,6 +4991,7 @@ fn learned_semantic_profile_stats(
     semantic_corroborated: &HistoricalEvalReport,
     excluded_sha: Option<&str>,
     ranking_budget: usize,
+    profile_key_mode: LearnedSemanticPolicyProfileKeyMode,
 ) -> BTreeMap<(String, String), LearnedSemanticProfileStats> {
     let semantic_by_sha = semantic_corroborated
         .commits
@@ -4940,6 +5011,7 @@ fn learned_semantic_profile_stats(
             default_commit,
             semantic_commit,
             ranking_budget,
+            profile_key_mode,
             &mut stats,
         );
     }
@@ -4951,10 +5023,29 @@ fn learned_semantic_policy_report(
     semantic_corroborated: &HistoricalEvalReport,
     minimum_support_commit_count: usize,
 ) -> LearnedSemanticPolicyReport {
+    learned_semantic_policy_report_with_key_mode(
+        default,
+        semantic_corroborated,
+        minimum_support_commit_count,
+        LearnedSemanticPolicyProfileKeyMode::QueryPath,
+    )
+}
+
+fn learned_semantic_policy_report_with_key_mode(
+    default: &HistoricalEvalReport,
+    semantic_corroborated: &HistoricalEvalReport,
+    minimum_support_commit_count: usize,
+    profile_key_mode: LearnedSemanticPolicyProfileKeyMode,
+) -> LearnedSemanticPolicyReport {
     let ranking_budget = default.ranking_comparison.k.max(1);
     let minimum_support_commit_count = minimum_support_commit_count.max(1);
-    let stats =
-        learned_semantic_profile_stats(default, semantic_corroborated, None, ranking_budget);
+    let stats = learned_semantic_profile_stats(
+        default,
+        semantic_corroborated,
+        None,
+        ranking_budget,
+        profile_key_mode,
+    );
     let semantic_shas = semantic_corroborated
         .commits
         .iter()
@@ -4992,6 +5083,7 @@ fn learned_semantic_policy_report(
                 inserted_target_count: stats.inserted_target_count,
                 inserted_non_target_count: stats.inserted_non_target_count,
                 lost_default_target_count: stats.lost_default_target_count,
+                query_family_breakdown: learned_semantic_profile_query_breakdown(&stats),
                 eligible,
                 decision_reason,
             }
@@ -5010,6 +5102,7 @@ fn learned_semantic_policy_report(
         &default.eval_range_id,
         ranking_budget,
         minimum_support_commit_count,
+        profile_key_mode,
         &profiles,
     );
 
@@ -5017,6 +5110,7 @@ fn learned_semantic_policy_report(
         schema_version: LEARNED_SEMANTIC_POLICY_SCHEMA_VERSION,
         policy_id,
         source_variant: "semantic_corroborated_reranked".to_string(),
+        profile_key_mode,
         generated_from_eval_range_id: default.eval_range_id.clone(),
         evaluated_commit_count: default.evaluated_commits,
         training_commit_count,
@@ -5043,10 +5137,12 @@ fn learned_semantic_policy_id(
     eval_range_id: &str,
     ranking_budget: usize,
     minimum_support_commit_count: usize,
+    profile_key_mode: LearnedSemanticPolicyProfileKeyMode,
     profiles: &[LearnedSemanticPolicyProfile],
 ) -> String {
     let mut fingerprint = format!(
-        "semantic-learned-policy:{eval_range_id}:k={ranking_budget}:support={minimum_support_commit_count}"
+        "semantic-learned-policy:{eval_range_id}:mode={}:k={ranking_budget}:support={minimum_support_commit_count}",
+        profile_key_mode.policy_label()
     );
     for profile in profiles {
         fingerprint.push_str(&format!(
@@ -5063,10 +5159,44 @@ fn learned_semantic_policy_id(
     format!("semantic-learned-policy-{}", &task_hash(&fingerprint)[..16])
 }
 
+fn learned_semantic_profile_key(
+    query_family: &str,
+    path_family: &str,
+    profile_key_mode: LearnedSemanticPolicyProfileKeyMode,
+) -> (String, String) {
+    match profile_key_mode {
+        LearnedSemanticPolicyProfileKeyMode::QueryPath => {
+            (query_family.to_string(), path_family.to_string())
+        }
+        LearnedSemanticPolicyProfileKeyMode::PathFamilyBackoff => {
+            ("*".to_string(), path_family.to_string())
+        }
+    }
+}
+
+fn learned_semantic_profile_query_breakdown(
+    stats: &LearnedSemanticProfileStats,
+) -> Vec<LearnedSemanticPolicyProfileQueryBreakdown> {
+    stats
+        .query_family_stats
+        .iter()
+        .map(
+            |(query_family, stats)| LearnedSemanticPolicyProfileQueryBreakdown {
+                query_family: query_family.clone(),
+                observed_commit_count: stats.observed_commit_count,
+                inserted_target_count: stats.inserted_target_count,
+                inserted_non_target_count: stats.inserted_non_target_count,
+                lost_default_target_count: stats.lost_default_target_count,
+            },
+        )
+        .collect()
+}
+
 fn update_learned_semantic_profile_stats(
     default_commit: &HistoricalCommitEval,
     semantic_commit: &HistoricalCommitEval,
     ranking_budget: usize,
+    profile_key_mode: LearnedSemanticPolicyProfileKeyMode,
     stats: &mut BTreeMap<(String, String), LearnedSemanticProfileStats>,
 ) {
     let default_selected = default_commit
@@ -5100,8 +5230,10 @@ fn update_learned_semantic_profile_stats(
         .collect::<Vec<_>>();
     let query_family = reranker_query_family(default_commit);
     let mut observed_profiles = BTreeSet::<(String, String)>::new();
+    let mut observed_query_profiles = BTreeSet::<(String, String, String)>::new();
     for inserted_path in semantic_selected.difference(&default_selected) {
-        let profile = (query_family.clone(), reranker_path_family(inserted_path));
+        let path_family = reranker_path_family(inserted_path);
+        let profile = learned_semantic_profile_key(&query_family, &path_family, profile_key_mode);
         let entry = stats.entry(profile.clone()).or_default();
         if retrieval_targets.contains(inserted_path) {
             entry.inserted_target_count += 1;
@@ -5109,11 +5241,30 @@ fn update_learned_semantic_profile_stats(
             entry.inserted_non_target_count += 1;
         }
         entry.lost_default_target_count += lost_default_targets.len();
+        let query_entry = entry
+            .query_family_stats
+            .entry(query_family.clone())
+            .or_default();
+        if retrieval_targets.contains(inserted_path) {
+            query_entry.inserted_target_count += 1;
+        } else {
+            query_entry.inserted_non_target_count += 1;
+        }
+        query_entry.lost_default_target_count += lost_default_targets.len();
         observed_profiles.insert(profile);
+        observed_query_profiles.insert((query_family.clone(), path_family, query_family.clone()));
     }
     for profile in observed_profiles {
         if let Some(entry) = stats.get_mut(&profile) {
             entry.observed_commit_count += 1;
+        }
+    }
+    for (query_family, path_family, observed_query_family) in observed_query_profiles {
+        let profile = learned_semantic_profile_key(&query_family, &path_family, profile_key_mode);
+        if let Some(entry) = stats.get_mut(&profile) {
+            if let Some(query_entry) = entry.query_family_stats.get_mut(&observed_query_family) {
+                query_entry.observed_commit_count += 1;
+            }
         }
     }
 }
@@ -5124,6 +5275,7 @@ fn learned_profile_semantic_files_with_min_support(
     profile_stats: &BTreeMap<(String, String), LearnedSemanticProfileStats>,
     ranking_budget: usize,
     minimum_support_commit_count: usize,
+    profile_key_mode: LearnedSemanticPolicyProfileKeyMode,
 ) -> Vec<String> {
     let default_selected = default_commit
         .recommended_context_files
@@ -5138,7 +5290,9 @@ fn learned_profile_semantic_files_with_min_support(
         .take(ranking_budget)
         .filter(|path| !default_selected.contains(*path))
         .filter(|path| {
-            let profile = (query_family.clone(), reranker_path_family(path));
+            let path_family = reranker_path_family(path);
+            let profile =
+                learned_semantic_profile_key(&query_family, &path_family, profile_key_mode);
             profile_stats
                 .get(&profile)
                 .map(|stats| {
@@ -13370,6 +13524,7 @@ mod tests {
             &test_default,
             &test_semantic,
             2,
+            LearnedSemanticPolicyProfileKeyMode::QueryPath,
         );
 
         assert_eq!(report.train_commit_count, 2);
@@ -13398,6 +13553,109 @@ mod tests {
         assert!(!report.runtime_promotable);
         assert!(!report.source_text_logged);
         assert!(report.privacy_status.local_only);
+    }
+
+    #[test]
+    fn learned_policy_train_test_path_family_backoff_applies_across_query_families() {
+        let mut train_default = empty_historical_eval_report("semantic-policy-backoff-train");
+        train_default.eval_range_id = "backoff-train-default-range".to_string();
+        train_default.evaluated_commits = 2;
+        train_default.commits[0].sha = "backoff-train-a".to_string();
+        train_default.commits[0].query_trace =
+            Some(query_trace_with_facets(vec![QueryFacetKind::DomainPhrase]));
+        train_default.commits[0].retrieval_target_files = vec!["docs/train_a.md".to_string()];
+        train_default.commits[0].changed_path_labels = vec![historical_changed_path_label(
+            "docs/train_a.md",
+            FileRole::Docs,
+        )];
+        train_default.commits[0].recommended_context_files = vec!["src/default_a.rs".to_string()];
+        let mut train_second = train_default.commits[0].clone();
+        train_second.sha = "backoff-train-b".to_string();
+        train_second.retrieval_target_files = vec!["docs/train_b.md".to_string()];
+        train_second.changed_path_labels = vec![historical_changed_path_label(
+            "docs/train_b.md",
+            FileRole::Docs,
+        )];
+        train_second.recommended_context_files = vec!["src/default_b.rs".to_string()];
+        train_default.commits.push(train_second);
+        for commit in &mut train_default.commits {
+            refresh_commit_ranking_metrics(commit);
+        }
+        refresh_historical_report_ranking_metrics(&mut train_default);
+
+        let mut train_semantic = train_default.clone();
+        train_semantic.eval_range_id = "backoff-train-semantic-range".to_string();
+        train_semantic.commits[0].recommended_context_files = vec![
+            "src/default_a.rs".to_string(),
+            "docs/train_a.md".to_string(),
+        ];
+        train_semantic.commits[1].recommended_context_files = vec![
+            "src/default_b.rs".to_string(),
+            "docs/train_b.md".to_string(),
+        ];
+        for commit in &mut train_semantic.commits {
+            refresh_commit_ranking_metrics(commit);
+        }
+        refresh_historical_report_ranking_metrics(&mut train_semantic);
+
+        let mut test_default = empty_historical_eval_report("semantic-policy-backoff-test");
+        test_default.eval_range_id = "backoff-test-default-range".to_string();
+        test_default.commits[0].sha = "backoff-test-a".to_string();
+        test_default.commits[0].query_trace =
+            Some(query_trace_with_facets(vec![QueryFacetKind::Symbol]));
+        test_default.commits[0].retrieval_target_files = vec!["docs/test_a.md".to_string()];
+        test_default.commits[0].changed_path_labels = vec![historical_changed_path_label(
+            "docs/test_a.md",
+            FileRole::Docs,
+        )];
+        test_default.commits[0].recommended_context_files = vec!["src/default_test.rs".to_string()];
+        refresh_commit_ranking_metrics(&mut test_default.commits[0]);
+        refresh_historical_report_ranking_metrics(&mut test_default);
+
+        let mut test_semantic = test_default.clone();
+        test_semantic.eval_range_id = "backoff-test-semantic-range".to_string();
+        test_semantic.commits[0].recommended_context_files = vec![
+            "src/default_test.rs".to_string(),
+            "docs/test_a.md".to_string(),
+        ];
+        refresh_commit_ranking_metrics(&mut test_semantic.commits[0]);
+        refresh_historical_report_ranking_metrics(&mut test_semantic);
+
+        let strict = learned_semantic_policy_train_test_report(
+            &train_default,
+            &train_semantic,
+            &test_default,
+            &test_semantic,
+            2,
+            LearnedSemanticPolicyProfileKeyMode::QueryPath,
+        );
+        let backoff = learned_semantic_policy_train_test_report(
+            &train_default,
+            &train_semantic,
+            &test_default,
+            &test_semantic,
+            2,
+            LearnedSemanticPolicyProfileKeyMode::PathFamilyBackoff,
+        );
+
+        assert_eq!(strict.train_test_eligible_profile_overlap_count, 0);
+        assert_eq!(strict.applied_commit_count, 0);
+        assert_eq!(
+            backoff.profile_key_mode,
+            LearnedSemanticPolicyProfileKeyMode::PathFamilyBackoff
+        );
+        assert_eq!(backoff.train_test_eligible_profile_overlap_count, 1);
+        assert_eq!(backoff.applied_commit_count, 1);
+        assert_eq!(backoff.target_hit_delta, 1);
+        assert_eq!(backoff.regressed_commit_count, 0);
+        assert_eq!(
+            backoff.learned_semantic_policy.profiles[0].query_family,
+            "*"
+        );
+        assert_eq!(
+            backoff.learned_semantic_policy.profiles[0].query_family_breakdown[0].query_family,
+            "domain_phrase"
+        );
     }
 
     #[test]

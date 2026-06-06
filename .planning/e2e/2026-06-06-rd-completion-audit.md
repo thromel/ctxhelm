@@ -25,6 +25,12 @@ reruns the Phase 284 train/test evaluator at `--train-limit 40 --test-limit
 `trainTestEligibleProfileOverlapCount = 0` and `appliedCommitCount = 0`, so the
 next semantic step should not be another same-range doubling.
 
+Phase 286 addendum: `.planning/e2e/2026-06-07-phase286-profile-key-backoff.md`
+adds an eval-only path-family backoff key to the train/test evaluator and
+rejects it. Coarse train/test overlap increases, but all path-family aggregates
+are blocked by inserted semantic non-targets, missing target hits, or lost
+default targets before application.
+
 ## Remaining R&D Risk
 
 1. Semantic is not yet a proven default-lift channel. It is useful and bounded,
@@ -96,10 +102,12 @@ next semantic step should not be another same-range doubling.
    train-on-range/apply-on-disjoint evaluator and finds no eligible-profile
    test overlap or applications in the four-repo recent-to-older proof. Phase
    285 broadens those same ranges and still finds no eligible-profile overlap
-   or applications, even on VeriSchema's deeper `38`/`39` split. The next
-   semantic learned-policy work needs pre-registered backoff/cross-repo
-   aggregation, or a return to semantic query/document construction where
-   candidate quality is the bottleneck.
+   or applications, even on VeriSchema's deeper `38`/`39` split. Phase 286
+   tests path-family backoff and rejects it because the coarser profiles expose
+   semantic non-targets or missing target hits instead of safe applications. The
+   next semantic learned-policy work needs a richer cross-repo rule, or a return
+   to semantic query/document construction where candidate quality is the
+   bottleneck.
 2. Claude has current workflow proof but not a fresh paired outcome suite on the
    same level as Codex Phase 245/250. Phase 264 confirms this is still a
    client-availability problem: Claude Code is rate-limited, while Codex remains
@@ -149,9 +157,11 @@ next semantic step should not be another same-range doubling.
    the repeated profiles are either unsafe or do not overlap the test candidate
    profiles. Phase 285 rules out one more same-range doubling because broader
    `40`/`40` limits still produce zero eligible overlap and zero applications.
-   The next semantic step is cross-repo/backoff aggregation with a
-   pre-registered no-regress bar or candidate-quality work, not runtime
-   promotion. Increasing the local-fastembed document cap, adding
+   Phase 286 rules out the simplest path-family backoff because the coarser
+   aggregates remain unsafe or target-empty. The next semantic step is richer
+   cross-repo aggregation with a pre-registered no-regress bar or
+   candidate-quality work, not runtime promotion. Increasing the local-fastembed
+   document cap, adding
    broad Python path metadata, adding another hand-written route, and merely
    widening or splitting the same gate are already rejected paths.
 
@@ -184,9 +194,10 @@ Phase 284 adds the train-on-range/apply-on-disjoint-test-range evaluator and
 finds the same negative result outside the training snapshot, with
 support/overlap diagnostics showing no eligible-profile test overlap. Phase 285
 reruns broader `40`/`40` limits on the same stable ranges and remains empty, so
-the remaining semantic R&D path is cross-repo/backoff learned-policy
-aggregation or separate query/document construction work, not more same-range
-doubling and not runtime/default promotion.
+Phase 286 tests and rejects path-family backoff as the simplest key relaxation.
+The remaining semantic R&D path is richer cross-repo learned-policy aggregation
+or separate query/document construction work, not more same-range doubling, not
+coarse profile-key relaxation, and not runtime/default promotion.
 Phase 253 reduces memory risk by
 proving cross-repo Codex target-consumption lift. Phase 255 further reduces
 memory risk by preserving that target consumption while improving irrelevant
