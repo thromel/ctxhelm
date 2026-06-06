@@ -746,6 +746,28 @@ minimum support threshold, applied commit/file counts, target-hit delta,
 regressed commit count, decision, source-text logging status, and local-only
 privacy status.
 
+Use `ctxhelm eval learned-policy-train-test` when the learned policy must be
+trained on one source-free revision range and applied to a disjoint test range:
+
+```bash
+ctxhelm eval learned-policy-train-test --repo /path/to/repo \
+  --train-base HEAD~80 --train-head HEAD~40 \
+  --test-base HEAD~40 --test-head HEAD \
+  --train-limit 20 --test-limit 20 --budget 10 \
+  --semantic-provider local_fastembed --format json
+```
+
+The train/test report runs default and semantic-corroborated historical evals
+for both ranges, builds `learnedSemanticPolicy` only from the training pair, and
+then applies eligible profiles to the test pair. It records
+`trainProfileSupportHistogram`, `testCandidateProfileCount`,
+`trainTestProfileOverlapCount`, `trainTestEligibleProfileOverlapCount`,
+`appliedCommitCount`, `appliedFileCount`, `targetHitDelta`,
+`regressedCommitCount`, `decision`, `sourceTextLogged = false`, and local-only
+privacy. Current reports always keep `runtimePromotable = false`; clean
+train/test lift is only research evidence until it repeats under a
+pre-registered cross-repo or broader holdout bar.
+
 The same family rows also report support diagnostics for semantic-only files:
 `semanticOnlyTargetWithNonsemanticSupportCount`,
 `semanticOnlyTargetWithoutNonsemanticSupportCount`,

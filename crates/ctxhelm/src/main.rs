@@ -8,8 +8,9 @@ use ctxhelm_compiler::{
     compile_pack_inspector_view, compile_workspace_context_pack, delete_candidate_feature_export,
     eval_trace_for_pack, eval_trace_for_plan, evaluate_historical_commits,
     export_candidate_features_for_task, generate_context_cards, generate_experience_cards,
-    generate_fallback_cards, list_candidate_feature_exports, load_benchmark_suite_config,
-    load_benchmark_suite_report, load_candidate_feature_export, paired_baseline_analysis_report,
+    generate_fallback_cards, learned_semantic_policy_train_test_report_with_provider_and_ranges,
+    list_candidate_feature_exports, load_benchmark_suite_config, load_benchmark_suite_report,
+    load_candidate_feature_export, paired_baseline_analysis_report,
     prepare_context_plan_with_paths_and_semantic_provider, prepare_workspace_context_plan,
     render_pack_inspector_html, render_pack_inspector_markdown, render_pack_markdown,
     retrieval_policy_experiment_report, run_benchmark_suite,
@@ -18,9 +19,10 @@ use ctxhelm_compiler::{
     BenchmarkComparisonReport, BenchmarkRegressionThreshold, BenchmarkSuiteReport,
     CandidateFeatureComparisonReport, ContextCardsOptions, ContextCardsReport,
     ExperienceCardsOptions, ExperienceCardsReport, FallbackCardsOptions, FallbackCardsReport,
-    HistoricalEvalOptions, HistoricalEvalReport, LexicalBackendCorpusOptions,
-    LexicalBackendCorpusReport, PairedBaselineAnalysisReport, ProductProofLexicalClaim,
-    ProductProofReport, RecommendedResearchAction, SemanticPrecisionGateReport,
+    HistoricalEvalOptions, HistoricalEvalReport, LearnedSemanticPolicyTrainTestReport,
+    LexicalBackendCorpusOptions, LexicalBackendCorpusReport, PairedBaselineAnalysisReport,
+    ProductProofLexicalClaim, ProductProofReport, RecommendedResearchAction,
+    SemanticPrecisionGateReport,
 };
 use ctxhelm_core::{
     run_init, run_setup_check, AgentAdapter, AgentOutcomeComparisonReport, AgentPreviewReport,
@@ -893,6 +895,8 @@ enum EvalCommand {
     Health(EvalHealthArgs),
     Baselines(EvalBaselineArgs),
     Gate(EvalGateArgs),
+    #[command(about = "Apply a learned semantic policy from one source-free range to another.")]
+    LearnedPolicyTrainTest(EvalLearnedPolicyTrainTestArgs),
     Benchmark(EvalBenchmarkArgs),
     Compare(EvalCompareArgs),
     Proof(EvalProofArgs),
@@ -1036,6 +1040,32 @@ struct EvalGateArgs {
     base: Option<String>,
     #[arg(long, help = "End revision for a stable semantic gate range.")]
     head: Option<String>,
+    #[arg(long, value_enum, default_value_t = Mode::BugFix)]
+    mode: Mode,
+    #[command(flatten)]
+    semantic_provider: SemanticProviderArgs,
+    #[arg(long, value_enum, default_value_t = PackFormat::Markdown)]
+    format: PackFormat,
+}
+
+#[derive(Debug, Args)]
+struct EvalLearnedPolicyTrainTestArgs {
+    #[arg(long)]
+    repo: Option<PathBuf>,
+    #[arg(long, default_value_t = 20)]
+    train_limit: usize,
+    #[arg(long, default_value_t = 20)]
+    test_limit: usize,
+    #[arg(long, default_value_t = 10)]
+    budget: usize,
+    #[arg(long, help = "Start revision for the source-free training range.")]
+    train_base: Option<String>,
+    #[arg(long, help = "End revision for the source-free training range.")]
+    train_head: Option<String>,
+    #[arg(long, help = "Start revision for the disjoint source-free test range.")]
+    test_base: Option<String>,
+    #[arg(long, help = "End revision for the disjoint source-free test range.")]
+    test_head: Option<String>,
     #[arg(long, value_enum, default_value_t = Mode::BugFix)]
     mode: Mode,
     #[command(flatten)]
@@ -2552,6 +2582,28 @@ fn main() -> Result<()> {
                 match args.format {
                     PackFormat::Markdown => {
                         println!("{}", render_semantic_precision_gate_report(&report))
+                    }
+                    PackFormat::Json => println!("{}", serde_json::to_string_pretty(&report)?),
+                }
+            }
+            EvalCommand::LearnedPolicyTrainTest(args) => {
+                let start = args.repo.clone().unwrap_or(std::env::current_dir()?);
+                let repo = RepoRoot::discover_from(&start)?;
+                let report = learned_semantic_policy_train_test_report_with_provider_and_ranges(
+                    &repo.path,
+                    args.train_limit,
+                    args.test_limit,
+                    args.budget,
+                    args.mode.into(),
+                    semantic_provider_config(&args.semantic_provider),
+                    args.train_base,
+                    args.train_head,
+                    args.test_base,
+                    args.test_head,
+                )?;
+                match args.format {
+                    PackFormat::Markdown => {
+                        println!("{}", render_learned_policy_train_test_report(&report))
                     }
                     PackFormat::Json => println!("{}", serde_json::to_string_pretty(&report)?),
                 }
@@ -6776,6 +6828,86 @@ fn render_count_map(counts: &std::collections::BTreeMap<String, usize>) -> Strin
         .join(", ")
 }
 
+fn render_usize_count_map(counts: &std::collections::BTreeMap<usize, usize>) -> String {
+    counts
+        .iter()
+        .map(|(key, value)| format!("{key}={value}"))
+        .collect::<Vec<_>>()
+        .join(", ")
+}
+
+fn render_learned_policy_train_test_report(
+    report: &LearnedSemanticPolicyTrainTestReport,
+) -> String {
+    let mut output = String::from("# ctxhelm Learned Semantic Policy Train/Test\n\n");
+    output.push_str("This source-free report trains learned semantic profile eligibility on one revision range and applies it to a disjoint test range.\n\n");
+    output.push_str(&format!(
+        "- Repo ID: `{}`\n- Eval range ID: `{}`\n- Train default range: `{}`\n- Train semantic range: `{}`\n- Test default range: `{}`\n- Test semantic range: `{}`\n- Source policy ID: `{}`\n- Train commits: `{}`\n- Test commits: `{}`\n- K: `{}`\n- Minimum support commits: `{}`\n- Eligible profiles: `{}`\n- Train profile support histogram: `{}`\n- Test candidate profiles: `{}`\n- Train/test profile overlap: `{}`\n- Train/test eligible profile overlap: `{}`\n- Applied commits: `{}`\n- Applied files: `{}`\n- Target hit delta: `{}`\n- Regressed commits: `{}`\n- Decision: `{}`\n- Runtime promotable: `{}`\n- Source text logged: `{}`\n- Privacy: local-only `{}`\n\n",
+        report.repo_id,
+        report.eval_range_id,
+        report.train_default_eval_range_id,
+        report.train_semantic_eval_range_id,
+        report.test_default_eval_range_id,
+        report.test_semantic_eval_range_id,
+        report.source_policy_id,
+        report.train_commit_count,
+        report.test_commit_count,
+        report.ranking_budget,
+        report.minimum_support_commit_count,
+        report.eligible_profile_count,
+        render_usize_count_map(&report.train_profile_support_histogram),
+        report.test_candidate_profile_count,
+        report.train_test_profile_overlap_count,
+        report.train_test_eligible_profile_overlap_count,
+        report.applied_commit_count,
+        report.applied_file_count,
+        report.target_hit_delta,
+        report.regressed_commit_count,
+        report.decision,
+        report.runtime_promotable,
+        report.source_text_logged,
+        report.privacy_status.local_only
+    ));
+    output.push_str("## Contribution\n\n");
+    output.push_str(&format!(
+        "- Default target hits: `{}`\n- Reranked target hits: `{}`\n- Default-only target hits: `{}`\n- Reranked-only target hits: `{}`\n- Neutral commits: `{}`\n- Improved commits: `{}`\n- Regressed commits: `{}`\n\n",
+        report.default_target_hit_count,
+        report.reranked_target_hit_count,
+        report
+            .learned_policy_semantic_train_test_contribution
+            .default_only_target_hit_count,
+        report
+            .learned_policy_semantic_train_test_contribution
+            .reranker_only_target_hit_count,
+        report
+            .learned_policy_semantic_train_test_contribution
+            .neutral_commit_count,
+        report
+            .learned_policy_semantic_train_test_contribution
+            .improved_commit_count,
+        report.regressed_commit_count
+    ));
+    output.push_str("## Learned Profiles\n\n");
+    if report.learned_semantic_policy.profiles.is_empty() {
+        output.push_str("- None.\n");
+    } else {
+        for profile in &report.learned_semantic_policy.profiles {
+            output.push_str(&format!(
+                "- `{}/{}` observed `{}` insertedTargets `{}` insertedNonTargets `{}` lostDefaultTargets `{}` eligible `{}` reason: {}\n",
+                profile.query_family,
+                profile.path_family,
+                profile.observed_commit_count,
+                profile.inserted_target_count,
+                profile.inserted_non_target_count,
+                profile.lost_default_target_count,
+                profile.eligible,
+                profile.decision_reason
+            ));
+        }
+    }
+    output
+}
+
 fn render_benchmark_suite_report(report: &BenchmarkSuiteReport) -> String {
     let mut output = String::from("# ctxhelm Benchmark Suite\n\n");
     output.push_str(
@@ -7893,6 +8025,53 @@ mod tests {
         assert_eq!(args.budget, 10);
         assert_eq!(args.base.as_deref(), Some("abc123"));
         assert_eq!(args.head.as_deref(), Some("def456"));
+        assert_eq!(args.semantic_provider.provider, "local_fastembed");
+        assert!(matches!(args.format, PackFormat::Json));
+    }
+
+    #[test]
+    fn learned_policy_train_test_command_parses_disjoint_ranges() {
+        let cli = Cli::try_parse_from([
+            "ctxhelm",
+            "eval",
+            "learned-policy-train-test",
+            "--repo",
+            ".",
+            "--train-limit",
+            "30",
+            "--test-limit",
+            "20",
+            "--budget",
+            "10",
+            "--train-base",
+            "train-base",
+            "--train-head",
+            "train-head",
+            "--test-base",
+            "test-base",
+            "--test-head",
+            "test-head",
+            "--semantic-provider",
+            "local_fastembed",
+            "--format",
+            "json",
+        ])
+        .unwrap();
+
+        let Command::Eval(EvalArgs {
+            command: EvalCommand::LearnedPolicyTrainTest(args),
+        }) = cli.command
+        else {
+            panic!("expected eval learned-policy-train-test command");
+        };
+        assert_eq!(args.repo, Some(PathBuf::from(".")));
+        assert_eq!(args.train_limit, 30);
+        assert_eq!(args.test_limit, 20);
+        assert_eq!(args.budget, 10);
+        assert_eq!(args.train_base.as_deref(), Some("train-base"));
+        assert_eq!(args.train_head.as_deref(), Some("train-head"));
+        assert_eq!(args.test_base.as_deref(), Some("test-base"));
+        assert_eq!(args.test_head.as_deref(), Some("test-head"));
         assert_eq!(args.semantic_provider.provider, "local_fastembed");
         assert!(matches!(args.format, PackFormat::Json));
     }

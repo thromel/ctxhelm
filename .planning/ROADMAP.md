@@ -209,6 +209,20 @@ slice has any held-out policy applications. This keeps promotion blocked and
 narrows the next experiment to cross-repo profile aggregation or a true
 train-on-range/apply-on-disjoint-test-range evaluator.
 
+Phase 284 implements that true train/test evaluator as
+`ctxhelm eval learned-policy-train-test`. The report trains source-free
+`(query_family, path_family)` profile eligibility on one revision range, applies
+the resulting policy to a disjoint test range, and records support histograms,
+test candidate profile counts, train/test overlap counts, applications,
+target-hit delta, regressions, and `runtimePromotable = false`. The four-repo
+recent-to-older local-fastembed proof is negative: ctxhelm, ReAgent, and
+VeriSchema have no eligible training profiles, while RefactoringMiner trains
+one eligible `symbol_identifier/docs` profile but has no eligible-profile test
+overlap and zero test applications. The next learned-policy experiment needs
+more statistical surface, pre-registered backoff/cross-repo aggregation, or a
+return to semantic query/document construction; runtime promotion remains
+blocked.
+
 Phase 196 reserves selected validation areas in broad context-area guidance and adds package-mirrored related-test affinity. The accepted release-binary proof promotes with selected-file/source/test/validation metrics unchanged while improving VeriSchema broad context-area recall from `0.5777778 -> 0.84444445` and next-read recovery from `16 -> 19` of `39` missed@10 files. A related-test-only intermediate proof was rejected because it did not move the product proof.
 
 Phase 197 adds source-free agent-evidence recovery accounting to context-area next-read summaries. The fresh release-binary proof promotes with selected-file/source/test/validation/broad-area metrics unchanged while showing VeriSchema has `29 / 39` missed@10 files recoverable through the full agent evidence bundle, compared with `19 / 39` through progressive next reads alone.
