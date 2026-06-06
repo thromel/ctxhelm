@@ -19,6 +19,12 @@ separates implemented/measured work from remaining research risk.
 | Agent-native integrations | `.planning/e2e/2026-06-06-phase247-cursor-opencode-real-client-proof.md`, `.planning/e2e/2026-06-06-phase246-agent-native-fallback-proof.md`, `docs/agent-setup.md` | Codex, Claude, OpenCode, Cursor setup/fallback surfaces exist. OpenCode real-client proof passes. Cursor real-client proof is available but local auth-blocked. |
 | Local inspector/governor UX | `.planning/e2e/2026-06-06-phase248-local-inspector-shell.md`, `.planning/e2e/2026-06-06-phase249-context-governor.md` | Implemented with source-sentinel smokes and release-gate wiring. Phase 250 fixed the first observed real-agent retrieval gap for governor/release R&D tasks. |
 
+Phase 285 addendum: `.planning/e2e/2026-06-07-phase285-broader-train-test-surface.md`
+reruns the Phase 284 train/test evaluator at `--train-limit 40 --test-limit
+40`. The result is still no-signal: every measured repo has
+`trainTestEligibleProfileOverlapCount = 0` and `appliedCommitCount = 0`, so the
+next semantic step should not be another same-range doubling.
+
 ## Remaining R&D Risk
 
 1. Semantic is not yet a proven default-lift channel. It is useful and bounded,
@@ -88,10 +94,12 @@ separates implemented/measured work from remaining research risk.
    ranges and shows older/recent slices still do not repeat the learned-policy
    signal across time. Phase 284 implements the true
    train-on-range/apply-on-disjoint evaluator and finds no eligible-profile
-   test overlap or applications in the four-repo recent-to-older proof. The
-   next semantic learned-policy work needs more statistical surface,
-   pre-registered backoff/cross-repo aggregation, or a return to semantic
-   query/document construction where candidate quality is the bottleneck.
+   test overlap or applications in the four-repo recent-to-older proof. Phase
+   285 broadens those same ranges and still finds no eligible-profile overlap
+   or applications, even on VeriSchema's deeper `38`/`39` split. The next
+   semantic learned-policy work needs pre-registered backoff/cross-repo
+   aggregation, or a return to semantic query/document construction where
+   candidate quality is the bottleneck.
 2. Claude has current workflow proof but not a fresh paired outcome suite on the
    same level as Codex Phase 245/250. Phase 264 confirms this is still a
    client-availability problem: Claude Code is rate-limited, while Codex remains
@@ -139,7 +147,9 @@ separates implemented/measured work from remaining research risk.
    policy applications. Phase 284 then adds the true train/test evaluator and
    shows the current four-repo slices still have zero external applications:
    the repeated profiles are either unsafe or do not overlap the test candidate
-   profiles. The next semantic step is cross-repo/backoff aggregation with a
+   profiles. Phase 285 rules out one more same-range doubling because broader
+   `40`/`40` limits still produce zero eligible overlap and zero applications.
+   The next semantic step is cross-repo/backoff aggregation with a
    pre-registered no-regress bar or candidate-quality work, not runtime
    promotion. Increasing the local-fastembed document cap, adding
    broad Python path metadata, adding another hand-written route, and merely
@@ -172,10 +182,11 @@ same result at `limit 40`. Phase 283 adds stable ranged gates and finds no
 older/recent slice repetition beyond the same recent RefactoringMiner row, so
 Phase 284 adds the train-on-range/apply-on-disjoint-test-range evaluator and
 finds the same negative result outside the training snapshot, with
-support/overlap diagnostics showing no eligible-profile test overlap. The
-remaining semantic R&D path is higher-power cross-repo/backoff learned-policy
-aggregation or separate query/document construction work, not runtime/default
-promotion.
+support/overlap diagnostics showing no eligible-profile test overlap. Phase 285
+reruns broader `40`/`40` limits on the same stable ranges and remains empty, so
+the remaining semantic R&D path is cross-repo/backoff learned-policy
+aggregation or separate query/document construction work, not more same-range
+doubling and not runtime/default promotion.
 Phase 253 reduces memory risk by
 proving cross-repo Codex target-consumption lift. Phase 255 further reduces
 memory risk by preserving that target consumption while improving irrelevant

@@ -223,6 +223,19 @@ more statistical surface, pre-registered backoff/cross-repo aggregation, or a
 return to semantic query/document construction; runtime promotion remains
 blocked.
 
+Phase 285 tests the first statistical-surface follow-up without changing the
+policy rule. The same source-free recent-to-older train/test ranges are rerun at
+`--train-limit 40 --test-limit 40` with a pre-registered bar requiring eligible
+test overlap, actual applications, positive target-hit delta, and no
+regressions. The broader proof is still empty: ctxhelm/ReAgent/RefactoringMiner
+only expose `25` usable recent train commits in the selected range, VeriSchema
+exposes `38` train and `39` test commits, but every repo has
+`trainTestEligibleProfileOverlapCount = 0` and `appliedCommitCount = 0`.
+This is a no-signal result, not a no-regress win. Stop doubling these same
+ranges; the next semantic learned-policy work should pre-register a
+backoff/cross-repo aggregation rule or move back to query/document construction
+where eligible profile quality is absent.
+
 Phase 196 reserves selected validation areas in broad context-area guidance and adds package-mirrored related-test affinity. The accepted release-binary proof promotes with selected-file/source/test/validation metrics unchanged while improving VeriSchema broad context-area recall from `0.5777778 -> 0.84444445` and next-read recovery from `16 -> 19` of `39` missed@10 files. A related-test-only intermediate proof was rejected because it did not move the product proof.
 
 Phase 197 adds source-free agent-evidence recovery accounting to context-area next-read summaries. The fresh release-binary proof promotes with selected-file/source/test/validation/broad-area metrics unchanged while showing VeriSchema has `29 / 39` missed@10 files recoverable through the full agent evidence bundle, compared with `19 / 39` through progressive next reads alone.
