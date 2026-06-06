@@ -4,7 +4,10 @@ use crate::planning::{
     prepare_context_plan_with_paths_history_and_semantic,
     prepare_context_plan_with_paths_history_mode_and_semantic, HistoryMode,
 };
-use crate::policy::{provider_policy_report, reranker_decision, semantic_provider_decision};
+use crate::policy::{
+    provider_policy_report, query_family_routed_reranker_enabled_for_family, reranker_decision,
+    semantic_provider_decision,
+};
 use ctxhelm_core::{
     context_area_for_path, context_area_resource_uri, CandidateFeatureExport,
     CandidateFeatureLabel, CandidateFeatureRow, CandidateFeatureSource, ContextArea, ContextPack,
@@ -3872,10 +3875,6 @@ fn query_family_from_parts(
     format!("task_type_{task_type:?}").to_ascii_lowercase()
 }
 
-fn local_metadata_reranker_route_enabled_for_family(family: &str) -> bool {
-    matches!(family, "commit_clue")
-}
-
 fn reranker_routing_recommendation(
     family: &RerankerQueryFamilyContribution,
 ) -> RerankerRoutingRecommendation {
@@ -5540,7 +5539,7 @@ fn evaluate_historical_commit_sample(
     );
     let should_apply_reranker = options.local_metadata_reranker
         || (options.query_family_routed_reranker
-            && local_metadata_reranker_route_enabled_for_family(&query_family));
+            && query_family_routed_reranker_enabled_for_family(&query_family));
     let recommended_context_files = if should_apply_reranker {
         local_metadata_reranked_context_files(
             &plan,
@@ -9863,19 +9862,19 @@ mod tests {
 
     #[test]
     fn query_family_routed_reranker_only_enables_clean_candidate_families() {
-        assert!(!local_metadata_reranker_route_enabled_for_family(
+        assert!(!query_family_routed_reranker_enabled_for_family(
             "symbol_identifier"
         ));
-        assert!(local_metadata_reranker_route_enabled_for_family(
+        assert!(query_family_routed_reranker_enabled_for_family(
             "commit_clue"
         ));
-        assert!(!local_metadata_reranker_route_enabled_for_family(
+        assert!(!query_family_routed_reranker_enabled_for_family(
             "domain_phrase"
         ));
-        assert!(!local_metadata_reranker_route_enabled_for_family(
+        assert!(!query_family_routed_reranker_enabled_for_family(
             "explicit_path"
         ));
-        assert!(!local_metadata_reranker_route_enabled_for_family(
+        assert!(!query_family_routed_reranker_enabled_for_family(
             "broad_scope"
         ));
     }

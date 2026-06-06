@@ -1115,6 +1115,8 @@ pub struct ProviderPolicy {
     #[serde(default)]
     pub enable_local_metadata_reranker: bool,
     #[serde(default)]
+    pub enable_query_family_routed_reranker: bool,
+    #[serde(default)]
     pub enable_local_fixture_reranker: bool,
     pub source_text_logged: bool,
 }
@@ -1129,6 +1131,7 @@ impl Default for ProviderPolicy {
             allow_cloud_reranking: false,
             allow_source_transfer: false,
             enable_local_metadata_reranker: false,
+            enable_query_family_routed_reranker: false,
             enable_local_fixture_reranker: false,
             source_text_logged: false,
         }
@@ -1917,6 +1920,7 @@ mod tests {
         assert_eq!(value["policy"]["allowCloudEmbeddings"], false);
         assert_eq!(value["policy"]["allowCloudReranking"], false);
         assert_eq!(value["policy"]["allowSourceTransfer"], false);
+        assert_eq!(value["policy"]["enableQueryFamilyRoutedReranker"], false);
         assert_eq!(value["policy"]["enableLocalFixtureReranker"], false);
         assert_eq!(value["decisions"][0]["capability"], "semantic_embedding");
         assert_eq!(value["decisions"][0]["dataClasses"][0], "metadata");

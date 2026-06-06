@@ -1,4 +1,7 @@
-use crate::policy::{provider_policy_report, reranker_decision, semantic_provider_decision};
+use crate::policy::{
+    provider_policy_report, query_family_routed_reranker_enabled_for_family, reranker_decision,
+    semantic_provider_decision,
+};
 use crate::ranking::{
     rank_candidates, rerank_with_local_metadata, select_ranked_candidates_for_scope,
     AnchorCandidate, MemoryPathCandidate, RankingInput,
@@ -444,19 +447,57 @@ pub(crate) fn prepare_context_plan_with_paths_history_mode_and_semantic(
     });
     let reranker = reranker_decision(&provider_policy);
     provider_policy.decisions.push(reranker.clone());
-    let ranked_candidates = if matches!(reranker.status, ProviderDecisionStatus::Allowed) {
+    let query_family = planner_reranker_query_family(&plan.task_type, task, &query_trace);
+    let full_reranker_enabled = provider_policy.policy.enable_local_metadata_reranker
+        || provider_policy.policy.enable_local_fixture_reranker;
+    let routed_reranker_enabled = provider_policy.policy.enable_query_family_routed_reranker
+        && query_family_routed_reranker_enabled_for_family(&query_family);
+    let ranked_candidates = if matches!(reranker.status, ProviderDecisionStatus::Allowed)
+        && (full_reranker_enabled || routed_reranker_enabled)
+    {
+        let (code, message) = if routed_reranker_enabled && !full_reranker_enabled {
+            (
+                "query_family_routed_reranker_applied",
+                format!(
+                    "Applied deterministic local metadata reranker for route-safe query family `{query_family}`."
+                ),
+            )
+        } else {
+            (
+                "local_metadata_reranker_applied",
+                "Applied deterministic local metadata reranker using source-free candidate metadata."
+                    .to_string(),
+            )
+        };
         push_plan_diagnostic(
             &mut plan,
             Diagnostic {
-                code: "local_metadata_reranker_applied".to_string(),
+                code: code.to_string(),
                 severity: DiagnosticSeverity::Info,
-                message: "Applied deterministic local metadata reranker using source-free candidate metadata.".to_string(),
+                message,
                 paths: Vec::new(),
                 count: ranked_candidates.len(),
             },
         );
         rerank_with_local_metadata(ranked_candidates)
     } else {
+        if matches!(reranker.status, ProviderDecisionStatus::Allowed)
+            && provider_policy.policy.enable_query_family_routed_reranker
+            && !full_reranker_enabled
+        {
+            push_plan_diagnostic(
+                &mut plan,
+                Diagnostic {
+                    code: "query_family_routed_reranker_held".to_string(),
+                    severity: DiagnosticSeverity::Info,
+                    message: format!(
+                        "Query-family routed reranker held for unproven query family `{query_family}`."
+                    ),
+                    paths: Vec::new(),
+                    count: ranked_candidates.len(),
+                },
+            );
+        }
         ranked_candidates
     };
     let mut selection = select_ranked_candidates_for_scope(
@@ -1508,6 +1549,57 @@ fn construct_query_trace(task: &str, anchor_paths: &[String]) -> QueryConstructi
         source_text_logged: false,
         privacy_status: PrivacyStatus::local_only(),
     }
+}
+
+fn planner_reranker_query_family(
+    task_type: &TaskType,
+    task: &str,
+    query_trace: &QueryConstructionTrace,
+) -> String {
+    if is_multi_area_task(task) {
+        return "broad_scope".to_string();
+    }
+    if is_low_information_task(task) {
+        return "low_information".to_string();
+    }
+    if query_trace.facets.iter().any(|facet| {
+        matches!(
+            facet.kind,
+            QueryFacetKind::ExplicitPath | QueryFacetKind::CurrentDiffPath
+        )
+    }) {
+        return "explicit_path".to_string();
+    }
+    if query_trace.facets.iter().any(|facet| {
+        matches!(
+            facet.kind,
+            QueryFacetKind::StackFrame | QueryFacetKind::ErrorText
+        )
+    }) {
+        return "stack_or_error".to_string();
+    }
+    if query_trace
+        .facets
+        .iter()
+        .any(|facet| matches!(facet.kind, QueryFacetKind::Symbol))
+    {
+        return "symbol_identifier".to_string();
+    }
+    if query_trace
+        .facets
+        .iter()
+        .any(|facet| matches!(facet.kind, QueryFacetKind::CommitClue))
+    {
+        return "commit_clue".to_string();
+    }
+    if query_trace
+        .facets
+        .iter()
+        .any(|facet| matches!(facet.kind, QueryFacetKind::DomainPhrase))
+    {
+        return "domain_phrase".to_string();
+    }
+    format!("task_type_{task_type:?}").to_ascii_lowercase()
 }
 
 fn push_query_facet(
@@ -3714,6 +3806,104 @@ mod tests {
         assert!(plan.diagnostics.iter().any(|diagnostic| diagnostic.code
             == "local_metadata_reranker_applied"
             && diagnostic.severity == DiagnosticSeverity::Info));
+    }
+
+    #[test]
+    fn prepare_plan_applies_policy_enabled_query_family_routed_reranker_for_commit_clues() {
+        let temp = tempfile::tempdir().unwrap();
+        let repo = temp.path();
+        fs::create_dir(repo.join(".git")).unwrap();
+        fs::create_dir_all(repo.join(".ctxhelm")).unwrap();
+        fs::create_dir_all(repo.join("src")).unwrap();
+        fs::write(
+            repo.join("src/lib.ts"),
+            "export function paymentRetry() {}\n",
+        )
+        .unwrap();
+        fs::write(
+            repo.join(".ctxhelm/provider-policy.json"),
+            r#"{
+  "schemaVersion": 1,
+  "name": "test-routed-local-metadata-reranker",
+  "allowLocalProviders": true,
+  "allowCloudEmbeddings": false,
+  "allowCloudReranking": false,
+  "allowSourceTransfer": false,
+  "enableQueryFamilyRoutedReranker": true,
+  "sourceTextLogged": false
+}"#,
+        )
+        .unwrap();
+
+        let plan = prepare_context_plan_with_paths_history_and_semantic(
+            repo,
+            "update payment retry behavior",
+            TaskType::BugFix,
+            &[],
+            false,
+            true,
+            SemanticProviderConfig::default(),
+        )
+        .unwrap();
+        let policy = plan.provider_policy.as_ref().expect("provider policy");
+
+        assert!(policy.decisions.iter().any(|decision| decision.status
+            == ProviderDecisionStatus::Allowed
+            && decision.provider == "local_metadata_routed"));
+        assert!(plan.diagnostics.iter().any(|diagnostic| diagnostic.code
+            == "query_family_routed_reranker_applied"
+            && diagnostic.message.contains("commit_clue")));
+        assert!(!plan
+            .diagnostics
+            .iter()
+            .any(|diagnostic| diagnostic.code == "local_metadata_reranker_applied"));
+    }
+
+    #[test]
+    fn prepare_plan_holds_policy_enabled_query_family_routed_reranker_for_unproven_families() {
+        let temp = tempfile::tempdir().unwrap();
+        let repo = temp.path();
+        fs::create_dir(repo.join(".git")).unwrap();
+        fs::create_dir_all(repo.join(".ctxhelm")).unwrap();
+        fs::create_dir_all(repo.join("src")).unwrap();
+        fs::write(repo.join("src/lib.ts"), "export class AuthService {}\n").unwrap();
+        fs::write(
+            repo.join(".ctxhelm/provider-policy.json"),
+            r#"{
+  "schemaVersion": 1,
+  "name": "test-routed-local-metadata-reranker",
+  "allowLocalProviders": true,
+  "allowCloudEmbeddings": false,
+  "allowCloudReranking": false,
+  "allowSourceTransfer": false,
+  "enableQueryFamilyRoutedReranker": true,
+  "sourceTextLogged": false
+}"#,
+        )
+        .unwrap();
+
+        let plan = prepare_context_plan_with_paths_history_and_semantic(
+            repo,
+            "fix AuthService redirect failure",
+            TaskType::BugFix,
+            &[],
+            false,
+            true,
+            SemanticProviderConfig::default(),
+        )
+        .unwrap();
+
+        assert!(plan.diagnostics.iter().any(|diagnostic| diagnostic.code
+            == "query_family_routed_reranker_held"
+            && diagnostic.message.contains("symbol_identifier")));
+        assert!(!plan
+            .diagnostics
+            .iter()
+            .any(|diagnostic| diagnostic.code == "query_family_routed_reranker_applied"));
+        assert!(!plan
+            .diagnostics
+            .iter()
+            .any(|diagnostic| diagnostic.code == "local_metadata_reranker_applied"));
     }
 
     #[test]

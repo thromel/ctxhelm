@@ -173,11 +173,32 @@ pub(crate) fn semantic_provider_decision(
     }
 }
 
+pub(crate) fn query_family_routed_reranker_enabled_for_family(family: &str) -> bool {
+    matches!(family, "commit_clue")
+}
+
 pub(crate) fn reranker_decision(report: &ProviderPolicyReport) -> ProviderDecision {
-    if report.policy.enable_local_metadata_reranker || report.policy.enable_local_fixture_reranker {
+    if report.policy.enable_local_metadata_reranker
+        || report.policy.enable_local_fixture_reranker
+        || report.policy.enable_query_family_routed_reranker
+    {
+        let provider = if report.policy.enable_local_metadata_reranker
+            || report.policy.enable_local_fixture_reranker
+        {
+            "local_metadata"
+        } else {
+            "local_metadata_routed"
+        };
+        let reason = if report.policy.enable_local_metadata_reranker
+            || report.policy.enable_local_fixture_reranker
+        {
+            "Deterministic local metadata reranker is policy-enabled."
+        } else {
+            "Query-family routed local metadata reranker is policy-enabled."
+        };
         return ProviderDecision {
             capability: ProviderCapability::Reranking,
-            provider: "local_metadata".to_string(),
+            provider: provider.to_string(),
             status: if report.policy.allow_local_providers {
                 ProviderDecisionStatus::Allowed
             } else {
@@ -186,7 +207,7 @@ pub(crate) fn reranker_decision(report: &ProviderPolicyReport) -> ProviderDecisi
             data_classes: vec![ProviderDataClass::Metadata],
             remote_allowed: false,
             source_text_allowed: false,
-            reason: "Deterministic local metadata reranker is policy-enabled.".to_string(),
+            reason: reason.to_string(),
         };
     }
     ProviderDecision {
@@ -539,6 +560,7 @@ mod tests {
         assert!(!report.policy.allow_cloud_reranking);
         assert!(!report.policy.allow_source_transfer);
         assert!(!report.policy.enable_local_metadata_reranker);
+        assert!(!report.policy.enable_query_family_routed_reranker);
         assert!(!report.policy.enable_local_fixture_reranker);
         assert!(report.privacy_status.local_only);
         assert!(report
@@ -603,6 +625,27 @@ mod tests {
         assert_eq!(enabled.provider, "local_metadata");
         assert!(!enabled.remote_allowed);
         assert!(!enabled.source_text_allowed);
+
+        let mut routed_report = ProviderPolicyReport {
+            policy_path: None,
+            policy: ProviderPolicy::default(),
+            decisions: Vec::new(),
+            diagnostics: Vec::new(),
+            source_text_logged: false,
+            privacy_status: PrivacyStatus::local_only(),
+        };
+        routed_report.policy.enable_query_family_routed_reranker = true;
+        let routed = reranker_decision(&routed_report);
+        assert_eq!(routed.status, ProviderDecisionStatus::Allowed);
+        assert_eq!(routed.provider, "local_metadata_routed");
+        assert!(!routed.remote_allowed);
+        assert!(!routed.source_text_allowed);
+        assert!(query_family_routed_reranker_enabled_for_family(
+            "commit_clue"
+        ));
+        assert!(!query_family_routed_reranker_enabled_for_family(
+            "symbol_identifier"
+        ));
     }
 
     #[test]

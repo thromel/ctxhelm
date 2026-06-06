@@ -1,0 +1,52 @@
+{
+  "phase": 263,
+  "name": "routed-reranker-runtime-policy",
+  "sourceTextLogged": false,
+  "privacyStatus": {
+    "localOnly": true,
+    "remoteEmbeddingsUsed": false,
+    "remoteRerankingUsed": false,
+    "redactionsApplied": 0
+  },
+  "policy": {
+    "enableLocalMetadataReranker": false,
+    "enableQueryFamilyRoutedReranker": true,
+    "enableLocalFixtureReranker": false,
+    "allowLocalProviders": true,
+    "allowCloudEmbeddings": false,
+    "allowCloudReranking": false,
+    "allowSourceTransfer": false
+  },
+  "appliedCase": {
+    "task": "update payment retry behavior",
+    "queryFamily": "commit_clue",
+    "diagnosticCode": "query_family_routed_reranker_applied",
+    "rerankerProvider": "local_metadata_routed",
+    "rerankerStatus": "allowed",
+    "dataClasses": [
+      "metadata"
+    ],
+    "remoteAllowed": false,
+    "sourceTextAllowed": false,
+    "sourceTextLogged": false,
+    "remoteRerankingUsed": false
+  },
+  "heldCase": {
+    "task": "fix AuthService redirect failure",
+    "queryFamily": "symbol_identifier",
+    "diagnosticCode": "query_family_routed_reranker_held",
+    "rerankerProvider": "local_metadata_routed",
+    "rerankerStatus": "allowed",
+    "dataClasses": [
+      "metadata"
+    ],
+    "remoteAllowed": false,
+    "sourceTextAllowed": false,
+    "sourceTextLogged": false,
+    "remoteRerankingUsed": false
+  },
+  "validation": [
+    "cargo test -p ctxhelm-compiler policy::tests::reranker_decision_is_disabled_by_default_and_local_when_enabled --locked",
+    "cargo test -p ctxhelm-compiler query_family_routed_reranker --locked"
+  ]
+}

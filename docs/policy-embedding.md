@@ -15,6 +15,7 @@ plans, packs, and retrieval-policy experiment reports. The default policy is:
   "allowCloudReranking": false,
   "allowSourceTransfer": false,
   "enableLocalMetadataReranker": false,
+  "enableQueryFamilyRoutedReranker": false,
   "enableLocalFixtureReranker": false
 }
 ```
@@ -23,8 +24,9 @@ This means local source-free metadata providers such as `local_hash` can run
 when explicitly requested, while cloud embedding providers, cloud rerankers, and
 source-transfer paths are denied by default. Reranking is represented as a
 typed provider decision but remains disabled unless `.ctxhelm/provider-policy.json`
-enables the deterministic local metadata reranker. The older
-`enableLocalFixtureReranker` key is still accepted as a compatibility alias.
+enables either the deterministic local metadata reranker or the narrower
+query-family routed reranker. The older `enableLocalFixtureReranker` key is
+still accepted as a compatibility alias.
 
 Inspect the local semantic provider:
 
@@ -70,6 +72,26 @@ source floor for anchor, current-diff, lexical, and symbol evidence before it
 applies metadata reordering to the remaining candidates. Tests are not treated
 as protected source-floor entries; validation/test placement stays controlled by
 the normal test budget. Reranking remains disabled by default.
+
+Example routed local metadata policy:
+
+```json
+{
+  "schemaVersion": 1,
+  "name": "routed-local-metadata-reranker",
+  "allowLocalProviders": true,
+  "allowCloudEmbeddings": false,
+  "allowCloudReranking": false,
+  "allowSourceTransfer": false,
+  "enableQueryFamilyRoutedReranker": true,
+  "sourceTextLogged": false
+}
+```
+
+The routed policy applies the same deterministic local metadata reranker only
+for query families with clean measured evidence. The current route set is
+`commit_clue` only. Other families, including `symbol_identifier`, stay on
+default ranking and emit a `query_family_routed_reranker_held` diagnostic.
 
 Cloud settings still require the team privacy policy to allow cloud use and
 source transfer; absent or restrictive team policy keeps remote provider

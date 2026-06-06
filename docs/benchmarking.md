@@ -616,6 +616,11 @@ As of the current four-repo proof, the routed eval policy routes only the
 `queryFamilyContributions`, but it is not routed because broader evidence found
 target-hit regression on ReAgent.
 
+Phase 263 exposes that narrower route as opt-in runtime behavior through
+`enableQueryFamilyRoutedReranker` in `.ctxhelm/provider-policy.json`. The
+planner applies local metadata reranking for `commit_clue` tasks only and emits
+a held diagnostic for unproven families.
+
 - `routed_reranker_clean_lift`: routed reranking added target hits without
   default-only target churn in the gate.
 - `routed_reranker_churn_hold`: routed reranking added target hits but still
