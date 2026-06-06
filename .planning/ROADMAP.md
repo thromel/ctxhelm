@@ -150,6 +150,18 @@ simple hand-written budget rule as a general semantic default and moves the
 remaining path toward learned/listwise allocation with explicit no-regress
 constraints or narrower corpus/profile-specific policy.
 
+Phase 278 tests the first source-free learned-profile semantic policy. The
+eval-only `semantic_learned_profile_reranked` variant learns eligible
+`(query_family, path_family)` profiles from other commits in the same gate and
+only admits semantic-corroborated candidates when the leave-one-out profile has
+inserted target hits with no inserted non-targets and no lost default targets.
+The four-repo proof is the strongest semantic-reranker result after Phase 270:
+RefactoringMiner improves from `0.41857147` to `0.51857144`, while ctxhelm,
+ReAgent, and VeriSchema remain exactly neutral with no regressions. This keeps
+learned/listwise allocation as the correct next direction, but runtime promotion
+still needs a durable learned-policy artifact, staleness handling, support
+thresholds, and broader holdout proof.
+
 Phase 196 reserves selected validation areas in broad context-area guidance and adds package-mirrored related-test affinity. The accepted release-binary proof promotes with selected-file/source/test/validation metrics unchanged while improving VeriSchema broad context-area recall from `0.5777778 -> 0.84444445` and next-read recovery from `16 -> 19` of `39` missed@10 files. A related-test-only intermediate proof was rejected because it did not move the product proof.
 
 Phase 197 adds source-free agent-evidence recovery accounting to context-area next-read summaries. The fresh release-binary proof promotes with selected-file/source/test/validation/broad-area metrics unchanged while showing VeriSchema has `29 / 39` missed@10 files recoverable through the full agent evidence bundle, compared with `19 / 39` through progressive next reads alone.
