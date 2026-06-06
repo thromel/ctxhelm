@@ -27,6 +27,7 @@ use ctxhelm_index::{
     LEARNED_POLICY_PROFILE_SCHEMA_VERSION,
 };
 use serde::{Deserialize, Serialize};
+use std::cmp::Reverse;
 use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
 use std::io::Write;
@@ -3575,7 +3576,7 @@ fn semantic_contribution_summary(report: &HistoricalEvalReport) -> SemanticContr
             }
             family
                 .missed_target_gap_families
-                .sort_by(|left, right| right.missed_count.cmp(&left.missed_count));
+                .sort_by_key(|entry| Reverse(entry.missed_count));
             family.example_cases.truncate(5);
             family
         })
