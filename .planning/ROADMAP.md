@@ -79,6 +79,16 @@ This rejects another blind routing pass and points the next semantic R&D to
 repo/family-specific fusion-budget experiments plus separate VeriSchema
 query/model/document coverage work.
 
+Phase 270 tests the first source-free fusion-budget experiment from Phase 269.
+The eval-only `semantic_corroborated_reranked` variant preserves the protected
+source floor and gives bounded credit to semantic candidates only when another
+local signal corroborates them. It produces a large RefactoringMiner lift
+(`0.41857147 -> 0.5619047`) with zero named regressions, but regresses ctxhelm
+(`0.44620585 -> 0.44333735`), ReAgent (`0.35 -> 0.325`), and VeriSchema
+(`0.39382353 -> 0.36960787`). This rejects global semantic-corroborated
+reranking and narrows the next step to query-family or corpus-shape routing
+around the RefactoringMiner win.
+
 Phase 196 reserves selected validation areas in broad context-area guidance and adds package-mirrored related-test affinity. The accepted release-binary proof promotes with selected-file/source/test/validation metrics unchanged while improving VeriSchema broad context-area recall from `0.5777778 -> 0.84444445` and next-read recovery from `16 -> 19` of `39` missed@10 files. A related-test-only intermediate proof was rejected because it did not move the product proof.
 
 Phase 197 adds source-free agent-evidence recovery accounting to context-area next-read summaries. The fresh release-binary proof promotes with selected-file/source/test/validation/broad-area metrics unchanged while showing VeriSchema has `29 / 39` missed@10 files recoverable through the full agent evidence bundle, compared with `19 / 39` through progressive next reads alone.

@@ -643,6 +643,14 @@ support-profile noise holds. It is an R&D probe, not runtime behavior. Phase
 268's four-repo `limit 20` local-fastembed proof found zero regressions but
 also zero wins, so support-profile routing remains rejected as a promotion path.
 
+The gate also reports the eval-only `semantic_corroborated_reranked` variant.
+This variant reranks all source-free candidates with the same protected source
+floor as the local metadata reranker, but gives a bounded bonus to semantic
+signals only when another local signal also supports the candidate. It is a
+fusion R&D probe, not runtime behavior. Phase 270 found strong RefactoringMiner
+lift but regressions on ctxhelm, ReAgent, and VeriSchema, so semantic
+corroboration remains a routing candidate rather than a default policy.
+
 The same family rows also report support diagnostics for semantic-only files:
 `semanticOnlyTargetWithNonsemanticSupportCount`,
 `semanticOnlyTargetWithoutNonsemanticSupportCount`,
