@@ -6123,7 +6123,7 @@ fn render_semantic_precision_gate_report(report: &SemanticPrecisionGateReport) -
     } else {
         for family in &report.semantic_contribution.query_family_contributions {
             output.push_str(&format!(
-                "- `{}`: commits `{}`, semantic selections `{}`, target-hit commits `{}`, non-target commits `{}`, clean target-only commits `{}`, mixed commits `{}`, noise-only commits `{}`, target hits `{}`, semantic-only target hits `{}`, semantic-only non-targets `{}`, missed targets `{}`, semantic-only target rate `{:.3}`, semantic-only non-target rate `{:.3}`\n",
+                "- `{}`: commits `{}`, semantic selections `{}`, target-hit commits `{}`, non-target commits `{}`, clean target-only commits `{}`, mixed commits `{}`, noise-only commits `{}`, target hits `{}`, semantic-only target hits `{}` (supported `{}`, unsupported `{}`), semantic-only non-targets `{}` (supported `{}`, unsupported `{}`), missed targets `{}`, semantic-only target rate `{:.3}`, semantic-only non-target rate `{:.3}`\n",
                 family.family,
                 family.evaluated_commits,
                 family.commits_with_semantic_selection,
@@ -6134,11 +6134,23 @@ fn render_semantic_precision_gate_report(report: &SemanticPrecisionGateReport) -
                 family.noise_only_commit_count,
                 family.semantic_target_hit_count,
                 family.semantic_only_target_hit_count,
+                family.semantic_only_target_with_nonsemantic_support_count,
+                family.semantic_only_target_without_nonsemantic_support_count,
                 family.semantic_only_non_target_count,
+                family.semantic_only_non_target_with_nonsemantic_support_count,
+                family.semantic_only_non_target_without_nonsemantic_support_count,
                 family.semantic_missed_target_count,
                 family.semantic_only_target_hit_rate,
                 family.semantic_only_non_target_rate
             ));
+            for profile in &family.support_profiles {
+                output.push_str(&format!(
+                    "  - support `{}`: targets `{}`, non-targets `{}`\n",
+                    profile.support_family,
+                    profile.semantic_only_target_count,
+                    profile.semantic_only_non_target_count
+                ));
+            }
         }
     }
     output.push_str("\n## Reranker Contribution\n\n");

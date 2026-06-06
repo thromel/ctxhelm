@@ -572,6 +572,16 @@ The semantic contribution summary also emits source-free diagnostics:
 - `semantic_query_family_unstable_hold`: a query family has clean target-only
   commits, but also mixed or noise-only commits. Treat this as a larger-sample
   hold even if a smaller gate made the family look routable.
+- `semantic_query_family_unsupported_target_hold`: a query family has
+  semantic-only target hits, but those target hits have no non-semantic
+  source-free corroboration. Treat this as weak routing evidence until a better
+  semantic query/document experiment repeats the target hits.
+- `semantic_query_family_supported_noise_hold`: semantic-only non-targets have
+  non-semantic source-free corroboration while semantic-only targets do not.
+  This shows that "semantic plus another signal" is not automatically safe.
+- `semantic_query_family_supported_mixed_hold`: semantic-only targets and
+  semantic-only non-targets both have non-semantic source-free corroboration.
+  Hold until stricter within-family features separate the two cases.
 - `semantic_query_family_mixed_hold`: a query family has both semantic-only
   target hits and semantic-only non-targets. Hold until fusion can separate
   useful semantic evidence from noise.
@@ -599,6 +609,17 @@ also reports commit-level stability counters:
 fields distinguish repeated clean semantic evidence from one-off path-count
 artifacts or family-specific noise. They support selective semantic/fusion R&D
 without promoting semantic retrieval globally.
+
+The same family rows also report support diagnostics for semantic-only files:
+`semanticOnlyTargetWithNonsemanticSupportCount`,
+`semanticOnlyTargetWithoutNonsemanticSupportCount`,
+`semanticOnlyNonTargetWithNonsemanticSupportCount`,
+`semanticOnlyNonTargetWithoutNonsemanticSupportCount`, and
+`supportProfiles`. A support profile groups semantic-only targets and
+non-targets by the other source-free retrieval signals that also selected the
+path, or `unsupported` when semantic was the only observed signal. Use these
+fields to test stricter within-family gates before adding runtime semantic
+routing.
 
 The reranker contribution summary compares `local_metadata_reranked` against
 `ctxhelm_default` without source text. It reports commit-level target-hit lift,

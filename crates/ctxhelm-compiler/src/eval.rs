@@ -434,6 +434,16 @@ pub struct SemanticMissedTargetGapFamily {
     pub example_paths: Vec<String>,
 }
 
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct SemanticOnlySupportProfile {
+    pub support_family: String,
+    pub semantic_only_target_count: usize,
+    pub semantic_only_non_target_count: usize,
+    pub example_target_paths: Vec<String>,
+    pub example_non_target_paths: Vec<String>,
+}
+
 #[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct SemanticQueryFamilyContribution {
@@ -453,7 +463,15 @@ pub struct SemanticQueryFamilyContribution {
     pub semantic_selected_file_count: usize,
     pub semantic_target_hit_count: usize,
     pub semantic_only_target_hit_count: usize,
+    #[serde(default)]
+    pub semantic_only_target_with_nonsemantic_support_count: usize,
+    #[serde(default)]
+    pub semantic_only_target_without_nonsemantic_support_count: usize,
     pub semantic_only_non_target_count: usize,
+    #[serde(default)]
+    pub semantic_only_non_target_with_nonsemantic_support_count: usize,
+    #[serde(default)]
+    pub semantic_only_non_target_without_nonsemantic_support_count: usize,
     pub semantic_missed_target_count: usize,
     pub semantic_only_target_hit_rate: f32,
     pub semantic_only_non_target_rate: f32,
@@ -465,6 +483,8 @@ pub struct SemanticQueryFamilyContribution {
     pub noise_only_commit_rate: f32,
     #[serde(default)]
     pub missed_target_gap_families: Vec<SemanticMissedTargetGapFamily>,
+    #[serde(default)]
+    pub support_profiles: Vec<SemanticOnlySupportProfile>,
     #[serde(default)]
     pub example_cases: Vec<SemanticPrecisionNamedCase>,
 }
@@ -3496,6 +3516,24 @@ fn semantic_contribution_summary(report: &HistoricalEvalReport) -> SemanticContr
         family_entry.semantic_only_target_hit_count += semantic_only_target_hits.len();
         family_entry.semantic_only_non_target_count += semantic_only_non_targets.len();
         family_entry.semantic_missed_target_count += semantic_missed_targets.len();
+        for path in &semantic_only_target_hits {
+            let support_family = semantic_only_support_family(commit, path);
+            if support_family == "unsupported" {
+                family_entry.semantic_only_target_without_nonsemantic_support_count += 1;
+            } else {
+                family_entry.semantic_only_target_with_nonsemantic_support_count += 1;
+            }
+            upsert_semantic_support_profile(family_entry, &support_family, path, true);
+        }
+        for path in &semantic_only_non_targets {
+            let support_family = semantic_only_support_family(commit, path);
+            if support_family == "unsupported" {
+                family_entry.semantic_only_non_target_without_nonsemantic_support_count += 1;
+            } else {
+                family_entry.semantic_only_non_target_with_nonsemantic_support_count += 1;
+            }
+            upsert_semantic_support_profile(family_entry, &support_family, path, false);
+        }
         if has_semantic_only_target_hits {
             family_entry.commits_with_semantic_only_target_hits += 1;
         }
@@ -3615,6 +3653,16 @@ fn semantic_contribution_summary(report: &HistoricalEvalReport) -> SemanticContr
             family
                 .missed_target_gap_families
                 .sort_by_key(|entry| Reverse(entry.missed_count));
+            family.support_profiles.sort_by(|left, right| {
+                right
+                    .semantic_only_target_count
+                    .cmp(&left.semantic_only_target_count)
+                    .then_with(|| {
+                        left.semantic_only_non_target_count
+                            .cmp(&right.semantic_only_non_target_count)
+                    })
+                    .then_with(|| left.support_family.cmp(&right.support_family))
+            });
             family.example_cases.truncate(5);
             family
         })
@@ -3635,6 +3683,64 @@ fn semantic_contribution_summary(report: &HistoricalEvalReport) -> SemanticContr
             .then_with(|| left.family.cmp(&right.family))
     });
     summary
+}
+
+fn semantic_only_support_family(commit: &HistoricalCommitEval, path: &str) -> String {
+    let signals = commit
+        .signal_baseline_files
+        .iter()
+        .filter(|ranking| ranking.signal != RetrievalSignalKind::Semantic)
+        .filter(|ranking| ranking.files.iter().any(|file| file == path))
+        .map(|ranking| ranking.signal.clone())
+        .collect::<Vec<_>>();
+    if signals.is_empty() {
+        "unsupported".to_string()
+    } else {
+        signal_family_code(&signals)
+    }
+}
+
+fn upsert_semantic_support_profile(
+    family: &mut SemanticQueryFamilyContribution,
+    support_family: &str,
+    path: &str,
+    target: bool,
+) {
+    if let Some(existing) = family
+        .support_profiles
+        .iter_mut()
+        .find(|entry| entry.support_family == support_family)
+    {
+        if target {
+            existing.semantic_only_target_count += 1;
+            if existing.example_target_paths.len() < 5
+                && !existing.example_target_paths.iter().any(|p| p == path)
+            {
+                existing.example_target_paths.push(path.to_string());
+            }
+        } else {
+            existing.semantic_only_non_target_count += 1;
+            if existing.example_non_target_paths.len() < 5
+                && !existing.example_non_target_paths.iter().any(|p| p == path)
+            {
+                existing.example_non_target_paths.push(path.to_string());
+            }
+        }
+        return;
+    }
+
+    let mut profile = SemanticOnlySupportProfile {
+        support_family: support_family.to_string(),
+        ..SemanticOnlySupportProfile::default()
+    };
+    if target {
+        profile.semantic_only_target_count = 1;
+        profile.example_target_paths.push(path.to_string());
+    } else {
+        profile.semantic_only_non_target_count = 1;
+        profile.example_non_target_paths.push(path.to_string());
+    }
+    family.support_profiles.push(profile);
 }
 
 fn upsert_semantic_family_gap(
@@ -3829,6 +3935,48 @@ fn semantic_contribution_diagnostics(
                     + family.noise_only_commit_count,
             });
         }
+        if family.semantic_only_target_without_nonsemantic_support_count > 0
+            && family.semantic_only_target_with_nonsemantic_support_count == 0
+        {
+            diagnostics.push(Diagnostic {
+                code: "semantic_query_family_unsupported_target_hold".to_string(),
+                severity: DiagnosticSeverity::Info,
+                message: format!(
+                    "Semantic retrieval has unique target hits for query family `{}`, but those target hits lack non-semantic source-free corroboration.",
+                    family.family
+                ),
+                paths: semantic_support_example_paths(family, true),
+                count: family.semantic_only_target_without_nonsemantic_support_count,
+            });
+        }
+        if family.semantic_only_non_target_with_nonsemantic_support_count > 0
+            && family.semantic_only_target_with_nonsemantic_support_count == 0
+        {
+            diagnostics.push(Diagnostic {
+                code: "semantic_query_family_supported_noise_hold".to_string(),
+                severity: DiagnosticSeverity::Warning,
+                message: format!(
+                    "Semantic retrieval has non-targets with non-semantic source-free corroboration for query family `{}`, but no corroborated semantic-only target hits.",
+                    family.family
+                ),
+                paths: semantic_support_example_paths(family, false),
+                count: family.semantic_only_non_target_with_nonsemantic_support_count,
+            });
+        } else if family.semantic_only_non_target_with_nonsemantic_support_count > 0
+            && family.semantic_only_target_with_nonsemantic_support_count > 0
+        {
+            diagnostics.push(Diagnostic {
+                code: "semantic_query_family_supported_mixed_hold".to_string(),
+                severity: DiagnosticSeverity::Info,
+                message: format!(
+                    "Semantic retrieval has both corroborated semantic-only targets and corroborated semantic-only non-targets for query family `{}`.",
+                    family.family
+                ),
+                paths: semantic_support_example_paths(family, false),
+                count: family.semantic_only_target_with_nonsemantic_support_count
+                    + family.semantic_only_non_target_with_nonsemantic_support_count,
+            });
+        }
         if family.semantic_only_target_hit_count > 0 && family.semantic_only_non_target_count == 0 {
             diagnostics.push(Diagnostic {
                 code: "semantic_query_family_route_candidate".to_string(),
@@ -3868,6 +4016,27 @@ fn semantic_contribution_diagnostics(
         }
     }
     diagnostics
+}
+
+fn semantic_support_example_paths(
+    family: &SemanticQueryFamilyContribution,
+    targets: bool,
+) -> Vec<String> {
+    let mut paths = Vec::new();
+    for profile in &family.support_profiles {
+        let examples = if targets {
+            &profile.example_target_paths
+        } else {
+            &profile.example_non_target_paths
+        };
+        for path in examples {
+            if paths.len() >= 5 {
+                return paths;
+            }
+            paths.push(path.clone());
+        }
+    }
+    paths
 }
 
 fn semantic_family_example_paths(family: &SemanticQueryFamilyContribution) -> Vec<String> {
@@ -9937,14 +10106,20 @@ mod tests {
             "src/shared.ts".to_string(),
             "src/lexical_only.ts".to_string(),
         ];
-        report.commits[0].signal_baseline_files = vec![HistoricalSignalRanking {
-            signal: RetrievalSignalKind::Semantic,
-            files: vec![
-                "src/semantic_only.ts".to_string(),
-                "src/shared.ts".to_string(),
-                "src/noise.ts".to_string(),
-            ],
-        }];
+        report.commits[0].signal_baseline_files = vec![
+            HistoricalSignalRanking {
+                signal: RetrievalSignalKind::Semantic,
+                files: vec![
+                    "src/semantic_only.ts".to_string(),
+                    "src/shared.ts".to_string(),
+                    "src/noise.ts".to_string(),
+                ],
+            },
+            HistoricalSignalRanking {
+                signal: RetrievalSignalKind::Dependency,
+                files: vec!["src/noise.ts".to_string()],
+            },
+        ];
 
         let summary = semantic_contribution_summary(&report);
 
@@ -9996,7 +10171,23 @@ mod tests {
         assert_eq!(family.semantic_selected_file_count, 3);
         assert_eq!(family.semantic_target_hit_count, 2);
         assert_eq!(family.semantic_only_target_hit_count, 1);
+        assert_eq!(
+            family.semantic_only_target_with_nonsemantic_support_count,
+            0
+        );
+        assert_eq!(
+            family.semantic_only_target_without_nonsemantic_support_count,
+            1
+        );
         assert_eq!(family.semantic_only_non_target_count, 1);
+        assert_eq!(
+            family.semantic_only_non_target_with_nonsemantic_support_count,
+            1
+        );
+        assert_eq!(
+            family.semantic_only_non_target_without_nonsemantic_support_count,
+            0
+        );
         assert_eq!(family.semantic_missed_target_count, 1);
         assert!((family.semantic_only_target_hit_rate - 1.0 / 3.0).abs() < f32::EPSILON);
         assert!((family.semantic_only_non_target_rate - 0.5).abs() < f32::EPSILON);
@@ -10008,6 +10199,19 @@ mod tests {
             family.missed_target_gap_families[0].signal_gap,
             "semantic_miss_no_candidate_signal"
         );
+        assert_eq!(family.support_profiles.len(), 2);
+        assert!(family
+            .support_profiles
+            .iter()
+            .any(|profile| profile.support_family == "unsupported"
+                && profile.semantic_only_target_count == 1
+                && profile.example_target_paths == vec!["src/semantic_only.ts".to_string()]));
+        assert!(family
+            .support_profiles
+            .iter()
+            .any(|profile| profile.support_family == "dependency"
+                && profile.semantic_only_non_target_count == 1
+                && profile.example_non_target_paths == vec!["src/noise.ts".to_string()]));
         assert_eq!(family.example_cases.len(), 2);
     }
 
@@ -10468,7 +10672,14 @@ mod tests {
                     family: "domain_phrase".to_string(),
                     target_only_commit_count: 2,
                     semantic_only_target_hit_count: 2,
+                    semantic_only_target_without_nonsemantic_support_count: 2,
                     semantic_only_non_target_count: 0,
+                    support_profiles: vec![SemanticOnlySupportProfile {
+                        support_family: "unsupported".to_string(),
+                        semantic_only_target_count: 2,
+                        example_target_paths: vec!["src/domain_target.ts".to_string()],
+                        ..SemanticOnlySupportProfile::default()
+                    }],
                     example_cases: vec![SemanticPrecisionNamedCase {
                         sha: "abc123".to_string(),
                         variant: "local_semantic".to_string(),
@@ -10482,7 +10693,16 @@ mod tests {
                     target_only_commit_count: 1,
                     mixed_commit_count: 1,
                     semantic_only_target_hit_count: 1,
+                    semantic_only_target_with_nonsemantic_support_count: 1,
                     semantic_only_non_target_count: 2,
+                    semantic_only_non_target_with_nonsemantic_support_count: 2,
+                    support_profiles: vec![SemanticOnlySupportProfile {
+                        support_family: "dependency_symbol".to_string(),
+                        semantic_only_target_count: 1,
+                        semantic_only_non_target_count: 2,
+                        example_target_paths: vec!["src/symbol_target.ts".to_string()],
+                        example_non_target_paths: vec!["src/symbol_noise.ts".to_string()],
+                    }],
                     example_cases: vec![SemanticPrecisionNamedCase {
                         sha: "def456".to_string(),
                         variant: "local_semantic".to_string(),
@@ -10498,6 +10718,13 @@ mod tests {
                     family: "commit_clue".to_string(),
                     semantic_only_target_hit_count: 0,
                     semantic_only_non_target_count: 1,
+                    semantic_only_non_target_with_nonsemantic_support_count: 1,
+                    support_profiles: vec![SemanticOnlySupportProfile {
+                        support_family: "history".to_string(),
+                        semantic_only_non_target_count: 1,
+                        example_non_target_paths: vec!["src/commit_noise.ts".to_string()],
+                        ..SemanticOnlySupportProfile::default()
+                    }],
                     example_cases: vec![SemanticPrecisionNamedCase {
                         sha: "fedcba".to_string(),
                         variant: "local_semantic".to_string(),
@@ -10517,13 +10744,23 @@ mod tests {
             && diagnostic.message.contains("domain_phrase")
             && diagnostic.paths == vec!["src/domain_target.ts".to_string()]));
         assert!(diagnostics.iter().any(|diagnostic| diagnostic.code
+            == "semantic_query_family_unsupported_target_hold"
+            && diagnostic.message.contains("domain_phrase")));
+        assert!(diagnostics.iter().any(|diagnostic| diagnostic.code
             == "semantic_query_family_mixed_hold"
             && diagnostic.message.contains("symbol_identifier")));
         assert!(diagnostics.iter().any(|diagnostic| diagnostic.code
             == "semantic_query_family_unstable_hold"
             && diagnostic.message.contains("symbol_identifier")));
         assert!(diagnostics.iter().any(|diagnostic| diagnostic.code
+            == "semantic_query_family_supported_mixed_hold"
+            && diagnostic.message.contains("symbol_identifier")));
+        assert!(diagnostics.iter().any(|diagnostic| diagnostic.code
             == "semantic_query_family_noise_hold"
+            && diagnostic.severity == DiagnosticSeverity::Warning
+            && diagnostic.message.contains("commit_clue")));
+        assert!(diagnostics.iter().any(|diagnostic| diagnostic.code
+            == "semantic_query_family_supported_noise_hold"
             && diagnostic.severity == DiagnosticSeverity::Warning
             && diagnostic.message.contains("commit_clue")));
     }
