@@ -605,6 +605,21 @@ default-only churn, example paths, and a `routingRecommendation` value:
 `route_candidate`, `hold_neutral`, `hold_churn`, `block_regression`, or
 `insufficient_evidence`.
 
+The gate also evaluates `query_family_routed_reranked`, an eval-only variant
+that applies local metadata reranking only to conservative route-safe query
+families and keeps default ranking elsewhere. The
+`routedRerankerContribution` JSON field compares that routed variant against
+`ctxhelm_default`. Routed diagnostics include:
+
+- `routed_reranker_clean_lift`: routed reranking added target hits without
+  default-only target churn in the gate.
+- `routed_reranker_churn_hold`: routed reranking added target hits but still
+  churned default targets, so the route policy remains held.
+- `routed_reranker_regression`: routed reranking lost target hits and must stay
+  eval-only.
+- `routed_reranker_neutral`: routed reranking preserved target hits but did not
+  add target hits in the gate.
+
 Phase 176 turns the `area_context_only` diagnosis into a better progressive
 read surface for focused tasks. When a standard plan already selects
 source-like files in an area and has unselected source-like candidates nearby,

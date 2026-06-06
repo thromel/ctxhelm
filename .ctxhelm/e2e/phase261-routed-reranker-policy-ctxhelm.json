@@ -1,0 +1,1096 @@
+{
+  "repoId": "5bd7219b-a357-5c88-8759-2786e882ae25",
+  "evalRangeId": "semantic-precision-gate:5ce8be636f970883d9e61ab7ea707f96652f563ed7eb292d6ff7e58a18a19ea4",
+  "evaluatedCommits": 10,
+  "k": 10,
+  "decision": "hold",
+  "decisionReason": "Held: local semantic recall delta +0.000, precision delta +0.000; keep opt-in.",
+  "variants": [
+    {
+      "name": "lexical_baseline",
+      "status": "evaluated",
+      "semanticEnabled": false,
+      "precisionEnabled": false,
+      "rerankerEnabled": false,
+      "metrics": {
+        "k": 10,
+        "recallAtK": 0.6269048,
+        "precisionAtK": 0.36,
+        "mrrAtK": 0.6333333,
+        "roleRecall": [
+          {
+            "role": "source",
+            "recallAtK": 0.75,
+            "changedFileCount": 8,
+            "hitCount": 6
+          },
+          {
+            "role": "test",
+            "recallAtK": 0.5,
+            "changedFileCount": 2,
+            "hitCount": 1
+          }
+        ],
+        "testRecommendationRate": 1.0,
+        "averageRecommendedContextFiles": 10.0
+      },
+      "fileRecallAt10": 0.3036905,
+      "testRecallAt10": 1.0,
+      "runtimeMillis": 3457,
+      "cacheHits": 0,
+      "cacheMisses": 0,
+      "tokenEfficiency": 0.7083333,
+      "protectedEvidenceMissRateAt10": 0.52040815,
+      "protectedEvidenceTargetMissRateAt10": 0.6486486,
+      "providerStatus": "evaluated",
+      "note": "Exact/path lexical baseline under the same fixed K."
+    },
+    {
+      "name": "ctxhelm_default",
+      "status": "evaluated",
+      "semanticEnabled": false,
+      "precisionEnabled": false,
+      "rerankerEnabled": false,
+      "metrics": {
+        "k": 10,
+        "recallAtK": 0.3036905,
+        "precisionAtK": 0.17,
+        "mrrAtK": 0.5192857,
+        "roleRecall": [
+          {
+            "role": "source",
+            "recallAtK": 1.0,
+            "changedFileCount": 8,
+            "hitCount": 8
+          },
+          {
+            "role": "test",
+            "recallAtK": 1.0,
+            "changedFileCount": 2,
+            "hitCount": 2
+          }
+        ],
+        "testRecommendationRate": 1.0,
+        "averageRecommendedContextFiles": 10.0
+      },
+      "fileRecallAt10": 0.3036905,
+      "testRecallAt10": 1.0,
+      "runtimeMillis": 3457,
+      "cacheHits": 0,
+      "cacheMisses": 0,
+      "tokenEfficiency": 0.7083333,
+      "protectedEvidenceMissRateAt10": 0.52040815,
+      "protectedEvidenceTargetMissRateAt10": 0.6486486,
+      "providerStatus": "evaluated",
+      "note": "Current default ranking without semantic default promotion."
+    },
+    {
+      "name": "local_metadata_reranked",
+      "status": "evaluated",
+      "semanticEnabled": false,
+      "precisionEnabled": false,
+      "rerankerEnabled": true,
+      "metrics": {
+        "k": 10,
+        "recallAtK": 0.6342858,
+        "precisionAtK": 0.35000002,
+        "mrrAtK": 0.565,
+        "roleRecall": [
+          {
+            "role": "source",
+            "recallAtK": 0.875,
+            "changedFileCount": 8,
+            "hitCount": 7
+          },
+          {
+            "role": "test",
+            "recallAtK": 1.0,
+            "changedFileCount": 2,
+            "hitCount": 2
+          }
+        ],
+        "testRecommendationRate": 1.0,
+        "averageRecommendedContextFiles": 10.0
+      },
+      "fileRecallAt10": 0.6342858,
+      "testRecallAt10": 1.0,
+      "runtimeMillis": 1623,
+      "cacheHits": 0,
+      "cacheMisses": 0,
+      "tokenEfficiency": 1.4583334,
+      "protectedEvidenceMissRateAt10": 0.18367347,
+      "protectedEvidenceTargetMissRateAt10": 0.10810811,
+      "providerStatus": "evaluated",
+      "note": "Eval-only deterministic local metadata reranker over source-free candidate metadata."
+    },
+    {
+      "name": "query_family_routed_reranked",
+      "status": "evaluated",
+      "semanticEnabled": false,
+      "precisionEnabled": false,
+      "rerankerEnabled": true,
+      "metrics": {
+        "k": 10,
+        "recallAtK": 0.48845237,
+        "precisionAtK": 0.28000003,
+        "mrrAtK": 0.54833335,
+        "roleRecall": [
+          {
+            "role": "source",
+            "recallAtK": 1.0,
+            "changedFileCount": 8,
+            "hitCount": 8
+          },
+          {
+            "role": "test",
+            "recallAtK": 1.0,
+            "changedFileCount": 2,
+            "hitCount": 2
+          }
+        ],
+        "testRecommendationRate": 1.0,
+        "averageRecommendedContextFiles": 10.0
+      },
+      "fileRecallAt10": 0.48845237,
+      "testRecallAt10": 1.0,
+      "runtimeMillis": 1610,
+      "cacheHits": 0,
+      "cacheMisses": 0,
+      "tokenEfficiency": 1.1666666,
+      "protectedEvidenceMissRateAt10": 0.33673468,
+      "protectedEvidenceTargetMissRateAt10": 0.35135135,
+      "providerStatus": "evaluated",
+      "note": "Eval-only local metadata reranker gated to route-safe source-free query families."
+    },
+    {
+      "name": "local_semantic",
+      "status": "evaluated",
+      "semanticEnabled": true,
+      "precisionEnabled": false,
+      "rerankerEnabled": false,
+      "metrics": {
+        "k": 10,
+        "recallAtK": 0.3036905,
+        "precisionAtK": 0.17,
+        "mrrAtK": 0.5192857,
+        "roleRecall": [
+          {
+            "role": "source",
+            "recallAtK": 1.0,
+            "changedFileCount": 8,
+            "hitCount": 8
+          },
+          {
+            "role": "test",
+            "recallAtK": 1.0,
+            "changedFileCount": 2,
+            "hitCount": 2
+          }
+        ],
+        "testRecommendationRate": 1.0,
+        "averageRecommendedContextFiles": 10.0
+      },
+      "fileRecallAt10": 0.3036905,
+      "testRecallAt10": 1.0,
+      "runtimeMillis": 6012,
+      "cacheHits": 0,
+      "cacheMisses": 0,
+      "tokenEfficiency": 0.7083333,
+      "protectedEvidenceMissRateAt10": 0.52040815,
+      "protectedEvidenceTargetMissRateAt10": 0.6486486,
+      "providerStatus": "local_fastembed",
+      "note": "Explicit local semantic retrieval using source-free semantic documents."
+    },
+    {
+      "name": "precision_enriched_semantic",
+      "status": "skipped",
+      "semanticEnabled": true,
+      "precisionEnabled": true,
+      "rerankerEnabled": false,
+      "metrics": null,
+      "fileRecallAt10": 0.3036905,
+      "testRecallAt10": 1.0,
+      "runtimeMillis": 6012,
+      "cacheHits": 0,
+      "cacheMisses": 0,
+      "tokenEfficiency": 0.7083333,
+      "protectedEvidenceMissRateAt10": 0.52040815,
+      "protectedEvidenceTargetMissRateAt10": 0.6486486,
+      "providerStatus": "skipped",
+      "note": "Skipped because no fresh precision overlay was available."
+    },
+    {
+      "name": "semantic_precision_full_hybrid",
+      "status": "skipped",
+      "semanticEnabled": true,
+      "precisionEnabled": true,
+      "rerankerEnabled": false,
+      "metrics": null,
+      "fileRecallAt10": 0.3036905,
+      "testRecallAt10": 1.0,
+      "runtimeMillis": 6012,
+      "cacheHits": 0,
+      "cacheMisses": 0,
+      "tokenEfficiency": 0.7083333,
+      "protectedEvidenceMissRateAt10": 0.52040815,
+      "protectedEvidenceTargetMissRateAt10": 0.6486486,
+      "providerStatus": "skipped",
+      "note": "Full hybrid is held unless semantic plus precision beats default gates."
+    },
+    {
+      "name": "policy_allowed_reranked",
+      "status": "skipped",
+      "semanticEnabled": true,
+      "precisionEnabled": false,
+      "rerankerEnabled": false,
+      "metrics": null,
+      "fileRecallAt10": 0.3036905,
+      "testRecallAt10": 1.0,
+      "runtimeMillis": 6012,
+      "cacheHits": 0,
+      "cacheMisses": 0,
+      "tokenEfficiency": 0.7083333,
+      "protectedEvidenceMissRateAt10": 0.52040815,
+      "protectedEvidenceTargetMissRateAt10": 0.6486486,
+      "providerStatus": "disabled",
+      "note": "Reranker is disabled by default."
+    }
+  ],
+  "namedWins": [],
+  "namedRegressions": [],
+  "namedMisses": [
+    {
+      "sha": "2896e4f15533",
+      "variant": "local_semantic",
+      "reason": "Variant still missed gold changed files at K.",
+      "paths": [
+        ".planning/MILESTONES.md",
+        ".planning/ROADMAP.md",
+        ".planning/e2e/2026-06-06-rd-completion-audit.md",
+        "docs/benchmarking.md"
+      ]
+    },
+    {
+      "sha": "1a9879ed80d9",
+      "variant": "local_semantic",
+      "reason": "Variant still missed gold changed files at K.",
+      "paths": [
+        ".planning/MILESTONES.md",
+        ".planning/e2e/2026-06-06-rd-completion-audit.md",
+        "docs/policy-embedding.md"
+      ]
+    },
+    {
+      "sha": "39738ed4baac",
+      "variant": "local_semantic",
+      "reason": "Variant still missed gold changed files at K.",
+      "paths": [
+        ".planning/MILESTONES.md",
+        ".planning/e2e/2026-06-06-rd-completion-audit.md",
+        "docs/benchmarking.md"
+      ]
+    },
+    {
+      "sha": "fbcb04d72fd8",
+      "variant": "local_semantic",
+      "reason": "Variant still missed gold changed files at K.",
+      "paths": [
+        ".planning/MILESTONES.md"
+      ]
+    },
+    {
+      "sha": "42abf869c4b8",
+      "variant": "local_semantic",
+      "reason": "Variant still missed gold changed files at K.",
+      "paths": [
+        ".planning/MILESTONES.md",
+        ".planning/e2e/2026-06-06-rd-completion-audit.md",
+        ".planning/research/2026-06-01-world-class-context-engine-gap-plan.md",
+        "docs/semantic.md"
+      ]
+    },
+    {
+      "sha": "afc6bfe9b149",
+      "variant": "local_semantic",
+      "reason": "Variant still missed gold changed files at K.",
+      "paths": [
+        ".planning/MILESTONES.md",
+        ".planning/e2e/2026-06-06-rd-completion-audit.md",
+        ".planning/research/2026-06-01-world-class-context-engine-gap-plan.md",
+        "docs/benchmarking.md",
+        "docs/memory.md"
+      ]
+    },
+    {
+      "sha": "024d054f679c",
+      "variant": "local_semantic",
+      "reason": "Variant still missed gold changed files at K.",
+      "paths": [
+        ".planning/MILESTONES.md",
+        ".planning/STATE.md",
+        ".planning/e2e/2026-06-06-rd-completion-audit.md",
+        ".planning/research/2026-06-01-world-class-context-engine-gap-plan.md",
+        "docs/benchmarking.md",
+        "docs/memory.md"
+      ]
+    },
+    {
+      "sha": "f17ff7004591",
+      "variant": "local_semantic",
+      "reason": "Variant still missed gold changed files at K.",
+      "paths": [
+        ".planning/MILESTONES.md",
+        ".planning/e2e/2026-06-06-rd-completion-audit.md",
+        ".planning/research/2026-06-01-world-class-context-engine-gap-plan.md",
+        "docs/benchmarking.md",
+        "docs/semantic.md"
+      ]
+    },
+    {
+      "sha": "15441f44dfda",
+      "variant": "local_semantic",
+      "reason": "Variant still missed gold changed files at K.",
+      "paths": [
+        ".planning/MILESTONES.md",
+        ".planning/STATE.md",
+        ".planning/e2e/2026-06-06-rd-completion-audit.md",
+        ".planning/research/2026-06-01-world-class-context-engine-gap-plan.md",
+        "scripts/e2e-agent-run-codex.sh"
+      ]
+    },
+    {
+      "sha": "8eaa6c1efbe7",
+      "variant": "local_semantic",
+      "reason": "Variant still missed gold changed files at K.",
+      "paths": [
+        ".planning/MILESTONES.md",
+        ".planning/research/2026-06-01-world-class-context-engine-gap-plan.md",
+        "docs/agent-setup.md"
+      ]
+    }
+  ],
+  "semanticContribution": {
+    "evaluatedCommits": 10,
+    "commitsWithSemanticSelection": 5,
+    "semanticSelectedFileCount": 6,
+    "semanticTargetHitCount": 0,
+    "semanticOnlyTargetHitCount": 0,
+    "semanticOnlyNonTargetCount": 2,
+    "semanticLexicalOverlapCount": 4,
+    "semanticMissedTargetCount": 56,
+    "averageSemanticSelectedFiles": 0.6,
+    "semanticTargetHitRate": 0.0,
+    "semanticOnlyTargetHitRate": 0.0,
+    "semanticOnlyNonTargetRate": 1.0,
+    "semanticOnlyHits": [],
+    "semanticOnlyNonTargets": [
+      {
+        "sha": "39738ed4baac",
+        "variant": "local_semantic",
+        "reason": "Semantic selected non-target path(s) absent from the lexical baseline top K.",
+        "paths": [
+          "crates/ctxhelm-compiler/src/ranking.rs"
+        ]
+      },
+      {
+        "sha": "f17ff7004591",
+        "variant": "local_semantic",
+        "reason": "Semantic selected non-target path(s) absent from the lexical baseline top K.",
+        "paths": [
+          "crates/ctxhelm-index/src/semantic.rs"
+        ]
+      }
+    ],
+    "semanticMissedTargetGapFamilies": [
+      {
+        "signalGap": "semantic_miss_lexical_covered",
+        "missedCount": 36,
+        "examplePaths": [
+          ".planning/MILESTONES.md",
+          ".planning/ROADMAP.md",
+          "crates/ctxhelm-compiler/src/eval.rs",
+          "docs/benchmarking.md",
+          "crates/ctxhelm-compiler/src/ranking.rs"
+        ]
+      },
+      {
+        "signalGap": "semantic_miss_no_candidate_signal",
+        "missedCount": 17,
+        "examplePaths": [
+          ".planning/e2e/2026-06-06-rd-completion-audit.md",
+          "docs/policy-embedding.md",
+          ".planning/research/2026-06-01-world-class-context-engine-gap-plan.md",
+          "docs/benchmarking.md",
+          ".planning/STATE.md"
+        ]
+      },
+      {
+        "signalGap": "semantic_miss_nonsemantic_coupled_signal",
+        "missedCount": 3,
+        "examplePaths": [
+          "crates/ctxhelm-compiler/src/planning.rs",
+          "crates/ctxhelm/tests/release_packaging.rs"
+        ]
+      }
+    ]
+  },
+  "rerankerContribution": {
+    "evaluatedCommits": 10,
+    "improvedCommitCount": 9,
+    "regressedCommitCount": 0,
+    "neutralCommitCount": 1,
+    "defaultTargetHitCount": 17,
+    "rerankedTargetHitCount": 35,
+    "targetHitDelta": 18,
+    "rerankerOnlyTargetHitCount": 20,
+    "defaultOnlyTargetHitCount": 2,
+    "protectedEvidenceMissRateDelta": -0.33673468,
+    "protectedEvidenceTargetMissRateDelta": -0.5405405,
+    "improvedCases": [
+      {
+        "sha": "2896e4f15533",
+        "variant": "local_metadata_reranked",
+        "reason": "Reranker retrieved additional gold changed file(s) beyond default.",
+        "paths": [
+          ".planning/MILESTONES.md",
+          ".planning/ROADMAP.md",
+          "docs/benchmarking.md"
+        ]
+      },
+      {
+        "sha": "39738ed4baac",
+        "variant": "local_metadata_reranked",
+        "reason": "Reranker retrieved additional gold changed file(s) beyond default.",
+        "paths": [
+          ".planning/MILESTONES.md",
+          "docs/benchmarking.md"
+        ]
+      },
+      {
+        "sha": "fbcb04d72fd8",
+        "variant": "local_metadata_reranked",
+        "reason": "Reranker retrieved additional gold changed file(s) beyond default.",
+        "paths": [
+          ".planning/MILESTONES.md"
+        ]
+      },
+      {
+        "sha": "42abf869c4b8",
+        "variant": "local_metadata_reranked",
+        "reason": "Reranker retrieved additional gold changed file(s) beyond default.",
+        "paths": [
+          ".planning/MILESTONES.md"
+        ]
+      },
+      {
+        "sha": "afc6bfe9b149",
+        "variant": "local_metadata_reranked",
+        "reason": "Reranker retrieved additional gold changed file(s) beyond default.",
+        "paths": [
+          ".planning/research/2026-06-01-world-class-context-engine-gap-plan.md",
+          "docs/memory.md"
+        ]
+      },
+      {
+        "sha": "024d054f679c",
+        "variant": "local_metadata_reranked",
+        "reason": "Reranker retrieved additional gold changed file(s) beyond default.",
+        "paths": [
+          ".planning/MILESTONES.md",
+          ".planning/research/2026-06-01-world-class-context-engine-gap-plan.md",
+          "docs/benchmarking.md"
+        ]
+      },
+      {
+        "sha": "f17ff7004591",
+        "variant": "local_metadata_reranked",
+        "reason": "Reranker retrieved additional gold changed file(s) beyond default.",
+        "paths": [
+          ".planning/MILESTONES.md",
+          "docs/benchmarking.md"
+        ]
+      },
+      {
+        "sha": "15441f44dfda",
+        "variant": "local_metadata_reranked",
+        "reason": "Reranker retrieved additional gold changed file(s) beyond default.",
+        "paths": [
+          ".planning/MILESTONES.md",
+          ".planning/STATE.md",
+          ".planning/research/2026-06-01-world-class-context-engine-gap-plan.md",
+          "scripts/e2e-agent-run-codex.sh"
+        ]
+      },
+      {
+        "sha": "8eaa6c1efbe7",
+        "variant": "local_metadata_reranked",
+        "reason": "Reranker retrieved additional gold changed file(s) beyond default.",
+        "paths": [
+          ".planning/MILESTONES.md"
+        ]
+      }
+    ],
+    "regressedCases": [],
+    "defaultOnlyCases": [
+      {
+        "sha": "1a9879ed80d9",
+        "variant": "local_metadata_reranked",
+        "reason": "Reranker replaced target file(s) that default retrieved.",
+        "paths": [
+          "crates/ctxhelm-compiler/src/planning.rs"
+        ]
+      },
+      {
+        "sha": "afc6bfe9b149",
+        "variant": "local_metadata_reranked",
+        "reason": "Reranker replaced target file(s) that default retrieved.",
+        "paths": [
+          ".planning/STATE.md"
+        ]
+      }
+    ],
+    "queryFamilyContributions": [
+      {
+        "family": "commit_clue",
+        "evaluatedCommits": 3,
+        "improvedCommitCount": 3,
+        "regressedCommitCount": 0,
+        "neutralCommitCount": 0,
+        "defaultTargetHitCount": 6,
+        "rerankedTargetHitCount": 13,
+        "targetHitDelta": 7,
+        "rerankerOnlyTargetHitCount": 7,
+        "defaultOnlyTargetHitCount": 0,
+        "routingRecommendation": "route_candidate",
+        "exampleCases": [
+          {
+            "sha": "2896e4f15533",
+            "variant": "local_metadata_reranked",
+            "reason": "Reranker retrieved additional gold changed file(s) beyond default.",
+            "paths": [
+              ".planning/MILESTONES.md",
+              ".planning/ROADMAP.md",
+              "docs/benchmarking.md"
+            ]
+          },
+          {
+            "sha": "39738ed4baac",
+            "variant": "local_metadata_reranked",
+            "reason": "Reranker retrieved additional gold changed file(s) beyond default.",
+            "paths": [
+              ".planning/MILESTONES.md",
+              "docs/benchmarking.md"
+            ]
+          },
+          {
+            "sha": "f17ff7004591",
+            "variant": "local_metadata_reranked",
+            "reason": "Reranker retrieved additional gold changed file(s) beyond default.",
+            "paths": [
+              ".planning/MILESTONES.md",
+              "docs/benchmarking.md"
+            ]
+          }
+        ]
+      },
+      {
+        "family": "domain_phrase",
+        "evaluatedCommits": 5,
+        "improvedCommitCount": 4,
+        "regressedCommitCount": 0,
+        "neutralCommitCount": 1,
+        "defaultTargetHitCount": 9,
+        "rerankedTargetHitCount": 16,
+        "targetHitDelta": 7,
+        "rerankerOnlyTargetHitCount": 9,
+        "defaultOnlyTargetHitCount": 2,
+        "routingRecommendation": "hold_churn",
+        "exampleCases": [
+          {
+            "sha": "1a9879ed80d9",
+            "variant": "local_metadata_reranked",
+            "reason": "Reranker churned target file(s) without changing target-hit count.",
+            "paths": [
+              "crates/ctxhelm-compiler/src/planning.rs"
+            ]
+          },
+          {
+            "sha": "fbcb04d72fd8",
+            "variant": "local_metadata_reranked",
+            "reason": "Reranker retrieved additional gold changed file(s) beyond default.",
+            "paths": [
+              ".planning/MILESTONES.md"
+            ]
+          },
+          {
+            "sha": "afc6bfe9b149",
+            "variant": "local_metadata_reranked",
+            "reason": "Reranker retrieved additional gold changed file(s) beyond default.",
+            "paths": [
+              ".planning/research/2026-06-01-world-class-context-engine-gap-plan.md",
+              "docs/memory.md"
+            ]
+          },
+          {
+            "sha": "15441f44dfda",
+            "variant": "local_metadata_reranked",
+            "reason": "Reranker retrieved additional gold changed file(s) beyond default.",
+            "paths": [
+              ".planning/MILESTONES.md",
+              ".planning/STATE.md",
+              ".planning/research/2026-06-01-world-class-context-engine-gap-plan.md",
+              "scripts/e2e-agent-run-codex.sh"
+            ]
+          },
+          {
+            "sha": "8eaa6c1efbe7",
+            "variant": "local_metadata_reranked",
+            "reason": "Reranker retrieved additional gold changed file(s) beyond default.",
+            "paths": [
+              ".planning/MILESTONES.md"
+            ]
+          }
+        ]
+      },
+      {
+        "family": "symbol_identifier",
+        "evaluatedCommits": 2,
+        "improvedCommitCount": 2,
+        "regressedCommitCount": 0,
+        "neutralCommitCount": 0,
+        "defaultTargetHitCount": 2,
+        "rerankedTargetHitCount": 6,
+        "targetHitDelta": 4,
+        "rerankerOnlyTargetHitCount": 4,
+        "defaultOnlyTargetHitCount": 0,
+        "routingRecommendation": "route_candidate",
+        "exampleCases": [
+          {
+            "sha": "42abf869c4b8",
+            "variant": "local_metadata_reranked",
+            "reason": "Reranker retrieved additional gold changed file(s) beyond default.",
+            "paths": [
+              ".planning/MILESTONES.md"
+            ]
+          },
+          {
+            "sha": "024d054f679c",
+            "variant": "local_metadata_reranked",
+            "reason": "Reranker retrieved additional gold changed file(s) beyond default.",
+            "paths": [
+              ".planning/MILESTONES.md",
+              ".planning/research/2026-06-01-world-class-context-engine-gap-plan.md",
+              "docs/benchmarking.md"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "routedRerankerContribution": {
+    "evaluatedCommits": 10,
+    "improvedCommitCount": 5,
+    "regressedCommitCount": 0,
+    "neutralCommitCount": 5,
+    "defaultTargetHitCount": 17,
+    "rerankedTargetHitCount": 28,
+    "targetHitDelta": 11,
+    "rerankerOnlyTargetHitCount": 11,
+    "defaultOnlyTargetHitCount": 0,
+    "protectedEvidenceMissRateDelta": -0.18367347,
+    "protectedEvidenceTargetMissRateDelta": -0.29729727,
+    "improvedCases": [
+      {
+        "sha": "2896e4f15533",
+        "variant": "local_metadata_reranked",
+        "reason": "Reranker retrieved additional gold changed file(s) beyond default.",
+        "paths": [
+          ".planning/MILESTONES.md",
+          ".planning/ROADMAP.md",
+          "docs/benchmarking.md"
+        ]
+      },
+      {
+        "sha": "39738ed4baac",
+        "variant": "local_metadata_reranked",
+        "reason": "Reranker retrieved additional gold changed file(s) beyond default.",
+        "paths": [
+          ".planning/MILESTONES.md",
+          "docs/benchmarking.md"
+        ]
+      },
+      {
+        "sha": "42abf869c4b8",
+        "variant": "local_metadata_reranked",
+        "reason": "Reranker retrieved additional gold changed file(s) beyond default.",
+        "paths": [
+          ".planning/MILESTONES.md"
+        ]
+      },
+      {
+        "sha": "024d054f679c",
+        "variant": "local_metadata_reranked",
+        "reason": "Reranker retrieved additional gold changed file(s) beyond default.",
+        "paths": [
+          ".planning/MILESTONES.md",
+          ".planning/research/2026-06-01-world-class-context-engine-gap-plan.md",
+          "docs/benchmarking.md"
+        ]
+      },
+      {
+        "sha": "f17ff7004591",
+        "variant": "local_metadata_reranked",
+        "reason": "Reranker retrieved additional gold changed file(s) beyond default.",
+        "paths": [
+          ".planning/MILESTONES.md",
+          "docs/benchmarking.md"
+        ]
+      }
+    ],
+    "regressedCases": [],
+    "defaultOnlyCases": [],
+    "queryFamilyContributions": [
+      {
+        "family": "commit_clue",
+        "evaluatedCommits": 3,
+        "improvedCommitCount": 3,
+        "regressedCommitCount": 0,
+        "neutralCommitCount": 0,
+        "defaultTargetHitCount": 6,
+        "rerankedTargetHitCount": 13,
+        "targetHitDelta": 7,
+        "rerankerOnlyTargetHitCount": 7,
+        "defaultOnlyTargetHitCount": 0,
+        "routingRecommendation": "route_candidate",
+        "exampleCases": [
+          {
+            "sha": "2896e4f15533",
+            "variant": "local_metadata_reranked",
+            "reason": "Reranker retrieved additional gold changed file(s) beyond default.",
+            "paths": [
+              ".planning/MILESTONES.md",
+              ".planning/ROADMAP.md",
+              "docs/benchmarking.md"
+            ]
+          },
+          {
+            "sha": "39738ed4baac",
+            "variant": "local_metadata_reranked",
+            "reason": "Reranker retrieved additional gold changed file(s) beyond default.",
+            "paths": [
+              ".planning/MILESTONES.md",
+              "docs/benchmarking.md"
+            ]
+          },
+          {
+            "sha": "f17ff7004591",
+            "variant": "local_metadata_reranked",
+            "reason": "Reranker retrieved additional gold changed file(s) beyond default.",
+            "paths": [
+              ".planning/MILESTONES.md",
+              "docs/benchmarking.md"
+            ]
+          }
+        ]
+      },
+      {
+        "family": "symbol_identifier",
+        "evaluatedCommits": 2,
+        "improvedCommitCount": 2,
+        "regressedCommitCount": 0,
+        "neutralCommitCount": 0,
+        "defaultTargetHitCount": 2,
+        "rerankedTargetHitCount": 6,
+        "targetHitDelta": 4,
+        "rerankerOnlyTargetHitCount": 4,
+        "defaultOnlyTargetHitCount": 0,
+        "routingRecommendation": "route_candidate",
+        "exampleCases": [
+          {
+            "sha": "42abf869c4b8",
+            "variant": "local_metadata_reranked",
+            "reason": "Reranker retrieved additional gold changed file(s) beyond default.",
+            "paths": [
+              ".planning/MILESTONES.md"
+            ]
+          },
+          {
+            "sha": "024d054f679c",
+            "variant": "local_metadata_reranked",
+            "reason": "Reranker retrieved additional gold changed file(s) beyond default.",
+            "paths": [
+              ".planning/MILESTONES.md",
+              ".planning/research/2026-06-01-world-class-context-engine-gap-plan.md",
+              "docs/benchmarking.md"
+            ]
+          }
+        ]
+      },
+      {
+        "family": "domain_phrase",
+        "evaluatedCommits": 5,
+        "improvedCommitCount": 0,
+        "regressedCommitCount": 0,
+        "neutralCommitCount": 5,
+        "defaultTargetHitCount": 9,
+        "rerankedTargetHitCount": 9,
+        "targetHitDelta": 0,
+        "rerankerOnlyTargetHitCount": 0,
+        "defaultOnlyTargetHitCount": 0,
+        "routingRecommendation": "hold_neutral",
+        "exampleCases": []
+      }
+    ]
+  },
+  "providerPolicy": {
+    "policyPath": null,
+    "policy": {
+      "schemaVersion": 1,
+      "name": "local-source-free-default",
+      "allowLocalProviders": true,
+      "allowCloudEmbeddings": false,
+      "allowCloudReranking": false,
+      "allowSourceTransfer": false,
+      "enableLocalMetadataReranker": false,
+      "enableLocalFixtureReranker": false,
+      "sourceTextLogged": false
+    },
+    "decisions": [
+      {
+        "capability": "semantic_embedding",
+        "provider": "local_hash",
+        "status": "allowed",
+        "dataClasses": [
+          "metadata",
+          "semantic_vector"
+        ],
+        "remoteAllowed": false,
+        "sourceTextAllowed": false,
+        "reason": "Default deterministic local semantic metadata provider."
+      },
+      {
+        "capability": "semantic_embedding",
+        "provider": "cloud_embedding",
+        "status": "denied",
+        "dataClasses": [
+          "metadata",
+          "source_text"
+        ],
+        "remoteAllowed": false,
+        "sourceTextAllowed": false,
+        "reason": "Cloud embeddings require both cloud and source-transfer policy."
+      },
+      {
+        "capability": "precision_graph",
+        "provider": "local_precision_overlay",
+        "status": "allowed",
+        "dataClasses": [
+          "metadata"
+        ],
+        "remoteAllowed": false,
+        "sourceTextAllowed": false,
+        "reason": "Local precision overlays are metadata-only."
+      },
+      {
+        "capability": "reranking",
+        "provider": "local_metadata",
+        "status": "disabled",
+        "dataClasses": [
+          "metadata"
+        ],
+        "remoteAllowed": false,
+        "sourceTextAllowed": false,
+        "reason": "Reranker is disabled by default."
+      },
+      {
+        "capability": "semantic_embedding",
+        "provider": "local_fastembed",
+        "status": "allowed",
+        "dataClasses": [
+          "metadata",
+          "semantic_vector"
+        ],
+        "remoteAllowed": false,
+        "sourceTextAllowed": false,
+        "reason": "Local source-free semantic provider is allowed."
+      }
+    ],
+    "diagnostics": [
+      {
+        "code": "provider_policy_absent_safe_defaults",
+        "severity": "info",
+        "message": "Provider policy file was not found; using local source-free defaults.",
+        "paths": [],
+        "count": 0
+      },
+      {
+        "code": "provider_policy_remote_denied",
+        "severity": "info",
+        "message": "Remote embedding or reranking providers are blocked by local source-free policy.",
+        "paths": [],
+        "count": 1
+      }
+    ],
+    "sourceTextLogged": false,
+    "privacyStatus": {
+      "localOnly": true,
+      "remoteEmbeddingsUsed": false,
+      "remoteRerankingUsed": false,
+      "redactionsApplied": 0
+    }
+  },
+  "precisionStatus": {
+    "status": "unavailable",
+    "provider": null,
+    "overlayPath": "/Users/romel/Documents/GitHub/ctxhelm/.ctxhelm/precision-edges.json",
+    "edgeCount": 0,
+    "rejectedEdgeCount": 0,
+    "stale": false,
+    "degraded": false,
+    "diagnostics": []
+  },
+  "diagnostics": [
+    {
+      "code": "provider_policy_absent_safe_defaults",
+      "severity": "info",
+      "message": "Provider policy file was not found; using local source-free defaults.",
+      "paths": [],
+      "count": 0
+    },
+    {
+      "code": "provider_policy_remote_denied",
+      "severity": "info",
+      "message": "Remote embedding or reranking providers are blocked by local source-free policy.",
+      "paths": [],
+      "count": 1
+    },
+    {
+      "code": "semantic_contribution_unique_non_targets",
+      "severity": "info",
+      "message": "Semantic provider `local_fastembed` contributed files outside the lexical baseline, but those unique semantic files were not retrieval targets.",
+      "paths": [
+        "crates/ctxhelm-compiler/src/ranking.rs",
+        "crates/ctxhelm-index/src/semantic.rs"
+      ],
+      "count": 2
+    },
+    {
+      "code": "semantic_contribution_missed_targets_coupled",
+      "severity": "info",
+      "message": "Semantic provider `local_fastembed` missed target files that already had source-free graph/history/symbol signals; prioritize graph/fusion ordering before adding more semantic text.",
+      "paths": [
+        "crates/ctxhelm-compiler/src/planning.rs",
+        "crates/ctxhelm/tests/release_packaging.rs"
+      ],
+      "count": 3
+    },
+    {
+      "code": "semantic_contribution_missed_targets_no_signal",
+      "severity": "warning",
+      "message": "Semantic provider `local_fastembed` missed target files with no lexical, graph, history, or area signal; inspect semantic document/query construction for these path families.",
+      "paths": [
+        ".planning/e2e/2026-06-06-rd-completion-audit.md",
+        "docs/policy-embedding.md",
+        ".planning/research/2026-06-01-world-class-context-engine-gap-plan.md",
+        "docs/benchmarking.md",
+        ".planning/STATE.md"
+      ],
+      "count": 17
+    },
+    {
+      "code": "reranker_contribution_target_lift",
+      "severity": "info",
+      "message": "Local metadata reranker retrieved additional target files on measured commits.",
+      "paths": [
+        ".planning/MILESTONES.md",
+        ".planning/ROADMAP.md",
+        "docs/benchmarking.md",
+        ".planning/MILESTONES.md",
+        "docs/benchmarking.md",
+        ".planning/MILESTONES.md",
+        ".planning/MILESTONES.md",
+        ".planning/research/2026-06-01-world-class-context-engine-gap-plan.md",
+        "docs/memory.md",
+        ".planning/MILESTONES.md"
+      ],
+      "count": 9
+    },
+    {
+      "code": "reranker_contribution_protected_target_improved",
+      "severity": "info",
+      "message": "Local metadata reranker reduced protected retrieval-target miss-rate by 0.541.",
+      "paths": [],
+      "count": 35
+    },
+    {
+      "code": "reranker_contribution_target_churn",
+      "severity": "info",
+      "message": "Local metadata reranker added target hits but also replaced some target files that default retrieved; use this as routing evidence rather than an unconditional default.",
+      "paths": [
+        "crates/ctxhelm-compiler/src/planning.rs",
+        ".planning/STATE.md"
+      ],
+      "count": 2
+    },
+    {
+      "code": "reranker_query_family_route_candidate",
+      "severity": "info",
+      "message": "Some query families show reranker lift without target churn; keep them as routing candidates pending repeated proof.",
+      "paths": [
+        ".planning/MILESTONES.md",
+        ".planning/ROADMAP.md",
+        "docs/benchmarking.md",
+        ".planning/MILESTONES.md",
+        "docs/benchmarking.md",
+        ".planning/MILESTONES.md",
+        "docs/benchmarking.md",
+        ".planning/MILESTONES.md",
+        ".planning/MILESTONES.md",
+        ".planning/research/2026-06-01-world-class-context-engine-gap-plan.md"
+      ],
+      "count": 2
+    },
+    {
+      "code": "reranker_query_family_churn_hold",
+      "severity": "info",
+      "message": "Some query families improve net target hits but still churn default targets; hold routing for those families until churn is reduced.",
+      "paths": [
+        "crates/ctxhelm-compiler/src/planning.rs",
+        ".planning/MILESTONES.md",
+        ".planning/research/2026-06-01-world-class-context-engine-gap-plan.md",
+        "docs/memory.md",
+        ".planning/MILESTONES.md",
+        ".planning/STATE.md",
+        ".planning/research/2026-06-01-world-class-context-engine-gap-plan.md",
+        "scripts/e2e-agent-run-codex.sh",
+        ".planning/MILESTONES.md"
+      ],
+      "count": 1
+    },
+    {
+      "code": "routed_reranker_clean_lift",
+      "severity": "info",
+      "message": "Query-family routed reranker added target hits without default-only target churn in this gate.",
+      "paths": [
+        ".planning/MILESTONES.md",
+        ".planning/ROADMAP.md",
+        "docs/benchmarking.md",
+        ".planning/MILESTONES.md",
+        "docs/benchmarking.md",
+        ".planning/MILESTONES.md",
+        ".planning/MILESTONES.md",
+        ".planning/research/2026-06-01-world-class-context-engine-gap-plan.md",
+        "docs/benchmarking.md",
+        ".planning/MILESTONES.md"
+      ],
+      "count": 5
+    }
+  ],
+  "sourceTextLogged": false,
+  "privacyStatus": {
+    "localOnly": true,
+    "remoteEmbeddingsUsed": false,
+    "remoteRerankingUsed": false,
+    "redactionsApplied": 0
+  }
+}

@@ -85,6 +85,8 @@ pub struct HistoricalEvalOptions {
     #[serde(default)]
     pub local_metadata_reranker: bool,
     #[serde(default)]
+    pub query_family_routed_reranker: bool,
+    #[serde(default)]
     pub cache_enabled: bool,
     #[serde(default)]
     pub force_refresh: bool,
@@ -194,6 +196,8 @@ pub struct HistoricalEvalEffectiveFilters {
     pub semantic_enabled: bool,
     pub semantic_provider: Option<String>,
     pub local_metadata_reranker: bool,
+    #[serde(default)]
+    pub query_family_routed_reranker: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -350,6 +354,8 @@ pub struct SemanticPrecisionGateReport {
     pub semantic_contribution: SemanticContributionSummary,
     #[serde(default)]
     pub reranker_contribution: RerankerContributionSummary,
+    #[serde(default)]
+    pub routed_reranker_contribution: RerankerContributionSummary,
     pub provider_policy: ProviderPolicyReport,
     pub precision_status: PrecisionStatusReport,
     #[serde(default)]
@@ -2958,6 +2964,7 @@ pub fn semantic_precision_gate_report_with_provider(
             semantic_enabled: false,
             semantic_provider: semantic_provider.clone(),
             local_metadata_reranker: false,
+            query_family_routed_reranker: false,
             cache_enabled: false,
             force_refresh: false,
             parallelism: 1,
@@ -2977,6 +2984,7 @@ pub fn semantic_precision_gate_report_with_provider(
                 semantic_enabled: false,
                 semantic_provider: semantic_provider.clone(),
                 local_metadata_reranker: false,
+                query_family_routed_reranker: false,
                 cache_enabled: false,
                 force_refresh: false,
                 parallelism: 1,
@@ -2988,13 +2996,32 @@ pub fn semantic_precision_gate_report_with_provider(
         &HistoricalEvalOptions {
             limit,
             ranking_budget,
-            task_type,
+            task_type: task_type.clone(),
             target_agent: "generic".to_string(),
             base: None,
             head: None,
             semantic_enabled: false,
             semantic_provider: semantic_provider.clone(),
             local_metadata_reranker: true,
+            query_family_routed_reranker: false,
+            cache_enabled: false,
+            force_refresh: false,
+            parallelism: 1,
+        },
+    )?;
+    let routed_reranked = evaluate_historical_commits(
+        repo_root,
+        &HistoricalEvalOptions {
+            limit,
+            ranking_budget,
+            task_type: task_type.clone(),
+            target_agent: "generic".to_string(),
+            base: None,
+            head: None,
+            semantic_enabled: false,
+            semantic_provider: semantic_provider.clone(),
+            local_metadata_reranker: false,
+            query_family_routed_reranker: true,
             cache_enabled: false,
             force_refresh: false,
             parallelism: 1,
@@ -3040,6 +3067,17 @@ pub fn semantic_precision_gate_report_with_provider(
             &reranked,
             "evaluated",
             "Eval-only deterministic local metadata reranker over source-free candidate metadata.",
+        ),
+        gate_variant(
+            "query_family_routed_reranked",
+            SemanticPrecisionVariantStatus::Evaluated,
+            false,
+            false,
+            true,
+            Some(routed_reranked.ranking_comparison.combined.clone()),
+            &routed_reranked,
+            "evaluated",
+            "Eval-only local metadata reranker gated to route-safe source-free query families.",
         ),
         gate_variant(
             "local_semantic",
@@ -3125,6 +3163,12 @@ pub fn semantic_precision_gate_report_with_provider(
         "local_metadata_reranked",
         NamedCaseKind::Regression,
     ));
+    named_regressions.extend(named_cases(
+        &default,
+        &routed_reranked,
+        "query_family_routed_reranked",
+        NamedCaseKind::Regression,
+    ));
     named_regressions.extend(protected_evidence_regressions(
         &default,
         &semantic,
@@ -3135,9 +3179,15 @@ pub fn semantic_precision_gate_report_with_provider(
         &reranked,
         "local_metadata_reranked",
     ));
+    named_regressions.extend(protected_evidence_regressions(
+        &default,
+        &routed_reranked,
+        "query_family_routed_reranked",
+    ));
     let named_misses = named_cases(&default, &semantic, "local_semantic", NamedCaseKind::Miss);
     let semantic_contribution = semantic_contribution_summary(&semantic);
     let reranker_contribution = reranker_contribution_summary(&default, &reranked);
+    let routed_reranker_contribution = reranker_contribution_summary(&default, &routed_reranked);
     let (decision, decision_reason) =
         gate_decision_from_variants(&variants, &named_regressions, &provider_policy);
     let mut diagnostics = provider_policy.diagnostics.clone();
@@ -3146,6 +3196,9 @@ pub fn semantic_precision_gate_report_with_provider(
         semantic_provider_status,
     ));
     diagnostics.extend(reranker_contribution_diagnostics(&reranker_contribution));
+    diagnostics.extend(routed_reranker_contribution_diagnostics(
+        &routed_reranker_contribution,
+    ));
     if !named_regressions.is_empty() {
         diagnostics.push(Diagnostic {
             code: "semantic_precision_named_regressions".to_string(),
@@ -3173,6 +3226,7 @@ pub fn semantic_precision_gate_report_with_provider(
         named_misses,
         semantic_contribution,
         reranker_contribution,
+        routed_reranker_contribution,
         provider_policy,
         precision_status: precision,
         diagnostics,
@@ -3755,14 +3809,28 @@ fn reranker_contribution_summary(
 }
 
 fn reranker_query_family(commit: &HistoricalCommitEval) -> String {
-    if commit.broad_scope_task {
+    query_family_from_parts(
+        &commit.task_type,
+        commit.low_information_task,
+        commit.broad_scope_task,
+        commit.query_trace.as_ref(),
+    )
+}
+
+fn query_family_from_parts(
+    task_type: &TaskType,
+    low_information_task: bool,
+    broad_scope_task: bool,
+    query_trace: Option<&QueryConstructionTrace>,
+) -> String {
+    if broad_scope_task {
         return "broad_scope".to_string();
     }
-    if commit.low_information_task {
+    if low_information_task {
         return "low_information".to_string();
     }
-    let Some(trace) = &commit.query_trace else {
-        return format!("task_type_{:?}", commit.task_type).to_ascii_lowercase();
+    let Some(trace) = query_trace else {
+        return format!("task_type_{task_type:?}").to_ascii_lowercase();
     };
     if trace.facets.iter().any(|facet| {
         matches!(
@@ -3801,7 +3869,11 @@ fn reranker_query_family(commit: &HistoricalCommitEval) -> String {
     {
         return "domain_phrase".to_string();
     }
-    format!("task_type_{:?}", commit.task_type).to_ascii_lowercase()
+    format!("task_type_{task_type:?}").to_ascii_lowercase()
+}
+
+fn local_metadata_reranker_route_enabled_for_family(family: &str) -> bool {
+    matches!(family, "commit_clue" | "symbol_identifier")
 }
 
 fn reranker_routing_recommendation(
@@ -3939,6 +4011,66 @@ fn reranker_contribution_diagnostics(summary: &RerankerContributionSummary) -> V
                 .take(10)
                 .collect(),
             count: churn_held_families.len(),
+        });
+    }
+    diagnostics
+}
+
+fn routed_reranker_contribution_diagnostics(
+    summary: &RerankerContributionSummary,
+) -> Vec<Diagnostic> {
+    if summary.evaluated_commits == 0 {
+        return Vec::new();
+    }
+    let mut diagnostics = Vec::new();
+    if summary.regressed_commit_count > 0 || summary.target_hit_delta < 0 {
+        diagnostics.push(Diagnostic {
+            code: "routed_reranker_regression".to_string(),
+            severity: DiagnosticSeverity::Warning,
+            message:
+                "Query-family routed reranker lost target hits; keep routed reranking eval-only."
+                    .to_string(),
+            paths: summary
+                .regressed_cases
+                .iter()
+                .flat_map(|case| case.paths.clone())
+                .take(10)
+                .collect(),
+            count: summary.regressed_commit_count,
+        });
+    } else if summary.target_hit_delta > 0 && summary.default_only_target_hit_count == 0 {
+        diagnostics.push(Diagnostic {
+            code: "routed_reranker_clean_lift".to_string(),
+            severity: DiagnosticSeverity::Info,
+            message: "Query-family routed reranker added target hits without default-only target churn in this gate.".to_string(),
+            paths: summary
+                .improved_cases
+                .iter()
+                .flat_map(|case| case.paths.clone())
+                .take(10)
+                .collect(),
+            count: summary.improved_commit_count,
+        });
+    } else if summary.target_hit_delta > 0 && summary.default_only_target_hit_count > 0 {
+        diagnostics.push(Diagnostic {
+            code: "routed_reranker_churn_hold".to_string(),
+            severity: DiagnosticSeverity::Info,
+            message: "Query-family routed reranker added target hits but still churned default targets; hold routing policy.".to_string(),
+            paths: summary
+                .default_only_cases
+                .iter()
+                .flat_map(|case| case.paths.clone())
+                .take(10)
+                .collect(),
+            count: summary.default_only_target_hit_count,
+        });
+    } else {
+        diagnostics.push(Diagnostic {
+            code: "routed_reranker_neutral".to_string(),
+            severity: DiagnosticSeverity::Info,
+            message: "Query-family routed reranker preserved target hits but did not add target hits in this gate.".to_string(),
+            paths: Vec::new(),
+            count: summary.neutral_commit_count,
         });
     }
     diagnostics
@@ -4265,6 +4397,7 @@ fn run_benchmark_repo(
         semantic_enabled: effective_config.semantic_enabled,
         semantic_provider,
         local_metadata_reranker: effective_config.local_metadata_reranker,
+        query_family_routed_reranker: false,
         cache_enabled: effective_config.cache_enabled,
         force_refresh: effective_config.force_refresh,
         parallelism: effective_config.parallelism,
@@ -4713,6 +4846,7 @@ pub fn evaluate_historical_commits(
             .semantic_enabled
             .then(|| options.semantic_provider.provider.clone()),
         local_metadata_reranker: options.local_metadata_reranker,
+        query_family_routed_reranker: options.query_family_routed_reranker,
     };
     let eval_range_id = historical_eval_range_id(&repo_id, &effective_filters, &refs);
 
@@ -5398,7 +5532,16 @@ fn evaluate_historical_commit_sample(
         ranking_budget,
         !multi_area_task,
     );
-    let recommended_context_files = if options.local_metadata_reranker {
+    let query_family = query_family_from_parts(
+        &options.task_type,
+        is_low_information_task(&task),
+        multi_area_task,
+        plan.query_trace.as_ref(),
+    );
+    let should_apply_reranker = options.local_metadata_reranker
+        || (options.query_family_routed_reranker
+            && local_metadata_reranker_route_enabled_for_family(&query_family));
+    let recommended_context_files = if should_apply_reranker {
         local_metadata_reranked_context_files(
             &plan,
             ranking_budget,
@@ -9719,6 +9862,53 @@ mod tests {
     }
 
     #[test]
+    fn query_family_routed_reranker_only_enables_clean_candidate_families() {
+        assert!(local_metadata_reranker_route_enabled_for_family(
+            "symbol_identifier"
+        ));
+        assert!(local_metadata_reranker_route_enabled_for_family(
+            "commit_clue"
+        ));
+        assert!(!local_metadata_reranker_route_enabled_for_family(
+            "domain_phrase"
+        ));
+        assert!(!local_metadata_reranker_route_enabled_for_family(
+            "explicit_path"
+        ));
+        assert!(!local_metadata_reranker_route_enabled_for_family(
+            "broad_scope"
+        ));
+    }
+
+    #[test]
+    fn routed_reranker_diagnostics_report_clean_lift_without_churn() {
+        let summary = RerankerContributionSummary {
+            evaluated_commits: 2,
+            improved_commit_count: 2,
+            regressed_commit_count: 0,
+            neutral_commit_count: 0,
+            default_target_hit_count: 2,
+            reranked_target_hit_count: 4,
+            target_hit_delta: 2,
+            reranker_only_target_hit_count: 2,
+            default_only_target_hit_count: 0,
+            improved_cases: vec![SemanticPrecisionNamedCase {
+                sha: "abc123".to_string(),
+                variant: "query_family_routed_reranked".to_string(),
+                reason: "routed lift".to_string(),
+                paths: vec!["src/lift.rs".to_string()],
+            }],
+            ..RerankerContributionSummary::default()
+        };
+
+        let diagnostics = routed_reranker_contribution_diagnostics(&summary);
+
+        assert_eq!(diagnostics[0].code, "routed_reranker_clean_lift");
+        assert_eq!(diagnostics[0].severity, DiagnosticSeverity::Info);
+        assert_eq!(diagnostics[0].paths, vec!["src/lift.rs".to_string()]);
+    }
+
+    #[test]
     fn reranker_contribution_diagnostics_warn_on_target_loss() {
         let summary = RerankerContributionSummary {
             evaluated_commits: 2,
@@ -11643,6 +11833,7 @@ mod tests {
                 semantic_enabled: false,
                 semantic_provider: None,
                 local_metadata_reranker: false,
+                query_family_routed_reranker: false,
             },
             refs: HistoricalEvalRefs {
                 base: None,
