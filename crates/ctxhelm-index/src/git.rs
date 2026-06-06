@@ -181,6 +181,16 @@ pub struct HistoricalCommitReport {
     pub cache_status: CacheStatus,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct MentionedCommitChangedPathsReport {
+    pub safe_changed_files: Vec<String>,
+    pub excluded_changed_file_count: usize,
+    #[serde(default)]
+    pub diagnostics: Vec<Diagnostic>,
+    pub cache_status: CacheStatus,
+}
+
 pub fn co_change_hints(
     repo_root: impl AsRef<Path>,
     anchor_paths: &[String],
@@ -476,6 +486,83 @@ pub fn historical_commit_samples_report(
     })
 }
 
+pub fn mentioned_commit_changed_paths_report(
+    repo_root: impl AsRef<Path>,
+    shas: &[String],
+    limit: usize,
+) -> Result<MentionedCommitChangedPathsReport, InventoryError> {
+    let repo_root = canonicalize(repo_root.as_ref())?;
+    let inventory_report = load_or_refresh_inventory(&repo_root, &InventoryOptions::default())?;
+    let safe_paths = inventory_report
+        .inventory
+        .files
+        .into_iter()
+        .map(|file| file.path)
+        .collect::<BTreeSet<_>>();
+    let mut diagnostics = inventory_report.diagnostics;
+    let mut safe_changed_files = Vec::new();
+    let mut excluded_changed_file_count = 0;
+    let mut observed_commit_count = 0;
+
+    for sha in shas.iter().filter(|sha| is_hex_revision_like(sha)) {
+        let output = match git_diff_tree_name_status_z_without_renames(
+            &repo_root,
+            sha,
+            HISTORY_DIFF_TIMEOUT,
+        ) {
+            Ok(output) => output,
+            Err(error) => {
+                diagnostics.extend(git_partial_diagnostics(&error, "mentioned_commit_partial"));
+                continue;
+            }
+        };
+        observed_commit_count += 1;
+        let changed_paths = label_historical_changed_paths(
+            &repo_root,
+            &safe_paths,
+            parse_git_name_status_z(&output),
+        );
+        excluded_changed_file_count += changed_paths
+            .iter()
+            .filter(|label| label.label_scope != LabelScope::Safe)
+            .count();
+        safe_changed_files.extend(
+            changed_paths
+                .into_iter()
+                .filter(|label| label.label_scope == LabelScope::Safe)
+                .map(|label| label.path),
+        );
+    }
+
+    safe_changed_files.sort();
+    safe_changed_files.dedup();
+    let limit = limit.max(1);
+    if safe_changed_files.len() > limit {
+        excluded_changed_file_count += safe_changed_files.len() - limit;
+        safe_changed_files.truncate(limit);
+    }
+    if !safe_changed_files.is_empty() {
+        diagnostics.push(Diagnostic {
+            code: "mentioned_commit_changed_paths".to_string(),
+            severity: DiagnosticSeverity::Info,
+            message: format!(
+                "Added {} safe changed path anchor(s) from {} task-mentioned commit(s).",
+                safe_changed_files.len(),
+                observed_commit_count
+            ),
+            paths: safe_changed_files.clone(),
+            count: safe_changed_files.len(),
+        });
+    }
+
+    Ok(MentionedCommitChangedPathsReport {
+        safe_changed_files,
+        excluded_changed_file_count,
+        diagnostics,
+        cache_status: inventory_report.cache_status,
+    })
+}
+
 fn label_historical_commit_samples(
     repo_root: &Path,
     limit: usize,
@@ -556,6 +643,10 @@ fn git_partial_diagnostics(error: &InventoryError, partial_code: &str) -> Vec<Di
             count: 0,
         },
     ]
+}
+
+fn is_hex_revision_like(value: &str) -> bool {
+    (7..=40).contains(&value.len()) && value.chars().all(|character| character.is_ascii_hexdigit())
 }
 
 fn safe_changed_paths(

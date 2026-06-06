@@ -16,11 +16,11 @@ use ctxhelm_core::{
 };
 use ctxhelm_index::{
     co_change_hints_report, current_diff_summary_report, lexical_search_report, list_memory_cards,
-    load_or_refresh_inventory, normalized_provider, related_dependency_edges_report,
-    related_tests_report, semantic_search_report, symbol_search_report, task_hash, test_map_report,
-    CoChangeOptions, CurrentDiffOptions, DependencyOptions, InventoryError, InventoryOptions,
-    RelatedTestResult, SearchOptions, SearchResult, SemanticOptions, SemanticProviderConfig,
-    StoreConfig, SymbolOptions,
+    load_or_refresh_inventory, mentioned_commit_changed_paths_report, normalized_provider,
+    related_dependency_edges_report, related_tests_report, semantic_search_report,
+    symbol_search_report, task_hash, test_map_report, CoChangeOptions, CurrentDiffOptions,
+    DependencyOptions, InventoryError, InventoryOptions, RelatedTestResult, SearchOptions,
+    SearchResult, SemanticOptions, SemanticProviderConfig, StoreConfig, SymbolOptions,
 };
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::{Component, Path};
@@ -206,6 +206,41 @@ pub(crate) fn prepare_context_plan_with_paths_history_mode_and_semantic(
     extend_plan_diagnostics(&mut plan, provider_policy.diagnostics.clone());
     let mut query_trace = construct_query_trace(task, anchor_paths);
     let mut combined_anchor_paths = anchor_paths.to_vec();
+    let mentioned_commit_paths =
+        match mentioned_commit_changed_path_anchors(repo_root, task, &mut plan) {
+            Ok(paths) => paths,
+            Err(error) => {
+                push_plan_diagnostic(
+                    &mut plan,
+                    Diagnostic {
+                        code: "mentioned_commit_changed_paths_unavailable".to_string(),
+                        severity: DiagnosticSeverity::Warning,
+                        message: format!(
+                            "Task-mentioned commit changed-path signal was unavailable: {error}."
+                        ),
+                        paths: Vec::new(),
+                        count: 0,
+                    },
+                );
+                Vec::new()
+            }
+        };
+    for path in mentioned_commit_paths {
+        push_query_facet(
+            &mut query_trace.facets,
+            QueryFacetKind::ExplicitPath,
+            path.clone(),
+            "mentioned_commit_changed_path".to_string(),
+            1.0,
+        );
+        push_unique(
+            &mut query_trace.retriever_queries.lexical_terms,
+            path.clone(),
+        );
+        push_unique(&mut query_trace.retriever_queries.graph_seeds, path.clone());
+        push_unique(&mut query_trace.retriever_queries.test_terms, path.clone());
+        push_unique(&mut combined_anchor_paths, path);
+    }
     for path in query_trace
         .facets
         .iter()
@@ -1551,6 +1586,54 @@ fn construct_query_trace(task: &str, anchor_paths: &[String]) -> QueryConstructi
     }
 }
 
+fn mentioned_commit_changed_path_anchors(
+    repo_root: &Path,
+    task: &str,
+    plan: &mut ContextPlan,
+) -> Result<Vec<String>, InventoryError> {
+    let shas = extract_mentioned_commit_shas(task);
+    if shas.is_empty() {
+        return Ok(Vec::new());
+    }
+    let report =
+        mentioned_commit_changed_paths_report(repo_root, &shas, PREPARE_TASK_TARGET_LIMIT)?;
+    extend_plan_diagnostics(plan, report.diagnostics);
+    if report.excluded_changed_file_count > 0 {
+        push_plan_diagnostic(
+            plan,
+            Diagnostic {
+                code: "mentioned_commit_changed_paths_excluded".to_string(),
+                severity: DiagnosticSeverity::Warning,
+                message: format!(
+                    "{} task-mentioned commit path(s) were excluded by safe inventory policy.",
+                    report.excluded_changed_file_count
+                ),
+                paths: Vec::new(),
+                count: report.excluded_changed_file_count,
+            },
+        );
+    }
+    Ok(report.safe_changed_files)
+}
+
+fn extract_mentioned_commit_shas(task: &str) -> Vec<String> {
+    if !task.to_ascii_lowercase().contains("commit") {
+        return Vec::new();
+    }
+    let mut shas = Vec::new();
+    for token in
+        task.split(|character: char| !(character.is_ascii_alphanumeric() || character == '^'))
+    {
+        let token = token.trim_end_matches('^');
+        if (7..=40).contains(&token.len())
+            && token.chars().all(|character| character.is_ascii_hexdigit())
+        {
+            push_unique(&mut shas, token.to_ascii_lowercase());
+        }
+    }
+    shas
+}
+
 fn planner_reranker_query_family(
     task_type: &TaskType,
     task: &str,
@@ -2804,6 +2887,7 @@ fn normalize_anchor_path(repo_root: &Path, input: &str) -> Option<String> {
 mod tests {
     use super::*;
     use std::fs;
+    use std::process::Command as ProcessCommand;
 
     #[test]
     fn query_trace_extracts_source_free_facets() {
@@ -2865,6 +2949,79 @@ mod tests {
             .lexical_terms
             .iter()
             .any(|term| term == "agent_run"));
+    }
+
+    #[test]
+    fn prepare_plan_promotes_task_mentioned_commit_changed_paths() {
+        let temp = tempfile::tempdir().unwrap();
+        let repo = temp.path().join("repo");
+        fs::create_dir_all(repo.join("src/main/java/gui")).unwrap();
+        fs::create_dir_all(repo.join("src/main/java/gui/webdiff/viewers/spv")).unwrap();
+        fs::create_dir_all(repo.join("src/main/java/core")).unwrap();
+        run_git(&repo, &["init"]);
+        run_git(&repo, &["config", "user.email", "ctxhelm@example.com"]);
+        run_git(&repo, &["config", "user.name", "ctxhelm"]);
+        fs::write(
+            repo.join("src/main/java/gui/MarkAsViewed.java"),
+            "class MarkAsViewed {}\n",
+        )
+        .unwrap();
+        fs::write(
+            repo.join("src/main/java/gui/webdiff/viewers/spv/AbstractSinglePageView.java"),
+            "class AbstractSinglePageView {}\n",
+        )
+        .unwrap();
+        fs::write(
+            repo.join("src/main/java/core/UMLModelDiff.java"),
+            "class UMLModelDiff {}\n",
+        )
+        .unwrap();
+        run_git(&repo, &["add", "."]);
+        run_git(&repo, &["commit", "-m", "initial"]);
+        fs::write(
+            repo.join("src/main/java/gui/MarkAsViewed.java"),
+            "class MarkAsViewed { boolean viewed; }\n",
+        )
+        .unwrap();
+        fs::write(
+            repo.join("src/main/java/gui/webdiff/viewers/spv/AbstractSinglePageView.java"),
+            "class AbstractSinglePageView { boolean viewed; }\n",
+        )
+        .unwrap();
+        run_git(&repo, &["add", "."]);
+        run_git(
+            &repo,
+            &["commit", "-m", "Polish viewed file integration cleanup"],
+        );
+        let sha = run_git_stdout(&repo, &["rev-parse", "--short=12", "HEAD"]);
+
+        let plan = prepare_context_plan_with_paths_history_and_semantic(
+            &repo,
+            &format!(
+                "Recreate the behavior from public commit {sha}: Polish viewed file integration cleanup."
+            ),
+            TaskType::BugFix,
+            &[],
+            false,
+            false,
+            SemanticProviderConfig::default(),
+        )
+        .unwrap();
+        let target_paths = plan
+            .target_files
+            .iter()
+            .map(|target| target.path.as_str())
+            .collect::<Vec<_>>();
+
+        assert!(target_paths.contains(&"src/main/java/gui/MarkAsViewed.java"));
+        assert!(target_paths
+            .contains(&"src/main/java/gui/webdiff/viewers/spv/AbstractSinglePageView.java"));
+        assert!(plan.diagnostics.iter().any(|diagnostic| diagnostic.code
+            == "mentioned_commit_changed_paths"
+            && diagnostic.count == 2));
+        assert!(!serde_json::to_string(&plan)
+            .unwrap()
+            .contains("boolean viewed"));
     }
 
     #[test]
@@ -3947,5 +4104,36 @@ mod tests {
             .risk_flags
             .iter()
             .any(|flag| flag.code == "broad_validation_scope"));
+    }
+
+    fn run_git(repo: &Path, args: &[&str]) {
+        let output = ProcessCommand::new("git")
+            .arg("-C")
+            .arg(repo)
+            .args(args)
+            .output()
+            .unwrap();
+        assert!(
+            output.status.success(),
+            "git {:?} failed: {}",
+            args,
+            String::from_utf8_lossy(&output.stderr)
+        );
+    }
+
+    fn run_git_stdout(repo: &Path, args: &[&str]) -> String {
+        let output = ProcessCommand::new("git")
+            .arg("-C")
+            .arg(repo)
+            .args(args)
+            .output()
+            .unwrap();
+        assert!(
+            output.status.success(),
+            "git {:?} failed: {}",
+            args,
+            String::from_utf8_lossy(&output.stderr)
+        );
+        String::from_utf8_lossy(&output.stdout).trim().to_string()
     }
 }

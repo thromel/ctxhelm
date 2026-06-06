@@ -41,11 +41,12 @@ pub use freshness::{
 pub use git::{
     co_change_hints, co_change_hints_report, current_diff_summary, current_diff_summary_report,
     historical_commit_samples, historical_commit_samples_report,
-    historical_commit_samples_with_safe_paths, write_eval_history_sidecar, ChangeKind,
-    CoChangeHint, CoChangeOptions, CoChangeReport, CurrentDiffExcluded, CurrentDiffOptions,
-    CurrentDiffPrivacyStatus, CurrentDiffReport, CurrentDiffSummary, HistoricalChangedPath,
-    HistoricalCommitOptions, HistoricalCommitReport, HistoricalCommitSample,
-    HistoricalPathExclusionReason, LabelScope,
+    historical_commit_samples_with_safe_paths, mentioned_commit_changed_paths_report,
+    write_eval_history_sidecar, ChangeKind, CoChangeHint, CoChangeOptions, CoChangeReport,
+    CurrentDiffExcluded, CurrentDiffOptions, CurrentDiffPrivacyStatus, CurrentDiffReport,
+    CurrentDiffSummary, HistoricalChangedPath, HistoricalCommitOptions, HistoricalCommitReport,
+    HistoricalCommitSample, HistoricalPathExclusionReason, LabelScope,
+    MentionedCommitChangedPathsReport,
 };
 pub use inventory::{
     build_inventory, inventory_path, load_inventory, load_or_build_inventory, repo_id_for_path,
