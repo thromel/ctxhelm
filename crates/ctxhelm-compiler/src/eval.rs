@@ -91,6 +91,8 @@ pub struct HistoricalEvalOptions {
     #[serde(default)]
     pub query_family_routed_reranker: bool,
     #[serde(default)]
+    pub semantic_corroborated_reranker: bool,
+    #[serde(default)]
     pub cache_enabled: bool,
     #[serde(default)]
     pub force_refresh: bool,
@@ -202,6 +204,8 @@ pub struct HistoricalEvalEffectiveFilters {
     pub local_metadata_reranker: bool,
     #[serde(default)]
     pub query_family_routed_reranker: bool,
+    #[serde(default)]
+    pub semantic_corroborated_reranker: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -3040,6 +3044,7 @@ pub fn semantic_precision_gate_report_with_provider(
             semantic_provider: semantic_provider.clone(),
             local_metadata_reranker: false,
             query_family_routed_reranker: false,
+            semantic_corroborated_reranker: false,
             cache_enabled: false,
             force_refresh: false,
             parallelism: 1,
@@ -3060,6 +3065,7 @@ pub fn semantic_precision_gate_report_with_provider(
                 semantic_provider: semantic_provider.clone(),
                 local_metadata_reranker: false,
                 query_family_routed_reranker: false,
+                semantic_corroborated_reranker: false,
                 cache_enabled: false,
                 force_refresh: false,
                 parallelism: 1,
@@ -3079,6 +3085,7 @@ pub fn semantic_precision_gate_report_with_provider(
             semantic_provider: semantic_provider.clone(),
             local_metadata_reranker: true,
             query_family_routed_reranker: false,
+            semantic_corroborated_reranker: false,
             cache_enabled: false,
             force_refresh: false,
             parallelism: 1,
@@ -3097,6 +3104,26 @@ pub fn semantic_precision_gate_report_with_provider(
             semantic_provider: semantic_provider.clone(),
             local_metadata_reranker: false,
             query_family_routed_reranker: true,
+            semantic_corroborated_reranker: false,
+            cache_enabled: false,
+            force_refresh: false,
+            parallelism: 1,
+        },
+    )?;
+    let semantic_corroborated_reranked = evaluate_historical_commits(
+        repo_root,
+        &HistoricalEvalOptions {
+            limit,
+            ranking_budget,
+            task_type: task_type.clone(),
+            target_agent: "generic".to_string(),
+            base: None,
+            head: None,
+            semantic_enabled: true,
+            semantic_provider: semantic_provider.clone(),
+            local_metadata_reranker: false,
+            query_family_routed_reranker: false,
+            semantic_corroborated_reranker: true,
             cache_enabled: false,
             force_refresh: false,
             parallelism: 1,
@@ -3165,6 +3192,22 @@ pub fn semantic_precision_gate_report_with_provider(
             semantic_provider_status,
             "Explicit local semantic retrieval using source-free semantic documents.",
         ),
+        gate_variant(
+            "semantic_corroborated_reranked",
+            SemanticPrecisionVariantStatus::Evaluated,
+            true,
+            false,
+            true,
+            Some(
+                semantic_corroborated_reranked
+                    .ranking_comparison
+                    .combined
+                    .clone(),
+            ),
+            &semantic_corroborated_reranked,
+            "eval_only",
+            "Eval-only metadata reranker that gives bounded credit to semantic candidates only when another source-free signal corroborates them.",
+        ),
     ];
     variants.push(gate_variant(
         "precision_enriched_semantic",
@@ -3225,7 +3268,13 @@ pub fn semantic_precision_gate_report_with_provider(
         &reranker.reason,
     ));
 
-    let named_wins = named_cases(&default, &semantic, "local_semantic", NamedCaseKind::Win);
+    let mut named_wins = named_cases(&default, &semantic, "local_semantic", NamedCaseKind::Win);
+    named_wins.extend(named_cases(
+        &default,
+        &semantic_corroborated_reranked,
+        "semantic_corroborated_reranked",
+        NamedCaseKind::Win,
+    ));
     let semantic_contribution = semantic_contribution_summary(&semantic);
     let support_profile_routed_semantic =
         support_profile_routed_semantic_report(&default, &semantic, &semantic_contribution);
@@ -3249,6 +3298,12 @@ pub fn semantic_precision_gate_report_with_provider(
     ));
     named_regressions.extend(named_cases(
         &default,
+        &semantic_corroborated_reranked,
+        "semantic_corroborated_reranked",
+        NamedCaseKind::Regression,
+    ));
+    named_regressions.extend(named_cases(
+        &default,
         &support_profile_routed_semantic,
         "support_profile_routed_semantic",
         NamedCaseKind::Regression,
@@ -3267,6 +3322,11 @@ pub fn semantic_precision_gate_report_with_provider(
         &default,
         &routed_reranked,
         "query_family_routed_reranked",
+    ));
+    named_regressions.extend(protected_evidence_regressions(
+        &default,
+        &semantic_corroborated_reranked,
+        "semantic_corroborated_reranked",
     ));
     named_regressions.extend(protected_evidence_regressions(
         &default,
@@ -5117,6 +5177,7 @@ fn run_benchmark_repo(
         semantic_provider,
         local_metadata_reranker: effective_config.local_metadata_reranker,
         query_family_routed_reranker: false,
+        semantic_corroborated_reranker: false,
         cache_enabled: effective_config.cache_enabled,
         force_refresh: effective_config.force_refresh,
         parallelism: effective_config.parallelism,
@@ -5566,6 +5627,7 @@ pub fn evaluate_historical_commits(
             .then(|| options.semantic_provider.provider.clone()),
         local_metadata_reranker: options.local_metadata_reranker,
         query_family_routed_reranker: options.query_family_routed_reranker,
+        semantic_corroborated_reranker: options.semantic_corroborated_reranker,
     };
     let eval_range_id = historical_eval_range_id(&repo_id, &effective_filters, &refs);
 
@@ -6259,13 +6321,20 @@ fn evaluate_historical_commit_sample(
     );
     let should_apply_reranker = options.local_metadata_reranker
         || (options.query_family_routed_reranker
-            && query_family_routed_reranker_enabled_for_family(&query_family));
+            && query_family_routed_reranker_enabled_for_family(&query_family))
+        || options.semantic_corroborated_reranker;
     let recommended_context_files = if should_apply_reranker {
+        let score_mode = if options.semantic_corroborated_reranker {
+            LocalMetadataScoreMode::SemanticCorroborated
+        } else {
+            LocalMetadataScoreMode::Standard
+        };
         local_metadata_reranked_context_files(
             &plan,
             ranking_budget,
             &default_context_files,
             !multi_area_task,
+            score_mode,
         )
     } else {
         default_context_files
@@ -7442,6 +7511,7 @@ fn local_metadata_reranked_context_files(
     ranking_budget: usize,
     default_context_files: &[String],
     reserve_validation_tests: bool,
+    score_mode: LocalMetadataScoreMode,
 ) -> Vec<String> {
     let ranking_budget = ranking_budget.max(1);
     let recommended_files = plan
@@ -7466,10 +7536,12 @@ fn local_metadata_reranked_context_files(
         .retrieval_candidates
         .iter()
         .filter_map(|candidate| {
-            candidate
-                .path
-                .as_ref()
-                .map(|path| (path.clone(), local_metadata_candidate_score(candidate)))
+            candidate.path.as_ref().map(|path| {
+                (
+                    path.clone(),
+                    local_metadata_candidate_score(candidate, score_mode),
+                )
+            })
         })
         .collect::<Vec<_>>();
     candidates.sort_by(|(left_path, left_score), (right_path, right_score)| {
@@ -7511,6 +7583,12 @@ fn local_metadata_reranked_context_files(
     );
     ranking.truncate(ranking_budget);
     ranking
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum LocalMetadataScoreMode {
+    Standard,
+    SemanticCorroborated,
 }
 
 fn local_metadata_protected_floor_paths(
@@ -7560,14 +7638,47 @@ fn metadata_candidate_has_protected_source_signal(candidate: &RetrievalCandidate
         .any(is_protected_evidence_signal)
 }
 
-fn local_metadata_candidate_score(candidate: &RetrievalCandidate) -> f32 {
+fn local_metadata_candidate_score(
+    candidate: &RetrievalCandidate,
+    mode: LocalMetadataScoreMode,
+) -> f32 {
     let exact_score = candidate
         .signal_scores
         .iter()
         .filter(|score| is_protected_evidence_signal(&score.signal))
         .map(|score| score.score * score.weight)
         .sum::<f32>();
-    candidate.confidence + exact_score + candidate.evidence.len() as f32 * 0.05
+    let semantic_bonus = match mode {
+        LocalMetadataScoreMode::Standard => 0.0,
+        LocalMetadataScoreMode::SemanticCorroborated => {
+            semantic_corroboration_bonus(candidate).unwrap_or(0.0)
+        }
+    };
+    candidate.confidence + exact_score + semantic_bonus + candidate.evidence.len() as f32 * 0.05
+}
+
+fn semantic_corroboration_bonus(candidate: &RetrievalCandidate) -> Option<f32> {
+    let semantic_score = feature_signal_score(candidate, RetrievalSignalKind::Semantic);
+    if semantic_score <= 0.0 {
+        return None;
+    }
+    let corroborating_score = [
+        RetrievalSignalKind::Lexical,
+        RetrievalSignalKind::LexicalExpansion,
+        RetrievalSignalKind::Symbol,
+        RetrievalSignalKind::Dependency,
+        RetrievalSignalKind::RelatedTest,
+        RetrievalSignalKind::CoChange,
+        RetrievalSignalKind::Docs,
+        RetrievalSignalKind::Config,
+    ]
+    .into_iter()
+    .map(|signal| feature_signal_score(candidate, signal))
+    .fold(0.0_f32, f32::max);
+    if corroborating_score <= 0.0 {
+        return None;
+    }
+    Some((semantic_score * 0.75 + corroborating_score * 0.15).min(0.85))
 }
 
 fn lexical_baseline_context_files(
@@ -7971,7 +8082,7 @@ fn historical_eval_range_id(
     refs: &HistoricalEvalRefs,
 ) -> String {
     task_hash(&format!(
-        "version={HISTORICAL_EVAL_CACHE_SCHEMA_VERSION}\nrepo={repo_id}\nlimit={}\nrankingBudget={}\nmode={:?}\ntarget={}\nbudget={:?}\nsemantic={}\nsemanticProvider={}\nlocalMetadataReranker={}\nbase={}\nhead={}",
+        "version={HISTORICAL_EVAL_CACHE_SCHEMA_VERSION}\nrepo={repo_id}\nlimit={}\nrankingBudget={}\nmode={:?}\ntarget={}\nbudget={:?}\nsemantic={}\nsemanticProvider={}\nlocalMetadataReranker={}\nqueryFamilyRoutedReranker={}\nsemanticCorroboratedReranker={}\nbase={}\nhead={}",
         filters.limit,
         filters.ranking_budget,
         filters.mode,
@@ -7980,6 +8091,8 @@ fn historical_eval_range_id(
         filters.semantic_enabled,
         filters.semantic_provider.as_deref().unwrap_or(""),
         filters.local_metadata_reranker,
+        filters.query_family_routed_reranker,
+        filters.semantic_corroborated_reranker,
         refs.base.as_deref().unwrap_or(""),
         refs.head.as_deref().unwrap_or("")
     ))
@@ -11476,8 +11589,13 @@ mod tests {
         }
 
         let default_context_files = vec!["src/semantic_0.rs".to_string()];
-        let ranking =
-            local_metadata_reranked_context_files(&plan, 10, &default_context_files, true);
+        let ranking = local_metadata_reranked_context_files(
+            &plan,
+            10,
+            &default_context_files,
+            true,
+            LocalMetadataScoreMode::Standard,
+        );
 
         assert_eq!(ranking.first(), Some(&"src/exact.rs".to_string()));
         assert!(ranking.contains(&"src/exact.rs".to_string()));
@@ -11535,11 +11653,104 @@ mod tests {
             "src/exact.rs".to_string(),
         ];
         let floor = local_metadata_protected_floor_paths(&plan, &default_context_files, 10);
-        let ranking =
-            local_metadata_reranked_context_files(&plan, 10, &default_context_files, true);
+        let ranking = local_metadata_reranked_context_files(
+            &plan,
+            10,
+            &default_context_files,
+            true,
+            LocalMetadataScoreMode::Standard,
+        );
 
         assert_eq!(floor, vec!["src/exact.rs".to_string()]);
         assert!(ranking.contains(&"tests/exact_test.rs".to_string()));
+    }
+
+    #[test]
+    fn semantic_corroborated_reranker_promotes_only_supported_semantic_candidates() {
+        let mut plan = crate::planning::empty_plan_for_task(TaskType::BugFix);
+        plan.retrieval_candidates = vec![
+            RetrievalCandidate {
+                kind: RetrievalCandidateKind::File,
+                path: Some("src/exact.rs".to_string()),
+                role: Some(FileRole::Source),
+                reason_code: "lexical_match".to_string(),
+                confidence: 0.1,
+                signal_scores: vec![RetrievalSignalScore {
+                    signal: RetrievalSignalKind::Lexical,
+                    score: 0.1,
+                    weight: 1.0,
+                }],
+                evidence: Vec::new(),
+            },
+            RetrievalCandidate {
+                kind: RetrievalCandidateKind::File,
+                path: Some("docs/corroborated.md".to_string()),
+                role: Some(FileRole::Docs),
+                reason_code: "semantic_match".to_string(),
+                confidence: 0.2,
+                signal_scores: vec![
+                    RetrievalSignalScore {
+                        signal: RetrievalSignalKind::Semantic,
+                        score: 0.9,
+                        weight: 0.55,
+                    },
+                    RetrievalSignalScore {
+                        signal: RetrievalSignalKind::Lexical,
+                        score: 0.4,
+                        weight: 1.0,
+                    },
+                    RetrievalSignalScore {
+                        signal: RetrievalSignalKind::Docs,
+                        score: 1.0,
+                        weight: 0.35,
+                    },
+                ],
+                evidence: Vec::new(),
+            },
+            RetrievalCandidate {
+                kind: RetrievalCandidateKind::File,
+                path: Some("src/pure_semantic.rs".to_string()),
+                role: Some(FileRole::Source),
+                reason_code: "semantic_match".to_string(),
+                confidence: 0.8,
+                signal_scores: vec![RetrievalSignalScore {
+                    signal: RetrievalSignalKind::Semantic,
+                    score: 0.95,
+                    weight: 0.55,
+                }],
+                evidence: Vec::new(),
+            },
+        ];
+
+        let default_context_files = vec!["src/pure_semantic.rs".to_string()];
+        let standard = local_metadata_reranked_context_files(
+            &plan,
+            3,
+            &default_context_files,
+            false,
+            LocalMetadataScoreMode::Standard,
+        );
+        let semantic_corroborated = local_metadata_reranked_context_files(
+            &plan,
+            3,
+            &default_context_files,
+            false,
+            LocalMetadataScoreMode::SemanticCorroborated,
+        );
+
+        assert_eq!(standard.first(), Some(&"src/exact.rs".to_string()));
+        assert_eq!(
+            semantic_corroborated.first(),
+            Some(&"src/exact.rs".to_string())
+        );
+        assert!(
+            semantic_corroborated
+                .iter()
+                .position(|path| path == "docs/corroborated.md")
+                < semantic_corroborated
+                    .iter()
+                    .position(|path| path == "src/pure_semantic.rs")
+        );
     }
 
     #[test]
@@ -12859,6 +13070,7 @@ mod tests {
                 semantic_provider: None,
                 local_metadata_reranker: false,
                 query_family_routed_reranker: false,
+                semantic_corroborated_reranker: false,
             },
             refs: HistoricalEvalRefs {
                 base: None,

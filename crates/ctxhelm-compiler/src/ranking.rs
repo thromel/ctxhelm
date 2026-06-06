@@ -337,7 +337,33 @@ fn local_metadata_rerank_score(candidate: &RankedCandidate) -> f32 {
         })
         .map(|score| score.score * score.weight)
         .sum::<f32>();
-    candidate.rank_score + exact_score + evidence_score
+    candidate.rank_score
+        + exact_score
+        + semantic_corroboration_bonus(&candidate.candidate)
+        + evidence_score
+}
+
+fn semantic_corroboration_bonus(candidate: &RetrievalCandidate) -> f32 {
+    let Some(semantic_score) = signal_score(candidate, RetrievalSignalKind::Semantic) else {
+        return 0.0;
+    };
+    let corroborating_score = [
+        RetrievalSignalKind::Lexical,
+        RetrievalSignalKind::LexicalExpansion,
+        RetrievalSignalKind::Symbol,
+        RetrievalSignalKind::Dependency,
+        RetrievalSignalKind::RelatedTest,
+        RetrievalSignalKind::CoChange,
+        RetrievalSignalKind::Docs,
+        RetrievalSignalKind::Config,
+    ]
+    .into_iter()
+    .filter_map(|signal| signal_score(candidate, signal))
+    .max_by(|left, right| left.total_cmp(right));
+    let Some(corroborating_score) = corroborating_score else {
+        return 0.0;
+    };
+    (semantic_score * 0.75 + corroborating_score * 0.15).min(0.85)
 }
 
 fn semantic_facet_label(result: &SemanticSearchResult) -> String {
@@ -4036,6 +4062,60 @@ mod tests {
         let reranked = rerank_with_local_metadata(candidates);
 
         assert_eq!(candidate_paths(&reranked).first(), Some(&"src/exact.ts"));
+    }
+
+    #[test]
+    fn local_metadata_reranker_promotes_semantic_only_when_corroborated() {
+        let candidates = rank_candidates(RankingInput {
+            lexical_results: vec![
+                lexical("src/exact.ts", 20.0),
+                lexical("src/corroborated.ts", 10.0),
+            ],
+            protected_lexical_limit: Some(1),
+            semantic_results: vec![
+                SemanticSearchResult {
+                    path: "src/pure-semantic.ts".to_string(),
+                    role: FileRole::Source,
+                    language: Some("typescript".to_string()),
+                    score: 0.95,
+                    reason: "local semantic similarity".to_string(),
+                    provider: SemanticProviderConfig::default(),
+                    document_id: Some("sem_doc_pure".to_string()),
+                    matched_facets: Vec::new(),
+                    precision_status: None,
+                },
+                SemanticSearchResult {
+                    path: "src/corroborated.ts".to_string(),
+                    role: FileRole::Source,
+                    language: Some("typescript".to_string()),
+                    score: 0.95,
+                    reason: "local semantic similarity".to_string(),
+                    provider: SemanticProviderConfig::default(),
+                    document_id: Some("sem_doc_corroborated".to_string()),
+                    matched_facets: Vec::new(),
+                    precision_status: None,
+                },
+            ],
+            roles: roles([
+                ("src/exact.ts", FileRole::Source),
+                ("src/corroborated.ts", FileRole::Source),
+                ("src/pure-semantic.ts", FileRole::Source),
+            ]),
+            ..RankingInput::default()
+        });
+
+        let reranked_candidates = rerank_with_local_metadata(candidates);
+        let reranked = candidate_paths(&reranked_candidates);
+
+        assert_eq!(reranked.first(), Some(&"src/exact.ts"));
+        assert!(
+            reranked
+                .iter()
+                .position(|path| *path == "src/corroborated.ts")
+                < reranked
+                    .iter()
+                    .position(|path| *path == "src/pure-semantic.ts")
+        );
     }
 
     #[test]
