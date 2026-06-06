@@ -3800,6 +3800,7 @@ pub fn semantic_precision_gate_report_with_provider_and_range(
     })
 }
 
+#[allow(clippy::too_many_arguments)]
 pub fn learned_semantic_policy_train_test_report_with_provider_and_ranges(
     repo_root: impl AsRef<Path>,
     train_limit: usize,
