@@ -611,6 +611,11 @@ families and keeps default ranking elsewhere. The
 `routedRerankerContribution` JSON field compares that routed variant against
 `ctxhelm_default`. Routed diagnostics include:
 
+As of the current four-repo proof, the routed eval policy routes only the
+`commit_clue` family. `symbol_identifier` remains measured in
+`queryFamilyContributions`, but it is not routed because broader evidence found
+target-hit regression on ReAgent.
+
 - `routed_reranker_clean_lift`: routed reranking added target hits without
   default-only target churn in the gate.
 - `routed_reranker_churn_hold`: routed reranking added target hits but still

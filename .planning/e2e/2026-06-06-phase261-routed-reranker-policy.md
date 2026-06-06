@@ -9,15 +9,17 @@ churn.
 The full local metadata reranker can improve target recall on ctxhelm, but the
 aggregate variant still churns default target hits. Phase 260 showed that
 `commit_clue` and `symbol_identifier` families had clean lift while
-`domain_phrase` needed to remain held.
+`domain_phrase` needed to remain held. Phase 262 later broadened this proof and
+rejected `symbol_identifier` routing after ReAgent regression, leaving
+`commit_clue` as the only current routed family.
 
 ## Change
 
 - Add `query_family_routed_reranked` to the semantic/precision gate variants.
 - Add `routedRerankerContribution` to compare that routed variant against
   `ctxhelm_default`.
-- Apply the local metadata reranker only for conservative route-safe families:
-  `commit_clue` and `symbol_identifier`.
+- Apply the local metadata reranker only for the initial conservative
+  route-safe families: `commit_clue` and `symbol_identifier`.
 - Keep default ranking for held families such as `domain_phrase`,
   `explicit_path`, `broad_scope`, and low-information tasks.
 - Add routed diagnostics:

@@ -1,0 +1,985 @@
+{
+  "repoId": "c9dca089-9373-5fe6-bd5d-81ee0a43a5d9",
+  "evalRangeId": "semantic-precision-gate:ae8a4e50725bbfaaa76498b5f64c53d006b2186b13c1d94e51f89faa6f84b69f",
+  "evaluatedCommits": 10,
+  "k": 10,
+  "decision": "block",
+  "decisionReason": "Blocked because 1 semantic promotion regression(s) were detected.",
+  "variants": [
+    {
+      "name": "lexical_baseline",
+      "status": "evaluated",
+      "semanticEnabled": false,
+      "precisionEnabled": false,
+      "rerankerEnabled": false,
+      "metrics": {
+        "k": 10,
+        "recallAtK": 0.27588236,
+        "precisionAtK": 0.120000005,
+        "mrrAtK": 0.25555557,
+        "roleRecall": [
+          {
+            "role": "source",
+            "recallAtK": 0.11764706,
+            "changedFileCount": 34,
+            "hitCount": 4
+          },
+          {
+            "role": "test",
+            "recallAtK": 0.14285715,
+            "changedFileCount": 21,
+            "hitCount": 3
+          }
+        ],
+        "testRecommendationRate": 1.0,
+        "averageRecommendedContextFiles": 10.0
+      },
+      "fileRecallAt10": 0.48764706,
+      "testRecallAt10": 0.831746,
+      "runtimeMillis": 1992,
+      "cacheHits": 0,
+      "cacheMisses": 0,
+      "tokenEfficiency": 0.9166667,
+      "protectedEvidenceMissRateAt10": 0.5632184,
+      "protectedEvidenceTargetMissRateAt10": 0.18181819,
+      "providerStatus": "evaluated",
+      "note": "Exact/path lexical baseline under the same fixed K."
+    },
+    {
+      "name": "ctxhelm_default",
+      "status": "evaluated",
+      "semanticEnabled": false,
+      "precisionEnabled": false,
+      "rerankerEnabled": false,
+      "metrics": {
+        "k": 10,
+        "recallAtK": 0.48764706,
+        "precisionAtK": 0.21999998,
+        "mrrAtK": 0.3285714,
+        "roleRecall": [
+          {
+            "role": "source",
+            "recallAtK": 0.44117647,
+            "changedFileCount": 34,
+            "hitCount": 15
+          },
+          {
+            "role": "test",
+            "recallAtK": 0.0952381,
+            "changedFileCount": 21,
+            "hitCount": 2
+          }
+        ],
+        "testRecommendationRate": 1.0,
+        "averageRecommendedContextFiles": 10.0
+      },
+      "fileRecallAt10": 0.48764706,
+      "testRecallAt10": 0.831746,
+      "runtimeMillis": 1992,
+      "cacheHits": 0,
+      "cacheMisses": 0,
+      "tokenEfficiency": 0.9166667,
+      "protectedEvidenceMissRateAt10": 0.5632184,
+      "protectedEvidenceTargetMissRateAt10": 0.18181819,
+      "providerStatus": "evaluated",
+      "note": "Current default ranking without semantic default promotion."
+    },
+    {
+      "name": "local_metadata_reranked",
+      "status": "evaluated",
+      "semanticEnabled": false,
+      "precisionEnabled": false,
+      "rerankerEnabled": true,
+      "metrics": {
+        "k": 10,
+        "recallAtK": 0.34843138,
+        "precisionAtK": 0.15,
+        "mrrAtK": 0.40333334,
+        "roleRecall": [
+          {
+            "role": "source",
+            "recallAtK": 0.20588236,
+            "changedFileCount": 34,
+            "hitCount": 7
+          },
+          {
+            "role": "test",
+            "recallAtK": 0.0952381,
+            "changedFileCount": 21,
+            "hitCount": 2
+          }
+        ],
+        "testRecommendationRate": 1.0,
+        "averageRecommendedContextFiles": 10.0
+      },
+      "fileRecallAt10": 0.34843138,
+      "testRecallAt10": 0.831746,
+      "runtimeMillis": 2529,
+      "cacheHits": 0,
+      "cacheMisses": 0,
+      "tokenEfficiency": 0.625,
+      "protectedEvidenceMissRateAt10": 0.08045977,
+      "protectedEvidenceTargetMissRateAt10": 0.0,
+      "providerStatus": "evaluated",
+      "note": "Eval-only deterministic local metadata reranker over source-free candidate metadata."
+    },
+    {
+      "name": "query_family_routed_reranked",
+      "status": "evaluated",
+      "semanticEnabled": false,
+      "precisionEnabled": false,
+      "rerankerEnabled": true,
+      "metrics": {
+        "k": 10,
+        "recallAtK": 0.48764706,
+        "precisionAtK": 0.21999998,
+        "mrrAtK": 0.3285714,
+        "roleRecall": [
+          {
+            "role": "source",
+            "recallAtK": 0.44117647,
+            "changedFileCount": 34,
+            "hitCount": 15
+          },
+          {
+            "role": "test",
+            "recallAtK": 0.0952381,
+            "changedFileCount": 21,
+            "hitCount": 2
+          }
+        ],
+        "testRecommendationRate": 1.0,
+        "averageRecommendedContextFiles": 10.0
+      },
+      "fileRecallAt10": 0.48764706,
+      "testRecallAt10": 0.831746,
+      "runtimeMillis": 2245,
+      "cacheHits": 0,
+      "cacheMisses": 0,
+      "tokenEfficiency": 0.9166667,
+      "protectedEvidenceMissRateAt10": 0.5632184,
+      "protectedEvidenceTargetMissRateAt10": 0.18181819,
+      "providerStatus": "evaluated",
+      "note": "Eval-only local metadata reranker gated to route-safe source-free query families."
+    },
+    {
+      "name": "local_semantic",
+      "status": "evaluated",
+      "semanticEnabled": true,
+      "precisionEnabled": false,
+      "rerankerEnabled": false,
+      "metrics": {
+        "k": 10,
+        "recallAtK": 0.48764706,
+        "precisionAtK": 0.21999998,
+        "mrrAtK": 0.3285714,
+        "roleRecall": [
+          {
+            "role": "source",
+            "recallAtK": 0.44117647,
+            "changedFileCount": 34,
+            "hitCount": 15
+          },
+          {
+            "role": "test",
+            "recallAtK": 0.0952381,
+            "changedFileCount": 21,
+            "hitCount": 2
+          }
+        ],
+        "testRecommendationRate": 1.0,
+        "averageRecommendedContextFiles": 10.0
+      },
+      "fileRecallAt10": 0.48764706,
+      "testRecallAt10": 0.831746,
+      "runtimeMillis": 2321,
+      "cacheHits": 0,
+      "cacheMisses": 0,
+      "tokenEfficiency": 0.9166667,
+      "protectedEvidenceMissRateAt10": 0.55172414,
+      "protectedEvidenceTargetMissRateAt10": 0.18181819,
+      "providerStatus": "local_fastembed",
+      "note": "Explicit local semantic retrieval using source-free semantic documents."
+    },
+    {
+      "name": "precision_enriched_semantic",
+      "status": "skipped",
+      "semanticEnabled": true,
+      "precisionEnabled": true,
+      "rerankerEnabled": false,
+      "metrics": null,
+      "fileRecallAt10": 0.48764706,
+      "testRecallAt10": 0.831746,
+      "runtimeMillis": 2321,
+      "cacheHits": 0,
+      "cacheMisses": 0,
+      "tokenEfficiency": 0.9166667,
+      "protectedEvidenceMissRateAt10": 0.55172414,
+      "protectedEvidenceTargetMissRateAt10": 0.18181819,
+      "providerStatus": "skipped",
+      "note": "Skipped because no fresh precision overlay was available."
+    },
+    {
+      "name": "semantic_precision_full_hybrid",
+      "status": "skipped",
+      "semanticEnabled": true,
+      "precisionEnabled": true,
+      "rerankerEnabled": false,
+      "metrics": null,
+      "fileRecallAt10": 0.48764706,
+      "testRecallAt10": 0.831746,
+      "runtimeMillis": 2321,
+      "cacheHits": 0,
+      "cacheMisses": 0,
+      "tokenEfficiency": 0.9166667,
+      "protectedEvidenceMissRateAt10": 0.55172414,
+      "protectedEvidenceTargetMissRateAt10": 0.18181819,
+      "providerStatus": "skipped",
+      "note": "Full hybrid is held unless semantic plus precision beats default gates."
+    },
+    {
+      "name": "policy_allowed_reranked",
+      "status": "skipped",
+      "semanticEnabled": true,
+      "precisionEnabled": false,
+      "rerankerEnabled": false,
+      "metrics": null,
+      "fileRecallAt10": 0.48764706,
+      "testRecallAt10": 0.831746,
+      "runtimeMillis": 2321,
+      "cacheHits": 0,
+      "cacheMisses": 0,
+      "tokenEfficiency": 0.9166667,
+      "protectedEvidenceMissRateAt10": 0.55172414,
+      "protectedEvidenceTargetMissRateAt10": 0.18181819,
+      "providerStatus": "disabled",
+      "note": "Reranker is disabled by default."
+    }
+  ],
+  "namedWins": [],
+  "namedRegressions": [
+    {
+      "sha": "335786673044",
+      "variant": "local_metadata_reranked",
+      "reason": "Variant retrieved fewer gold changed files than default.",
+      "paths": [
+        "experiments/pvldb_eval/manifest.yaml",
+        "schema_agent/evaluation/text2schema/pvldb_eval_manifest.py",
+        "schema_agent/evaluation/text2schema/pvldb_eval_runner.py"
+      ]
+    },
+    {
+      "sha": "ea1587681408",
+      "variant": "local_metadata_reranked",
+      "reason": "Variant retrieved fewer gold changed files than default.",
+      "paths": [
+        "experiments/pvldb_eval/start_qwen35_vllm.sh",
+        "schema_agent/agents/base.py",
+        "schema_agent/agents/relationship_cardinality.py",
+        "schema_agent/core/nodes.py",
+        "schema_agent/core/workflow.py",
+        "schema_agent/evaluation/text2schema/pvldb_eval_runner.py",
+        "schema_agent/evaluation/text2schema/pvldb_eval_stats.py",
+        "schema_agent/gates/gate_system.py"
+      ]
+    },
+    {
+      "sha": "19469f22236a",
+      "variant": "local_metadata_reranked",
+      "reason": "Variant retrieved fewer gold changed files than default.",
+      "paths": [
+        "paper/pvldb/README.md"
+      ]
+    },
+    {
+      "sha": "f8fdf836d7be",
+      "variant": "local_metadata_reranked",
+      "reason": "Variant retrieved fewer gold changed files than default.",
+      "paths": [
+        "schema_agent/evaluation/text2schema/matching.py",
+        "schema_agent/evaluation/text2schema/metrics.py",
+        "schema_agent/evaluation/text2schema/score.py"
+      ]
+    },
+    {
+      "sha": "3ed189708762",
+      "variant": "local_semantic",
+      "reason": "Variant demoted 1 protected anchor/current-diff/lexical/symbol path(s) that default kept within K.",
+      "paths": [
+        "paper/pvldb/acmart.cls"
+      ]
+    }
+  ],
+  "namedMisses": [
+    {
+      "sha": "335786673044",
+      "variant": "local_semantic",
+      "reason": "Variant still missed gold changed files at K.",
+      "paths": [
+        "schema_agent/agents/base.py",
+        "schema_agent/agents/entity_discovery.py",
+        "schema_agent/agents/normalization.py",
+        "schema_agent/agents/requirement_analyzer.py",
+        "schema_agent/core/nodes.py",
+        "schema_agent/core/routing.py",
+        "schema_agent/gates/gate_system.py",
+        "tests/agents/test_base_agent_openai_compatible.py",
+        "tests/agents/test_normalization_fds.py",
+        "tests/agents/test_requirement_analyzer.py",
+        "tests/core/test_retry_routing.py",
+        "tests/evaluation/test_pvldb_eval_manifest.py",
+        "tests/evaluation/test_pvldb_eval_runner.py",
+        "tests/gates/test_quality_gate_system_singleton.py"
+      ]
+    },
+    {
+      "sha": "ea1587681408",
+      "variant": "local_semantic",
+      "reason": "Variant still missed gold changed files at K.",
+      "paths": [
+        "experiments/pvldb_eval/bootstrap_qwen35_host.sh",
+        "experiments/pvldb_eval/run_qwen35_phase1.sh",
+        "schema_agent/agents/normalization.py",
+        "schema_agent/agents/repair_agent.py",
+        "schema_agent/agents/requirement_analyzer.py",
+        "schema_agent/core/routing.py",
+        "schema_agent/evaluation/text2schema/baseline_adapters.py",
+        "schema_agent/evaluation/text2schema/ddl_parser.py",
+        "schema_agent/evaluation/text2schema/pvldb_eval_manifest.py",
+        "schema_agent/nlp/entity_extractor.py",
+        "schema_agent/nlp/model_cache.py",
+        "schema_agent/nlp/transformer_ner.py",
+        "schema_agent/production/ddl_generator_sqlite.py",
+        "tests/agents/test_base_agent_openai_compatible.py",
+        "tests/agents/test_relationship_cardinality.py",
+        "tests/evaluation/test_baseline_adapters.py",
+        "tests/evaluation/test_ddl_parser.py",
+        "tests/evaluation/test_pvldb_eval_manifest.py",
+        "tests/evaluation/test_pvldb_eval_runner.py",
+        "tests/gates/test_normalization_gate_purity.py",
+        "tests/nlp/test_entity_extractor.py",
+        "tests/nlp/test_transformer_ner.py"
+      ]
+    },
+    {
+      "sha": "22edba2daa23",
+      "variant": "local_semantic",
+      "reason": "Variant still missed gold changed files at K.",
+      "paths": [
+        "schema_agent/agents/relationship_cardinality.py",
+        "tests/agents/test_relationship_cardinality.py"
+      ]
+    },
+    {
+      "sha": "f8fdf836d7be",
+      "variant": "local_semantic",
+      "reason": "Variant still missed gold changed files at K.",
+      "paths": [
+        "tests/evaluation/test_matching.py",
+        "tests/evaluation/test_score_runner.py"
+      ]
+    },
+    {
+      "sha": "011219a92362",
+      "variant": "local_semantic",
+      "reason": "Variant still missed gold changed files at K.",
+      "paths": [
+        "paper/pvldb/tables/ablation.tex"
+      ]
+    }
+  ],
+  "semanticContribution": {
+    "evaluatedCommits": 10,
+    "commitsWithSemanticSelection": 9,
+    "semanticSelectedFileCount": 25,
+    "semanticTargetHitCount": 8,
+    "semanticOnlyTargetHitCount": 6,
+    "semanticOnlyNonTargetCount": 1,
+    "semanticLexicalOverlapCount": 18,
+    "semanticMissedTargetCount": 55,
+    "averageSemanticSelectedFiles": 2.5,
+    "semanticTargetHitRate": 0.12698413,
+    "semanticOnlyTargetHitRate": 0.0952381,
+    "semanticOnlyNonTargetRate": 0.14285715,
+    "semanticOnlyHits": [
+      {
+        "sha": "335786673044",
+        "variant": "local_semantic",
+        "reason": "Semantic selected retrieval-target path(s) absent from the lexical baseline top K.",
+        "paths": [
+          "experiments/pvldb_eval/manifest.yaml"
+        ]
+      },
+      {
+        "sha": "ea1587681408",
+        "variant": "local_semantic",
+        "reason": "Semantic selected retrieval-target path(s) absent from the lexical baseline top K.",
+        "paths": [
+          "schema_agent/core/workflow.py"
+        ]
+      },
+      {
+        "sha": "19469f22236a",
+        "variant": "local_semantic",
+        "reason": "Semantic selected retrieval-target path(s) absent from the lexical baseline top K.",
+        "paths": [
+          "paper/pvldb/README.md"
+        ]
+      },
+      {
+        "sha": "29c6ca20884b",
+        "variant": "local_semantic",
+        "reason": "Semantic selected retrieval-target path(s) absent from the lexical baseline top K.",
+        "paths": [
+          "tests/evaluation/test_matching.py"
+        ]
+      },
+      {
+        "sha": "f8fdf836d7be",
+        "variant": "local_semantic",
+        "reason": "Semantic selected retrieval-target path(s) absent from the lexical baseline top K.",
+        "paths": [
+          "schema_agent/evaluation/text2schema/matching.py",
+          "schema_agent/evaluation/text2schema/metrics.py"
+        ]
+      }
+    ],
+    "semanticOnlyNonTargets": [
+      {
+        "sha": "ea1587681408",
+        "variant": "local_semantic",
+        "reason": "Semantic selected non-target path(s) absent from the lexical baseline top K.",
+        "paths": [
+          "schema_agent/core/validated_workflow.py"
+        ]
+      }
+    ],
+    "semanticMissedTargetGapFamilies": [
+      {
+        "signalGap": "semantic_miss_area_context_only",
+        "missedCount": 28,
+        "examplePaths": [
+          "schema_agent/agents/base.py",
+          "schema_agent/agents/entity_discovery.py",
+          "schema_agent/agents/normalization.py",
+          "schema_agent/agents/requirement_analyzer.py",
+          "schema_agent/core/nodes.py"
+        ]
+      },
+      {
+        "signalGap": "semantic_miss_final_context_covered",
+        "missedCount": 3,
+        "examplePaths": [
+          "schema_agent/agents/base.py",
+          "schema_agent/evaluation/text2schema/pvldb_eval_runner.py",
+          "schema_agent/evaluation/text2schema/pvldb_eval_stats.py"
+        ]
+      },
+      {
+        "signalGap": "semantic_miss_lexical_covered",
+        "missedCount": 10,
+        "examplePaths": [
+          "tests/evaluation/test_pvldb_eval_runner.py",
+          "experiments/pvldb_eval/bootstrap_qwen35_host.sh",
+          "experiments/pvldb_eval/run_qwen35_phase1.sh",
+          "experiments/pvldb_eval/start_qwen35_vllm.sh",
+          "tests/evaluation/test_baseline_adapters.py"
+        ]
+      },
+      {
+        "signalGap": "semantic_miss_no_candidate_signal",
+        "missedCount": 8,
+        "examplePaths": [
+          "tests/gates/test_quality_gate_system_singleton.py",
+          "tests/gates/test_normalization_gate_purity.py",
+          "tests/nlp/test_entity_extractor.py",
+          "tests/nlp/test_transformer_ner.py",
+          "tests/agents/test_relationship_cardinality.py"
+        ]
+      },
+      {
+        "signalGap": "semantic_miss_nonsemantic_coupled_signal",
+        "missedCount": 6,
+        "examplePaths": [
+          "schema_agent/evaluation/text2schema/pvldb_eval_manifest.py",
+          "schema_agent/evaluation/text2schema/pvldb_eval_runner.py",
+          "schema_agent/agents/relationship_cardinality.py",
+          "schema_agent/core/nodes.py",
+          "schema_agent/gates/gate_system.py"
+        ]
+      }
+    ]
+  },
+  "rerankerContribution": {
+    "evaluatedCommits": 10,
+    "improvedCommitCount": 0,
+    "regressedCommitCount": 4,
+    "neutralCommitCount": 6,
+    "defaultTargetHitCount": 22,
+    "rerankedTargetHitCount": 15,
+    "targetHitDelta": -7,
+    "rerankerOnlyTargetHitCount": 3,
+    "defaultOnlyTargetHitCount": 10,
+    "protectedEvidenceMissRateDelta": -0.48275864,
+    "protectedEvidenceTargetMissRateDelta": -0.18181819,
+    "improvedCases": [],
+    "regressedCases": [
+      {
+        "sha": "335786673044",
+        "variant": "local_metadata_reranked",
+        "reason": "Reranker lost gold changed file(s) that default retrieved.",
+        "paths": [
+          "schema_agent/evaluation/text2schema/pvldb_eval_runner.py"
+        ]
+      },
+      {
+        "sha": "ea1587681408",
+        "variant": "local_metadata_reranked",
+        "reason": "Reranker lost gold changed file(s) that default retrieved.",
+        "paths": [
+          "schema_agent/agents/base.py",
+          "schema_agent/agents/relationship_cardinality.py",
+          "schema_agent/core/nodes.py",
+          "schema_agent/core/workflow.py",
+          "schema_agent/evaluation/text2schema/pvldb_eval_runner.py"
+        ]
+      },
+      {
+        "sha": "19469f22236a",
+        "variant": "local_metadata_reranked",
+        "reason": "Reranker lost gold changed file(s) that default retrieved.",
+        "paths": [
+          "paper/pvldb/README.md"
+        ]
+      },
+      {
+        "sha": "f8fdf836d7be",
+        "variant": "local_metadata_reranked",
+        "reason": "Reranker lost gold changed file(s) that default retrieved.",
+        "paths": [
+          "schema_agent/evaluation/text2schema/metrics.py"
+        ]
+      }
+    ],
+    "defaultOnlyCases": [
+      {
+        "sha": "335786673044",
+        "variant": "local_metadata_reranked",
+        "reason": "Reranker replaced target file(s) that default retrieved.",
+        "paths": [
+          "schema_agent/evaluation/text2schema/pvldb_eval_runner.py"
+        ]
+      },
+      {
+        "sha": "ea1587681408",
+        "variant": "local_metadata_reranked",
+        "reason": "Reranker replaced target file(s) that default retrieved.",
+        "paths": [
+          "schema_agent/agents/base.py",
+          "schema_agent/agents/relationship_cardinality.py",
+          "schema_agent/core/nodes.py",
+          "schema_agent/core/workflow.py",
+          "schema_agent/evaluation/text2schema/pvldb_eval_runner.py"
+        ]
+      },
+      {
+        "sha": "19469f22236a",
+        "variant": "local_metadata_reranked",
+        "reason": "Reranker replaced target file(s) that default retrieved.",
+        "paths": [
+          "paper/pvldb/README.md"
+        ]
+      },
+      {
+        "sha": "f8fdf836d7be",
+        "variant": "local_metadata_reranked",
+        "reason": "Reranker replaced target file(s) that default retrieved.",
+        "paths": [
+          "schema_agent/evaluation/text2schema/metrics.py"
+        ]
+      }
+    ],
+    "queryFamilyContributions": [
+      {
+        "family": "symbol_identifier",
+        "evaluatedCommits": 2,
+        "improvedCommitCount": 0,
+        "regressedCommitCount": 0,
+        "neutralCommitCount": 2,
+        "defaultTargetHitCount": 1,
+        "rerankedTargetHitCount": 1,
+        "targetHitDelta": 0,
+        "rerankerOnlyTargetHitCount": 0,
+        "defaultOnlyTargetHitCount": 0,
+        "routingRecommendation": "hold_neutral",
+        "exampleCases": []
+      },
+      {
+        "family": "domain_phrase",
+        "evaluatedCommits": 4,
+        "improvedCommitCount": 0,
+        "regressedCommitCount": 1,
+        "neutralCommitCount": 3,
+        "defaultTargetHitCount": 9,
+        "rerankedTargetHitCount": 8,
+        "targetHitDelta": -1,
+        "rerankerOnlyTargetHitCount": 0,
+        "defaultOnlyTargetHitCount": 1,
+        "routingRecommendation": "block_regression",
+        "exampleCases": [
+          {
+            "sha": "f8fdf836d7be",
+            "variant": "local_metadata_reranked",
+            "reason": "Reranker lost gold changed file(s) that default retrieved.",
+            "paths": [
+              "schema_agent/evaluation/text2schema/metrics.py"
+            ]
+          }
+        ]
+      },
+      {
+        "family": "broad_scope",
+        "evaluatedCommits": 4,
+        "improvedCommitCount": 0,
+        "regressedCommitCount": 3,
+        "neutralCommitCount": 1,
+        "defaultTargetHitCount": 12,
+        "rerankedTargetHitCount": 6,
+        "targetHitDelta": -6,
+        "rerankerOnlyTargetHitCount": 3,
+        "defaultOnlyTargetHitCount": 9,
+        "routingRecommendation": "block_regression",
+        "exampleCases": [
+          {
+            "sha": "335786673044",
+            "variant": "local_metadata_reranked",
+            "reason": "Reranker lost gold changed file(s) that default retrieved.",
+            "paths": [
+              "schema_agent/evaluation/text2schema/pvldb_eval_runner.py"
+            ]
+          },
+          {
+            "sha": "ea1587681408",
+            "variant": "local_metadata_reranked",
+            "reason": "Reranker lost gold changed file(s) that default retrieved.",
+            "paths": [
+              "schema_agent/agents/base.py",
+              "schema_agent/agents/relationship_cardinality.py",
+              "schema_agent/core/nodes.py",
+              "schema_agent/core/workflow.py",
+              "schema_agent/evaluation/text2schema/pvldb_eval_runner.py"
+            ]
+          },
+          {
+            "sha": "19469f22236a",
+            "variant": "local_metadata_reranked",
+            "reason": "Reranker lost gold changed file(s) that default retrieved.",
+            "paths": [
+              "paper/pvldb/README.md"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "routedRerankerContribution": {
+    "evaluatedCommits": 10,
+    "improvedCommitCount": 0,
+    "regressedCommitCount": 0,
+    "neutralCommitCount": 10,
+    "defaultTargetHitCount": 22,
+    "rerankedTargetHitCount": 22,
+    "targetHitDelta": 0,
+    "rerankerOnlyTargetHitCount": 0,
+    "defaultOnlyTargetHitCount": 0,
+    "protectedEvidenceMissRateDelta": 0.0,
+    "protectedEvidenceTargetMissRateDelta": 0.0,
+    "improvedCases": [],
+    "regressedCases": [],
+    "defaultOnlyCases": [],
+    "queryFamilyContributions": [
+      {
+        "family": "broad_scope",
+        "evaluatedCommits": 4,
+        "improvedCommitCount": 0,
+        "regressedCommitCount": 0,
+        "neutralCommitCount": 4,
+        "defaultTargetHitCount": 12,
+        "rerankedTargetHitCount": 12,
+        "targetHitDelta": 0,
+        "rerankerOnlyTargetHitCount": 0,
+        "defaultOnlyTargetHitCount": 0,
+        "routingRecommendation": "hold_neutral",
+        "exampleCases": []
+      },
+      {
+        "family": "domain_phrase",
+        "evaluatedCommits": 4,
+        "improvedCommitCount": 0,
+        "regressedCommitCount": 0,
+        "neutralCommitCount": 4,
+        "defaultTargetHitCount": 9,
+        "rerankedTargetHitCount": 9,
+        "targetHitDelta": 0,
+        "rerankerOnlyTargetHitCount": 0,
+        "defaultOnlyTargetHitCount": 0,
+        "routingRecommendation": "hold_neutral",
+        "exampleCases": []
+      },
+      {
+        "family": "symbol_identifier",
+        "evaluatedCommits": 2,
+        "improvedCommitCount": 0,
+        "regressedCommitCount": 0,
+        "neutralCommitCount": 2,
+        "defaultTargetHitCount": 1,
+        "rerankedTargetHitCount": 1,
+        "targetHitDelta": 0,
+        "rerankerOnlyTargetHitCount": 0,
+        "defaultOnlyTargetHitCount": 0,
+        "routingRecommendation": "hold_neutral",
+        "exampleCases": []
+      }
+    ]
+  },
+  "providerPolicy": {
+    "policyPath": null,
+    "policy": {
+      "schemaVersion": 1,
+      "name": "local-source-free-default",
+      "allowLocalProviders": true,
+      "allowCloudEmbeddings": false,
+      "allowCloudReranking": false,
+      "allowSourceTransfer": false,
+      "enableLocalMetadataReranker": false,
+      "enableLocalFixtureReranker": false,
+      "sourceTextLogged": false
+    },
+    "decisions": [
+      {
+        "capability": "semantic_embedding",
+        "provider": "local_hash",
+        "status": "allowed",
+        "dataClasses": [
+          "metadata",
+          "semantic_vector"
+        ],
+        "remoteAllowed": false,
+        "sourceTextAllowed": false,
+        "reason": "Default deterministic local semantic metadata provider."
+      },
+      {
+        "capability": "semantic_embedding",
+        "provider": "cloud_embedding",
+        "status": "denied",
+        "dataClasses": [
+          "metadata",
+          "source_text"
+        ],
+        "remoteAllowed": false,
+        "sourceTextAllowed": false,
+        "reason": "Cloud embeddings require both cloud and source-transfer policy."
+      },
+      {
+        "capability": "precision_graph",
+        "provider": "local_precision_overlay",
+        "status": "allowed",
+        "dataClasses": [
+          "metadata"
+        ],
+        "remoteAllowed": false,
+        "sourceTextAllowed": false,
+        "reason": "Local precision overlays are metadata-only."
+      },
+      {
+        "capability": "reranking",
+        "provider": "local_metadata",
+        "status": "disabled",
+        "dataClasses": [
+          "metadata"
+        ],
+        "remoteAllowed": false,
+        "sourceTextAllowed": false,
+        "reason": "Reranker is disabled by default."
+      },
+      {
+        "capability": "semantic_embedding",
+        "provider": "local_fastembed",
+        "status": "allowed",
+        "dataClasses": [
+          "metadata",
+          "semantic_vector"
+        ],
+        "remoteAllowed": false,
+        "sourceTextAllowed": false,
+        "reason": "Local source-free semantic provider is allowed."
+      }
+    ],
+    "diagnostics": [
+      {
+        "code": "provider_policy_absent_safe_defaults",
+        "severity": "info",
+        "message": "Provider policy file was not found; using local source-free defaults.",
+        "paths": [],
+        "count": 0
+      },
+      {
+        "code": "provider_policy_remote_denied",
+        "severity": "info",
+        "message": "Remote embedding or reranking providers are blocked by local source-free policy.",
+        "paths": [],
+        "count": 1
+      }
+    ],
+    "sourceTextLogged": false,
+    "privacyStatus": {
+      "localOnly": true,
+      "remoteEmbeddingsUsed": false,
+      "remoteRerankingUsed": false,
+      "redactionsApplied": 0
+    }
+  },
+  "precisionStatus": {
+    "status": "unavailable",
+    "provider": null,
+    "overlayPath": "/Users/romel/Documents/GitHub/ctxhelm-proof-fixtures/VeriSchema/.ctxhelm/precision-edges.json",
+    "edgeCount": 0,
+    "rejectedEdgeCount": 0,
+    "stale": false,
+    "degraded": false,
+    "diagnostics": []
+  },
+  "diagnostics": [
+    {
+      "code": "provider_policy_absent_safe_defaults",
+      "severity": "info",
+      "message": "Provider policy file was not found; using local source-free defaults.",
+      "paths": [],
+      "count": 0
+    },
+    {
+      "code": "provider_policy_remote_denied",
+      "severity": "info",
+      "message": "Remote embedding or reranking providers are blocked by local source-free policy.",
+      "paths": [],
+      "count": 1
+    },
+    {
+      "code": "semantic_contribution_missed_targets_coupled",
+      "severity": "info",
+      "message": "Semantic provider `local_fastembed` missed target files that already had source-free graph/history/symbol signals; prioritize graph/fusion ordering before adding more semantic text.",
+      "paths": [
+        "schema_agent/evaluation/text2schema/pvldb_eval_manifest.py",
+        "schema_agent/evaluation/text2schema/pvldb_eval_runner.py",
+        "schema_agent/agents/relationship_cardinality.py",
+        "schema_agent/core/nodes.py",
+        "schema_agent/gates/gate_system.py"
+      ],
+      "count": 6
+    },
+    {
+      "code": "semantic_contribution_missed_targets_no_signal",
+      "severity": "warning",
+      "message": "Semantic provider `local_fastembed` missed target files with no lexical, graph, history, or area signal; inspect semantic document/query construction for these path families.",
+      "paths": [
+        "tests/gates/test_quality_gate_system_singleton.py",
+        "tests/gates/test_normalization_gate_purity.py",
+        "tests/nlp/test_entity_extractor.py",
+        "tests/nlp/test_transformer_ner.py",
+        "tests/agents/test_relationship_cardinality.py"
+      ],
+      "count": 8
+    },
+    {
+      "code": "semantic_contribution_unique_target_hits",
+      "severity": "info",
+      "message": "Semantic provider `local_fastembed` contributed target file(s) absent from the lexical baseline top K.",
+      "paths": [
+        "experiments/pvldb_eval/manifest.yaml",
+        "schema_agent/core/workflow.py",
+        "paper/pvldb/README.md",
+        "tests/evaluation/test_matching.py",
+        "schema_agent/evaluation/text2schema/matching.py",
+        "schema_agent/evaluation/text2schema/metrics.py"
+      ],
+      "count": 6
+    },
+    {
+      "code": "reranker_contribution_regressed_commits",
+      "severity": "warning",
+      "message": "Local metadata reranker lost target hits on some commits; keep reranking opt-in or route by query family.",
+      "paths": [
+        "schema_agent/evaluation/text2schema/pvldb_eval_runner.py",
+        "schema_agent/agents/base.py",
+        "schema_agent/agents/relationship_cardinality.py",
+        "schema_agent/core/nodes.py",
+        "schema_agent/core/workflow.py",
+        "schema_agent/evaluation/text2schema/pvldb_eval_runner.py",
+        "paper/pvldb/README.md",
+        "schema_agent/evaluation/text2schema/metrics.py"
+      ],
+      "count": 4
+    },
+    {
+      "code": "reranker_contribution_protected_target_improved",
+      "severity": "info",
+      "message": "Local metadata reranker reduced protected retrieval-target miss-rate by 0.182.",
+      "paths": [],
+      "count": 15
+    },
+    {
+      "code": "reranker_contribution_target_churn",
+      "severity": "info",
+      "message": "Local metadata reranker added target hits but also replaced some target files that default retrieved; use this as routing evidence rather than an unconditional default.",
+      "paths": [
+        "schema_agent/evaluation/text2schema/pvldb_eval_runner.py",
+        "schema_agent/agents/base.py",
+        "schema_agent/agents/relationship_cardinality.py",
+        "schema_agent/core/nodes.py",
+        "schema_agent/core/workflow.py",
+        "schema_agent/evaluation/text2schema/pvldb_eval_runner.py",
+        "paper/pvldb/README.md",
+        "schema_agent/evaluation/text2schema/metrics.py"
+      ],
+      "count": 10
+    },
+    {
+      "code": "routed_reranker_neutral",
+      "severity": "info",
+      "message": "Query-family routed reranker preserved target hits but did not add target hits in this gate.",
+      "paths": [],
+      "count": 10
+    },
+    {
+      "code": "semantic_precision_named_regressions",
+      "severity": "warning",
+      "message": "Semantic/precision gate found named regressions; keep feature opt-in.",
+      "paths": [
+        "experiments/pvldb_eval/manifest.yaml",
+        "schema_agent/evaluation/text2schema/pvldb_eval_manifest.py",
+        "schema_agent/evaluation/text2schema/pvldb_eval_runner.py",
+        "experiments/pvldb_eval/start_qwen35_vllm.sh",
+        "schema_agent/agents/base.py",
+        "schema_agent/agents/relationship_cardinality.py",
+        "schema_agent/core/nodes.py",
+        "schema_agent/core/workflow.py",
+        "schema_agent/evaluation/text2schema/pvldb_eval_runner.py",
+        "schema_agent/evaluation/text2schema/pvldb_eval_stats.py",
+        "schema_agent/gates/gate_system.py",
+        "paper/pvldb/README.md",
+        "schema_agent/evaluation/text2schema/matching.py",
+        "schema_agent/evaluation/text2schema/metrics.py",
+        "schema_agent/evaluation/text2schema/score.py",
+        "paper/pvldb/acmart.cls"
+      ],
+      "count": 5
+    }
+  ],
+  "sourceTextLogged": false,
+  "privacyStatus": {
+    "localOnly": true,
+    "remoteEmbeddingsUsed": false,
+    "remoteRerankingUsed": false,
+    "redactionsApplied": 0
+  }
+}

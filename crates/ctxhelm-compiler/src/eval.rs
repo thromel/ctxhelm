@@ -3873,7 +3873,7 @@ fn query_family_from_parts(
 }
 
 fn local_metadata_reranker_route_enabled_for_family(family: &str) -> bool {
-    matches!(family, "commit_clue" | "symbol_identifier")
+    matches!(family, "commit_clue")
 }
 
 fn reranker_routing_recommendation(
@@ -9863,7 +9863,7 @@ mod tests {
 
     #[test]
     fn query_family_routed_reranker_only_enables_clean_candidate_families() {
-        assert!(local_metadata_reranker_route_enabled_for_family(
+        assert!(!local_metadata_reranker_route_enabled_for_family(
             "symbol_identifier"
         ));
         assert!(local_metadata_reranker_route_enabled_for_family(
