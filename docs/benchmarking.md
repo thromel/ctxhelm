@@ -590,6 +590,20 @@ diagnostics:
 - `reranker_contribution_target_churn`: the reranker added target hits but also
   replaced target files that default retrieved. Treat this as routing evidence,
   not unconditional default-promotion evidence.
+- `reranker_query_family_route_candidate`: one or more query families show
+  target-hit lift without default-only target churn. These families are routing
+  candidates, not automatic defaults.
+- `reranker_query_family_churn_hold`: one or more query families improve net
+  target hits but still churn target files that default retrieved. Hold these
+  families until a routed or learned policy reduces churn.
+
+The `rerankerContribution.queryFamilyContributions` JSON field groups the same
+source-free evidence by primary query family, such as `explicit_path`,
+`stack_or_error`, `symbol_identifier`, `commit_clue`, `domain_phrase`,
+`broad_scope`, or `low_information`. Each family reports target-hit deltas,
+default-only churn, example paths, and a `routingRecommendation` value:
+`route_candidate`, `hold_neutral`, `hold_churn`, `block_regression`, or
+`insufficient_evidence`.
 
 Phase 176 turns the `area_context_only` diagnosis into a better progressive
 read surface for focused tasks. When a standard plan already selects

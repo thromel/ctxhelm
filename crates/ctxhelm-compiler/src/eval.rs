@@ -10,8 +10,8 @@ use ctxhelm_core::{
     CandidateFeatureLabel, CandidateFeatureRow, CandidateFeatureSource, ContextArea, ContextPack,
     ContextPlan, Diagnostic, DiagnosticSeverity, EvalTrace, FileRole, InspectionPressureBreakdown,
     PackBudget, PolicyQualityReport, PrecisionStatusReport, PrivacyStatus, ProviderDecisionStatus,
-    ProviderPolicyReport, QueryConstructionTrace, RetrievalCandidate, RetrievalCandidateKind,
-    RetrievalHealthGapFamily, RetrievalHealthMetric, RetrievalHealthReport,
+    ProviderPolicyReport, QueryConstructionTrace, QueryFacetKind, RetrievalCandidate,
+    RetrievalCandidateKind, RetrievalHealthGapFamily, RetrievalHealthMetric, RetrievalHealthReport,
     RetrievalHealthSignalContribution, RetrievalHealthTokenRoi, RetrievalSignalKind, TaskType,
 };
 use ctxhelm_index::{
@@ -442,6 +442,37 @@ pub struct RerankerContributionSummary {
     pub regressed_cases: Vec<SemanticPrecisionNamedCase>,
     #[serde(default)]
     pub default_only_cases: Vec<SemanticPrecisionNamedCase>,
+    #[serde(default)]
+    pub query_family_contributions: Vec<RerankerQueryFamilyContribution>,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct RerankerQueryFamilyContribution {
+    pub family: String,
+    pub evaluated_commits: usize,
+    pub improved_commit_count: usize,
+    pub regressed_commit_count: usize,
+    pub neutral_commit_count: usize,
+    pub default_target_hit_count: usize,
+    pub reranked_target_hit_count: usize,
+    pub target_hit_delta: i32,
+    pub reranker_only_target_hit_count: usize,
+    pub default_only_target_hit_count: usize,
+    pub routing_recommendation: RerankerRoutingRecommendation,
+    #[serde(default)]
+    pub example_cases: Vec<SemanticPrecisionNamedCase>,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum RerankerRoutingRecommendation {
+    RouteCandidate,
+    HoldNeutral,
+    HoldChurn,
+    BlockRegression,
+    #[default]
+    InsufficientEvidence,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -3580,6 +3611,8 @@ fn reranker_contribution_summary(
         .iter()
         .map(|commit| (commit.sha.as_str(), commit))
         .collect::<BTreeMap<_, _>>();
+    let mut family_contributions: BTreeMap<String, RerankerQueryFamilyContribution> =
+        BTreeMap::new();
     let mut summary = RerankerContributionSummary {
         evaluated_commits: reranked.commits.len(),
         protected_evidence_miss_rate_delta: reranked.protected_evidence.miss_rate_at_10
@@ -3614,6 +3647,20 @@ fn reranker_contribution_summary(
             .cloned()
             .collect::<BTreeSet<_>>();
 
+        let family = reranker_query_family(default_commit);
+        let family_entry =
+            family_contributions
+                .entry(family.clone())
+                .or_insert(RerankerQueryFamilyContribution {
+                    family,
+                    ..RerankerQueryFamilyContribution::default()
+                });
+        family_entry.evaluated_commits += 1;
+        family_entry.default_target_hit_count += default_hits.len();
+        family_entry.reranked_target_hit_count += reranked_hits.len();
+        family_entry.reranker_only_target_hit_count += reranker_only_hits.len();
+        family_entry.default_only_target_hit_count += default_only_hits.len();
+
         summary.default_target_hit_count += default_hits.len();
         summary.reranked_target_hit_count += reranked_hits.len();
         summary.reranker_only_target_hit_count += reranker_only_hits.len();
@@ -3632,40 +3679,147 @@ fn reranker_contribution_summary(
         match reranked_hits.len().cmp(&default_hits.len()) {
             std::cmp::Ordering::Greater => {
                 summary.improved_commit_count += 1;
+                family_entry.improved_commit_count += 1;
                 let mut paths = reranker_only_hits.into_iter().collect::<Vec<_>>();
                 paths.truncate(5);
-                summary.improved_cases.push(SemanticPrecisionNamedCase {
+                let case = SemanticPrecisionNamedCase {
                     sha: short_sha(&commit.sha),
                     variant: "local_metadata_reranked".to_string(),
                     reason: "Reranker retrieved additional gold changed file(s) beyond default."
                         .to_string(),
                     paths,
-                });
+                };
+                family_entry.example_cases.push(case.clone());
+                summary.improved_cases.push(case);
             }
             std::cmp::Ordering::Less => {
                 summary.regressed_commit_count += 1;
+                family_entry.regressed_commit_count += 1;
                 let mut paths = default_only_hits.into_iter().collect::<Vec<_>>();
                 paths.truncate(5);
-                summary.regressed_cases.push(SemanticPrecisionNamedCase {
+                let case = SemanticPrecisionNamedCase {
                     sha: short_sha(&commit.sha),
                     variant: "local_metadata_reranked".to_string(),
                     reason: "Reranker lost gold changed file(s) that default retrieved."
                         .to_string(),
                     paths,
-                });
+                };
+                family_entry.example_cases.push(case.clone());
+                summary.regressed_cases.push(case);
             }
             std::cmp::Ordering::Equal => {
                 summary.neutral_commit_count += 1;
+                family_entry.neutral_commit_count += 1;
+                if !default_only_hits.is_empty() {
+                    let mut paths = default_only_hits.into_iter().collect::<Vec<_>>();
+                    paths.truncate(5);
+                    family_entry.example_cases.push(SemanticPrecisionNamedCase {
+                        sha: short_sha(&commit.sha),
+                        variant: "local_metadata_reranked".to_string(),
+                        reason:
+                            "Reranker churned target file(s) without changing target-hit count."
+                                .to_string(),
+                        paths,
+                    });
+                }
             }
         }
     }
 
     summary.target_hit_delta =
         summary.reranked_target_hit_count as i32 - summary.default_target_hit_count as i32;
+    summary.query_family_contributions = family_contributions
+        .into_values()
+        .map(|mut family| {
+            family.target_hit_delta =
+                family.reranked_target_hit_count as i32 - family.default_target_hit_count as i32;
+            family.routing_recommendation = reranker_routing_recommendation(&family);
+            family.example_cases.truncate(5);
+            family
+        })
+        .collect();
+    summary.query_family_contributions.sort_by(|left, right| {
+        right
+            .target_hit_delta
+            .cmp(&left.target_hit_delta)
+            .then_with(|| {
+                left.default_only_target_hit_count
+                    .cmp(&right.default_only_target_hit_count)
+            })
+            .then_with(|| left.family.cmp(&right.family))
+    });
     summary.improved_cases.truncate(10);
     summary.regressed_cases.truncate(10);
     summary.default_only_cases.truncate(10);
     summary
+}
+
+fn reranker_query_family(commit: &HistoricalCommitEval) -> String {
+    if commit.broad_scope_task {
+        return "broad_scope".to_string();
+    }
+    if commit.low_information_task {
+        return "low_information".to_string();
+    }
+    let Some(trace) = &commit.query_trace else {
+        return format!("task_type_{:?}", commit.task_type).to_ascii_lowercase();
+    };
+    if trace.facets.iter().any(|facet| {
+        matches!(
+            facet.kind,
+            QueryFacetKind::ExplicitPath | QueryFacetKind::CurrentDiffPath
+        )
+    }) {
+        return "explicit_path".to_string();
+    }
+    if trace.facets.iter().any(|facet| {
+        matches!(
+            facet.kind,
+            QueryFacetKind::StackFrame | QueryFacetKind::ErrorText
+        )
+    }) {
+        return "stack_or_error".to_string();
+    }
+    if trace
+        .facets
+        .iter()
+        .any(|facet| matches!(facet.kind, QueryFacetKind::Symbol))
+    {
+        return "symbol_identifier".to_string();
+    }
+    if trace
+        .facets
+        .iter()
+        .any(|facet| matches!(facet.kind, QueryFacetKind::CommitClue))
+    {
+        return "commit_clue".to_string();
+    }
+    if trace
+        .facets
+        .iter()
+        .any(|facet| matches!(facet.kind, QueryFacetKind::DomainPhrase))
+    {
+        return "domain_phrase".to_string();
+    }
+    format!("task_type_{:?}", commit.task_type).to_ascii_lowercase()
+}
+
+fn reranker_routing_recommendation(
+    family: &RerankerQueryFamilyContribution,
+) -> RerankerRoutingRecommendation {
+    if family.evaluated_commits == 0 {
+        return RerankerRoutingRecommendation::InsufficientEvidence;
+    }
+    if family.regressed_commit_count > 0 || family.target_hit_delta < 0 {
+        return RerankerRoutingRecommendation::BlockRegression;
+    }
+    if family.target_hit_delta > 0 && family.default_only_target_hit_count == 0 {
+        return RerankerRoutingRecommendation::RouteCandidate;
+    }
+    if family.target_hit_delta > 0 && family.default_only_target_hit_count > 0 {
+        return RerankerRoutingRecommendation::HoldChurn;
+    }
+    RerankerRoutingRecommendation::HoldNeutral
 }
 
 fn reranker_contribution_diagnostics(summary: &RerankerContributionSummary) -> Vec<Diagnostic> {
@@ -3737,6 +3891,54 @@ fn reranker_contribution_diagnostics(summary: &RerankerContributionSummary) -> V
                 .take(10)
                 .collect(),
             count: summary.default_only_target_hit_count,
+        });
+    }
+    let route_candidate_families = summary
+        .query_family_contributions
+        .iter()
+        .filter(|family| {
+            family.routing_recommendation == RerankerRoutingRecommendation::RouteCandidate
+        })
+        .collect::<Vec<_>>();
+    if !route_candidate_families.is_empty() {
+        diagnostics.push(Diagnostic {
+            code: "reranker_query_family_route_candidate".to_string(),
+            severity: DiagnosticSeverity::Info,
+            message: "Some query families show reranker lift without target churn; keep them as routing candidates pending repeated proof.".to_string(),
+            paths: route_candidate_families
+                .iter()
+                .flat_map(|family| {
+                    family
+                        .example_cases
+                        .iter()
+                        .flat_map(|case| case.paths.clone())
+                })
+                .take(10)
+                .collect(),
+            count: route_candidate_families.len(),
+        });
+    }
+    let churn_held_families = summary
+        .query_family_contributions
+        .iter()
+        .filter(|family| family.routing_recommendation == RerankerRoutingRecommendation::HoldChurn)
+        .collect::<Vec<_>>();
+    if !churn_held_families.is_empty() {
+        diagnostics.push(Diagnostic {
+            code: "reranker_query_family_churn_hold".to_string(),
+            severity: DiagnosticSeverity::Info,
+            message: "Some query families improve net target hits but still churn default targets; hold routing for those families until churn is reduced.".to_string(),
+            paths: churn_held_families
+                .iter()
+                .flat_map(|family| {
+                    family
+                        .example_cases
+                        .iter()
+                        .flat_map(|case| case.paths.clone())
+                })
+                .take(10)
+                .collect(),
+            count: churn_held_families.len(),
         });
     }
     diagnostics
@@ -9456,6 +9658,67 @@ mod tests {
     }
 
     #[test]
+    fn reranker_contribution_groups_route_candidates_by_query_family() {
+        let mut default = empty_historical_eval_report("route-family");
+        default.commits[0].query_trace =
+            Some(query_trace_with_facets(vec![QueryFacetKind::Symbol]));
+        default.commits[0].file_hits_at_10 = vec!["src/shared.rs".to_string()];
+
+        let mut reranked = empty_historical_eval_report("route-family");
+        reranked.commits[0].query_trace = default.commits[0].query_trace.clone();
+        reranked.commits[0].file_hits_at_10 = vec![
+            "src/shared.rs".to_string(),
+            "src/reranker_only.rs".to_string(),
+        ];
+
+        let summary = reranker_contribution_summary(&default, &reranked);
+
+        assert_eq!(summary.query_family_contributions.len(), 1);
+        let family = &summary.query_family_contributions[0];
+        assert_eq!(family.family, "symbol_identifier");
+        assert_eq!(family.target_hit_delta, 1);
+        assert_eq!(
+            family.routing_recommendation,
+            RerankerRoutingRecommendation::RouteCandidate
+        );
+        assert_eq!(family.default_only_target_hit_count, 0);
+    }
+
+    #[test]
+    fn reranker_contribution_holds_churned_winning_query_family() {
+        let mut default = empty_historical_eval_report("churn-family");
+        default.commits[0].query_trace =
+            Some(query_trace_with_facets(vec![QueryFacetKind::ExplicitPath]));
+        default.commits[0].file_hits_at_10 = vec![
+            "src/shared.rs".to_string(),
+            "src/default_only.rs".to_string(),
+        ];
+
+        let mut reranked = empty_historical_eval_report("churn-family");
+        reranked.commits[0].query_trace = default.commits[0].query_trace.clone();
+        reranked.commits[0].file_hits_at_10 = vec![
+            "src/shared.rs".to_string(),
+            "src/reranker_only.rs".to_string(),
+            "src/reranker_extra.rs".to_string(),
+        ];
+
+        let summary = reranker_contribution_summary(&default, &reranked);
+
+        let family = &summary.query_family_contributions[0];
+        assert_eq!(family.family, "explicit_path");
+        assert_eq!(family.target_hit_delta, 1);
+        assert_eq!(family.default_only_target_hit_count, 1);
+        assert_eq!(
+            family.routing_recommendation,
+            RerankerRoutingRecommendation::HoldChurn
+        );
+        assert_eq!(
+            family.example_cases[0].paths,
+            vec!["src/reranker_extra.rs", "src/reranker_only.rs"]
+        );
+    }
+
+    #[test]
     fn reranker_contribution_diagnostics_warn_on_target_loss() {
         let summary = RerankerContributionSummary {
             evaluated_commits: 2,
@@ -11508,6 +11771,37 @@ mod tests {
                 elapsed_millis: 0,
                 source_text_logged: false,
             }],
+            privacy_status: PrivacyStatus::local_only(),
+        }
+    }
+
+    fn query_trace_with_facets(kinds: Vec<QueryFacetKind>) -> QueryConstructionTrace {
+        QueryConstructionTrace {
+            task_hash: "task".to_string(),
+            facets: kinds
+                .into_iter()
+                .map(|kind| ctxhelm_core::QueryFacet {
+                    kind,
+                    value: "safe-query-token".to_string(),
+                    origin: "test".to_string(),
+                    weight: 1.0,
+                })
+                .collect(),
+            retriever_queries: ctxhelm_core::RetrieverQuerySet {
+                lexical_terms: Vec::new(),
+                semantic_phrases: Vec::new(),
+                symbol_terms: Vec::new(),
+                graph_seeds: Vec::new(),
+                history_terms: Vec::new(),
+                test_terms: Vec::new(),
+            },
+            fusion_controls: ctxhelm_core::FusionControlSummary {
+                anchor_dominance: true,
+                exact_evidence_protected: true,
+                semantic_candidate_cap: 8,
+                semantic_weight: 0.7,
+            },
+            source_text_logged: false,
             privacy_status: PrivacyStatus::local_only(),
         }
     }
