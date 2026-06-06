@@ -65,6 +65,17 @@ v2.3 treats benchmark suites as fixed corpus manifests. Older suite files still 
 
 Phase 58 adds source-free query construction traces to prepare-task and historical eval commit rows. These traces record extracted paths, stack frames, symbols, error terms, domain terms, commit clues, retriever query sets, and fusion controls. They intentionally store task hashes and bounded facets instead of raw prompts or source snippets.
 
+Prepare-task also promotes safe changed paths from task-mentioned commits when
+the task explicitly contains `commit` and 7-40 character hex revision tokens.
+The planner reads local `git diff-tree --name-status -z` metadata, filters
+changed paths through the safe inventory, and records them as explicit path
+facets with origin `mentioned_commit_changed_path`. Diagnostics include
+`mentioned_commit_changed_paths`,
+`mentioned_commit_changed_paths_excluded`,
+`mentioned_commit_changed_paths_unavailable`, and `mentioned_commit_partial`.
+This is source-free commit metadata only; commit subjects, patches, and source
+text are not returned.
+
 Historical eval also records broad multi-area task pressure. `broadScopeTask`
 marks commits whose prompt or changed-file surface spans workflow/eval/lint
 style changes that cannot be fully covered by a small K=10 context budget, and
@@ -687,6 +698,17 @@ present in the default top-K ranking. It is diagnostic only. Phase 277 found
 clean lift on RefactoringMiner and ReAgent, but regressions on ctxhelm and
 VeriSchema, so the family-budget rule is not a promotion path.
 
+The gate also reports the eval-only `semantic_learned_profile_reranked` variant
+and `learnedProfileSemanticRerankerContribution`. This variant starts from
+semantic-corroborated candidates, but it admits only candidates whose
+source-free `(query_family, path_family)` profile was safe on other commits in
+the same gate. The current commit is excluded from its own profile evidence.
+A profile is eligible only when other commits show inserted semantic target
+hits, zero inserted semantic non-targets, and zero lost default targets. Phase
+278 found clean RefactoringMiner lift and exact neutrality on ctxhelm, ReAgent,
+and VeriSchema. It remains eval-only until a durable learned-policy artifact,
+staleness contract, support threshold, and broader holdout proof exist.
+
 The same family rows also report support diagnostics for semantic-only files:
 `semanticOnlyTargetWithNonsemanticSupportCount`,
 `semanticOnlyTargetWithoutNonsemanticSupportCount`,
@@ -731,6 +753,12 @@ diagnostics:
   variant lost target hits and must remain eval-only.
 - `semantic_family_budget_reranker_neutral`: the family-budget semantic variant
   preserved target hits without adding target hits.
+- `semantic_learned_profile_reranker_clean_lift`: the learned-profile semantic
+  variant added target hits without default-only target churn in this gate.
+- `semantic_learned_profile_reranker_regression`: the learned-profile semantic
+  variant lost target hits and must remain eval-only.
+- `semantic_learned_profile_reranker_neutral`: the learned-profile semantic
+  variant preserved target hits without adding target hits.
 
 The `rerankerContribution.queryFamilyContributions` JSON field groups the same
 source-free evidence by primary query family, such as `explicit_path`,
