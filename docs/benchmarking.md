@@ -651,6 +651,15 @@ fusion R&D probe, not runtime behavior. Phase 270 found strong RefactoringMiner
 lift but regressions on ctxhelm, ReAgent, and VeriSchema, so semantic
 corroboration remains a routing candidate rather than a default policy.
 
+The report includes `semanticCorroboratedRerankerContribution`, which mirrors
+the local reranker contribution table for that eval-only semantic fusion
+variant. Phase 271 used this field to reject query-family-only routing:
+RefactoringMiner had clean `domain_phrase`, `symbol_identifier`, and
+`commit_clue` route candidates, but the same coarse families regressed or
+churned default targets on ctxhelm, ReAgent, or VeriSchema. Future semantic
+fusion experiments need corpus-shape, path-role, or document/query construction
+evidence beyond query-family labels.
+
 The same family rows also report support diagnostics for semantic-only files:
 `semanticOnlyTargetWithNonsemanticSupportCount`,
 `semanticOnlyTargetWithoutNonsemanticSupportCount`,

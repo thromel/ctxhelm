@@ -1,0 +1,2635 @@
+{
+  "repoId": "ce546088-ab35-5ed9-a152-b30063c576e0",
+  "evalRangeId": "semantic-precision-gate:5aff2ee2294cb0e65aff9d5b40e84e99d4c80d4ebf98be74aa6829a78c184660",
+  "evaluatedCommits": 20,
+  "k": 10,
+  "decision": "hold",
+  "decisionReason": "Held: local semantic recall delta +0.000, precision delta +0.000; keep opt-in.",
+  "variants": [
+    {
+      "name": "lexical_baseline",
+      "status": "evaluated",
+      "semanticEnabled": false,
+      "precisionEnabled": false,
+      "rerankerEnabled": false,
+      "metrics": {
+        "k": 10,
+        "recallAtK": 0.4489151,
+        "precisionAtK": 0.36999997,
+        "mrrAtK": 0.69333327,
+        "roleRecall": [
+          {
+            "role": "source",
+            "recallAtK": 0.3625,
+            "changedFileCount": 80,
+            "hitCount": 29
+          },
+          {
+            "role": "test",
+            "recallAtK": 0.75,
+            "changedFileCount": 4,
+            "hitCount": 3
+          }
+        ],
+        "testRecommendationRate": 1.0,
+        "averageRecommendedContextFiles": 10.0
+      },
+      "fileRecallAt10": 0.44620585,
+      "testRecallAt10": 1.0,
+      "runtimeMillis": 3103,
+      "cacheHits": 0,
+      "cacheMisses": 0,
+      "tokenEfficiency": 3.25,
+      "protectedEvidenceMissRateAt10": 0.61702126,
+      "protectedEvidenceTargetMissRateAt10": 0.46478873,
+      "providerStatus": "evaluated",
+      "note": "Exact/path lexical baseline under the same fixed K."
+    },
+    {
+      "name": "ctxhelm_default",
+      "status": "evaluated",
+      "semanticEnabled": false,
+      "precisionEnabled": false,
+      "rerankerEnabled": false,
+      "metrics": {
+        "k": 10,
+        "recallAtK": 0.44620585,
+        "precisionAtK": 0.39000002,
+        "mrrAtK": 0.66297615,
+        "roleRecall": [
+          {
+            "role": "source",
+            "recallAtK": 0.5625,
+            "changedFileCount": 80,
+            "hitCount": 45
+          },
+          {
+            "role": "test",
+            "recallAtK": 0.5,
+            "changedFileCount": 4,
+            "hitCount": 2
+          }
+        ],
+        "testRecommendationRate": 1.0,
+        "averageRecommendedContextFiles": 10.0
+      },
+      "fileRecallAt10": 0.44620585,
+      "testRecallAt10": 1.0,
+      "runtimeMillis": 3103,
+      "cacheHits": 0,
+      "cacheMisses": 0,
+      "tokenEfficiency": 3.25,
+      "protectedEvidenceMissRateAt10": 0.61702126,
+      "protectedEvidenceTargetMissRateAt10": 0.46478873,
+      "providerStatus": "evaluated",
+      "note": "Current default ranking without semantic default promotion."
+    },
+    {
+      "name": "local_metadata_reranked",
+      "status": "evaluated",
+      "semanticEnabled": false,
+      "precisionEnabled": false,
+      "rerankerEnabled": true,
+      "metrics": {
+        "k": 10,
+        "recallAtK": 0.4420886,
+        "precisionAtK": 0.34999996,
+        "mrrAtK": 0.7125,
+        "roleRecall": [
+          {
+            "role": "source",
+            "recallAtK": 0.3375,
+            "changedFileCount": 80,
+            "hitCount": 27
+          },
+          {
+            "role": "test",
+            "recallAtK": 0.5,
+            "changedFileCount": 4,
+            "hitCount": 2
+          }
+        ],
+        "testRecommendationRate": 1.0,
+        "averageRecommendedContextFiles": 10.0
+      },
+      "fileRecallAt10": 0.4420886,
+      "testRecallAt10": 1.0,
+      "runtimeMillis": 2750,
+      "cacheHits": 0,
+      "cacheMisses": 0,
+      "tokenEfficiency": 2.9166667,
+      "protectedEvidenceMissRateAt10": 0.09042553,
+      "protectedEvidenceTargetMissRateAt10": 0.09859155,
+      "providerStatus": "evaluated",
+      "note": "Eval-only deterministic local metadata reranker over source-free candidate metadata."
+    },
+    {
+      "name": "query_family_routed_reranked",
+      "status": "evaluated",
+      "semanticEnabled": false,
+      "precisionEnabled": false,
+      "rerankerEnabled": true,
+      "metrics": {
+        "k": 10,
+        "recallAtK": 0.44620585,
+        "precisionAtK": 0.39000002,
+        "mrrAtK": 0.66297615,
+        "roleRecall": [
+          {
+            "role": "source",
+            "recallAtK": 0.5625,
+            "changedFileCount": 80,
+            "hitCount": 45
+          },
+          {
+            "role": "test",
+            "recallAtK": 0.5,
+            "changedFileCount": 4,
+            "hitCount": 2
+          }
+        ],
+        "testRecommendationRate": 1.0,
+        "averageRecommendedContextFiles": 10.0
+      },
+      "fileRecallAt10": 0.44620585,
+      "testRecallAt10": 1.0,
+      "runtimeMillis": 2718,
+      "cacheHits": 0,
+      "cacheMisses": 0,
+      "tokenEfficiency": 3.25,
+      "protectedEvidenceMissRateAt10": 0.61702126,
+      "protectedEvidenceTargetMissRateAt10": 0.46478873,
+      "providerStatus": "evaluated",
+      "note": "Eval-only local metadata reranker gated to route-safe source-free query families."
+    },
+    {
+      "name": "local_semantic",
+      "status": "evaluated",
+      "semanticEnabled": true,
+      "precisionEnabled": false,
+      "rerankerEnabled": false,
+      "metrics": {
+        "k": 10,
+        "recallAtK": 0.44620585,
+        "precisionAtK": 0.39000002,
+        "mrrAtK": 0.66297615,
+        "roleRecall": [
+          {
+            "role": "source",
+            "recallAtK": 0.5625,
+            "changedFileCount": 80,
+            "hitCount": 45
+          },
+          {
+            "role": "test",
+            "recallAtK": 0.5,
+            "changedFileCount": 4,
+            "hitCount": 2
+          }
+        ],
+        "testRecommendationRate": 1.0,
+        "averageRecommendedContextFiles": 10.0
+      },
+      "fileRecallAt10": 0.44620585,
+      "testRecallAt10": 1.0,
+      "runtimeMillis": 4011,
+      "cacheHits": 0,
+      "cacheMisses": 0,
+      "tokenEfficiency": 3.25,
+      "protectedEvidenceMissRateAt10": 0.61702126,
+      "protectedEvidenceTargetMissRateAt10": 0.46478873,
+      "providerStatus": "local_fastembed",
+      "note": "Explicit local semantic retrieval using source-free semantic documents."
+    },
+    {
+      "name": "semantic_corroborated_reranked",
+      "status": "evaluated",
+      "semanticEnabled": true,
+      "precisionEnabled": false,
+      "rerankerEnabled": true,
+      "metrics": {
+        "k": 10,
+        "recallAtK": 0.44333735,
+        "precisionAtK": 0.35499996,
+        "mrrAtK": 0.71,
+        "roleRecall": [
+          {
+            "role": "source",
+            "recallAtK": 0.3375,
+            "changedFileCount": 80,
+            "hitCount": 27
+          },
+          {
+            "role": "test",
+            "recallAtK": 0.5,
+            "changedFileCount": 4,
+            "hitCount": 2
+          }
+        ],
+        "testRecommendationRate": 1.0,
+        "averageRecommendedContextFiles": 10.0
+      },
+      "fileRecallAt10": 0.44333735,
+      "testRecallAt10": 1.0,
+      "runtimeMillis": 3635,
+      "cacheHits": 0,
+      "cacheMisses": 0,
+      "tokenEfficiency": 2.9583333,
+      "protectedEvidenceMissRateAt10": 0.09042553,
+      "protectedEvidenceTargetMissRateAt10": 0.056338027,
+      "providerStatus": "eval_only",
+      "note": "Eval-only metadata reranker that gives bounded credit to semantic candidates only when another source-free signal corroborates them."
+    },
+    {
+      "name": "precision_enriched_semantic",
+      "status": "skipped",
+      "semanticEnabled": true,
+      "precisionEnabled": true,
+      "rerankerEnabled": false,
+      "metrics": null,
+      "fileRecallAt10": 0.44620585,
+      "testRecallAt10": 1.0,
+      "runtimeMillis": 4011,
+      "cacheHits": 0,
+      "cacheMisses": 0,
+      "tokenEfficiency": 3.25,
+      "protectedEvidenceMissRateAt10": 0.61702126,
+      "protectedEvidenceTargetMissRateAt10": 0.46478873,
+      "providerStatus": "skipped",
+      "note": "Skipped because no fresh precision overlay was available."
+    },
+    {
+      "name": "semantic_precision_full_hybrid",
+      "status": "skipped",
+      "semanticEnabled": true,
+      "precisionEnabled": true,
+      "rerankerEnabled": false,
+      "metrics": null,
+      "fileRecallAt10": 0.44620585,
+      "testRecallAt10": 1.0,
+      "runtimeMillis": 4011,
+      "cacheHits": 0,
+      "cacheMisses": 0,
+      "tokenEfficiency": 3.25,
+      "protectedEvidenceMissRateAt10": 0.61702126,
+      "protectedEvidenceTargetMissRateAt10": 0.46478873,
+      "providerStatus": "skipped",
+      "note": "Full hybrid is held unless semantic plus precision beats default gates."
+    },
+    {
+      "name": "policy_allowed_reranked",
+      "status": "skipped",
+      "semanticEnabled": true,
+      "precisionEnabled": false,
+      "rerankerEnabled": false,
+      "metrics": null,
+      "fileRecallAt10": 0.44620585,
+      "testRecallAt10": 1.0,
+      "runtimeMillis": 4011,
+      "cacheHits": 0,
+      "cacheMisses": 0,
+      "tokenEfficiency": 3.25,
+      "protectedEvidenceMissRateAt10": 0.61702126,
+      "protectedEvidenceTargetMissRateAt10": 0.46478873,
+      "providerStatus": "disabled",
+      "note": "Reranker is disabled by default."
+    },
+    {
+      "name": "support_profile_routed_semantic",
+      "status": "evaluated",
+      "semanticEnabled": true,
+      "precisionEnabled": false,
+      "rerankerEnabled": false,
+      "metrics": {
+        "k": 10,
+        "recallAtK": 0.44620585,
+        "precisionAtK": 0.39000002,
+        "mrrAtK": 0.66297615,
+        "roleRecall": [
+          {
+            "role": "source",
+            "recallAtK": 0.5625,
+            "changedFileCount": 80,
+            "hitCount": 45
+          },
+          {
+            "role": "test",
+            "recallAtK": 0.5,
+            "changedFileCount": 4,
+            "hitCount": 2
+          }
+        ],
+        "testRecommendationRate": 1.0,
+        "averageRecommendedContextFiles": 10.0
+      },
+      "fileRecallAt10": 0.44620585,
+      "testRecallAt10": 1.0,
+      "runtimeMillis": 7114,
+      "cacheHits": 0,
+      "cacheMisses": 0,
+      "tokenEfficiency": 3.25,
+      "protectedEvidenceMissRateAt10": 0.61702126,
+      "protectedEvidenceTargetMissRateAt10": 0.46478873,
+      "providerStatus": "eval_only",
+      "note": "Eval-only synthetic route that inserts semantic candidates only for support profiles with semantic-only targets and no semantic-only non-targets."
+    }
+  ],
+  "namedWins": [
+    {
+      "sha": "a4319839c08b",
+      "variant": "semantic_corroborated_reranked",
+      "reason": "Variant retrieved more gold changed files than default.",
+      "paths": [
+        ".planning/ROADMAP.md",
+        "crates/ctxpack-compiler/src/eval.rs",
+        "crates/ctxpack-core/src/contracts.rs",
+        "docs/benchmarking.md"
+      ]
+    },
+    {
+      "sha": "11dbfea18ad4",
+      "variant": "semantic_corroborated_reranked",
+      "reason": "Variant retrieved more gold changed files than default.",
+      "paths": [
+        ".planning/REQUIREMENTS.md",
+        ".planning/ROADMAP.md",
+        ".planning/STATE.md",
+        "crates/ctxpack-compiler/src/eval.rs",
+        "crates/ctxpack/src/main.rs",
+        "docs/benchmarking.md"
+      ]
+    },
+    {
+      "sha": "9d6baddb0ce7",
+      "variant": "semantic_corroborated_reranked",
+      "reason": "Variant retrieved more gold changed files than default.",
+      "paths": [
+        "crates/ctxpack-mcp/src/lib.rs",
+        "docs/semantic.md"
+      ]
+    },
+    {
+      "sha": "a90dca05379b",
+      "variant": "semantic_corroborated_reranked",
+      "reason": "Variant retrieved more gold changed files than default.",
+      "paths": [
+        ".planning/ROADMAP.md",
+        "crates/ctxpack/src/main.rs",
+        "docs/release.md",
+        "docs/semantic.md",
+        "scripts/check-release-docs.sh",
+        "scripts/release-gate.sh"
+      ]
+    },
+    {
+      "sha": "2453ec76a0bf",
+      "variant": "semantic_corroborated_reranked",
+      "reason": "Variant retrieved more gold changed files than default.",
+      "paths": [
+        ".planning/ROADMAP.md",
+        "crates/ctxpack-compiler/src/eval.rs",
+        "crates/ctxpack-compiler/src/lib.rs",
+        "crates/ctxpack-core/src/contracts.rs",
+        "crates/ctxpack/src/main.rs"
+      ]
+    },
+    {
+      "sha": "151fdccb231b",
+      "variant": "semantic_corroborated_reranked",
+      "reason": "Variant retrieved more gold changed files than default.",
+      "paths": [
+        ".planning/ROADMAP.md",
+        ".planning/STATE.md"
+      ]
+    },
+    {
+      "sha": "ef4d84a0e94b",
+      "variant": "semantic_corroborated_reranked",
+      "reason": "Variant retrieved more gold changed files than default.",
+      "paths": [
+        ".planning/ROADMAP.md"
+      ]
+    }
+  ],
+  "namedRegressions": [
+    {
+      "sha": "7f439fa1b1f2",
+      "variant": "local_metadata_reranked",
+      "reason": "Variant retrieved fewer gold changed files than default.",
+      "paths": [
+        ".planning/MILESTONES.md",
+        ".planning/ROADMAP.md",
+        ".planning/STATE.md",
+        "crates/ctxpack-index/src/lib.rs",
+        "docs/benchmarking.md"
+      ]
+    },
+    {
+      "sha": "fd37d4eeb9ea",
+      "variant": "local_metadata_reranked",
+      "reason": "Variant retrieved fewer gold changed files than default.",
+      "paths": [
+        ".planning/STATE.md",
+        "crates/ctxpack-compiler/src/eval.rs",
+        "docs/benchmarking.md"
+      ]
+    },
+    {
+      "sha": "bd5e0468c9f9",
+      "variant": "local_metadata_reranked",
+      "reason": "Variant retrieved fewer gold changed files than default.",
+      "paths": [
+        ".planning/MILESTONES.md",
+        ".planning/ROADMAP.md",
+        ".planning/STATE.md",
+        "crates/ctxpack-compiler/src/eval.rs",
+        "crates/ctxpack-compiler/src/lib.rs",
+        "crates/ctxpack/src/main.rs",
+        "docs/benchmarking.md"
+      ]
+    },
+    {
+      "sha": "4e950d58cb0a",
+      "variant": "local_metadata_reranked",
+      "reason": "Variant retrieved fewer gold changed files than default.",
+      "paths": [
+        ".planning/MILESTONES.md",
+        ".planning/ROADMAP.md",
+        ".planning/STATE.md",
+        "crates/ctxpack-compiler/src/eval.rs",
+        "crates/ctxpack-index/src/lib.rs"
+      ]
+    },
+    {
+      "sha": "1c258e73ed24",
+      "variant": "local_metadata_reranked",
+      "reason": "Variant retrieved fewer gold changed files than default.",
+      "paths": [
+        ".planning/MILESTONES.md",
+        ".planning/REQUIREMENTS.md",
+        ".planning/ROADMAP.md",
+        ".planning/STATE.md",
+        "docs/benchmarking.md"
+      ]
+    },
+    {
+      "sha": "feeaac955897",
+      "variant": "local_metadata_reranked",
+      "reason": "Variant retrieved fewer gold changed files than default.",
+      "paths": [
+        ".planning/MILESTONES.md",
+        ".planning/STATE.md",
+        "crates/ctxpack-compiler/src/eval.rs",
+        "crates/ctxpack-compiler/src/planning.rs"
+      ]
+    },
+    {
+      "sha": "dac74e958917",
+      "variant": "local_metadata_reranked",
+      "reason": "Variant retrieved fewer gold changed files than default.",
+      "paths": [
+        "crates/ctxpack-compiler/src/eval.rs",
+        "crates/ctxpack-compiler/src/packs.rs",
+        "crates/ctxpack-compiler/src/planning.rs",
+        "crates/ctxpack/src/main.rs",
+        "crates/ctxpack/tests/cli_compat.rs"
+      ]
+    },
+    {
+      "sha": "1f25b48d8678",
+      "variant": "local_metadata_reranked",
+      "reason": "Variant retrieved fewer gold changed files than default.",
+      "paths": [
+        "crates/ctxpack-compiler/src/lib.rs",
+        "crates/ctxpack-compiler/src/planning.rs",
+        "crates/ctxpack-core/src/contracts.rs",
+        "crates/ctxpack-index/src/lib.rs",
+        "crates/ctxpack/src/main.rs",
+        "crates/ctxpack/tests/cli_compat.rs"
+      ]
+    },
+    {
+      "sha": "8a2ac1a97eb1",
+      "variant": "local_metadata_reranked",
+      "reason": "Variant retrieved fewer gold changed files than default.",
+      "paths": [
+        ".planning/STATE.md",
+        "crates/ctxpack-compiler/src/lib.rs",
+        "crates/ctxpack-compiler/src/policy.rs",
+        "crates/ctxpack-core/src/contracts.rs",
+        "crates/ctxpack/src/main.rs"
+      ]
+    },
+    {
+      "sha": "7f439fa1b1f2",
+      "variant": "semantic_corroborated_reranked",
+      "reason": "Variant retrieved fewer gold changed files than default.",
+      "paths": [
+        ".planning/MILESTONES.md",
+        ".planning/ROADMAP.md",
+        ".planning/STATE.md",
+        "crates/ctxpack-index/src/lib.rs",
+        "docs/benchmarking.md"
+      ]
+    },
+    {
+      "sha": "fd37d4eeb9ea",
+      "variant": "semantic_corroborated_reranked",
+      "reason": "Variant retrieved fewer gold changed files than default.",
+      "paths": [
+        ".planning/STATE.md",
+        "crates/ctxpack-compiler/src/eval.rs",
+        "docs/benchmarking.md"
+      ]
+    },
+    {
+      "sha": "bd5e0468c9f9",
+      "variant": "semantic_corroborated_reranked",
+      "reason": "Variant retrieved fewer gold changed files than default.",
+      "paths": [
+        ".planning/MILESTONES.md",
+        ".planning/ROADMAP.md",
+        ".planning/STATE.md",
+        "crates/ctxpack-compiler/src/eval.rs",
+        "crates/ctxpack-compiler/src/lib.rs",
+        "crates/ctxpack/src/main.rs",
+        "docs/benchmarking.md"
+      ]
+    },
+    {
+      "sha": "4e950d58cb0a",
+      "variant": "semantic_corroborated_reranked",
+      "reason": "Variant retrieved fewer gold changed files than default.",
+      "paths": [
+        ".planning/MILESTONES.md",
+        ".planning/ROADMAP.md",
+        ".planning/STATE.md",
+        "crates/ctxpack-compiler/src/eval.rs",
+        "crates/ctxpack-index/src/lib.rs"
+      ]
+    },
+    {
+      "sha": "1c258e73ed24",
+      "variant": "semantic_corroborated_reranked",
+      "reason": "Variant retrieved fewer gold changed files than default.",
+      "paths": [
+        ".planning/MILESTONES.md",
+        ".planning/REQUIREMENTS.md",
+        ".planning/ROADMAP.md",
+        ".planning/STATE.md",
+        "docs/benchmarking.md"
+      ]
+    },
+    {
+      "sha": "feeaac955897",
+      "variant": "semantic_corroborated_reranked",
+      "reason": "Variant retrieved fewer gold changed files than default.",
+      "paths": [
+        ".planning/MILESTONES.md",
+        ".planning/STATE.md",
+        "crates/ctxpack-compiler/src/eval.rs",
+        "crates/ctxpack-compiler/src/planning.rs"
+      ]
+    },
+    {
+      "sha": "dac74e958917",
+      "variant": "semantic_corroborated_reranked",
+      "reason": "Variant retrieved fewer gold changed files than default.",
+      "paths": [
+        "crates/ctxpack-compiler/src/eval.rs",
+        "crates/ctxpack-compiler/src/packs.rs",
+        "crates/ctxpack-compiler/src/planning.rs",
+        "crates/ctxpack/src/main.rs",
+        "crates/ctxpack/tests/cli_compat.rs"
+      ]
+    },
+    {
+      "sha": "1f25b48d8678",
+      "variant": "semantic_corroborated_reranked",
+      "reason": "Variant retrieved fewer gold changed files than default.",
+      "paths": [
+        "crates/ctxpack-compiler/src/lib.rs",
+        "crates/ctxpack-compiler/src/planning.rs",
+        "crates/ctxpack-core/src/contracts.rs",
+        "crates/ctxpack-index/src/lib.rs",
+        "crates/ctxpack/src/main.rs",
+        "crates/ctxpack/tests/cli_compat.rs"
+      ]
+    },
+    {
+      "sha": "8a2ac1a97eb1",
+      "variant": "semantic_corroborated_reranked",
+      "reason": "Variant retrieved fewer gold changed files than default.",
+      "paths": [
+        ".planning/STATE.md",
+        "crates/ctxpack-compiler/src/lib.rs",
+        "crates/ctxpack-compiler/src/policy.rs",
+        "crates/ctxpack-core/src/contracts.rs",
+        "crates/ctxpack/src/main.rs"
+      ]
+    }
+  ],
+  "namedMisses": [
+    {
+      "sha": "7f439fa1b1f2",
+      "variant": "local_semantic",
+      "reason": "Variant still missed gold changed files at K.",
+      "paths": [
+        ".planning/REQUIREMENTS.md",
+        "crates/ctxpack-compiler/src/ranking.rs",
+        "crates/ctxpack-index/src/search.rs",
+        "docs/release.md"
+      ]
+    },
+    {
+      "sha": "841dd3856e36",
+      "variant": "local_semantic",
+      "reason": "Variant still missed gold changed files at K.",
+      "paths": [
+        ".planning/REQUIREMENTS.md",
+        "docs/agent-setup.md",
+        "docs/release.md"
+      ]
+    },
+    {
+      "sha": "fd37d4eeb9ea",
+      "variant": "local_semantic",
+      "reason": "Variant still missed gold changed files at K.",
+      "paths": [
+        "crates/ctxpack-compiler/src/planning.rs",
+        "crates/ctxpack-compiler/src/ranking.rs",
+        "crates/ctxpack-index/src/dependencies.rs",
+        "crates/ctxpack-index/src/lib.rs"
+      ]
+    },
+    {
+      "sha": "4e950d58cb0a",
+      "variant": "local_semantic",
+      "reason": "Variant still missed gold changed files at K.",
+      "paths": [
+        "crates/ctxpack-index/src/related_tests.rs"
+      ]
+    },
+    {
+      "sha": "42bd9774512f",
+      "variant": "local_semantic",
+      "reason": "Variant still missed gold changed files at K.",
+      "paths": [
+        ".planning/REQUIREMENTS.md",
+        "crates/ctxpack/tests/cli_compat.rs",
+        "crates/ctxpack/tests/release_packaging.rs",
+        "docs/release.md",
+        "scripts/release-gate.sh"
+      ]
+    },
+    {
+      "sha": "a4319839c08b",
+      "variant": "local_semantic",
+      "reason": "Variant still missed gold changed files at K.",
+      "paths": [
+        ".planning/ROADMAP.md",
+        ".planning/STATE.md",
+        "crates/ctxpack-compiler/src/planning.rs",
+        "crates/ctxpack-compiler/src/ranking.rs",
+        "docs/benchmarking.md"
+      ]
+    },
+    {
+      "sha": "11dbfea18ad4",
+      "variant": "local_semantic",
+      "reason": "Variant still missed gold changed files at K.",
+      "paths": [
+        ".planning/REQUIREMENTS.md",
+        ".planning/ROADMAP.md",
+        "docs/benchmarking.md"
+      ]
+    },
+    {
+      "sha": "f247e826e4ac",
+      "variant": "local_semantic",
+      "reason": "Variant still missed gold changed files at K.",
+      "paths": [
+        ".gitignore",
+        ".planning/MILESTONES.md",
+        ".planning/REQUIREMENTS.md",
+        ".planning/phases/62-production-local-embedding-quality/62-production-local-embedding-quality-01-PLAN.md",
+        "crates/ctxpack-compiler/src/policy.rs",
+        "crates/ctxpack-index/src/policy.rs",
+        "docs/benchmarking.md",
+        "docs/semantic.md"
+      ]
+    },
+    {
+      "sha": "feeaac955897",
+      "variant": "local_semantic",
+      "reason": "Variant still missed gold changed files at K.",
+      "paths": [
+        ".gitignore",
+        "crates/ctxpack-compiler/src/ranking.rs",
+        "crates/ctxpack-index/src/policy.rs"
+      ]
+    },
+    {
+      "sha": "9d6baddb0ce7",
+      "variant": "local_semantic",
+      "reason": "Variant still missed gold changed files at K.",
+      "paths": [
+        "crates/ctxpack-compiler/Cargo.toml",
+        "crates/ctxpack-compiler/src/policy.rs",
+        "crates/ctxpack-index/src/lib.rs",
+        "crates/ctxpack-index/src/policy.rs",
+        "crates/ctxpack-mcp/Cargo.toml",
+        "crates/ctxpack-mcp/src/schemas.rs",
+        "crates/ctxpack-mcp/src/tools.rs",
+        "crates/ctxpack/Cargo.toml",
+        "docs/semantic.md",
+        "scripts/smoke-claude-mcp.sh"
+      ]
+    }
+  ],
+  "semanticContribution": {
+    "evaluatedCommits": 20,
+    "commitsWithSemanticSelection": 10,
+    "semanticSelectedFileCount": 15,
+    "semanticCandidateTargetHitCount": 24,
+    "semanticCandidateMissedTargetCount": 17,
+    "semanticTargetHitCount": 7,
+    "semanticOnlyTargetHitCount": 3,
+    "semanticOnlyNonTargetCount": 4,
+    "semanticLexicalOverlapCount": 8,
+    "semanticMissedTargetCount": 175,
+    "averageSemanticSelectedFiles": 0.75,
+    "semanticCandidateTargetHitRate": 0.13186814,
+    "semanticTargetHitRate": 0.03846154,
+    "semanticOnlyTargetHitRate": 0.016483517,
+    "semanticOnlyNonTargetRate": 0.5714286,
+    "semanticCandidateMissedTargetPaths": [
+      "crates/ctxpack/tests/release_packaging.rs",
+      "docs/release.md",
+      "docs/benchmarking.md",
+      ".planning/phases/62-production-local-embedding-quality/62-production-local-embedding-quality-01-PLAN.md",
+      "crates/ctxpack-mcp/Cargo.toml",
+      "crates/ctxpack-mcp/src/schemas.rs",
+      "docs/semantic.md",
+      "docs/agent-setup.md",
+      "docs/precision.md",
+      "docs/policy-embedding.md"
+    ],
+    "semanticOnlyHits": [
+      {
+        "sha": "bd5e0468c9f9",
+        "variant": "local_semantic",
+        "reason": "Semantic selected retrieval-target path(s) absent from the lexical baseline top K.",
+        "paths": [
+          ".planning/MILESTONES.md",
+          ".planning/STATE.md"
+        ]
+      },
+      {
+        "sha": "291ba129c718",
+        "variant": "local_semantic",
+        "reason": "Semantic selected retrieval-target path(s) absent from the lexical baseline top K.",
+        "paths": [
+          "crates/ctxpack-index/src/semantic.rs"
+        ]
+      }
+    ],
+    "semanticOnlyNonTargets": [
+      {
+        "sha": "feeaac955897",
+        "variant": "local_semantic",
+        "reason": "Semantic selected non-target path(s) absent from the lexical baseline top K.",
+        "paths": [
+          "crates/ctxpack-index/src/semantic.rs"
+        ]
+      },
+      {
+        "sha": "9d6baddb0ce7",
+        "variant": "local_semantic",
+        "reason": "Semantic selected non-target path(s) absent from the lexical baseline top K.",
+        "paths": [
+          "crates/ctxpack-index/src/semantic.rs"
+        ]
+      },
+      {
+        "sha": "a90dca05379b",
+        "variant": "local_semantic",
+        "reason": "Semantic selected non-target path(s) absent from the lexical baseline top K.",
+        "paths": [
+          "crates/ctxpack-index/src/semantic.rs",
+          "crates/ctxpack/tests/release_packaging.rs"
+        ]
+      }
+    ],
+    "semanticMissedTargetGapFamilies": [
+      {
+        "signalGap": "semantic_miss_area_context_only",
+        "missedCount": 36,
+        "examplePaths": [
+          "crates/ctxpack-compiler/src/ranking.rs",
+          "crates/ctxpack-index/src/search.rs",
+          "crates/ctxpack-compiler/src/planning.rs",
+          "crates/ctxpack-index/src/dependencies.rs",
+          "crates/ctxpack-index/src/lib.rs"
+        ]
+      },
+      {
+        "signalGap": "semantic_miss_final_context_covered",
+        "missedCount": 5,
+        "examplePaths": [
+          "crates/ctxpack-compiler/src/lib.rs",
+          "crates/ctxpack-compiler/src/eval.rs",
+          "crates/ctxpack-index/src/semantic.rs",
+          "crates/ctxpack-core/src/contracts.rs"
+        ]
+      },
+      {
+        "signalGap": "semantic_miss_lexical_covered",
+        "missedCount": 70,
+        "examplePaths": [
+          ".planning/MILESTONES.md",
+          "docs/release.md",
+          "docs/agent-setup.md",
+          "crates/ctxpack-compiler/src/eval.rs",
+          "crates/ctxpack-compiler/src/lib.rs"
+        ]
+      },
+      {
+        "signalGap": "semantic_miss_no_candidate_signal",
+        "missedCount": 33,
+        "examplePaths": [
+          ".planning/REQUIREMENTS.md",
+          ".planning/STATE.md",
+          ".gitignore",
+          "docs/semantic.md",
+          "scripts/smoke-claude-mcp.sh"
+        ]
+      },
+      {
+        "signalGap": "semantic_miss_nonsemantic_coupled_signal",
+        "missedCount": 31,
+        "examplePaths": [
+          ".planning/ROADMAP.md",
+          ".planning/STATE.md",
+          "crates/ctxpack-index/src/lib.rs",
+          "docs/benchmarking.md",
+          ".planning/MILESTONES.md"
+        ]
+      }
+    ],
+    "queryFamilyContributions": [
+      {
+        "family": "broad_scope",
+        "evaluatedCommits": 11,
+        "commitsWithSemanticSelection": 6,
+        "semanticCandidateTargetHitCount": 11,
+        "semanticCandidateMissedTargetCount": 6,
+        "commitsWithSemanticOnlyTargetHits": 1,
+        "commitsWithSemanticOnlyNonTargets": 1,
+        "targetOnlyCommitCount": 1,
+        "mixedCommitCount": 0,
+        "noiseOnlyCommitCount": 1,
+        "semanticSelectedFileCount": 9,
+        "semanticTargetHitCount": 5,
+        "semanticOnlyTargetHitCount": 2,
+        "semanticOnlyTargetWithNonsemanticSupportCount": 2,
+        "semanticOnlyTargetWithoutNonsemanticSupportCount": 0,
+        "semanticOnlyNonTargetCount": 1,
+        "semanticOnlyNonTargetWithNonsemanticSupportCount": 1,
+        "semanticOnlyNonTargetWithoutNonsemanticSupportCount": 0,
+        "semanticMissedTargetCount": 105,
+        "semanticCandidateTargetHitRate": 0.1,
+        "semanticOnlyTargetHitRate": 0.018181818,
+        "semanticOnlyNonTargetRate": 0.33333334,
+        "targetOnlyCommitRate": 0.09090909,
+        "mixedCommitRate": 0.0,
+        "noiseOnlyCommitRate": 0.09090909,
+        "missedTargetGapFamilies": [
+          {
+            "signalGap": "semantic_miss_lexical_covered",
+            "missedCount": 37,
+            "examplePaths": [
+              ".planning/MILESTONES.md",
+              "docs/release.md",
+              "docs/agent-setup.md",
+              "crates/ctxpack-compiler/src/eval.rs",
+              "crates/ctxpack-compiler/src/lib.rs"
+            ]
+          },
+          {
+            "signalGap": "semantic_miss_nonsemantic_coupled_signal",
+            "missedCount": 25,
+            "examplePaths": [
+              ".planning/ROADMAP.md",
+              ".planning/STATE.md",
+              "crates/ctxpack-index/src/lib.rs",
+              "docs/benchmarking.md",
+              ".planning/MILESTONES.md"
+            ]
+          },
+          {
+            "signalGap": "semantic_miss_area_context_only",
+            "missedCount": 20,
+            "examplePaths": [
+              "crates/ctxpack-compiler/src/ranking.rs",
+              "crates/ctxpack-index/src/search.rs",
+              "crates/ctxpack-compiler/src/planning.rs",
+              "crates/ctxpack-index/src/dependencies.rs",
+              "crates/ctxpack-index/src/lib.rs"
+            ]
+          },
+          {
+            "signalGap": "semantic_miss_no_candidate_signal",
+            "missedCount": 19,
+            "examplePaths": [
+              ".planning/REQUIREMENTS.md",
+              ".gitignore",
+              "docs/semantic.md",
+              "Cargo.toml",
+              "docs/agent-setup.md"
+            ]
+          },
+          {
+            "signalGap": "semantic_miss_final_context_covered",
+            "missedCount": 4,
+            "examplePaths": [
+              "crates/ctxpack-compiler/src/lib.rs",
+              "crates/ctxpack-compiler/src/eval.rs",
+              "crates/ctxpack-index/src/semantic.rs",
+              "crates/ctxpack-core/src/contracts.rs"
+            ]
+          }
+        ],
+        "supportProfiles": [
+          {
+            "supportFamily": "lexical_expansion_co_change",
+            "semanticOnlyTargetCount": 2,
+            "semanticOnlyNonTargetCount": 0,
+            "exampleTargetPaths": [
+              ".planning/MILESTONES.md",
+              ".planning/STATE.md"
+            ],
+            "exampleNonTargetPaths": []
+          },
+          {
+            "supportFamily": "lexical_expansion",
+            "semanticOnlyTargetCount": 0,
+            "semanticOnlyNonTargetCount": 1,
+            "exampleTargetPaths": [],
+            "exampleNonTargetPaths": [
+              "crates/ctxpack-index/src/semantic.rs"
+            ]
+          }
+        ],
+        "exampleCases": [
+          {
+            "sha": "bd5e0468c9f9",
+            "variant": "local_semantic",
+            "reason": "Semantic selected retrieval-target path(s) absent from the lexical baseline top K.",
+            "paths": [
+              ".planning/MILESTONES.md",
+              ".planning/STATE.md"
+            ]
+          },
+          {
+            "sha": "feeaac955897",
+            "variant": "local_semantic",
+            "reason": "Semantic selected non-target path(s) absent from the lexical baseline top K.",
+            "paths": [
+              "crates/ctxpack-index/src/semantic.rs"
+            ]
+          }
+        ]
+      },
+      {
+        "family": "domain_phrase",
+        "evaluatedCommits": 6,
+        "commitsWithSemanticSelection": 4,
+        "semanticCandidateTargetHitCount": 12,
+        "semanticCandidateMissedTargetCount": 10,
+        "commitsWithSemanticOnlyTargetHits": 1,
+        "commitsWithSemanticOnlyNonTargets": 2,
+        "targetOnlyCommitCount": 1,
+        "mixedCommitCount": 0,
+        "noiseOnlyCommitCount": 2,
+        "semanticSelectedFileCount": 6,
+        "semanticTargetHitCount": 2,
+        "semanticOnlyTargetHitCount": 1,
+        "semanticOnlyTargetWithNonsemanticSupportCount": 1,
+        "semanticOnlyTargetWithoutNonsemanticSupportCount": 0,
+        "semanticOnlyNonTargetCount": 3,
+        "semanticOnlyNonTargetWithNonsemanticSupportCount": 3,
+        "semanticOnlyNonTargetWithoutNonsemanticSupportCount": 0,
+        "semanticMissedTargetCount": 52,
+        "semanticCandidateTargetHitRate": 0.22222222,
+        "semanticOnlyTargetHitRate": 0.018518519,
+        "semanticOnlyNonTargetRate": 0.75,
+        "targetOnlyCommitRate": 0.16666667,
+        "mixedCommitRate": 0.0,
+        "noiseOnlyCommitRate": 0.33333334,
+        "missedTargetGapFamilies": [
+          {
+            "signalGap": "semantic_miss_lexical_covered",
+            "missedCount": 21,
+            "examplePaths": [
+              ".planning/REQUIREMENTS.md",
+              ".planning/ROADMAP.md",
+              ".planning/STATE.md",
+              "crates/ctxpack-compiler/src/eval.rs",
+              "crates/ctxpack/src/main.rs"
+            ]
+          },
+          {
+            "signalGap": "semantic_miss_area_context_only",
+            "missedCount": 14,
+            "examplePaths": [
+              "crates/ctxpack-compiler/Cargo.toml",
+              "crates/ctxpack-compiler/src/policy.rs",
+              "crates/ctxpack-index/src/lib.rs",
+              "crates/ctxpack-index/src/policy.rs",
+              "crates/ctxpack-mcp/Cargo.toml"
+            ]
+          },
+          {
+            "signalGap": "semantic_miss_no_candidate_signal",
+            "missedCount": 11,
+            "examplePaths": [
+              "scripts/smoke-claude-mcp.sh",
+              "docs/benchmarking.md",
+              ".planning/STATE.md",
+              "docs/precision.md",
+              "docs/semantic.md"
+            ]
+          },
+          {
+            "signalGap": "semantic_miss_nonsemantic_coupled_signal",
+            "missedCount": 5,
+            "examplePaths": [
+              "crates/ctxpack-compiler/src/policy.rs",
+              "crates/ctxpack-compiler/src/packs.rs",
+              "crates/ctxpack-compiler/src/planning.rs",
+              "crates/ctxpack/tests/cli_compat.rs",
+              "crates/ctxpack-compiler/src/eval.rs"
+            ]
+          },
+          {
+            "signalGap": "semantic_miss_final_context_covered",
+            "missedCount": 1,
+            "examplePaths": [
+              "crates/ctxpack-compiler/src/lib.rs"
+            ]
+          }
+        ],
+        "supportProfiles": [
+          {
+            "supportFamily": "lexical_expansion_dependency",
+            "semanticOnlyTargetCount": 1,
+            "semanticOnlyNonTargetCount": 1,
+            "exampleTargetPaths": [
+              "crates/ctxpack-index/src/semantic.rs"
+            ],
+            "exampleNonTargetPaths": [
+              "crates/ctxpack-index/src/semantic.rs"
+            ]
+          },
+          {
+            "supportFamily": "lexical_expansion",
+            "semanticOnlyTargetCount": 0,
+            "semanticOnlyNonTargetCount": 1,
+            "exampleTargetPaths": [],
+            "exampleNonTargetPaths": [
+              "crates/ctxpack-index/src/semantic.rs"
+            ]
+          },
+          {
+            "supportFamily": "lexical_related_test_co_change",
+            "semanticOnlyTargetCount": 0,
+            "semanticOnlyNonTargetCount": 1,
+            "exampleTargetPaths": [],
+            "exampleNonTargetPaths": [
+              "crates/ctxpack/tests/release_packaging.rs"
+            ]
+          }
+        ],
+        "exampleCases": [
+          {
+            "sha": "9d6baddb0ce7",
+            "variant": "local_semantic",
+            "reason": "Semantic selected non-target path(s) absent from the lexical baseline top K.",
+            "paths": [
+              "crates/ctxpack-index/src/semantic.rs"
+            ]
+          },
+          {
+            "sha": "a90dca05379b",
+            "variant": "local_semantic",
+            "reason": "Semantic selected non-target path(s) absent from the lexical baseline top K.",
+            "paths": [
+              "crates/ctxpack-index/src/semantic.rs",
+              "crates/ctxpack/tests/release_packaging.rs"
+            ]
+          },
+          {
+            "sha": "291ba129c718",
+            "variant": "local_semantic",
+            "reason": "Semantic selected retrieval-target path(s) absent from the lexical baseline top K.",
+            "paths": [
+              "crates/ctxpack-index/src/semantic.rs"
+            ]
+          }
+        ]
+      },
+      {
+        "family": "symbol_identifier",
+        "evaluatedCommits": 3,
+        "commitsWithSemanticSelection": 0,
+        "semanticCandidateTargetHitCount": 1,
+        "semanticCandidateMissedTargetCount": 1,
+        "commitsWithSemanticOnlyTargetHits": 0,
+        "commitsWithSemanticOnlyNonTargets": 0,
+        "targetOnlyCommitCount": 0,
+        "mixedCommitCount": 0,
+        "noiseOnlyCommitCount": 0,
+        "semanticSelectedFileCount": 0,
+        "semanticTargetHitCount": 0,
+        "semanticOnlyTargetHitCount": 0,
+        "semanticOnlyTargetWithNonsemanticSupportCount": 0,
+        "semanticOnlyTargetWithoutNonsemanticSupportCount": 0,
+        "semanticOnlyNonTargetCount": 0,
+        "semanticOnlyNonTargetWithNonsemanticSupportCount": 0,
+        "semanticOnlyNonTargetWithoutNonsemanticSupportCount": 0,
+        "semanticMissedTargetCount": 18,
+        "semanticCandidateTargetHitRate": 0.055555556,
+        "semanticOnlyTargetHitRate": 0.0,
+        "semanticOnlyNonTargetRate": 0.0,
+        "targetOnlyCommitRate": 0.0,
+        "mixedCommitRate": 0.0,
+        "noiseOnlyCommitRate": 0.0,
+        "missedTargetGapFamilies": [
+          {
+            "signalGap": "semantic_miss_lexical_covered",
+            "missedCount": 12,
+            "examplePaths": [
+              ".planning/ROADMAP.md",
+              "crates/ctxpack-compiler/src/eval.rs",
+              "crates/ctxpack-compiler/src/planning.rs",
+              "crates/ctxpack-core/src/contracts.rs",
+              "docs/benchmarking.md"
+            ]
+          },
+          {
+            "signalGap": "semantic_miss_no_candidate_signal",
+            "missedCount": 3,
+            "examplePaths": [
+              ".planning/STATE.md",
+              "docs/benchmarking.md"
+            ]
+          },
+          {
+            "signalGap": "semantic_miss_area_context_only",
+            "missedCount": 2,
+            "examplePaths": [
+              "crates/ctxpack-compiler/src/ranking.rs",
+              "crates/ctxpack-compiler/src/planning.rs"
+            ]
+          },
+          {
+            "signalGap": "semantic_miss_nonsemantic_coupled_signal",
+            "missedCount": 1,
+            "examplePaths": [
+              "crates/ctxpack-compiler/src/ranking.rs"
+            ]
+          }
+        ],
+        "supportProfiles": [],
+        "exampleCases": []
+      }
+    ]
+  },
+  "rerankerContribution": {
+    "evaluatedCommits": 20,
+    "improvedCommitCount": 7,
+    "regressedCommitCount": 9,
+    "neutralCommitCount": 4,
+    "defaultTargetHitCount": 78,
+    "rerankedTargetHitCount": 70,
+    "targetHitDelta": -8,
+    "rerankerOnlyTargetHitCount": 28,
+    "defaultOnlyTargetHitCount": 36,
+    "protectedEvidenceMissRateDelta": -0.5265957,
+    "protectedEvidenceTargetMissRateDelta": -0.36619717,
+    "improvedCases": [
+      {
+        "sha": "42bd9774512f",
+        "variant": "local_metadata_reranked",
+        "reason": "Local metadata reranker retrieved additional gold changed file(s) beyond default.",
+        "paths": [
+          ".planning/REQUIREMENTS.md",
+          "docs/release.md",
+          "scripts/release-gate.sh"
+        ]
+      },
+      {
+        "sha": "a4319839c08b",
+        "variant": "local_metadata_reranked",
+        "reason": "Local metadata reranker retrieved additional gold changed file(s) beyond default.",
+        "paths": [
+          ".planning/ROADMAP.md",
+          "docs/benchmarking.md"
+        ]
+      },
+      {
+        "sha": "11dbfea18ad4",
+        "variant": "local_metadata_reranked",
+        "reason": "Local metadata reranker retrieved additional gold changed file(s) beyond default.",
+        "paths": [
+          ".planning/REQUIREMENTS.md",
+          ".planning/ROADMAP.md",
+          "docs/benchmarking.md"
+        ]
+      },
+      {
+        "sha": "a90dca05379b",
+        "variant": "local_metadata_reranked",
+        "reason": "Local metadata reranker retrieved additional gold changed file(s) beyond default.",
+        "paths": [
+          ".planning/ROADMAP.md",
+          "docs/release.md",
+          "docs/semantic.md",
+          "scripts/check-release-docs.sh",
+          "scripts/release-gate.sh"
+        ]
+      },
+      {
+        "sha": "2453ec76a0bf",
+        "variant": "local_metadata_reranked",
+        "reason": "Local metadata reranker retrieved additional gold changed file(s) beyond default.",
+        "paths": [
+          ".planning/ROADMAP.md",
+          "crates/ctxpack-compiler/src/eval.rs"
+        ]
+      },
+      {
+        "sha": "151fdccb231b",
+        "variant": "local_metadata_reranked",
+        "reason": "Local metadata reranker retrieved additional gold changed file(s) beyond default.",
+        "paths": [
+          ".planning/ROADMAP.md",
+          ".planning/STATE.md"
+        ]
+      },
+      {
+        "sha": "ef4d84a0e94b",
+        "variant": "local_metadata_reranked",
+        "reason": "Local metadata reranker retrieved additional gold changed file(s) beyond default.",
+        "paths": [
+          ".planning/ROADMAP.md"
+        ]
+      }
+    ],
+    "regressedCases": [
+      {
+        "sha": "7f439fa1b1f2",
+        "variant": "local_metadata_reranked",
+        "reason": "Local metadata reranker lost gold changed file(s) that default retrieved.",
+        "paths": [
+          ".planning/ROADMAP.md",
+          ".planning/STATE.md",
+          "crates/ctxpack-index/src/lib.rs",
+          "docs/benchmarking.md"
+        ]
+      },
+      {
+        "sha": "fd37d4eeb9ea",
+        "variant": "local_metadata_reranked",
+        "reason": "Local metadata reranker lost gold changed file(s) that default retrieved.",
+        "paths": [
+          ".planning/STATE.md",
+          "docs/benchmarking.md"
+        ]
+      },
+      {
+        "sha": "bd5e0468c9f9",
+        "variant": "local_metadata_reranked",
+        "reason": "Local metadata reranker lost gold changed file(s) that default retrieved.",
+        "paths": [
+          ".planning/MILESTONES.md",
+          ".planning/ROADMAP.md",
+          ".planning/STATE.md"
+        ]
+      },
+      {
+        "sha": "4e950d58cb0a",
+        "variant": "local_metadata_reranked",
+        "reason": "Local metadata reranker lost gold changed file(s) that default retrieved.",
+        "paths": [
+          ".planning/ROADMAP.md",
+          ".planning/STATE.md",
+          "crates/ctxpack-index/src/lib.rs"
+        ]
+      },
+      {
+        "sha": "1c258e73ed24",
+        "variant": "local_metadata_reranked",
+        "reason": "Local metadata reranker lost gold changed file(s) that default retrieved.",
+        "paths": [
+          ".planning/ROADMAP.md",
+          ".planning/STATE.md"
+        ]
+      },
+      {
+        "sha": "feeaac955897",
+        "variant": "local_metadata_reranked",
+        "reason": "Local metadata reranker lost gold changed file(s) that default retrieved.",
+        "paths": [
+          "crates/ctxpack-compiler/src/planning.rs"
+        ]
+      },
+      {
+        "sha": "dac74e958917",
+        "variant": "local_metadata_reranked",
+        "reason": "Local metadata reranker lost gold changed file(s) that default retrieved.",
+        "paths": [
+          "crates/ctxpack-compiler/src/packs.rs",
+          "crates/ctxpack-compiler/src/planning.rs"
+        ]
+      },
+      {
+        "sha": "1f25b48d8678",
+        "variant": "local_metadata_reranked",
+        "reason": "Local metadata reranker lost gold changed file(s) that default retrieved.",
+        "paths": [
+          "crates/ctxpack-compiler/src/planning.rs",
+          "crates/ctxpack-index/src/lib.rs"
+        ]
+      },
+      {
+        "sha": "8a2ac1a97eb1",
+        "variant": "local_metadata_reranked",
+        "reason": "Local metadata reranker lost gold changed file(s) that default retrieved.",
+        "paths": [
+          ".planning/STATE.md",
+          "crates/ctxpack-compiler/src/lib.rs",
+          "crates/ctxpack-core/src/contracts.rs"
+        ]
+      }
+    ],
+    "defaultOnlyCases": [
+      {
+        "sha": "7f439fa1b1f2",
+        "variant": "local_metadata_reranked",
+        "reason": "Local metadata reranker replaced target file(s) that default retrieved.",
+        "paths": [
+          ".planning/ROADMAP.md",
+          ".planning/STATE.md",
+          "crates/ctxpack-index/src/lib.rs",
+          "docs/benchmarking.md"
+        ]
+      },
+      {
+        "sha": "841dd3856e36",
+        "variant": "local_metadata_reranked",
+        "reason": "Local metadata reranker replaced target file(s) that default retrieved.",
+        "paths": [
+          ".planning/ROADMAP.md",
+          ".planning/STATE.md",
+          "docs/benchmarking.md"
+        ]
+      },
+      {
+        "sha": "fd37d4eeb9ea",
+        "variant": "local_metadata_reranked",
+        "reason": "Local metadata reranker replaced target file(s) that default retrieved.",
+        "paths": [
+          ".planning/STATE.md",
+          "docs/benchmarking.md"
+        ]
+      },
+      {
+        "sha": "bd5e0468c9f9",
+        "variant": "local_metadata_reranked",
+        "reason": "Local metadata reranker replaced target file(s) that default retrieved.",
+        "paths": [
+          ".planning/MILESTONES.md",
+          ".planning/ROADMAP.md",
+          ".planning/STATE.md"
+        ]
+      },
+      {
+        "sha": "4e950d58cb0a",
+        "variant": "local_metadata_reranked",
+        "reason": "Local metadata reranker replaced target file(s) that default retrieved.",
+        "paths": [
+          ".planning/ROADMAP.md",
+          ".planning/STATE.md",
+          "crates/ctxpack-index/src/lib.rs"
+        ]
+      },
+      {
+        "sha": "42bd9774512f",
+        "variant": "local_metadata_reranked",
+        "reason": "Local metadata reranker replaced target file(s) that default retrieved.",
+        "paths": [
+          ".planning/STATE.md",
+          "crates/ctxpack-compiler/src/lib.rs"
+        ]
+      },
+      {
+        "sha": "11dbfea18ad4",
+        "variant": "local_metadata_reranked",
+        "reason": "Local metadata reranker replaced target file(s) that default retrieved.",
+        "paths": [
+          "crates/ctxpack-compiler/src/lib.rs",
+          "crates/ctxpack-compiler/src/policy.rs"
+        ]
+      },
+      {
+        "sha": "f247e826e4ac",
+        "variant": "local_metadata_reranked",
+        "reason": "Local metadata reranker replaced target file(s) that default retrieved.",
+        "paths": [
+          "crates/ctxpack-compiler/src/eval.rs",
+          "crates/ctxpack-compiler/src/lib.rs",
+          "crates/ctxpack-index/src/semantic.rs"
+        ]
+      },
+      {
+        "sha": "1c258e73ed24",
+        "variant": "local_metadata_reranked",
+        "reason": "Local metadata reranker replaced target file(s) that default retrieved.",
+        "paths": [
+          ".planning/ROADMAP.md",
+          ".planning/STATE.md"
+        ]
+      },
+      {
+        "sha": "feeaac955897",
+        "variant": "local_metadata_reranked",
+        "reason": "Local metadata reranker replaced target file(s) that default retrieved.",
+        "paths": [
+          "crates/ctxpack-compiler/src/planning.rs"
+        ]
+      }
+    ],
+    "queryFamilyContributions": [
+      {
+        "family": "symbol_identifier",
+        "evaluatedCommits": 3,
+        "improvedCommitCount": 3,
+        "regressedCommitCount": 0,
+        "neutralCommitCount": 0,
+        "defaultTargetHitCount": 6,
+        "rerankedTargetHitCount": 11,
+        "targetHitDelta": 5,
+        "rerankerOnlyTargetHitCount": 6,
+        "defaultOnlyTargetHitCount": 1,
+        "routingRecommendation": "hold_churn",
+        "exampleCases": [
+          {
+            "sha": "a4319839c08b",
+            "variant": "local_metadata_reranked",
+            "reason": "Local metadata reranker retrieved additional gold changed file(s) beyond default.",
+            "paths": [
+              ".planning/ROADMAP.md",
+              "docs/benchmarking.md"
+            ]
+          },
+          {
+            "sha": "2453ec76a0bf",
+            "variant": "local_metadata_reranked",
+            "reason": "Local metadata reranker retrieved additional gold changed file(s) beyond default.",
+            "paths": [
+              ".planning/ROADMAP.md",
+              "crates/ctxpack-compiler/src/eval.rs"
+            ]
+          },
+          {
+            "sha": "151fdccb231b",
+            "variant": "local_metadata_reranked",
+            "reason": "Local metadata reranker retrieved additional gold changed file(s) beyond default.",
+            "paths": [
+              ".planning/ROADMAP.md",
+              ".planning/STATE.md"
+            ]
+          }
+        ]
+      },
+      {
+        "family": "domain_phrase",
+        "evaluatedCommits": 6,
+        "improvedCommitCount": 3,
+        "regressedCommitCount": 1,
+        "neutralCommitCount": 2,
+        "defaultTargetHitCount": 16,
+        "rerankedTargetHitCount": 19,
+        "targetHitDelta": 3,
+        "rerankerOnlyTargetHitCount": 10,
+        "defaultOnlyTargetHitCount": 7,
+        "routingRecommendation": "block_regression",
+        "exampleCases": [
+          {
+            "sha": "11dbfea18ad4",
+            "variant": "local_metadata_reranked",
+            "reason": "Local metadata reranker retrieved additional gold changed file(s) beyond default.",
+            "paths": [
+              ".planning/REQUIREMENTS.md",
+              ".planning/ROADMAP.md",
+              "docs/benchmarking.md"
+            ]
+          },
+          {
+            "sha": "dac74e958917",
+            "variant": "local_metadata_reranked",
+            "reason": "Local metadata reranker lost gold changed file(s) that default retrieved.",
+            "paths": [
+              "crates/ctxpack-compiler/src/packs.rs",
+              "crates/ctxpack-compiler/src/planning.rs"
+            ]
+          },
+          {
+            "sha": "a90dca05379b",
+            "variant": "local_metadata_reranked",
+            "reason": "Local metadata reranker retrieved additional gold changed file(s) beyond default.",
+            "paths": [
+              ".planning/ROADMAP.md",
+              "docs/release.md",
+              "docs/semantic.md",
+              "scripts/check-release-docs.sh",
+              "scripts/release-gate.sh"
+            ]
+          },
+          {
+            "sha": "291ba129c718",
+            "variant": "local_metadata_reranked",
+            "reason": "Local metadata reranker churned target file(s) without changing target-hit count.",
+            "paths": [
+              "crates/ctxpack-index/src/semantic.rs"
+            ]
+          },
+          {
+            "sha": "ef4d84a0e94b",
+            "variant": "local_metadata_reranked",
+            "reason": "Local metadata reranker retrieved additional gold changed file(s) beyond default.",
+            "paths": [
+              ".planning/ROADMAP.md"
+            ]
+          }
+        ]
+      },
+      {
+        "family": "broad_scope",
+        "evaluatedCommits": 11,
+        "improvedCommitCount": 1,
+        "regressedCommitCount": 8,
+        "neutralCommitCount": 2,
+        "defaultTargetHitCount": 56,
+        "rerankedTargetHitCount": 40,
+        "targetHitDelta": -16,
+        "rerankerOnlyTargetHitCount": 12,
+        "defaultOnlyTargetHitCount": 28,
+        "routingRecommendation": "block_regression",
+        "exampleCases": [
+          {
+            "sha": "7f439fa1b1f2",
+            "variant": "local_metadata_reranked",
+            "reason": "Local metadata reranker lost gold changed file(s) that default retrieved.",
+            "paths": [
+              ".planning/ROADMAP.md",
+              ".planning/STATE.md",
+              "crates/ctxpack-index/src/lib.rs",
+              "docs/benchmarking.md"
+            ]
+          },
+          {
+            "sha": "841dd3856e36",
+            "variant": "local_metadata_reranked",
+            "reason": "Local metadata reranker churned target file(s) without changing target-hit count.",
+            "paths": [
+              ".planning/ROADMAP.md",
+              ".planning/STATE.md",
+              "docs/benchmarking.md"
+            ]
+          },
+          {
+            "sha": "fd37d4eeb9ea",
+            "variant": "local_metadata_reranked",
+            "reason": "Local metadata reranker lost gold changed file(s) that default retrieved.",
+            "paths": [
+              ".planning/STATE.md",
+              "docs/benchmarking.md"
+            ]
+          },
+          {
+            "sha": "bd5e0468c9f9",
+            "variant": "local_metadata_reranked",
+            "reason": "Local metadata reranker lost gold changed file(s) that default retrieved.",
+            "paths": [
+              ".planning/MILESTONES.md",
+              ".planning/ROADMAP.md",
+              ".planning/STATE.md"
+            ]
+          },
+          {
+            "sha": "4e950d58cb0a",
+            "variant": "local_metadata_reranked",
+            "reason": "Local metadata reranker lost gold changed file(s) that default retrieved.",
+            "paths": [
+              ".planning/ROADMAP.md",
+              ".planning/STATE.md",
+              "crates/ctxpack-index/src/lib.rs"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "routedRerankerContribution": {
+    "evaluatedCommits": 20,
+    "improvedCommitCount": 0,
+    "regressedCommitCount": 0,
+    "neutralCommitCount": 20,
+    "defaultTargetHitCount": 78,
+    "rerankedTargetHitCount": 78,
+    "targetHitDelta": 0,
+    "rerankerOnlyTargetHitCount": 0,
+    "defaultOnlyTargetHitCount": 0,
+    "protectedEvidenceMissRateDelta": 0.0,
+    "protectedEvidenceTargetMissRateDelta": 0.0,
+    "improvedCases": [],
+    "regressedCases": [],
+    "defaultOnlyCases": [],
+    "queryFamilyContributions": [
+      {
+        "family": "broad_scope",
+        "evaluatedCommits": 11,
+        "improvedCommitCount": 0,
+        "regressedCommitCount": 0,
+        "neutralCommitCount": 11,
+        "defaultTargetHitCount": 56,
+        "rerankedTargetHitCount": 56,
+        "targetHitDelta": 0,
+        "rerankerOnlyTargetHitCount": 0,
+        "defaultOnlyTargetHitCount": 0,
+        "routingRecommendation": "hold_neutral",
+        "exampleCases": []
+      },
+      {
+        "family": "domain_phrase",
+        "evaluatedCommits": 6,
+        "improvedCommitCount": 0,
+        "regressedCommitCount": 0,
+        "neutralCommitCount": 6,
+        "defaultTargetHitCount": 16,
+        "rerankedTargetHitCount": 16,
+        "targetHitDelta": 0,
+        "rerankerOnlyTargetHitCount": 0,
+        "defaultOnlyTargetHitCount": 0,
+        "routingRecommendation": "hold_neutral",
+        "exampleCases": []
+      },
+      {
+        "family": "symbol_identifier",
+        "evaluatedCommits": 3,
+        "improvedCommitCount": 0,
+        "regressedCommitCount": 0,
+        "neutralCommitCount": 3,
+        "defaultTargetHitCount": 6,
+        "rerankedTargetHitCount": 6,
+        "targetHitDelta": 0,
+        "rerankerOnlyTargetHitCount": 0,
+        "defaultOnlyTargetHitCount": 0,
+        "routingRecommendation": "hold_neutral",
+        "exampleCases": []
+      }
+    ]
+  },
+  "semanticCorroboratedRerankerContribution": {
+    "evaluatedCommits": 20,
+    "improvedCommitCount": 7,
+    "regressedCommitCount": 9,
+    "neutralCommitCount": 4,
+    "defaultTargetHitCount": 78,
+    "rerankedTargetHitCount": 71,
+    "targetHitDelta": -7,
+    "rerankerOnlyTargetHitCount": 30,
+    "defaultOnlyTargetHitCount": 37,
+    "protectedEvidenceMissRateDelta": -0.5265957,
+    "protectedEvidenceTargetMissRateDelta": -0.40845072,
+    "improvedCases": [
+      {
+        "sha": "a4319839c08b",
+        "variant": "semantic_corroborated_reranked",
+        "reason": "Semantic-corroborated reranker retrieved additional gold changed file(s) beyond default.",
+        "paths": [
+          ".planning/ROADMAP.md",
+          "docs/benchmarking.md"
+        ]
+      },
+      {
+        "sha": "11dbfea18ad4",
+        "variant": "semantic_corroborated_reranked",
+        "reason": "Semantic-corroborated reranker retrieved additional gold changed file(s) beyond default.",
+        "paths": [
+          ".planning/REQUIREMENTS.md",
+          ".planning/ROADMAP.md",
+          "docs/benchmarking.md"
+        ]
+      },
+      {
+        "sha": "9d6baddb0ce7",
+        "variant": "semantic_corroborated_reranked",
+        "reason": "Semantic-corroborated reranker retrieved additional gold changed file(s) beyond default.",
+        "paths": [
+          "docs/semantic.md"
+        ]
+      },
+      {
+        "sha": "a90dca05379b",
+        "variant": "semantic_corroborated_reranked",
+        "reason": "Semantic-corroborated reranker retrieved additional gold changed file(s) beyond default.",
+        "paths": [
+          ".planning/ROADMAP.md",
+          "docs/release.md",
+          "docs/semantic.md",
+          "scripts/check-release-docs.sh",
+          "scripts/release-gate.sh"
+        ]
+      },
+      {
+        "sha": "2453ec76a0bf",
+        "variant": "semantic_corroborated_reranked",
+        "reason": "Semantic-corroborated reranker retrieved additional gold changed file(s) beyond default.",
+        "paths": [
+          ".planning/ROADMAP.md",
+          "crates/ctxpack-compiler/src/eval.rs"
+        ]
+      },
+      {
+        "sha": "151fdccb231b",
+        "variant": "semantic_corroborated_reranked",
+        "reason": "Semantic-corroborated reranker retrieved additional gold changed file(s) beyond default.",
+        "paths": [
+          ".planning/ROADMAP.md",
+          ".planning/STATE.md"
+        ]
+      },
+      {
+        "sha": "ef4d84a0e94b",
+        "variant": "semantic_corroborated_reranked",
+        "reason": "Semantic-corroborated reranker retrieved additional gold changed file(s) beyond default.",
+        "paths": [
+          ".planning/ROADMAP.md"
+        ]
+      }
+    ],
+    "regressedCases": [
+      {
+        "sha": "7f439fa1b1f2",
+        "variant": "semantic_corroborated_reranked",
+        "reason": "Semantic-corroborated reranker lost gold changed file(s) that default retrieved.",
+        "paths": [
+          ".planning/ROADMAP.md",
+          ".planning/STATE.md",
+          "crates/ctxpack-index/src/lib.rs",
+          "docs/benchmarking.md"
+        ]
+      },
+      {
+        "sha": "fd37d4eeb9ea",
+        "variant": "semantic_corroborated_reranked",
+        "reason": "Semantic-corroborated reranker lost gold changed file(s) that default retrieved.",
+        "paths": [
+          ".planning/STATE.md",
+          "docs/benchmarking.md"
+        ]
+      },
+      {
+        "sha": "bd5e0468c9f9",
+        "variant": "semantic_corroborated_reranked",
+        "reason": "Semantic-corroborated reranker lost gold changed file(s) that default retrieved.",
+        "paths": [
+          ".planning/MILESTONES.md",
+          ".planning/ROADMAP.md",
+          ".planning/STATE.md"
+        ]
+      },
+      {
+        "sha": "4e950d58cb0a",
+        "variant": "semantic_corroborated_reranked",
+        "reason": "Semantic-corroborated reranker lost gold changed file(s) that default retrieved.",
+        "paths": [
+          ".planning/ROADMAP.md",
+          ".planning/STATE.md",
+          "crates/ctxpack-index/src/lib.rs"
+        ]
+      },
+      {
+        "sha": "1c258e73ed24",
+        "variant": "semantic_corroborated_reranked",
+        "reason": "Semantic-corroborated reranker lost gold changed file(s) that default retrieved.",
+        "paths": [
+          ".planning/ROADMAP.md",
+          ".planning/STATE.md"
+        ]
+      },
+      {
+        "sha": "feeaac955897",
+        "variant": "semantic_corroborated_reranked",
+        "reason": "Semantic-corroborated reranker lost gold changed file(s) that default retrieved.",
+        "paths": [
+          ".planning/STATE.md",
+          "crates/ctxpack-compiler/src/planning.rs"
+        ]
+      },
+      {
+        "sha": "dac74e958917",
+        "variant": "semantic_corroborated_reranked",
+        "reason": "Semantic-corroborated reranker lost gold changed file(s) that default retrieved.",
+        "paths": [
+          "crates/ctxpack-compiler/src/packs.rs",
+          "crates/ctxpack-compiler/src/planning.rs"
+        ]
+      },
+      {
+        "sha": "1f25b48d8678",
+        "variant": "semantic_corroborated_reranked",
+        "reason": "Semantic-corroborated reranker lost gold changed file(s) that default retrieved.",
+        "paths": [
+          "crates/ctxpack-compiler/src/planning.rs",
+          "crates/ctxpack-index/src/lib.rs"
+        ]
+      },
+      {
+        "sha": "8a2ac1a97eb1",
+        "variant": "semantic_corroborated_reranked",
+        "reason": "Semantic-corroborated reranker lost gold changed file(s) that default retrieved.",
+        "paths": [
+          ".planning/STATE.md",
+          "crates/ctxpack-compiler/src/lib.rs",
+          "crates/ctxpack-core/src/contracts.rs"
+        ]
+      }
+    ],
+    "defaultOnlyCases": [
+      {
+        "sha": "7f439fa1b1f2",
+        "variant": "semantic_corroborated_reranked",
+        "reason": "Semantic-corroborated reranker replaced target file(s) that default retrieved.",
+        "paths": [
+          ".planning/ROADMAP.md",
+          ".planning/STATE.md",
+          "crates/ctxpack-index/src/lib.rs",
+          "docs/benchmarking.md"
+        ]
+      },
+      {
+        "sha": "841dd3856e36",
+        "variant": "semantic_corroborated_reranked",
+        "reason": "Semantic-corroborated reranker replaced target file(s) that default retrieved.",
+        "paths": [
+          ".planning/ROADMAP.md",
+          ".planning/STATE.md",
+          "docs/benchmarking.md"
+        ]
+      },
+      {
+        "sha": "fd37d4eeb9ea",
+        "variant": "semantic_corroborated_reranked",
+        "reason": "Semantic-corroborated reranker replaced target file(s) that default retrieved.",
+        "paths": [
+          ".planning/STATE.md",
+          "docs/benchmarking.md"
+        ]
+      },
+      {
+        "sha": "bd5e0468c9f9",
+        "variant": "semantic_corroborated_reranked",
+        "reason": "Semantic-corroborated reranker replaced target file(s) that default retrieved.",
+        "paths": [
+          ".planning/MILESTONES.md",
+          ".planning/ROADMAP.md",
+          ".planning/STATE.md"
+        ]
+      },
+      {
+        "sha": "4e950d58cb0a",
+        "variant": "semantic_corroborated_reranked",
+        "reason": "Semantic-corroborated reranker replaced target file(s) that default retrieved.",
+        "paths": [
+          ".planning/ROADMAP.md",
+          ".planning/STATE.md",
+          "crates/ctxpack-index/src/lib.rs"
+        ]
+      },
+      {
+        "sha": "42bd9774512f",
+        "variant": "semantic_corroborated_reranked",
+        "reason": "Semantic-corroborated reranker replaced target file(s) that default retrieved.",
+        "paths": [
+          ".planning/STATE.md",
+          "crates/ctxpack-compiler/src/lib.rs"
+        ]
+      },
+      {
+        "sha": "11dbfea18ad4",
+        "variant": "semantic_corroborated_reranked",
+        "reason": "Semantic-corroborated reranker replaced target file(s) that default retrieved.",
+        "paths": [
+          "crates/ctxpack-compiler/src/lib.rs",
+          "crates/ctxpack-compiler/src/policy.rs"
+        ]
+      },
+      {
+        "sha": "f247e826e4ac",
+        "variant": "semantic_corroborated_reranked",
+        "reason": "Semantic-corroborated reranker replaced target file(s) that default retrieved.",
+        "paths": [
+          "crates/ctxpack-compiler/src/eval.rs",
+          "crates/ctxpack-compiler/src/lib.rs",
+          "crates/ctxpack-index/src/semantic.rs"
+        ]
+      },
+      {
+        "sha": "1c258e73ed24",
+        "variant": "semantic_corroborated_reranked",
+        "reason": "Semantic-corroborated reranker replaced target file(s) that default retrieved.",
+        "paths": [
+          ".planning/ROADMAP.md",
+          ".planning/STATE.md"
+        ]
+      },
+      {
+        "sha": "feeaac955897",
+        "variant": "semantic_corroborated_reranked",
+        "reason": "Semantic-corroborated reranker replaced target file(s) that default retrieved.",
+        "paths": [
+          ".planning/STATE.md",
+          "crates/ctxpack-compiler/src/planning.rs"
+        ]
+      }
+    ],
+    "queryFamilyContributions": [
+      {
+        "family": "symbol_identifier",
+        "evaluatedCommits": 3,
+        "improvedCommitCount": 3,
+        "regressedCommitCount": 0,
+        "neutralCommitCount": 0,
+        "defaultTargetHitCount": 6,
+        "rerankedTargetHitCount": 11,
+        "targetHitDelta": 5,
+        "rerankerOnlyTargetHitCount": 6,
+        "defaultOnlyTargetHitCount": 1,
+        "routingRecommendation": "hold_churn",
+        "exampleCases": [
+          {
+            "sha": "a4319839c08b",
+            "variant": "semantic_corroborated_reranked",
+            "reason": "Semantic-corroborated reranker retrieved additional gold changed file(s) beyond default.",
+            "paths": [
+              ".planning/ROADMAP.md",
+              "docs/benchmarking.md"
+            ]
+          },
+          {
+            "sha": "2453ec76a0bf",
+            "variant": "semantic_corroborated_reranked",
+            "reason": "Semantic-corroborated reranker retrieved additional gold changed file(s) beyond default.",
+            "paths": [
+              ".planning/ROADMAP.md",
+              "crates/ctxpack-compiler/src/eval.rs"
+            ]
+          },
+          {
+            "sha": "151fdccb231b",
+            "variant": "semantic_corroborated_reranked",
+            "reason": "Semantic-corroborated reranker retrieved additional gold changed file(s) beyond default.",
+            "paths": [
+              ".planning/ROADMAP.md",
+              ".planning/STATE.md"
+            ]
+          }
+        ]
+      },
+      {
+        "family": "domain_phrase",
+        "evaluatedCommits": 6,
+        "improvedCommitCount": 4,
+        "regressedCommitCount": 1,
+        "neutralCommitCount": 1,
+        "defaultTargetHitCount": 16,
+        "rerankedTargetHitCount": 21,
+        "targetHitDelta": 5,
+        "rerankerOnlyTargetHitCount": 12,
+        "defaultOnlyTargetHitCount": 7,
+        "routingRecommendation": "block_regression",
+        "exampleCases": [
+          {
+            "sha": "11dbfea18ad4",
+            "variant": "semantic_corroborated_reranked",
+            "reason": "Semantic-corroborated reranker retrieved additional gold changed file(s) beyond default.",
+            "paths": [
+              ".planning/REQUIREMENTS.md",
+              ".planning/ROADMAP.md",
+              "docs/benchmarking.md"
+            ]
+          },
+          {
+            "sha": "9d6baddb0ce7",
+            "variant": "semantic_corroborated_reranked",
+            "reason": "Semantic-corroborated reranker retrieved additional gold changed file(s) beyond default.",
+            "paths": [
+              "docs/semantic.md"
+            ]
+          },
+          {
+            "sha": "dac74e958917",
+            "variant": "semantic_corroborated_reranked",
+            "reason": "Semantic-corroborated reranker lost gold changed file(s) that default retrieved.",
+            "paths": [
+              "crates/ctxpack-compiler/src/packs.rs",
+              "crates/ctxpack-compiler/src/planning.rs"
+            ]
+          },
+          {
+            "sha": "a90dca05379b",
+            "variant": "semantic_corroborated_reranked",
+            "reason": "Semantic-corroborated reranker retrieved additional gold changed file(s) beyond default.",
+            "paths": [
+              ".planning/ROADMAP.md",
+              "docs/release.md",
+              "docs/semantic.md",
+              "scripts/check-release-docs.sh",
+              "scripts/release-gate.sh"
+            ]
+          },
+          {
+            "sha": "291ba129c718",
+            "variant": "semantic_corroborated_reranked",
+            "reason": "Semantic-corroborated reranker churned target file(s) without changing target-hit count.",
+            "paths": [
+              "crates/ctxpack-index/src/semantic.rs"
+            ]
+          }
+        ]
+      },
+      {
+        "family": "broad_scope",
+        "evaluatedCommits": 11,
+        "improvedCommitCount": 0,
+        "regressedCommitCount": 8,
+        "neutralCommitCount": 3,
+        "defaultTargetHitCount": 56,
+        "rerankedTargetHitCount": 39,
+        "targetHitDelta": -17,
+        "rerankerOnlyTargetHitCount": 12,
+        "defaultOnlyTargetHitCount": 29,
+        "routingRecommendation": "block_regression",
+        "exampleCases": [
+          {
+            "sha": "7f439fa1b1f2",
+            "variant": "semantic_corroborated_reranked",
+            "reason": "Semantic-corroborated reranker lost gold changed file(s) that default retrieved.",
+            "paths": [
+              ".planning/ROADMAP.md",
+              ".planning/STATE.md",
+              "crates/ctxpack-index/src/lib.rs",
+              "docs/benchmarking.md"
+            ]
+          },
+          {
+            "sha": "841dd3856e36",
+            "variant": "semantic_corroborated_reranked",
+            "reason": "Semantic-corroborated reranker churned target file(s) without changing target-hit count.",
+            "paths": [
+              ".planning/ROADMAP.md",
+              ".planning/STATE.md",
+              "docs/benchmarking.md"
+            ]
+          },
+          {
+            "sha": "fd37d4eeb9ea",
+            "variant": "semantic_corroborated_reranked",
+            "reason": "Semantic-corroborated reranker lost gold changed file(s) that default retrieved.",
+            "paths": [
+              ".planning/STATE.md",
+              "docs/benchmarking.md"
+            ]
+          },
+          {
+            "sha": "bd5e0468c9f9",
+            "variant": "semantic_corroborated_reranked",
+            "reason": "Semantic-corroborated reranker lost gold changed file(s) that default retrieved.",
+            "paths": [
+              ".planning/MILESTONES.md",
+              ".planning/ROADMAP.md",
+              ".planning/STATE.md"
+            ]
+          },
+          {
+            "sha": "4e950d58cb0a",
+            "variant": "semantic_corroborated_reranked",
+            "reason": "Semantic-corroborated reranker lost gold changed file(s) that default retrieved.",
+            "paths": [
+              ".planning/ROADMAP.md",
+              ".planning/STATE.md",
+              "crates/ctxpack-index/src/lib.rs"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "providerPolicy": {
+    "policyPath": null,
+    "policy": {
+      "schemaVersion": 1,
+      "name": "local-source-free-default",
+      "allowLocalProviders": true,
+      "allowCloudEmbeddings": false,
+      "allowCloudReranking": false,
+      "allowSourceTransfer": false,
+      "enableLocalMetadataReranker": false,
+      "enableQueryFamilyRoutedReranker": false,
+      "enableLocalFixtureReranker": false,
+      "sourceTextLogged": false
+    },
+    "decisions": [
+      {
+        "capability": "semantic_embedding",
+        "provider": "local_hash",
+        "status": "allowed",
+        "dataClasses": [
+          "metadata",
+          "semantic_vector"
+        ],
+        "remoteAllowed": false,
+        "sourceTextAllowed": false,
+        "reason": "Default deterministic local semantic metadata provider."
+      },
+      {
+        "capability": "semantic_embedding",
+        "provider": "cloud_embedding",
+        "status": "denied",
+        "dataClasses": [
+          "metadata",
+          "source_text"
+        ],
+        "remoteAllowed": false,
+        "sourceTextAllowed": false,
+        "reason": "Cloud embeddings require both cloud and source-transfer policy."
+      },
+      {
+        "capability": "precision_graph",
+        "provider": "local_precision_overlay",
+        "status": "allowed",
+        "dataClasses": [
+          "metadata"
+        ],
+        "remoteAllowed": false,
+        "sourceTextAllowed": false,
+        "reason": "Local precision overlays are metadata-only."
+      },
+      {
+        "capability": "reranking",
+        "provider": "local_metadata",
+        "status": "disabled",
+        "dataClasses": [
+          "metadata"
+        ],
+        "remoteAllowed": false,
+        "sourceTextAllowed": false,
+        "reason": "Reranker is disabled by default."
+      },
+      {
+        "capability": "semantic_embedding",
+        "provider": "local_fastembed",
+        "status": "allowed",
+        "dataClasses": [
+          "metadata",
+          "semantic_vector"
+        ],
+        "remoteAllowed": false,
+        "sourceTextAllowed": false,
+        "reason": "Local source-free semantic provider is allowed."
+      }
+    ],
+    "diagnostics": [
+      {
+        "code": "provider_policy_absent_safe_defaults",
+        "severity": "info",
+        "message": "Provider policy file was not found; using local source-free defaults.",
+        "paths": [],
+        "count": 0
+      },
+      {
+        "code": "provider_policy_remote_denied",
+        "severity": "info",
+        "message": "Remote embedding or reranking providers are blocked by local source-free policy.",
+        "paths": [],
+        "count": 1
+      }
+    ],
+    "sourceTextLogged": false,
+    "privacyStatus": {
+      "localOnly": true,
+      "remoteEmbeddingsUsed": false,
+      "remoteRerankingUsed": false,
+      "redactionsApplied": 0
+    }
+  },
+  "precisionStatus": {
+    "status": "unavailable",
+    "provider": null,
+    "overlayPath": "/Users/romel/Documents/GitHub/ctxhelm-proof-fixtures/ctxhelm/.ctxhelm/precision-edges.json",
+    "edgeCount": 0,
+    "rejectedEdgeCount": 0,
+    "stale": false,
+    "degraded": false,
+    "diagnostics": []
+  },
+  "diagnostics": [
+    {
+      "code": "provider_policy_absent_safe_defaults",
+      "severity": "info",
+      "message": "Provider policy file was not found; using local source-free defaults.",
+      "paths": [],
+      "count": 0
+    },
+    {
+      "code": "provider_policy_remote_denied",
+      "severity": "info",
+      "message": "Remote embedding or reranking providers are blocked by local source-free policy.",
+      "paths": [],
+      "count": 1
+    },
+    {
+      "code": "semantic_contribution_missed_targets_coupled",
+      "severity": "info",
+      "message": "Semantic provider `local_fastembed` missed target files that already had source-free graph/history/symbol signals; prioritize graph/fusion ordering before adding more semantic text.",
+      "paths": [
+        ".planning/ROADMAP.md",
+        ".planning/STATE.md",
+        "crates/ctxpack-index/src/lib.rs",
+        "docs/benchmarking.md",
+        ".planning/MILESTONES.md"
+      ],
+      "count": 31
+    },
+    {
+      "code": "semantic_contribution_missed_targets_no_signal",
+      "severity": "warning",
+      "message": "Semantic provider `local_fastembed` missed target files with no lexical, graph, history, or area signal; inspect semantic document/query construction for these path families.",
+      "paths": [
+        ".planning/REQUIREMENTS.md",
+        ".planning/STATE.md",
+        ".gitignore",
+        "docs/semantic.md",
+        "scripts/smoke-claude-mcp.sh"
+      ],
+      "count": 33
+    },
+    {
+      "code": "semantic_candidate_fusion_gap",
+      "severity": "info",
+      "message": "Semantic provider `local_fastembed` generated source-free candidates for missed retrieval targets, but final top-K selection did not include them; tune fusion, ranking, or budget before query construction.",
+      "paths": [
+        "crates/ctxpack/tests/release_packaging.rs",
+        "docs/release.md",
+        "docs/benchmarking.md",
+        ".planning/phases/62-production-local-embedding-quality/62-production-local-embedding-quality-01-PLAN.md",
+        "crates/ctxpack-mcp/Cargo.toml",
+        "crates/ctxpack-mcp/src/schemas.rs",
+        "docs/semantic.md",
+        "docs/agent-setup.md",
+        "docs/precision.md",
+        "docs/policy-embedding.md"
+      ],
+      "count": 17
+    },
+    {
+      "code": "semantic_contribution_unique_target_hits",
+      "severity": "info",
+      "message": "Semantic provider `local_fastembed` contributed target file(s) absent from the lexical baseline top K.",
+      "paths": [
+        ".planning/MILESTONES.md",
+        ".planning/STATE.md",
+        "crates/ctxpack-index/src/semantic.rs"
+      ],
+      "count": 3
+    },
+    {
+      "code": "semantic_query_family_unstable_hold",
+      "severity": "info",
+      "message": "Semantic retrieval has clean target-only commits for query family `broad_scope`, but also mixed/noise commits; validate on a larger slice before routing this family.",
+      "paths": [
+        ".planning/MILESTONES.md",
+        ".planning/STATE.md",
+        "crates/ctxpack-index/src/semantic.rs"
+      ],
+      "count": 2
+    },
+    {
+      "code": "semantic_query_family_supported_mixed_hold",
+      "severity": "info",
+      "message": "Semantic retrieval has both corroborated semantic-only targets and corroborated semantic-only non-targets for query family `broad_scope`.",
+      "paths": [
+        "crates/ctxpack-index/src/semantic.rs"
+      ],
+      "count": 3
+    },
+    {
+      "code": "semantic_query_family_mixed_hold",
+      "severity": "info",
+      "message": "Semantic retrieval has both unique target hits and unique non-targets for query family `broad_scope`; hold for better fusion evidence.",
+      "paths": [
+        ".planning/MILESTONES.md",
+        ".planning/STATE.md",
+        "crates/ctxpack-index/src/semantic.rs"
+      ],
+      "count": 3
+    },
+    {
+      "code": "semantic_support_profile_route_candidate",
+      "severity": "info",
+      "message": "Semantic support profile `lexical_expansion_co_change` has semantic-only target hits without semantic-only non-targets for query family `broad_scope`.",
+      "paths": [
+        ".planning/MILESTONES.md",
+        ".planning/STATE.md"
+      ],
+      "count": 2
+    },
+    {
+      "code": "semantic_support_profile_noise_hold",
+      "severity": "warning",
+      "message": "Semantic support profile `lexical_expansion` has semantic-only non-targets without semantic-only targets for query family `broad_scope`.",
+      "paths": [
+        "crates/ctxpack-index/src/semantic.rs"
+      ],
+      "count": 1
+    },
+    {
+      "code": "semantic_query_family_unstable_hold",
+      "severity": "info",
+      "message": "Semantic retrieval has clean target-only commits for query family `domain_phrase`, but also mixed/noise commits; validate on a larger slice before routing this family.",
+      "paths": [
+        "crates/ctxpack-index/src/semantic.rs",
+        "crates/ctxpack/tests/release_packaging.rs"
+      ],
+      "count": 3
+    },
+    {
+      "code": "semantic_query_family_supported_mixed_hold",
+      "severity": "info",
+      "message": "Semantic retrieval has both corroborated semantic-only targets and corroborated semantic-only non-targets for query family `domain_phrase`.",
+      "paths": [
+        "crates/ctxpack-index/src/semantic.rs",
+        "crates/ctxpack-index/src/semantic.rs",
+        "crates/ctxpack/tests/release_packaging.rs"
+      ],
+      "count": 4
+    },
+    {
+      "code": "semantic_query_family_mixed_hold",
+      "severity": "info",
+      "message": "Semantic retrieval has both unique target hits and unique non-targets for query family `domain_phrase`; hold for better fusion evidence.",
+      "paths": [
+        "crates/ctxpack-index/src/semantic.rs",
+        "crates/ctxpack/tests/release_packaging.rs"
+      ],
+      "count": 4
+    },
+    {
+      "code": "semantic_support_profile_mixed_hold",
+      "severity": "info",
+      "message": "Semantic support profile `lexical_expansion_dependency` has both semantic-only targets and semantic-only non-targets for query family `domain_phrase`.",
+      "paths": [
+        "crates/ctxpack-index/src/semantic.rs"
+      ],
+      "count": 2
+    },
+    {
+      "code": "semantic_support_profile_noise_hold",
+      "severity": "warning",
+      "message": "Semantic support profile `lexical_expansion` has semantic-only non-targets without semantic-only targets for query family `domain_phrase`.",
+      "paths": [
+        "crates/ctxpack-index/src/semantic.rs"
+      ],
+      "count": 1
+    },
+    {
+      "code": "semantic_support_profile_noise_hold",
+      "severity": "warning",
+      "message": "Semantic support profile `lexical_related_test_co_change` has semantic-only non-targets without semantic-only targets for query family `domain_phrase`.",
+      "paths": [
+        "crates/ctxpack/tests/release_packaging.rs"
+      ],
+      "count": 1
+    },
+    {
+      "code": "reranker_contribution_regressed_commits",
+      "severity": "warning",
+      "message": "Local metadata reranker lost target hits on some commits; keep reranking opt-in or route by query family.",
+      "paths": [
+        ".planning/ROADMAP.md",
+        ".planning/STATE.md",
+        "crates/ctxpack-index/src/lib.rs",
+        "docs/benchmarking.md",
+        ".planning/STATE.md",
+        "docs/benchmarking.md",
+        ".planning/MILESTONES.md",
+        ".planning/ROADMAP.md",
+        ".planning/STATE.md",
+        ".planning/ROADMAP.md"
+      ],
+      "count": 9
+    },
+    {
+      "code": "reranker_contribution_target_lift",
+      "severity": "info",
+      "message": "Local metadata reranker retrieved additional target files on measured commits.",
+      "paths": [
+        ".planning/REQUIREMENTS.md",
+        "docs/release.md",
+        "scripts/release-gate.sh",
+        ".planning/ROADMAP.md",
+        "docs/benchmarking.md",
+        ".planning/REQUIREMENTS.md",
+        ".planning/ROADMAP.md",
+        "docs/benchmarking.md",
+        ".planning/ROADMAP.md",
+        "docs/release.md"
+      ],
+      "count": 7
+    },
+    {
+      "code": "reranker_contribution_protected_target_improved",
+      "severity": "info",
+      "message": "Local metadata reranker reduced protected retrieval-target miss-rate by 0.366.",
+      "paths": [],
+      "count": 70
+    },
+    {
+      "code": "reranker_contribution_target_churn",
+      "severity": "info",
+      "message": "Local metadata reranker added target hits but also replaced some target files that default retrieved; use this as routing evidence rather than an unconditional default.",
+      "paths": [
+        ".planning/ROADMAP.md",
+        ".planning/STATE.md",
+        "crates/ctxpack-index/src/lib.rs",
+        "docs/benchmarking.md",
+        ".planning/ROADMAP.md",
+        ".planning/STATE.md",
+        "docs/benchmarking.md",
+        ".planning/STATE.md",
+        "docs/benchmarking.md",
+        ".planning/MILESTONES.md"
+      ],
+      "count": 36
+    },
+    {
+      "code": "reranker_query_family_churn_hold",
+      "severity": "info",
+      "message": "Some query families improve net target hits but still churn default targets; hold routing for those families until churn is reduced.",
+      "paths": [
+        ".planning/ROADMAP.md",
+        "docs/benchmarking.md",
+        ".planning/ROADMAP.md",
+        "crates/ctxpack-compiler/src/eval.rs",
+        ".planning/ROADMAP.md",
+        ".planning/STATE.md"
+      ],
+      "count": 1
+    },
+    {
+      "code": "routed_reranker_neutral",
+      "severity": "info",
+      "message": "Query-family routed reranker preserved target hits but did not add target hits in this gate.",
+      "paths": [],
+      "count": 20
+    },
+    {
+      "code": "semantic_corroborated_reranker_regression",
+      "severity": "warning",
+      "message": "Semantic-corroborated reranker lost target hits; keep this fusion rule eval-only and route only with stronger separators.",
+      "paths": [
+        ".planning/ROADMAP.md",
+        ".planning/STATE.md",
+        "crates/ctxpack-index/src/lib.rs",
+        "docs/benchmarking.md",
+        ".planning/STATE.md",
+        "docs/benchmarking.md",
+        ".planning/MILESTONES.md",
+        ".planning/ROADMAP.md",
+        ".planning/STATE.md",
+        ".planning/ROADMAP.md"
+      ],
+      "count": 9
+    },
+    {
+      "code": "semantic_precision_named_regressions",
+      "severity": "warning",
+      "message": "Semantic/precision gate found named regressions; keep feature opt-in.",
+      "paths": [
+        ".planning/MILESTONES.md",
+        ".planning/ROADMAP.md",
+        ".planning/STATE.md",
+        "crates/ctxpack-index/src/lib.rs",
+        "docs/benchmarking.md",
+        ".planning/STATE.md",
+        "crates/ctxpack-compiler/src/eval.rs",
+        "docs/benchmarking.md",
+        ".planning/MILESTONES.md",
+        ".planning/ROADMAP.md",
+        ".planning/STATE.md",
+        "crates/ctxpack-compiler/src/eval.rs",
+        "crates/ctxpack-compiler/src/lib.rs",
+        "crates/ctxpack/src/main.rs",
+        "docs/benchmarking.md",
+        ".planning/MILESTONES.md",
+        ".planning/ROADMAP.md",
+        ".planning/STATE.md",
+        "crates/ctxpack-compiler/src/eval.rs",
+        "crates/ctxpack-index/src/lib.rs",
+        ".planning/MILESTONES.md",
+        ".planning/REQUIREMENTS.md",
+        ".planning/ROADMAP.md",
+        ".planning/STATE.md",
+        "docs/benchmarking.md",
+        ".planning/MILESTONES.md",
+        ".planning/STATE.md",
+        "crates/ctxpack-compiler/src/eval.rs",
+        "crates/ctxpack-compiler/src/planning.rs",
+        "crates/ctxpack-compiler/src/eval.rs",
+        "crates/ctxpack-compiler/src/packs.rs",
+        "crates/ctxpack-compiler/src/planning.rs",
+        "crates/ctxpack/src/main.rs",
+        "crates/ctxpack/tests/cli_compat.rs",
+        "crates/ctxpack-compiler/src/lib.rs",
+        "crates/ctxpack-compiler/src/planning.rs",
+        "crates/ctxpack-core/src/contracts.rs",
+        "crates/ctxpack-index/src/lib.rs",
+        "crates/ctxpack/src/main.rs",
+        "crates/ctxpack/tests/cli_compat.rs",
+        ".planning/STATE.md",
+        "crates/ctxpack-compiler/src/lib.rs",
+        "crates/ctxpack-compiler/src/policy.rs",
+        "crates/ctxpack-core/src/contracts.rs",
+        "crates/ctxpack/src/main.rs",
+        ".planning/MILESTONES.md",
+        ".planning/ROADMAP.md",
+        ".planning/STATE.md",
+        "crates/ctxpack-index/src/lib.rs",
+        "docs/benchmarking.md",
+        ".planning/STATE.md",
+        "crates/ctxpack-compiler/src/eval.rs",
+        "docs/benchmarking.md",
+        ".planning/MILESTONES.md",
+        ".planning/ROADMAP.md",
+        ".planning/STATE.md",
+        "crates/ctxpack-compiler/src/eval.rs",
+        "crates/ctxpack-compiler/src/lib.rs",
+        "crates/ctxpack/src/main.rs",
+        "docs/benchmarking.md",
+        ".planning/MILESTONES.md",
+        ".planning/ROADMAP.md",
+        ".planning/STATE.md",
+        "crates/ctxpack-compiler/src/eval.rs",
+        "crates/ctxpack-index/src/lib.rs",
+        ".planning/MILESTONES.md",
+        ".planning/REQUIREMENTS.md",
+        ".planning/ROADMAP.md",
+        ".planning/STATE.md",
+        "docs/benchmarking.md",
+        ".planning/MILESTONES.md",
+        ".planning/STATE.md",
+        "crates/ctxpack-compiler/src/eval.rs",
+        "crates/ctxpack-compiler/src/planning.rs",
+        "crates/ctxpack-compiler/src/eval.rs",
+        "crates/ctxpack-compiler/src/packs.rs",
+        "crates/ctxpack-compiler/src/planning.rs",
+        "crates/ctxpack/src/main.rs",
+        "crates/ctxpack/tests/cli_compat.rs",
+        "crates/ctxpack-compiler/src/lib.rs",
+        "crates/ctxpack-compiler/src/planning.rs",
+        "crates/ctxpack-core/src/contracts.rs",
+        "crates/ctxpack-index/src/lib.rs",
+        "crates/ctxpack/src/main.rs",
+        "crates/ctxpack/tests/cli_compat.rs",
+        ".planning/STATE.md",
+        "crates/ctxpack-compiler/src/lib.rs",
+        "crates/ctxpack-compiler/src/policy.rs",
+        "crates/ctxpack-core/src/contracts.rs",
+        "crates/ctxpack/src/main.rs"
+      ],
+      "count": 18
+    }
+  ],
+  "sourceTextLogged": false,
+  "privacyStatus": {
+    "localOnly": true,
+    "remoteEmbeddingsUsed": false,
+    "remoteRerankingUsed": false,
+    "redactionsApplied": 0
+  }
+}

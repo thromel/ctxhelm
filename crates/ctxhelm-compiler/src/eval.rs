@@ -364,6 +364,8 @@ pub struct SemanticPrecisionGateReport {
     pub reranker_contribution: RerankerContributionSummary,
     #[serde(default)]
     pub routed_reranker_contribution: RerankerContributionSummary,
+    #[serde(default)]
+    pub semantic_corroborated_reranker_contribution: RerankerContributionSummary,
     pub provider_policy: ProviderPolicyReport,
     pub precision_status: PrecisionStatusReport,
     #[serde(default)]
@@ -3334,8 +3336,24 @@ pub fn semantic_precision_gate_report_with_provider(
         "support_profile_routed_semantic",
     ));
     let named_misses = named_cases(&default, &semantic, "local_semantic", NamedCaseKind::Miss);
-    let reranker_contribution = reranker_contribution_summary(&default, &reranked);
-    let routed_reranker_contribution = reranker_contribution_summary(&default, &routed_reranked);
+    let reranker_contribution = reranker_contribution_summary(
+        &default,
+        &reranked,
+        "local_metadata_reranked",
+        "Local metadata reranker",
+    );
+    let routed_reranker_contribution = reranker_contribution_summary(
+        &default,
+        &routed_reranked,
+        "query_family_routed_reranked",
+        "Query-family routed reranker",
+    );
+    let semantic_corroborated_reranker_contribution = reranker_contribution_summary(
+        &default,
+        &semantic_corroborated_reranked,
+        "semantic_corroborated_reranked",
+        "Semantic-corroborated reranker",
+    );
     variants.push(gate_variant(
         "support_profile_routed_semantic",
         SemanticPrecisionVariantStatus::Evaluated,
@@ -3362,6 +3380,9 @@ pub fn semantic_precision_gate_report_with_provider(
     diagnostics.extend(reranker_contribution_diagnostics(&reranker_contribution));
     diagnostics.extend(routed_reranker_contribution_diagnostics(
         &routed_reranker_contribution,
+    ));
+    diagnostics.extend(semantic_corroborated_reranker_contribution_diagnostics(
+        &semantic_corroborated_reranker_contribution,
     ));
     if !named_regressions.is_empty() {
         diagnostics.push(Diagnostic {
@@ -3391,6 +3412,7 @@ pub fn semantic_precision_gate_report_with_provider(
         semantic_contribution,
         reranker_contribution,
         routed_reranker_contribution,
+        semantic_corroborated_reranker_contribution,
         provider_policy,
         precision_status: precision,
         diagnostics,
@@ -4442,6 +4464,8 @@ fn semantic_family_example_paths(family: &SemanticQueryFamilyContribution) -> Ve
 fn reranker_contribution_summary(
     default: &HistoricalEvalReport,
     reranked: &HistoricalEvalReport,
+    variant_name: &str,
+    variant_label: &str,
 ) -> RerankerContributionSummary {
     let default_by_sha = default
         .commits
@@ -4507,8 +4531,8 @@ fn reranker_contribution_summary(
             paths.truncate(5);
             summary.default_only_cases.push(SemanticPrecisionNamedCase {
                 sha: short_sha(&commit.sha),
-                variant: "local_metadata_reranked".to_string(),
-                reason: "Reranker replaced target file(s) that default retrieved.".to_string(),
+                variant: variant_name.to_string(),
+                reason: format!("{variant_label} replaced target file(s) that default retrieved."),
                 paths,
             });
         }
@@ -4521,9 +4545,10 @@ fn reranker_contribution_summary(
                 paths.truncate(5);
                 let case = SemanticPrecisionNamedCase {
                     sha: short_sha(&commit.sha),
-                    variant: "local_metadata_reranked".to_string(),
-                    reason: "Reranker retrieved additional gold changed file(s) beyond default."
-                        .to_string(),
+                    variant: variant_name.to_string(),
+                    reason: format!(
+                        "{variant_label} retrieved additional gold changed file(s) beyond default."
+                    ),
                     paths,
                 };
                 family_entry.example_cases.push(case.clone());
@@ -4536,9 +4561,10 @@ fn reranker_contribution_summary(
                 paths.truncate(5);
                 let case = SemanticPrecisionNamedCase {
                     sha: short_sha(&commit.sha),
-                    variant: "local_metadata_reranked".to_string(),
-                    reason: "Reranker lost gold changed file(s) that default retrieved."
-                        .to_string(),
+                    variant: variant_name.to_string(),
+                    reason: format!(
+                        "{variant_label} lost gold changed file(s) that default retrieved."
+                    ),
                     paths,
                 };
                 family_entry.example_cases.push(case.clone());
@@ -4552,10 +4578,10 @@ fn reranker_contribution_summary(
                     paths.truncate(5);
                     family_entry.example_cases.push(SemanticPrecisionNamedCase {
                         sha: short_sha(&commit.sha),
-                        variant: "local_metadata_reranked".to_string(),
-                        reason:
-                            "Reranker churned target file(s) without changing target-hit count."
-                                .to_string(),
+                        variant: variant_name.to_string(),
+                        reason: format!(
+                            "{variant_label} churned target file(s) without changing target-hit count."
+                        ),
                         paths,
                     });
                 }
@@ -4850,6 +4876,90 @@ fn routed_reranker_contribution_diagnostics(
             message: "Query-family routed reranker preserved target hits but did not add target hits in this gate.".to_string(),
             paths: Vec::new(),
             count: summary.neutral_commit_count,
+        });
+    }
+    diagnostics
+}
+
+fn semantic_corroborated_reranker_contribution_diagnostics(
+    summary: &RerankerContributionSummary,
+) -> Vec<Diagnostic> {
+    if summary.evaluated_commits == 0 {
+        return Vec::new();
+    }
+    let mut diagnostics = Vec::new();
+    if summary.regressed_commit_count > 0 || summary.target_hit_delta < 0 {
+        diagnostics.push(Diagnostic {
+            code: "semantic_corroborated_reranker_regression".to_string(),
+            severity: DiagnosticSeverity::Warning,
+            message: "Semantic-corroborated reranker lost target hits; keep this fusion rule eval-only and route only with stronger separators.".to_string(),
+            paths: summary
+                .regressed_cases
+                .iter()
+                .flat_map(|case| case.paths.clone())
+                .take(10)
+                .collect(),
+            count: summary.regressed_commit_count,
+        });
+    } else if summary.target_hit_delta > 0 && summary.default_only_target_hit_count == 0 {
+        diagnostics.push(Diagnostic {
+            code: "semantic_corroborated_reranker_clean_lift".to_string(),
+            severity: DiagnosticSeverity::Info,
+            message: "Semantic-corroborated reranker added target hits without default-only target churn in this gate.".to_string(),
+            paths: summary
+                .improved_cases
+                .iter()
+                .flat_map(|case| case.paths.clone())
+                .take(10)
+                .collect(),
+            count: summary.improved_commit_count,
+        });
+    } else if summary.target_hit_delta > 0 && summary.default_only_target_hit_count > 0 {
+        diagnostics.push(Diagnostic {
+            code: "semantic_corroborated_reranker_churn_hold".to_string(),
+            severity: DiagnosticSeverity::Info,
+            message: "Semantic-corroborated reranker added target hits but still churned default targets; hold global fusion and inspect route candidates.".to_string(),
+            paths: summary
+                .default_only_cases
+                .iter()
+                .flat_map(|case| case.paths.clone())
+                .take(10)
+                .collect(),
+            count: summary.default_only_target_hit_count,
+        });
+    } else {
+        diagnostics.push(Diagnostic {
+            code: "semantic_corroborated_reranker_neutral".to_string(),
+            severity: DiagnosticSeverity::Info,
+            message: "Semantic-corroborated reranker preserved target hits but did not add target hits in this gate.".to_string(),
+            paths: Vec::new(),
+            count: summary.neutral_commit_count,
+        });
+    }
+
+    let route_candidate_families = summary
+        .query_family_contributions
+        .iter()
+        .filter(|family| {
+            family.routing_recommendation == RerankerRoutingRecommendation::RouteCandidate
+        })
+        .collect::<Vec<_>>();
+    if !route_candidate_families.is_empty() {
+        diagnostics.push(Diagnostic {
+            code: "semantic_corroborated_query_family_route_candidate".to_string(),
+            severity: DiagnosticSeverity::Info,
+            message: "Some query families show semantic-corroborated lift without target churn; validate these families across repos before runtime exposure.".to_string(),
+            paths: route_candidate_families
+                .iter()
+                .flat_map(|family| {
+                    family
+                        .example_cases
+                        .iter()
+                        .flat_map(|case| case.paths.clone())
+                })
+                .take(10)
+                .collect(),
+            count: route_candidate_families.len(),
         });
     }
     diagnostics
@@ -10785,7 +10895,12 @@ mod tests {
         reranked.protected_evidence.miss_rate_at_10 = 0.10;
         reranked.protected_evidence.retrieval_target_miss_rate_at_10 = 0.0;
 
-        let summary = reranker_contribution_summary(&default, &reranked);
+        let summary = reranker_contribution_summary(
+            &default,
+            &reranked,
+            "local_metadata_reranked",
+            "Local metadata reranker",
+        );
 
         assert_eq!(summary.evaluated_commits, 1);
         assert_eq!(summary.improved_commit_count, 1);
@@ -10822,7 +10937,12 @@ mod tests {
             "src/reranker_only.rs".to_string(),
         ];
 
-        let summary = reranker_contribution_summary(&default, &reranked);
+        let summary = reranker_contribution_summary(
+            &default,
+            &reranked,
+            "local_metadata_reranked",
+            "Local metadata reranker",
+        );
 
         assert_eq!(summary.query_family_contributions.len(), 1);
         let family = &summary.query_family_contributions[0];
@@ -10853,7 +10973,12 @@ mod tests {
             "src/reranker_extra.rs".to_string(),
         ];
 
-        let summary = reranker_contribution_summary(&default, &reranked);
+        let summary = reranker_contribution_summary(
+            &default,
+            &reranked,
+            "local_metadata_reranked",
+            "Local metadata reranker",
+        );
 
         let family = &summary.query_family_contributions[0];
         assert_eq!(family.family, "explicit_path");
@@ -10867,6 +10992,48 @@ mod tests {
             family.example_cases[0].paths,
             vec!["src/reranker_extra.rs", "src/reranker_only.rs"]
         );
+    }
+
+    #[test]
+    fn semantic_corroborated_contribution_reports_route_candidate_families() {
+        let mut default = empty_historical_eval_report("semantic-corroborated-family");
+        default.commits[0].query_trace =
+            Some(query_trace_with_facets(vec![QueryFacetKind::DomainPhrase]));
+        default.commits[0].file_hits_at_10 = vec!["src/shared.rs".to_string()];
+
+        let mut reranked = empty_historical_eval_report("semantic-corroborated-family");
+        reranked.commits[0].query_trace = default.commits[0].query_trace.clone();
+        reranked.commits[0].file_hits_at_10 = vec![
+            "src/shared.rs".to_string(),
+            "src/semantic_only.rs".to_string(),
+        ];
+
+        let summary = reranker_contribution_summary(
+            &default,
+            &reranked,
+            "semantic_corroborated_reranked",
+            "Semantic-corroborated reranker",
+        );
+        let diagnostics = semantic_corroborated_reranker_contribution_diagnostics(&summary);
+
+        assert_eq!(summary.query_family_contributions.len(), 1);
+        assert_eq!(
+            summary.query_family_contributions[0].family,
+            "domain_phrase"
+        );
+        assert_eq!(
+            summary.improved_cases[0].variant,
+            "semantic_corroborated_reranked"
+        );
+        assert!(summary.improved_cases[0]
+            .reason
+            .contains("Semantic-corroborated reranker"));
+        assert!(diagnostics
+            .iter()
+            .any(|diagnostic| diagnostic.code == "semantic_corroborated_reranker_clean_lift"));
+        assert!(diagnostics.iter().any(|diagnostic| {
+            diagnostic.code == "semantic_corroborated_query_family_route_candidate"
+        }));
     }
 
     #[test]
