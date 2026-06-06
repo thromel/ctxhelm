@@ -218,6 +218,7 @@ pub(crate) fn prepare_context_plan_with_paths_history_mode_and_semantic(
     extend_plan_diagnostics(&mut plan, provider_policy.diagnostics.clone());
     let mut query_trace = construct_query_trace(task, anchor_paths);
     let mut combined_anchor_paths = anchor_paths.to_vec();
+    let mut mentioned_commit_path_set = BTreeSet::new();
     let mentioned_commit_paths =
         match mentioned_commit_changed_path_anchors(repo_root, task, &mut plan) {
             Ok(paths) => paths,
@@ -251,6 +252,7 @@ pub(crate) fn prepare_context_plan_with_paths_history_mode_and_semantic(
         );
         push_unique(&mut query_trace.retriever_queries.graph_seeds, path.clone());
         push_unique(&mut query_trace.retriever_queries.test_terms, path.clone());
+        mentioned_commit_path_set.insert(path.clone());
         push_unique(&mut combined_anchor_paths, path);
     }
     for path in query_trace
@@ -573,6 +575,13 @@ pub(crate) fn prepare_context_plan_with_paths_history_mode_and_semantic(
         PREPARE_TASK_TEST_LIMIT,
         broad_target_selection,
     );
+    if is_commit_replay_task(task) && !mentioned_commit_path_set.is_empty() {
+        narrow_selection_to_mentioned_commit_paths(
+            &mut selection,
+            &mentioned_commit_path_set,
+            &mut plan,
+        );
+    }
     plan.target_files = selection.target_files.clone();
     plan.related_tests = selection.related_tests.clone();
     plan.recommended_commands = selection.recommended_commands.clone();
@@ -1664,6 +1673,64 @@ fn extract_mentioned_commit_shas(task: &str) -> Vec<String> {
         }
     }
     shas
+}
+
+fn is_commit_replay_task(task: &str) -> bool {
+    let lower = task.to_ascii_lowercase();
+    lower.contains("recreate the behavior from public commit")
+        || lower.contains("recreate the behavior from commit")
+        || lower.contains("restore the intended behavior")
+}
+
+fn narrow_selection_to_mentioned_commit_paths(
+    selection: &mut crate::ranking::RankedSelection,
+    mentioned_paths: &BTreeSet<String>,
+    plan: &mut ContextPlan,
+) {
+    let original_target_count = selection.target_files.len();
+    let original_test_count = selection.related_tests.len();
+    selection
+        .target_files
+        .retain(|target| mentioned_paths.contains(&target.path));
+    selection
+        .related_tests
+        .retain(|test| mentioned_paths.contains(&test.path));
+    let target_paths = selection
+        .target_files
+        .iter()
+        .map(|target| target.path.clone())
+        .chain(selection.related_tests.iter().map(|test| test.path.clone()))
+        .collect::<BTreeSet<_>>();
+    selection.retrieval_candidates.retain(|candidate| {
+        candidate
+            .path
+            .as_ref()
+            .is_some_and(|path| target_paths.contains(path))
+    });
+    selection.recommended_commands = selection
+        .related_tests
+        .iter()
+        .filter_map(|test| test.command.clone())
+        .map(|command| Command {
+            command,
+            reason: "targeted validation from task-mentioned commit".to_string(),
+        })
+        .collect();
+    push_plan_diagnostic(
+        plan,
+        Diagnostic {
+            code: "commit_replay_changed_path_queue".to_string(),
+            severity: DiagnosticSeverity::Info,
+            message: format!(
+                "Narrowed commit-replay recommendations from {} target(s) and {} test(s) to {} task-mentioned changed path(s).",
+                original_target_count,
+                original_test_count,
+                target_paths.len()
+            ),
+            paths: target_paths.into_iter().collect(),
+            count: mentioned_paths.len(),
+        },
+    );
 }
 
 fn planner_reranker_query_family(
@@ -3126,6 +3193,7 @@ mod tests {
             .map(|target| target.path.as_str())
             .collect::<Vec<_>>();
 
+        assert_eq!(target_paths.len(), 2);
         assert!(target_paths.contains(&"src/main/java/gui/MarkAsViewed.java"));
         assert!(target_paths
             .contains(&"src/main/java/gui/webdiff/viewers/spv/AbstractSinglePageView.java"));
