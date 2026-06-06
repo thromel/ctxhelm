@@ -531,6 +531,8 @@ pub struct RerankerContributionSummary {
     pub default_only_cases: Vec<SemanticPrecisionNamedCase>,
     #[serde(default)]
     pub query_family_contributions: Vec<RerankerQueryFamilyContribution>,
+    #[serde(default)]
+    pub path_family_contributions: Vec<RerankerPathFamilyContribution>,
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
@@ -549,6 +551,20 @@ pub struct RerankerQueryFamilyContribution {
     pub routing_recommendation: RerankerRoutingRecommendation,
     #[serde(default)]
     pub example_cases: Vec<SemanticPrecisionNamedCase>,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct RerankerPathFamilyContribution {
+    pub family: String,
+    pub reranker_only_target_hit_count: usize,
+    pub default_only_target_hit_count: usize,
+    pub target_hit_delta: i32,
+    pub routing_recommendation: RerankerRoutingRecommendation,
+    #[serde(default)]
+    pub example_reranker_only_paths: Vec<String>,
+    #[serde(default)]
+    pub example_default_only_paths: Vec<String>,
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
@@ -4474,6 +4490,8 @@ fn reranker_contribution_summary(
         .collect::<BTreeMap<_, _>>();
     let mut family_contributions: BTreeMap<String, RerankerQueryFamilyContribution> =
         BTreeMap::new();
+    let mut path_family_contributions: BTreeMap<String, RerankerPathFamilyContribution> =
+        BTreeMap::new();
     let mut summary = RerankerContributionSummary {
         evaluated_commits: reranked.commits.len(),
         protected_evidence_miss_rate_delta: reranked.protected_evidence.miss_rate_at_10
@@ -4507,6 +4525,28 @@ fn reranker_contribution_summary(
             .difference(&reranked_hits)
             .cloned()
             .collect::<BTreeSet<_>>();
+        for path in &reranker_only_hits {
+            let family = reranker_path_family(path);
+            let entry = path_family_contributions.entry(family.clone()).or_insert(
+                RerankerPathFamilyContribution {
+                    family,
+                    ..RerankerPathFamilyContribution::default()
+                },
+            );
+            entry.reranker_only_target_hit_count += 1;
+            push_unique_limited(&mut entry.example_reranker_only_paths, path, 5);
+        }
+        for path in &default_only_hits {
+            let family = reranker_path_family(path);
+            let entry = path_family_contributions.entry(family.clone()).or_insert(
+                RerankerPathFamilyContribution {
+                    family,
+                    ..RerankerPathFamilyContribution::default()
+                },
+            );
+            entry.default_only_target_hit_count += 1;
+            push_unique_limited(&mut entry.example_default_only_paths, path, 5);
+        }
 
         let family = reranker_query_family(default_commit);
         let family_entry =
@@ -4611,6 +4651,25 @@ fn reranker_contribution_summary(
             })
             .then_with(|| left.family.cmp(&right.family))
     });
+    summary.path_family_contributions = path_family_contributions
+        .into_values()
+        .map(|mut family| {
+            family.target_hit_delta = family.reranker_only_target_hit_count as i32
+                - family.default_only_target_hit_count as i32;
+            family.routing_recommendation = reranker_path_family_recommendation(&family);
+            family
+        })
+        .collect();
+    summary.path_family_contributions.sort_by(|left, right| {
+        right
+            .target_hit_delta
+            .cmp(&left.target_hit_delta)
+            .then_with(|| {
+                left.default_only_target_hit_count
+                    .cmp(&right.default_only_target_hit_count)
+            })
+            .then_with(|| left.family.cmp(&right.family))
+    });
     summary.improved_cases.truncate(10);
     summary.regressed_cases.truncate(10);
     summary.default_only_cases.truncate(10);
@@ -4697,6 +4756,77 @@ fn reranker_routing_recommendation(
         return RerankerRoutingRecommendation::HoldChurn;
     }
     RerankerRoutingRecommendation::HoldNeutral
+}
+
+fn reranker_path_family_recommendation(
+    family: &RerankerPathFamilyContribution,
+) -> RerankerRoutingRecommendation {
+    if family.default_only_target_hit_count > 0 && family.reranker_only_target_hit_count == 0 {
+        return RerankerRoutingRecommendation::BlockRegression;
+    }
+    if family.default_only_target_hit_count > 0 {
+        return RerankerRoutingRecommendation::HoldChurn;
+    }
+    if family.reranker_only_target_hit_count > 0 {
+        return RerankerRoutingRecommendation::RouteCandidate;
+    }
+    RerankerRoutingRecommendation::HoldNeutral
+}
+
+fn reranker_path_family(path: &str) -> String {
+    let path = path.trim_start_matches("./");
+    let lower = path.to_ascii_lowercase();
+    if lower.starts_with(".planning/") {
+        return "planning".to_string();
+    }
+    if lower.starts_with("docs/")
+        || lower.starts_with("documentation/")
+        || lower == "readme.md"
+        || lower.ends_with("/readme.md")
+    {
+        return "docs".to_string();
+    }
+    if lower.starts_with("scripts/") || lower.ends_with(".sh") {
+        return "scripts".to_string();
+    }
+    if lower.starts_with("docker/") || lower.contains("/dockerfile") || lower == "dockerfile" {
+        return "docker".to_string();
+    }
+    if lower.ends_with(".gradle")
+        || lower == "cargo.toml"
+        || lower == "package.json"
+        || lower == "pyproject.toml"
+        || lower.ends_with(".toml")
+        || lower.ends_with(".json")
+        || lower.ends_with(".yaml")
+        || lower.ends_with(".yml")
+        || lower.ends_with(".xml")
+    {
+        return "config".to_string();
+    }
+    if lower.contains("/src/test/") || lower.contains("/test/") || lower.contains("/tests/") {
+        return match lower.rsplit('.').next() {
+            Some("java") => "java_test".to_string(),
+            Some("py") => "python_test".to_string(),
+            Some("rs") => "rust_test".to_string(),
+            _ => "test".to_string(),
+        };
+    }
+    match lower.rsplit('.').next() {
+        Some("java") | Some("kt") | Some("kts") => "java_source".to_string(),
+        Some("py") => "python_source".to_string(),
+        Some("rs") => "rust_source".to_string(),
+        Some("ts") | Some("tsx") | Some("js") | Some("jsx") => "javascript_source".to_string(),
+        Some("md") => "docs".to_string(),
+        _ => "other".to_string(),
+    }
+}
+
+fn push_unique_limited(values: &mut Vec<String>, value: &str, limit: usize) {
+    if values.len() >= limit || values.iter().any(|existing| existing == value) {
+        return;
+    }
+    values.push(value.to_string());
 }
 
 fn reranker_contribution_diagnostics(summary: &RerankerContributionSummary) -> Vec<Diagnostic> {
@@ -4960,6 +5090,50 @@ fn semantic_corroborated_reranker_contribution_diagnostics(
                 .take(10)
                 .collect(),
             count: route_candidate_families.len(),
+        });
+    }
+    let path_route_candidates = summary
+        .path_family_contributions
+        .iter()
+        .filter(|family| {
+            family.routing_recommendation == RerankerRoutingRecommendation::RouteCandidate
+        })
+        .collect::<Vec<_>>();
+    if !path_route_candidates.is_empty() {
+        diagnostics.push(Diagnostic {
+            code: "semantic_corroborated_path_family_route_candidate".to_string(),
+            severity: DiagnosticSeverity::Info,
+            message: "Some path families show semantic-corroborated lift without default-only target churn; validate corpus-shape constraints before runtime exposure.".to_string(),
+            paths: path_route_candidates
+                .iter()
+                .flat_map(|family| family.example_reranker_only_paths.clone())
+                .take(10)
+                .collect(),
+            count: path_route_candidates.len(),
+        });
+    }
+    let blocked_path_families = summary
+        .path_family_contributions
+        .iter()
+        .filter(|family| {
+            matches!(
+                family.routing_recommendation,
+                RerankerRoutingRecommendation::BlockRegression
+                    | RerankerRoutingRecommendation::HoldChurn
+            )
+        })
+        .collect::<Vec<_>>();
+    if !blocked_path_families.is_empty() {
+        diagnostics.push(Diagnostic {
+            code: "semantic_corroborated_path_family_blocked".to_string(),
+            severity: DiagnosticSeverity::Warning,
+            message: "Some path families lose or churn default targets under semantic-corroborated reranking; exclude these shapes from routing experiments.".to_string(),
+            paths: blocked_path_families
+                .iter()
+                .flat_map(|family| family.example_default_only_paths.clone())
+                .take(10)
+                .collect(),
+            count: blocked_path_families.len(),
         });
     }
     diagnostics
@@ -11005,7 +11179,8 @@ mod tests {
         reranked.commits[0].query_trace = default.commits[0].query_trace.clone();
         reranked.commits[0].file_hits_at_10 = vec![
             "src/shared.rs".to_string(),
-            "src/semantic_only.rs".to_string(),
+            "src/main/java/org/example/SemanticOnly.java".to_string(),
+            "documentation/mcp.md".to_string(),
         ];
 
         let summary = reranker_contribution_summary(
@@ -11021,6 +11196,11 @@ mod tests {
             summary.query_family_contributions[0].family,
             "domain_phrase"
         );
+        assert!(summary.path_family_contributions.iter().any(|family| {
+            family.family == "java_source"
+                && family.routing_recommendation == RerankerRoutingRecommendation::RouteCandidate
+                && family.reranker_only_target_hit_count == 1
+        }));
         assert_eq!(
             summary.improved_cases[0].variant,
             "semantic_corroborated_reranked"
@@ -11034,6 +11214,41 @@ mod tests {
         assert!(diagnostics.iter().any(|diagnostic| {
             diagnostic.code == "semantic_corroborated_query_family_route_candidate"
         }));
+        assert!(diagnostics.iter().any(|diagnostic| {
+            diagnostic.code == "semantic_corroborated_path_family_route_candidate"
+        }));
+    }
+
+    #[test]
+    fn semantic_corroborated_contribution_reports_blocked_path_families() {
+        let mut default = empty_historical_eval_report("semantic-corroborated-path-block");
+        default.commits[0].query_trace =
+            Some(query_trace_with_facets(vec![QueryFacetKind::DomainPhrase]));
+        default.commits[0].file_hits_at_10 = vec![
+            "src/shared.rs".to_string(),
+            ".planning/STATE.md".to_string(),
+        ];
+
+        let mut reranked = empty_historical_eval_report("semantic-corroborated-path-block");
+        reranked.commits[0].query_trace = default.commits[0].query_trace.clone();
+        reranked.commits[0].file_hits_at_10 = vec!["src/shared.rs".to_string()];
+
+        let summary = reranker_contribution_summary(
+            &default,
+            &reranked,
+            "semantic_corroborated_reranked",
+            "Semantic-corroborated reranker",
+        );
+        let diagnostics = semantic_corroborated_reranker_contribution_diagnostics(&summary);
+
+        assert!(summary.path_family_contributions.iter().any(|family| {
+            family.family == "planning"
+                && family.routing_recommendation == RerankerRoutingRecommendation::BlockRegression
+                && family.default_only_target_hit_count == 1
+        }));
+        assert!(diagnostics
+            .iter()
+            .any(|diagnostic| diagnostic.code == "semantic_corroborated_path_family_blocked"));
     }
 
     #[test]

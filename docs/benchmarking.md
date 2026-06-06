@@ -660,6 +660,15 @@ churned default targets on ctxhelm, ReAgent, or VeriSchema. Future semantic
 fusion experiments need corpus-shape, path-role, or document/query construction
 evidence beyond query-family labels.
 
+`RerankerContributionSummary` also includes `pathFamilyContributions`. This is
+source-free path-shape accounting for reranker-only and default-only target
+movement. Phase 272 used it to show that RefactoringMiner's
+semantic-corroborated lift is concentrated in docs, Gradle config, Java source,
+and Java tests with no churn, while ctxhelm churns docs/planning/Rust source,
+ReAgent loses planning/scripts, and VeriSchema loses Python source. This rejects
+broad path-family routing and points remaining semantic R&D toward narrower
+corpus-shape constraints or VeriSchema-specific query/document construction.
+
 The same family rows also report support diagnostics for semantic-only files:
 `semanticOnlyTargetWithNonsemanticSupportCount`,
 `semanticOnlyTargetWithoutNonsemanticSupportCount`,
