@@ -54,10 +54,10 @@ pub use eval::{
     SemanticContributionSummary, SemanticMissedTargetGapFamily, SemanticPrecisionGateDecision,
     SemanticPrecisionGateRangeOptions, SemanticPrecisionGateReport, SemanticPrecisionNamedCase,
     SemanticPrecisionVariant, SemanticPrecisionVariantStatus, SemanticQueryMode,
-    SemanticRetentionSeparatorProfile, SemanticRetentionSeparatorTrainTestReport,
-    SignalAblationResult, SignalSaturationMetric, SupportedSemanticCandidateProfile,
-    SupportedSemanticCandidateProfileSummary, SupportedSemanticCandidateShapeSummary,
-    TokenRoiMetric,
+    SemanticRetentionSeparatorProfile, SemanticRetentionSeparatorThresholdSummary,
+    SemanticRetentionSeparatorTrainTestReport, SignalAblationResult, SignalSaturationMetric,
+    SupportedSemanticCandidateProfile, SupportedSemanticCandidateProfileSummary,
+    SupportedSemanticCandidateShapeSummary, TokenRoiMetric,
 };
 pub use graph::build_graph_neighborhood_report;
 pub use packs::{

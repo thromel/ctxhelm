@@ -7223,7 +7223,7 @@ fn render_retention_separator_train_test_report(
     let mut output = String::from("# ctxhelm Semantic Retention Separator Train/Test\n\n");
     output.push_str("This source-free report trains semantic retention-family eligibility on one revision range and applies it to dropped supported semantic candidates in a disjoint test range.\n\n");
     output.push_str(&format!(
-        "- Repo ID: `{}`\n- Eval range ID: `{}`\n- Train range: `{}`\n- Test range: `{}`\n- Train commits: `{}`\n- Test commits: `{}`\n- K: `{}`\n- Minimum support commits: `{}`\n- Train families: `{}`\n- Eligible families: `{}`\n- Train support histogram: `{}`\n- Test dropped profiles: `{}`\n- Train/test family overlap: `{}`\n- Train/test eligible family overlap: `{}`\n- Applied commits: `{}`\n- Applied files: `{}`\n- Recovered dropped targets: `{}`\n- Inserted non-targets: `{}`\n- Decision: `{}`\n- Runtime promotable: `{}`\n- Source text logged: `{}`\n- Privacy: local-only `{}`\n\n",
+        "- Repo ID: `{}`\n- Eval range ID: `{}`\n- Train range: `{}`\n- Test range: `{}`\n- Train commits: `{}`\n- Test commits: `{}`\n- K: `{}`\n- Minimum support commits: `{}`\n- Train families: `{}`\n- Eligible families: `{}`\n- Positive margin families: `{}` ({:.6})\n- Support-deficient clean families: `{}`\n- Churn-blocked supported families: `{}`\n- Train support histogram: `{}`\n- Test dropped profiles: `{}`\n- Train/test family overlap: `{}`\n- Train/test eligible family overlap: `{}`\n- Applied commits: `{}`\n- Applied files: `{}`\n- Recovered dropped targets: `{}`\n- Inserted non-targets: `{}`\n- Decision: `{}`\n- Runtime promotable: `{}`\n- Source text logged: `{}`\n- Privacy: local-only `{}`\n\n",
         report.repo_id,
         report.eval_range_id,
         report.train_eval_range_id,
@@ -7234,6 +7234,10 @@ fn render_retention_separator_train_test_report(
         report.minimum_support_commit_count,
         report.train_family_count,
         report.eligible_family_count,
+        report.positive_margin_family_count,
+        report.positive_margin_family_ratio,
+        report.support_deficient_clean_family_count,
+        report.churn_blocked_supported_family_count,
         render_usize_count_map(&report.train_support_histogram),
         report.test_dropped_profile_count,
         report.train_test_family_overlap_count,
@@ -7247,19 +7251,39 @@ fn render_retention_separator_train_test_report(
         report.source_text_logged,
         report.privacy_status.local_only
     ));
+    output.push_str("## Threshold Sweep\n\n");
+    if report.threshold_summaries.is_empty() {
+        output.push_str("- None.\n\n");
+    } else {
+        for threshold in report.threshold_summaries.iter().take(12) {
+            output.push_str(&format!(
+                "- support `>= {}` retainedNonTargets `<= {}` trainFamilies `{}` overlap `{}` appliedFiles `{}` recoveredTargets `{}` insertedNonTargets `{}` decision `{}`\n",
+                threshold.min_retained_target_commit_count,
+                threshold.max_retained_non_target_count,
+                threshold.train_family_count,
+                threshold.train_test_family_overlap_count,
+                threshold.applied_file_count,
+                threshold.recovered_dropped_target_count,
+                threshold.inserted_non_target_count,
+                threshold.decision
+            ));
+        }
+        output.push('\n');
+    }
     output.push_str("## Retention Families\n\n");
     if report.profiles.is_empty() {
         output.push_str("- None.\n");
     } else {
         for profile in &report.profiles {
             output.push_str(&format!(
-                "- `{}/{:?}/{}/{}` trainRetainedTargets `{}` trainRetainedNonTargets `{}` supportCommits `{}` testDroppedTargets `{}` testDroppedNonTargets `{}` eligible `{}` reason: {}\n",
+                "- `{}/{:?}/{}/{}` trainRetainedTargets `{}` trainRetainedNonTargets `{}` margin `{}` supportCommits `{}` testDroppedTargets `{}` testDroppedNonTargets `{}` eligible `{}` reason: {}\n",
                 profile.query_family,
                 profile.role,
                 profile.path_family,
                 profile.support_family,
                 profile.retained_target_count,
                 profile.retained_non_target_count,
+                profile.retention_margin,
                 profile.retained_target_commit_count,
                 profile.test_dropped_target_count,
                 profile.test_dropped_non_target_count,

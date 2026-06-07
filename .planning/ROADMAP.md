@@ -413,6 +413,15 @@ and VeriSchema find 117 train families and 377 dropped test profiles, but zero
 eligible families under the repeated retained-target and zero retained
 non-target bar. The result keeps semantic retention diagnostic-only.
 
+Phase 303 adds margin and threshold-sweep diagnostics to the same
+`retention-separator-train-test` report after Claude Code recommended checking
+whether Phase 302's empty strict result was a threshold artifact. The same
+four-repo proof has only 8 positive-margin families out of 117 (`0.068376`),
+below the `15%` continuation bar, and relaxed threshold rows recover targets
+only with much larger non-target insertion (`3` recovered versus `21` inserted
+at the best recovery row). This rejects another retention-separator relaxation
+and moves the next R&D step toward fresh agent outcome proof.
+
 Phase 196 reserves selected validation areas in broad context-area guidance and adds package-mirrored related-test affinity. The accepted release-binary proof promotes with selected-file/source/test/validation metrics unchanged while improving VeriSchema broad context-area recall from `0.5777778 -> 0.84444445` and next-read recovery from `16 -> 19` of `39` missed@10 files. A related-test-only intermediate proof was rejected because it did not move the product proof.
 
 Phase 197 adds source-free agent-evidence recovery accounting to context-area next-read summaries. The fresh release-binary proof promotes with selected-file/source/test/validation/broad-area metrics unchanged while showing VeriSchema has `29 / 39` missed@10 files recoverable through the full agent evidence bundle, compared with `19 / 39` through progressive next reads alone.

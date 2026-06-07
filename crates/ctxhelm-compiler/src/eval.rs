@@ -421,7 +421,7 @@ pub struct SemanticPrecisionGateRangeOptions {
 }
 
 const LEARNED_SEMANTIC_POLICY_SCHEMA_VERSION: u32 = 1;
-const SEMANTIC_RETENTION_SEPARATOR_SCHEMA_VERSION: u32 = 1;
+const SEMANTIC_RETENTION_SEPARATOR_SCHEMA_VERSION: u32 = 2;
 const LEARNED_SEMANTIC_POLICY_MIN_SUPPORT_COMMIT_COUNT: usize = 2;
 const SEMANTIC_NEXT_READ_APPEND_LIMIT: usize = 2;
 
@@ -613,6 +613,16 @@ pub struct SemanticRetentionSeparatorTrainTestReport {
     pub train_family_count: usize,
     pub eligible_family_count: usize,
     pub train_support_histogram: BTreeMap<usize, usize>,
+    #[serde(default)]
+    pub positive_margin_family_count: usize,
+    #[serde(default)]
+    pub positive_margin_family_ratio: f64,
+    #[serde(default)]
+    pub support_deficient_clean_family_count: usize,
+    #[serde(default)]
+    pub churn_blocked_supported_family_count: usize,
+    #[serde(default)]
+    pub threshold_summaries: Vec<SemanticRetentionSeparatorThresholdSummary>,
     pub test_dropped_profile_count: usize,
     pub train_test_family_overlap_count: usize,
     pub train_test_eligible_family_overlap_count: usize,
@@ -629,6 +639,20 @@ pub struct SemanticRetentionSeparatorTrainTestReport {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
+pub struct SemanticRetentionSeparatorThresholdSummary {
+    pub min_retained_target_commit_count: usize,
+    pub max_retained_non_target_count: usize,
+    pub train_family_count: usize,
+    pub train_test_family_overlap_count: usize,
+    pub applied_commit_count: usize,
+    pub applied_file_count: usize,
+    pub recovered_dropped_target_count: usize,
+    pub inserted_non_target_count: usize,
+    pub decision: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
 pub struct SemanticRetentionSeparatorProfile {
     pub query_family: String,
     pub role: FileRole,
@@ -637,6 +661,8 @@ pub struct SemanticRetentionSeparatorProfile {
     pub observed_commit_count: usize,
     pub retained_target_count: usize,
     pub retained_non_target_count: usize,
+    #[serde(default)]
+    pub retention_margin: i32,
     pub dropped_target_count: usize,
     pub dropped_non_target_count: usize,
     pub retained_target_commit_count: usize,
@@ -12918,6 +12944,12 @@ struct SemanticRetentionSeparatorAccumulator {
     example_test_dropped_non_target_paths: Vec<String>,
 }
 
+struct SemanticRetentionSeparatorTestDrop {
+    key: (String, String, String, String),
+    commit_sha: String,
+    is_target: bool,
+}
+
 fn supported_semantic_candidate_profile_summary(
     commits: &[HistoricalCommitEval],
 ) -> SupportedSemanticCandidateProfileSummary {
@@ -13299,6 +13331,7 @@ fn semantic_retention_separator_train_test_report(
     let mut recovered_dropped_target_count = 0;
     let mut inserted_non_target_count = 0;
     let mut test_dropped_profile_count = 0;
+    let mut test_drops = Vec::<SemanticRetentionSeparatorTestDrop>::new();
 
     for commit in &test.commits {
         let query_family = reranker_query_family(commit);
@@ -13322,6 +13355,11 @@ fn semantic_retention_separator_train_test_report(
             );
             test_family_keys.insert(key.clone());
             let is_target = target_files.contains(&profile.path);
+            test_drops.push(SemanticRetentionSeparatorTestDrop {
+                key: key.clone(),
+                commit_sha: commit.sha.clone(),
+                is_target,
+            });
             if let Some(entry) = profiles.get_mut(&key) {
                 if is_target {
                     entry.test_dropped_target_count += 1;
@@ -13359,6 +13397,35 @@ fn semantic_retention_separator_train_test_report(
             .entry(profile.retained_target_commit_shas.len())
             .or_insert(0) += 1;
     }
+    let positive_margin_family_count = profiles
+        .values()
+        .filter(|profile| semantic_retention_separator_margin(profile) > 0)
+        .count();
+    let positive_margin_family_ratio = if profiles.is_empty() {
+        0.0
+    } else {
+        positive_margin_family_count as f64 / profiles.len() as f64
+    };
+    let support_deficient_clean_family_count = profiles
+        .values()
+        .filter(|profile| {
+            profile.retained_target_count > 0
+                && profile.retained_non_target_count == 0
+                && profile.retained_target_commit_shas.len() < minimum_support_commit_count
+        })
+        .count();
+    let churn_blocked_supported_family_count = profiles
+        .values()
+        .filter(|profile| {
+            profile.retained_target_commit_shas.len() >= minimum_support_commit_count
+                && profile.retained_non_target_count > 0
+        })
+        .count();
+    let threshold_summaries = semantic_retention_separator_threshold_summaries(
+        &profiles,
+        &test_drops,
+        minimum_support_commit_count,
+    );
 
     let mut profile_summaries = profiles
         .into_values()
@@ -13371,6 +13438,7 @@ fn semantic_retention_separator_train_test_report(
                 &profile,
                 minimum_support_commit_count,
             );
+            let retention_margin = semantic_retention_separator_margin(&profile);
             SemanticRetentionSeparatorProfile {
                 query_family: profile.query_family,
                 role: profile.role,
@@ -13379,6 +13447,7 @@ fn semantic_retention_separator_train_test_report(
                 observed_commit_count: profile.observed_commit_shas.len(),
                 retained_target_count: profile.retained_target_count,
                 retained_non_target_count: profile.retained_non_target_count,
+                retention_margin,
                 dropped_target_count: profile.dropped_target_count,
                 dropped_non_target_count: profile.dropped_non_target_count,
                 retained_target_commit_count: profile.retained_target_commit_shas.len(),
@@ -13441,6 +13510,11 @@ fn semantic_retention_separator_train_test_report(
         train_family_count: train_family_keys.len(),
         eligible_family_count: eligible_keys.len(),
         train_support_histogram,
+        positive_margin_family_count,
+        positive_margin_family_ratio,
+        support_deficient_clean_family_count,
+        churn_blocked_supported_family_count,
+        threshold_summaries,
         test_dropped_profile_count,
         train_test_family_overlap_count,
         train_test_eligible_family_overlap_count,
@@ -13454,6 +13528,95 @@ fn semantic_retention_separator_train_test_report(
         source_text_logged: false,
         privacy_status: PrivacyStatus::local_only(),
     }
+}
+
+fn semantic_retention_separator_threshold_summaries(
+    profiles: &BTreeMap<(String, String, String, String), SemanticRetentionSeparatorAccumulator>,
+    test_drops: &[SemanticRetentionSeparatorTestDrop],
+    minimum_support_commit_count: usize,
+) -> Vec<SemanticRetentionSeparatorThresholdSummary> {
+    let max_support = profiles
+        .values()
+        .map(|profile| profile.retained_target_commit_shas.len())
+        .max()
+        .unwrap_or(0)
+        .max(minimum_support_commit_count.max(1));
+    let max_retained_non_targets = profiles
+        .values()
+        .map(|profile| profile.retained_non_target_count)
+        .max()
+        .unwrap_or(0)
+        .min(3);
+    let mut summaries = Vec::new();
+    for min_support in 1..=max_support {
+        for max_non_targets in 0..=max_retained_non_targets {
+            let train_keys = profiles
+                .iter()
+                .filter_map(|(key, profile)| {
+                    (profile.retained_target_count > 0
+                        && profile.retained_target_commit_shas.len() >= min_support
+                        && profile.retained_non_target_count <= max_non_targets)
+                        .then_some(key.clone())
+                })
+                .collect::<BTreeSet<_>>();
+            let mut overlap_keys = BTreeSet::new();
+            let mut applied_commit_shas = BTreeSet::new();
+            let mut applied_file_count = 0;
+            let mut recovered_dropped_target_count = 0;
+            let mut inserted_non_target_count = 0;
+            for test_drop in test_drops {
+                if !train_keys.contains(&test_drop.key) {
+                    continue;
+                }
+                overlap_keys.insert(test_drop.key.clone());
+                applied_commit_shas.insert(test_drop.commit_sha.clone());
+                applied_file_count += 1;
+                if test_drop.is_target {
+                    recovered_dropped_target_count += 1;
+                } else {
+                    inserted_non_target_count += 1;
+                }
+            }
+            summaries.push(SemanticRetentionSeparatorThresholdSummary {
+                min_retained_target_commit_count: min_support,
+                max_retained_non_target_count: max_non_targets,
+                train_family_count: train_keys.len(),
+                train_test_family_overlap_count: overlap_keys.len(),
+                applied_commit_count: applied_commit_shas.len(),
+                applied_file_count,
+                recovered_dropped_target_count,
+                inserted_non_target_count,
+                decision: semantic_retention_separator_train_test_decision(
+                    train_keys.len(),
+                    applied_file_count,
+                    recovered_dropped_target_count,
+                    inserted_non_target_count,
+                ),
+            });
+        }
+    }
+    summaries.sort_by(|left, right| {
+        right
+            .recovered_dropped_target_count
+            .cmp(&left.recovered_dropped_target_count)
+            .then_with(|| {
+                left.inserted_non_target_count
+                    .cmp(&right.inserted_non_target_count)
+            })
+            .then_with(|| {
+                left.min_retained_target_commit_count
+                    .cmp(&right.min_retained_target_commit_count)
+            })
+            .then_with(|| {
+                left.max_retained_non_target_count
+                    .cmp(&right.max_retained_non_target_count)
+            })
+    });
+    summaries
+}
+
+fn semantic_retention_separator_margin(profile: &SemanticRetentionSeparatorAccumulator) -> i32 {
+    profile.retained_target_commit_shas.len() as i32 - profile.retained_non_target_count as i32
 }
 
 fn semantic_retention_separator_profile_is_eligible(
@@ -15424,7 +15587,17 @@ mod tests {
         assert_eq!(report.test_commit_count, 1);
         assert_eq!(report.train_family_count, 1);
         assert_eq!(report.eligible_family_count, 1);
+        assert_eq!(report.positive_margin_family_count, 1);
+        assert_eq!(report.positive_margin_family_ratio, 1.0);
+        assert_eq!(report.support_deficient_clean_family_count, 0);
+        assert_eq!(report.churn_blocked_supported_family_count, 0);
         assert_eq!(report.train_support_histogram.get(&2), Some(&1));
+        assert!(report.threshold_summaries.iter().any(|threshold| {
+            threshold.min_retained_target_commit_count == 2
+                && threshold.max_retained_non_target_count == 0
+                && threshold.recovered_dropped_target_count == 1
+                && threshold.inserted_non_target_count == 0
+        }));
         assert_eq!(report.test_dropped_profile_count, 1);
         assert_eq!(report.train_test_family_overlap_count, 1);
         assert_eq!(report.train_test_eligible_family_overlap_count, 1);
@@ -15440,6 +15613,7 @@ mod tests {
         assert!(!report.source_text_logged);
         assert!(report.privacy_status.local_only);
         assert_eq!(report.profiles[0].retained_target_commit_count, 2);
+        assert_eq!(report.profiles[0].retention_margin, 2);
         assert_eq!(report.profiles[0].test_dropped_target_count, 1);
         assert!(report.profiles[0].eligible);
     }

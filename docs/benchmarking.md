@@ -707,6 +707,14 @@ ctxhelm, ReAgent, RefactoringMiner, and VeriSchema finds 117 train families,
 377 dropped test profiles, zero eligible families, and zero applications, so
 semantic retention remains diagnostic-only.
 
+Phase 303 adds margin and threshold-sweep fields to the same report. Claude
+Code recommended checking whether the zero-eligible result was a threshold
+artifact before spending more effort on separator variants. The same four-repo
+proof has only 8 positive-margin families out of 117 (`0.068376`), below the
+`15%` continuation bar, and relaxed rows recover targets only with much larger
+non-target insertion. This rejects further retention-separator relaxation as
+the next semantic R&D step.
+
 `local_hash` remains the deterministic scaffold. `local_fastembed` is the
 production-local backend and requires a build compiled with the
 `local-embeddings` feature.
@@ -997,6 +1005,14 @@ retention-family eligibility on one revision range and apply it to dropped
 supported semantic candidates in a disjoint range. Phase 302's four-repo
 recent-to-older proof has zero eligible families, so the command is a
 diagnostic audit surface, not a promotion path.
+
+The report also includes Phase 303 margin diagnostics:
+`positiveMarginFamilyCount`, `positiveMarginFamilyRatio`,
+`supportDeficientCleanFamilyCount`, `churnBlockedSupportedFamilyCount`,
+`thresholdSummaries`, and per-profile `retentionMargin`. Use these fields to
+decide whether strict separator failures are threshold artifacts. In the
+current four-repo proof, they show structural overlap rather than a safe
+relaxation path.
 
 Use `ctxhelm eval learned-policy-cross-repo` to aggregate saved
 `learned-policy-train-test` JSON reports across repositories without rerunning
