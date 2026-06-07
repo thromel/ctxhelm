@@ -645,6 +645,12 @@ next-read policy: on the targeted VeriSchema older-range proof it appended one
 path, `tests/core/test_state_validator.py`, and that path was a non-target
 (`semantic_next_read_noise_hold`).
 
+Phase 295 also rejects the documented `AllMiniLML12V2Q` and `AllMiniLML12V2`
+model branch as a simple swap for this slice. Both models emit
+`semantic_contribution_no_candidates` across all `19` evaluated VeriSchema
+commits under `candidate-path-hints`, produce no semantic candidate target
+hits, and leave Recall@10 unchanged.
+
 `local_hash` remains the deterministic scaffold. `local_fastembed` is the
 production-local backend and requires a build compiled with the
 `local-embeddings` feature.

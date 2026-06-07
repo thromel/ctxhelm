@@ -341,6 +341,16 @@ and it is a non-target (`tests/core/test_state_validator.py`), so the gate emits
 the current setup while keeping the source-free diagnostic for future model or
 document experiments.
 
+Phase 295 tests the documented `AllMiniLML12V2Q` and `AllMiniLML12V2`
+local-fastembed models as simple alternates on the same VeriSchema older-range
+candidate-path proof. Both variants are rejected: each emits
+`semantic_contribution_no_candidates` across all `19` commits, produces zero
+semantic candidate target hits, leaves local semantic Recall@10 unchanged at
+`0.29122806`, keeps the known semantic-corroborated `targetHitDelta = -1`, and
+leaves tail-slot reranking neutral. The remaining local model path should not
+spend more effort on MiniLM12 as a simple swap; corrected Jina remains the
+useful diagnostic backend, not default policy.
+
 Phase 196 reserves selected validation areas in broad context-area guidance and adds package-mirrored related-test affinity. The accepted release-binary proof promotes with selected-file/source/test/validation metrics unchanged while improving VeriSchema broad context-area recall from `0.5777778 -> 0.84444445` and next-read recovery from `16 -> 19` of `39` missed@10 files. A related-test-only intermediate proof was rejected because it did not move the product proof.
 
 Phase 197 adds source-free agent-evidence recovery accounting to context-area next-read summaries. The fresh release-binary proof promotes with selected-file/source/test/validation/broad-area metrics unchanged while showing VeriSchema has `29 / 39` missed@10 files recoverable through the full agent evidence bundle, compared with `19 / 39` through progressive next reads alone.
