@@ -41,8 +41,9 @@ Current proof snapshot:
   coverage versus baseline `0.7083333333333333`, with no evidence misses,
   evidence-only targets, under-read targets, forbidden commands, client
   failures, or rate limits.
-- Claude Code `2.1.163` is currently rate-limited in availability preflight;
-  older Claude workflow proof remains historical evidence only.
+- Claude Code `2.1.163` is currently rate-limited in source-free availability
+  and in the preflight-disabled four-task paired suite; older Claude workflow
+  proof remains historical evidence only.
 
 ## Product Surface
 
