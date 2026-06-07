@@ -380,6 +380,8 @@ pub struct SemanticPrecisionGateReport {
     #[serde(default)]
     pub supported_semantic_candidate_profile_summary: SupportedSemanticCandidateProfileSummary,
     #[serde(default)]
+    pub semantic_candidate_retention_summary: SemanticCandidateRetentionSummary,
+    #[serde(default)]
     pub reranker_contribution: RerankerContributionSummary,
     #[serde(default)]
     pub routed_reranker_contribution: RerankerContributionSummary,
@@ -1370,6 +1372,8 @@ pub struct HistoricalEvalReport {
     #[serde(default)]
     pub supported_semantic_candidate_profile_summary: SupportedSemanticCandidateProfileSummary,
     #[serde(default)]
+    pub semantic_candidate_retention_summary: SemanticCandidateRetentionSummary,
+    #[serde(default)]
     pub memory_reuse_summary: MemoryReuseSummary,
     #[serde(default)]
     pub recommended_research_actions: Vec<RecommendedResearchAction>,
@@ -1517,6 +1521,45 @@ pub struct SupportedSemanticCandidateShapeSummary {
     pub example_non_target_paths: Vec<String>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct SemanticCandidateRetentionSummary {
+    pub top_k: usize,
+    pub profile_count: usize,
+    pub retained_count: usize,
+    pub dropped_count: usize,
+    pub retained_target_count: usize,
+    pub dropped_target_count: usize,
+    pub retained_non_target_count: usize,
+    pub dropped_non_target_count: usize,
+    pub target_retention_rate: f32,
+    pub non_target_drop_rate: f32,
+    pub recoverable_dropped_target_family_count: usize,
+    pub source_text_logged: bool,
+    pub families: Vec<SemanticCandidateRetentionFamilySummary>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct SemanticCandidateRetentionFamilySummary {
+    pub query_family: String,
+    pub role: FileRole,
+    pub path_family: String,
+    pub support_family: String,
+    pub profile_count: usize,
+    pub retained_target_count: usize,
+    pub dropped_target_count: usize,
+    pub retained_non_target_count: usize,
+    pub dropped_non_target_count: usize,
+    pub target_retention_rate: f32,
+    pub non_target_drop_rate: f32,
+    pub thin_cell: bool,
+    pub example_retained_target_paths: Vec<String>,
+    pub example_dropped_target_paths: Vec<String>,
+    pub example_retained_non_target_paths: Vec<String>,
+    pub example_dropped_non_target_paths: Vec<String>,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct MemoryReuseSummary {
@@ -1561,6 +1604,17 @@ pub struct SupportedSemanticCandidateProfile {
     pub context_area: String,
     pub support_family: String,
     pub signals: Vec<RetrievalSignalKind>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct SemanticCandidateRetentionProfile {
+    pub path: String,
+    pub role: FileRole,
+    pub context_area: String,
+    pub support_family: String,
+    pub signals: Vec<RetrievalSignalKind>,
+    pub selected_at_10: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -1900,6 +1954,8 @@ pub struct HistoricalCommitEval {
     pub candidate_missed_file_profiles_at_10: Vec<CandidateMissedFileProfile>,
     #[serde(default)]
     pub supported_semantic_candidate_profiles_at_10: Vec<SupportedSemanticCandidateProfile>,
+    #[serde(default)]
+    pub semantic_candidate_retention_profiles_at_10: Vec<SemanticCandidateRetentionProfile>,
     pub source_files_changed: usize,
     pub source_hits_at_5: usize,
     pub source_hits_at_10: usize,
@@ -4170,6 +4226,7 @@ pub fn semantic_precision_gate_report_with_provider_and_range_options(
         supported_semantic_candidate_profile_summary: semantic
             .supported_semantic_candidate_profile_summary
             .clone(),
+        semantic_candidate_retention_summary: semantic.semantic_candidate_retention_summary.clone(),
         reranker_contribution,
         routed_reranker_contribution,
         semantic_corroborated_reranker_contribution,
@@ -6378,6 +6435,8 @@ fn refresh_historical_report_ranking_metrics(report: &mut HistoricalEvalReport) 
     report.protected_evidence = protected_evidence_summary(&report.commits);
     report.supported_semantic_candidate_profile_summary =
         supported_semantic_candidate_profile_summary(&report.commits);
+    report.semantic_candidate_retention_summary =
+        semantic_candidate_retention_summary(&report.commits, k);
     report.top_missing_files =
         top_missing_files(&report.commits, &roles_by_path_from_report(report), 10);
 }
@@ -9078,6 +9137,8 @@ pub fn evaluate_historical_commits(
     let candidate_coverage_summary = candidate_coverage_summary(&commits);
     let supported_semantic_candidate_profile_summary =
         supported_semantic_candidate_profile_summary(&commits);
+    let semantic_candidate_retention_summary =
+        semantic_candidate_retention_summary(&commits, ranking_budget);
     let memory_reuse_summary = memory_reuse_summary(&commits);
     let runtime = historical_eval_runtime_summary(
         &commits,
@@ -9118,6 +9179,7 @@ pub fn evaluate_historical_commits(
         context_area_next_read_summary,
         candidate_coverage_summary,
         supported_semantic_candidate_profile_summary,
+        semantic_candidate_retention_summary,
         memory_reuse_summary,
         recommended_research_actions: Vec::new(),
         file_recall_at_5,
@@ -9711,6 +9773,8 @@ fn evaluate_historical_commit_sample(
         candidate_missed_file_profiles(&missing_files_at_10, &plan, &candidate_roles_by_path);
     let supported_semantic_candidate_profiles_at_10 =
         supported_semantic_candidate_profiles(&recommended_context_files, &plan, 10, 20);
+    let semantic_candidate_retention_profiles_at_10 =
+        semantic_candidate_retention_profiles(&recommended_context_files, &plan, 10, 40);
     let ablation_rankings = ablation_signals()
         .into_iter()
         .map(|signal| {
@@ -9800,6 +9864,7 @@ fn evaluate_historical_commit_sample(
             candidate_missed_files_at_10,
             candidate_missed_file_profiles_at_10,
             supported_semantic_candidate_profiles_at_10,
+            semantic_candidate_retention_profiles_at_10,
             source_files_changed: source_changed_files.len(),
             source_hits_at_5,
             source_hits_at_10,
@@ -11823,6 +11888,68 @@ fn supported_semantic_candidate_profiles(
         .collect()
 }
 
+fn semantic_candidate_retention_profiles(
+    selected_files: &[String],
+    plan: &ContextPlan,
+    selected_limit: usize,
+    profile_limit: usize,
+) -> Vec<SemanticCandidateRetentionProfile> {
+    let selected = selected_files
+        .iter()
+        .take(selected_limit)
+        .cloned()
+        .collect::<BTreeSet<_>>();
+    let mut profiles = plan
+        .retrieval_candidates
+        .iter()
+        .filter_map(|candidate| {
+            let path = candidate.path.as_ref()?;
+            let signals = candidate_signals(candidate);
+            if !signals
+                .iter()
+                .any(|signal| signal == &RetrievalSignalKind::Semantic)
+            {
+                return None;
+            }
+            let support_signals = signals
+                .iter()
+                .filter(|signal| signal != &&RetrievalSignalKind::Semantic)
+                .cloned()
+                .collect::<Vec<_>>();
+            if support_signals.is_empty() {
+                return None;
+            }
+            Some((
+                selected.contains(path),
+                path.clone(),
+                candidate.confidence,
+                SemanticCandidateRetentionProfile {
+                    path: path.clone(),
+                    role: candidate.role.clone().unwrap_or(FileRole::Unknown),
+                    context_area: context_area_for_path(path),
+                    support_family: signal_family_code(&support_signals),
+                    signals,
+                    selected_at_10: selected.contains(path),
+                },
+            ))
+        })
+        .collect::<Vec<_>>();
+    profiles.sort_by(
+        |(left_selected, left_path, left_score, _),
+         (right_selected, right_path, right_score, _)| {
+            right_selected
+                .cmp(left_selected)
+                .then_with(|| right_score.total_cmp(left_score))
+                .then_with(|| left_path.cmp(right_path))
+        },
+    );
+    profiles
+        .into_iter()
+        .map(|(_, _, _, profile)| profile)
+        .take(profile_limit)
+        .collect()
+}
+
 fn candidate_signals(candidate: &RetrievalCandidate) -> Vec<RetrievalSignalKind> {
     let mut signals = Vec::new();
     for signal in candidate
@@ -12641,6 +12768,21 @@ struct SupportedSemanticCandidateShapeAccumulator {
     example_non_target_paths: Vec<String>,
 }
 
+struct SemanticCandidateRetentionFamilyAccumulator {
+    query_family: String,
+    role: FileRole,
+    path_family: String,
+    support_family: String,
+    retained_target_count: usize,
+    dropped_target_count: usize,
+    retained_non_target_count: usize,
+    dropped_non_target_count: usize,
+    example_retained_target_paths: Vec<String>,
+    example_dropped_target_paths: Vec<String>,
+    example_retained_non_target_paths: Vec<String>,
+    example_dropped_non_target_paths: Vec<String>,
+}
+
 fn supported_semantic_candidate_profile_summary(
     commits: &[HistoricalCommitEval],
 ) -> SupportedSemanticCandidateProfileSummary {
@@ -12761,6 +12903,177 @@ fn supported_semantic_candidate_profile_summary(
     });
     shape_summaries.truncate(50);
     summary.shapes = shape_summaries;
+    summary
+}
+
+fn semantic_candidate_retention_summary(
+    commits: &[HistoricalCommitEval],
+    top_k: usize,
+) -> SemanticCandidateRetentionSummary {
+    let mut summary = SemanticCandidateRetentionSummary {
+        top_k,
+        source_text_logged: false,
+        ..SemanticCandidateRetentionSummary::default()
+    };
+    let mut families = BTreeMap::<
+        (String, String, String, String),
+        SemanticCandidateRetentionFamilyAccumulator,
+    >::new();
+
+    for commit in commits {
+        let query_family = reranker_query_family(commit);
+        let target_files = commit
+            .retrieval_target_files
+            .iter()
+            .cloned()
+            .collect::<BTreeSet<_>>();
+
+        for profile in &commit.semantic_candidate_retention_profiles_at_10 {
+            summary.profile_count += 1;
+            if profile.selected_at_10 {
+                summary.retained_count += 1;
+            } else {
+                summary.dropped_count += 1;
+            }
+
+            let is_target = target_files.contains(&profile.path);
+            match (profile.selected_at_10, is_target) {
+                (true, true) => summary.retained_target_count += 1,
+                (false, true) => summary.dropped_target_count += 1,
+                (true, false) => summary.retained_non_target_count += 1,
+                (false, false) => summary.dropped_non_target_count += 1,
+            }
+
+            let path_family = reranker_path_family(&profile.path);
+            let key = (
+                query_family.clone(),
+                file_role_label(&profile.role).to_string(),
+                path_family.clone(),
+                profile.support_family.clone(),
+            );
+            let family = families.entry(key).or_insert_with(|| {
+                SemanticCandidateRetentionFamilyAccumulator {
+                    query_family: query_family.clone(),
+                    role: profile.role.clone(),
+                    path_family,
+                    support_family: profile.support_family.clone(),
+                    retained_target_count: 0,
+                    dropped_target_count: 0,
+                    retained_non_target_count: 0,
+                    dropped_non_target_count: 0,
+                    example_retained_target_paths: Vec::new(),
+                    example_dropped_target_paths: Vec::new(),
+                    example_retained_non_target_paths: Vec::new(),
+                    example_dropped_non_target_paths: Vec::new(),
+                }
+            });
+            match (profile.selected_at_10, is_target) {
+                (true, true) => {
+                    family.retained_target_count += 1;
+                    push_limited_example(
+                        &mut family.example_retained_target_paths,
+                        &profile.path,
+                        3,
+                    );
+                }
+                (false, true) => {
+                    family.dropped_target_count += 1;
+                    push_limited_example(
+                        &mut family.example_dropped_target_paths,
+                        &profile.path,
+                        3,
+                    );
+                }
+                (true, false) => {
+                    family.retained_non_target_count += 1;
+                    push_limited_example(
+                        &mut family.example_retained_non_target_paths,
+                        &profile.path,
+                        3,
+                    );
+                }
+                (false, false) => {
+                    family.dropped_non_target_count += 1;
+                    push_limited_example(
+                        &mut family.example_dropped_non_target_paths,
+                        &profile.path,
+                        3,
+                    );
+                }
+            }
+        }
+    }
+
+    let target_opportunity = summary.retained_target_count + summary.dropped_target_count;
+    if target_opportunity > 0 {
+        summary.target_retention_rate =
+            summary.retained_target_count as f32 / target_opportunity as f32;
+    }
+    let non_target_opportunity =
+        summary.retained_non_target_count + summary.dropped_non_target_count;
+    if non_target_opportunity > 0 {
+        summary.non_target_drop_rate =
+            summary.dropped_non_target_count as f32 / non_target_opportunity as f32;
+    }
+
+    let mut family_summaries = families
+        .into_values()
+        .map(|family| {
+            let profile_count = family.retained_target_count
+                + family.dropped_target_count
+                + family.retained_non_target_count
+                + family.dropped_non_target_count;
+            let target_opportunity = family.retained_target_count + family.dropped_target_count;
+            let target_retention_rate = if target_opportunity > 0 {
+                family.retained_target_count as f32 / target_opportunity as f32
+            } else {
+                0.0
+            };
+            let non_target_opportunity =
+                family.retained_non_target_count + family.dropped_non_target_count;
+            let non_target_drop_rate = if non_target_opportunity > 0 {
+                family.dropped_non_target_count as f32 / non_target_opportunity as f32
+            } else {
+                0.0
+            };
+            SemanticCandidateRetentionFamilySummary {
+                query_family: family.query_family,
+                role: family.role,
+                path_family: family.path_family,
+                support_family: family.support_family,
+                profile_count,
+                retained_target_count: family.retained_target_count,
+                dropped_target_count: family.dropped_target_count,
+                retained_non_target_count: family.retained_non_target_count,
+                dropped_non_target_count: family.dropped_non_target_count,
+                target_retention_rate,
+                non_target_drop_rate,
+                thin_cell: profile_count < 3,
+                example_retained_target_paths: family.example_retained_target_paths,
+                example_dropped_target_paths: family.example_dropped_target_paths,
+                example_retained_non_target_paths: family.example_retained_non_target_paths,
+                example_dropped_non_target_paths: family.example_dropped_non_target_paths,
+            }
+        })
+        .collect::<Vec<_>>();
+
+    summary.recoverable_dropped_target_family_count = family_summaries
+        .iter()
+        .filter(|family| family.dropped_target_count > 0 && family.non_target_drop_rate >= 0.5)
+        .count();
+    family_summaries.sort_by(|left, right| {
+        right
+            .dropped_target_count
+            .cmp(&left.dropped_target_count)
+            .then_with(|| right.retained_target_count.cmp(&left.retained_target_count))
+            .then_with(|| right.profile_count.cmp(&left.profile_count))
+            .then_with(|| left.query_family.cmp(&right.query_family))
+            .then_with(|| file_role_order(&left.role).cmp(&file_role_order(&right.role)))
+            .then_with(|| left.path_family.cmp(&right.path_family))
+            .then_with(|| left.support_family.cmp(&right.support_family))
+    });
+    family_summaries.truncate(50);
+    summary.families = family_summaries;
     summary
 }
 
@@ -14518,6 +14831,96 @@ mod tests {
     }
 
     #[test]
+    fn semantic_candidate_retention_summary_counts_retained_and_dropped_cells() {
+        let mut report = empty_historical_eval_report("semantic-retention-summary");
+        report.commits[0].sha = "retention-a".to_string();
+        report.commits[0].query_trace = Some(query_trace_with_facets(vec![QueryFacetKind::Symbol]));
+        report.commits[0].retrieval_target_files =
+            vec!["src/retained.rs".to_string(), "src/dropped.rs".to_string()];
+        report.commits[0].semantic_candidate_retention_profiles_at_10 = vec![
+            SemanticCandidateRetentionProfile {
+                path: "src/retained.rs".to_string(),
+                role: FileRole::Source,
+                context_area: "src".to_string(),
+                support_family: "dependency_co_change".to_string(),
+                signals: vec![
+                    RetrievalSignalKind::Semantic,
+                    RetrievalSignalKind::Dependency,
+                    RetrievalSignalKind::CoChange,
+                ],
+                selected_at_10: true,
+            },
+            SemanticCandidateRetentionProfile {
+                path: "src/dropped.rs".to_string(),
+                role: FileRole::Source,
+                context_area: "src".to_string(),
+                support_family: "dependency_co_change".to_string(),
+                signals: vec![
+                    RetrievalSignalKind::Semantic,
+                    RetrievalSignalKind::Dependency,
+                    RetrievalSignalKind::CoChange,
+                ],
+                selected_at_10: false,
+            },
+            SemanticCandidateRetentionProfile {
+                path: "src/noise.rs".to_string(),
+                role: FileRole::Source,
+                context_area: "src".to_string(),
+                support_family: "dependency_co_change".to_string(),
+                signals: vec![
+                    RetrievalSignalKind::Semantic,
+                    RetrievalSignalKind::Dependency,
+                    RetrievalSignalKind::CoChange,
+                ],
+                selected_at_10: true,
+            },
+            SemanticCandidateRetentionProfile {
+                path: "src/unused.rs".to_string(),
+                role: FileRole::Source,
+                context_area: "src".to_string(),
+                support_family: "dependency_co_change".to_string(),
+                signals: vec![
+                    RetrievalSignalKind::Semantic,
+                    RetrievalSignalKind::Dependency,
+                    RetrievalSignalKind::CoChange,
+                ],
+                selected_at_10: false,
+            },
+        ];
+
+        let summary = semantic_candidate_retention_summary(&report.commits, 10);
+
+        assert_eq!(summary.top_k, 10);
+        assert_eq!(summary.profile_count, 4);
+        assert_eq!(summary.retained_count, 2);
+        assert_eq!(summary.dropped_count, 2);
+        assert_eq!(summary.retained_target_count, 1);
+        assert_eq!(summary.dropped_target_count, 1);
+        assert_eq!(summary.retained_non_target_count, 1);
+        assert_eq!(summary.dropped_non_target_count, 1);
+        assert_eq!(summary.target_retention_rate, 0.5);
+        assert_eq!(summary.non_target_drop_rate, 0.5);
+        assert_eq!(summary.recoverable_dropped_target_family_count, 1);
+        assert!(!summary.source_text_logged);
+
+        let family = &summary.families[0];
+        assert_eq!(family.query_family, "symbol_identifier");
+        assert_eq!(family.role, FileRole::Source);
+        assert_eq!(family.path_family, "rust_source");
+        assert_eq!(family.support_family, "dependency_co_change");
+        assert_eq!(family.profile_count, 4);
+        assert_eq!(family.retained_target_count, 1);
+        assert_eq!(family.dropped_target_count, 1);
+        assert_eq!(family.retained_non_target_count, 1);
+        assert_eq!(family.dropped_non_target_count, 1);
+        assert!(!family.thin_cell);
+        assert_eq!(
+            family.example_dropped_target_paths,
+            vec!["src/dropped.rs".to_string()]
+        );
+    }
+
+    #[test]
     fn support_profile_routed_semantic_only_inserts_clean_profiles() {
         let mut default = empty_historical_eval_report("support-route");
         let default_commit = &mut default.commits[0];
@@ -15758,6 +16161,7 @@ mod tests {
             semantic_next_read_contribution: SemanticNextReadContributionSummary::default(),
             supported_semantic_candidate_profile_summary:
                 SupportedSemanticCandidateProfileSummary::default(),
+            semantic_candidate_retention_summary: SemanticCandidateRetentionSummary::default(),
             reranker_contribution: RerankerContributionSummary::default(),
             routed_reranker_contribution: RerankerContributionSummary::default(),
             semantic_corroborated_reranker_contribution: RerankerContributionSummary::default(),
@@ -16470,6 +16874,7 @@ mod tests {
             candidate_missed_files_at_10: Vec::new(),
             candidate_missed_file_profiles_at_10: Vec::new(),
             supported_semantic_candidate_profiles_at_10: Vec::new(),
+            semantic_candidate_retention_profiles_at_10: Vec::new(),
             source_files_changed: 0,
             source_hits_at_5: 0,
             source_hits_at_10: 0,
@@ -17641,6 +18046,7 @@ mod tests {
                 },
             ],
             supported_semantic_candidate_profiles_at_10: Vec::new(),
+            semantic_candidate_retention_profiles_at_10: Vec::new(),
             source_files_changed: 4,
             source_hits_at_5: 1,
             source_hits_at_10: 1,
@@ -17824,6 +18230,7 @@ mod tests {
                 },
             ],
             supported_semantic_candidate_profiles_at_10: Vec::new(),
+            semantic_candidate_retention_profiles_at_10: Vec::new(),
             source_files_changed: 2,
             source_hits_at_5: 0,
             source_hits_at_10: 0,
@@ -18146,6 +18553,7 @@ mod tests {
             candidate_coverage_summary: CandidateCoverageSummary::default(),
             supported_semantic_candidate_profile_summary:
                 SupportedSemanticCandidateProfileSummary::default(),
+            semantic_candidate_retention_summary: SemanticCandidateRetentionSummary::default(),
             memory_reuse_summary: MemoryReuseSummary::default(),
             recommended_research_actions: Vec::new(),
             file_recall_at_5: 0.0,
@@ -18190,6 +18598,7 @@ mod tests {
                 candidate_missed_files_at_10: Vec::new(),
                 candidate_missed_file_profiles_at_10: Vec::new(),
                 supported_semantic_candidate_profiles_at_10: Vec::new(),
+                semantic_candidate_retention_profiles_at_10: Vec::new(),
                 source_files_changed: 0,
                 source_hits_at_5: 0,
                 source_hits_at_10: 0,

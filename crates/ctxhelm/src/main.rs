@@ -6534,6 +6534,9 @@ fn render_historical_eval_report(report: &HistoricalEvalReport) -> String {
     output.push_str(&render_supported_semantic_candidate_profile_summary(
         &report.supported_semantic_candidate_profile_summary,
     ));
+    output.push_str(&render_semantic_candidate_retention_summary(
+        &report.semantic_candidate_retention_summary,
+    ));
     output.push_str(&render_memory_reuse_summary(&report.memory_reuse_summary));
     output.push_str(&render_compiler_research_actions(
         &report.recommended_research_actions,
@@ -6913,6 +6916,56 @@ fn render_supported_semantic_candidate_profile_summary(
             .join("; ");
         output.push_str(&format!(
             "- Top supported semantic candidate shapes: `{shapes}`\n"
+        ));
+    }
+    output.push('\n');
+    output
+}
+
+fn render_semantic_candidate_retention_summary(
+    summary: &ctxhelm_compiler::SemanticCandidateRetentionSummary,
+) -> String {
+    if summary.profile_count == 0 {
+        return String::new();
+    }
+    let mut output = format!(
+        "- Semantic candidate retention@{}: profiles `{}`, retained `{}`, dropped `{}`\n- Semantic candidate retention targets: retained `{}`, dropped `{}`, retention rate `{:.2}`\n- Semantic candidate retention non-targets: retained `{}`, dropped `{}`, drop rate `{:.2}`\n- Semantic candidate recoverable dropped-target families: `{}`\n- Semantic candidate retention source-free: `{}`\n",
+        summary.top_k,
+        summary.profile_count,
+        summary.retained_count,
+        summary.dropped_count,
+        summary.retained_target_count,
+        summary.dropped_target_count,
+        summary.target_retention_rate,
+        summary.retained_non_target_count,
+        summary.dropped_non_target_count,
+        summary.non_target_drop_rate,
+        summary.recoverable_dropped_target_family_count,
+        !summary.source_text_logged
+    );
+    if !summary.families.is_empty() {
+        let families = summary
+            .families
+            .iter()
+            .take(5)
+            .map(|family| {
+                format!(
+                    "{}:{:?}:{}:{} rt {} dt {} rn {} dn {} thin {}",
+                    family.query_family,
+                    family.role,
+                    family.path_family,
+                    family.support_family,
+                    family.retained_target_count,
+                    family.dropped_target_count,
+                    family.retained_non_target_count,
+                    family.dropped_non_target_count,
+                    family.thin_cell
+                )
+            })
+            .collect::<Vec<_>>()
+            .join("; ");
+        output.push_str(&format!(
+            "- Top semantic candidate retention families: `{families}`\n"
         ));
     }
     output.push('\n');
@@ -7999,6 +8052,41 @@ mod tests {
                         example_non_target_paths: vec!["src/noise.ts".to_string()],
                     }],
                 },
+            semantic_candidate_retention_summary:
+                ctxhelm_compiler::SemanticCandidateRetentionSummary {
+                    top_k: 10,
+                    profile_count: 4,
+                    retained_count: 2,
+                    dropped_count: 2,
+                    retained_target_count: 1,
+                    dropped_target_count: 1,
+                    retained_non_target_count: 1,
+                    dropped_non_target_count: 1,
+                    target_retention_rate: 0.5,
+                    non_target_drop_rate: 0.5,
+                    recoverable_dropped_target_family_count: 1,
+                    source_text_logged: false,
+                    families: vec![
+                        ctxhelm_compiler::SemanticCandidateRetentionFamilySummary {
+                            query_family: "symbol_identifier".to_string(),
+                            role: ctxhelm_core::FileRole::Source,
+                            path_family: "typescript_source".to_string(),
+                            support_family: "dependency_co_change".to_string(),
+                            profile_count: 4,
+                            retained_target_count: 1,
+                            dropped_target_count: 1,
+                            retained_non_target_count: 1,
+                            dropped_non_target_count: 1,
+                            target_retention_rate: 0.5,
+                            non_target_drop_rate: 0.5,
+                            thin_cell: false,
+                            example_retained_target_paths: vec!["src/auth.ts".to_string()],
+                            example_dropped_target_paths: vec!["src/token.ts".to_string()],
+                            example_retained_non_target_paths: vec!["src/noise.ts".to_string()],
+                            example_dropped_non_target_paths: vec!["src/unused.ts".to_string()],
+                        },
+                    ],
+                },
             memory_reuse_summary: ctxhelm_compiler::MemoryReuseSummary {
                 commits_with_memory_candidates: 1,
                 memory_candidate_count: 2,
@@ -8097,6 +8185,7 @@ mod tests {
                 candidate_missed_files_at_10: vec![],
                 candidate_missed_file_profiles_at_10: vec![],
                 supported_semantic_candidate_profiles_at_10: Vec::new(),
+                semantic_candidate_retention_profiles_at_10: Vec::new(),
                 source_files_changed: 1,
                 source_hits_at_5: 1,
                 source_hits_at_10: 1,
@@ -8157,6 +8246,18 @@ mod tests {
         ));
         assert!(markdown.contains(
             "Top supported semantic candidate shapes: `symbol_identifier:Source:typescript_source:dependency_co_change targets 1/3 repeated false thin false`"
+        ));
+        assert!(markdown
+            .contains("Semantic candidate retention@10: profiles `4`, retained `2`, dropped `2`"));
+        assert!(markdown.contains(
+            "Semantic candidate retention targets: retained `1`, dropped `1`, retention rate `0.50`"
+        ));
+        assert!(markdown.contains(
+            "Semantic candidate retention non-targets: retained `1`, dropped `1`, drop rate `0.50`"
+        ));
+        assert!(markdown.contains("Semantic candidate recoverable dropped-target families: `1`"));
+        assert!(markdown.contains(
+            "Top semantic candidate retention families: `symbol_identifier:Source:typescript_source:dependency_co_change rt 1 dt 1 rn 1 dn 1 thin false`"
         ));
         assert!(markdown
             .contains("Memory reuse candidates: commits `1`, candidates `2`, selected@10 `1`"));

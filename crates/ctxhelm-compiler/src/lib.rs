@@ -47,8 +47,9 @@ pub use eval::{
     ProductProofLexicalComparison, ProductProofMetric, ProductProofReleaseGate, ProductProofReport,
     ProtectedEvidenceSignalSummary, ProtectedEvidenceSummary, RankingMetrics,
     RecommendedResearchAction, RetrievalGapRecommendationArea, RetrievalGapSummary,
-    RetrievalGapTargetStatus, RoleRecallMetric, SemanticContributionSummary,
-    SemanticMissedTargetGapFamily, SemanticPrecisionGateDecision,
+    RetrievalGapTargetStatus, RoleRecallMetric, SemanticCandidateRetentionFamilySummary,
+    SemanticCandidateRetentionProfile, SemanticCandidateRetentionSummary,
+    SemanticContributionSummary, SemanticMissedTargetGapFamily, SemanticPrecisionGateDecision,
     SemanticPrecisionGateRangeOptions, SemanticPrecisionGateReport, SemanticPrecisionNamedCase,
     SemanticPrecisionVariant, SemanticPrecisionVariantStatus, SemanticQueryMode,
     SignalAblationResult, SignalSaturationMetric, SupportedSemanticCandidateProfile,
@@ -1966,6 +1967,7 @@ mod tests {
             },
             supported_semantic_candidate_profile_summary:
                 SupportedSemanticCandidateProfileSummary::default(),
+            semantic_candidate_retention_summary: SemanticCandidateRetentionSummary::default(),
             memory_reuse_summary: MemoryReuseSummary {
                 commits_with_memory_candidates: 1,
                 memory_candidate_count: 2,
@@ -2046,6 +2048,7 @@ mod tests {
                 candidate_missed_files_at_10: Vec::new(),
                 candidate_missed_file_profiles_at_10: Vec::new(),
                 supported_semantic_candidate_profiles_at_10: Vec::new(),
+                semantic_candidate_retention_profiles_at_10: Vec::new(),
                 source_files_changed: 1,
                 source_hits_at_5: 1,
                 source_hits_at_10: 1,
@@ -2523,6 +2526,7 @@ mod tests {
             candidate_coverage_summary: CandidateCoverageSummary::default(),
             supported_semantic_candidate_profile_summary:
                 SupportedSemanticCandidateProfileSummary::default(),
+            semantic_candidate_retention_summary: SemanticCandidateRetentionSummary::default(),
             memory_reuse_summary: MemoryReuseSummary::default(),
             recommended_research_actions: Vec::new(),
             file_recall_at_5: 0.0,

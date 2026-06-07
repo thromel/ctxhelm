@@ -694,6 +694,13 @@ Across the eight Phase 299 slices, supported semantic candidate profiles have
 the one repeated-target shape is docs/planning noise, and the VeriSchema source
 lift remains a singleton thin cell.
 
+Phase 301 adds `semanticCandidateRetentionSummary`, which groups supported
+semantic candidates by retained/dropped target/non-target cells at the current
+top K. Across the same eight slices, it records 1071 profiles, 52 retained
+targets, 22 dropped targets, 232 retained non-targets, and 765 dropped
+non-targets. This is candidate-retention evidence for future held-out
+separation, not runtime/default promotion evidence.
+
 `local_hash` remains the deterministic scaffold. `local_fastembed` is the
 production-local backend and requires a build compiled with the
 `local-embeddings` feature.
@@ -972,6 +979,12 @@ reports. The eight-slice aggregate has 787 supported profiles, 22 targets, 765
 non-targets, 171 per-slice shape rows, 90 thin cells, and one repeated-target
 shape; this confirms the current supported-shape signal is diagnostic, not a
 runtime/default policy candidate.
+
+Phase 301 records supported semantic candidate retention directly in history
+and gate reports. The aggregate target retention rate is `0.702703`, while the
+non-target drop rate is `0.767302`; the 12 recoverable dropped-target family
+rows are useful for a held-out learned separator, but retained non-targets keep
+this branch diagnostic-only.
 
 Use `ctxhelm eval learned-policy-cross-repo` to aggregate saved
 `learned-policy-train-test` JSON reports across repositories without rerunning
