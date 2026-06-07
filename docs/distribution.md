@@ -157,6 +157,17 @@ Run:
 bash scripts/smoke-distribution-metadata.sh
 ```
 
+By default the smoke writes its generated readiness JSON to a temporary path so
+release-gate validation does not dirty the worktree. To intentionally refresh
+the tracked proof artifact, run:
+
+```bash
+CTXHELM_UPDATE_DISTRIBUTION_METADATA=1 bash scripts/smoke-distribution-metadata.sh
+```
+
+Set `CTXHELM_DISTRIBUTION_METADATA_OUT=/absolute/path/to/report.json` when a
+specific output path is needed.
+
 When `CTXHELM_DIST_DIR` points at a built release archive, the smoke also renders
 a concrete Homebrew formula candidate from the exact archive digest and checks
 that no placeholders or machine-local paths remain. It runs

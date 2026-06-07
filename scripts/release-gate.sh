@@ -60,6 +60,18 @@ log_step() {
   printf '\n==> %s\n' "$1"
 }
 
+check_worktree_clean() {
+  local label="$1"
+  if [[ "${CTXHELM_SKIP_WORKTREE_CLEAN_CHECK:-0}" == "1" ]]; then
+    return 0
+  fi
+  if [[ -n "$(git -C "$repo_root" status --porcelain)" ]]; then
+    echo "release gate failed: worktree changed during $label; commit intentional generated artifacts or fix the smoke" >&2
+    git -C "$repo_root" status --short >&2
+    exit 1
+  fi
+}
+
 clean_fixture_ready() {
   local config_path="$1"
   python3 - "$config_path" <<'PY'
@@ -263,7 +275,12 @@ log_step "public demo artifacts smoke"
 bash "$smoke_demo_artifacts_script"
 
 log_step "distribution metadata smoke"
-CTXHELM_DIST_DIR="$dist_dir" bash "$smoke_distribution_metadata_script"
+CTXHELM_DIST_DIR="$dist_dir" \
+  CTXHELM_DISTRIBUTION_METADATA_OUT="$work_dir/distribution-metadata-smoke.json" \
+  bash "$smoke_distribution_metadata_script"
+
+log_step "post-smoke worktree cleanliness"
+check_worktree_clean "distribution metadata smoke"
 
 log_step "release governance smoke"
 bash "$smoke_release_governance_script"
@@ -575,5 +592,8 @@ with open(proof_summary_path, "w", encoding="utf-8") as handle:
     handle.write("\n")
 PY
 echo "wrote release proof summary: $proof_summary_path"
+
+log_step "final worktree cleanliness"
+check_worktree_clean "release gate"
 
 echo "release gate passed: binary=$ctxhelm_bin archive=$archive_path proof=$proof_summary_path"

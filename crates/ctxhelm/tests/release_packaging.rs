@@ -310,10 +310,23 @@ fn release_gate_script_contract() {
         "release gate should let release-package enforce clean-checkout semantics unless CTXHELM_ALLOW_DIRTY is explicitly inherited"
     );
     assert!(
-        script_text.contains(
-            "CTXHELM_DIST_DIR=\"$dist_dir\" bash \"$smoke_distribution_metadata_script\""
-        ),
+        script_text.contains("CTXHELM_DIST_DIR=\"$dist_dir\"")
+            && script_text.contains("bash \"$smoke_distribution_metadata_script\""),
         "release gate must pass packaged archive directory into distribution metadata smoke"
+    );
+    assert!(
+        script_text.contains(
+            "CTXHELM_DISTRIBUTION_METADATA_OUT=\"$work_dir/distribution-metadata-smoke.json\""
+        ),
+        "release gate must keep distribution metadata smoke output in the temp proof workspace by default"
+    );
+    assert!(
+        script_text.contains("post-smoke worktree cleanliness")
+            && script_text.contains("git -C \"$repo_root\" status --porcelain")
+            && script_text.contains("final worktree cleanliness")
+            && script_text.contains("check_worktree_clean \"release gate\"")
+            && script_text.contains("CTXHELM_SKIP_WORKTREE_CLEAN_CHECK"),
+        "release gate must fail when smokes leave the worktree dirty"
     );
     assert!(
         script_text.find("scripts/smoke-first-pack.sh").unwrap()
@@ -637,6 +650,9 @@ fn distribution_metadata_smoke_script_contract() {
     for required in [
         "scripts/render-homebrew-formula.sh",
         "CTXHELM_DIST_DIR",
+        "CTXHELM_DISTRIBUTION_METADATA_OUT",
+        "CTXHELM_UPDATE_DISTRIBUTION_METADATA",
+        "$work_dir/distribution-metadata-smoke.json",
         "ctxhelm-v${version}-${target_label}.tar.gz",
         "https://github.com/thromel/ctxhelm/releases/download/v${version}/${archive_name}",
         "cargo package --manifest-path \"$repo_root/crates/$crate/Cargo.toml\" --locked --allow-dirty --list",

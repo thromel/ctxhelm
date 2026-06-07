@@ -24,13 +24,17 @@ done
 bash -n "$repo_root/scripts/render-homebrew-formula.sh"
 bash -n "$repo_root/scripts/verify-release-archive.sh"
 
-metadata_path="$repo_root/.ctxhelm/distribution-metadata-smoke.json"
 dist_dir="${CTXHELM_DIST_DIR:-"$repo_root/dist"}"
 work_dir="$(mktemp -d)"
 cleanup() {
   rm -rf "$work_dir"
 }
 trap cleanup EXIT
+if [[ "${CTXHELM_UPDATE_DISTRIBUTION_METADATA:-0}" == "1" ]]; then
+  metadata_path="${CTXHELM_DISTRIBUTION_METADATA_OUT:-"$repo_root/.ctxhelm/distribution-metadata-smoke.json"}"
+else
+  metadata_path="${CTXHELM_DISTRIBUTION_METADATA_OUT:-"$work_dir/distribution-metadata-smoke.json"}"
+fi
 
 cargo_metadata="$work_dir/cargo-metadata.json"
 cargo metadata --no-deps --format-version 1 >"$cargo_metadata"
@@ -208,4 +212,4 @@ payload = {
 pathlib.Path(metadata_path).write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 PY
 
-echo "distribution metadata smoke passed"
+echo "distribution metadata smoke passed: metadata=$metadata_path"
