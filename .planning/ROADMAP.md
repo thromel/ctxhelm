@@ -422,6 +422,14 @@ only with much larger non-target insertion (`3` recovered versus `21` inserted
 at the best recovery row). This rejects another retention-separator relaxation
 and moves the next R&D step toward fresh agent outcome proof.
 
+Phase 304 refreshes that outcome-proof state. Claude Code `2.1.163` remains
+rate-limited in the availability preflight, and the current four-task Claude
+R&D breadth-suite rerun is `degraded` with 4/4 preflights rate-limited, zero
+comparison-eligible tasks, zero comparable ctxhelm lanes, and outcome claim
+`insufficient_comparable_lanes`. Codex CLI `0.137.0` remains available with
+deterministic explicit-repo MCP evidence, so this is a client-availability
+blocker for Claude proof rather than retrieval-quality evidence.
+
 Phase 196 reserves selected validation areas in broad context-area guidance and adds package-mirrored related-test affinity. The accepted release-binary proof promotes with selected-file/source/test/validation metrics unchanged while improving VeriSchema broad context-area recall from `0.5777778 -> 0.84444445` and next-read recovery from `16 -> 19` of `39` missed@10 files. A related-test-only intermediate proof was rejected because it did not move the product proof.
 
 Phase 197 adds source-free agent-evidence recovery accounting to context-area next-read summaries. The fresh release-binary proof promotes with selected-file/source/test/validation/broad-area metrics unchanged while showing VeriSchema has `29 / 39` missed@10 files recoverable through the full agent evidence bundle, compared with `19 / 39` through progressive next reads alone.
