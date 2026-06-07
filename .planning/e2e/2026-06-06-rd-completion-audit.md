@@ -223,6 +223,15 @@ calls and memory-lane forbidden `Bash` calls, but this is boundary/availability
 evidence rather than retrieval-quality evidence because every lane is
 non-comparable.
 
+Phase 313 addendum:
+`.planning/e2e/2026-06-07-phase313-rd-completion-gate.md` records the strict
+gate for declaring this R&D effort complete. Current head satisfies the
+release/docs/CI, Codex outcome, memory guard, and optional-client scoping rows,
+but not the full completion gate: semantic/default promotion still needs either
+an explicit diagnostic-only closeout or a no-regress lift proof, and Claude
+needs either a comparable paired suite or a formal external-availability
+closeout.
+
 ## Remaining R&D Risk
 
 1. Semantic is not yet a proven default-lift channel. It is useful and bounded,
@@ -358,6 +367,37 @@ non-comparable.
 6. Task-mentioned commit anchoring is implemented for prepare-task and covered
    by a focused local Git fixture. It should be treated as a narrow planner
    improvement, not as broad semantic/RAG completion evidence.
+
+## R&D Completion Gate
+
+The active R&D effort is complete only when the current head satisfies all of
+these rows:
+
+1. Release/docs/CI are green, including the local release gate, and the worktree
+   is clean after push.
+2. The latest Codex R&D breadth suite is comparable and reports
+   `ctxhelm_improved` without evidence misses, evidence-only targets,
+   under-read targets, forbidden commands, client failures, or rate limits.
+3. The memory lane preserves the Phase 253/255 target-consumption and
+   irrelevant-read guard, or a newer broader proof supersedes it without
+   regression.
+4. Semantic is resolved explicitly: either no-regress default lift on the
+   agreed stable corpus, or a documented diagnostic-only closeout with the
+   rejected branches and no higher-leverage same-family experiment pending.
+5. Claude cross-agent state is unambiguous: either a fresh comparable paired
+   suite passes the read-only/source-free boundary, or the final audit formally
+   classifies Claude as an external availability blocker based on current
+   source-free evidence.
+6. Optional client/auth blockers, including Cursor, are documented as external
+   availability/auth issues rather than retrieval-quality failures.
+7. The final audit states each gate row as satisfied, superseded, or externally
+   blocked; unresolved retrieval or policy questions cannot be hidden in
+   narrative text.
+
+Current status: not fully satisfied. Rows 1, 2, 3, and 6 are satisfied on the
+current head after Phase 313. Rows 4 and 5 still need explicit closeout,
+promotion, or external-blocker classification before the active goal can be
+marked complete.
 
 ## Next Correct Order
 
@@ -527,3 +567,7 @@ cross-agent gap scoped correctly: a manual tiny Opus prompt is not enough to
 make the paired suite comparable, and the source-free Claude run still reports
 `insufficient_comparable_lanes` because every lane records rate-limit/client
 failure evidence.
+Phase 313 adds the stop condition for this active R&D effort. The product can
+keep shipping on the current proof base, but the R&D goal should not be marked
+complete until the semantic and Claude rows in the completion gate are either
+satisfied or explicitly closed as diagnostic/external.
