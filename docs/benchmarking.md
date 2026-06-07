@@ -738,6 +738,14 @@ present in the default top-K ranking. It is diagnostic only. Phase 277 found
 clean lift on RefactoringMiner and ReAgent, but regressions on ctxhelm and
 VeriSchema, so the family-budget rule is not a promotion path.
 
+The gate also reports the eval-only `semantic_tail_slot_reranked` variant and
+`tailSlotSemanticRerankerContribution`. This variant preserves the top
+`ceil(0.8 * K)` default context files in order, then lets
+semantic-corroborated candidates compete only for the remaining tail slots.
+It is diagnostic only. Phase 290 showed that this conservative selector removes
+the targeted VeriSchema candidate-path-hints regression without adding target
+hits, so it is safety evidence rather than a semantic promotion path.
+
 The gate also reports the eval-only `semantic_learned_profile_reranked` variant
 and `learnedProfileSemanticRerankerContribution`. This variant starts from
 semantic-corroborated candidates, but it admits only candidates whose

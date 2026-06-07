@@ -380,6 +380,8 @@ pub struct SemanticPrecisionGateReport {
     #[serde(default)]
     pub semantic_corroborated_reranker_contribution: RerankerContributionSummary,
     #[serde(default)]
+    pub tail_slot_semantic_reranker_contribution: RerankerContributionSummary,
+    #[serde(default)]
     pub family_budget_semantic_reranker_contribution: RerankerContributionSummary,
     #[serde(default)]
     pub learned_profile_semantic_reranker_contribution: RerankerContributionSummary,
@@ -3633,6 +3635,8 @@ pub fn semantic_precision_gate_report_with_provider_and_range_options(
         support_profile_routed_semantic_report(&default, &semantic, &semantic_contribution);
     let family_budget_semantic_reranked =
         family_budget_semantic_reranked_report(&default, &semantic_corroborated_reranked);
+    let tail_slot_semantic_reranked =
+        tail_slot_semantic_reranked_report(&default, &semantic_corroborated_reranked);
     let learned_profile_semantic_reranked =
         learned_profile_semantic_reranked_report(&default, &semantic_corroborated_reranked);
     let learned_policy_semantic_holdout_reranked = learned_policy_holdout_semantic_reranked_report(
@@ -3644,6 +3648,12 @@ pub fn semantic_precision_gate_report_with_provider_and_range_options(
         &default,
         &family_budget_semantic_reranked,
         "semantic_family_budget_reranked",
+        NamedCaseKind::Win,
+    ));
+    named_wins.extend(named_cases(
+        &default,
+        &tail_slot_semantic_reranked,
+        "semantic_tail_slot_reranked",
         NamedCaseKind::Win,
     ));
     named_wins.extend(named_cases(
@@ -3696,6 +3706,12 @@ pub fn semantic_precision_gate_report_with_provider_and_range_options(
     ));
     named_regressions.extend(named_cases(
         &default,
+        &tail_slot_semantic_reranked,
+        "semantic_tail_slot_reranked",
+        NamedCaseKind::Regression,
+    ));
+    named_regressions.extend(named_cases(
+        &default,
         &learned_profile_semantic_reranked,
         "semantic_learned_profile_reranked",
         NamedCaseKind::Regression,
@@ -3738,6 +3754,11 @@ pub fn semantic_precision_gate_report_with_provider_and_range_options(
     ));
     named_regressions.extend(protected_evidence_regressions(
         &default,
+        &tail_slot_semantic_reranked,
+        "semantic_tail_slot_reranked",
+    ));
+    named_regressions.extend(protected_evidence_regressions(
+        &default,
         &learned_profile_semantic_reranked,
         "semantic_learned_profile_reranked",
     ));
@@ -3770,6 +3791,12 @@ pub fn semantic_precision_gate_report_with_provider_and_range_options(
         &family_budget_semantic_reranked,
         "semantic_family_budget_reranked",
         "Family-budget semantic reranker",
+    );
+    let tail_slot_semantic_reranker_contribution = reranker_contribution_summary(
+        &default,
+        &tail_slot_semantic_reranked,
+        "semantic_tail_slot_reranked",
+        "Tail-slot semantic reranker",
     );
     let learned_profile_semantic_reranker_contribution = reranker_contribution_summary(
         &default,
@@ -3827,6 +3854,22 @@ pub fn semantic_precision_gate_report_with_provider_and_range_options(
         "Eval-only semantic-corroborated ranking with a source-free default source/test/script preservation budget.",
     ));
     variants.push(gate_variant(
+        "semantic_tail_slot_reranked",
+        SemanticPrecisionVariantStatus::Evaluated,
+        true,
+        false,
+        true,
+        Some(
+            tail_slot_semantic_reranked
+                .ranking_comparison
+                .combined
+                .clone(),
+        ),
+        &tail_slot_semantic_reranked,
+        "eval_only",
+        "Eval-only semantic-corroborated ranking that preserves the high-confidence default prefix and only lets semantic candidates compete for tail slots.",
+    ));
+    variants.push(gate_variant(
         "semantic_learned_profile_reranked",
         SemanticPrecisionVariantStatus::Evaluated,
         true,
@@ -3875,6 +3918,9 @@ pub fn semantic_precision_gate_report_with_provider_and_range_options(
     diagnostics.extend(family_budget_semantic_reranker_contribution_diagnostics(
         &family_budget_semantic_reranker_contribution,
     ));
+    diagnostics.extend(tail_slot_semantic_reranker_contribution_diagnostics(
+        &tail_slot_semantic_reranker_contribution,
+    ));
     diagnostics.extend(learned_profile_semantic_reranker_contribution_diagnostics(
         &learned_profile_semantic_reranker_contribution,
     ));
@@ -3913,6 +3959,7 @@ pub fn semantic_precision_gate_report_with_provider_and_range_options(
         reranker_contribution,
         routed_reranker_contribution,
         semantic_corroborated_reranker_contribution,
+        tail_slot_semantic_reranker_contribution,
         family_budget_semantic_reranker_contribution,
         learned_profile_semantic_reranker_contribution,
         learned_semantic_policy,
@@ -4628,6 +4675,83 @@ fn family_budget_accepts_path(
     }
     *used += 1;
     true
+}
+
+fn tail_slot_semantic_reranked_report(
+    default: &HistoricalEvalReport,
+    semantic_corroborated: &HistoricalEvalReport,
+) -> HistoricalEvalReport {
+    let semantic_by_sha = semantic_corroborated
+        .commits
+        .iter()
+        .map(|commit| (commit.sha.as_str(), commit))
+        .collect::<BTreeMap<_, _>>();
+    let mut constrained = default.clone();
+    constrained.eval_range_id = format!("{}:semantic-tail-slot", default.eval_range_id);
+    constrained.effective_filters.semantic_enabled = true;
+    constrained.effective_filters.semantic_provider = semantic_corroborated
+        .effective_filters
+        .semantic_provider
+        .clone();
+    constrained.effective_filters.semantic_corroborated_reranker = true;
+    constrained.runtime.total_millis = default
+        .runtime
+        .total_millis
+        .saturating_add(semantic_corroborated.runtime.total_millis);
+
+    let ranking_budget = constrained.ranking_comparison.k.max(1);
+    for commit in &mut constrained.commits {
+        let Some(semantic_commit) = semantic_by_sha.get(commit.sha.as_str()) else {
+            refresh_commit_ranking_metrics(commit);
+            continue;
+        };
+        commit.recommended_context_files = tail_slot_semantic_files(
+            &commit.recommended_context_files,
+            &semantic_commit.recommended_context_files,
+            ranking_budget,
+        );
+        refresh_commit_ranking_metrics(commit);
+    }
+
+    refresh_historical_report_ranking_metrics(&mut constrained);
+    constrained.recommended_research_actions =
+        historical_recommended_research_actions(&constrained);
+    constrained
+}
+
+fn tail_slot_semantic_files(
+    default_files: &[String],
+    semantic_files: &[String],
+    ranking_budget: usize,
+) -> Vec<String> {
+    let ranking_budget = ranking_budget.max(1);
+    let preserved_prefix = tail_slot_default_prefix_len(ranking_budget);
+    let mut seen = BTreeSet::new();
+    let mut ranking = default_files
+        .iter()
+        .take(preserved_prefix)
+        .filter_map(|path| seen.insert(path.clone()).then_some(path.clone()))
+        .collect::<Vec<_>>();
+
+    ranking.extend(
+        semantic_files
+            .iter()
+            .filter_map(|path| seen.insert(path.clone()).then_some(path.clone()))
+            .take(ranking_budget.saturating_sub(ranking.len())),
+    );
+    ranking.extend(
+        default_files
+            .iter()
+            .filter_map(|path| seen.insert(path.clone()).then_some(path.clone()))
+            .take(ranking_budget.saturating_sub(ranking.len())),
+    );
+    ranking.truncate(ranking_budget);
+    ranking
+}
+
+fn tail_slot_default_prefix_len(ranking_budget: usize) -> usize {
+    let ranking_budget = ranking_budget.max(1);
+    (ranking_budget * 4).div_ceil(5).max(1).min(ranking_budget)
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
@@ -7060,6 +7184,53 @@ fn family_budget_semantic_reranker_contribution_diagnostics(
             severity: DiagnosticSeverity::Info,
             message:
                 "Family-budget semantic reranking preserved target hits but did not add target hits in this gate."
+                    .to_string(),
+            paths: Vec::new(),
+            count: summary.neutral_commit_count,
+        });
+    }
+    diagnostics
+}
+
+fn tail_slot_semantic_reranker_contribution_diagnostics(
+    summary: &RerankerContributionSummary,
+) -> Vec<Diagnostic> {
+    if summary.evaluated_commits == 0 {
+        return Vec::new();
+    }
+    let mut diagnostics = Vec::new();
+    if summary.regressed_commit_count > 0 || summary.target_hit_delta < 0 {
+        diagnostics.push(Diagnostic {
+            code: "semantic_tail_slot_reranker_regression".to_string(),
+            severity: DiagnosticSeverity::Warning,
+            message: "Tail-slot semantic reranking lost target hits; keep this budget constraint eval-only.".to_string(),
+            paths: summary
+                .regressed_cases
+                .iter()
+                .flat_map(|case| case.paths.clone())
+                .take(10)
+                .collect(),
+            count: summary.regressed_commit_count,
+        });
+    } else if summary.target_hit_delta > 0 && summary.default_only_target_hit_count == 0 {
+        diagnostics.push(Diagnostic {
+            code: "semantic_tail_slot_reranker_clean_lift".to_string(),
+            severity: DiagnosticSeverity::Info,
+            message: "Tail-slot semantic reranking added target hits without default-only target churn in this gate.".to_string(),
+            paths: summary
+                .improved_cases
+                .iter()
+                .flat_map(|case| case.paths.clone())
+                .take(10)
+                .collect(),
+            count: summary.improved_commit_count,
+        });
+    } else {
+        diagnostics.push(Diagnostic {
+            code: "semantic_tail_slot_reranker_neutral".to_string(),
+            severity: DiagnosticSeverity::Info,
+            message:
+                "Tail-slot semantic reranking preserved target hits but did not add target hits in this gate."
                     .to_string(),
             paths: Vec::new(),
             count: summary.neutral_commit_count,
@@ -13566,6 +13737,83 @@ mod tests {
     }
 
     #[test]
+    fn tail_slot_semantic_files_preserve_high_confidence_default_prefix() {
+        let default_files = vec![
+            "src/default-0.rs".to_string(),
+            "src/default-1.rs".to_string(),
+            "src/default-2.rs".to_string(),
+            "src/default-3.rs".to_string(),
+            "src/default-4.rs".to_string(),
+            "src/default-5.rs".to_string(),
+            "src/default-6.rs".to_string(),
+            "src/default-7.rs".to_string(),
+            "src/default-8.rs".to_string(),
+            "src/default-9.rs".to_string(),
+        ];
+        let semantic_files = vec![
+            "docs/semantic-noise.md".to_string(),
+            "src/default-0.rs".to_string(),
+            "src/semantic-tail.rs".to_string(),
+        ];
+
+        let ranking = tail_slot_semantic_files(&default_files, &semantic_files, 10);
+
+        assert_eq!(&ranking[..8], &default_files[..8]);
+        assert_eq!(ranking[8], "docs/semantic-noise.md");
+        assert_eq!(ranking[9], "src/semantic-tail.rs");
+        assert!(!ranking.contains(&"src/default-8.rs".to_string()));
+    }
+
+    #[test]
+    fn tail_slot_semantic_report_allows_tail_lift_without_prefix_loss() {
+        let mut default = empty_historical_eval_report("semantic-tail-slot");
+        default.commits[0].retrieval_target_files = vec![
+            "src/default-prefix.rs".to_string(),
+            "docs/semantic-tail.md".to_string(),
+        ];
+        default.commits[0].changed_path_labels = vec![
+            historical_changed_path_label("src/default-prefix.rs", FileRole::Source),
+            historical_changed_path_label("docs/semantic-tail.md", FileRole::Docs),
+        ];
+        default.commits[0].recommended_context_files = vec![
+            "src/default-prefix.rs".to_string(),
+            "src/default-tail-a.rs".to_string(),
+            "src/default-tail-b.rs".to_string(),
+        ];
+        refresh_commit_ranking_metrics(&mut default.commits[0]);
+        refresh_historical_report_ranking_metrics(&mut default);
+
+        let mut semantic = default.clone();
+        semantic.commits[0].recommended_context_files = vec![
+            "docs/semantic-tail.md".to_string(),
+            "src/default-prefix.rs".to_string(),
+            "src/default-tail-a.rs".to_string(),
+        ];
+        refresh_commit_ranking_metrics(&mut semantic.commits[0]);
+        refresh_historical_report_ranking_metrics(&mut semantic);
+
+        let constrained = tail_slot_semantic_reranked_report(&default, &semantic);
+
+        assert_eq!(
+            constrained.commits[0].recommended_context_files,
+            vec![
+                "src/default-prefix.rs".to_string(),
+                "src/default-tail-a.rs".to_string(),
+                "src/default-tail-b.rs".to_string(),
+                "docs/semantic-tail.md".to_string(),
+            ]
+        );
+        assert_eq!(
+            constrained.commits[0].file_hits_at_10,
+            vec![
+                "src/default-prefix.rs".to_string(),
+                "docs/semantic-tail.md".to_string(),
+            ]
+        );
+        assert_eq!(constrained.file_recall_at_10, 1.0);
+    }
+
+    #[test]
     fn learned_profile_semantic_report_uses_leave_one_out_safe_profiles() {
         let mut default = empty_historical_eval_report("semantic-learned-profile");
         default.evaluated_commits = 2;
@@ -14113,6 +14361,7 @@ mod tests {
             reranker_contribution: RerankerContributionSummary::default(),
             routed_reranker_contribution: RerankerContributionSummary::default(),
             semantic_corroborated_reranker_contribution: RerankerContributionSummary::default(),
+            tail_slot_semantic_reranker_contribution: RerankerContributionSummary::default(),
             family_budget_semantic_reranker_contribution: RerankerContributionSummary::default(),
             learned_profile_semantic_reranker_contribution: RerankerContributionSummary::default(),
             learned_semantic_policy: LearnedSemanticPolicyReport::default(),
@@ -14137,6 +14386,10 @@ mod tests {
         value
             .as_object_mut()
             .expect("gate report object")
+            .remove("tailSlotSemanticRerankerContribution");
+        value
+            .as_object_mut()
+            .expect("gate report object")
             .remove("familyBudgetSemanticRerankerContribution");
         value
             .as_object_mut()
@@ -14158,6 +14411,10 @@ mod tests {
         let decoded: SemanticPrecisionGateReport = serde_json::from_value(value)
             .expect("missing semantic eval-only summaries use defaults");
 
+        assert!(decoded
+            .tail_slot_semantic_reranker_contribution
+            .displacement_contributions
+            .is_empty());
         assert!(decoded
             .family_budget_semantic_reranker_contribution
             .displacement_contributions

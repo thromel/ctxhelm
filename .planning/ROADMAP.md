@@ -289,6 +289,16 @@ semantic-only targets remain `2`. Promotion is still rejected because
 semantic-corroborated variant remains `0.28245613`, and the same one-commit
 corroborated regression remains.
 
+Phase 290 tests target-preserving selection from those improved candidates. The
+eval-only `semantic_tail_slot_reranked` variant preserves the top
+`ceil(0.8 * K)` default files and lets semantic-corroborated candidates compete
+only for tail slots. On the same VeriSchema older-range candidate-path proof,
+the known semantic-corroborated regression is removed (`targetHitDelta = 0`,
+`regressedCommitCount = 0`, `defaultOnlyTargetHitCount = 0`), but there is no
+new target lift (`rerankerOnlyTargetHitCount = 0`). Tail-slot preservation is
+therefore retained as diagnostic safety evidence, not a runtime/default
+semantic promotion path.
+
 Phase 196 reserves selected validation areas in broad context-area guidance and adds package-mirrored related-test affinity. The accepted release-binary proof promotes with selected-file/source/test/validation metrics unchanged while improving VeriSchema broad context-area recall from `0.5777778 -> 0.84444445` and next-read recovery from `16 -> 19` of `39` missed@10 files. A related-test-only intermediate proof was rejected because it did not move the product proof.
 
 Phase 197 adds source-free agent-evidence recovery accounting to context-area next-read summaries. The fresh release-binary proof promotes with selected-file/source/test/validation/broad-area metrics unchanged while showing VeriSchema has `29 / 39` missed@10 files recoverable through the full agent evidence bundle, compared with `19 / 39` through progressive next reads alone.

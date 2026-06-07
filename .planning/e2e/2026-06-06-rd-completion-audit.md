@@ -54,6 +54,16 @@ improves the targeted VeriSchema semantic candidate-quality counters
 recall or remove the semantic-corroborated regression, so it remains
 diagnostic-only.
 
+Phase 290 addendum:
+`.planning/e2e/2026-06-07-phase290-semantic-tail-slot-reranker.md` adds the
+eval-only `semantic_tail_slot_reranked` variant. It preserves the top
+`ceil(0.8 * K)` default context files and lets semantic-corroborated candidates
+compete only for tail slots. On the same VeriSchema older-range
+candidate-path-hints proof, it removes the known semantic-corroborated
+regression (`targetHitDelta = 0`, `regressedCommitCount = 0`,
+`defaultOnlyTargetHitCount = 0`) but adds no target hits, so it is safety
+evidence rather than promotion evidence.
+
 ## Remaining R&D Risk
 
 1. Semantic is not yet a proven default-lift channel. It is useful and bounded,
@@ -133,9 +143,10 @@ diagnostic-only.
    backoff keys both aggregate to zero eligible profiles. Phase 289 improves
    VeriSchema semantic candidate quality with bounded candidate-path hints but
    still does not improve recall or remove the semantic-corroborated
-   regression. The next semantic work needs target-preserving selection from
-   improved candidates, richer query/document construction for remaining
-   prompt/workflow/verification files, or a much narrower learned separator.
+   regression. Phase 290 removes that regression with a conservative tail-slot
+   selector but adds no target hits. The next semantic work needs richer
+   query/document construction for remaining prompt/workflow/verification
+   files, or a much narrower learned separator.
 2. Claude has current workflow proof but not a fresh paired outcome suite on the
    same level as Codex Phase 245/250. Phase 264 confirms this is still a
    client-availability problem: Claude Code is rate-limited, while Codex remains
@@ -192,10 +203,11 @@ diagnostic-only.
    regression. Phase 288 rules out the current cross-repo learned-policy
    aggregation because strict and backoff profiles both produce zero eligible
    cross-repo keys. Phase 289 shows candidate-path hints improve candidate
-   quality but not final recall or regression status. The next semantic step is
-   target-preserving selection from improved candidates, richer query/document
-   construction for the remaining prompt/workflow/verification gaps, or a
-   materially narrower learned separator, not runtime promotion. Increasing the
+   quality but not final recall or regression status. Phase 290 proves a
+   conservative tail-slot selector can remove the regression but not create
+   lift. The next semantic step is richer query/document construction for the
+   remaining prompt/workflow/verification gaps, or a materially narrower
+   learned separator, not runtime promotion. Increasing the
    local-fastembed document cap, adding broad Python path metadata, adding
    generic source-role query words, adding another hand-written route, merely
    widening or splitting the same gate, relaxing profile keys, current
@@ -238,12 +250,13 @@ current source-free cross-repo learned-policy aggregation because neither
 strict query/path profiles nor path-family backoff profiles have an eligible
 cross-repo zero-harm key. Phase 289 tests bounded candidate-path semantic query
 hints; it improves semantic candidate quality but not recall or the
-semantic-corroborated regression. The remaining semantic R&D path is
-target-preserving selection from improved candidates, richer query/document
-construction, or a much narrower learned separator, not more same-range
-doubling, not coarse profile-key relaxation, not generic role words, not
-current cross-repo aggregation, not candidate-path hints as runtime/default
-policy, and not runtime/default promotion.
+semantic-corroborated regression. Phase 290 tests conservative tail-slot
+selection; it removes the regression but adds no target lift. The remaining
+semantic R&D path is richer query/document construction or a much narrower
+learned separator, not more same-range doubling, not coarse profile-key
+relaxation, not generic role words, not current cross-repo aggregation, not
+candidate-path hints or tail-slot reranking as runtime/default policy, and not
+runtime/default promotion.
 Phase 253 reduces memory risk by
 proving cross-repo Codex target-consumption lift. Phase 255 further reduces
 memory risk by preserving that target consumption while improving irrelevant
