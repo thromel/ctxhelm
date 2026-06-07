@@ -670,6 +670,16 @@ file Recall@10 to `0.3438596`, and has zero default-only target churn. This is
 an upper bound, not a runtime policy, because the oracle consumes eval
 candidate-miss profiles.
 
+Phase 298 replaces that oracle dependency with the eval-only source-free
+`semantic_supported_shape_tail_slot_reranked` variant. Historical commit rows
+emit `supportedSemanticCandidateProfilesAt10`, and the variant inserts only
+supported semantic candidates matching the measured
+`symbol_identifier` / `python_source` / `dependency_co_change` source shape into
+protected tail slots. On the same Jina proof it matches the oracle's clean
+result: `schema_agent/core/state.py`, target hits `13 -> 14`, file Recall@10
+`0.3438596`, zero regressions, and zero default-only target churn. It remains
+eval-only until broader range/repo proof shows the shape repeats.
+
 `local_hash` remains the deterministic scaffold. `local_fastembed` is the
 production-local backend and requires a build compiled with the
 `local-embeddings` feature.
@@ -936,7 +946,10 @@ remaining Jina candidate miss is `schema_agent/core/state.py` with
 `dependency_co_change` support, so the remaining semantic path is fusion/top-K
 ordering for supported candidate misses. Phase 297 confirms a gold-backed
 tail-slot oracle can recover that target cleanly, but the oracle is not
-runtime-promotable because it uses eval target-miss profiles.
+runtime-promotable because it uses eval target-miss profiles. Phase 298
+replaces that oracle dependency on the targeted slice with a source-free
+supported-shape predictor that matches the clean lift, so the next bar is
+broader range/repo validation of that exact shape before runtime policy.
 
 Use `ctxhelm eval learned-policy-cross-repo` to aggregate saved
 `learned-policy-train-test` JSON reports across repositories without rerunning

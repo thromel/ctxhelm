@@ -388,6 +388,8 @@ pub struct SemanticPrecisionGateReport {
     #[serde(default)]
     pub supported_candidate_tail_slot_reranker_contribution: RerankerContributionSummary,
     #[serde(default)]
+    pub supported_shape_tail_slot_semantic_reranker_contribution: RerankerContributionSummary,
+    #[serde(default)]
     pub family_budget_semantic_reranker_contribution: RerankerContributionSummary,
     #[serde(default)]
     pub learned_profile_semantic_reranker_contribution: RerankerContributionSummary,
@@ -1515,6 +1517,16 @@ pub struct CandidateMissedFileProfile {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
+pub struct SupportedSemanticCandidateProfile {
+    pub path: String,
+    pub role: FileRole,
+    pub context_area: String,
+    pub support_family: String,
+    pub signals: Vec<RetrievalSignalKind>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
 pub struct ProtectedEvidenceSignalSummary {
     pub signal: RetrievalSignalKind,
     pub candidate_count: usize,
@@ -1848,6 +1860,8 @@ pub struct HistoricalCommitEval {
     pub candidate_missed_files_at_10: Vec<String>,
     #[serde(default)]
     pub candidate_missed_file_profiles_at_10: Vec<CandidateMissedFileProfile>,
+    #[serde(default)]
+    pub supported_semantic_candidate_profiles_at_10: Vec<SupportedSemanticCandidateProfile>,
     pub source_files_changed: usize,
     pub source_hits_at_5: usize,
     pub source_hits_at_10: usize,
@@ -3701,6 +3715,8 @@ pub fn semantic_precision_gate_report_with_provider_and_range_options(
         tail_slot_semantic_reranked_report(&default, &semantic_corroborated_reranked);
     let supported_candidate_tail_slot_reranked =
         supported_candidate_tail_slot_reranked_report(&default, &semantic);
+    let supported_shape_tail_slot_semantic_reranked =
+        supported_shape_tail_slot_semantic_reranked_report(&default, &semantic);
     let learned_profile_semantic_reranked =
         learned_profile_semantic_reranked_report(&default, &semantic_corroborated_reranked);
     let learned_policy_semantic_holdout_reranked = learned_policy_holdout_semantic_reranked_report(
@@ -3724,6 +3740,12 @@ pub fn semantic_precision_gate_report_with_provider_and_range_options(
         &default,
         &supported_candidate_tail_slot_reranked,
         "semantic_supported_candidate_tail_slot_oracle",
+        NamedCaseKind::Win,
+    ));
+    named_wins.extend(named_cases(
+        &default,
+        &supported_shape_tail_slot_semantic_reranked,
+        "semantic_supported_shape_tail_slot_reranked",
         NamedCaseKind::Win,
     ));
     named_wins.extend(named_cases(
@@ -3788,6 +3810,12 @@ pub fn semantic_precision_gate_report_with_provider_and_range_options(
     ));
     named_regressions.extend(named_cases(
         &default,
+        &supported_shape_tail_slot_semantic_reranked,
+        "semantic_supported_shape_tail_slot_reranked",
+        NamedCaseKind::Regression,
+    ));
+    named_regressions.extend(named_cases(
+        &default,
         &learned_profile_semantic_reranked,
         "semantic_learned_profile_reranked",
         NamedCaseKind::Regression,
@@ -3840,6 +3868,11 @@ pub fn semantic_precision_gate_report_with_provider_and_range_options(
     ));
     named_regressions.extend(protected_evidence_regressions(
         &default,
+        &supported_shape_tail_slot_semantic_reranked,
+        "semantic_supported_shape_tail_slot_reranked",
+    ));
+    named_regressions.extend(protected_evidence_regressions(
+        &default,
         &learned_profile_semantic_reranked,
         "semantic_learned_profile_reranked",
     ));
@@ -3884,6 +3917,12 @@ pub fn semantic_precision_gate_report_with_provider_and_range_options(
         &supported_candidate_tail_slot_reranked,
         "semantic_supported_candidate_tail_slot_oracle",
         "Supported-candidate tail-slot semantic oracle",
+    );
+    let supported_shape_tail_slot_semantic_reranker_contribution = reranker_contribution_summary(
+        &default,
+        &supported_shape_tail_slot_semantic_reranked,
+        "semantic_supported_shape_tail_slot_reranked",
+        "Supported-shape tail-slot semantic reranker",
     );
     let learned_profile_semantic_reranker_contribution = reranker_contribution_summary(
         &default,
@@ -3973,6 +4012,22 @@ pub fn semantic_precision_gate_report_with_provider_and_range_options(
         "Eval-only oracle that inserts semantic-generated missed target candidates with non-semantic support into protected tail slots.",
     ));
     variants.push(gate_variant(
+        "semantic_supported_shape_tail_slot_reranked",
+        SemanticPrecisionVariantStatus::Evaluated,
+        true,
+        false,
+        true,
+        Some(
+            supported_shape_tail_slot_semantic_reranked
+                .ranking_comparison
+                .combined
+                .clone(),
+        ),
+        &supported_shape_tail_slot_semantic_reranked,
+        "eval_only",
+        "Eval-only source-free shape predictor that inserts supported semantic candidates matching symbol/Python/dependency-co-change profiles into protected tail slots.",
+    ));
+    variants.push(gate_variant(
         "semantic_learned_profile_reranked",
         SemanticPrecisionVariantStatus::Evaluated,
         true,
@@ -4033,6 +4088,11 @@ pub fn semantic_precision_gate_report_with_provider_and_range_options(
             &supported_candidate_tail_slot_reranker_contribution,
         ),
     );
+    diagnostics.extend(
+        supported_shape_tail_slot_semantic_reranker_contribution_diagnostics(
+            &supported_shape_tail_slot_semantic_reranker_contribution,
+        ),
+    );
     diagnostics.extend(learned_profile_semantic_reranker_contribution_diagnostics(
         &learned_profile_semantic_reranker_contribution,
     ));
@@ -4074,6 +4134,7 @@ pub fn semantic_precision_gate_report_with_provider_and_range_options(
         semantic_corroborated_reranker_contribution,
         tail_slot_semantic_reranker_contribution,
         supported_candidate_tail_slot_reranker_contribution,
+        supported_shape_tail_slot_semantic_reranker_contribution,
         family_budget_semantic_reranker_contribution,
         learned_profile_semantic_reranker_contribution,
         learned_semantic_policy,
@@ -5087,6 +5148,53 @@ fn supported_candidate_tail_slot_reranked_report(
     constrained
 }
 
+fn supported_shape_tail_slot_semantic_reranked_report(
+    default: &HistoricalEvalReport,
+    semantic: &HistoricalEvalReport,
+) -> HistoricalEvalReport {
+    let semantic_by_sha = semantic
+        .commits
+        .iter()
+        .map(|commit| (commit.sha.as_str(), commit))
+        .collect::<BTreeMap<_, _>>();
+    let mut constrained = default.clone();
+    constrained.eval_range_id = format!(
+        "{}:semantic-supported-shape-tail-slot",
+        default.eval_range_id
+    );
+    constrained.effective_filters.semantic_enabled = true;
+    constrained.effective_filters.semantic_provider =
+        semantic.effective_filters.semantic_provider.clone();
+    constrained.runtime.total_millis = default
+        .runtime
+        .total_millis
+        .saturating_add(semantic.runtime.total_millis);
+
+    let ranking_budget = constrained.ranking_comparison.k.max(1);
+    for commit in &mut constrained.commits {
+        let Some(semantic_commit) = semantic_by_sha.get(commit.sha.as_str()) else {
+            refresh_commit_ranking_metrics(commit);
+            continue;
+        };
+        let supported_candidate_paths = supported_shape_semantic_candidate_paths(semantic_commit);
+        if supported_candidate_paths.is_empty() {
+            refresh_commit_ranking_metrics(commit);
+            continue;
+        }
+        commit.recommended_context_files = tail_slot_semantic_files(
+            &commit.recommended_context_files,
+            &supported_candidate_paths,
+            ranking_budget,
+        );
+        refresh_commit_ranking_metrics(commit);
+    }
+
+    refresh_historical_report_ranking_metrics(&mut constrained);
+    constrained.recommended_research_actions =
+        historical_recommended_research_actions(&constrained);
+    constrained
+}
+
 fn supported_semantic_candidate_missed_paths(commit: &HistoricalCommitEval) -> Vec<String> {
     commit
         .candidate_missed_file_profiles_at_10
@@ -5100,6 +5208,21 @@ fn supported_semantic_candidate_missed_paths(commit: &HistoricalCommitEval) -> V
                     .signals
                     .iter()
                     .any(|signal| signal != &RetrievalSignalKind::Semantic)
+        })
+        .map(|profile| profile.path.clone())
+        .collect()
+}
+
+fn supported_shape_semantic_candidate_paths(commit: &HistoricalCommitEval) -> Vec<String> {
+    let query_family = reranker_query_family(commit);
+    commit
+        .supported_semantic_candidate_profiles_at_10
+        .iter()
+        .filter(|profile| {
+            query_family == "symbol_identifier"
+                && profile.role == FileRole::Source
+                && reranker_path_family(&profile.path) == "python_source"
+                && profile.support_family == "dependency_co_change"
         })
         .map(|profile| profile.path.clone())
         .collect()
@@ -7816,6 +7939,53 @@ fn supported_candidate_tail_slot_reranker_contribution_diagnostics(
     diagnostics
 }
 
+fn supported_shape_tail_slot_semantic_reranker_contribution_diagnostics(
+    summary: &RerankerContributionSummary,
+) -> Vec<Diagnostic> {
+    if summary.evaluated_commits == 0 {
+        return Vec::new();
+    }
+    let mut diagnostics = Vec::new();
+    if summary.regressed_commit_count > 0 || summary.target_hit_delta < 0 {
+        diagnostics.push(Diagnostic {
+            code: "semantic_supported_shape_tail_slot_reranker_regression".to_string(),
+            severity: DiagnosticSeverity::Warning,
+            message: "Source-free supported-shape tail-slot semantic reranking lost target hits; keep this profile predictor eval-only.".to_string(),
+            paths: summary
+                .regressed_cases
+                .iter()
+                .flat_map(|case| case.paths.clone())
+                .take(10)
+                .collect(),
+            count: summary.regressed_commit_count,
+        });
+    } else if summary.target_hit_delta > 0 && summary.default_only_target_hit_count == 0 {
+        diagnostics.push(Diagnostic {
+            code: "semantic_supported_shape_tail_slot_reranker_clean_lift".to_string(),
+            severity: DiagnosticSeverity::Info,
+            message: "Source-free supported-shape tail-slot semantic reranking added target hits without default-only target churn in this gate.".to_string(),
+            paths: summary
+                .improved_cases
+                .iter()
+                .flat_map(|case| case.paths.clone())
+                .take(10)
+                .collect(),
+            count: summary.improved_commit_count,
+        });
+    } else {
+        diagnostics.push(Diagnostic {
+            code: "semantic_supported_shape_tail_slot_reranker_neutral".to_string(),
+            severity: DiagnosticSeverity::Info,
+            message:
+                "Source-free supported-shape tail-slot semantic reranking preserved target hits but did not add target hits in this gate."
+                    .to_string(),
+            paths: Vec::new(),
+            count: summary.neutral_commit_count,
+        });
+    }
+    diagnostics
+}
+
 fn learned_profile_semantic_reranker_contribution_diagnostics(
     summary: &RerankerContributionSummary,
 ) -> Vec<Diagnostic> {
@@ -9493,6 +9663,8 @@ fn evaluate_historical_commit_sample(
         .collect::<Vec<_>>();
     let candidate_missed_file_profiles_at_10 =
         candidate_missed_file_profiles(&missing_files_at_10, &plan, &candidate_roles_by_path);
+    let supported_semantic_candidate_profiles_at_10 =
+        supported_semantic_candidate_profiles(&recommended_context_files, &plan, 10, 20);
     let ablation_rankings = ablation_signals()
         .into_iter()
         .map(|signal| {
@@ -9581,6 +9753,7 @@ fn evaluate_historical_commit_sample(
             missing_files_at_10,
             candidate_missed_files_at_10,
             candidate_missed_file_profiles_at_10,
+            supported_semantic_candidate_profiles_at_10,
             source_files_changed: source_changed_files.len(),
             source_hits_at_5,
             source_hits_at_10,
@@ -11543,6 +11716,86 @@ fn candidate_missed_file_profiles(
             })
         })
         .collect()
+}
+
+fn supported_semantic_candidate_profiles(
+    selected_files: &[String],
+    plan: &ContextPlan,
+    selected_limit: usize,
+    profile_limit: usize,
+) -> Vec<SupportedSemanticCandidateProfile> {
+    let selected = selected_files
+        .iter()
+        .take(selected_limit)
+        .cloned()
+        .collect::<BTreeSet<_>>();
+    let mut profiles = plan
+        .retrieval_candidates
+        .iter()
+        .filter_map(|candidate| {
+            let path = candidate.path.as_ref()?;
+            if selected.contains(path) {
+                return None;
+            }
+            let signals = candidate_signals(candidate);
+            if !signals
+                .iter()
+                .any(|signal| signal == &RetrievalSignalKind::Semantic)
+            {
+                return None;
+            }
+            let support_signals = signals
+                .iter()
+                .filter(|signal| signal != &&RetrievalSignalKind::Semantic)
+                .cloned()
+                .collect::<Vec<_>>();
+            if support_signals.is_empty() {
+                return None;
+            }
+            Some((
+                path.clone(),
+                candidate.confidence,
+                SupportedSemanticCandidateProfile {
+                    path: path.clone(),
+                    role: candidate.role.clone().unwrap_or(FileRole::Unknown),
+                    context_area: context_area_for_path(path),
+                    support_family: signal_family_code(&support_signals),
+                    signals,
+                },
+            ))
+        })
+        .collect::<Vec<_>>();
+    profiles.sort_by(|(left_path, left_score, _), (right_path, right_score, _)| {
+        right_score
+            .total_cmp(left_score)
+            .then_with(|| left_path.cmp(right_path))
+    });
+    profiles
+        .into_iter()
+        .map(|(_, _, profile)| profile)
+        .take(profile_limit)
+        .collect()
+}
+
+fn candidate_signals(candidate: &RetrievalCandidate) -> Vec<RetrievalSignalKind> {
+    let mut signals = Vec::new();
+    for signal in candidate
+        .signal_scores
+        .iter()
+        .map(|score| score.signal.clone())
+        .chain(
+            candidate
+                .evidence
+                .iter()
+                .map(|evidence| evidence.signal.clone()),
+        )
+    {
+        if !signals.contains(&signal) {
+            signals.push(signal);
+        }
+    }
+    signals.sort_by_key(signal_sort_key);
+    signals
 }
 
 fn signal_sort_key(signal: &RetrievalSignalKind) -> u8 {
@@ -14640,6 +14893,67 @@ mod tests {
     }
 
     #[test]
+    fn supported_shape_tail_slot_reranker_recovers_source_free_supported_candidate() {
+        let mut default = empty_historical_eval_report("semantic-supported-shape-tail");
+        default.commits[0].query_trace =
+            Some(query_trace_with_facets(vec![QueryFacetKind::Symbol]));
+        default.commits[0].retrieval_target_files = vec!["schema_agent/core/state.py".to_string()];
+        default.commits[0].changed_path_labels = vec![historical_changed_path_label(
+            "schema_agent/core/state.py",
+            FileRole::Source,
+        )];
+        default.commits[0].recommended_context_files = (0..10)
+            .map(|index| format!("src/default_{index}.rs"))
+            .collect();
+        refresh_commit_ranking_metrics(&mut default.commits[0]);
+        refresh_historical_report_ranking_metrics(&mut default);
+
+        let mut semantic = default.clone();
+        semantic.commits[0].supported_semantic_candidate_profiles_at_10 =
+            vec![SupportedSemanticCandidateProfile {
+                path: "schema_agent/core/state.py".to_string(),
+                role: FileRole::Source,
+                context_area: "schema_agent/core".to_string(),
+                support_family: "dependency_co_change".to_string(),
+                signals: vec![
+                    RetrievalSignalKind::Semantic,
+                    RetrievalSignalKind::Dependency,
+                    RetrievalSignalKind::CoChange,
+                ],
+            }];
+
+        let constrained = supported_shape_tail_slot_semantic_reranked_report(&default, &semantic);
+
+        assert_eq!(
+            &constrained.commits[0].recommended_context_files[..8],
+            &default.commits[0].recommended_context_files[..8]
+        );
+        assert_eq!(
+            constrained.commits[0].recommended_context_files[8],
+            "schema_agent/core/state.py"
+        );
+        assert_eq!(
+            constrained.commits[0].file_hits_at_10,
+            vec!["schema_agent/core/state.py".to_string()]
+        );
+        assert_eq!(constrained.file_recall_at_10, 1.0);
+
+        let contribution = reranker_contribution_summary(
+            &default,
+            &constrained,
+            "semantic_supported_shape_tail_slot_reranked",
+            "Supported-shape tail-slot semantic reranker",
+        );
+        assert_eq!(contribution.target_hit_delta, 1);
+        let diagnostics =
+            supported_shape_tail_slot_semantic_reranker_contribution_diagnostics(&contribution);
+        assert_eq!(
+            diagnostics[0].code,
+            "semantic_supported_shape_tail_slot_reranker_clean_lift"
+        );
+    }
+
+    #[test]
     fn learned_profile_semantic_report_uses_leave_one_out_safe_profiles() {
         let mut default = empty_historical_eval_report("semantic-learned-profile");
         default.evaluated_commits = 2;
@@ -15190,6 +15504,8 @@ mod tests {
             semantic_corroborated_reranker_contribution: RerankerContributionSummary::default(),
             tail_slot_semantic_reranker_contribution: RerankerContributionSummary::default(),
             supported_candidate_tail_slot_reranker_contribution:
+                RerankerContributionSummary::default(),
+            supported_shape_tail_slot_semantic_reranker_contribution:
                 RerankerContributionSummary::default(),
             family_budget_semantic_reranker_contribution: RerankerContributionSummary::default(),
             learned_profile_semantic_reranker_contribution: RerankerContributionSummary::default(),
@@ -15894,6 +16210,7 @@ mod tests {
             missing_files_at_10: Vec::new(),
             candidate_missed_files_at_10: Vec::new(),
             candidate_missed_file_profiles_at_10: Vec::new(),
+            supported_semantic_candidate_profiles_at_10: Vec::new(),
             source_files_changed: 0,
             source_hits_at_5: 0,
             source_hits_at_10: 0,
@@ -17064,6 +17381,7 @@ mod tests {
                     signals: vec![RetrievalSignalKind::Lexical],
                 },
             ],
+            supported_semantic_candidate_profiles_at_10: Vec::new(),
             source_files_changed: 4,
             source_hits_at_5: 1,
             source_hits_at_10: 1,
@@ -17246,6 +17564,7 @@ mod tests {
                     signals: vec![RetrievalSignalKind::RelatedTest],
                 },
             ],
+            supported_semantic_candidate_profiles_at_10: Vec::new(),
             source_files_changed: 2,
             source_hits_at_5: 0,
             source_hits_at_10: 0,
@@ -17609,6 +17928,7 @@ mod tests {
                 missing_files_at_10: Vec::new(),
                 candidate_missed_files_at_10: Vec::new(),
                 candidate_missed_file_profiles_at_10: Vec::new(),
+                supported_semantic_candidate_profiles_at_10: Vec::new(),
                 source_files_changed: 0,
                 source_hits_at_5: 0,
                 source_hits_at_10: 0,

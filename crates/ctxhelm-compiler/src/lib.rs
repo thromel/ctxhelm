@@ -2041,6 +2041,7 @@ mod tests {
                 missing_files_at_10: Vec::new(),
                 candidate_missed_files_at_10: Vec::new(),
                 candidate_missed_file_profiles_at_10: Vec::new(),
+                supported_semantic_candidate_profiles_at_10: Vec::new(),
                 source_files_changed: 1,
                 source_hits_at_5: 1,
                 source_hits_at_10: 1,

@@ -374,6 +374,16 @@ is an upper bound, not runtime policy, because it uses eval target-miss
 profiles. The next step is a source-free predictor for the
 `symbol_identifier` / `python_source` supported-candidate shape.
 
+Phase 298 adds that source-free predictor as the eval-only
+`semantic_supported_shape_tail_slot_reranked` variant. Historical commit rows
+now expose `supportedSemanticCandidateProfilesAt10`, and the variant uses only
+those generated supported semantic candidate profiles to insert the measured
+`symbol_identifier` / `python_source` / `dependency_co_change` shape into
+protected tail slots. On the same VeriSchema Jina proof it matches the oracle's
+clean result: `schema_agent/core/state.py`, target hits `13 -> 14`, file
+Recall@10 `0.3438596`, no regressions, and no default-only target churn. Keep
+it eval-only until broader range/repo proof shows repeatable no-churn lift.
+
 Phase 196 reserves selected validation areas in broad context-area guidance and adds package-mirrored related-test affinity. The accepted release-binary proof promotes with selected-file/source/test/validation metrics unchanged while improving VeriSchema broad context-area recall from `0.5777778 -> 0.84444445` and next-read recovery from `16 -> 19` of `39` missed@10 files. A related-test-only intermediate proof was rejected because it did not move the product proof.
 
 Phase 197 adds source-free agent-evidence recovery accounting to context-area next-read summaries. The fresh release-binary proof promotes with selected-file/source/test/validation/broad-area metrics unchanged while showing VeriSchema has `29 / 39` missed@10 files recoverable through the full agent evidence bundle, compared with `19 / 39` through progressive next reads alone.

@@ -58,7 +58,7 @@ Measured Phase 62 status:
 - `local_hash`: deterministic scaffold, model `ctxhelm-local-hash-v1`, 64 dimensions, not a quality backend.
 - `local_fastembed`: production-local backend, quality backend `true`, local-only, no cloud source transfer.
 - Default production-local model: `AllMiniLML6V2Q` with 384 dimensions.
-- Jina code model status: still available explicitly as `JinaEmbeddingsV2BaseCode` with 768 dimensions and provider-specific `query:` / `passage:` text, but Phase 293 keeps it diagnostic-only because candidate quality improved without Recall@10 lift and runtime remained high. Phase 294 also rejects promoting semantic as post-top-K next-read guidance for that setup because the only appended next-read path was a non-target. Phase 295 rejects `AllMiniLML12V2Q` and `AllMiniLML12V2` as simple model-swap fixes because both are noisier than Jina on the same targeted proof. Phase 296 shows the remaining Jina candidate miss has `dependency_co_change` support. Phase 297's eval-only supported-candidate tail-slot oracle recovers that target cleanly, so the next semantic slice should replace the oracle with a source-free predictor rather than broaden documents or swap models.
+- Jina code model status: still available explicitly as `JinaEmbeddingsV2BaseCode` with 768 dimensions and provider-specific `query:` / `passage:` text, but Phase 293 keeps it diagnostic-only because candidate quality improved without Recall@10 lift and runtime remained high. Phase 294 also rejects promoting semantic as post-top-K next-read guidance for that setup because the only appended next-read path was a non-target. Phase 295 rejects `AllMiniLML12V2Q` and `AllMiniLML12V2` as simple model-swap fixes because both are noisier than Jina on the same targeted proof. Phase 296 shows the remaining Jina candidate miss has `dependency_co_change` support. Phase 297's eval-only supported-candidate tail-slot oracle recovers that target cleanly, and Phase 298 replaces the oracle dependency with a source-free `symbol_identifier` / `python_source` / `dependency_co_change` supported-shape predictor that matches the clean lift on the targeted slice. Keep that predictor eval-only until broader proof shows the shape repeats without target churn.
 - Model cache: defaults to repo `.ctxhelm/cache/fastembed` when run inside a git repo, otherwise `CTXHELM_HOME/cache/fastembed`; override with `CTXHELM_FASTEMBED_CACHE_DIR`.
 - Query-time vector cache: bounded in-process cache for repeated source-free document embeddings.
 - Persisted query-vector cache: source-free query hashes and vectors are stored in SQLite so repeated fresh CLI/MCP processes can reuse query embeddings without storing raw query text.
@@ -240,6 +240,16 @@ the oracle recovers `schema_agent/core/state.py`, improves target hits
 `13 -> 14`, and has no default-only target churn. It is explicitly eval-only
 because it consumes `candidateMissedFileProfilesAt10`, which are built from eval
 target misses.
+
+Phase 298 adds the eval-only source-free
+`semantic_supported_shape_tail_slot_reranked` variant and
+`supportedShapeTailSlotSemanticRerankerContribution`. It uses generated
+`supportedSemanticCandidateProfilesAt10` rows, not target-miss profiles, and
+only inserts the measured `symbol_identifier` / `python_source` /
+`dependency_co_change` supported shape into protected tail slots. On the same
+targeted proof it matches the oracle's clean lift: `schema_agent/core/state.py`,
+target hits `13 -> 14`, and no default-only target churn. Keep it eval-only
+until broader range/repo proof shows the shape repeats.
 
 ## When To Avoid It
 
