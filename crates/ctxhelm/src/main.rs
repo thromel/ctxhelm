@@ -6531,6 +6531,9 @@ fn render_historical_eval_report(report: &HistoricalEvalReport) -> String {
     output.push_str(&render_candidate_coverage_summary(
         &report.candidate_coverage_summary,
     ));
+    output.push_str(&render_supported_semantic_candidate_profile_summary(
+        &report.supported_semantic_candidate_profile_summary,
+    ));
     output.push_str(&render_memory_reuse_summary(&report.memory_reuse_summary));
     output.push_str(&render_compiler_research_actions(
         &report.recommended_research_actions,
@@ -6865,6 +6868,52 @@ fn render_candidate_coverage_summary(
             .collect::<Vec<_>>()
             .join(", ");
         output.push_str(&format!("- Top candidate-recoverable areas: `{areas}`\n"));
+    }
+    output.push('\n');
+    output
+}
+
+fn render_supported_semantic_candidate_profile_summary(
+    summary: &ctxhelm_compiler::SupportedSemanticCandidateProfileSummary,
+) -> String {
+    if summary.profile_count == 0 {
+        return String::new();
+    }
+    let mut output = format!(
+        "- Supported semantic candidate profiles: profiles `{}`, targets `{}`, non-targets `{}`, target precision `{:.2}`\n- Supported semantic candidate shapes: total `{}`, positive `{}`, thin cells `{}`, repeated-target shapes `{}`\n- Supported semantic candidate profiles source-free: `{}`\n",
+        summary.profile_count,
+        summary.target_count,
+        summary.non_target_count,
+        summary.target_precision,
+        summary.shape_count,
+        summary.positive_shape_count,
+        summary.thin_cell_count,
+        summary.repeated_target_shape_count,
+        !summary.source_text_logged
+    );
+    if !summary.shapes.is_empty() {
+        let shapes = summary
+            .shapes
+            .iter()
+            .take(5)
+            .map(|shape| {
+                format!(
+                    "{}:{:?}:{}:{} targets {}/{} repeated {} thin {}",
+                    shape.query_family,
+                    shape.role,
+                    shape.path_family,
+                    shape.support_family,
+                    shape.target_count,
+                    shape.profile_count,
+                    shape.repeated_target_support,
+                    shape.thin_cell
+                )
+            })
+            .collect::<Vec<_>>()
+            .join("; ");
+        output.push_str(&format!(
+            "- Top supported semantic candidate shapes: `{shapes}`\n"
+        ));
     }
     output.push('\n');
     output
@@ -7922,6 +7971,34 @@ mod tests {
                 ],
                 source_text_logged: false,
             },
+            supported_semantic_candidate_profile_summary:
+                ctxhelm_compiler::SupportedSemanticCandidateProfileSummary {
+                    profile_count: 3,
+                    target_count: 1,
+                    non_target_count: 2,
+                    target_precision: 1.0 / 3.0,
+                    shape_count: 1,
+                    positive_shape_count: 1,
+                    thin_cell_count: 0,
+                    repeated_target_shape_count: 0,
+                    source_text_logged: false,
+                    shapes: vec![ctxhelm_compiler::SupportedSemanticCandidateShapeSummary {
+                        query_family: "symbol_identifier".to_string(),
+                        role: ctxhelm_core::FileRole::Source,
+                        path_family: "typescript_source".to_string(),
+                        support_family: "dependency_co_change".to_string(),
+                        profile_count: 3,
+                        target_count: 1,
+                        non_target_count: 2,
+                        target_precision: 1.0 / 3.0,
+                        commit_count: 1,
+                        target_commit_count: 1,
+                        thin_cell: false,
+                        repeated_target_support: false,
+                        example_target_paths: vec!["src/auth.ts".to_string()],
+                        example_non_target_paths: vec!["src/noise.ts".to_string()],
+                    }],
+                },
             memory_reuse_summary: ctxhelm_compiler::MemoryReuseSummary {
                 commits_with_memory_candidates: 1,
                 memory_candidate_count: 2,
@@ -8072,6 +8149,15 @@ mod tests {
         assert!(markdown.contains("Candidate-recoverable signals: `co_change=1, dependency=1`"));
         assert!(markdown.contains("No-candidate roles: `test=1`"));
         assert!(markdown.contains("Top candidate-recoverable areas: `src/auth=1`"));
+        assert!(markdown.contains(
+            "Supported semantic candidate profiles: profiles `3`, targets `1`, non-targets `2`"
+        ));
+        assert!(markdown.contains(
+            "Supported semantic candidate shapes: total `1`, positive `1`, thin cells `0`, repeated-target shapes `0`"
+        ));
+        assert!(markdown.contains(
+            "Top supported semantic candidate shapes: `symbol_identifier:Source:typescript_source:dependency_co_change targets 1/3 repeated false thin false`"
+        ));
         assert!(markdown
             .contains("Memory reuse candidates: commits `1`, candidates `2`, selected@10 `1`"));
         assert!(markdown.contains("Memory reuse unique target hits: `1`"));

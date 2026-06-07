@@ -392,6 +392,14 @@ commits `0`, and default-only target hits `0`. The only lift remains the
 original VeriSchema older `schema_agent/core/state.py` case; the other seven
 slices are neutral.
 
+Phase 300 adds the source-free `supportedSemanticCandidateProfileSummary` to
+history and gate reports instead of adding another predictor. Across the eight
+Phase 299 slices, supported profiles are low-base-rate evidence: 787 profiles,
+22 targets, 765 non-targets, `0.027954` target precision, 171 per-slice shape
+rows, 90 thin cells, and only one repeated-target shape. The repeated shape is
+docs/planning noise, while the VeriSchema source lift remains a singleton thin
+cell. Keep this branch diagnostic-only.
+
 Phase 196 reserves selected validation areas in broad context-area guidance and adds package-mirrored related-test affinity. The accepted release-binary proof promotes with selected-file/source/test/validation metrics unchanged while improving VeriSchema broad context-area recall from `0.5777778 -> 0.84444445` and next-read recovery from `16 -> 19` of `39` missed@10 files. A related-test-only intermediate proof was rejected because it did not move the product proof.
 
 Phase 197 adds source-free agent-evidence recovery accounting to context-area next-read summaries. The fresh release-binary proof promotes with selected-file/source/test/validation/broad-area metrics unchanged while showing VeriSchema has `29 / 39` missed@10 files recoverable through the full agent evidence bundle, compared with `19 / 39` through progressive next reads alone.

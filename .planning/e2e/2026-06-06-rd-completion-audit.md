@@ -159,6 +159,15 @@ one improved commit, zero regressions, and zero default-only target hits. The
 only lift remains the original VeriSchema older `schema_agent/core/state.py`
 case, so the variant is safe but too sparse for runtime/default promotion.
 
+Phase 300 addendum:
+`.planning/e2e/2026-06-07-phase300-supported-profile-base-rate-diagnostic.md`
+adds `supportedSemanticCandidateProfileSummary` to history and gate reports.
+Across the eight Phase 299 slices, supported semantic candidate profiles have
+787 rows, 22 targets, 765 non-targets, and `0.027954` target precision. The
+shape surface has 171 per-slice rows, 90 thin cells, and only one
+repeated-target shape, which is docs/planning noise. The VeriSchema source lift
+remains a singleton thin cell, so this branch is diagnostic-only.
+
 ## Remaining R&D Risk
 
 1. Semantic is not yet a proven default-lift channel. It is useful and bounded,
@@ -256,11 +265,14 @@ case, so the variant is safe but too sparse for runtime/default promotion.
    tail-slot oracle can recover that target without churn. Phase 298 replaces
    the oracle dependency with a source-free supported-shape predictor on the
    targeted slice. Phase 299 broadens that predictor across eight stable
-   slices and finds zero churn but only one lifted commit. The next semantic
-   work should treat corrected Jina as a diagnostic backend and seek a broader
-   source-free candidate-retention signal or a much narrower held-out learned
-   separator, not more single-query expansion, MiniLM model swaps, next-read
-   promotion, broad document expansion, or default model promotion.
+   slices and finds zero churn but only one lifted commit. Phase 300 records the
+   broader supported-profile base rate directly and shows 787 profiles with
+   only 22 targets, 90 thin per-slice cells, and no repeated source shape. The
+   next semantic work should treat corrected Jina as a diagnostic backend and
+   seek a broader source-free candidate-retention signal or a much narrower
+   held-out learned separator, not more single-query expansion, MiniLM model
+   swaps, next-read promotion, broad document expansion, supported-shape
+   promotion, or default model promotion.
 2. Claude has current workflow proof but not a fresh paired outcome suite on the
    same level as Codex Phase 245/250. Phase 264 confirms this is still a
    client-availability problem: Claude Code is rate-limited, while Codex remains
@@ -333,9 +345,11 @@ case, so the variant is safe but too sparse for runtime/default promotion.
    `symbol_identifier` / `python_source` / `dependency_co_change` supported
    shape predictor on the targeted slice. Phase 299 broadens the predictor and
    finds it safe but sparse: one lift, no regressions, no default-only target
-   churn across eight slices. The next semantic step is broader source-free
-   candidate-retention evidence, or a materially narrower learned separator,
-   not runtime promotion.
+   churn across eight slices. Phase 300 turns that branch into a base-rate
+   diagnostic and shows supported profiles have only `0.027954` target
+   precision across the same slices. The next semantic step is broader
+   source-free candidate-retention evidence, or a materially narrower learned
+   separator, not runtime promotion.
    Increasing the local-fastembed document cap, adding broad Python path metadata, adding
    generic source-role query words, adding another hand-written route, merely
    widening or splitting the same gate, relaxing profile keys, current
@@ -400,13 +414,16 @@ profiles and shows the remaining Jina candidate miss is
 adds a gold-backed supported-candidate tail-slot oracle that recovers
 that target without churn. Phase 298 replaces the oracle dependency with a
 source-free supported-shape predictor on the targeted slice. Phase 299 shows
-that predictor is safe but too sparse across eight stable slices. The remaining
+that predictor is safe but too sparse across eight stable slices. Phase 300
+turns the supported-profile base rate into a durable source-free summary and
+confirms the surface is mostly non-target singleton evidence. The remaining
 semantic R&D path is a broader source-free candidate-retention signal or a much
 narrower learned separator, not more same-range doubling, not coarse profile-key
 relaxation, not generic role words, not current cross-repo aggregation, not
 candidate-path hints, candidate-sibling hints, generic concept-term hints,
-tail-slot reranking, semantic next-read promotion, MiniLM12 model swaps, or
-Jina as runtime/default policy, and not runtime/default promotion.
+tail-slot reranking, semantic next-read promotion, MiniLM12 model swaps,
+supported-shape promotion, or Jina as runtime/default policy, and not
+runtime/default promotion.
 Phase 253 reduces memory risk by
 proving cross-repo Codex target-consumption lift. Phase 255 further reduces
 memory risk by preserving that target consumption while improving irrelevant

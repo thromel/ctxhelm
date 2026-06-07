@@ -51,7 +51,9 @@ pub use eval::{
     SemanticMissedTargetGapFamily, SemanticPrecisionGateDecision,
     SemanticPrecisionGateRangeOptions, SemanticPrecisionGateReport, SemanticPrecisionNamedCase,
     SemanticPrecisionVariant, SemanticPrecisionVariantStatus, SemanticQueryMode,
-    SignalAblationResult, SignalSaturationMetric, TokenRoiMetric,
+    SignalAblationResult, SignalSaturationMetric, SupportedSemanticCandidateProfile,
+    SupportedSemanticCandidateProfileSummary, SupportedSemanticCandidateShapeSummary,
+    TokenRoiMetric,
 };
 pub use graph::build_graph_neighborhood_report;
 pub use packs::{
@@ -1962,6 +1964,8 @@ mod tests {
                 }],
                 source_text_logged: false,
             },
+            supported_semantic_candidate_profile_summary:
+                SupportedSemanticCandidateProfileSummary::default(),
             memory_reuse_summary: MemoryReuseSummary {
                 commits_with_memory_candidates: 1,
                 memory_candidate_count: 2,
@@ -2517,6 +2521,8 @@ mod tests {
             context_area_pressure_summary: ContextAreaPressureSummary::default(),
             context_area_next_read_summary: ContextAreaNextReadSummary::default(),
             candidate_coverage_summary: CandidateCoverageSummary::default(),
+            supported_semantic_candidate_profile_summary:
+                SupportedSemanticCandidateProfileSummary::default(),
             memory_reuse_summary: MemoryReuseSummary::default(),
             recommended_research_actions: Vec::new(),
             file_recall_at_5: 0.0,

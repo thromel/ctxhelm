@@ -378,6 +378,8 @@ pub struct SemanticPrecisionGateReport {
     #[serde(default)]
     pub semantic_next_read_contribution: SemanticNextReadContributionSummary,
     #[serde(default)]
+    pub supported_semantic_candidate_profile_summary: SupportedSemanticCandidateProfileSummary,
+    #[serde(default)]
     pub reranker_contribution: RerankerContributionSummary,
     #[serde(default)]
     pub routed_reranker_contribution: RerankerContributionSummary,
@@ -1366,6 +1368,8 @@ pub struct HistoricalEvalReport {
     #[serde(default)]
     pub candidate_coverage_summary: CandidateCoverageSummary,
     #[serde(default)]
+    pub supported_semantic_candidate_profile_summary: SupportedSemanticCandidateProfileSummary,
+    #[serde(default)]
     pub memory_reuse_summary: MemoryReuseSummary,
     #[serde(default)]
     pub recommended_research_actions: Vec<RecommendedResearchAction>,
@@ -1477,6 +1481,40 @@ pub struct CandidateCoverageSummary {
 pub struct CandidateCoverageAreaSummary {
     pub context_area: String,
     pub missed_count: usize,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct SupportedSemanticCandidateProfileSummary {
+    pub profile_count: usize,
+    pub target_count: usize,
+    pub non_target_count: usize,
+    pub target_precision: f32,
+    pub shape_count: usize,
+    pub positive_shape_count: usize,
+    pub thin_cell_count: usize,
+    pub repeated_target_shape_count: usize,
+    pub source_text_logged: bool,
+    pub shapes: Vec<SupportedSemanticCandidateShapeSummary>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct SupportedSemanticCandidateShapeSummary {
+    pub query_family: String,
+    pub role: FileRole,
+    pub path_family: String,
+    pub support_family: String,
+    pub profile_count: usize,
+    pub target_count: usize,
+    pub non_target_count: usize,
+    pub target_precision: f32,
+    pub commit_count: usize,
+    pub target_commit_count: usize,
+    pub thin_cell: bool,
+    pub repeated_target_support: bool,
+    pub example_target_paths: Vec<String>,
+    pub example_non_target_paths: Vec<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Default)]
@@ -4129,6 +4167,9 @@ pub fn semantic_precision_gate_report_with_provider_and_range_options(
         named_misses,
         semantic_contribution,
         semantic_next_read_contribution,
+        supported_semantic_candidate_profile_summary: semantic
+            .supported_semantic_candidate_profile_summary
+            .clone(),
         reranker_contribution,
         routed_reranker_contribution,
         semantic_corroborated_reranker_contribution,
@@ -6335,6 +6376,8 @@ fn refresh_historical_report_ranking_metrics(report: &mut HistoricalEvalReport) 
     report.token_roi = token_roi_metrics(&report.commits, k);
     report.average_recommended_context_files = average_recommended_context_files(&report.commits);
     report.protected_evidence = protected_evidence_summary(&report.commits);
+    report.supported_semantic_candidate_profile_summary =
+        supported_semantic_candidate_profile_summary(&report.commits);
     report.top_missing_files =
         top_missing_files(&report.commits, &roles_by_path_from_report(report), 10);
 }
@@ -9033,6 +9076,8 @@ pub fn evaluate_historical_commits(
     let context_area_pressure_summary = context_area_pressure_summary(&commits);
     let context_area_next_read_summary = context_area_next_read_summary(&commits);
     let candidate_coverage_summary = candidate_coverage_summary(&commits);
+    let supported_semantic_candidate_profile_summary =
+        supported_semantic_candidate_profile_summary(&commits);
     let memory_reuse_summary = memory_reuse_summary(&commits);
     let runtime = historical_eval_runtime_summary(
         &commits,
@@ -9072,6 +9117,7 @@ pub fn evaluate_historical_commits(
         context_area_pressure_summary,
         context_area_next_read_summary,
         candidate_coverage_summary,
+        supported_semantic_candidate_profile_summary,
         memory_reuse_summary,
         recommended_research_actions: Vec::new(),
         file_recall_at_5,
@@ -12582,6 +12628,148 @@ fn candidate_coverage_summary(commits: &[HistoricalCommitEval]) -> CandidateCove
     summary
 }
 
+struct SupportedSemanticCandidateShapeAccumulator {
+    query_family: String,
+    role: FileRole,
+    path_family: String,
+    support_family: String,
+    profile_count: usize,
+    target_count: usize,
+    commit_shas: BTreeSet<String>,
+    target_commit_shas: BTreeSet<String>,
+    example_target_paths: Vec<String>,
+    example_non_target_paths: Vec<String>,
+}
+
+fn supported_semantic_candidate_profile_summary(
+    commits: &[HistoricalCommitEval],
+) -> SupportedSemanticCandidateProfileSummary {
+    let mut summary = SupportedSemanticCandidateProfileSummary {
+        source_text_logged: false,
+        ..SupportedSemanticCandidateProfileSummary::default()
+    };
+    let mut shapes = BTreeMap::<
+        (String, String, String, String),
+        SupportedSemanticCandidateShapeAccumulator,
+    >::new();
+
+    for commit in commits {
+        let query_family = reranker_query_family(commit);
+        let target_files = commit
+            .retrieval_target_files
+            .iter()
+            .cloned()
+            .collect::<BTreeSet<_>>();
+        for profile in &commit.supported_semantic_candidate_profiles_at_10 {
+            summary.profile_count += 1;
+            let is_target = target_files.contains(&profile.path);
+            if is_target {
+                summary.target_count += 1;
+            }
+            let path_family = reranker_path_family(&profile.path);
+            let key = (
+                query_family.clone(),
+                file_role_label(&profile.role).to_string(),
+                path_family.clone(),
+                profile.support_family.clone(),
+            );
+            let shape =
+                shapes
+                    .entry(key)
+                    .or_insert_with(|| SupportedSemanticCandidateShapeAccumulator {
+                        query_family: query_family.clone(),
+                        role: profile.role.clone(),
+                        path_family,
+                        support_family: profile.support_family.clone(),
+                        profile_count: 0,
+                        target_count: 0,
+                        commit_shas: BTreeSet::new(),
+                        target_commit_shas: BTreeSet::new(),
+                        example_target_paths: Vec::new(),
+                        example_non_target_paths: Vec::new(),
+                    });
+            shape.profile_count += 1;
+            shape.commit_shas.insert(commit.sha.clone());
+            if is_target {
+                shape.target_count += 1;
+                shape.target_commit_shas.insert(commit.sha.clone());
+                push_limited_example(&mut shape.example_target_paths, &profile.path, 3);
+            } else {
+                push_limited_example(&mut shape.example_non_target_paths, &profile.path, 3);
+            }
+        }
+    }
+
+    summary.non_target_count = summary.profile_count.saturating_sub(summary.target_count);
+    if summary.profile_count > 0 {
+        summary.target_precision = summary.target_count as f32 / summary.profile_count as f32;
+    }
+
+    let mut shape_summaries = shapes
+        .into_values()
+        .map(|shape| {
+            let non_target_count = shape.profile_count.saturating_sub(shape.target_count);
+            let target_precision = if shape.profile_count > 0 {
+                shape.target_count as f32 / shape.profile_count as f32
+            } else {
+                0.0
+            };
+            let thin_cell = shape.profile_count < 3;
+            let repeated_target_support = shape.target_commit_shas.len() >= 2;
+            SupportedSemanticCandidateShapeSummary {
+                query_family: shape.query_family,
+                role: shape.role,
+                path_family: shape.path_family,
+                support_family: shape.support_family,
+                profile_count: shape.profile_count,
+                target_count: shape.target_count,
+                non_target_count,
+                target_precision,
+                commit_count: shape.commit_shas.len(),
+                target_commit_count: shape.target_commit_shas.len(),
+                thin_cell,
+                repeated_target_support,
+                example_target_paths: shape.example_target_paths,
+                example_non_target_paths: shape.example_non_target_paths,
+            }
+        })
+        .collect::<Vec<_>>();
+
+    summary.shape_count = shape_summaries.len();
+    summary.positive_shape_count = shape_summaries
+        .iter()
+        .filter(|shape| shape.target_count > 0)
+        .count();
+    summary.thin_cell_count = shape_summaries
+        .iter()
+        .filter(|shape| shape.thin_cell)
+        .count();
+    summary.repeated_target_shape_count = shape_summaries
+        .iter()
+        .filter(|shape| shape.repeated_target_support)
+        .count();
+
+    shape_summaries.sort_by(|left, right| {
+        right
+            .target_count
+            .cmp(&left.target_count)
+            .then_with(|| right.profile_count.cmp(&left.profile_count))
+            .then_with(|| left.query_family.cmp(&right.query_family))
+            .then_with(|| file_role_order(&left.role).cmp(&file_role_order(&right.role)))
+            .then_with(|| left.path_family.cmp(&right.path_family))
+            .then_with(|| left.support_family.cmp(&right.support_family))
+    });
+    shape_summaries.truncate(50);
+    summary.shapes = shape_summaries;
+    summary
+}
+
+fn push_limited_example(examples: &mut Vec<String>, path: &str, limit: usize) {
+    if examples.len() < limit && !examples.iter().any(|example| example == path) {
+        examples.push(path.to_string());
+    }
+}
+
 fn memory_reuse_summary(commits: &[HistoricalCommitEval]) -> MemoryReuseSummary {
     let mut summary = MemoryReuseSummary {
         source_text_logged: false,
@@ -14261,6 +14449,75 @@ mod tests {
     }
 
     #[test]
+    fn supported_semantic_candidate_profile_summary_counts_shape_base_rates() {
+        let mut report = empty_historical_eval_report("supported-profile-summary");
+        report.commits[0].sha = "shape-a".to_string();
+        report.commits[0].query_trace = Some(query_trace_with_facets(vec![QueryFacetKind::Symbol]));
+        report.commits[0].retrieval_target_files = vec!["src/target.rs".to_string()];
+        report.commits[0].supported_semantic_candidate_profiles_at_10 = vec![
+            SupportedSemanticCandidateProfile {
+                path: "src/target.rs".to_string(),
+                role: FileRole::Source,
+                context_area: "src".to_string(),
+                support_family: "dependency_co_change".to_string(),
+                signals: vec![
+                    RetrievalSignalKind::Dependency,
+                    RetrievalSignalKind::CoChange,
+                    RetrievalSignalKind::Semantic,
+                ],
+            },
+            SupportedSemanticCandidateProfile {
+                path: "src/noise.rs".to_string(),
+                role: FileRole::Source,
+                context_area: "src".to_string(),
+                support_family: "dependency_co_change".to_string(),
+                signals: vec![
+                    RetrievalSignalKind::Dependency,
+                    RetrievalSignalKind::CoChange,
+                    RetrievalSignalKind::Semantic,
+                ],
+            },
+        ];
+        let mut second = report.commits[0].clone();
+        second.sha = "shape-b".to_string();
+        second.retrieval_target_files = vec!["src/second_target.rs".to_string()];
+        second.supported_semantic_candidate_profiles_at_10 =
+            vec![SupportedSemanticCandidateProfile {
+                path: "src/second_target.rs".to_string(),
+                role: FileRole::Source,
+                context_area: "src".to_string(),
+                support_family: "dependency_co_change".to_string(),
+                signals: vec![
+                    RetrievalSignalKind::Dependency,
+                    RetrievalSignalKind::CoChange,
+                    RetrievalSignalKind::Semantic,
+                ],
+            }];
+        report.commits.push(second);
+
+        let summary = supported_semantic_candidate_profile_summary(&report.commits);
+
+        assert_eq!(summary.profile_count, 3);
+        assert_eq!(summary.target_count, 2);
+        assert_eq!(summary.non_target_count, 1);
+        assert_eq!(summary.shape_count, 1);
+        assert_eq!(summary.positive_shape_count, 1);
+        assert_eq!(summary.thin_cell_count, 0);
+        assert_eq!(summary.repeated_target_shape_count, 1);
+        assert_eq!(summary.shapes[0].query_family, "symbol_identifier");
+        assert_eq!(summary.shapes[0].role, FileRole::Source);
+        assert_eq!(summary.shapes[0].path_family, "rust_source");
+        assert_eq!(summary.shapes[0].support_family, "dependency_co_change");
+        assert_eq!(summary.shapes[0].profile_count, 3);
+        assert_eq!(summary.shapes[0].target_count, 2);
+        assert_eq!(summary.shapes[0].non_target_count, 1);
+        assert_eq!(summary.shapes[0].commit_count, 2);
+        assert_eq!(summary.shapes[0].target_commit_count, 2);
+        assert!(!summary.shapes[0].thin_cell);
+        assert!(summary.shapes[0].repeated_target_support);
+    }
+
+    #[test]
     fn support_profile_routed_semantic_only_inserts_clean_profiles() {
         let mut default = empty_historical_eval_report("support-route");
         let default_commit = &mut default.commits[0];
@@ -15499,6 +15756,8 @@ mod tests {
             named_misses: Vec::new(),
             semantic_contribution: SemanticContributionSummary::default(),
             semantic_next_read_contribution: SemanticNextReadContributionSummary::default(),
+            supported_semantic_candidate_profile_summary:
+                SupportedSemanticCandidateProfileSummary::default(),
             reranker_contribution: RerankerContributionSummary::default(),
             routed_reranker_contribution: RerankerContributionSummary::default(),
             semantic_corroborated_reranker_contribution: RerankerContributionSummary::default(),
@@ -17885,6 +18144,8 @@ mod tests {
             context_area_pressure_summary: ContextAreaPressureSummary::default(),
             context_area_next_read_summary: ContextAreaNextReadSummary::default(),
             candidate_coverage_summary: CandidateCoverageSummary::default(),
+            supported_semantic_candidate_profile_summary:
+                SupportedSemanticCandidateProfileSummary::default(),
             memory_reuse_summary: MemoryReuseSummary::default(),
             recommended_research_actions: Vec::new(),
             file_recall_at_5: 0.0,

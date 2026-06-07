@@ -687,6 +687,13 @@ regressions, and zero default-only target hits. The only lift is the original
 VeriSchema older `schema_agent/core/state.py` case, so the variant remains
 eval-only and is not runtime/default policy evidence.
 
+Phase 300 adds `supportedSemanticCandidateProfileSummary` to history and gate
+JSON so this sparse branch is measurable without another eval-only variant.
+Across the eight Phase 299 slices, supported semantic candidate profiles have
+787 rows, 22 targets, 765 non-targets, and only `0.027954` target precision;
+the one repeated-target shape is docs/planning noise, and the VeriSchema source
+lift remains a singleton thin cell.
+
 `local_hash` remains the deterministic scaffold. `local_fastembed` is the
 production-local backend and requires a build compiled with the
 `local-embeddings` feature.
@@ -959,6 +966,12 @@ supported-shape predictor that matches the clean lift. Phase 299 broadens that
 validation and finds no regressions but only one repeated application, so the
 next bar is a broader source-free candidate-retention signal or held-out learned
 separator before runtime policy.
+
+Phase 300 records the supported-profile base rate directly in history and gate
+reports. The eight-slice aggregate has 787 supported profiles, 22 targets, 765
+non-targets, 171 per-slice shape rows, 90 thin cells, and one repeated-target
+shape; this confirms the current supported-shape signal is diagnostic, not a
+runtime/default policy candidate.
 
 Use `ctxhelm eval learned-policy-cross-repo` to aggregate saved
 `learned-policy-train-test` JSON reports across repositories without rerunning
