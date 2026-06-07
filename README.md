@@ -36,9 +36,11 @@ Current proof snapshot:
 - The agent-evidence retrieval channel beats or matches lexical on every
   measured corpus, with average Recall@10 delta `+0.19379663`.
 - Codex CLI `0.137.0` currently produces real explicit-repo `prepare_task` and
-  `get_pack` MCP calls and a source-free outcome lift in the Codex agent-run
-  matrix: best ctxhelm lane improves target coverage by `+0.33` and reduces
-  command executions by `14`.
+  `get_pack` MCP calls and a source-free outcome lift in the retry-enabled
+  Codex R&D breadth suite: all ctxhelm lanes reach `1.00` average target-read
+  coverage versus baseline `0.7083333333333333`, with no evidence misses,
+  evidence-only targets, under-read targets, forbidden commands, client
+  failures, or rate limits.
 - Claude Code `2.1.163` is currently rate-limited in availability preflight;
   older Claude workflow proof remains historical evidence only.
 

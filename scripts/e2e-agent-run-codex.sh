@@ -636,6 +636,18 @@ run_lane() {
   local request_log="$lane_dir/ctxhelm-requests.jsonl"
   local ctxhelm_evidence="$lane_dir/ctxhelm-evidence.json"
   local lane_json="$lane_dir/lane.json"
+  local target_list
+  target_list="$(python3 -c 'import json,pathlib,sys; print(", ".join(json.loads(pathlib.Path(sys.argv[1]).read_text(encoding="utf-8"))))' "$target_json")"
+  local retry_instruction=""
+  if [[ "$lane" == *"-retry" ]]; then
+    retry_instruction=$(cat <<EOF
+This is a target-consumption retry. The previous attempt skipped at least one surfaced target.
+Before any other shell command after ctxhelm calls, consume every target path with read commands such as sed, cat, nl, head, or tail.
+Target paths: $target_list
+If docs, config, schema, or script targets are present, read those non-source targets first. Do not answer until every target path has been consumed or verified missing.
+EOF
+)
+  fi
 
   if [[ "$run_real" != "1" && "$require_real" != "1" ]]; then
     write_skip_lane "$lane" "$mode" "$lane_json" "real Codex execution not requested; set CTXHELM_RUN_REAL_CLIENT=1"
@@ -666,6 +678,7 @@ EOF
     prompt=$(cat <<EOF
 Do not edit files, do not write files, do not use shell redirection, do not run tests, and do not mutate git or global config. Do not run awk, bootstrap, setup, install, hook, or superpowers commands.
 First call ctxhelm prepare_task with explicit repo "$repo" and task "$task".
+$retry_instruction
 Use at most 8 shell commands total after ctxhelm calls.
 Identify the returned targetFiles paths. Consume the first up to 5 targetFiles first with read commands such as sed, cat, nl, head, or tail before broader exploration. rg, grep, find, ls, and wc may locate or count evidence, but they do not count as consuming a target file.
 If targetFiles contains 5 or fewer paths, consume every targetFiles path as the first shell reads after ctxhelm calls, before broader exploration and before answering, including docs, config, schema, and script paths.
@@ -680,6 +693,7 @@ EOF
 Do not edit files, do not write files, do not use shell redirection, do not run tests, and do not mutate git or global config. Do not run awk, bootstrap, setup, install, hook, or superpowers commands.
 First call ctxhelm prepare_task with explicit repo "$repo" and task "$task".
 Then call ctxhelm get_pack with explicit repo "$repo", the same task, budget "brief", format "json", and recordTrace false.
+$retry_instruction
 Use at most 8 shell commands total after ctxhelm calls.
 Identify targetFiles from prepare_task and high-confidence target paths from get_pack. Consume the first up to 5 target files first with read commands such as sed, cat, nl, head, or tail before broader exploration. rg, grep, find, ls, and wc may locate or count evidence, but they do not count as consuming a target file.
 If targetFiles contains 5 or fewer paths, consume every targetFiles path as the first shell reads after ctxhelm calls, before broader exploration and before answering, including docs, config, schema, and script paths.
@@ -694,6 +708,7 @@ EOF
 Do not edit files, do not write files, do not use shell redirection, do not run tests, and do not mutate git or global config. Do not run awk, bootstrap, setup, install, hook, or superpowers commands.
 First call ctxhelm prepare_task with explicit repo "$repo" and task "$task".
 Then call ctxhelm get_pack with explicit repo "$repo", the same task, budget "standard", format "json", and recordTrace false.
+$retry_instruction
 Use at most 8 shell commands total after ctxhelm calls.
 Identify targetFiles from prepare_task and high-confidence target paths from get_pack. Consume the first up to 5 target files first with read commands such as sed, cat, nl, head, or tail before broader exploration. rg, grep, find, ls, and wc may locate or count evidence, but they do not count as consuming a target file.
 If targetFiles contains 5 or fewer paths, consume every targetFiles path as the first shell reads after ctxhelm calls, before broader exploration and before answering, including docs, config, schema, and script paths.
@@ -708,6 +723,7 @@ EOF
 Do not edit files, do not write files, do not use shell redirection, do not run tests, and do not mutate git or global config. Do not run awk, bootstrap, setup, install, hook, or superpowers commands.
 First call ctxhelm prepare_task with explicit repo "$repo" and task "$task".
 Then call ctxhelm get_pack with explicit repo "$repo", the same task, budget "standard", format "json", and recordTrace false.
+$retry_instruction
 This is a memory-efficiency probe. Use at most 6 shell commands total after ctxhelm calls.
 First inspect selectedMemory, sourceLinks, experience-card evidence, targetFiles, and high-confidence get_pack paths. Choose the smallest current-file set that covers targetFiles and high-confidence pack targets, preferring paths that also appear in memory evidence.
 Consume targetFiles and high-confidence target paths first with read commands such as sed, cat, nl, head, or tail, up to 5 current files. rg, grep, find, ls, and wc may locate or count evidence, but they do not count as consuming a target file.
@@ -1207,11 +1223,99 @@ PY
   printf '%s\n' "$lane_json"
 }
 
+maybe_retry_lane() {
+  local original_json="$1"
+  local lane="$2"
+  local mode="$3"
+  local retry_decision
+  retry_decision="$(python3 - "$original_json" <<'PY'
+import json
+import pathlib
+import sys
+
+lane = json.loads(pathlib.Path(sys.argv[1]).read_text(encoding="utf-8"))
+metrics = lane.get("metrics", {})
+needs_retry = (
+    lane.get("evaluationEligible", False)
+    and not lane.get("clientFailureKind")
+    and not lane.get("forbiddenCommands")
+    and int(metrics.get("ctxhelmEvidenceOnlyTargetCount", 0) or 0) > 0
+)
+print("retry" if needs_retry else "keep")
+PY
+)"
+  if [[ "$retry_decision" != "retry" ]]; then
+    printf '%s\n' "$original_json"
+    return
+  fi
+
+  local retry_json
+  retry_json="$(run_lane "${lane}-retry" "$mode")"
+  local merged_json="$work_dir/${lane}-merged.json"
+  python3 - "$original_json" "$retry_json" "$lane" "$merged_json" <<'PY'
+import json
+import pathlib
+import sys
+
+original_path, retry_path, lane_name, output_path = sys.argv[1:]
+original = json.loads(pathlib.Path(original_path).read_text(encoding="utf-8"))
+retry = json.loads(pathlib.Path(retry_path).read_text(encoding="utf-8"))
+
+def metrics_summary(report):
+    metrics = report.get("metrics", {})
+    return {
+        "lane": report.get("lane"),
+        "status": report.get("status"),
+        "evaluationEligible": report.get("evaluationEligible", False),
+        "targetReadCoverage": metrics.get("targetReadCoverage", 0.0),
+        "targetReadCount": metrics.get("targetReadCount", 0),
+        "targetDiscoveredOnlyCount": metrics.get("targetDiscoveredOnlyCount", 0),
+        "missedTargetCount": metrics.get("missedTargetCount", 0),
+        "ctxhelmEvidenceOnlyTargetCount": metrics.get("ctxhelmEvidenceOnlyTargetCount", 0),
+        "readFileCount": metrics.get("readFileCount", 0),
+        "irrelevantReadCount": metrics.get("irrelevantReadCount", 0),
+        "commandExecutionCount": metrics.get("commandExecutionCount", 0),
+        "clientFailureKind": report.get("clientFailureKind"),
+    }
+
+def score(report):
+    metrics = report.get("metrics", {})
+    return (
+        1 if report.get("status") == "passed" else 0,
+        1 if report.get("evaluationEligible", False) else 0,
+        float(metrics.get("targetReadCoverage", 0.0) or 0.0),
+        float(metrics.get("targetCoverage", 0.0) or 0.0),
+        -int(metrics.get("ctxhelmEvidenceOnlyTargetCount", 0) or 0),
+        -int(metrics.get("missedTargetCount", 0) or 0),
+        -int(metrics.get("forbiddenCommandCount", 0) or 0),
+        -int(metrics.get("irrelevantReadCount", 0) or 0),
+        -int(metrics.get("readFileCount", 0) or 0),
+    )
+
+original_summary = metrics_summary(original)
+retry_summary = metrics_summary(retry)
+selected_retry = score(retry) > score(original)
+selected = retry if selected_retry else original
+selected = dict(selected)
+selected["lane"] = lane_name
+selected["retryAttempted"] = True
+selected["retrySelected"] = selected_retry
+selected["retryReason"] = "ctxhelm_evidence_only_targets"
+selected["initialAttempt"] = original_summary
+selected["retryAttempt"] = retry_summary
+if selected_retry:
+    selected["retrySourceLane"] = retry.get("lane")
+
+pathlib.Path(output_path).write_text(json.dumps(selected, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+PY
+  printf '%s\n' "$merged_json"
+}
+
 baseline_json="$(run_lane baseline baseline)"
-plan_json="$(run_lane ctxhelm-plan plan)"
-brief_json="$(run_lane ctxhelm-brief brief)"
-standard_json="$(run_lane ctxhelm-standard standard)"
-memory_json="$(run_lane ctxhelm-memory memory)"
+plan_json="$(maybe_retry_lane "$(run_lane ctxhelm-plan plan)" ctxhelm-plan plan)"
+brief_json="$(maybe_retry_lane "$(run_lane ctxhelm-brief brief)" ctxhelm-brief brief)"
+standard_json="$(maybe_retry_lane "$(run_lane ctxhelm-standard standard)" ctxhelm-standard standard)"
+memory_json="$(maybe_retry_lane "$(run_lane ctxhelm-memory memory)" ctxhelm-memory memory)"
 
 python3 - "$repo" "$task" "$ctxhelm_version" "$client_version" "$target_json" "$baseline_json" "$plan_json" "$brief_json" "$standard_json" "$memory_json" "$output_path" <<'PY'
 import hashlib

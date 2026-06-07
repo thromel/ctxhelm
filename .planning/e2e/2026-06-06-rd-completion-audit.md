@@ -498,3 +498,11 @@ stochastic in non-memory plan/brief/standard lanes. The remaining agent-outcome
 R&D should either add stronger consumption enforcement/retry logic or keep this
 as residual guidance work; it should not weaken the source-free reporting
 boundary or hide evidence-only targets.
+Phase 310/311 add that stronger source-free retry layer. Eligible
+ctxhelm-assisted lanes with evidence-only targets get one bounded
+target-consumption retry, and the selected report records source-free retry
+metadata. The targeted governor proof and the full four-task Codex R&D breadth
+suite both clear evidence misses, evidence-only targets, under-read targets,
+forbidden commands, client failures, and rate limits. This closes the measured
+Codex evidence-only consumption gap, while leaving Claude availability and
+semantic default-lift questions separate.
