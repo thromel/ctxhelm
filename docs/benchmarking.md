@@ -652,6 +652,14 @@ from `1` to `3`, semantic-only non-targets rise from `12` to `18/19`,
 bounded next-read noise rises to three non-target appends, and Recall@10 stays
 unchanged.
 
+Phase 296 adds candidate-missed support profiles for semantic-generated target
+candidates that final top-K selection drops. On the same Jina candidate-path
+proof, the one candidate miss is `schema_agent/core/state.py` with
+`dependency_co_change` support. The gate emits
+`semantic_candidate_fusion_supported_gap`, so the next semantic R&D target is
+fusion/top-K ordering for supported semantic candidates, not broader document
+expansion, MiniLM12 swaps, or next-read promotion.
+
 `local_hash` remains the deterministic scaffold. `local_fastembed` is the
 production-local backend and requires a build compiled with the
 `local-embeddings` feature.
@@ -736,9 +744,11 @@ semantic-missed retrieval targets into source-free families such as
 The semantic contribution summary also separates selected semantic target hits
 from generated-but-unselected semantic target candidates. The fields
 `semanticCandidateTargetHitCount`, `semanticCandidateMissedTargetCount`,
-`semanticCandidateTargetHitRate`, and `semanticCandidateMissedTargetPaths`
-show whether semantic retrieval found target candidates that final top-K
-selection dropped. The same candidate counters are repeated inside
+`semanticCandidateTargetHitRate`, `semanticCandidateMissedTargetPaths`, and
+`semanticCandidateMissedSupportProfiles` show whether semantic retrieval found
+target candidates that final top-K selection dropped, and whether those missed
+candidates had non-semantic source-free support. The same candidate counters
+and `candidateMissedSupportProfiles` are repeated inside
 `semanticContribution.queryFamilyContributions` for query-family routing
 analysis. Gate diagnostics use this split to route R&D:
 
@@ -748,6 +758,12 @@ analysis. Gate diagnostics use this split to route R&D:
 - `semantic_candidate_fusion_gap`: semantic generated source-free candidates
   for missed retrieval targets, but final top-K selection dropped them. Tune
   fusion, ranking, or budget before changing semantic documents.
+- `semantic_candidate_fusion_supported_gap`: semantic-generated missed targets
+  also had non-semantic source-free support. Tune fusion and top-K selection
+  before document expansion.
+- `semantic_candidate_fusion_unsupported_gap`: semantic-generated missed
+  targets lacked non-semantic source-free support. Inspect semantic
+  query/document coverage after supported fusion misses are resolved.
 
 The `semanticContribution.queryFamilyContributions` JSON field groups semantic
 selection quality by the same source-free query families used for reranker
@@ -900,7 +916,11 @@ better VeriSchema candidate quality, but not recall lift or semantic fusion
 safety, so Jina remains an explicit diagnostic model rather than the
 `local_fastembed` default. Phase 294 adds `semanticNextReadContribution` and
 rejects semantic next-read promotion for the same Jina candidate-path setup
-because the only post-top-K appended path is a non-target.
+because the only post-top-K appended path is a non-target. Phase 295 rejects
+MiniLM12 model swaps as noisier than corrected Jina. Phase 296 shows the
+remaining Jina candidate miss is `schema_agent/core/state.py` with
+`dependency_co_change` support, so the remaining semantic path is fusion/top-K
+ordering for supported candidate misses.
 
 Use `ctxhelm eval learned-policy-cross-repo` to aggregate saved
 `learned-policy-train-test` JSON reports across repositories without rerunning

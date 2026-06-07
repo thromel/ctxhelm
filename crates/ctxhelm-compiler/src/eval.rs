@@ -686,6 +686,8 @@ pub struct SemanticContributionSummary {
     #[serde(default)]
     pub semantic_candidate_missed_target_paths: Vec<String>,
     #[serde(default)]
+    pub semantic_candidate_missed_support_profiles: Vec<SemanticCandidateMissedSupportProfile>,
+    #[serde(default)]
     pub semantic_only_hits: Vec<SemanticPrecisionNamedCase>,
     #[serde(default)]
     pub semantic_only_non_targets: Vec<SemanticPrecisionNamedCase>,
@@ -711,6 +713,14 @@ pub struct SemanticOnlySupportProfile {
     pub semantic_only_non_target_count: usize,
     pub example_target_paths: Vec<String>,
     pub example_non_target_paths: Vec<String>,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct SemanticCandidateMissedSupportProfile {
+    pub support_family: String,
+    pub candidate_missed_target_count: usize,
+    pub example_paths: Vec<String>,
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
@@ -760,6 +770,8 @@ pub struct SemanticQueryFamilyContribution {
     pub missed_target_gap_families: Vec<SemanticMissedTargetGapFamily>,
     #[serde(default)]
     pub support_profiles: Vec<SemanticOnlySupportProfile>,
+    #[serde(default)]
+    pub candidate_missed_support_profiles: Vec<SemanticCandidateMissedSupportProfile>,
     #[serde(default)]
     pub example_cases: Vec<SemanticPrecisionNamedCase>,
 }
@@ -4298,6 +4310,7 @@ fn semantic_contribution_summary(report: &HistoricalEvalReport) -> SemanticContr
     let mut semantic_only_hits = Vec::new();
     let mut semantic_only_non_target_cases = Vec::new();
     let mut missed_gap_families = BTreeMap::<String, (usize, Vec<String>)>::new();
+    let mut candidate_missed_support_profiles = Vec::<SemanticCandidateMissedSupportProfile>::new();
     let mut family_contributions = BTreeMap::<String, SemanticQueryFamilyContribution>::new();
 
     for commit in &report.commits {
@@ -4422,6 +4435,17 @@ fn semantic_contribution_summary(report: &HistoricalEvalReport) -> SemanticContr
             upsert_semantic_family_gap(family_entry, &gap, &missed);
         }
         for missed in semantic_candidate_missed_targets {
+            let support_family = semantic_candidate_missed_support_family(commit, &missed);
+            upsert_semantic_candidate_missed_support_profile(
+                &mut candidate_missed_support_profiles,
+                &support_family,
+                &missed,
+            );
+            upsert_semantic_candidate_missed_support_profile(
+                &mut family_entry.candidate_missed_support_profiles,
+                &support_family,
+                &missed,
+            );
             if summary.semantic_candidate_missed_target_paths.len() < 10
                 && !summary
                     .semantic_candidate_missed_target_paths
@@ -4488,6 +4512,8 @@ fn semantic_contribution_summary(report: &HistoricalEvalReport) -> SemanticContr
     summary.semantic_only_hits = semantic_only_hits;
     semantic_only_non_target_cases.truncate(10);
     summary.semantic_only_non_targets = semantic_only_non_target_cases;
+    candidate_missed_support_profiles.sort_by(semantic_candidate_missed_support_profile_order);
+    summary.semantic_candidate_missed_support_profiles = candidate_missed_support_profiles;
     summary.semantic_missed_target_gap_families = missed_gap_families
         .into_iter()
         .map(
@@ -4536,6 +4562,9 @@ fn semantic_contribution_summary(report: &HistoricalEvalReport) -> SemanticContr
                     })
                     .then_with(|| left.support_family.cmp(&right.support_family))
             });
+            family
+                .candidate_missed_support_profiles
+                .sort_by(semantic_candidate_missed_support_profile_order);
             family.example_cases.truncate(5);
             family
         })
@@ -6098,6 +6127,33 @@ fn semantic_only_support_family(commit: &HistoricalCommitEval, path: &str) -> St
     }
 }
 
+fn semantic_candidate_missed_support_family(commit: &HistoricalCommitEval, path: &str) -> String {
+    let profile_signals = commit
+        .candidate_missed_file_profiles_at_10
+        .iter()
+        .find(|profile| {
+            profile.path == path
+                && profile
+                    .signals
+                    .iter()
+                    .any(|signal| signal == &RetrievalSignalKind::Semantic)
+        })
+        .map(|profile| {
+            profile
+                .signals
+                .iter()
+                .filter(|signal| signal != &&RetrievalSignalKind::Semantic)
+                .cloned()
+                .collect::<Vec<_>>()
+        })
+        .unwrap_or_default();
+    if profile_signals.is_empty() {
+        semantic_only_support_family(commit, path)
+    } else {
+        signal_family_code(&profile_signals)
+    }
+}
+
 fn upsert_semantic_support_profile(
     family: &mut SemanticQueryFamilyContribution,
     support_family: &str,
@@ -6139,6 +6195,39 @@ fn upsert_semantic_support_profile(
         profile.example_non_target_paths.push(path.to_string());
     }
     family.support_profiles.push(profile);
+}
+
+fn upsert_semantic_candidate_missed_support_profile(
+    profiles: &mut Vec<SemanticCandidateMissedSupportProfile>,
+    support_family: &str,
+    path: &str,
+) {
+    if let Some(existing) = profiles
+        .iter_mut()
+        .find(|entry| entry.support_family == support_family)
+    {
+        existing.candidate_missed_target_count += 1;
+        if existing.example_paths.len() < 5 && !existing.example_paths.iter().any(|p| p == path) {
+            existing.example_paths.push(path.to_string());
+        }
+        return;
+    }
+
+    profiles.push(SemanticCandidateMissedSupportProfile {
+        support_family: support_family.to_string(),
+        candidate_missed_target_count: 1,
+        example_paths: vec![path.to_string()],
+    });
+}
+
+fn semantic_candidate_missed_support_profile_order(
+    left: &SemanticCandidateMissedSupportProfile,
+    right: &SemanticCandidateMissedSupportProfile,
+) -> std::cmp::Ordering {
+    right
+        .candidate_missed_target_count
+        .cmp(&left.candidate_missed_target_count)
+        .then_with(|| left.support_family.cmp(&right.support_family))
 }
 
 fn upsert_semantic_family_gap(
@@ -6328,6 +6417,36 @@ fn semantic_contribution_diagnostics(
             paths: summary.semantic_candidate_missed_target_paths.clone(),
             count: summary.semantic_candidate_missed_target_count,
         });
+        if let Some(profile) = summary
+            .semantic_candidate_missed_support_profiles
+            .iter()
+            .find(|profile| profile.support_family != "unsupported")
+        {
+            diagnostics.push(Diagnostic {
+                code: "semantic_candidate_fusion_supported_gap".to_string(),
+                severity: DiagnosticSeverity::Info,
+                message: format!(
+                    "Semantic provider `{provider}` generated missed retrieval targets that also had non-semantic source-free support; tune fusion and top-K selection before document expansion."
+                ),
+                paths: profile.example_paths.clone(),
+                count: profile.candidate_missed_target_count,
+            });
+        }
+        if let Some(profile) = summary
+            .semantic_candidate_missed_support_profiles
+            .iter()
+            .find(|profile| profile.support_family == "unsupported")
+        {
+            diagnostics.push(Diagnostic {
+                code: "semantic_candidate_fusion_unsupported_gap".to_string(),
+                severity: DiagnosticSeverity::Info,
+                message: format!(
+                    "Semantic provider `{provider}` generated missed retrieval targets without non-semantic source-free support; inspect semantic query/document coverage for these paths after resolving supported fusion misses."
+                ),
+                paths: profile.example_paths.clone(),
+                count: profile.candidate_missed_target_count,
+            });
+        }
     }
     if summary.semantic_only_target_hit_count > 0 {
         diagnostics.push(Diagnostic {
@@ -13588,15 +13707,24 @@ mod tests {
             "src/candidate_only.rs".to_string(),
             "src/missing.rs".to_string(),
         ];
-        commit.signal_baseline_files = vec![HistoricalSignalRanking {
-            signal: RetrievalSignalKind::Semantic,
-            files: vec!["src/selected.rs".to_string()],
-        }];
+        commit.signal_baseline_files = vec![
+            HistoricalSignalRanking {
+                signal: RetrievalSignalKind::Semantic,
+                files: vec!["src/selected.rs".to_string()],
+            },
+            HistoricalSignalRanking {
+                signal: RetrievalSignalKind::Dependency,
+                files: vec!["src/candidate_only.rs".to_string()],
+            },
+        ];
         commit.candidate_missed_file_profiles_at_10 = vec![CandidateMissedFileProfile {
             path: "src/candidate_only.rs".to_string(),
             role: FileRole::Source,
             context_area: "src".to_string(),
-            signals: vec![RetrievalSignalKind::Semantic],
+            signals: vec![
+                RetrievalSignalKind::Semantic,
+                RetrievalSignalKind::Dependency,
+            ],
         }];
 
         let summary = semantic_contribution_summary(&report);
@@ -13609,6 +13737,14 @@ mod tests {
             summary.semantic_candidate_missed_target_paths,
             vec!["src/candidate_only.rs".to_string()]
         );
+        assert_eq!(
+            summary.semantic_candidate_missed_support_profiles,
+            vec![SemanticCandidateMissedSupportProfile {
+                support_family: "dependency".to_string(),
+                candidate_missed_target_count: 1,
+                example_paths: vec!["src/candidate_only.rs".to_string()],
+            }]
+        );
         assert!((summary.semantic_target_hit_rate - 1.0 / 3.0).abs() < f32::EPSILON);
         assert!((summary.semantic_candidate_target_hit_rate - 2.0 / 3.0).abs() < f32::EPSILON);
 
@@ -13616,12 +13752,98 @@ mod tests {
         assert_eq!(family.family, "domain_phrase");
         assert_eq!(family.semantic_candidate_target_hit_count, 2);
         assert_eq!(family.semantic_candidate_missed_target_count, 1);
+        assert_eq!(
+            family.candidate_missed_support_profiles,
+            vec![SemanticCandidateMissedSupportProfile {
+                support_family: "dependency".to_string(),
+                candidate_missed_target_count: 1,
+                example_paths: vec!["src/candidate_only.rs".to_string()],
+            }]
+        );
         assert!((family.semantic_candidate_target_hit_rate - 2.0 / 3.0).abs() < f32::EPSILON);
 
         let diagnostics = semantic_contribution_diagnostics(&summary, "local_fastembed");
         assert!(diagnostics.iter().any(|diagnostic| diagnostic.code
             == "semantic_candidate_fusion_gap"
             && diagnostic.paths == vec!["src/candidate_only.rs".to_string()]));
+        assert!(diagnostics.iter().any(|diagnostic| diagnostic.code
+            == "semantic_candidate_fusion_supported_gap"
+            && diagnostic.paths == vec!["src/candidate_only.rs".to_string()]));
+    }
+
+    #[test]
+    fn semantic_contribution_summary_groups_candidate_missed_support_profiles() {
+        let mut report = empty_historical_eval_report("semantic-candidate-support");
+        let commit = &mut report.commits[0];
+        commit.query_trace = Some(query_trace_with_facets(vec![QueryFacetKind::DomainPhrase]));
+        commit.retrieval_target_files = vec![
+            "src/dependency_candidate.rs".to_string(),
+            "src/unsupported_candidate.rs".to_string(),
+        ];
+        commit.signal_baseline_files = vec![
+            HistoricalSignalRanking {
+                signal: RetrievalSignalKind::Semantic,
+                files: vec!["src/noise.rs".to_string()],
+            },
+            HistoricalSignalRanking {
+                signal: RetrievalSignalKind::Dependency,
+                files: vec!["src/dependency_candidate.rs".to_string()],
+            },
+            HistoricalSignalRanking {
+                signal: RetrievalSignalKind::CoChange,
+                files: vec!["src/dependency_candidate.rs".to_string()],
+            },
+        ];
+        commit.candidate_missed_file_profiles_at_10 = vec![
+            CandidateMissedFileProfile {
+                path: "src/dependency_candidate.rs".to_string(),
+                role: FileRole::Source,
+                context_area: "src".to_string(),
+                signals: vec![
+                    RetrievalSignalKind::Semantic,
+                    RetrievalSignalKind::Dependency,
+                    RetrievalSignalKind::CoChange,
+                ],
+            },
+            CandidateMissedFileProfile {
+                path: "src/unsupported_candidate.rs".to_string(),
+                role: FileRole::Source,
+                context_area: "src".to_string(),
+                signals: vec![RetrievalSignalKind::Semantic],
+            },
+        ];
+
+        let summary = semantic_contribution_summary(&report);
+
+        assert_eq!(summary.semantic_candidate_missed_target_count, 2);
+        assert_eq!(
+            summary.semantic_candidate_missed_support_profiles,
+            vec![
+                SemanticCandidateMissedSupportProfile {
+                    support_family: "dependency_co_change".to_string(),
+                    candidate_missed_target_count: 1,
+                    example_paths: vec!["src/dependency_candidate.rs".to_string()],
+                },
+                SemanticCandidateMissedSupportProfile {
+                    support_family: "unsupported".to_string(),
+                    candidate_missed_target_count: 1,
+                    example_paths: vec!["src/unsupported_candidate.rs".to_string()],
+                },
+            ]
+        );
+        let family = &summary.query_family_contributions[0];
+        assert_eq!(
+            family.candidate_missed_support_profiles,
+            summary.semantic_candidate_missed_support_profiles
+        );
+
+        let diagnostics = semantic_contribution_diagnostics(&summary, "local_fastembed");
+        assert!(diagnostics.iter().any(|diagnostic| diagnostic.code
+            == "semantic_candidate_fusion_supported_gap"
+            && diagnostic.paths == vec!["src/dependency_candidate.rs".to_string()]));
+        assert!(diagnostics.iter().any(|diagnostic| diagnostic.code
+            == "semantic_candidate_fusion_unsupported_gap"
+            && diagnostic.paths == vec!["src/unsupported_candidate.rs".to_string()]));
     }
 
     #[test]
