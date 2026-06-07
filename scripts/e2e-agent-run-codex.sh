@@ -668,6 +668,8 @@ Do not edit files, do not write files, do not use shell redirection, do not run 
 First call ctxhelm prepare_task with explicit repo "$repo" and task "$task".
 Use at most 8 shell commands total after ctxhelm calls.
 Identify the returned targetFiles paths. Consume the first up to 5 targetFiles first with read commands such as sed, cat, nl, head, or tail before broader exploration. rg, grep, find, ls, and wc may locate or count evidence, but they do not count as consuming a target file.
+If targetFiles contains 5 or fewer paths, consume every targetFiles path as the first shell reads after ctxhelm calls, before broader exploration and before answering, including docs, config, schema, and script paths.
+When targetFiles includes docs, config, schema, or script paths, read those non-source targets before source-code targets; do not skip them because implementation files also look relevant.
 If selectedMemory appears, also read up to 3 selectedMemory sourceLinks or evidence paths with read-only shell commands before broader exploration.
 Treat docs, config, schema, script, and selected-memory paths in that initial set as first-class targets, not optional background. Stop after those reads if they answer the task.
 Return a short JSON object with keyFiles.
@@ -680,6 +682,8 @@ First call ctxhelm prepare_task with explicit repo "$repo" and task "$task".
 Then call ctxhelm get_pack with explicit repo "$repo", the same task, budget "brief", format "json", and recordTrace false.
 Use at most 8 shell commands total after ctxhelm calls.
 Identify targetFiles from prepare_task and high-confidence target paths from get_pack. Consume the first up to 5 target files first with read commands such as sed, cat, nl, head, or tail before broader exploration. rg, grep, find, ls, and wc may locate or count evidence, but they do not count as consuming a target file.
+If targetFiles contains 5 or fewer paths, consume every targetFiles path as the first shell reads after ctxhelm calls, before broader exploration and before answering, including docs, config, schema, and script paths.
+When targetFiles includes docs, config, schema, or script paths, read those non-source targets before source-code targets; do not skip them because implementation files also look relevant.
 If selectedMemory appears, also read up to 3 selectedMemory sourceLinks or evidence paths with read-only shell commands before broader exploration.
 Treat docs, config, schema, script, and selected-memory paths in that initial set as first-class targets, not optional background. Stop after those reads if they answer the task.
 Return a short JSON object with keyFiles.
@@ -692,6 +696,8 @@ First call ctxhelm prepare_task with explicit repo "$repo" and task "$task".
 Then call ctxhelm get_pack with explicit repo "$repo", the same task, budget "standard", format "json", and recordTrace false.
 Use at most 8 shell commands total after ctxhelm calls.
 Identify targetFiles from prepare_task and high-confidence target paths from get_pack. Consume the first up to 5 target files first with read commands such as sed, cat, nl, head, or tail before broader exploration. rg, grep, find, ls, and wc may locate or count evidence, but they do not count as consuming a target file.
+If targetFiles contains 5 or fewer paths, consume every targetFiles path as the first shell reads after ctxhelm calls, before broader exploration and before answering, including docs, config, schema, and script paths.
+When targetFiles includes docs, config, schema, or script paths, read those non-source targets before source-code targets; do not skip them because implementation files also look relevant.
 If selectedMemory appears, also read up to 3 selectedMemory sourceLinks or evidence paths with read-only shell commands before broader exploration.
 Treat docs, config, schema, script, and selected-memory paths in that initial set as first-class targets, not optional background. Stop after those reads if they answer the task.
 Return a short JSON object with keyFiles.
@@ -702,11 +708,13 @@ EOF
 Do not edit files, do not write files, do not use shell redirection, do not run tests, and do not mutate git or global config. Do not run awk, bootstrap, setup, install, hook, or superpowers commands.
 First call ctxhelm prepare_task with explicit repo "$repo" and task "$task".
 Then call ctxhelm get_pack with explicit repo "$repo", the same task, budget "standard", format "json", and recordTrace false.
-This is a memory-efficiency probe. Use at most 4 shell commands total after ctxhelm calls.
-First inspect selectedMemory, sourceLinks, experience-card evidence, targetFiles, and high-confidence get_pack paths. Choose the smallest current-file set that memory points to, preferring paths that appear in both memory evidence and targetFiles or high-confidence pack targets.
-Consume at most 2 memory-backed current files first with read commands such as sed, cat, nl, head, or tail. rg, grep, find, ls, and wc may locate or count evidence, but they do not count as consuming a target file.
-If those memory-backed reads answer which files matter, stop immediately and return the JSON. Do not keep exploring just to fill the command budget.
-Only read additional files when the memory-backed path is missing, clearly stale, or needs one immediate caller/callee/test/config neighbor to interpret it.
+This is a memory-efficiency probe. Use at most 6 shell commands total after ctxhelm calls.
+First inspect selectedMemory, sourceLinks, experience-card evidence, targetFiles, and high-confidence get_pack paths. Choose the smallest current-file set that covers targetFiles and high-confidence pack targets, preferring paths that also appear in memory evidence.
+Consume targetFiles and high-confidence target paths first with read commands such as sed, cat, nl, head, or tail, up to 5 current files. rg, grep, find, ls, and wc may locate or count evidence, but they do not count as consuming a target file.
+If targetFiles contains 5 or fewer paths, consume every targetFiles path as the first shell reads after ctxhelm calls, before broader exploration and before answering, including docs, config, schema, and script paths.
+When targetFiles includes docs, config, schema, or script paths, read those non-source targets before source-code targets; do not skip them because implementation files also look relevant.
+Stop immediately after those target-backed reads answer which files matter. Do not keep exploring just to fill the command budget.
+Only read additional non-target memory files when a target path is missing, clearly stale, or needs one immediate caller/callee/test/config neighbor to interpret it.
 If ctxhelm returns memory or experience-card evidence, use it only as guidance for which current files to inspect; still consume current files using read-only shell commands before answering.
 Return a short JSON object with keyFiles.
 EOF

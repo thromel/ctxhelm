@@ -489,3 +489,12 @@ Phase 253 reduces memory risk by
 proving cross-repo Codex target-consumption lift. Phase 255 further reduces
 memory risk by preserving that target consumption while improving irrelevant
 reads in all three measured memory pairs.
+Phase 304 refreshes Claude outcome evidence and keeps the gap correctly scoped
+to client rate limiting. Phase 305 then refreshes current-head Codex outcome
+evidence and finds the memory-efficiency prompt had become too aggressive for
+multi-target R&D tasks. Phase 307/309 fix that memory-lane under-read while
+preserving real Codex lift, but they also show prompt-only compliance is still
+stochastic in non-memory plan/brief/standard lanes. The remaining agent-outcome
+R&D should either add stronger consumption enforcement/retry logic or keep this
+as residual guidance work; it should not weaken the source-free reporting
+boundary or hide evidence-only targets.

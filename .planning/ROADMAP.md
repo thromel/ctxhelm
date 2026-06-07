@@ -1542,6 +1542,7 @@ Phases execute in numeric order: 61 -> 62 -> 63 -> 64 -> 65 -> 66 -> 67 -> 69 ->
 | 233. Memory Corroboration Policy | Evidence artifact | Complete | 2026-06-05 |
 | 236. Agent Client Availability | Evidence artifact | Complete | 2026-06-05 |
 | 237. Codex Agent-Run Outcome Matrix | Evidence artifact | Complete | 2026-06-05 |
+| 305-309. Codex Outcome Refresh And Target Consumption | Evidence artifact | Complete | 2026-06-07 |
 
 ---
 *Roadmap created: 2026-05-22*
