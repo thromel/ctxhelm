@@ -39,7 +39,7 @@ fn workspace_packages_have_release_identity() {
             .iter()
             .find(|package| package["name"] == name)
             .unwrap_or_else(|| panic!("missing package metadata for {name}"));
-        assert_eq!(package["version"], "1.1.12", "{name} version");
+        assert_eq!(package["version"], "2.4.0", "{name} version");
         assert_eq!(package["license"], "MIT", "{name} license");
         assert!(
             package["repository"]
@@ -94,7 +94,7 @@ fn version_reports_release_identity() {
         .arg("--version")
         .assert()
         .success()
-        .stdout(contains("ctxhelm 1.1.12"));
+        .stdout(contains("ctxhelm 2.4.0"));
 }
 
 #[test]
@@ -105,16 +105,16 @@ fn doctor_verifies_binary_manifest_and_local_state_source_free() {
     fs::write(
         &manifest_path,
         json!({
-            "version": "1.1.12",
+            "version": "2.4.0",
             "archive": {
-                "name": "ctxhelm-v1.1.12-test.tar.gz",
+                "name": "ctxhelm-v2.4.0-test.tar.gz",
                 "sha256": "archive-sha"
             },
             "binary": {
                 "name": "ctxhelm",
                 "sha256": "binary-sha"
             },
-            "auditReport": "ctxhelm-v1.1.12-test.audit.json",
+            "auditReport": "ctxhelm-v2.4.0-test.audit.json",
             "privacyStatus": {
                 "localOnly": true,
                 "sourceTextLogged": false
@@ -139,8 +139,8 @@ fn doctor_verifies_binary_manifest_and_local_state_source_free() {
     );
 
     assert_eq!(value["passed"], true);
-    assert_eq!(value["binary"]["version"], "ctxhelm 1.1.12");
-    assert_eq!(value["releaseManifest"]["version"], "1.1.12");
+    assert_eq!(value["binary"]["version"], "ctxhelm 2.4.0");
+    assert_eq!(value["releaseManifest"]["version"], "2.4.0");
     assert_eq!(value["privacyStatus"]["localOnly"], true);
     assert_eq!(value["mutatesGlobalAgentConfig"], false);
     assert!(value["checks"]
@@ -1651,7 +1651,7 @@ fn eval_agent_run_renders_source_free_report() {
                 "name": "claude",
                 "version": "Claude Code test"
             },
-            "ctxhelmVersion": "ctxhelm 1.1.12",
+            "ctxhelmVersion": "ctxhelm 2.4.0",
             "repo": {
                 "label": "fixture",
                 "pathSha256": "repo-hash"
@@ -2033,7 +2033,7 @@ fn eval_agent_run_renders_source_free_suite_report() {
                 "name": "claude",
                 "version": "Claude Code test"
             },
-            "ctxhelmVersion": "ctxhelm 1.1.12",
+            "ctxhelmVersion": "ctxhelm 2.4.0",
             "repo": {
                 "label": "fixture",
                 "pathSha256": "repo-hash"

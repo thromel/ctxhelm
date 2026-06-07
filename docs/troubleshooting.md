@@ -89,7 +89,7 @@ ctxhelm --version
 ctxhelm doctor \
   --repo /path/to/repo \
   --binary "$(command -v ctxhelm)" \
-  --release-manifest /path/to/ctxhelm-v1.1.12-aarch64-apple-darwin.manifest.json
+  --release-manifest /path/to/ctxhelm-v2.4.0-aarch64-apple-darwin.manifest.json
 ```
 
 If `doctor` reports a manifest version mismatch, update the binary path used by
