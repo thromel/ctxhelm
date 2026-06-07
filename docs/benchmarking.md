@@ -646,10 +646,11 @@ path, `tests/core/test_state_validator.py`, and that path was a non-target
 (`semantic_next_read_noise_hold`).
 
 Phase 295 also rejects the documented `AllMiniLML12V2Q` and `AllMiniLML12V2`
-model branch as a simple swap for this slice. Both models emit
-`semantic_contribution_no_candidates` across all `19` evaluated VeriSchema
-commits under `candidate-path-hints`, produce no semantic candidate target
-hits, and leave Recall@10 unchanged.
+model branch as a simple swap for this slice. After a feature-enabled provider
+preflight, both models are noisier than corrected Jina: candidate misses worsen
+from `1` to `3`, semantic-only non-targets rise from `12` to `18/19`,
+bounded next-read noise rises to three non-target appends, and Recall@10 stays
+unchanged.
 
 `local_hash` remains the deterministic scaffold. `local_fastembed` is the
 production-local backend and requires a build compiled with the

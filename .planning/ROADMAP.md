@@ -343,13 +343,15 @@ document experiments.
 
 Phase 295 tests the documented `AllMiniLML12V2Q` and `AllMiniLML12V2`
 local-fastembed models as simple alternates on the same VeriSchema older-range
-candidate-path proof. Both variants are rejected: each emits
-`semantic_contribution_no_candidates` across all `19` commits, produces zero
-semantic candidate target hits, leaves local semantic Recall@10 unchanged at
-`0.29122806`, keeps the known semantic-corroborated `targetHitDelta = -1`, and
-leaves tail-slot reranking neutral. The remaining local model path should not
-spend more effort on MiniLM12 as a simple swap; corrected Jina remains the
-useful diagnostic backend, not default policy.
+candidate-path proof after a feature-enabled provider preflight. Both variants
+are rejected: candidate misses are worse than corrected Jina (`1 -> 3`),
+semantic-only non-targets rise (`12 -> 18/19`), bounded next-read noise rises
+to three non-target appends with zero target appends, local semantic Recall@10
+is unchanged at `0.29122806`, the known semantic-corroborated
+`targetHitDelta = -1` remains, runtime ratio is `6.75x/7.34x`, and tail-slot
+reranking stays neutral. The remaining local model path should not spend more
+effort on MiniLM12 as a simple swap; corrected Jina remains the useful
+diagnostic backend, not default policy.
 
 Phase 196 reserves selected validation areas in broad context-area guidance and adds package-mirrored related-test affinity. The accepted release-binary proof promotes with selected-file/source/test/validation metrics unchanged while improving VeriSchema broad context-area recall from `0.5777778 -> 0.84444445` and next-read recovery from `16 -> 19` of `39` missed@10 files. A related-test-only intermediate proof was rejected because it did not move the product proof.
 
