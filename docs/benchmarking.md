@@ -637,6 +637,14 @@ non-targets fall `16 -> 12`. It remains diagnostic-only because
 regresses by one target hit, tail-slot reranking is neutral, and runtime is
 `6.01x` default with recall delta `+0.000`.
 
+The semantic gate also emits `semanticNextReadContribution`. This diagnostic
+preserves the full default top K and measures up to two semantic-ranked
+post-top-K next-read paths per commit, grouped by query, path, and support
+family. Phase 294 rejects using the current Jina candidate-path setup as
+next-read policy: on the targeted VeriSchema older-range proof it appended one
+path, `tests/core/test_state_validator.py`, and that path was a non-target
+(`semantic_next_read_noise_hold`).
+
 `local_hash` remains the deterministic scaffold. `local_fastembed` is the
 production-local backend and requires a build compiled with the
 `local-embeddings` feature.
@@ -649,8 +657,9 @@ not omitted.
 
 The report includes Recall@K, precision proxy, MRR where available, Test
 Recall@10, runtime/cache fields, token efficiency, provider policy, precision
-status, protected-evidence miss rate, semantic contribution summary, reranker
-contribution summary, named wins, named regressions, and named misses.
+status, protected-evidence miss rate, semantic contribution summary, semantic
+next-read contribution summary, reranker contribution summary, named wins,
+named regressions, and named misses.
 
 The semantic contribution summary also emits source-free diagnostics:
 
@@ -701,6 +710,15 @@ The semantic contribution summary also emits source-free diagnostics:
 - `semantic_query_family_noise_hold`: a query family has semantic-only
   non-targets without semantic-only target hits. Do not route semantic retrieval
   for that family without new evidence.
+- `semantic_next_read_clean_recovery`: bounded semantic next-read paths after
+  the protected default top K recovered retrieval targets without appending
+  non-targets.
+- `semantic_next_read_mixed_hold`: bounded semantic next-read paths recovered
+  some targets but also appended non-targets. Keep the result diagnostic until
+  a cleaner separator is proven.
+- `semantic_next_read_noise_hold`: bounded semantic next-read paths after the
+  protected default top K appended only non-targets. Do not promote next-read
+  guidance from that proof.
 
 The `semanticContribution.semanticMissedTargetGapFamilies` JSON field groups
 semantic-missed retrieval targets into source-free families such as
@@ -873,7 +891,9 @@ candidate and selected-target counts while increasing semantic-only non-targets.
 Phase 293 fixed the explicit Jina code-model dimension/text contract and showed
 better VeriSchema candidate quality, but not recall lift or semantic fusion
 safety, so Jina remains an explicit diagnostic model rather than the
-`local_fastembed` default.
+`local_fastembed` default. Phase 294 adds `semanticNextReadContribution` and
+rejects semantic next-read promotion for the same Jina candidate-path setup
+because the only post-top-K appended path is a non-target.
 
 Use `ctxhelm eval learned-policy-cross-repo` to aggregate saved
 `learned-policy-train-test` JSON reports across repositories without rerunning

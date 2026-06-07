@@ -376,6 +376,8 @@ pub struct SemanticPrecisionGateReport {
     #[serde(default)]
     pub semantic_contribution: SemanticContributionSummary,
     #[serde(default)]
+    pub semantic_next_read_contribution: SemanticNextReadContributionSummary,
+    #[serde(default)]
     pub reranker_contribution: RerankerContributionSummary,
     #[serde(default)]
     pub routed_reranker_contribution: RerankerContributionSummary,
@@ -412,6 +414,7 @@ pub struct SemanticPrecisionGateRangeOptions {
 
 const LEARNED_SEMANTIC_POLICY_SCHEMA_VERSION: u32 = 1;
 const LEARNED_SEMANTIC_POLICY_MIN_SUPPORT_COMMIT_COUNT: usize = 2;
+const SEMANTIC_NEXT_READ_APPEND_LIMIT: usize = 2;
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Default)]
 #[serde(rename_all = "snake_case")]
@@ -759,6 +762,44 @@ pub struct SemanticQueryFamilyContribution {
     pub support_profiles: Vec<SemanticOnlySupportProfile>,
     #[serde(default)]
     pub example_cases: Vec<SemanticPrecisionNamedCase>,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct SemanticNextReadContributionSummary {
+    pub evaluated_commits: usize,
+    pub append_limit_per_commit: usize,
+    pub commits_with_appended_files: usize,
+    pub commits_with_target_hits: usize,
+    pub commits_with_only_non_targets: usize,
+    pub appended_file_count: usize,
+    pub appended_target_hit_count: usize,
+    pub appended_non_target_count: usize,
+    pub appended_target_hit_rate: f32,
+    #[serde(default)]
+    pub appended_target_cases: Vec<SemanticPrecisionNamedCase>,
+    #[serde(default)]
+    pub appended_non_target_cases: Vec<SemanticPrecisionNamedCase>,
+    #[serde(default)]
+    pub query_family_contributions: Vec<SemanticNextReadFamilyContribution>,
+    #[serde(default)]
+    pub path_family_contributions: Vec<SemanticNextReadFamilyContribution>,
+    #[serde(default)]
+    pub support_family_contributions: Vec<SemanticNextReadFamilyContribution>,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct SemanticNextReadFamilyContribution {
+    pub family: String,
+    pub commits_with_appended_files: usize,
+    pub appended_file_count: usize,
+    pub appended_target_hit_count: usize,
+    pub appended_non_target_count: usize,
+    #[serde(default)]
+    pub example_target_paths: Vec<String>,
+    #[serde(default)]
+    pub example_non_target_paths: Vec<String>,
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
@@ -3633,6 +3674,11 @@ pub fn semantic_precision_gate_report_with_provider_and_range_options(
         NamedCaseKind::Win,
     ));
     let semantic_contribution = semantic_contribution_summary(&semantic);
+    let semantic_next_read_contribution = semantic_next_read_contribution_summary(
+        &default,
+        &semantic,
+        SEMANTIC_NEXT_READ_APPEND_LIMIT,
+    );
     let support_profile_routed_semantic =
         support_profile_routed_semantic_report(&default, &semantic, &semantic_contribution);
     let family_budget_semantic_reranked =
@@ -3910,6 +3956,10 @@ pub fn semantic_precision_gate_report_with_provider_and_range_options(
         &semantic_contribution,
         semantic_provider_status,
     ));
+    diagnostics.extend(semantic_next_read_contribution_diagnostics(
+        &semantic_next_read_contribution,
+        semantic_provider_status,
+    ));
     diagnostics.extend(reranker_contribution_diagnostics(&reranker_contribution));
     diagnostics.extend(routed_reranker_contribution_diagnostics(
         &routed_reranker_contribution,
@@ -3958,6 +4008,7 @@ pub fn semantic_precision_gate_report_with_provider_and_range_options(
         named_regressions,
         named_misses,
         semantic_contribution,
+        semantic_next_read_contribution,
         reranker_contribution,
         routed_reranker_contribution,
         semantic_corroborated_reranker_contribution,
@@ -4505,6 +4556,196 @@ fn semantic_contribution_summary(report: &HistoricalEvalReport) -> SemanticContr
             .then_with(|| left.family.cmp(&right.family))
     });
     summary
+}
+
+fn semantic_next_read_contribution_summary(
+    default: &HistoricalEvalReport,
+    semantic: &HistoricalEvalReport,
+    append_limit_per_commit: usize,
+) -> SemanticNextReadContributionSummary {
+    let ranking_budget = default.ranking_comparison.k.max(1);
+    let append_limit_per_commit = append_limit_per_commit.max(1);
+    let semantic_by_sha = semantic
+        .commits
+        .iter()
+        .map(|commit| (commit.sha.as_str(), commit))
+        .collect::<BTreeMap<_, _>>();
+    let mut summary = SemanticNextReadContributionSummary {
+        evaluated_commits: default.commits.len(),
+        append_limit_per_commit,
+        ..SemanticNextReadContributionSummary::default()
+    };
+    let mut query_families = BTreeMap::<String, SemanticNextReadFamilyContribution>::new();
+    let mut path_families = BTreeMap::<String, SemanticNextReadFamilyContribution>::new();
+    let mut support_families = BTreeMap::<String, SemanticNextReadFamilyContribution>::new();
+
+    for default_commit in &default.commits {
+        let Some(semantic_commit) = semantic_by_sha.get(default_commit.sha.as_str()) else {
+            continue;
+        };
+        let default_selected = default_commit
+            .recommended_context_files
+            .iter()
+            .take(ranking_budget)
+            .cloned()
+            .collect::<BTreeSet<_>>();
+        let retrieval_targets = default_commit
+            .retrieval_target_files
+            .iter()
+            .cloned()
+            .collect::<BTreeSet<_>>();
+        let semantic_next_reads =
+            signal_ranking_for_commit(semantic_commit, &RetrievalSignalKind::Semantic)
+                .into_iter()
+                .filter(|path| !default_selected.contains(path))
+                .take(append_limit_per_commit)
+                .collect::<Vec<_>>();
+        if semantic_next_reads.is_empty() {
+            continue;
+        }
+
+        summary.commits_with_appended_files += 1;
+        let query_family = reranker_query_family(default_commit);
+        let mut commit_target_paths = Vec::new();
+        let mut commit_non_target_paths = Vec::new();
+        let mut commit_query_families = BTreeSet::<String>::new();
+        let mut commit_path_families = BTreeSet::<String>::new();
+        let mut commit_support_families = BTreeSet::<String>::new();
+        for path in semantic_next_reads {
+            let is_target = retrieval_targets.contains(&path);
+            summary.appended_file_count += 1;
+            if is_target {
+                summary.appended_target_hit_count += 1;
+                commit_target_paths.push(path.clone());
+            } else {
+                summary.appended_non_target_count += 1;
+                commit_non_target_paths.push(path.clone());
+            }
+            upsert_semantic_next_read_family(&mut query_families, &query_family, &path, is_target);
+            commit_query_families.insert(query_family.clone());
+            let path_family = reranker_path_family(&path);
+            upsert_semantic_next_read_family(&mut path_families, &path_family, &path, is_target);
+            commit_path_families.insert(path_family);
+            let support_family = semantic_only_support_family(semantic_commit, &path);
+            upsert_semantic_next_read_family(
+                &mut support_families,
+                &support_family,
+                &path,
+                is_target,
+            );
+            commit_support_families.insert(support_family);
+        }
+        for family in commit_query_families {
+            if let Some(entry) = query_families.get_mut(&family) {
+                entry.commits_with_appended_files += 1;
+            }
+        }
+        for family in commit_path_families {
+            if let Some(entry) = path_families.get_mut(&family) {
+                entry.commits_with_appended_files += 1;
+            }
+        }
+        for family in commit_support_families {
+            if let Some(entry) = support_families.get_mut(&family) {
+                entry.commits_with_appended_files += 1;
+            }
+        }
+        if !commit_target_paths.is_empty() {
+            summary.commits_with_target_hits += 1;
+            commit_target_paths.sort();
+            commit_target_paths.truncate(5);
+            summary
+                .appended_target_cases
+                .push(SemanticPrecisionNamedCase {
+                    sha: short_sha(&default_commit.sha),
+                    variant: "semantic_next_read_appended".to_string(),
+                    reason: "Semantic next-read path(s) appended after the preserved default top K were retrieval targets.".to_string(),
+                    paths: commit_target_paths,
+                });
+        } else if !commit_non_target_paths.is_empty() {
+            summary.commits_with_only_non_targets += 1;
+        }
+        if !commit_non_target_paths.is_empty() {
+            commit_non_target_paths.sort();
+            commit_non_target_paths.truncate(5);
+            summary
+                .appended_non_target_cases
+                .push(SemanticPrecisionNamedCase {
+                    sha: short_sha(&default_commit.sha),
+                    variant: "semantic_next_read_appended".to_string(),
+                    reason: "Semantic next-read path(s) appended after the preserved default top K were not retrieval targets.".to_string(),
+                    paths: commit_non_target_paths,
+                });
+        }
+    }
+
+    if summary.appended_file_count > 0 {
+        summary.appended_target_hit_rate =
+            summary.appended_target_hit_count as f32 / summary.appended_file_count as f32;
+    }
+    summary.appended_target_cases.truncate(10);
+    summary.appended_non_target_cases.truncate(10);
+    summary.query_family_contributions =
+        sorted_semantic_next_read_family_contributions(query_families);
+    summary.path_family_contributions =
+        sorted_semantic_next_read_family_contributions(path_families);
+    summary.support_family_contributions =
+        sorted_semantic_next_read_family_contributions(support_families);
+    summary
+}
+
+fn upsert_semantic_next_read_family(
+    families: &mut BTreeMap<String, SemanticNextReadFamilyContribution>,
+    family: &str,
+    path: &str,
+    target: bool,
+) {
+    let entry = families
+        .entry(family.to_string())
+        .or_insert(SemanticNextReadFamilyContribution {
+            family: family.to_string(),
+            ..SemanticNextReadFamilyContribution::default()
+        });
+    entry.appended_file_count += 1;
+    if target {
+        entry.appended_target_hit_count += 1;
+        if entry.example_target_paths.len() < 5
+            && !entry
+                .example_target_paths
+                .iter()
+                .any(|example| example == path)
+        {
+            entry.example_target_paths.push(path.to_string());
+        }
+    } else {
+        entry.appended_non_target_count += 1;
+        if entry.example_non_target_paths.len() < 5
+            && !entry
+                .example_non_target_paths
+                .iter()
+                .any(|example| example == path)
+        {
+            entry.example_non_target_paths.push(path.to_string());
+        }
+    }
+}
+
+fn sorted_semantic_next_read_family_contributions(
+    families: BTreeMap<String, SemanticNextReadFamilyContribution>,
+) -> Vec<SemanticNextReadFamilyContribution> {
+    let mut families = families.into_values().collect::<Vec<_>>();
+    families.sort_by(|left, right| {
+        right
+            .appended_target_hit_count
+            .cmp(&left.appended_target_hit_count)
+            .then_with(|| {
+                left.appended_non_target_count
+                    .cmp(&right.appended_non_target_count)
+            })
+            .then_with(|| right.appended_file_count.cmp(&left.appended_file_count))
+            .then_with(|| left.family.cmp(&right.family))
+    });
+    families
 }
 
 fn support_profile_routed_semantic_report(
@@ -6240,6 +6481,60 @@ fn semantic_contribution_diagnostics(
         }
     }
     diagnostics
+}
+
+fn semantic_next_read_contribution_diagnostics(
+    summary: &SemanticNextReadContributionSummary,
+    provider: &str,
+) -> Vec<Diagnostic> {
+    if summary.evaluated_commits == 0 || summary.appended_file_count == 0 {
+        return Vec::new();
+    }
+    if summary.appended_target_hit_count > 0 && summary.appended_non_target_count == 0 {
+        return vec![Diagnostic {
+            code: "semantic_next_read_clean_recovery".to_string(),
+            severity: DiagnosticSeverity::Info,
+            message: format!(
+                "Semantic provider `{provider}` recovered retrieval target(s) as bounded next-read paths after preserving the full default top K."
+            ),
+            paths: summary
+                .appended_target_cases
+                .iter()
+                .flat_map(|case| case.paths.clone())
+                .collect(),
+            count: summary.appended_target_hit_count,
+        }];
+    }
+    if summary.appended_target_hit_count > 0 {
+        return vec![Diagnostic {
+            code: "semantic_next_read_mixed_hold".to_string(),
+            severity: DiagnosticSeverity::Info,
+            message: format!(
+                "Semantic provider `{provider}` recovered some retrieval targets as bounded next reads, but also appended non-targets; keep as diagnostic guidance until a cleaner separator is proven."
+            ),
+            paths: summary
+                .appended_non_target_cases
+                .iter()
+                .flat_map(|case| case.paths.clone())
+                .take(10)
+                .collect(),
+            count: summary.appended_target_hit_count + summary.appended_non_target_count,
+        }];
+    }
+    vec![Diagnostic {
+        code: "semantic_next_read_noise_hold".to_string(),
+        severity: DiagnosticSeverity::Warning,
+        message: format!(
+            "Semantic provider `{provider}` appended bounded next-read paths after preserving the default top K, but none were retrieval targets."
+        ),
+        paths: summary
+            .appended_non_target_cases
+            .iter()
+            .flat_map(|case| case.paths.clone())
+            .take(10)
+            .collect(),
+        count: summary.appended_non_target_count,
+    }]
 }
 
 fn semantic_support_profile_example_paths(
@@ -13390,6 +13685,82 @@ mod tests {
     }
 
     #[test]
+    fn semantic_next_read_contribution_counts_appended_target_and_noise() {
+        let mut default = empty_historical_eval_report("semantic-next-read");
+        let default_commit = &mut default.commits[0];
+        default_commit.query_trace =
+            Some(query_trace_with_facets(vec![QueryFacetKind::DomainPhrase]));
+        default_commit.retrieval_target_files = vec!["tests/semantic_target.rs".to_string()];
+        default_commit.changed_path_labels = vec![historical_changed_path_label(
+            "tests/semantic_target.rs",
+            FileRole::Test,
+        )];
+        default_commit.recommended_context_files = vec![
+            "src/default_anchor.rs".to_string(),
+            "src/default_tail.rs".to_string(),
+        ];
+        refresh_commit_ranking_metrics(default_commit);
+        refresh_historical_report_ranking_metrics(&mut default);
+
+        let mut semantic = default.clone();
+        let semantic_commit = &mut semantic.commits[0];
+        semantic_commit.signal_baseline_files = vec![
+            HistoricalSignalRanking {
+                signal: RetrievalSignalKind::Semantic,
+                files: vec![
+                    "tests/semantic_target.rs".to_string(),
+                    "src/semantic_noise.rs".to_string(),
+                    "src/ignored_after_limit.rs".to_string(),
+                ],
+            },
+            HistoricalSignalRanking {
+                signal: RetrievalSignalKind::RelatedTest,
+                files: vec!["tests/semantic_target.rs".to_string()],
+            },
+        ];
+
+        let summary = semantic_next_read_contribution_summary(&default, &semantic, 2);
+
+        assert_eq!(summary.evaluated_commits, 1);
+        assert_eq!(summary.append_limit_per_commit, 2);
+        assert_eq!(summary.commits_with_appended_files, 1);
+        assert_eq!(summary.commits_with_target_hits, 1);
+        assert_eq!(summary.appended_file_count, 2);
+        assert_eq!(summary.appended_target_hit_count, 1);
+        assert_eq!(summary.appended_non_target_count, 1);
+        assert_eq!(
+            summary.appended_target_cases[0].paths,
+            vec!["tests/semantic_target.rs"]
+        );
+        assert_eq!(
+            summary.appended_non_target_cases[0].paths,
+            vec!["src/semantic_noise.rs"]
+        );
+        assert!(summary
+            .query_family_contributions
+            .iter()
+            .any(|family| family.family == "domain_phrase"
+                && family.appended_target_hit_count == 1
+                && family.appended_non_target_count == 1));
+        assert!(summary
+            .path_family_contributions
+            .iter()
+            .any(|family| family.family == "rust_source" && family.appended_non_target_count == 1));
+        assert!(
+            summary
+                .support_family_contributions
+                .iter()
+                .any(|family| family.family == "related_test"
+                    && family.appended_target_hit_count == 1)
+        );
+
+        let diagnostics = semantic_next_read_contribution_diagnostics(&summary, "local_fastembed");
+        assert!(diagnostics
+            .iter()
+            .any(|diagnostic| diagnostic.code == "semantic_next_read_mixed_hold"));
+    }
+
+    #[test]
     fn reranker_contribution_summary_counts_target_hit_deltas() {
         let mut default = empty_historical_eval_report("rerank");
         default.commits[0].file_hits_at_10 = vec![
@@ -14372,6 +14743,7 @@ mod tests {
             named_regressions: Vec::new(),
             named_misses: Vec::new(),
             semantic_contribution: SemanticContributionSummary::default(),
+            semantic_next_read_contribution: SemanticNextReadContributionSummary::default(),
             reranker_contribution: RerankerContributionSummary::default(),
             routed_reranker_contribution: RerankerContributionSummary::default(),
             semantic_corroborated_reranker_contribution: RerankerContributionSummary::default(),

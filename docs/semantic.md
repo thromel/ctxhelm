@@ -58,7 +58,7 @@ Measured Phase 62 status:
 - `local_hash`: deterministic scaffold, model `ctxhelm-local-hash-v1`, 64 dimensions, not a quality backend.
 - `local_fastembed`: production-local backend, quality backend `true`, local-only, no cloud source transfer.
 - Default production-local model: `AllMiniLML6V2Q` with 384 dimensions.
-- Jina code model status: still available explicitly as `JinaEmbeddingsV2BaseCode` with 768 dimensions and provider-specific `query:` / `passage:` text, but Phase 293 keeps it diagnostic-only because candidate quality improved without Recall@10 lift and runtime remained high.
+- Jina code model status: still available explicitly as `JinaEmbeddingsV2BaseCode` with 768 dimensions and provider-specific `query:` / `passage:` text, but Phase 293 keeps it diagnostic-only because candidate quality improved without Recall@10 lift and runtime remained high. Phase 294 also rejects promoting semantic as post-top-K next-read guidance for that setup because the only appended next-read path was a non-target.
 - Model cache: defaults to repo `.ctxhelm/cache/fastembed` when run inside a git repo, otherwise `CTXHELM_HOME/cache/fastembed`; override with `CTXHELM_FASTEMBED_CACHE_DIR`.
 - Query-time vector cache: bounded in-process cache for repeated source-free document embeddings.
 - Persisted query-vector cache: source-free query hashes and vectors are stored in SQLite so repeated fresh CLI/MCP processes can reuse query embeddings without storing raw query text.
@@ -216,6 +216,14 @@ kept ctxhelm neutral, and materially increased semantic runtime. Do not promote
 semantic by stuffing more facets into search documents. Future semantic R&D
 should target task-conditioned query construction, alternate local model/fusion
 evaluation, or safe local metadata reranker promotion constraints.
+
+Phase 294 adds `semanticNextReadContribution` to semantic gate reports. This
+source-free diagnostic preserves the full default top K and measures bounded
+semantic next-read paths after that protected budget. The targeted VeriSchema
+Jina candidate-path proof appended only one path,
+`tests/core/test_state_validator.py`, and it was not a retrieval target, so the
+gate emitted `semantic_next_read_noise_hold`. Treat the field as R&D evidence,
+not runtime/default guidance.
 
 ## When To Avoid It
 
