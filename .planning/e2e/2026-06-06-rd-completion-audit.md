@@ -64,6 +64,14 @@ regression (`targetHitDelta = 0`, `regressedCommitCount = 0`,
 `defaultOnlyTargetHitCount = 0`) but adds no target hits, so it is safety
 evidence rather than promotion evidence.
 
+Phase 291 addendum:
+`.planning/e2e/2026-06-07-phase291-semantic-candidate-sibling-query.md` adds
+an eval-only `--semantic-query-mode candidate-sibling-path-hints` probe for
+same-directory and mirrored-test aliases around top lexical candidates. The
+targeted VeriSchema proof rejects it: candidate misses worsen from Phase 289
+`3 -> 4`, selected semantic targets fall `11 -> 10`, the semantic-corroborated
+regression remains, and the tail-slot variant remains neutral.
+
 ## Remaining R&D Risk
 
 1. Semantic is not yet a proven default-lift channel. It is useful and bounded,
@@ -144,9 +152,11 @@ evidence rather than promotion evidence.
    VeriSchema semantic candidate quality with bounded candidate-path hints but
    still does not improve recall or remove the semantic-corroborated
    regression. Phase 290 removes that regression with a conservative tail-slot
-   selector but adds no target hits. The next semantic work needs richer
-   query/document construction for remaining prompt/workflow/verification
-   files, or a much narrower learned separator.
+   selector but adds no target hits. Phase 291 rejects same-directory and
+   mirrored-test sibling path aliases because candidate misses worsen and
+   selected semantic targets fall. The next semantic work needs richer
+   source-free document/query construction for remaining
+   prompt/workflow/verification files, or a much narrower learned separator.
 2. Claude has current workflow proof but not a fresh paired outcome suite on the
    same level as Codex Phase 245/250. Phase 264 confirms this is still a
    client-availability problem: Claude Code is rate-limited, while Codex remains
@@ -205,14 +215,16 @@ evidence rather than promotion evidence.
    cross-repo keys. Phase 289 shows candidate-path hints improve candidate
    quality but not final recall or regression status. Phase 290 proves a
    conservative tail-slot selector can remove the regression but not create
-   lift. The next semantic step is richer query/document construction for the
-   remaining prompt/workflow/verification gaps, or a materially narrower
-   learned separator, not runtime promotion. Increasing the
+   lift. Phase 291 rejects candidate-sibling path aliases because they worsen
+   candidate misses and selected semantic target hits. The next semantic step is
+   richer query/document construction for the remaining
+   prompt/workflow/verification gaps, or a materially narrower learned
+   separator, not runtime promotion. Increasing the
    local-fastembed document cap, adding broad Python path metadata, adding
    generic source-role query words, adding another hand-written route, merely
    widening or splitting the same gate, relaxing profile keys, current
-   cross-repo aggregation, and candidate-path hints as a runtime/default policy
-   are already rejected paths.
+   cross-repo aggregation, candidate-path hints as a runtime/default policy, and
+   candidate-sibling path aliases are already rejected paths.
 
 ## Conclusion
 
@@ -251,12 +263,14 @@ strict query/path profiles nor path-family backoff profiles have an eligible
 cross-repo zero-harm key. Phase 289 tests bounded candidate-path semantic query
 hints; it improves semantic candidate quality but not recall or the
 semantic-corroborated regression. Phase 290 tests conservative tail-slot
-selection; it removes the regression but adds no target lift. The remaining
-semantic R&D path is richer query/document construction or a much narrower
-learned separator, not more same-range doubling, not coarse profile-key
-relaxation, not generic role words, not current cross-repo aggregation, not
-candidate-path hints or tail-slot reranking as runtime/default policy, and not
-runtime/default promotion.
+selection; it removes the regression but adds no target lift. Phase 291 tests
+candidate-sibling path aliases; candidate misses worsen and selected semantic
+targets fall, so more path aliases are rejected. The remaining semantic R&D path
+is richer query/document construction or a much narrower learned separator, not
+more same-range doubling, not coarse profile-key relaxation, not generic role
+words, not current cross-repo aggregation, not candidate-path hints,
+candidate-sibling hints, or tail-slot reranking as runtime/default policy, and
+not runtime/default promotion.
 Phase 253 reduces memory risk by
 proving cross-repo Codex target-consumption lift. Phase 255 further reduces
 memory risk by preserving that target consumption while improving irrelevant

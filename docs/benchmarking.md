@@ -584,6 +584,22 @@ This remains diagnostic-only. Phase 289 improved VeriSchema candidate-quality
 counters, but recall stayed unchanged and the semantic-corroborated regression
 remained, so it is not runtime/default policy evidence.
 
+Use `--semantic-query-mode candidate-sibling-path-hints` only as an eval
+diagnostic when testing path-neighborhood query construction. It includes the
+candidate-path aliases above, then appends a very small bounded set of
+same-directory and mirrored-test aliases from source-free inventory paths near
+top lexical candidates:
+
+```bash
+ctxhelm eval gate --repo /path/to/repo --base HEAD~40 --head HEAD \
+  --limit 20 --budget 10 --semantic-provider local_fastembed \
+  --semantic-query-mode candidate-sibling-path-hints --format json
+```
+
+Phase 291 rejects this route on the targeted VeriSchema slice: candidate misses
+worsen, selected semantic targets fall, and the semantic-corroborated
+regression remains. It is not runtime/default policy evidence.
+
 `local_hash` remains the deterministic scaffold. `local_fastembed` is the
 production-local backend and requires a build compiled with the
 `local-embeddings` feature.
@@ -806,12 +822,15 @@ ctxhelm eval learned-policy-train-test --repo /path/to/repo \
   --profile-key-mode path-family-backoff --format json
 ```
 
-The same train/test evaluator accepts `--semantic-query-mode source-role-hints`
-and `--semantic-query-mode candidate-path-hints` for source-free
-query-construction probes. Treat both as diagnostic only: Phase 287 rejected
-generic source-role hints on VeriSchema, while Phase 289 kept candidate-path
+The same train/test evaluator accepts `--semantic-query-mode source-role-hints`,
+`--semantic-query-mode candidate-path-hints`, and
+`--semantic-query-mode candidate-sibling-path-hints` for source-free
+query-construction probes. Treat all three as diagnostic only: Phase 287
+rejected generic source-role hints on VeriSchema, Phase 289 kept candidate-path
 hints eval-only because improved candidate quality did not improve recall or
-remove the semantic-corroborated regression.
+remove the semantic-corroborated regression, and Phase 291 rejected sibling path
+aliases because they worsened candidate misses and selected semantic target
+hits.
 
 Use `ctxhelm eval learned-policy-cross-repo` to aggregate saved
 `learned-policy-train-test` JSON reports across repositories without rerunning

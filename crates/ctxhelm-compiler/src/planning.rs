@@ -31,6 +31,9 @@ pub(crate) const PREPARE_TASK_TEST_LIMIT: usize = 10;
 const SELECTED_MEMORY_INITIAL_READ_LIMIT: usize = 3;
 const SEMANTIC_CANDIDATE_PATH_HINT_PATH_LIMIT: usize = 8;
 const SEMANTIC_CANDIDATE_PATH_HINT_TERM_LIMIT: usize = 12;
+const SEMANTIC_SIBLING_PATH_HINT_PATH_LIMIT: usize = 8;
+const SEMANTIC_SIBLING_PATH_HINT_TERM_LIMIT: usize = 4;
+const SEMANTIC_SIBLING_PATH_HINTS_PER_PATH_LIMIT: usize = 1;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum HistoryMode {
@@ -44,6 +47,7 @@ pub(crate) struct PlannerSemanticOptions {
     pub provider: SemanticProviderConfig,
     pub query_source_role_hints: bool,
     pub query_candidate_path_hints: bool,
+    pub query_candidate_sibling_path_hints: bool,
 }
 
 impl PlannerSemanticOptions {
@@ -53,6 +57,7 @@ impl PlannerSemanticOptions {
             provider,
             query_source_role_hints: false,
             query_candidate_path_hints: false,
+            query_candidate_sibling_path_hints: false,
         }
     }
 }
@@ -325,7 +330,7 @@ pub(crate) fn prepare_context_plan_with_paths_history_mode_and_semantic(
     for result in &search_results {
         roles.insert(result.path.clone(), result.role.clone());
     }
-    if semantic.query_candidate_path_hints {
+    if semantic.query_candidate_path_hints || semantic.query_candidate_sibling_path_hints {
         let hint_count = append_semantic_candidate_path_hints(&mut semantic_query, &search_results);
         push_plan_diagnostic(
             &mut plan,
@@ -335,6 +340,24 @@ pub(crate) fn prepare_context_plan_with_paths_history_mode_and_semantic(
                 message:
                     "Semantic query text included bounded source-free aliases from lexical candidate paths."
                         .to_string(),
+                paths: Vec::new(),
+                count: hint_count,
+            },
+        );
+    }
+    if semantic.query_candidate_sibling_path_hints {
+        let hint_count = append_semantic_candidate_sibling_path_hints(
+            &mut semantic_query,
+            &search_results,
+            &roles,
+        );
+        push_plan_diagnostic(
+            &mut plan,
+            Diagnostic {
+                code: "semantic_query_candidate_sibling_path_hints_applied".to_string(),
+                severity: DiagnosticSeverity::Info,
+                message: "Semantic query text included bounded source-free aliases from same-directory and mirrored-test inventory paths."
+                    .to_string(),
                 paths: Vec::new(),
                 count: hint_count,
             },
@@ -1942,6 +1965,115 @@ fn append_semantic_candidate_path_hints(
     hint_count
 }
 
+fn append_semantic_candidate_sibling_path_hints(
+    query: &mut String,
+    search_results: &[SearchResult],
+    roles: &BTreeMap<String, FileRole>,
+) -> usize {
+    let mut hint_count = 0usize;
+    let mut sibling_paths = Vec::new();
+    for result in search_results
+        .iter()
+        .take(SEMANTIC_SIBLING_PATH_HINT_PATH_LIMIT)
+    {
+        for path in semantic_candidate_sibling_paths(&result.path, roles) {
+            if !sibling_paths.contains(&path) {
+                sibling_paths.push(path);
+            }
+        }
+    }
+    for path in sibling_paths {
+        let mut path_hint_count = 0usize;
+        for hint in semantic_candidate_sibling_path_hint_terms(&path) {
+            if hint_count >= SEMANTIC_SIBLING_PATH_HINT_TERM_LIMIT {
+                return hint_count;
+            }
+            if path_hint_count >= SEMANTIC_SIBLING_PATH_HINTS_PER_PATH_LIMIT {
+                break;
+            }
+            if query
+                .split_whitespace()
+                .any(|term| term.eq_ignore_ascii_case(&hint))
+            {
+                continue;
+            }
+            if !query.is_empty() {
+                query.push(' ');
+            }
+            query.push_str(&hint);
+            hint_count += 1;
+            path_hint_count += 1;
+        }
+    }
+    hint_count
+}
+
+fn semantic_candidate_sibling_path_hint_terms(path: &str) -> Vec<String> {
+    let mut terms = Vec::new();
+    if let Some(stem) = path_stem(path) {
+        if semantic_candidate_compound_path_hint_allowed(&stem) {
+            terms.push(stem);
+        }
+    }
+    for term in semantic_candidate_path_hint_terms(path) {
+        if !terms.contains(&term) {
+            terms.push(term);
+        }
+    }
+    terms
+}
+
+fn semantic_candidate_sibling_paths(
+    candidate_path: &str,
+    roles: &BTreeMap<String, FileRole>,
+) -> Vec<String> {
+    let mut paths = Vec::new();
+    let Some(parent) = candidate_path.rsplit_once('/').map(|(parent, _)| parent) else {
+        return paths;
+    };
+    let candidate_stem = path_stem(candidate_path);
+    for (path, role) in roles {
+        if path == candidate_path {
+            continue;
+        }
+        if !matches!(role, FileRole::Source | FileRole::Test) {
+            continue;
+        }
+        let same_directory = path
+            .rsplit_once('/')
+            .map(|(path_parent, _)| path_parent == parent)
+            .unwrap_or(false);
+        let mirrored_test = matches!(role, FileRole::Test)
+            && candidate_stem
+                .as_deref()
+                .is_some_and(|stem| mirrored_test_path_matches(path, stem));
+        if (same_directory || mirrored_test) && !paths.contains(path) {
+            paths.push(path.clone());
+        }
+        if paths.len() >= SEMANTIC_SIBLING_PATH_HINT_PATH_LIMIT {
+            break;
+        }
+    }
+    paths
+}
+
+fn path_stem(path: &str) -> Option<String> {
+    let file = path.rsplit('/').next()?;
+    let stem = file.rsplit_once('.').map(|(stem, _)| stem).unwrap_or(file);
+    (!stem.is_empty()).then(|| stem.to_ascii_lowercase())
+}
+
+fn mirrored_test_path_matches(path: &str, source_stem: &str) -> bool {
+    let Some(test_stem) = path_stem(path) else {
+        return false;
+    };
+    let normalized = test_stem
+        .strip_prefix("test_")
+        .or_else(|| test_stem.strip_suffix("_test"))
+        .unwrap_or(&test_stem);
+    normalized == source_stem
+}
+
 fn semantic_candidate_path_hint_terms(path: &str) -> Vec<String> {
     let mut terms = Vec::new();
     for raw in path.split(|character: char| {
@@ -1986,6 +2118,14 @@ fn semantic_candidate_path_hint_term_allowed(term: &str) -> bool {
             | "doc"
             | "readme"
     )
+}
+
+fn semantic_candidate_compound_path_hint_allowed(term: &str) -> bool {
+    if term.len() < 3 {
+        return false;
+    }
+    term.split(['_', '-'])
+        .any(semantic_candidate_path_hint_term_allowed)
 }
 
 fn semantic_source_role_hints_apply(task_type: &TaskType) -> bool {
@@ -3221,6 +3361,63 @@ mod tests {
         assert!(query.contains("normalization"));
         assert!(query.contains("fds"));
         assert!(!query.contains("schema_agent"));
+        assert!(!query.contains(" tests "));
+    }
+
+    #[test]
+    fn semantic_query_candidate_sibling_path_hints_add_source_free_neighbor_aliases() {
+        let mut query = "phase workflow".to_string();
+        let results = vec![SearchResult {
+            path: "schema_agent/core/state_validator.py".to_string(),
+            role: FileRole::Source,
+            language: Some("python".to_string()),
+            score: 1.0,
+            reason: "test".to_string(),
+        }];
+        let roles = BTreeMap::from([
+            ("schema_agent/core/state.py".to_string(), FileRole::Source),
+            (
+                "schema_agent/core/state_validator.py".to_string(),
+                FileRole::Source,
+            ),
+            (
+                "schema_agent/nlp/transformer_ner.py".to_string(),
+                FileRole::Source,
+            ),
+        ]);
+
+        let hint_count = append_semantic_candidate_sibling_path_hints(&mut query, &results, &roles);
+
+        assert!(hint_count > 0);
+        assert!(query.contains("state"));
+        assert!(!query.contains("schema_agent"));
+    }
+
+    #[test]
+    fn semantic_query_candidate_sibling_path_hints_add_mirrored_test_aliases() {
+        let mut query = "nlp transformer".to_string();
+        let results = vec![SearchResult {
+            path: "schema_agent/nlp/transformer_ner.py".to_string(),
+            role: FileRole::Source,
+            language: Some("python".to_string()),
+            score: 1.0,
+            reason: "test".to_string(),
+        }];
+        let roles = BTreeMap::from([
+            (
+                "schema_agent/nlp/transformer_ner.py".to_string(),
+                FileRole::Source,
+            ),
+            (
+                "tests/nlp/test_transformer_ner.py".to_string(),
+                FileRole::Test,
+            ),
+        ]);
+
+        let hint_count = append_semantic_candidate_sibling_path_hints(&mut query, &results, &roles);
+
+        assert!(hint_count > 0);
+        assert!(query.contains("test_transformer_ner"));
         assert!(!query.contains(" tests "));
     }
 

@@ -299,6 +299,15 @@ new target lift (`rerankerOnlyTargetHitCount = 0`). Tail-slot preservation is
 therefore retained as diagnostic safety evidence, not a runtime/default
 semantic promotion path.
 
+Phase 291 tests a narrower path-neighborhood query construction idea. The
+eval-only `--semantic-query-mode candidate-sibling-path-hints` mode appends
+bounded same-directory and mirrored-test aliases near top lexical candidates.
+The same VeriSchema older-range proof rejects it: semantic candidate misses
+worsen from `3 -> 4`, selected semantic target hits fall from `11 -> 10`,
+semantic-only non-targets only fall from `16 -> 15`, the semantic-corroborated
+regression remains `targetHitDelta = -1`, and the tail-slot variant remains
+neutral. More path aliases are not the current semantic path.
+
 Phase 196 reserves selected validation areas in broad context-area guidance and adds package-mirrored related-test affinity. The accepted release-binary proof promotes with selected-file/source/test/validation metrics unchanged while improving VeriSchema broad context-area recall from `0.5777778 -> 0.84444445` and next-read recovery from `16 -> 19` of `39` missed@10 files. A related-test-only intermediate proof was rejected because it did not move the product proof.
 
 Phase 197 adds source-free agent-evidence recovery accounting to context-area next-read summaries. The fresh release-binary proof promotes with selected-file/source/test/validation/broad-area metrics unchanged while showing VeriSchema has `29 / 39` missed@10 files recoverable through the full agent evidence bundle, compared with `19 / 39` through progressive next reads alone.
