@@ -660,6 +660,16 @@ proof, the one candidate miss is `schema_agent/core/state.py` with
 fusion/top-K ordering for supported semantic candidates, not broader document
 expansion, MiniLM12 swaps, or next-read promotion.
 
+Phase 297 measures that supported-candidate surface with the eval-only
+`semantic_supported_candidate_tail_slot_oracle` variant. The oracle inserts
+semantic-generated missed target candidates with non-semantic support into
+protected tail slots and records
+`supportedCandidateTailSlotRerankerContribution`. On the same Jina proof it
+recovers `schema_agent/core/state.py`, improves target hits `13 -> 14`, raises
+file Recall@10 to `0.3438596`, and has zero default-only target churn. This is
+an upper bound, not a runtime policy, because the oracle consumes eval
+candidate-miss profiles.
+
 `local_hash` remains the deterministic scaffold. `local_fastembed` is the
 production-local backend and requires a build compiled with the
 `local-embeddings` feature.
@@ -764,6 +774,10 @@ analysis. Gate diagnostics use this split to route R&D:
 - `semantic_candidate_fusion_unsupported_gap`: semantic-generated missed
   targets lacked non-semantic source-free support. Inspect semantic
   query/document coverage after supported fusion misses are resolved.
+- `semantic_supported_candidate_tail_slot_oracle_clean_lift`: the eval-only
+  supported-candidate oracle added target hits without default-only target
+  churn. Treat this as an upper bound for source-free predictor work, not as a
+  deployable ranking rule.
 
 The `semanticContribution.queryFamilyContributions` JSON field groups semantic
 selection quality by the same source-free query families used for reranker
@@ -920,7 +934,9 @@ because the only post-top-K appended path is a non-target. Phase 295 rejects
 MiniLM12 model swaps as noisier than corrected Jina. Phase 296 shows the
 remaining Jina candidate miss is `schema_agent/core/state.py` with
 `dependency_co_change` support, so the remaining semantic path is fusion/top-K
-ordering for supported candidate misses.
+ordering for supported candidate misses. Phase 297 confirms a gold-backed
+tail-slot oracle can recover that target cleanly, but the oracle is not
+runtime-promotable because it uses eval target-miss profiles.
 
 Use `ctxhelm eval learned-policy-cross-repo` to aggregate saved
 `learned-policy-train-test` JSON reports across repositories without rerunning

@@ -58,7 +58,7 @@ Measured Phase 62 status:
 - `local_hash`: deterministic scaffold, model `ctxhelm-local-hash-v1`, 64 dimensions, not a quality backend.
 - `local_fastembed`: production-local backend, quality backend `true`, local-only, no cloud source transfer.
 - Default production-local model: `AllMiniLML6V2Q` with 384 dimensions.
-- Jina code model status: still available explicitly as `JinaEmbeddingsV2BaseCode` with 768 dimensions and provider-specific `query:` / `passage:` text, but Phase 293 keeps it diagnostic-only because candidate quality improved without Recall@10 lift and runtime remained high. Phase 294 also rejects promoting semantic as post-top-K next-read guidance for that setup because the only appended next-read path was a non-target. Phase 295 rejects `AllMiniLML12V2Q` and `AllMiniLML12V2` as simple model-swap fixes because both are noisier than Jina on the same targeted proof. Phase 296 shows the remaining Jina candidate miss has `dependency_co_change` support, so the next semantic slice should target fusion/top-K ordering rather than broader documents or model swaps.
+- Jina code model status: still available explicitly as `JinaEmbeddingsV2BaseCode` with 768 dimensions and provider-specific `query:` / `passage:` text, but Phase 293 keeps it diagnostic-only because candidate quality improved without Recall@10 lift and runtime remained high. Phase 294 also rejects promoting semantic as post-top-K next-read guidance for that setup because the only appended next-read path was a non-target. Phase 295 rejects `AllMiniLML12V2Q` and `AllMiniLML12V2` as simple model-swap fixes because both are noisier than Jina on the same targeted proof. Phase 296 shows the remaining Jina candidate miss has `dependency_co_change` support. Phase 297's eval-only supported-candidate tail-slot oracle recovers that target cleanly, so the next semantic slice should replace the oracle with a source-free predictor rather than broaden documents or swap models.
 - Model cache: defaults to repo `.ctxhelm/cache/fastembed` when run inside a git repo, otherwise `CTXHELM_HOME/cache/fastembed`; override with `CTXHELM_FASTEMBED_CACHE_DIR`.
 - Query-time vector cache: bounded in-process cache for repeated source-free document embeddings.
 - Persisted query-vector cache: source-free query hashes and vectors are stored in SQLite so repeated fresh CLI/MCP processes can reuse query embeddings without storing raw query text.
@@ -232,6 +232,14 @@ targeted VeriSchema Jina candidate-path proof, the only such missed target is
 `schema_agent/core/state.py` with `dependency_co_change` support, yielding
 `semantic_candidate_fusion_supported_gap`. Treat that as fusion/top-K ordering
 evidence, not as a reason to expand semantic documents or promote Jina.
+
+Phase 297 adds `semantic_supported_candidate_tail_slot_oracle` and
+`supportedCandidateTailSlotRerankerContribution` to measure the upper bound of
+that supported candidate-miss surface. On the targeted VeriSchema Jina proof,
+the oracle recovers `schema_agent/core/state.py`, improves target hits
+`13 -> 14`, and has no default-only target churn. It is explicitly eval-only
+because it consumes `candidateMissedFileProfilesAt10`, which are built from eval
+target misses.
 
 ## When To Avoid It
 
