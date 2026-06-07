@@ -680,6 +680,13 @@ result: `schema_agent/core/state.py`, target hits `13 -> 14`, file Recall@10
 `0.3438596`, zero regressions, and zero default-only target churn. It remains
 eval-only until broader range/repo proof shows the shape repeats.
 
+Phase 299 runs that broader proof across RefactoringMiner, ctxhelm, ReAgent,
+and VeriSchema older/recent ranges. The shape is safe but sparse: across 159
+evaluated commits it has target-hit delta `+1`, one improved commit, zero
+regressions, and zero default-only target hits. The only lift is the original
+VeriSchema older `schema_agent/core/state.py` case, so the variant remains
+eval-only and is not runtime/default policy evidence.
+
 `local_hash` remains the deterministic scaffold. `local_fastembed` is the
 production-local backend and requires a build compiled with the
 `local-embeddings` feature.
@@ -948,8 +955,10 @@ ordering for supported candidate misses. Phase 297 confirms a gold-backed
 tail-slot oracle can recover that target cleanly, but the oracle is not
 runtime-promotable because it uses eval target-miss profiles. Phase 298
 replaces that oracle dependency on the targeted slice with a source-free
-supported-shape predictor that matches the clean lift, so the next bar is
-broader range/repo validation of that exact shape before runtime policy.
+supported-shape predictor that matches the clean lift. Phase 299 broadens that
+validation and finds no regressions but only one repeated application, so the
+next bar is a broader source-free candidate-retention signal or held-out learned
+separator before runtime policy.
 
 Use `ctxhelm eval learned-policy-cross-repo` to aggregate saved
 `learned-policy-train-test` JSON reports across repositories without rerunning

@@ -384,6 +384,14 @@ clean result: `schema_agent/core/state.py`, target hits `13 -> 14`, file
 Recall@10 `0.3438596`, no regressions, and no default-only target churn. Keep
 it eval-only until broader range/repo proof shows repeatable no-churn lift.
 
+Phase 299 broadens that validation across RefactoringMiner, ctxhelm, ReAgent,
+and VeriSchema older/recent ranges after a clean feature-enabled Jina rebuild.
+Across 159 evaluated commits, the supported-shape variant is safe but too
+sparse for promotion: target-hit delta `+1`, improved commits `1`, regressed
+commits `0`, and default-only target hits `0`. The only lift remains the
+original VeriSchema older `schema_agent/core/state.py` case; the other seven
+slices are neutral.
+
 Phase 196 reserves selected validation areas in broad context-area guidance and adds package-mirrored related-test affinity. The accepted release-binary proof promotes with selected-file/source/test/validation metrics unchanged while improving VeriSchema broad context-area recall from `0.5777778 -> 0.84444445` and next-read recovery from `16 -> 19` of `39` missed@10 files. A related-test-only intermediate proof was rejected because it did not move the product proof.
 
 Phase 197 adds source-free agent-evidence recovery accounting to context-area next-read summaries. The fresh release-binary proof promotes with selected-file/source/test/validation/broad-area metrics unchanged while showing VeriSchema has `29 / 39` missed@10 files recoverable through the full agent evidence bundle, compared with `19 / 39` through progressive next reads alone.
