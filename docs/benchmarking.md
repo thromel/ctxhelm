@@ -600,6 +600,22 @@ Phase 291 rejects this route on the targeted VeriSchema slice: candidate misses
 worsen, selected semantic targets fall, and the semantic-corroborated
 regression remains. It is not runtime/default policy evidence.
 
+Use `--semantic-query-mode candidate-path-concept-hints` only as an eval
+diagnostic when testing generic path-concept query construction. It includes the
+candidate-path aliases above, then appends up to four generic source-free
+software-domain concept terms derived from the task and candidate path terms:
+
+```bash
+ctxhelm eval gate --repo /path/to/repo --base HEAD~40 --head HEAD \
+  --limit 20 --budget 10 --semantic-provider local_fastembed \
+  --semantic-query-mode candidate-path-concept-hints --format json
+```
+
+Phase 292 rejects this route on the targeted VeriSchema slice: candidate
+targets and selected semantic targets fall, semantic-only non-targets rise, and
+the tail-slot semantic variant regresses. It is not runtime/default policy
+evidence.
+
 `local_hash` remains the deterministic scaffold. `local_fastembed` is the
 production-local backend and requires a build compiled with the
 `local-embeddings` feature.
@@ -824,13 +840,15 @@ ctxhelm eval learned-policy-train-test --repo /path/to/repo \
 
 The same train/test evaluator accepts `--semantic-query-mode source-role-hints`,
 `--semantic-query-mode candidate-path-hints`, and
-`--semantic-query-mode candidate-sibling-path-hints` for source-free
-query-construction probes. Treat all three as diagnostic only: Phase 287
+`--semantic-query-mode candidate-sibling-path-hints`, and
+`--semantic-query-mode candidate-path-concept-hints` for source-free
+query-construction probes. Treat all four as diagnostic only: Phase 287
 rejected generic source-role hints on VeriSchema, Phase 289 kept candidate-path
 hints eval-only because improved candidate quality did not improve recall or
 remove the semantic-corroborated regression, and Phase 291 rejected sibling path
 aliases because they worsened candidate misses and selected semantic target
-hits.
+hits. Phase 292 rejected generic path-concept terms because they lowered target
+candidate and selected-target counts while increasing semantic-only non-targets.
 
 Use `ctxhelm eval learned-policy-cross-repo` to aggregate saved
 `learned-policy-train-test` JSON reports across repositories without rerunning

@@ -31,6 +31,7 @@ pub(crate) const PREPARE_TASK_TEST_LIMIT: usize = 10;
 const SELECTED_MEMORY_INITIAL_READ_LIMIT: usize = 3;
 const SEMANTIC_CANDIDATE_PATH_HINT_PATH_LIMIT: usize = 8;
 const SEMANTIC_CANDIDATE_PATH_HINT_TERM_LIMIT: usize = 12;
+const SEMANTIC_PATH_CONCEPT_HINT_TERM_LIMIT: usize = 4;
 const SEMANTIC_SIBLING_PATH_HINT_PATH_LIMIT: usize = 8;
 const SEMANTIC_SIBLING_PATH_HINT_TERM_LIMIT: usize = 4;
 const SEMANTIC_SIBLING_PATH_HINTS_PER_PATH_LIMIT: usize = 1;
@@ -48,6 +49,7 @@ pub(crate) struct PlannerSemanticOptions {
     pub query_source_role_hints: bool,
     pub query_candidate_path_hints: bool,
     pub query_candidate_sibling_path_hints: bool,
+    pub query_candidate_path_concept_hints: bool,
 }
 
 impl PlannerSemanticOptions {
@@ -58,6 +60,7 @@ impl PlannerSemanticOptions {
             query_source_role_hints: false,
             query_candidate_path_hints: false,
             query_candidate_sibling_path_hints: false,
+            query_candidate_path_concept_hints: false,
         }
     }
 }
@@ -330,7 +333,10 @@ pub(crate) fn prepare_context_plan_with_paths_history_mode_and_semantic(
     for result in &search_results {
         roles.insert(result.path.clone(), result.role.clone());
     }
-    if semantic.query_candidate_path_hints || semantic.query_candidate_sibling_path_hints {
+    if semantic.query_candidate_path_hints
+        || semantic.query_candidate_sibling_path_hints
+        || semantic.query_candidate_path_concept_hints
+    {
         let hint_count = append_semantic_candidate_path_hints(&mut semantic_query, &search_results);
         push_plan_diagnostic(
             &mut plan,
@@ -340,6 +346,21 @@ pub(crate) fn prepare_context_plan_with_paths_history_mode_and_semantic(
                 message:
                     "Semantic query text included bounded source-free aliases from lexical candidate paths."
                         .to_string(),
+                paths: Vec::new(),
+                count: hint_count,
+            },
+        );
+    }
+    if semantic.query_candidate_path_concept_hints {
+        let hint_count =
+            append_semantic_candidate_path_concept_hints(&mut semantic_query, &search_results);
+        push_plan_diagnostic(
+            &mut plan,
+            Diagnostic {
+                code: "semantic_query_candidate_path_concept_hints_applied".to_string(),
+                severity: DiagnosticSeverity::Info,
+                message: "Semantic query text included bounded source-free generic concepts derived from task and lexical candidate path terms."
+                    .to_string(),
                 paths: Vec::new(),
                 count: hint_count,
             },
@@ -1965,6 +1986,66 @@ fn append_semantic_candidate_path_hints(
     hint_count
 }
 
+fn append_semantic_candidate_path_concept_hints(
+    query: &mut String,
+    search_results: &[SearchResult],
+) -> usize {
+    let mut triggers = query
+        .split_whitespace()
+        .map(|term| {
+            term.trim_matches(|character: char| !character.is_ascii_alphanumeric())
+                .to_ascii_lowercase()
+        })
+        .filter(|term| !term.is_empty())
+        .collect::<Vec<_>>();
+    for result in search_results
+        .iter()
+        .take(SEMANTIC_CANDIDATE_PATH_HINT_PATH_LIMIT)
+    {
+        for term in semantic_candidate_path_hint_terms(&result.path) {
+            if !triggers.contains(&term) {
+                triggers.push(term);
+            }
+        }
+    }
+
+    let mut hint_count = 0usize;
+    for trigger in triggers {
+        for hint in semantic_path_concept_hints_for_term(&trigger) {
+            if hint_count >= SEMANTIC_PATH_CONCEPT_HINT_TERM_LIMIT {
+                return hint_count;
+            }
+            if query
+                .split_whitespace()
+                .any(|term| term.eq_ignore_ascii_case(hint))
+            {
+                continue;
+            }
+            if !query.is_empty() {
+                query.push(' ');
+            }
+            query.push_str(hint);
+            hint_count += 1;
+        }
+    }
+    hint_count
+}
+
+fn semantic_path_concept_hints_for_term(term: &str) -> &'static [&'static str] {
+    match term {
+        "prompt" | "prompts" => &["template", "instruction"],
+        "workflow" | "workflows" => &["state", "transition", "orchestration"],
+        "gate" | "gates" => &["validation", "guard", "check"],
+        "verification" | "verifier" | "verify" | "z3" => &["formal", "solver", "constraint"],
+        "fd" | "fds" | "dependency" | "dependencies" => &["functional", "extraction"],
+        "nlp" | "ner" | "transformer" | "transformers" => &["entity", "recognition", "model"],
+        "state" | "states" => &["context", "artifacts"],
+        "repair" | "recovery" => &["fix", "remediation"],
+        "agent" | "agents" => &["tool", "prompt", "workflow"],
+        _ => &[],
+    }
+}
+
 fn append_semantic_candidate_sibling_path_hints(
     query: &mut String,
     search_results: &[SearchResult],
@@ -3362,6 +3443,34 @@ mod tests {
         assert!(query.contains("fds"));
         assert!(!query.contains("schema_agent"));
         assert!(!query.contains(" tests "));
+    }
+
+    #[test]
+    fn semantic_query_candidate_path_concept_hints_add_generic_domain_terms() {
+        let mut query = "verification workflow".to_string();
+        let results = vec![
+            SearchResult {
+                path: "schema_agent/gates/gate_system.py".to_string(),
+                role: FileRole::Source,
+                language: Some("python".to_string()),
+                score: 1.0,
+                reason: "test".to_string(),
+            },
+            SearchResult {
+                path: "schema_agent/prompts/normalization.py".to_string(),
+                role: FileRole::Source,
+                language: Some("python".to_string()),
+                score: 0.8,
+                reason: "test".to_string(),
+            },
+        ];
+
+        let hint_count = append_semantic_candidate_path_concept_hints(&mut query, &results);
+
+        assert!(hint_count > 0);
+        assert!(query.contains("formal"));
+        assert!(query.contains("state"));
+        assert!(hint_count <= SEMANTIC_PATH_CONCEPT_HINT_TERM_LIMIT);
     }
 
     #[test]

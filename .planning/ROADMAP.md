@@ -308,6 +308,16 @@ semantic-only non-targets only fall from `16 -> 15`, the semantic-corroborated
 regression remains `targetHitDelta = -1`, and the tail-slot variant remains
 neutral. More path aliases are not the current semantic path.
 
+Phase 292 tests generic path-concept query construction. The eval-only
+`--semantic-query-mode candidate-path-concept-hints` mode keeps candidate-path
+aliases and appends a small capped set of generic software-domain concepts from
+task/path terms, such as formal/solver/constraint for verification and
+state/transition/orchestration for workflow. The VeriSchema older-range proof
+rejects it: semantic candidate targets fall `14 -> 13`, candidate misses worsen
+`3 -> 4`, selected semantic target hits fall `11 -> 9`, semantic-only
+non-targets rise `16 -> 19`, and the tail-slot variant regresses
+`targetHitDelta = -1`. Stop adding terms to the same local-fastembed query.
+
 Phase 196 reserves selected validation areas in broad context-area guidance and adds package-mirrored related-test affinity. The accepted release-binary proof promotes with selected-file/source/test/validation metrics unchanged while improving VeriSchema broad context-area recall from `0.5777778 -> 0.84444445` and next-read recovery from `16 -> 19` of `39` missed@10 files. A related-test-only intermediate proof was rejected because it did not move the product proof.
 
 Phase 197 adds source-free agent-evidence recovery accounting to context-area next-read summaries. The fresh release-binary proof promotes with selected-file/source/test/validation/broad-area metrics unchanged while showing VeriSchema has `29 / 39` missed@10 files recoverable through the full agent evidence bundle, compared with `19 / 39` through progressive next reads alone.

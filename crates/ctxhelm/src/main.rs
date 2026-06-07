@@ -1517,6 +1517,7 @@ enum SemanticQueryModeArg {
     SourceRoleHints,
     CandidatePathHints,
     CandidateSiblingPathHints,
+    CandidatePathConceptHints,
 }
 
 impl From<LearnedPolicyProfileKeyModeArg> for LearnedSemanticPolicyProfileKeyMode {
@@ -1535,6 +1536,7 @@ impl From<SemanticQueryModeArg> for SemanticQueryMode {
             SemanticQueryModeArg::SourceRoleHints => Self::SourceRoleHints,
             SemanticQueryModeArg::CandidatePathHints => Self::CandidatePathHints,
             SemanticQueryModeArg::CandidateSiblingPathHints => Self::CandidateSiblingPathHints,
+            SemanticQueryModeArg::CandidatePathConceptHints => Self::CandidatePathConceptHints,
         }
     }
 }
@@ -8250,6 +8252,40 @@ mod tests {
         assert!(matches!(
             args.semantic_query_mode,
             SemanticQueryModeArg::CandidateSiblingPathHints
+        ));
+        assert!(matches!(args.format, PackFormat::Json));
+    }
+
+    #[test]
+    fn semantic_history_command_parses_candidate_path_concept_query_mode() {
+        let cli = Cli::try_parse_from([
+            "ctxhelm",
+            "eval",
+            "history",
+            "--repo",
+            ".",
+            "--semantic",
+            "--semantic-provider",
+            "local_fastembed",
+            "--semantic-query-mode",
+            "candidate-path-concept-hints",
+            "--format",
+            "json",
+        ])
+        .unwrap();
+
+        let Command::Eval(EvalArgs {
+            command: EvalCommand::History(args),
+        }) = cli.command
+        else {
+            panic!("expected eval history command");
+        };
+        assert_eq!(args.repo, Some(PathBuf::from(".")));
+        assert!(args.semantic);
+        assert_eq!(args.semantic_provider.provider, "local_fastembed");
+        assert!(matches!(
+            args.semantic_query_mode,
+            SemanticQueryModeArg::CandidatePathConceptHints
         ));
         assert!(matches!(args.format, PackFormat::Json));
     }
