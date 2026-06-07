@@ -16,15 +16,17 @@ use ctxhelm_compiler::{
     render_pack_inspector_html, render_pack_inspector_markdown, render_pack_markdown,
     retrieval_policy_experiment_report, run_benchmark_suite,
     semantic_precision_gate_report_with_provider_and_range_options,
-    semantic_provider_status_report_with_provider, write_candidate_feature_export,
-    BenchmarkComparisonReport, BenchmarkRegressionThreshold, BenchmarkSuiteReport,
-    CandidateFeatureComparisonReport, ContextCardsOptions, ContextCardsReport,
-    ExperienceCardsOptions, ExperienceCardsReport, FallbackCardsOptions, FallbackCardsReport,
-    HistoricalEvalOptions, HistoricalEvalReport, LearnedSemanticPolicyCrossRepoReport,
-    LearnedSemanticPolicyProfileKeyMode, LearnedSemanticPolicyTrainTestReport,
-    LexicalBackendCorpusOptions, LexicalBackendCorpusReport, PairedBaselineAnalysisReport,
-    ProductProofLexicalClaim, ProductProofReport, RecommendedResearchAction,
-    SemanticPrecisionGateRangeOptions, SemanticPrecisionGateReport, SemanticQueryMode,
+    semantic_provider_status_report_with_provider,
+    semantic_retention_separator_train_test_report_with_provider_and_ranges,
+    write_candidate_feature_export, BenchmarkComparisonReport, BenchmarkRegressionThreshold,
+    BenchmarkSuiteReport, CandidateFeatureComparisonReport, ContextCardsOptions,
+    ContextCardsReport, ExperienceCardsOptions, ExperienceCardsReport, FallbackCardsOptions,
+    FallbackCardsReport, HistoricalEvalOptions, HistoricalEvalReport,
+    LearnedSemanticPolicyCrossRepoReport, LearnedSemanticPolicyProfileKeyMode,
+    LearnedSemanticPolicyTrainTestReport, LexicalBackendCorpusOptions, LexicalBackendCorpusReport,
+    PairedBaselineAnalysisReport, ProductProofLexicalClaim, ProductProofReport,
+    RecommendedResearchAction, SemanticPrecisionGateRangeOptions, SemanticPrecisionGateReport,
+    SemanticQueryMode, SemanticRetentionSeparatorTrainTestReport,
 };
 use ctxhelm_core::{
     run_init, run_setup_check, AgentAdapter, AgentOutcomeComparisonReport, AgentPreviewReport,
@@ -899,6 +901,8 @@ enum EvalCommand {
     Gate(EvalGateArgs),
     #[command(about = "Apply a learned semantic policy from one source-free range to another.")]
     LearnedPolicyTrainTest(EvalLearnedPolicyTrainTestArgs),
+    #[command(about = "Train and test a source-free semantic retention separator.")]
+    RetentionSeparatorTrainTest(EvalRetentionSeparatorTrainTestArgs),
     #[command(about = "Aggregate source-free learned semantic policy reports across repos.")]
     LearnedPolicyCrossRepo(EvalLearnedPolicyCrossRepoArgs),
     Benchmark(EvalBenchmarkArgs),
@@ -1076,6 +1080,34 @@ struct EvalLearnedPolicyTrainTestArgs {
     mode: Mode,
     #[arg(long, value_enum, default_value_t = LearnedPolicyProfileKeyModeArg::QueryPath)]
     profile_key_mode: LearnedPolicyProfileKeyModeArg,
+    #[command(flatten)]
+    semantic_provider: SemanticProviderArgs,
+    #[arg(long, value_enum, default_value_t = SemanticQueryModeArg::Plain)]
+    semantic_query_mode: SemanticQueryModeArg,
+    #[arg(long, value_enum, default_value_t = PackFormat::Markdown)]
+    format: PackFormat,
+}
+
+#[derive(Debug, Args)]
+struct EvalRetentionSeparatorTrainTestArgs {
+    #[arg(long)]
+    repo: Option<PathBuf>,
+    #[arg(long, default_value_t = 20)]
+    train_limit: usize,
+    #[arg(long, default_value_t = 20)]
+    test_limit: usize,
+    #[arg(long, default_value_t = 10)]
+    budget: usize,
+    #[arg(long, help = "Start revision for the source-free training range.")]
+    train_base: Option<String>,
+    #[arg(long, help = "End revision for the source-free training range.")]
+    train_head: Option<String>,
+    #[arg(long, help = "Start revision for the disjoint source-free test range.")]
+    test_base: Option<String>,
+    #[arg(long, help = "End revision for the disjoint source-free test range.")]
+    test_head: Option<String>,
+    #[arg(long, value_enum, default_value_t = Mode::BugFix)]
+    mode: Mode,
     #[command(flatten)]
     semantic_provider: SemanticProviderArgs,
     #[arg(long, value_enum, default_value_t = SemanticQueryModeArg::Plain)]
@@ -2675,6 +2707,30 @@ fn main() -> Result<()> {
                 match args.format {
                     PackFormat::Markdown => {
                         println!("{}", render_learned_policy_train_test_report(&report))
+                    }
+                    PackFormat::Json => println!("{}", serde_json::to_string_pretty(&report)?),
+                }
+            }
+            EvalCommand::RetentionSeparatorTrainTest(args) => {
+                let start = args.repo.clone().unwrap_or(std::env::current_dir()?);
+                let repo = RepoRoot::discover_from(&start)?;
+                let report =
+                    semantic_retention_separator_train_test_report_with_provider_and_ranges(
+                        &repo.path,
+                        args.train_limit,
+                        args.test_limit,
+                        args.budget,
+                        args.mode.into(),
+                        semantic_provider_config(&args.semantic_provider),
+                        args.train_base,
+                        args.train_head,
+                        args.test_base,
+                        args.test_head,
+                        args.semantic_query_mode.into(),
+                    )?;
+                match args.format {
+                    PackFormat::Markdown => {
+                        println!("{}", render_retention_separator_train_test_report(&report))
                     }
                     PackFormat::Json => println!("{}", serde_json::to_string_pretty(&report)?),
                 }
@@ -7161,6 +7217,60 @@ fn render_learned_policy_train_test_report(
     output
 }
 
+fn render_retention_separator_train_test_report(
+    report: &SemanticRetentionSeparatorTrainTestReport,
+) -> String {
+    let mut output = String::from("# ctxhelm Semantic Retention Separator Train/Test\n\n");
+    output.push_str("This source-free report trains semantic retention-family eligibility on one revision range and applies it to dropped supported semantic candidates in a disjoint test range.\n\n");
+    output.push_str(&format!(
+        "- Repo ID: `{}`\n- Eval range ID: `{}`\n- Train range: `{}`\n- Test range: `{}`\n- Train commits: `{}`\n- Test commits: `{}`\n- K: `{}`\n- Minimum support commits: `{}`\n- Train families: `{}`\n- Eligible families: `{}`\n- Train support histogram: `{}`\n- Test dropped profiles: `{}`\n- Train/test family overlap: `{}`\n- Train/test eligible family overlap: `{}`\n- Applied commits: `{}`\n- Applied files: `{}`\n- Recovered dropped targets: `{}`\n- Inserted non-targets: `{}`\n- Decision: `{}`\n- Runtime promotable: `{}`\n- Source text logged: `{}`\n- Privacy: local-only `{}`\n\n",
+        report.repo_id,
+        report.eval_range_id,
+        report.train_eval_range_id,
+        report.test_eval_range_id,
+        report.train_commit_count,
+        report.test_commit_count,
+        report.ranking_budget,
+        report.minimum_support_commit_count,
+        report.train_family_count,
+        report.eligible_family_count,
+        render_usize_count_map(&report.train_support_histogram),
+        report.test_dropped_profile_count,
+        report.train_test_family_overlap_count,
+        report.train_test_eligible_family_overlap_count,
+        report.applied_commit_count,
+        report.applied_file_count,
+        report.recovered_dropped_target_count,
+        report.inserted_non_target_count,
+        report.decision,
+        report.runtime_promotable,
+        report.source_text_logged,
+        report.privacy_status.local_only
+    ));
+    output.push_str("## Retention Families\n\n");
+    if report.profiles.is_empty() {
+        output.push_str("- None.\n");
+    } else {
+        for profile in &report.profiles {
+            output.push_str(&format!(
+                "- `{}/{:?}/{}/{}` trainRetainedTargets `{}` trainRetainedNonTargets `{}` supportCommits `{}` testDroppedTargets `{}` testDroppedNonTargets `{}` eligible `{}` reason: {}\n",
+                profile.query_family,
+                profile.role,
+                profile.path_family,
+                profile.support_family,
+                profile.retained_target_count,
+                profile.retained_non_target_count,
+                profile.retained_target_commit_count,
+                profile.test_dropped_target_count,
+                profile.test_dropped_non_target_count,
+                profile.eligible,
+                profile.decision_reason
+            ));
+        }
+    }
+    output
+}
+
 fn render_benchmark_suite_report(report: &BenchmarkSuiteReport) -> String {
     let mut output = String::from("# ctxhelm Benchmark Suite\n\n");
     output.push_str(
@@ -8533,6 +8643,59 @@ mod tests {
         assert!(matches!(
             args.semantic_query_mode,
             SemanticQueryModeArg::SourceRoleHints
+        ));
+        assert!(matches!(args.format, PackFormat::Json));
+    }
+
+    #[test]
+    fn retention_separator_train_test_command_parses_disjoint_ranges() {
+        let cli = Cli::try_parse_from([
+            "ctxhelm",
+            "eval",
+            "retention-separator-train-test",
+            "--repo",
+            ".",
+            "--train-limit",
+            "30",
+            "--test-limit",
+            "20",
+            "--budget",
+            "10",
+            "--train-base",
+            "train-base",
+            "--train-head",
+            "train-head",
+            "--test-base",
+            "test-base",
+            "--test-head",
+            "test-head",
+            "--semantic-provider",
+            "local_fastembed",
+            "--semantic-query-mode",
+            "candidate-path-hints",
+            "--format",
+            "json",
+        ])
+        .unwrap();
+
+        let Command::Eval(EvalArgs {
+            command: EvalCommand::RetentionSeparatorTrainTest(args),
+        }) = cli.command
+        else {
+            panic!("expected eval retention-separator-train-test command");
+        };
+        assert_eq!(args.repo, Some(PathBuf::from(".")));
+        assert_eq!(args.train_limit, 30);
+        assert_eq!(args.test_limit, 20);
+        assert_eq!(args.budget, 10);
+        assert_eq!(args.train_base.as_deref(), Some("train-base"));
+        assert_eq!(args.train_head.as_deref(), Some("train-head"));
+        assert_eq!(args.test_base.as_deref(), Some("test-base"));
+        assert_eq!(args.test_head.as_deref(), Some("test-head"));
+        assert_eq!(args.semantic_provider.provider, "local_fastembed");
+        assert!(matches!(
+            args.semantic_query_mode,
+            SemanticQueryModeArg::CandidatePathHints
         ));
         assert!(matches!(args.format, PackFormat::Json));
     }

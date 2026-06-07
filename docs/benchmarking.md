@@ -701,6 +701,12 @@ targets, 22 dropped targets, 232 retained non-targets, and 765 dropped
 non-targets. This is candidate-retention evidence for future held-out
 separation, not runtime/default promotion evidence.
 
+Phase 302 adds `ctxhelm eval retention-separator-train-test` to test that
+held-out separator path directly. The strict recent-to-older proof across
+ctxhelm, ReAgent, RefactoringMiner, and VeriSchema finds 117 train families,
+377 dropped test profiles, zero eligible families, and zero applications, so
+semantic retention remains diagnostic-only.
+
 `local_hash` remains the deterministic scaffold. `local_fastembed` is the
 production-local backend and requires a build compiled with the
 `local-embeddings` feature.
@@ -985,6 +991,12 @@ and gate reports. The aggregate target retention rate is `0.702703`, while the
 non-target drop rate is `0.767302`; the 12 recoverable dropped-target family
 rows are useful for a held-out learned separator, but retained non-targets keep
 this branch diagnostic-only.
+
+Use `ctxhelm eval retention-separator-train-test` to train strict source-free
+retention-family eligibility on one revision range and apply it to dropped
+supported semantic candidates in a disjoint range. Phase 302's four-repo
+recent-to-older proof has zero eligible families, so the command is a
+diagnostic audit surface, not a promotion path.
 
 Use `ctxhelm eval learned-policy-cross-repo` to aggregate saved
 `learned-policy-train-test` JSON reports across repositories without rerunning

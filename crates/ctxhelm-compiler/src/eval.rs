@@ -421,6 +421,7 @@ pub struct SemanticPrecisionGateRangeOptions {
 }
 
 const LEARNED_SEMANTIC_POLICY_SCHEMA_VERSION: u32 = 1;
+const SEMANTIC_RETENTION_SEPARATOR_SCHEMA_VERSION: u32 = 1;
 const LEARNED_SEMANTIC_POLICY_MIN_SUPPORT_COMMIT_COUNT: usize = 2;
 const SEMANTIC_NEXT_READ_APPEND_LIMIT: usize = 2;
 
@@ -595,6 +596,58 @@ pub struct LearnedSemanticPolicyTrainTestReport {
     pub learned_policy_semantic_train_test_contribution: RerankerContributionSummary,
     pub source_text_logged: bool,
     pub privacy_status: PrivacyStatus,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct SemanticRetentionSeparatorTrainTestReport {
+    pub schema_version: u32,
+    pub repo_id: String,
+    pub eval_range_id: String,
+    pub train_eval_range_id: String,
+    pub test_eval_range_id: String,
+    pub train_commit_count: usize,
+    pub test_commit_count: usize,
+    pub ranking_budget: usize,
+    pub minimum_support_commit_count: usize,
+    pub train_family_count: usize,
+    pub eligible_family_count: usize,
+    pub train_support_histogram: BTreeMap<usize, usize>,
+    pub test_dropped_profile_count: usize,
+    pub train_test_family_overlap_count: usize,
+    pub train_test_eligible_family_overlap_count: usize,
+    pub applied_commit_count: usize,
+    pub applied_file_count: usize,
+    pub recovered_dropped_target_count: usize,
+    pub inserted_non_target_count: usize,
+    pub decision: String,
+    pub runtime_promotable: bool,
+    pub profiles: Vec<SemanticRetentionSeparatorProfile>,
+    pub source_text_logged: bool,
+    pub privacy_status: PrivacyStatus,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct SemanticRetentionSeparatorProfile {
+    pub query_family: String,
+    pub role: FileRole,
+    pub path_family: String,
+    pub support_family: String,
+    pub observed_commit_count: usize,
+    pub retained_target_count: usize,
+    pub retained_non_target_count: usize,
+    pub dropped_target_count: usize,
+    pub dropped_non_target_count: usize,
+    pub retained_target_commit_count: usize,
+    pub test_dropped_target_count: usize,
+    pub test_dropped_non_target_count: usize,
+    pub eligible: bool,
+    pub decision_reason: String,
+    pub example_retained_target_paths: Vec<String>,
+    pub example_retained_non_target_paths: Vec<String>,
+    pub example_test_dropped_target_paths: Vec<String>,
+    pub example_test_dropped_non_target_paths: Vec<String>,
 }
 
 const LEARNED_SEMANTIC_POLICY_CROSS_REPO_SCHEMA_VERSION: u32 = 1;
@@ -4358,6 +4411,69 @@ pub fn learned_semantic_policy_train_test_report_with_provider_and_ranges(
         &test_semantic,
         LEARNED_SEMANTIC_POLICY_MIN_SUPPORT_COMMIT_COUNT,
         profile_key_mode,
+    ))
+}
+
+#[allow(clippy::too_many_arguments)]
+pub fn semantic_retention_separator_train_test_report_with_provider_and_ranges(
+    repo_root: impl AsRef<Path>,
+    train_limit: usize,
+    test_limit: usize,
+    ranking_budget: usize,
+    task_type: TaskType,
+    semantic_provider: SemanticProviderConfig,
+    train_base: Option<String>,
+    train_head: Option<String>,
+    test_base: Option<String>,
+    test_head: Option<String>,
+    semantic_query_mode: SemanticQueryMode,
+) -> Result<SemanticRetentionSeparatorTrainTestReport, InventoryError> {
+    let repo_root = repo_root.as_ref();
+    let train_semantic = evaluate_historical_commits(
+        repo_root,
+        &HistoricalEvalOptions {
+            limit: train_limit,
+            ranking_budget,
+            task_type: task_type.clone(),
+            target_agent: "generic".to_string(),
+            base: train_base,
+            head: train_head,
+            semantic_enabled: true,
+            semantic_provider: semantic_provider.clone(),
+            local_metadata_reranker: false,
+            query_family_routed_reranker: false,
+            semantic_corroborated_reranker: false,
+            semantic_query_mode,
+            cache_enabled: false,
+            force_refresh: false,
+            parallelism: 1,
+        },
+    )?;
+    let test_semantic = evaluate_historical_commits(
+        repo_root,
+        &HistoricalEvalOptions {
+            limit: test_limit,
+            ranking_budget,
+            task_type,
+            target_agent: "generic".to_string(),
+            base: test_base,
+            head: test_head,
+            semantic_enabled: true,
+            semantic_provider,
+            local_metadata_reranker: false,
+            query_family_routed_reranker: false,
+            semantic_corroborated_reranker: false,
+            semantic_query_mode,
+            cache_enabled: false,
+            force_refresh: false,
+            parallelism: 1,
+        },
+    )?;
+
+    Ok(semantic_retention_separator_train_test_report(
+        &train_semantic,
+        &test_semantic,
+        LEARNED_SEMANTIC_POLICY_MIN_SUPPORT_COMMIT_COUNT,
     ))
 }
 
@@ -12783,6 +12899,25 @@ struct SemanticCandidateRetentionFamilyAccumulator {
     example_dropped_non_target_paths: Vec<String>,
 }
 
+struct SemanticRetentionSeparatorAccumulator {
+    query_family: String,
+    role: FileRole,
+    path_family: String,
+    support_family: String,
+    observed_commit_shas: BTreeSet<String>,
+    retained_target_commit_shas: BTreeSet<String>,
+    retained_target_count: usize,
+    retained_non_target_count: usize,
+    dropped_target_count: usize,
+    dropped_non_target_count: usize,
+    test_dropped_target_count: usize,
+    test_dropped_non_target_count: usize,
+    example_retained_target_paths: Vec<String>,
+    example_retained_non_target_paths: Vec<String>,
+    example_test_dropped_target_paths: Vec<String>,
+    example_test_dropped_non_target_paths: Vec<String>,
+}
+
 fn supported_semantic_candidate_profile_summary(
     commits: &[HistoricalCommitEval],
 ) -> SupportedSemanticCandidateProfileSummary {
@@ -13075,6 +13210,310 @@ fn semantic_candidate_retention_summary(
     family_summaries.truncate(50);
     summary.families = family_summaries;
     summary
+}
+
+fn semantic_retention_separator_train_test_report(
+    train: &HistoricalEvalReport,
+    test: &HistoricalEvalReport,
+    minimum_support_commit_count: usize,
+) -> SemanticRetentionSeparatorTrainTestReport {
+    let minimum_support_commit_count = minimum_support_commit_count.max(1);
+    let mut profiles =
+        BTreeMap::<(String, String, String, String), SemanticRetentionSeparatorAccumulator>::new();
+
+    for commit in &train.commits {
+        let query_family = reranker_query_family(commit);
+        let target_files = commit
+            .retrieval_target_files
+            .iter()
+            .cloned()
+            .collect::<BTreeSet<_>>();
+        for profile in &commit.semantic_candidate_retention_profiles_at_10 {
+            let path_family = reranker_path_family(&profile.path);
+            let key = (
+                query_family.clone(),
+                file_role_label(&profile.role).to_string(),
+                path_family.clone(),
+                profile.support_family.clone(),
+            );
+            let entry =
+                profiles
+                    .entry(key)
+                    .or_insert_with(|| SemanticRetentionSeparatorAccumulator {
+                        query_family: query_family.clone(),
+                        role: profile.role.clone(),
+                        path_family,
+                        support_family: profile.support_family.clone(),
+                        observed_commit_shas: BTreeSet::new(),
+                        retained_target_commit_shas: BTreeSet::new(),
+                        retained_target_count: 0,
+                        retained_non_target_count: 0,
+                        dropped_target_count: 0,
+                        dropped_non_target_count: 0,
+                        test_dropped_target_count: 0,
+                        test_dropped_non_target_count: 0,
+                        example_retained_target_paths: Vec::new(),
+                        example_retained_non_target_paths: Vec::new(),
+                        example_test_dropped_target_paths: Vec::new(),
+                        example_test_dropped_non_target_paths: Vec::new(),
+                    });
+            entry.observed_commit_shas.insert(commit.sha.clone());
+            let is_target = target_files.contains(&profile.path);
+            match (profile.selected_at_10, is_target) {
+                (true, true) => {
+                    entry.retained_target_count += 1;
+                    entry.retained_target_commit_shas.insert(commit.sha.clone());
+                    push_limited_example(
+                        &mut entry.example_retained_target_paths,
+                        &profile.path,
+                        3,
+                    );
+                }
+                (true, false) => {
+                    entry.retained_non_target_count += 1;
+                    push_limited_example(
+                        &mut entry.example_retained_non_target_paths,
+                        &profile.path,
+                        3,
+                    );
+                }
+                (false, true) => entry.dropped_target_count += 1,
+                (false, false) => entry.dropped_non_target_count += 1,
+            }
+        }
+    }
+
+    let eligible_keys = profiles
+        .iter()
+        .filter_map(|(key, profile)| {
+            semantic_retention_separator_profile_is_eligible(profile, minimum_support_commit_count)
+                .then_some(key.clone())
+        })
+        .collect::<BTreeSet<_>>();
+    let train_family_keys = profiles.keys().cloned().collect::<BTreeSet<_>>();
+
+    let mut test_family_keys = BTreeSet::new();
+    let mut test_eligible_family_keys = BTreeSet::new();
+    let mut applied_commit_shas = BTreeSet::new();
+    let mut applied_file_count = 0;
+    let mut recovered_dropped_target_count = 0;
+    let mut inserted_non_target_count = 0;
+    let mut test_dropped_profile_count = 0;
+
+    for commit in &test.commits {
+        let query_family = reranker_query_family(commit);
+        let target_files = commit
+            .retrieval_target_files
+            .iter()
+            .cloned()
+            .collect::<BTreeSet<_>>();
+        for profile in commit
+            .semantic_candidate_retention_profiles_at_10
+            .iter()
+            .filter(|profile| !profile.selected_at_10)
+        {
+            test_dropped_profile_count += 1;
+            let path_family = reranker_path_family(&profile.path);
+            let key = (
+                query_family.clone(),
+                file_role_label(&profile.role).to_string(),
+                path_family.clone(),
+                profile.support_family.clone(),
+            );
+            test_family_keys.insert(key.clone());
+            let is_target = target_files.contains(&profile.path);
+            if let Some(entry) = profiles.get_mut(&key) {
+                if is_target {
+                    entry.test_dropped_target_count += 1;
+                    push_limited_example(
+                        &mut entry.example_test_dropped_target_paths,
+                        &profile.path,
+                        3,
+                    );
+                } else {
+                    entry.test_dropped_non_target_count += 1;
+                    push_limited_example(
+                        &mut entry.example_test_dropped_non_target_paths,
+                        &profile.path,
+                        3,
+                    );
+                }
+            }
+            if !eligible_keys.contains(&key) {
+                continue;
+            }
+            test_eligible_family_keys.insert(key);
+            applied_commit_shas.insert(commit.sha.clone());
+            applied_file_count += 1;
+            if is_target {
+                recovered_dropped_target_count += 1;
+            } else {
+                inserted_non_target_count += 1;
+            }
+        }
+    }
+
+    let mut train_support_histogram = BTreeMap::<usize, usize>::new();
+    for profile in profiles.values() {
+        *train_support_histogram
+            .entry(profile.retained_target_commit_shas.len())
+            .or_insert(0) += 1;
+    }
+
+    let mut profile_summaries = profiles
+        .into_values()
+        .map(|profile| {
+            let eligible = semantic_retention_separator_profile_is_eligible(
+                &profile,
+                minimum_support_commit_count,
+            );
+            let decision_reason = semantic_retention_separator_profile_decision_reason(
+                &profile,
+                minimum_support_commit_count,
+            );
+            SemanticRetentionSeparatorProfile {
+                query_family: profile.query_family,
+                role: profile.role,
+                path_family: profile.path_family,
+                support_family: profile.support_family,
+                observed_commit_count: profile.observed_commit_shas.len(),
+                retained_target_count: profile.retained_target_count,
+                retained_non_target_count: profile.retained_non_target_count,
+                dropped_target_count: profile.dropped_target_count,
+                dropped_non_target_count: profile.dropped_non_target_count,
+                retained_target_commit_count: profile.retained_target_commit_shas.len(),
+                test_dropped_target_count: profile.test_dropped_target_count,
+                test_dropped_non_target_count: profile.test_dropped_non_target_count,
+                eligible,
+                decision_reason,
+                example_retained_target_paths: profile.example_retained_target_paths,
+                example_retained_non_target_paths: profile.example_retained_non_target_paths,
+                example_test_dropped_target_paths: profile.example_test_dropped_target_paths,
+                example_test_dropped_non_target_paths: profile
+                    .example_test_dropped_non_target_paths,
+            }
+        })
+        .collect::<Vec<_>>();
+    profile_summaries.sort_by(|left, right| {
+        right
+            .test_dropped_target_count
+            .cmp(&left.test_dropped_target_count)
+            .then_with(|| {
+                right
+                    .retained_target_commit_count
+                    .cmp(&left.retained_target_commit_count)
+            })
+            .then_with(|| right.retained_target_count.cmp(&left.retained_target_count))
+            .then_with(|| {
+                left.retained_non_target_count
+                    .cmp(&right.retained_non_target_count)
+            })
+            .then_with(|| left.query_family.cmp(&right.query_family))
+            .then_with(|| file_role_order(&left.role).cmp(&file_role_order(&right.role)))
+            .then_with(|| left.path_family.cmp(&right.path_family))
+            .then_with(|| left.support_family.cmp(&right.support_family))
+    });
+    profile_summaries.truncate(50);
+
+    let train_test_family_overlap_count = test_family_keys.intersection(&train_family_keys).count();
+    let train_test_eligible_family_overlap_count =
+        test_family_keys.intersection(&eligible_keys).count();
+
+    let decision = semantic_retention_separator_train_test_decision(
+        eligible_keys.len(),
+        applied_file_count,
+        recovered_dropped_target_count,
+        inserted_non_target_count,
+    );
+    let eval_range_id =
+        semantic_retention_separator_train_test_range_id(train, test, minimum_support_commit_count);
+
+    SemanticRetentionSeparatorTrainTestReport {
+        schema_version: SEMANTIC_RETENTION_SEPARATOR_SCHEMA_VERSION,
+        repo_id: test.repo_id.clone(),
+        eval_range_id,
+        train_eval_range_id: train.eval_range_id.clone(),
+        test_eval_range_id: test.eval_range_id.clone(),
+        train_commit_count: train.commits.len(),
+        test_commit_count: test.commits.len(),
+        ranking_budget: test.ranking_comparison.k.max(1),
+        minimum_support_commit_count,
+        train_family_count: train_family_keys.len(),
+        eligible_family_count: eligible_keys.len(),
+        train_support_histogram,
+        test_dropped_profile_count,
+        train_test_family_overlap_count,
+        train_test_eligible_family_overlap_count,
+        applied_commit_count: applied_commit_shas.len(),
+        applied_file_count,
+        recovered_dropped_target_count,
+        inserted_non_target_count,
+        decision,
+        runtime_promotable: false,
+        profiles: profile_summaries,
+        source_text_logged: false,
+        privacy_status: PrivacyStatus::local_only(),
+    }
+}
+
+fn semantic_retention_separator_profile_is_eligible(
+    profile: &SemanticRetentionSeparatorAccumulator,
+    minimum_support_commit_count: usize,
+) -> bool {
+    profile.retained_target_commit_shas.len() >= minimum_support_commit_count.max(1)
+        && profile.retained_target_count > 0
+        && profile.retained_non_target_count == 0
+}
+
+fn semantic_retention_separator_profile_decision_reason(
+    profile: &SemanticRetentionSeparatorAccumulator,
+    minimum_support_commit_count: usize,
+) -> String {
+    if profile.retained_target_count == 0 {
+        "no_retained_training_targets".to_string()
+    } else if profile.retained_target_commit_shas.len() < minimum_support_commit_count.max(1) {
+        "insufficient_retained_target_commit_support".to_string()
+    } else if profile.retained_non_target_count > 0 {
+        "retained_training_non_target_churn".to_string()
+    } else {
+        "eligible".to_string()
+    }
+}
+
+fn semantic_retention_separator_train_test_decision(
+    eligible_family_count: usize,
+    applied_file_count: usize,
+    recovered_dropped_target_count: usize,
+    inserted_non_target_count: usize,
+) -> String {
+    if eligible_family_count == 0 {
+        "insufficient_train_families".to_string()
+    } else if applied_file_count == 0 {
+        "insufficient_test_applications".to_string()
+    } else if inserted_non_target_count > 0 {
+        "blocked_inserted_non_targets".to_string()
+    } else if recovered_dropped_target_count > 0 {
+        "train_test_clean_recovery_requires_cross_repo_repetition".to_string()
+    } else {
+        "train_test_neutral_no_recovery".to_string()
+    }
+}
+
+fn semantic_retention_separator_train_test_range_id(
+    train: &HistoricalEvalReport,
+    test: &HistoricalEvalReport,
+    minimum_support_commit_count: usize,
+) -> String {
+    let fingerprint = format!(
+        "semantic-retention-separator-train-test:{}:{}:support={}",
+        train.eval_range_id,
+        test.eval_range_id,
+        minimum_support_commit_count.max(1)
+    );
+    format!(
+        "semantic-retention-separator-train-test-{}",
+        &task_hash(&fingerprint)[..16]
+    )
 }
 
 fn push_limited_example(examples: &mut Vec<String>, path: &str, limit: usize) {
@@ -14918,6 +15357,91 @@ mod tests {
             family.example_dropped_target_paths,
             vec!["src/dropped.rs".to_string()]
         );
+    }
+
+    #[test]
+    fn semantic_retention_separator_train_test_recovers_held_out_dropped_target() {
+        let mut train = empty_historical_eval_report("retention-separator-train");
+        train.eval_range_id = "retention-train-range".to_string();
+        train.commits[0].sha = "retention-train-a".to_string();
+        train.commits[0].query_trace = Some(query_trace_with_facets(vec![QueryFacetKind::Symbol]));
+        train.commits[0].retrieval_target_files = vec!["src/train_a.rs".to_string()];
+        train.commits[0].semantic_candidate_retention_profiles_at_10 =
+            vec![SemanticCandidateRetentionProfile {
+                path: "src/train_a.rs".to_string(),
+                role: FileRole::Source,
+                context_area: "src".to_string(),
+                support_family: "dependency_co_change".to_string(),
+                signals: vec![
+                    RetrievalSignalKind::Semantic,
+                    RetrievalSignalKind::Dependency,
+                    RetrievalSignalKind::CoChange,
+                ],
+                selected_at_10: true,
+            }];
+        let mut train_second = train.commits[0].clone();
+        train_second.sha = "retention-train-b".to_string();
+        train_second.retrieval_target_files = vec!["src/train_b.rs".to_string()];
+        train_second.semantic_candidate_retention_profiles_at_10 =
+            vec![SemanticCandidateRetentionProfile {
+                path: "src/train_b.rs".to_string(),
+                role: FileRole::Source,
+                context_area: "src".to_string(),
+                support_family: "dependency_co_change".to_string(),
+                signals: vec![
+                    RetrievalSignalKind::Semantic,
+                    RetrievalSignalKind::Dependency,
+                    RetrievalSignalKind::CoChange,
+                ],
+                selected_at_10: true,
+            }];
+        train.commits.push(train_second);
+        refresh_historical_report_ranking_metrics(&mut train);
+
+        let mut test = empty_historical_eval_report("retention-separator-test");
+        test.eval_range_id = "retention-test-range".to_string();
+        test.commits[0].sha = "retention-test-a".to_string();
+        test.commits[0].query_trace = Some(query_trace_with_facets(vec![QueryFacetKind::Symbol]));
+        test.commits[0].retrieval_target_files = vec!["src/test_target.rs".to_string()];
+        test.commits[0].semantic_candidate_retention_profiles_at_10 =
+            vec![SemanticCandidateRetentionProfile {
+                path: "src/test_target.rs".to_string(),
+                role: FileRole::Source,
+                context_area: "src".to_string(),
+                support_family: "dependency_co_change".to_string(),
+                signals: vec![
+                    RetrievalSignalKind::Semantic,
+                    RetrievalSignalKind::Dependency,
+                    RetrievalSignalKind::CoChange,
+                ],
+                selected_at_10: false,
+            }];
+        refresh_historical_report_ranking_metrics(&mut test);
+
+        let report = semantic_retention_separator_train_test_report(&train, &test, 2);
+
+        assert_eq!(report.train_commit_count, 2);
+        assert_eq!(report.test_commit_count, 1);
+        assert_eq!(report.train_family_count, 1);
+        assert_eq!(report.eligible_family_count, 1);
+        assert_eq!(report.train_support_histogram.get(&2), Some(&1));
+        assert_eq!(report.test_dropped_profile_count, 1);
+        assert_eq!(report.train_test_family_overlap_count, 1);
+        assert_eq!(report.train_test_eligible_family_overlap_count, 1);
+        assert_eq!(report.applied_commit_count, 1);
+        assert_eq!(report.applied_file_count, 1);
+        assert_eq!(report.recovered_dropped_target_count, 1);
+        assert_eq!(report.inserted_non_target_count, 0);
+        assert_eq!(
+            report.decision,
+            "train_test_clean_recovery_requires_cross_repo_repetition"
+        );
+        assert!(!report.runtime_promotable);
+        assert!(!report.source_text_logged);
+        assert!(report.privacy_status.local_only);
+        assert_eq!(report.profiles[0].retained_target_commit_count, 2);
+        assert_eq!(report.profiles[0].test_dropped_target_count, 1);
+        assert!(report.profiles[0].eligible);
     }
 
     #[test]

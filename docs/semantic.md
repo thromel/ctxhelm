@@ -58,7 +58,7 @@ Measured Phase 62 status:
 - `local_hash`: deterministic scaffold, model `ctxhelm-local-hash-v1`, 64 dimensions, not a quality backend.
 - `local_fastembed`: production-local backend, quality backend `true`, local-only, no cloud source transfer.
 - Default production-local model: `AllMiniLML6V2Q` with 384 dimensions.
-- Jina code model status: still available explicitly as `JinaEmbeddingsV2BaseCode` with 768 dimensions and provider-specific `query:` / `passage:` text, but Phase 293 keeps it diagnostic-only because candidate quality improved without Recall@10 lift and runtime remained high. Phase 294 also rejects promoting semantic as post-top-K next-read guidance for that setup because the only appended next-read path was a non-target. Phase 295 rejects `AllMiniLML12V2Q` and `AllMiniLML12V2` as simple model-swap fixes because both are noisier than Jina on the same targeted proof. Phase 296 shows the remaining Jina candidate miss has `dependency_co_change` support. Phase 297's eval-only supported-candidate tail-slot oracle recovers that target cleanly, and Phase 298 replaces the oracle dependency with a source-free `symbol_identifier` / `python_source` / `dependency_co_change` supported-shape predictor that matches the clean lift on the targeted slice. Phase 299 broadens the predictor proof across eight slices and finds zero regressions but only the original VeriSchema older lift. Phase 300 adds `supportedSemanticCandidateProfileSummary` and shows the broader supported-profile surface is low-base-rate evidence: 787 profiles, 22 targets, 765 non-targets, and `0.027954` target precision. Phase 301 adds `semanticCandidateRetentionSummary` and shows 22 dropped targets but also 232 retained non-targets, so keep it eval-only and use the evidence for held-out separation.
+- Jina code model status: still available explicitly as `JinaEmbeddingsV2BaseCode` with 768 dimensions and provider-specific `query:` / `passage:` text, but Phase 293 keeps it diagnostic-only because candidate quality improved without Recall@10 lift and runtime remained high. Phase 294 also rejects promoting semantic as post-top-K next-read guidance for that setup because the only appended next-read path was a non-target. Phase 295 rejects `AllMiniLML12V2Q` and `AllMiniLML12V2` as simple model-swap fixes because both are noisier than Jina on the same targeted proof. Phase 296 shows the remaining Jina candidate miss has `dependency_co_change` support. Phase 297's eval-only supported-candidate tail-slot oracle recovers that target cleanly, and Phase 298 replaces the oracle dependency with a source-free `symbol_identifier` / `python_source` / `dependency_co_change` supported-shape predictor that matches the clean lift on the targeted slice. Phase 299 broadens the predictor proof across eight slices and finds zero regressions but only the original VeriSchema older lift. Phase 300 adds `supportedSemanticCandidateProfileSummary` and shows the broader supported-profile surface is low-base-rate evidence: 787 profiles, 22 targets, 765 non-targets, and `0.027954` target precision. Phase 301 adds `semanticCandidateRetentionSummary` and shows 22 dropped targets but also 232 retained non-targets. Phase 302 adds a strict retention-separator train/test diagnostic and finds zero eligible held-out families across four repos, so keep this branch diagnostic-only.
 - Model cache: defaults to repo `.ctxhelm/cache/fastembed` when run inside a git repo, otherwise `CTXHELM_HOME/cache/fastembed`; override with `CTXHELM_FASTEMBED_CACHE_DIR`.
 - Query-time vector cache: bounded in-process cache for repeated source-free document embeddings.
 - Persisted query-vector cache: source-free query hashes and vectors are stored in SQLite so repeated fresh CLI/MCP processes can reuse query embeddings without storing raw query text.
@@ -271,6 +271,13 @@ eight-slice proof, there are 52 retained targets, 22 dropped targets, 232
 retained non-targets, and 765 dropped non-targets. The dropped-target rows are
 useful separator features, but retained non-targets block runtime/default
 promotion.
+
+Phase 302 adds `ctxhelm eval retention-separator-train-test`, which trains a
+strict source-free retention separator on one range and applies it to dropped
+supported semantic candidates in a disjoint range. The four-repo
+recent-to-older proof has 117 train families, 377 dropped test profiles, zero
+eligible families, and zero applications. Keep semantic retention diagnostic
+only.
 
 ## When To Avoid It
 
