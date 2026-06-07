@@ -232,6 +232,18 @@ an explicit diagnostic-only closeout or a no-regress lift proof, and Claude
 needs either a comparable paired suite or a formal external-availability
 closeout.
 
+Phase 314 addendum:
+`.planning/e2e/2026-06-07-phase314-rd-closeout-audit.md` applies the Phase 313
+gate. Semantic/default promotion is closed as diagnostic-only for the active
+R&D scope because Phases 252-303 record the rejected same-family branches, and
+Phase 302/303 show the last retention-separator branch has zero eligible train
+families and weak positive-margin support. Claude cross-agent replication is
+closed as an external availability blocker because Phase 312 source-free
+availability and paired-suite artifacts both record rate-limit/client-failure
+evidence with zero comparable lanes. Future semantic work requires a materially
+different source-free feature family or new corpus; future Claude proof should
+retry the same suite only when the client no longer emits rate-limit events.
+
 ## Remaining R&D Risk
 
 1. Semantic is not yet a proven default-lift channel. It is useful and bounded,
@@ -394,10 +406,12 @@ these rows:
    blocked; unresolved retrieval or policy questions cannot be hidden in
    narrative text.
 
-Current status: not fully satisfied. Rows 1, 2, 3, and 6 are satisfied on the
-current head after Phase 313. Rows 4 and 5 still need explicit closeout,
-promotion, or external-blocker classification before the active goal can be
-marked complete.
+Current status after Phase 314: satisfied for the active R&D scope. Rows 1, 2,
+3, 6, and 7 are satisfied by current release/docs/CI proof, Codex Phase 311,
+memory Phase 253/255, optional-client scoping, and this final audit. Row 4 is
+satisfied by explicit semantic diagnostic-only closeout. Row 5 is satisfied by
+external Claude availability closeout based on current source-free rate-limit
+evidence.
 
 ## Next Correct Order
 
@@ -475,9 +489,11 @@ marked complete.
 ## Conclusion
 
 ctxhelm is past MVP and has real agent-outcome proof for multiple failure
-classes. It is not yet R&D complete in the world-class sense because semantic
-default lift and fresh paired Claude outcome proof remain open research
-questions. Phase 264 reduces semantic risk by exposing where semantic is a
+classes. The active R&D effort is now complete under the Phase 313 gate: Codex
+and memory proof are current, semantic/default promotion is explicitly closed as
+diagnostic-only for this scope, and Claude/Cursor gaps are classified as
+external client availability/auth states rather than hidden retrieval-quality
+failures. Phase 264 reduces semantic risk by exposing where semantic is a
 candidate versus a noise source, Phase 265 further reduces risk by proving the
 coarse candidate families are not stable enough for runtime routing, and Phase
 266 rejects generic corroboration as a sufficient separator. Phase 267 narrows
@@ -567,7 +583,10 @@ cross-agent gap scoped correctly: a manual tiny Opus prompt is not enough to
 make the paired suite comparable, and the source-free Claude run still reports
 `insufficient_comparable_lanes` because every lane records rate-limit/client
 failure evidence.
-Phase 313 adds the stop condition for this active R&D effort. The product can
-keep shipping on the current proof base, but the R&D goal should not be marked
-complete until the semantic and Claude rows in the completion gate are either
-satisfied or explicitly closed as diagnostic/external.
+Phase 313 adds the stop condition for this active R&D effort. Phase 314 applies
+that gate: semantic is explicitly closed as diagnostic-only for the current
+same-family R&D surface, and Claude is explicitly closed as an external
+availability blocker until a future available client can rerun the same paired
+suite. The product can keep shipping on the current proof base, and future
+semantic or Claude work should be treated as new R&D scope unless it is a
+straight availability retry of the recorded Claude suite.
