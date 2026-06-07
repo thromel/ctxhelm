@@ -501,7 +501,7 @@ pub fn semantic_search_report(
             count: original_document_count - candidate_documents.len(),
         });
     }
-    let query_text = render_semantic_query_text(query);
+    let query_text = render_semantic_query_text(query, &provider);
     let query_hash = semantic_query_hash(&query_text);
     let stored_query_vector =
         load_stored_semantic_query_vector(&repo_root, &provider, &query_hash, &mut diagnostics);
@@ -517,7 +517,7 @@ pub fn semantic_search_report(
         .iter()
         .map(|document| {
             stored_vectors
-                .get(&semantic_document_vector_storage_key(document))
+                .get(&semantic_document_vector_storage_key(&provider, document))
                 .cloned()
         })
         .collect::<Vec<_>>();
@@ -554,7 +554,7 @@ pub fn semantic_search_report(
     for index in &missing_indices {
         let slot = texts.len();
         if let Some(document) = candidate_documents.get(*index) {
-            texts.push(render_semantic_document_text(document));
+            texts.push(render_semantic_document_text(document, &provider));
             missing_text_slots.push((*index, slot));
         }
     }
@@ -717,7 +717,7 @@ pub fn semantic_vector_records(
     let inputs = document_report
         .documents
         .iter()
-        .map(render_semantic_document_text)
+        .map(|document| render_semantic_document_text(document, &provider))
         .collect::<Vec<_>>();
     let vectors = embed_texts(&inputs, &provider).map_err(|message| {
         InventoryError::InvalidInput(format!("semantic vector indexing failed: {message}"))
@@ -894,14 +894,50 @@ fn semantic_document_storage_key(path: &str, safe_hash: &str) -> String {
     format!("{path}\n{safe_hash}")
 }
 
-fn semantic_document_vector_hash(document: &SemanticDocument) -> String {
-    blake3::hash(format!("{SEMANTIC_DOCUMENT_TEXT_VERSION}:{}", document.safe_hash).as_bytes())
-        .to_hex()
-        .to_string()
+fn semantic_document_text_version(provider: &SemanticProviderConfig) -> &'static str {
+    if semantic_provider_uses_jina_code_prefixes(provider) {
+        "sem-doc-v2-jina-code-prefix"
+    } else {
+        SEMANTIC_DOCUMENT_TEXT_VERSION
+    }
 }
 
-fn semantic_document_vector_storage_key(document: &SemanticDocument) -> String {
-    semantic_document_storage_key(&document.path, &semantic_document_vector_hash(document))
+fn semantic_query_text_version(provider: &SemanticProviderConfig) -> &'static str {
+    if semantic_provider_uses_jina_code_prefixes(provider) {
+        "sem-query-v2-jina-code-prefix"
+    } else {
+        SEMANTIC_QUERY_TEXT_VERSION
+    }
+}
+
+fn semantic_provider_uses_jina_code_prefixes(provider: &SemanticProviderConfig) -> bool {
+    provider.provider == LOCAL_FASTEMBED_PROVIDER && provider.model == "JinaEmbeddingsV2BaseCode"
+}
+
+fn semantic_document_vector_hash(
+    provider: &SemanticProviderConfig,
+    document: &SemanticDocument,
+) -> String {
+    blake3::hash(
+        format!(
+            "{}:{}",
+            semantic_document_text_version(provider),
+            document.safe_hash
+        )
+        .as_bytes(),
+    )
+    .to_hex()
+    .to_string()
+}
+
+fn semantic_document_vector_storage_key(
+    provider: &SemanticProviderConfig,
+    document: &SemanticDocument,
+) -> String {
+    semantic_document_storage_key(
+        &document.path,
+        &semantic_document_vector_hash(provider, document),
+    )
 }
 
 fn stored_semantic_vectors_by_document(
@@ -911,7 +947,7 @@ fn stored_semantic_vectors_by_document(
 ) -> BTreeMap<String, Vec<f32>> {
     let needed = documents
         .iter()
-        .map(semantic_document_vector_storage_key)
+        .map(|document| semantic_document_vector_storage_key(provider, document))
         .collect::<BTreeSet<_>>();
     stored_records
         .iter()
@@ -1022,7 +1058,7 @@ fn extend_with_stored_semantic_candidates(
     }
     let mut candidate_keys = candidate_documents
         .iter()
-        .map(semantic_document_vector_storage_key)
+        .map(|document| semantic_document_vector_storage_key(provider, document))
         .collect::<BTreeSet<_>>();
     let stored_keys = stored_records
         .iter()
@@ -1052,7 +1088,7 @@ fn extend_with_stored_semantic_candidates(
         };
         let mut added = 0usize;
         for document in search_space {
-            let key = semantic_document_vector_storage_key(&document);
+            let key = semantic_document_vector_storage_key(provider, &document);
             if missing_stored_keys.contains(&key) && candidate_keys.insert(key) {
                 candidate_documents.push(document);
                 added += 1;
@@ -1161,7 +1197,7 @@ fn persist_embedded_semantic_vectors(
             let document = candidate_documents.get(*index)?;
             Some(StorageSemanticVectorRecord {
                 path: document.path.clone(),
-                safe_hash: semantic_document_vector_hash(document),
+                safe_hash: semantic_document_vector_hash(provider, document),
                 provider: provider.provider.clone(),
                 model: provider.model.clone(),
                 dimensions: provider.dimensions,
@@ -1225,21 +1261,30 @@ fn safe_symbol_signature(name: &str, signature: &str) -> String {
     value
 }
 
-fn render_semantic_query_text(query: &str) -> String {
+fn render_semantic_query_text(query: &str, provider: &SemanticProviderConfig) -> String {
     let aliases = identifier_aliases(query);
+    let version = semantic_query_text_version(provider);
+    let query_label = if semantic_provider_uses_jina_code_prefixes(provider) {
+        "query:"
+    } else {
+        "query"
+    };
     if aliases.is_empty() {
-        format!("{SEMANTIC_QUERY_TEXT_VERSION}\nquery {query}")
+        format!("{version}\n{query_label} {query}")
     } else {
         format!(
-            "{SEMANTIC_QUERY_TEXT_VERSION}\nquery {query}\nquery_aliases {}",
+            "{version}\n{query_label} {query}\nquery_aliases {}",
             aliases.join(" ")
         )
     }
 }
 
-fn render_semantic_document_text(document: &SemanticDocument) -> String {
+fn render_semantic_document_text(
+    document: &SemanticDocument,
+    provider: &SemanticProviderConfig,
+) -> String {
     let mut lines = vec![
-        SEMANTIC_DOCUMENT_TEXT_VERSION.to_string(),
+        semantic_document_text_version(provider).to_string(),
         format!("path {}", document.path),
         format!("role {:?}", document.role),
         document.summary.clone(),
@@ -1258,7 +1303,12 @@ fn render_semantic_document_text(document: &SemanticDocument) -> String {
             facet.kind, facet.label, facet.value, path
         ));
     }
-    lines.join("\n")
+    let text = lines.join("\n");
+    if semantic_provider_uses_jina_code_prefixes(provider) {
+        format!("passage: {text}")
+    } else {
+        text
+    }
 }
 
 fn semantic_query_terms(query: &str) -> Vec<String> {
@@ -1575,6 +1625,7 @@ fn local_fastembed_available() -> bool {
 fn local_fastembed_model_dimensions(model: &str) -> usize {
     match model {
         "AllMiniLML6V2" | "AllMiniLML6V2Q" | "AllMiniLML12V2" | "AllMiniLML12V2Q" => 384,
+        "JinaEmbeddingsV2BaseCode" => 768,
         _ => LOCAL_FASTEMBED_DIMENSIONS,
     }
 }
@@ -1967,7 +2018,10 @@ mod tests {
             &config,
             &[StorageSemanticVectorRecord {
                 path: payment_document.path.clone(),
-                safe_hash: semantic_document_vector_hash(payment_document),
+                safe_hash: semantic_document_vector_hash(
+                    &SemanticProviderConfig::default(),
+                    payment_document,
+                ),
                 provider: DEFAULT_SEMANTIC_PROVIDER.to_string(),
                 model: DEFAULT_SEMANTIC_MODEL.to_string(),
                 dimensions: DEFAULT_SEMANTIC_DIMENSIONS,
@@ -2070,7 +2124,10 @@ mod tests {
             },
         )
         .unwrap();
-        let query_hash = semantic_query_hash(&render_semantic_query_text("payment webhook"));
+        let query_hash = semantic_query_hash(&render_semantic_query_text(
+            "payment webhook",
+            &SemanticProviderConfig::default(),
+        ));
         let stored_query = load_semantic_query_vector_record(
             &repo,
             &StoreConfig::default(),
@@ -2150,7 +2207,10 @@ mod tests {
             &config,
             &[StorageSemanticVectorRecord {
                 path: needle_document.path.clone(),
-                safe_hash: semantic_document_vector_hash(needle_document),
+                safe_hash: semantic_document_vector_hash(
+                    &SemanticProviderConfig::default(),
+                    needle_document,
+                ),
                 provider: DEFAULT_SEMANTIC_PROVIDER.to_string(),
                 model: DEFAULT_SEMANTIC_MODEL.to_string(),
                 dimensions: DEFAULT_SEMANTIC_DIMENSIONS,
@@ -2258,6 +2318,43 @@ mod tests {
         assert_eq!(provider.provider_role, LOCAL_FASTEMBED_PROVIDER_ROLE);
         assert!(provider.quality_backend);
         assert!(provider.local_only);
+    }
+
+    #[test]
+    fn jina_code_fastembed_uses_768_dimensions_and_prefixed_text_contract() {
+        let provider = normalized_provider(&SemanticProviderConfig {
+            provider: LOCAL_FASTEMBED_PROVIDER.to_string(),
+            model: "JinaEmbeddingsV2BaseCode".to_string(),
+            ..SemanticProviderConfig::default()
+        });
+        let allmini_provider = normalized_provider(&SemanticProviderConfig {
+            provider: LOCAL_FASTEMBED_PROVIDER.to_string(),
+            model: "AllMiniLML6V2Q".to_string(),
+            ..SemanticProviderConfig::default()
+        });
+        let document = SemanticDocument {
+            id: "sem_doc_auth".to_string(),
+            path: "src/auth/session.ts".to_string(),
+            role: FileRole::Source,
+            language: Some("typescript".to_string()),
+            safe_hash: "safe-hash".to_string(),
+            summary: "source-free semantic document".to_string(),
+            facets: Vec::new(),
+            source_text_logged: false,
+            privacy_status: PrivacyStatus::local_only(),
+        };
+
+        assert_eq!(provider.dimensions, 768);
+        assert!(render_semantic_query_text("payment webhook", &provider).contains("query:"));
+        assert!(render_semantic_document_text(&document, &provider)
+            .starts_with("passage: sem-doc-v2-jina-code-prefix"));
+        assert_ne!(
+            semantic_document_vector_hash(&provider, &document),
+            semantic_document_vector_hash(&allmini_provider, &document)
+        );
+        assert!(
+            !render_semantic_document_text(&document, &allmini_provider).starts_with("passage:")
+        );
     }
 
     #[cfg(feature = "local-embeddings")]

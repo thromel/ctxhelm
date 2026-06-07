@@ -318,6 +318,19 @@ rejects it: semantic candidate targets fall `14 -> 13`, candidate misses worsen
 non-targets rise `16 -> 19`, and the tail-slot variant regresses
 `targetHitDelta = -1`. Stop adding terms to the same local-fastembed query.
 
+Phase 293 moves from query expansion to explicit local model/document-contract
+correctness. The first Jina code-model probe found no semantic candidates
+because `JinaEmbeddingsV2BaseCode` was normalized to `384` dimensions while the
+model emits `768`-dimension vectors. The fix normalizes Jina to `768`, renders
+provider-specific `query:` / `passage:` text, and includes that text contract in
+semantic document vector hashes. On the same VeriSchema older-range
+candidate-path proof, corrected Jina improves candidate quality over Phase 289
+AllMini (`candidate misses 3 -> 1`, selected semantic targets `11 -> 12`,
+semantic-only non-targets `16 -> 12`) but still does not improve Recall@10,
+still leaves `semantic_corroborated_reranked` at `targetHitDelta = -1`, and is
+held for `6.01x` runtime ratio with recall delta `+0.000`. Keep the explicit
+Jina fix and diagnostic path; do not promote Jina as the default model.
+
 Phase 196 reserves selected validation areas in broad context-area guidance and adds package-mirrored related-test affinity. The accepted release-binary proof promotes with selected-file/source/test/validation metrics unchanged while improving VeriSchema broad context-area recall from `0.5777778 -> 0.84444445` and next-read recovery from `16 -> 19` of `39` missed@10 files. A related-test-only intermediate proof was rejected because it did not move the product proof.
 
 Phase 197 adds source-free agent-evidence recovery accounting to context-area next-read summaries. The fresh release-binary proof promotes with selected-file/source/test/validation/broad-area metrics unchanged while showing VeriSchema has `29 / 39` missed@10 files recoverable through the full agent evidence bundle, compared with `19 / 39` through progressive next reads alone.

@@ -616,6 +616,27 @@ targets and selected semantic targets fall, semantic-only non-targets rise, and
 the tail-slot semantic variant regresses. It is not runtime/default policy
 evidence.
 
+Use `--semantic-model JinaEmbeddingsV2BaseCode` only as an explicit
+local-fastembed diagnostic backend. Phase 293 fixes the Jina code-model
+contract by normalizing it to `768` dimensions, rendering provider-specific
+`query:` / `passage:` text, and hashing the provider-specific semantic document
+text contract so stale old-shape vectors are not reused:
+
+```bash
+ctxhelm eval gate --repo /path/to/repo --base HEAD~40 --head HEAD \
+  --limit 20 --budget 10 --semantic-provider local_fastembed \
+  --semantic-model JinaEmbeddingsV2BaseCode \
+  --semantic-query-mode candidate-path-hints --format json
+```
+
+On the targeted VeriSchema older-range slice, corrected Jina improves candidate
+quality versus Phase 289 AllMini candidate-path hints: candidate misses fall
+`3 -> 1`, selected semantic targets rise `11 -> 12`, and semantic-only
+non-targets fall `16 -> 12`. It remains diagnostic-only because
+`local_semantic` Recall@10 is unchanged, `semantic_corroborated_reranked` still
+regresses by one target hit, tail-slot reranking is neutral, and runtime is
+`6.01x` default with recall delta `+0.000`.
+
 `local_hash` remains the deterministic scaffold. `local_fastembed` is the
 production-local backend and requires a build compiled with the
 `local-embeddings` feature.
@@ -849,6 +870,10 @@ remove the semantic-corroborated regression, and Phase 291 rejected sibling path
 aliases because they worsened candidate misses and selected semantic target
 hits. Phase 292 rejected generic path-concept terms because they lowered target
 candidate and selected-target counts while increasing semantic-only non-targets.
+Phase 293 fixed the explicit Jina code-model dimension/text contract and showed
+better VeriSchema candidate quality, but not recall lift or semantic fusion
+safety, so Jina remains an explicit diagnostic model rather than the
+`local_fastembed` default.
 
 Use `ctxhelm eval learned-policy-cross-repo` to aggregate saved
 `learned-policy-train-test` JSON reports across repositories without rerunning
