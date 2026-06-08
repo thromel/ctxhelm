@@ -249,6 +249,18 @@ comparison = {
     "commandExecutionDeltaSum": 0,
     "readFileDeltaSum": 0,
 }
+retry_cost = {
+    "retryTriggeredLanes": 0,
+    "retrySelectedLanes": 0,
+    "readFilesBeforeRetrySum": 0,
+    "readFilesAfterRetrySum": 0,
+    "irrelevantReadsBeforeRetrySum": 0,
+    "irrelevantReadsAfterRetrySum": 0,
+    "targetReadCoverageBeforeRetrySum": 0.0,
+    "targetReadCoverageAfterRetrySum": 0.0,
+    "evidenceOnlyTargetsBeforeRetry": 0,
+    "evidenceOnlyTargetsAfterRetry": 0,
+}
 privacy = {
     "localOnly": True,
     "remoteEmbeddingsUsed": False,
@@ -319,6 +331,18 @@ for entry in entries:
     for lane in report.get("lanes", []):
         lane_id = lane.get("lane", "unknown")
         metrics = lane.get("metrics", {})
+        lane_retry = lane.get("retry") or {}
+        if lane_retry.get("triggered", False):
+            retry_cost["retryTriggeredLanes"] += 1
+            retry_cost["retrySelectedLanes"] += 1 if lane_retry.get("selected", False) else 0
+            retry_cost["readFilesBeforeRetrySum"] += int(lane_retry.get("readFileCountBeforeRetry", 0) or 0)
+            retry_cost["readFilesAfterRetrySum"] += int(lane_retry.get("readFileCountAfterRetry", 0) or 0)
+            retry_cost["irrelevantReadsBeforeRetrySum"] += int(lane_retry.get("irrelevantReadCountBeforeRetry", 0) or 0)
+            retry_cost["irrelevantReadsAfterRetrySum"] += int(lane_retry.get("irrelevantReadCountAfterRetry", 0) or 0)
+            retry_cost["targetReadCoverageBeforeRetrySum"] += float(lane_retry.get("targetReadCoverageBeforeRetry", 0.0) or 0.0)
+            retry_cost["targetReadCoverageAfterRetrySum"] += float(lane_retry.get("targetReadCoverageAfterRetry", 0.0) or 0.0)
+            retry_cost["evidenceOnlyTargetsBeforeRetry"] += int(lane_retry.get("evidenceOnlyTargetCountBeforeRetry", 0) or 0)
+            retry_cost["evidenceOnlyTargetsAfterRetry"] += int(lane_retry.get("evidenceOnlyTargetCountAfterRetry", 0) or 0)
         bucket = lane_totals[lane_id]
         bucket["taskCount"] += 1
         bucket["passedCount"] += 1 if lane.get("status") == "passed" else 0
@@ -385,6 +409,19 @@ for lane_id, bucket in sorted(lane_totals.items()):
     })
 
 task_count = len(tasks)
+retry_triggered = retry_cost["retryTriggeredLanes"]
+retry_cost_summary = {
+    "retryTriggeredLanes": retry_triggered,
+    "retrySelectedLanes": retry_cost["retrySelectedLanes"],
+    "avgReadFilesBeforeRetry": retry_cost["readFilesBeforeRetrySum"] / retry_triggered if retry_triggered else 0.0,
+    "avgReadFilesAfterRetry": retry_cost["readFilesAfterRetrySum"] / retry_triggered if retry_triggered else 0.0,
+    "avgIrrelevantReadsBeforeRetry": retry_cost["irrelevantReadsBeforeRetrySum"] / retry_triggered if retry_triggered else 0.0,
+    "avgIrrelevantReadsAfterRetry": retry_cost["irrelevantReadsAfterRetrySum"] / retry_triggered if retry_triggered else 0.0,
+    "targetReadCoverageBeforeRetry": retry_cost["targetReadCoverageBeforeRetrySum"] / retry_triggered if retry_triggered else 0.0,
+    "targetReadCoverageAfterRetry": retry_cost["targetReadCoverageAfterRetrySum"] / retry_triggered if retry_triggered else 0.0,
+    "evidenceOnlyTargetsBeforeRetry": retry_cost["evidenceOnlyTargetsBeforeRetry"],
+    "evidenceOnlyTargetsAfterRetry": retry_cost["evidenceOnlyTargetsAfterRetry"],
+}
 target_delta_avg = comparison["targetCoverageDeltaSum"] / task_count if task_count else 0.0
 target_read_delta_avg = comparison["targetReadCoverageDeltaSum"] / task_count if task_count else 0.0
 irrelevant_delta_sum = comparison["irrelevantReadDeltaSum"]
@@ -472,6 +509,7 @@ payload = {
         "ctxhelmEvidenceOnlyTargetsObserved": comparison["ctxhelmEvidenceOnlyTargetsObserved"],
         "ctxhelmUnderReadTargetsObserved": comparison["ctxhelmUnderReadTargetsObserved"],
         "outcomeClaim": outcome_claim,
+        "retryCost": retry_cost_summary,
         "recommendedResearchActions": recommended_research_actions(),
     },
     "privacyStatus": privacy,
@@ -1245,7 +1283,43 @@ print("retry" if needs_retry else "keep")
 PY
 )"
   if [[ "$retry_decision" != "retry" ]]; then
-    printf '%s\n' "$original_json"
+    local keep_json="$work_dir/${lane}-retry-metadata.json"
+    python3 - "$original_json" "$lane" "$keep_json" <<'PY'
+import json
+import pathlib
+import sys
+
+original_path, lane_name, output_path = sys.argv[1:]
+lane = json.loads(pathlib.Path(original_path).read_text(encoding="utf-8"))
+metrics = lane.get("metrics", {})
+eligible = (
+    lane.get("evaluationEligible", False)
+    and not lane.get("clientFailureKind")
+    and not lane.get("forbiddenCommands")
+)
+lane = dict(lane)
+lane["lane"] = lane_name
+lane["retryAttempted"] = False
+lane["retrySelected"] = False
+lane["retry"] = {
+    "eligible": eligible,
+    "triggered": False,
+    "selected": False,
+    "evidenceOnlyTargetCountBeforeRetry": int(metrics.get("ctxhelmEvidenceOnlyTargetCount", 0) or 0),
+    "evidenceOnlyTargetCountAfterRetry": int(metrics.get("ctxhelmEvidenceOnlyTargetCount", 0) or 0),
+    "readFileCountBeforeRetry": int(metrics.get("readFileCount", 0) or 0),
+    "readFileCountAfterRetry": int(metrics.get("readFileCount", 0) or 0),
+    "irrelevantReadCountBeforeRetry": int(metrics.get("irrelevantReadCount", 0) or 0),
+    "irrelevantReadCountAfterRetry": int(metrics.get("irrelevantReadCount", 0) or 0),
+    "targetReadCoverageBeforeRetry": float(metrics.get("targetReadCoverage", 0.0) or 0.0),
+    "targetReadCoverageAfterRetry": float(metrics.get("targetReadCoverage", 0.0) or 0.0),
+    "readFileCountDelta": 0,
+    "irrelevantReadCountDelta": 0,
+    "targetReadCoverageDelta": 0.0,
+}
+pathlib.Path(output_path).write_text(json.dumps(lane, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+PY
+    printf '%s\n' "$keep_json"
     return
   fi
 
@@ -1303,6 +1377,22 @@ selected["retrySelected"] = selected_retry
 selected["retryReason"] = "ctxhelm_evidence_only_targets"
 selected["initialAttempt"] = original_summary
 selected["retryAttempt"] = retry_summary
+selected["retry"] = {
+    "eligible": True,
+    "triggered": True,
+    "selected": selected_retry,
+    "evidenceOnlyTargetCountBeforeRetry": original_summary["ctxhelmEvidenceOnlyTargetCount"],
+    "evidenceOnlyTargetCountAfterRetry": retry_summary["ctxhelmEvidenceOnlyTargetCount"],
+    "readFileCountBeforeRetry": original_summary["readFileCount"],
+    "readFileCountAfterRetry": retry_summary["readFileCount"],
+    "irrelevantReadCountBeforeRetry": original_summary["irrelevantReadCount"],
+    "irrelevantReadCountAfterRetry": retry_summary["irrelevantReadCount"],
+    "targetReadCoverageBeforeRetry": original_summary["targetReadCoverage"],
+    "targetReadCoverageAfterRetry": retry_summary["targetReadCoverage"],
+    "readFileCountDelta": retry_summary["readFileCount"] - original_summary["readFileCount"],
+    "irrelevantReadCountDelta": retry_summary["irrelevantReadCount"] - original_summary["irrelevantReadCount"],
+    "targetReadCoverageDelta": retry_summary["targetReadCoverage"] - original_summary["targetReadCoverage"],
+}
 if selected_retry:
     selected["retrySourceLane"] = retry.get("lane")
 
@@ -1375,6 +1465,27 @@ ctxhelm_under_read = any(
     and lane.get("metrics", {}).get("targetReadCoverage", 0.0) < base_metrics.get("targetReadCoverage", 0.0)
     for lane in ctxhelm_lanes
 )
+
+def retry_cost_summary(lanes):
+    triggered = []
+    for lane in lanes:
+        lane_retry = lane.get("retry") or {}
+        if lane_retry.get("triggered", False):
+            triggered.append(lane_retry)
+    count = len(triggered)
+    return {
+        "retryTriggeredLanes": count,
+        "retrySelectedLanes": sum(1 for lane_retry in triggered if lane_retry.get("selected", False)),
+        "avgReadFilesBeforeRetry": sum(int(lane_retry.get("readFileCountBeforeRetry", 0) or 0) for lane_retry in triggered) / count if count else 0.0,
+        "avgReadFilesAfterRetry": sum(int(lane_retry.get("readFileCountAfterRetry", 0) or 0) for lane_retry in triggered) / count if count else 0.0,
+        "avgIrrelevantReadsBeforeRetry": sum(int(lane_retry.get("irrelevantReadCountBeforeRetry", 0) or 0) for lane_retry in triggered) / count if count else 0.0,
+        "avgIrrelevantReadsAfterRetry": sum(int(lane_retry.get("irrelevantReadCountAfterRetry", 0) or 0) for lane_retry in triggered) / count if count else 0.0,
+        "targetReadCoverageBeforeRetry": sum(float(lane_retry.get("targetReadCoverageBeforeRetry", 0.0) or 0.0) for lane_retry in triggered) / count if count else 0.0,
+        "targetReadCoverageAfterRetry": sum(float(lane_retry.get("targetReadCoverageAfterRetry", 0.0) or 0.0) for lane_retry in triggered) / count if count else 0.0,
+        "evidenceOnlyTargetsBeforeRetry": sum(int(lane_retry.get("evidenceOnlyTargetCountBeforeRetry", 0) or 0) for lane_retry in triggered),
+        "evidenceOnlyTargetsAfterRetry": sum(int(lane_retry.get("evidenceOnlyTargetCountAfterRetry", 0) or 0) for lane_retry in triggered),
+    }
+
 status = "passed" if any(lane.get("status") == "passed" for lane in lanes) else "skipped"
 if status == "passed" and (not ctxhelm_called or not comparison_eligible or missing_required_observed or invalid_required_observed or client_failures_observed or forbidden_called):
     status = "degraded"
@@ -1452,6 +1563,7 @@ payload = {
         "ctxhelmEvidenceOnlyTargets": ctxhelm_evidence_only_targets,
         "ctxhelmUnderReadTargetsObserved": ctxhelm_under_read,
         "outcomeClaim": outcome_claim,
+        "retryCost": retry_cost_summary(ctxhelm_lanes),
         "recommendedResearchActions": recommended_research_actions(),
     },
     "privacyStatus": {

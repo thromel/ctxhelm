@@ -5086,6 +5086,7 @@ fn render_agent_run_report(report: &serde_json::Value) -> String {
             "- Recommended R&D actions: `{}`\n",
             render_recommended_research_actions(delta.get("recommendedResearchActions"))
         ));
+        output.push_str(&render_retry_cost(delta.get("retryCost")));
     }
     if let Some(aggregate) = report.get("aggregate") {
         output.push_str("\n## Suite Aggregate\n\n");
@@ -5170,6 +5171,7 @@ fn render_agent_run_report(report: &serde_json::Value) -> String {
             "- Recommended R&D actions: `{}`\n",
             render_recommended_research_actions(aggregate.get("recommendedResearchActions"))
         ));
+        output.push_str(&render_retry_cost(aggregate.get("retryCost")));
         if let Some(lanes) = aggregate
             .get("laneSummaries")
             .and_then(serde_json::Value::as_array)
@@ -5393,11 +5395,120 @@ fn render_agent_run_report(report: &serde_json::Value) -> String {
                 render_json_count_map(lane.get("readRoleCounts")),
                 render_json_count_map(lane.get("missedTargetRoleCounts")),
             ));
+            output.push_str(&render_lane_retry(lane.get("retry")));
         }
     } else {
         output.push_str("_No lanes found._\n");
     }
     output
+}
+
+fn render_retry_cost(value: Option<&serde_json::Value>) -> String {
+    let Some(retry) = value else {
+        return String::new();
+    };
+    format!(
+        "- Retry cost: triggered `{}` selected `{}` avg reads before `{}` after `{}` avg irrelevant before `{}` after `{}` target-read coverage before `{}` after `{}` evidence-only targets before `{}` after `{}`\n",
+        retry
+            .get("retryTriggeredLanes")
+            .and_then(serde_json::Value::as_u64)
+            .map(|value| value.to_string())
+            .unwrap_or_else(|| "n/a".to_string()),
+        retry
+            .get("retrySelectedLanes")
+            .and_then(serde_json::Value::as_u64)
+            .map(|value| value.to_string())
+            .unwrap_or_else(|| "n/a".to_string()),
+        retry
+            .get("avgReadFilesBeforeRetry")
+            .and_then(serde_json::Value::as_f64)
+            .map(|value| format!("{value:.2}"))
+            .unwrap_or_else(|| "n/a".to_string()),
+        retry
+            .get("avgReadFilesAfterRetry")
+            .and_then(serde_json::Value::as_f64)
+            .map(|value| format!("{value:.2}"))
+            .unwrap_or_else(|| "n/a".to_string()),
+        retry
+            .get("avgIrrelevantReadsBeforeRetry")
+            .and_then(serde_json::Value::as_f64)
+            .map(|value| format!("{value:.2}"))
+            .unwrap_or_else(|| "n/a".to_string()),
+        retry
+            .get("avgIrrelevantReadsAfterRetry")
+            .and_then(serde_json::Value::as_f64)
+            .map(|value| format!("{value:.2}"))
+            .unwrap_or_else(|| "n/a".to_string()),
+        retry
+            .get("targetReadCoverageBeforeRetry")
+            .and_then(serde_json::Value::as_f64)
+            .map(|value| format!("{value:.2}"))
+            .unwrap_or_else(|| "n/a".to_string()),
+        retry
+            .get("targetReadCoverageAfterRetry")
+            .and_then(serde_json::Value::as_f64)
+            .map(|value| format!("{value:.2}"))
+            .unwrap_or_else(|| "n/a".to_string()),
+        retry
+            .get("evidenceOnlyTargetsBeforeRetry")
+            .and_then(serde_json::Value::as_u64)
+            .map(|value| value.to_string())
+            .unwrap_or_else(|| "n/a".to_string()),
+        retry
+            .get("evidenceOnlyTargetsAfterRetry")
+            .and_then(serde_json::Value::as_u64)
+            .map(|value| value.to_string())
+            .unwrap_or_else(|| "n/a".to_string()),
+    )
+}
+
+fn render_lane_retry(value: Option<&serde_json::Value>) -> String {
+    let Some(retry) = value else {
+        return String::new();
+    };
+    format!(
+        "  - retry eligible `{}` triggered `{}` selected `{}` evidence-only before `{}` after `{}` read delta `{}` irrelevant delta `{}` target-read delta `{}`\n",
+        retry
+            .get("eligible")
+            .and_then(serde_json::Value::as_bool)
+            .map(|value| value.to_string())
+            .unwrap_or_else(|| "n/a".to_string()),
+        retry
+            .get("triggered")
+            .and_then(serde_json::Value::as_bool)
+            .map(|value| value.to_string())
+            .unwrap_or_else(|| "n/a".to_string()),
+        retry
+            .get("selected")
+            .and_then(serde_json::Value::as_bool)
+            .map(|value| value.to_string())
+            .unwrap_or_else(|| "n/a".to_string()),
+        retry
+            .get("evidenceOnlyTargetCountBeforeRetry")
+            .and_then(serde_json::Value::as_u64)
+            .map(|value| value.to_string())
+            .unwrap_or_else(|| "n/a".to_string()),
+        retry
+            .get("evidenceOnlyTargetCountAfterRetry")
+            .and_then(serde_json::Value::as_u64)
+            .map(|value| value.to_string())
+            .unwrap_or_else(|| "n/a".to_string()),
+        retry
+            .get("readFileCountDelta")
+            .and_then(serde_json::Value::as_i64)
+            .map(|value| value.to_string())
+            .unwrap_or_else(|| "n/a".to_string()),
+        retry
+            .get("irrelevantReadCountDelta")
+            .and_then(serde_json::Value::as_i64)
+            .map(|value| value.to_string())
+            .unwrap_or_else(|| "n/a".to_string()),
+        retry
+            .get("targetReadCoverageDelta")
+            .and_then(serde_json::Value::as_f64)
+            .map(|value| format!("{value:.2}"))
+            .unwrap_or_else(|| "n/a".to_string()),
+    )
 }
 
 fn render_json_count_map(value: Option<&serde_json::Value>) -> String {
