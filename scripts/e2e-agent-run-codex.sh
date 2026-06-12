@@ -932,6 +932,7 @@ First call ctxhelm prepare_task with explicit repo "$repo" and task "$task".
 Then call ctxhelm get_pack with explicit repo "$repo", the same task, budget "standard", format "json", and recordTrace false.
 $retry_instruction
 This is a memory-efficiency probe. Use at most 6 shell commands total after ctxhelm calls.
+Read no more than 6 current files total. Memory evidence may prioritize targetFiles, but it must not displace targetFiles; do not read selectedMemory, docs, or planning paths before the returned targetFiles unless they are themselves targetFiles.
 First inspect selectedMemory, sourceLinks, experience-card evidence, targetFiles, and high-confidence get_pack paths. Choose the smallest current-file set that covers targetFiles and high-confidence pack targets, preferring paths that also appear in memory evidence.
 Consume targetFiles and high-confidence target paths first with read commands such as sed, cat, nl, head, or tail, up to 5 current files. rg, grep, find, ls, and wc may locate or count evidence, but they do not count as consuming a target file.
 If targetFiles contains 5 or fewer paths, consume every targetFiles path as the first shell reads after ctxhelm calls, before broader exploration and before answering, including docs, config, schema, and script paths.
