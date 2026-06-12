@@ -4,7 +4,7 @@ set -euo pipefail
 usage() {
   cat >&2 <<'EOF'
 usage: e2e-agent-run-codex.sh --target-file PATH [--target-file PATH ...] [--repo PATH] [--task TASK] [--output PATH]
-       e2e-agent-run-codex.sh --suite SUITE.json [--repo PATH] [--output PATH]
+       e2e-agent-run-codex.sh --suite SUITE.json [--repo PATH] [--output PATH] [--suite-work-dir DIR]
 
 Runs a source-free paired Codex CLI agent-run evaluation:
   1. baseline native read-only shell exploration
@@ -22,6 +22,12 @@ a source-free suite and writes aggregate native-vs-ctxhelm metrics. Suite files
 may be either an array of task objects or an object with a "tasks" array. Each
 task needs "task" or "prompt" plus "targetFiles" or "target_files".
 
+For long real-client suites, pass --suite-work-dir DIR or set
+CTXHELM_AGENT_RUN_SUITE_WORK_DIR. Completed task reports are written there and
+reused on rerun. The checkpoint files are the same source-free per-task reports
+that feed the aggregate; raw prompts, transcripts, MCP traffic, command output,
+and source text are still not stored.
+
 The script does not edit source files, run user project tests, mutate global
 agent configuration, publish releases, upload data, or store raw prompts/source
 text/transcripts/MCP traffic/command output in the report.
@@ -37,6 +43,7 @@ run_real="${CTXHELM_RUN_REAL_CLIENT:-0}"
 require_real="${CTXHELM_REQUIRE_REAL_CLIENT:-0}"
 client_timeout_seconds="${CTXHELM_AGENT_RUN_TIMEOUT_SECONDS:-120}"
 suite_path=""
+suite_work_dir="${CTXHELM_AGENT_RUN_SUITE_WORK_DIR:-}"
 target_files=()
 
 while [[ $# -gt 0 ]]; do
@@ -59,6 +66,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --suite)
       suite_path="${2:-}"
+      shift 2
+      ;;
+    --suite-work-dir)
+      suite_work_dir="${2:-}"
       shift 2
       ;;
     -h|--help)
@@ -121,6 +132,11 @@ if [[ -n "$suite_path" ]]; then
     echo "suite not found: $suite_path" >&2
     exit 66
   fi
+  suite_checkpoint_dir=""
+  if [[ -n "$suite_work_dir" ]]; then
+    mkdir -p "$suite_work_dir"
+    suite_checkpoint_dir="$(cd "$suite_work_dir" && pwd -P)"
+  fi
   suite_tasks_jsonl="$work_dir/suite-tasks.jsonl"
   suite_reports_jsonl="$work_dir/suite-reports.jsonl"
   python3 - "$suite_path" "$suite_tasks_jsonl" <<'PY'
@@ -164,40 +180,85 @@ out.write_text(
 PY
 
   task_index=0
+  suite_reused_task_count=0
   while IFS= read -r suite_task; do
     task_index=$((task_index + 1))
     task_id="$(python3 -c 'import json,sys; print(json.loads(sys.argv[1])["id"])' "$suite_task")"
     task_text="$(python3 -c 'import json,sys; print(json.loads(sys.argv[1])["task"])' "$suite_task")"
+    task_key="$(python3 -c 'import hashlib,json,re,sys; row=json.loads(sys.argv[1]); raw=str(row["id"]); slug=re.sub(r"[^A-Za-z0-9_.-]+", "-", raw).strip("-._") or "task"; digest=hashlib.sha256(json.dumps(row, sort_keys=True).encode("utf-8")).hexdigest()[:16]; print(f"{int(sys.argv[2]):03d}-{slug[:64]}-{digest}")' "$suite_task" "$task_index")"
     suite_targets=()
     while IFS= read -r suite_target; do
       suite_targets+=("$suite_target")
     done < <(python3 -c 'import json,sys; print("\n".join(json.loads(sys.argv[1])["targetFiles"]))' "$suite_task")
-    task_report="$work_dir/suite-task-${task_index}.json"
-    task_args=(--repo "$repo" --task "$task_text" --output "$task_report")
-    for target in "${suite_targets[@]}"; do
-      task_args+=(--target-file "$target")
-    done
-    CTXHELM_BIN="$ctxhelm_bin" "$script_dir/e2e-agent-run-codex.sh" "${task_args[@]}" >/dev/null
-    python3 - "$task_id" "$task_report" "$suite_reports_jsonl" <<'PY'
+    if [[ -n "$suite_checkpoint_dir" ]]; then
+      task_report="$suite_checkpoint_dir/${task_key}.json"
+    else
+      task_report="$work_dir/suite-task-${task_index}.json"
+    fi
+    task_reused="false"
+    if [[ -n "$suite_checkpoint_dir" && -s "$task_report" ]]; then
+      if python3 - "$task_report" <<'PY'
 import json
 import pathlib
 import sys
 
-task_id, report_path, manifest_path = sys.argv[1:]
-entry = {"taskId": task_id, "reportPath": report_path}
+try:
+    report = json.loads(pathlib.Path(sys.argv[1]).read_text(encoding="utf-8"))
+except Exception:
+    raise SystemExit(1)
+if report.get("schemaVersion") != "ctxhelm-agent-run-eval-v1":
+    raise SystemExit(1)
+if report.get("workflowKind") != "paired-agent-context-run":
+    raise SystemExit(1)
+if not isinstance(report.get("lanes"), list) or not report["lanes"]:
+    raise SystemExit(1)
+if report.get("task", {}).get("rawTaskStored") is not False:
+    raise SystemExit(1)
+privacy = report.get("privacyStatus", {})
+for key in [
+    "sourceTextLogged",
+    "rawPromptStored",
+    "rawTranscriptStored",
+    "rawMcpTrafficStored",
+    "rawCommandOutputStored",
+]:
+    if privacy.get(key) is not False:
+        raise SystemExit(1)
+PY
+      then
+        task_reused="true"
+        suite_reused_task_count=$((suite_reused_task_count + 1))
+      else
+        rm -f "$task_report"
+      fi
+    fi
+    if [[ "$task_reused" != "true" ]]; then
+      task_args=(--repo "$repo" --task "$task_text" --output "$task_report")
+      for target in "${suite_targets[@]}"; do
+        task_args+=(--target-file "$target")
+      done
+      CTXHELM_BIN="$ctxhelm_bin" "$script_dir/e2e-agent-run-codex.sh" "${task_args[@]}" >/dev/null
+    fi
+    python3 - "$task_id" "$task_report" "$suite_reports_jsonl" "$task_reused" <<'PY'
+import json
+import pathlib
+import sys
+
+task_id, report_path, manifest_path, reused = sys.argv[1:]
+entry = {"taskId": task_id, "reportPath": report_path, "reusedCheckpoint": reused == "true"}
 with pathlib.Path(manifest_path).open("a", encoding="utf-8") as handle:
     handle.write(json.dumps(entry, sort_keys=True) + "\n")
 PY
   done <"$suite_tasks_jsonl"
 
-  python3 - "$suite_path" "$suite_reports_jsonl" "$repo" "$ctxhelm_version" "$client_version" "$output_path" <<'PY'
+  python3 - "$suite_path" "$suite_reports_jsonl" "$repo" "$ctxhelm_version" "$client_version" "$output_path" "$suite_checkpoint_dir" "$suite_reused_task_count" <<'PY'
 import hashlib
 import json
 import pathlib
 import sys
 from collections import defaultdict
 
-suite_path, manifest_path, repo, ctxhelm_version, client_version, output_path = sys.argv[1:]
+suite_path, manifest_path, repo, ctxhelm_version, client_version, output_path, checkpoint_dir, reused_task_count_text = sys.argv[1:]
 entries = [
     json.loads(line)
     for line in pathlib.Path(manifest_path).read_text(encoding="utf-8").splitlines()
@@ -276,6 +337,7 @@ for entry in entries:
     report = json.loads(pathlib.Path(entry["reportPath"]).read_text(encoding="utf-8"))
     tasks.append({
         "taskId": entry["taskId"],
+        "reusedCheckpoint": bool(entry.get("reusedCheckpoint", False)),
         "status": report.get("status", "unknown"),
         "taskSha256": report.get("task", {}).get("taskSha256"),
         "targetFiles": report.get("targetFiles", []),
@@ -487,6 +549,9 @@ payload = {
         "suiteSha256": hashlib.sha256(pathlib.Path(suite_path).read_bytes()).hexdigest(),
         "rawTasksStored": False,
         "taskCount": task_count,
+        "checkpointEnabled": bool(checkpoint_dir),
+        "checkpointDirSha256": hashlib.sha256(checkpoint_dir.encode("utf-8")).hexdigest() if checkpoint_dir else None,
+        "reusedTaskCount": int(reused_task_count_text or 0),
     },
     "tasks": tasks,
     "aggregate": {
