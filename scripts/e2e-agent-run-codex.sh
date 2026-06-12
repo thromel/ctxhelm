@@ -521,6 +521,13 @@ def recommended_research_actions():
         add("inspect_pack_ordering_and_native_read_instruction", 2, "A ctxhelm-assisted lane under-read targets relative to the native baseline.")
     if comparison_eligible_count and outcome_claim == "no_measured_lift":
         add("analyze_native_baseline_gap", 2, "Comparable lanes produced no measured ctxhelm lift.")
+    if (
+        comparison_eligible_count
+        and outcome_claim == "ctxhelm_improved"
+        and not comparison["clientFailuresObserved"]
+        and (irrelevant_delta_sum < 0 or comparison["readFileDeltaSum"] < 0)
+    ):
+        add("optimize_agent_read_efficiency", 2, "ctxhelm improved target consumption but required more reads or more irrelevant reads than the native baseline.")
     if not actions and comparison_eligible_count and outcome_claim in {"ctxhelm_improved", "ctxhelm_matched"}:
         add("preserve_current_agent_contract", 3, "Comparable lanes produced stable source-free outcome evidence.")
     return actions
@@ -1583,6 +1590,13 @@ def recommended_research_actions():
         add("inspect_pack_ordering_and_native_read_instruction", 2, "A ctxhelm-assisted lane under-read targets relative to the native baseline.")
     if comparison_eligible and outcome_claim == "no_measured_lift":
         add("analyze_native_baseline_gap", 2, "Comparable lanes produced no measured ctxhelm lift.")
+    if (
+        comparison_eligible
+        and outcome_claim == "ctxhelm_improved"
+        and not client_failures_observed
+        and (irrelevant_delta < 0 or read_file_delta < 0)
+    ):
+        add("optimize_agent_read_efficiency", 2, "ctxhelm improved target consumption but required more reads or more irrelevant reads than the native baseline.")
     if not actions and comparison_eligible and outcome_claim in {"ctxhelm_improved", "ctxhelm_matched"}:
         add("preserve_current_agent_contract", 3, "Comparable lanes produced stable source-free outcome evidence.")
     return actions

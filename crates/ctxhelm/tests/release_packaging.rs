@@ -2035,6 +2035,7 @@ fn codex_agent_run_e2e_script_contract() {
         "retryCost",
         "retryTriggeredLanes",
         "retrySelectedLanes",
+        "optimize_agent_read_efficiency",
         "avgReadFilesBeforeRetry",
         "avgReadFilesAfterRetry",
         "avgIrrelevantReadsBeforeRetry",
