@@ -126,6 +126,15 @@ client_version="unavailable"
 if command -v codex >/dev/null 2>&1; then
   client_version="$(codex --version 2>&1 | head -n 1)"
 fi
+runner_contract_version="ctxhelm-agent-run-codex-runner-v1"
+runner_script_sha256="$(python3 - "$script_dir/e2e-agent-run-codex.sh" <<'PY'
+import hashlib
+import pathlib
+import sys
+
+print(hashlib.sha256(pathlib.Path(sys.argv[1]).read_bytes()).hexdigest())
+PY
+)"
 
 if [[ -n "$suite_path" ]]; then
   if [[ ! -f "$suite_path" ]]; then
@@ -197,18 +206,39 @@ PY
     fi
     task_reused="false"
     if [[ -n "$suite_checkpoint_dir" && -s "$task_report" ]]; then
-      if python3 - "$task_report" <<'PY'
+      if python3 - "$task_report" "$suite_task" "$runner_contract_version" "$runner_script_sha256" "$ctxhelm_version" "$client_version" <<'PY'
+import hashlib
 import json
 import pathlib
 import sys
 
+report_path, suite_task_json, expected_contract, expected_script_sha, expected_ctxhelm_version, expected_client_version = sys.argv[1:]
 try:
-    report = json.loads(pathlib.Path(sys.argv[1]).read_text(encoding="utf-8"))
+    report = json.loads(pathlib.Path(report_path).read_text(encoding="utf-8"))
+    suite_task = json.loads(suite_task_json)
 except Exception:
     raise SystemExit(1)
 if report.get("schemaVersion") != "ctxhelm-agent-run-eval-v1":
     raise SystemExit(1)
 if report.get("workflowKind") != "paired-agent-context-run":
+    raise SystemExit(1)
+runner = report.get("runner") or {}
+if runner.get("name") != "e2e-agent-run-codex":
+    raise SystemExit(1)
+if runner.get("contractVersion") != expected_contract:
+    raise SystemExit(1)
+if runner.get("scriptSha256") != expected_script_sha:
+    raise SystemExit(1)
+if runner.get("checkpointValidation") != "runner_fingerprint_v1":
+    raise SystemExit(1)
+if report.get("ctxhelmVersion") != expected_ctxhelm_version:
+    raise SystemExit(1)
+if (report.get("client") or {}).get("version") != expected_client_version:
+    raise SystemExit(1)
+expected_task_sha = hashlib.sha256(suite_task["task"].encode("utf-8")).hexdigest()
+if (report.get("task") or {}).get("taskSha256") != expected_task_sha:
+    raise SystemExit(1)
+if report.get("targetFiles") != suite_task["targetFiles"]:
     raise SystemExit(1)
 if not isinstance(report.get("lanes"), list) or not report["lanes"]:
     raise SystemExit(1)
@@ -251,14 +281,14 @@ with pathlib.Path(manifest_path).open("a", encoding="utf-8") as handle:
 PY
   done <"$suite_tasks_jsonl"
 
-  python3 - "$suite_path" "$suite_reports_jsonl" "$repo" "$ctxhelm_version" "$client_version" "$output_path" "$suite_checkpoint_dir" "$suite_reused_task_count" <<'PY'
+  python3 - "$suite_path" "$suite_reports_jsonl" "$repo" "$ctxhelm_version" "$client_version" "$runner_contract_version" "$runner_script_sha256" "$output_path" "$suite_checkpoint_dir" "$suite_reused_task_count" <<'PY'
 import hashlib
 import json
 import pathlib
 import sys
 from collections import defaultdict
 
-suite_path, manifest_path, repo, ctxhelm_version, client_version, output_path, checkpoint_dir, reused_task_count_text = sys.argv[1:]
+suite_path, manifest_path, repo, ctxhelm_version, client_version, runner_contract_version, runner_script_sha256, output_path, checkpoint_dir, reused_task_count_text = sys.argv[1:]
 entries = [
     json.loads(line)
     for line in pathlib.Path(manifest_path).read_text(encoding="utf-8").splitlines()
@@ -602,6 +632,12 @@ payload = {
     "workflowKind": "paired-agent-context-suite",
     "client": {"name": "codex", "version": client_version},
     "ctxhelmVersion": ctxhelm_version,
+    "runner": {
+        "name": "e2e-agent-run-codex",
+        "contractVersion": runner_contract_version,
+        "scriptSha256": runner_script_sha256,
+        "checkpointValidation": "runner_fingerprint_v1",
+    },
     "repo": {
         "label": pathlib.Path(repo).name,
         "pathSha256": hashlib.sha256(repo.encode("utf-8")).hexdigest(),
@@ -1537,13 +1573,13 @@ brief_json="$(maybe_retry_lane "$(run_lane ctxhelm-brief brief)" ctxhelm-brief b
 standard_json="$(maybe_retry_lane "$(run_lane ctxhelm-standard standard)" ctxhelm-standard standard)"
 memory_json="$(maybe_retry_lane "$(run_lane ctxhelm-memory memory)" ctxhelm-memory memory)"
 
-python3 - "$repo" "$task" "$ctxhelm_version" "$client_version" "$target_json" "$baseline_json" "$plan_json" "$brief_json" "$standard_json" "$memory_json" "$output_path" <<'PY'
+python3 - "$repo" "$task" "$ctxhelm_version" "$client_version" "$runner_contract_version" "$runner_script_sha256" "$target_json" "$baseline_json" "$plan_json" "$brief_json" "$standard_json" "$memory_json" "$output_path" <<'PY'
 import hashlib
 import json
 import pathlib
 import sys
 
-repo, task, ctxhelm_version, client_version, target_path, *rest = sys.argv[1:]
+repo, task, ctxhelm_version, client_version, runner_contract_version, runner_script_sha256, target_path, *rest = sys.argv[1:]
 lane_paths = rest[:5]
 output_path = rest[5]
 targets = json.loads(pathlib.Path(target_path).read_text(encoding="utf-8"))
@@ -1695,6 +1731,12 @@ payload = {
     "workflowKind": "paired-agent-context-run",
     "client": {"name": "codex", "version": client_version},
     "ctxhelmVersion": ctxhelm_version,
+    "runner": {
+        "name": "e2e-agent-run-codex",
+        "contractVersion": runner_contract_version,
+        "scriptSha256": runner_script_sha256,
+        "checkpointValidation": "runner_fingerprint_v1",
+    },
     "repo": {
         "label": pathlib.Path(repo).name,
         "pathSha256": hashlib.sha256(repo.encode("utf-8")).hexdigest(),
