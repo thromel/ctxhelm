@@ -880,12 +880,14 @@ EOF
 Do not edit files, do not write files, do not use shell redirection, do not run tests, and do not mutate git or global config. Do not run awk, bootstrap, setup, install, hook, or superpowers commands.
 First call ctxhelm prepare_task with explicit repo "$repo" and task "$task".
 $retry_instruction
-Use at most 8 shell commands total after ctxhelm calls.
+This is a target-first efficiency probe. Use at most 6 shell commands total after ctxhelm calls.
+Read no more than 6 current files total. Do not batch-read broad context-area, pack-neighbor, or planning/doc lists; if one command names multiple files, include targetFiles first and at most one immediate neighbor.
 Identify the returned targetFiles paths. Consume the first up to 5 targetFiles first with read commands such as sed, cat, nl, head, or tail before broader exploration. rg, grep, find, ls, and wc may locate or count evidence, but they do not count as consuming a target file.
 If targetFiles contains 5 or fewer paths, consume every targetFiles path as the first shell reads after ctxhelm calls, before broader exploration and before answering, including docs, config, schema, and script paths.
 When targetFiles includes docs, config, schema, or script paths, read those non-source targets before source-code targets; do not skip them because implementation files also look relevant.
 If selectedMemory appears, also read up to 3 selectedMemory sourceLinks or evidence paths with read-only shell commands before broader exploration.
 Treat docs, config, schema, script, and selected-memory paths in that initial set as first-class targets, not optional background. Stop after those reads if they answer the task.
+Stop immediately after target-backed reads are enough to name the key files. Do not read extra non-target files just to fill the command budget.
 Return a short JSON object with keyFiles.
 EOF
 )
@@ -895,12 +897,14 @@ Do not edit files, do not write files, do not use shell redirection, do not run 
 First call ctxhelm prepare_task with explicit repo "$repo" and task "$task".
 Then call ctxhelm get_pack with explicit repo "$repo", the same task, budget "brief", format "json", and recordTrace false.
 $retry_instruction
-Use at most 8 shell commands total after ctxhelm calls.
+This is a target-first efficiency probe. Use at most 6 shell commands total after ctxhelm calls.
+Read no more than 6 current files total. Do not batch-read broad context-area, pack-neighbor, or planning/doc lists; if one command names multiple files, include targetFiles and high-confidence target paths first and at most one immediate neighbor.
 Identify targetFiles from prepare_task and high-confidence target paths from get_pack. Consume the first up to 5 target files first with read commands such as sed, cat, nl, head, or tail before broader exploration. rg, grep, find, ls, and wc may locate or count evidence, but they do not count as consuming a target file.
 If targetFiles contains 5 or fewer paths, consume every targetFiles path as the first shell reads after ctxhelm calls, before broader exploration and before answering, including docs, config, schema, and script paths.
 When targetFiles includes docs, config, schema, or script paths, read those non-source targets before source-code targets; do not skip them because implementation files also look relevant.
 If selectedMemory appears, also read up to 3 selectedMemory sourceLinks or evidence paths with read-only shell commands before broader exploration.
 Treat docs, config, schema, script, and selected-memory paths in that initial set as first-class targets, not optional background. Stop after those reads if they answer the task.
+Stop immediately after target-backed reads are enough to name the key files. Do not read extra non-target files just to fill the command budget.
 Return a short JSON object with keyFiles.
 EOF
 )
@@ -910,12 +914,14 @@ Do not edit files, do not write files, do not use shell redirection, do not run 
 First call ctxhelm prepare_task with explicit repo "$repo" and task "$task".
 Then call ctxhelm get_pack with explicit repo "$repo", the same task, budget "standard", format "json", and recordTrace false.
 $retry_instruction
-Use at most 8 shell commands total after ctxhelm calls.
+This is a target-first efficiency probe. Use at most 6 shell commands total after ctxhelm calls.
+Read no more than 6 current files total. Do not batch-read broad context-area, pack-neighbor, or planning/doc lists; if one command names multiple files, include targetFiles and high-confidence target paths first and at most one immediate neighbor.
 Identify targetFiles from prepare_task and high-confidence target paths from get_pack. Consume the first up to 5 target files first with read commands such as sed, cat, nl, head, or tail before broader exploration. rg, grep, find, ls, and wc may locate or count evidence, but they do not count as consuming a target file.
 If targetFiles contains 5 or fewer paths, consume every targetFiles path as the first shell reads after ctxhelm calls, before broader exploration and before answering, including docs, config, schema, and script paths.
 When targetFiles includes docs, config, schema, or script paths, read those non-source targets before source-code targets; do not skip them because implementation files also look relevant.
 If selectedMemory appears, also read up to 3 selectedMemory sourceLinks or evidence paths with read-only shell commands before broader exploration.
 Treat docs, config, schema, script, and selected-memory paths in that initial set as first-class targets, not optional background. Stop after those reads if they answer the task.
+Stop immediately after target-backed reads are enough to name the key files. Do not read extra non-target files just to fill the command budget.
 Return a short JSON object with keyFiles.
 EOF
 )

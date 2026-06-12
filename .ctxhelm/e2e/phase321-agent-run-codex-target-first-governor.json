@@ -1,0 +1,1296 @@
+{
+  "client": {
+    "name": "codex",
+    "version": "codex-cli 0.137.0"
+  },
+  "comparison": {
+    "baselineEligible": true,
+    "baselineLane": "baseline",
+    "bestLane": "ctxhelm-brief",
+    "clientFailuresObserved": false,
+    "commandExecutionDelta": 3,
+    "comparableCtxhelmLaneCount": 4,
+    "comparisonEligible": true,
+    "ctxhelmEvidenceMisses": {},
+    "ctxhelmEvidenceMissesObserved": false,
+    "ctxhelmEvidenceOnlyTargets": {},
+    "ctxhelmEvidenceOnlyTargetsObserved": false,
+    "ctxhelmToolCallsObserved": true,
+    "ctxhelmUnderReadTargetsObserved": false,
+    "forbiddenCommandsObserved": false,
+    "invalidRequiredCtxhelmCalls": {},
+    "invalidRequiredCtxhelmCallsObserved": false,
+    "irrelevantReadDelta": 0,
+    "missingRequiredCtxhelmCalls": {},
+    "missingRequiredCtxhelmCallsObserved": false,
+    "outcomeClaim": "ctxhelm_improved",
+    "rateLimitsObserved": false,
+    "readEfficiency": {
+      "analysisAvailable": true,
+      "baselineIrrelevantReadCount": 2,
+      "baselineIrrelevantReadRate": 0.4,
+      "baselineLane": "baseline",
+      "baselineReadFileCount": 5,
+      "baselineTargetReadCoverage": 0.75,
+      "baselineTargetReadPrecision": 0.6,
+      "efficientCtxhelmLane": "ctxhelm-brief",
+      "efficientIrrelevantReadCount": 2,
+      "efficientIrrelevantReadRate": 0.3333333333333333,
+      "efficientReadFileCount": 6,
+      "efficientTargetReadCoverage": 1.0,
+      "efficientTargetReadPrecision": 0.6666666666666666,
+      "extraIrrelevantReadCount": 0,
+      "extraIrrelevantReadsPerRecoveredTarget": 0.0,
+      "extraReadFileCount": 1,
+      "extraReadsPerRecoveredTarget": 1.0,
+      "irrelevantReadRateDelta": -0.06666666666666671,
+      "recoveredTargetReadCount": 1,
+      "targetReadCoverageDelta": 0.25,
+      "targetReadPrecisionDelta": 0.06666666666666665
+    },
+    "readFileDelta": -1,
+    "recommendedResearchActions": [
+      {
+        "action": "optimize_agent_read_efficiency",
+        "priority": 2,
+        "reason": "ctxhelm improved target consumption but required more reads or more irrelevant reads than the native baseline."
+      }
+    ],
+    "retryCost": {
+      "avgIrrelevantReadsAfterRetry": 0.0,
+      "avgIrrelevantReadsBeforeRetry": 0.0,
+      "avgReadFilesAfterRetry": 0.0,
+      "avgReadFilesBeforeRetry": 0.0,
+      "evidenceOnlyTargetsAfterRetry": 0,
+      "evidenceOnlyTargetsBeforeRetry": 0,
+      "retrySelectedLanes": 0,
+      "retryTriggeredLanes": 0,
+      "targetReadCoverageAfterRetry": 0.0,
+      "targetReadCoverageBeforeRetry": 0.0
+    },
+    "targetCoverageDelta": 0.25,
+    "targetReadCoverageDelta": 0.25
+  },
+  "ctxhelmVersion": "ctxhelm 2.4.0",
+  "lanes": [
+    {
+      "clientApiErrorStatus": null,
+      "clientExitStatus": 0,
+      "clientFailureKind": null,
+      "commandExecutions": [
+        {
+          "commandSha256": "47d0315b306ea8525186dd9db0e864afe4736ff9c09ad411b870d3692da2ea8e",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 0,
+          "paths": [],
+          "status": "completed",
+          "verb": "pwd"
+        },
+        {
+          "commandSha256": "df975d43920ba8ebd551b0993a27d942097aeb5b8c2848162367c73080c4a17b",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 0,
+          "paths": [],
+          "status": "completed",
+          "verb": "rg"
+        },
+        {
+          "commandSha256": "e9bfd10ff934240926b865b7021d8f8d5395fcbbde3b53596f6443629776a47a",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 0,
+          "paths": [],
+          "status": "completed",
+          "verb": "rg"
+        },
+        {
+          "commandSha256": "4f7180201cd1b43a948cd64e8c9a8235f6f996961b6c28c329f352bc7850ce41",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 0,
+          "paths": [],
+          "status": "completed",
+          "verb": "find"
+        },
+        {
+          "commandSha256": "955f52e47fd4c8e0d09e2bee51758bf27c9524f21d57d2ae6ab2092cc911e044",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 1,
+          "paths": [
+            "crates/ctxhelm-core/src/contracts.rs"
+          ],
+          "status": "completed",
+          "verb": "sed"
+        },
+        {
+          "commandSha256": "aa586dc24b701372f985a96234cb827aecc5e32aa8d64509dd606b5b77cae792",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 1,
+          "paths": [
+            "crates/ctxhelm/src/main.rs"
+          ],
+          "status": "completed",
+          "verb": "sed"
+        },
+        {
+          "commandSha256": "8e03e62c8cc3b75ba4522bed459347d3d8b42d65eaf515b4d03e4d4fdfc2fc04",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 1,
+          "paths": [
+            "scripts/release-gate.sh"
+          ],
+          "status": "completed",
+          "verb": "sed"
+        },
+        {
+          "commandSha256": "844c0a74077e9eaab429af0481fd98806cc234a5e85ff3ab367df0fe3104ec6a",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 1,
+          "paths": [
+            "crates/ctxhelm-compiler/src/eval.rs"
+          ],
+          "status": "completed",
+          "verb": "sed"
+        },
+        {
+          "commandSha256": "78ec4392f99c1f5a2e8c04ed84a6f30f344d8c524b7ced4e2b7ae090dd2b4896",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 1,
+          "paths": [
+            "scripts/smoke-governor.sh"
+          ],
+          "status": "completed",
+          "verb": "sed"
+        }
+      ],
+      "ctxhelmCallCompliance": "not_required",
+      "ctxhelmEvidenceFiles": [],
+      "ctxhelmEvidenceMissedTargets": [
+        "crates/ctxhelm-core/src/contracts.rs",
+        "crates/ctxhelm/src/main.rs",
+        "docs/context-governor.md",
+        "scripts/smoke-governor.sh"
+      ],
+      "ctxhelmEvidenceOnlyTargets": [],
+      "ctxhelmEvidenceTargetHits": [],
+      "ctxhelmToolCalls": [],
+      "discoveredFiles": [
+        "crates/ctxhelm-core/src/contracts.rs",
+        "crates/ctxhelm/src/main.rs",
+        "scripts/release-gate.sh",
+        "crates/ctxhelm-compiler/src/eval.rs",
+        "scripts/smoke-governor.sh"
+      ],
+      "discoveredOnlyTargets": [],
+      "evaluationEligible": true,
+      "evaluationStatus": "eligible",
+      "evidenceHashes": {
+        "ctxhelmRequestLogSha256": null,
+        "stderrSha256": "6f059c5cbfa68befe6fe91f36c841999d380adeb16d17475eb298be0f0b15532",
+        "streamJsonSha256": "505dfe3c7d3f4ee3c68ef443f17a307267a1d73620db2c0d7a4d634a474d940f"
+      },
+      "forbiddenCommands": [],
+      "invalidRequiredCtxhelmCalls": [],
+      "irrelevantReads": [
+        "crates/ctxhelm-compiler/src/eval.rs",
+        "scripts/release-gate.sh"
+      ],
+      "lane": "baseline",
+      "metrics": {
+        "commandExecutionCount": 9,
+        "ctxhelmEvidenceFileCount": 0,
+        "ctxhelmEvidenceMissedTargetCount": 4,
+        "ctxhelmEvidenceOnlyTargetCount": 0,
+        "ctxhelmEvidenceTargetHitCount": 0,
+        "ctxhelmToolCallCount": 0,
+        "discoveredFileCount": 5,
+        "forbiddenCommandCount": 0,
+        "invalidRequiredCtxhelmCallCount": 0,
+        "irrelevantReadCount": 2,
+        "irrelevantReadRate": 0.4,
+        "missedTargetCount": 1,
+        "missingRequiredCtxhelmCallCount": 0,
+        "observedRequiredCtxhelmCallCount": 0,
+        "readFileCount": 5,
+        "readsPerTargetRead": 1.6666666666666667,
+        "requiredCtxhelmCallCount": 0,
+        "targetCount": 4,
+        "targetCoverage": 0.75,
+        "targetDiscoveredOnlyCount": 0,
+        "targetHitCount": 3,
+        "targetReadCount": 3,
+        "targetReadCoverage": 0.75,
+        "targetReadPrecision": 0.6
+      },
+      "missedTargetRoleCounts": {
+        "docs": 1
+      },
+      "missedTargets": [
+        "docs/context-governor.md"
+      ],
+      "missingRequiredCtxhelmCalls": [],
+      "mode": "baseline",
+      "observedRequiredCtxhelmCalls": [],
+      "rateLimitObserved": false,
+      "rawCommandOutputStored": false,
+      "rawMcpTrafficStored": false,
+      "rawPromptStored": false,
+      "rawTranscriptStored": false,
+      "readFiles": [
+        "crates/ctxhelm-core/src/contracts.rs",
+        "crates/ctxhelm/src/main.rs",
+        "scripts/release-gate.sh",
+        "crates/ctxhelm-compiler/src/eval.rs",
+        "scripts/smoke-governor.sh"
+      ],
+      "readRoleCounts": {
+        "source": 5
+      },
+      "requiredCtxhelmCallSpecs": [],
+      "requiredCtxhelmCalls": [],
+      "sourceTextLogged": false,
+      "status": "passed",
+      "targetHits": [
+        "crates/ctxhelm-core/src/contracts.rs",
+        "crates/ctxhelm/src/main.rs",
+        "scripts/smoke-governor.sh"
+      ],
+      "targetReads": [
+        "crates/ctxhelm-core/src/contracts.rs",
+        "crates/ctxhelm/src/main.rs",
+        "scripts/smoke-governor.sh"
+      ]
+    },
+    {
+      "clientApiErrorStatus": null,
+      "clientExitStatus": 0,
+      "clientFailureKind": null,
+      "commandExecutions": [
+        {
+          "commandSha256": "89c3a15bd8e4f03f99390ac3c234ba81f08adcdd55b3d21c386d635139c6b692",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 1,
+          "paths": [
+            "scripts/smoke-governor.sh"
+          ],
+          "status": "completed",
+          "verb": "sed"
+        },
+        {
+          "commandSha256": "aee593db5852414f1cbda78fec6882a4479cf5b0ae2fd1f3248b3e3a7881ded6",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 1,
+          "paths": [
+            "crates/ctxhelm/src/main.rs"
+          ],
+          "status": "completed",
+          "verb": "sed"
+        },
+        {
+          "commandSha256": "c0a384f8b92b0218f41cdeeac0a5fde52a72c48e79696da10dd07136f9c4fd85",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 1,
+          "paths": [
+            "crates/ctxhelm-compiler/src/eval.rs"
+          ],
+          "status": "completed",
+          "verb": "sed"
+        },
+        {
+          "commandSha256": "91f02bb50af47356084436e5eaaeb3304b6ba62744e3134f29dcce82d39d92c9",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 1,
+          "paths": [
+            "crates/ctxhelm-core/src/contracts.rs"
+          ],
+          "status": "completed",
+          "verb": "sed"
+        },
+        {
+          "commandSha256": "b6f45a0a690ae6937b2692d338acd45e3eba7da04b2436ed49289d9feb9e1193",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 1,
+          "paths": [
+            "crates/ctxhelm-core/src/contracts.rs"
+          ],
+          "status": "completed",
+          "verb": "sed"
+        },
+        {
+          "commandSha256": "5eb0c9b80a9c41b71ca043888af66a04b6cfc8281744989b155228f22ed6d5ea",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 1,
+          "paths": [
+            "crates/ctxhelm-core/src/contracts.rs"
+          ],
+          "status": "completed",
+          "verb": "sed"
+        },
+        {
+          "commandSha256": "c2b89d572cd5b5d0d7c34db13dd5b90b02f941ed01fda9fb453826738404f7db",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 2,
+          "paths": [
+            "crates/ctxhelm-compiler/src/lib.rs",
+            "docs/context-governor.md"
+          ],
+          "status": "completed",
+          "verb": "sed"
+        }
+      ],
+      "ctxhelmCallCompliance": "satisfied",
+      "ctxhelmEvidenceFiles": [
+        "crates/ctxhelm/src/main.rs",
+        "crates/ctxhelm-compiler/src/eval.rs",
+        "crates/ctxhelm-core/src/contracts.rs",
+        "scripts/smoke-governor.sh",
+        "crates/ctxhelm-compiler/src/lib.rs",
+        "docs/context-governor.md",
+        ".planning/STATE.md",
+        ".planning/ROADMAP.md",
+        ".planning/MILESTONES.md",
+        ".planning/research/2026-06-01-world-class-context-engine-gap-plan.md",
+        "crates/ctxhelm/tests/release_packaging.rs",
+        "crates/ctxhelm/tests/cli_compat.rs",
+        "crates/ctxhelm/tests/common/mod.rs",
+        "crates/ctxhelm-core/src/lib.rs",
+        "docs/benchmarking.md",
+        ".planning/e2e/2026-06-06-rd-completion-audit.md",
+        "docs/release.md",
+        "scripts/release-gate.sh",
+        ".planning/REQUIREMENTS.md",
+        ".planning/PROJECT.md",
+        "docs/semantic.md"
+      ],
+      "ctxhelmEvidenceMissedTargets": [],
+      "ctxhelmEvidenceOnlyTargets": [],
+      "ctxhelmEvidenceTargetHits": [
+        "crates/ctxhelm-core/src/contracts.rs",
+        "crates/ctxhelm/src/main.rs",
+        "docs/context-governor.md",
+        "scripts/smoke-governor.sh"
+      ],
+      "ctxhelmToolCalls": [
+        {
+          "budget": null,
+          "format": null,
+          "hasRepo": true,
+          "hasTask": true,
+          "name": "prepare_task",
+          "recordTrace": null
+        }
+      ],
+      "discoveredFiles": [
+        "scripts/smoke-governor.sh",
+        "crates/ctxhelm/src/main.rs",
+        "crates/ctxhelm-compiler/src/eval.rs",
+        "crates/ctxhelm-core/src/contracts.rs",
+        "crates/ctxhelm-compiler/src/lib.rs",
+        "docs/context-governor.md"
+      ],
+      "discoveredOnlyTargets": [],
+      "evaluationEligible": true,
+      "evaluationStatus": "eligible",
+      "evidenceHashes": {
+        "ctxhelmRequestLogSha256": "a1c3d8afdb1833a45e86e2af0885683852c895198c717e7d02d07718d3c23be6",
+        "stderrSha256": "56ce1c63acbec5b72fa566fd531a92a84797e0c820216715e6db6a62d77b2962",
+        "streamJsonSha256": "47e5d59dd7e6693765d5925bb3397f6e1608834c61bf13bab188688a0d87ecab"
+      },
+      "forbiddenCommands": [],
+      "invalidRequiredCtxhelmCalls": [],
+      "irrelevantReads": [
+        "crates/ctxhelm-compiler/src/eval.rs",
+        "crates/ctxhelm-compiler/src/lib.rs"
+      ],
+      "lane": "ctxhelm-plan",
+      "metrics": {
+        "commandExecutionCount": 7,
+        "ctxhelmEvidenceFileCount": 21,
+        "ctxhelmEvidenceMissedTargetCount": 0,
+        "ctxhelmEvidenceOnlyTargetCount": 0,
+        "ctxhelmEvidenceTargetHitCount": 4,
+        "ctxhelmToolCallCount": 1,
+        "discoveredFileCount": 6,
+        "forbiddenCommandCount": 0,
+        "invalidRequiredCtxhelmCallCount": 0,
+        "irrelevantReadCount": 2,
+        "irrelevantReadRate": 0.3333333333333333,
+        "missedTargetCount": 0,
+        "missingRequiredCtxhelmCallCount": 0,
+        "observedRequiredCtxhelmCallCount": 1,
+        "readFileCount": 6,
+        "readsPerTargetRead": 1.5,
+        "requiredCtxhelmCallCount": 1,
+        "targetCount": 4,
+        "targetCoverage": 1.0,
+        "targetDiscoveredOnlyCount": 0,
+        "targetHitCount": 4,
+        "targetReadCount": 4,
+        "targetReadCoverage": 1.0,
+        "targetReadPrecision": 0.6666666666666666
+      },
+      "missedTargetRoleCounts": {},
+      "missedTargets": [],
+      "missingRequiredCtxhelmCalls": [],
+      "mode": "plan",
+      "observedRequiredCtxhelmCalls": [
+        "prepare_task"
+      ],
+      "rateLimitObserved": false,
+      "rawCommandOutputStored": false,
+      "rawMcpTrafficStored": false,
+      "rawPromptStored": false,
+      "rawTranscriptStored": false,
+      "readFiles": [
+        "scripts/smoke-governor.sh",
+        "crates/ctxhelm/src/main.rs",
+        "crates/ctxhelm-compiler/src/eval.rs",
+        "crates/ctxhelm-core/src/contracts.rs",
+        "crates/ctxhelm-compiler/src/lib.rs",
+        "docs/context-governor.md"
+      ],
+      "readRoleCounts": {
+        "docs": 1,
+        "source": 5
+      },
+      "requiredCtxhelmCallSpecs": [
+        {
+          "name": "prepare_task",
+          "requiresRepo": true,
+          "requiresTask": true
+        }
+      ],
+      "requiredCtxhelmCalls": [
+        "prepare_task"
+      ],
+      "retry": {
+        "eligible": true,
+        "evidenceOnlyTargetCountAfterRetry": 0,
+        "evidenceOnlyTargetCountBeforeRetry": 0,
+        "irrelevantReadCountAfterRetry": 2,
+        "irrelevantReadCountBeforeRetry": 2,
+        "irrelevantReadCountDelta": 0,
+        "readFileCountAfterRetry": 6,
+        "readFileCountBeforeRetry": 6,
+        "readFileCountDelta": 0,
+        "selected": false,
+        "targetReadCoverageAfterRetry": 1.0,
+        "targetReadCoverageBeforeRetry": 1.0,
+        "targetReadCoverageDelta": 0.0,
+        "triggered": false
+      },
+      "retryAttempted": false,
+      "retrySelected": false,
+      "sourceTextLogged": false,
+      "status": "passed",
+      "targetHits": [
+        "crates/ctxhelm-core/src/contracts.rs",
+        "crates/ctxhelm/src/main.rs",
+        "docs/context-governor.md",
+        "scripts/smoke-governor.sh"
+      ],
+      "targetReads": [
+        "crates/ctxhelm-core/src/contracts.rs",
+        "crates/ctxhelm/src/main.rs",
+        "docs/context-governor.md",
+        "scripts/smoke-governor.sh"
+      ]
+    },
+    {
+      "clientApiErrorStatus": null,
+      "clientExitStatus": 0,
+      "clientFailureKind": null,
+      "commandExecutions": [
+        {
+          "commandSha256": "89c3a15bd8e4f03f99390ac3c234ba81f08adcdd55b3d21c386d635139c6b692",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 1,
+          "paths": [
+            "scripts/smoke-governor.sh"
+          ],
+          "status": "completed",
+          "verb": "sed"
+        },
+        {
+          "commandSha256": "7b09873e5e3f3750f2d06180b5d23d005b06180de80b6e5fde23265c81a57d7b",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 1,
+          "paths": [
+            "docs/context-governor.md"
+          ],
+          "status": "completed",
+          "verb": "sed"
+        },
+        {
+          "commandSha256": "6cbb642c95ad8920f51e8864f1fc28ab033d92e7593db62306f82bb7be568292",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 1,
+          "paths": [
+            "crates/ctxhelm-compiler/src/eval.rs"
+          ],
+          "status": "completed",
+          "verb": "sed"
+        },
+        {
+          "commandSha256": "aee593db5852414f1cbda78fec6882a4479cf5b0ae2fd1f3248b3e3a7881ded6",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 1,
+          "paths": [
+            "crates/ctxhelm/src/main.rs"
+          ],
+          "status": "completed",
+          "verb": "sed"
+        },
+        {
+          "commandSha256": "ff01433ef6ab71b40d474b279ec7856713e298c53b3f00feecfd66f8dd643467",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 1,
+          "paths": [
+            "crates/ctxhelm-core/src/contracts.rs"
+          ],
+          "status": "completed",
+          "verb": "sed"
+        },
+        {
+          "commandSha256": "3464b52e27f601ae2ea460c55b3a7c7f2eebbdd196538d04c41128923eebf9aa",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 1,
+          "paths": [
+            "crates/ctxhelm-compiler/src/lib.rs"
+          ],
+          "status": "completed",
+          "verb": "sed"
+        }
+      ],
+      "ctxhelmCallCompliance": "satisfied",
+      "ctxhelmEvidenceFiles": [
+        "crates/ctxhelm/src/main.rs",
+        "crates/ctxhelm-compiler/src/eval.rs",
+        "crates/ctxhelm-core/src/contracts.rs",
+        "scripts/smoke-governor.sh",
+        "crates/ctxhelm-compiler/src/lib.rs",
+        "docs/context-governor.md",
+        ".planning/STATE.md",
+        ".planning/ROADMAP.md",
+        ".planning/MILESTONES.md",
+        ".planning/research/2026-06-01-world-class-context-engine-gap-plan.md",
+        "crates/ctxhelm/tests/release_packaging.rs",
+        "crates/ctxhelm/tests/cli_compat.rs",
+        "crates/ctxhelm/tests/common/mod.rs",
+        "crates/ctxhelm-core/src/lib.rs"
+      ],
+      "ctxhelmEvidenceMissedTargets": [],
+      "ctxhelmEvidenceOnlyTargets": [],
+      "ctxhelmEvidenceTargetHits": [
+        "crates/ctxhelm-core/src/contracts.rs",
+        "crates/ctxhelm/src/main.rs",
+        "docs/context-governor.md",
+        "scripts/smoke-governor.sh"
+      ],
+      "ctxhelmToolCalls": [
+        {
+          "budget": null,
+          "format": null,
+          "hasRepo": true,
+          "hasTask": true,
+          "name": "prepare_task",
+          "recordTrace": null
+        },
+        {
+          "budget": "brief",
+          "format": "json",
+          "hasRepo": true,
+          "hasTask": true,
+          "name": "get_pack",
+          "recordTrace": false
+        }
+      ],
+      "discoveredFiles": [
+        "scripts/smoke-governor.sh",
+        "docs/context-governor.md",
+        "crates/ctxhelm-compiler/src/eval.rs",
+        "crates/ctxhelm/src/main.rs",
+        "crates/ctxhelm-core/src/contracts.rs",
+        "crates/ctxhelm-compiler/src/lib.rs"
+      ],
+      "discoveredOnlyTargets": [],
+      "evaluationEligible": true,
+      "evaluationStatus": "eligible",
+      "evidenceHashes": {
+        "ctxhelmRequestLogSha256": "cef7e71f96e58a7e8c4ba2f969989300a747900b4d77defc3881fa77e8513736",
+        "stderrSha256": "aba6e333155a01c56029a7cf9401bbefb6c0ed6f107cf9d3e6a04d145cf4d804",
+        "streamJsonSha256": "9a5bdafbd885c6327311fcc97862a9ffa0343a68cce82d539b81648855346398"
+      },
+      "forbiddenCommands": [],
+      "invalidRequiredCtxhelmCalls": [],
+      "irrelevantReads": [
+        "crates/ctxhelm-compiler/src/eval.rs",
+        "crates/ctxhelm-compiler/src/lib.rs"
+      ],
+      "lane": "ctxhelm-brief",
+      "metrics": {
+        "commandExecutionCount": 6,
+        "ctxhelmEvidenceFileCount": 14,
+        "ctxhelmEvidenceMissedTargetCount": 0,
+        "ctxhelmEvidenceOnlyTargetCount": 0,
+        "ctxhelmEvidenceTargetHitCount": 4,
+        "ctxhelmToolCallCount": 2,
+        "discoveredFileCount": 6,
+        "forbiddenCommandCount": 0,
+        "invalidRequiredCtxhelmCallCount": 0,
+        "irrelevantReadCount": 2,
+        "irrelevantReadRate": 0.3333333333333333,
+        "missedTargetCount": 0,
+        "missingRequiredCtxhelmCallCount": 0,
+        "observedRequiredCtxhelmCallCount": 2,
+        "readFileCount": 6,
+        "readsPerTargetRead": 1.5,
+        "requiredCtxhelmCallCount": 2,
+        "targetCount": 4,
+        "targetCoverage": 1.0,
+        "targetDiscoveredOnlyCount": 0,
+        "targetHitCount": 4,
+        "targetReadCount": 4,
+        "targetReadCoverage": 1.0,
+        "targetReadPrecision": 0.6666666666666666
+      },
+      "missedTargetRoleCounts": {},
+      "missedTargets": [],
+      "missingRequiredCtxhelmCalls": [],
+      "mode": "brief",
+      "observedRequiredCtxhelmCalls": [
+        "prepare_task",
+        "get_pack"
+      ],
+      "rateLimitObserved": false,
+      "rawCommandOutputStored": false,
+      "rawMcpTrafficStored": false,
+      "rawPromptStored": false,
+      "rawTranscriptStored": false,
+      "readFiles": [
+        "scripts/smoke-governor.sh",
+        "docs/context-governor.md",
+        "crates/ctxhelm-compiler/src/eval.rs",
+        "crates/ctxhelm/src/main.rs",
+        "crates/ctxhelm-core/src/contracts.rs",
+        "crates/ctxhelm-compiler/src/lib.rs"
+      ],
+      "readRoleCounts": {
+        "docs": 1,
+        "source": 5
+      },
+      "requiredCtxhelmCallSpecs": [
+        {
+          "name": "prepare_task",
+          "requiresRepo": true,
+          "requiresTask": true
+        },
+        {
+          "budget": "brief",
+          "format": "json",
+          "name": "get_pack",
+          "recordTrace": false,
+          "requiresRepo": true,
+          "requiresTask": true
+        }
+      ],
+      "requiredCtxhelmCalls": [
+        "prepare_task",
+        "get_pack"
+      ],
+      "retry": {
+        "eligible": true,
+        "evidenceOnlyTargetCountAfterRetry": 0,
+        "evidenceOnlyTargetCountBeforeRetry": 0,
+        "irrelevantReadCountAfterRetry": 2,
+        "irrelevantReadCountBeforeRetry": 2,
+        "irrelevantReadCountDelta": 0,
+        "readFileCountAfterRetry": 6,
+        "readFileCountBeforeRetry": 6,
+        "readFileCountDelta": 0,
+        "selected": false,
+        "targetReadCoverageAfterRetry": 1.0,
+        "targetReadCoverageBeforeRetry": 1.0,
+        "targetReadCoverageDelta": 0.0,
+        "triggered": false
+      },
+      "retryAttempted": false,
+      "retrySelected": false,
+      "sourceTextLogged": false,
+      "status": "passed",
+      "targetHits": [
+        "crates/ctxhelm-core/src/contracts.rs",
+        "crates/ctxhelm/src/main.rs",
+        "docs/context-governor.md",
+        "scripts/smoke-governor.sh"
+      ],
+      "targetReads": [
+        "crates/ctxhelm-core/src/contracts.rs",
+        "crates/ctxhelm/src/main.rs",
+        "docs/context-governor.md",
+        "scripts/smoke-governor.sh"
+      ]
+    },
+    {
+      "clientApiErrorStatus": null,
+      "clientExitStatus": 0,
+      "clientFailureKind": null,
+      "commandExecutions": [
+        {
+          "commandSha256": "7b09873e5e3f3750f2d06180b5d23d005b06180de80b6e5fde23265c81a57d7b",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 1,
+          "paths": [
+            "docs/context-governor.md"
+          ],
+          "status": "completed",
+          "verb": "sed"
+        },
+        {
+          "commandSha256": "89c3a15bd8e4f03f99390ac3c234ba81f08adcdd55b3d21c386d635139c6b692",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 1,
+          "paths": [
+            "scripts/smoke-governor.sh"
+          ],
+          "status": "completed",
+          "verb": "sed"
+        },
+        {
+          "commandSha256": "eaeba888ecc50ffdadffa41ee3e858b702f1cccb89026eb4d4680d2b884eab67",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 1,
+          "paths": [
+            "crates/ctxhelm-compiler/src/eval.rs"
+          ],
+          "status": "completed",
+          "verb": "sed"
+        },
+        {
+          "commandSha256": "6ea9e562faa3c718e46e5ee808fc672fc6a6b42b49c9d81947ea15fc5835bdd1",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 1,
+          "paths": [
+            "crates/ctxhelm-core/src/contracts.rs"
+          ],
+          "status": "completed",
+          "verb": "sed"
+        },
+        {
+          "commandSha256": "aee593db5852414f1cbda78fec6882a4479cf5b0ae2fd1f3248b3e3a7881ded6",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 1,
+          "paths": [
+            "crates/ctxhelm/src/main.rs"
+          ],
+          "status": "completed",
+          "verb": "sed"
+        },
+        {
+          "commandSha256": "1d2220de108acf3d3c6065cb26f487189d2989fee9da3552043c5ccd5e335689",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 1,
+          "paths": [
+            "crates/ctxhelm-compiler/src/lib.rs"
+          ],
+          "status": "completed",
+          "verb": "sed"
+        }
+      ],
+      "ctxhelmCallCompliance": "satisfied",
+      "ctxhelmEvidenceFiles": [
+        "crates/ctxhelm/src/main.rs",
+        "crates/ctxhelm-compiler/src/eval.rs",
+        "crates/ctxhelm-core/src/contracts.rs",
+        "scripts/smoke-governor.sh",
+        "crates/ctxhelm-compiler/src/lib.rs",
+        "docs/context-governor.md",
+        ".planning/STATE.md",
+        ".planning/ROADMAP.md",
+        ".planning/MILESTONES.md",
+        ".planning/research/2026-06-01-world-class-context-engine-gap-plan.md",
+        "crates/ctxhelm/tests/release_packaging.rs",
+        "crates/ctxhelm/tests/cli_compat.rs",
+        "crates/ctxhelm/tests/common/mod.rs",
+        "crates/ctxhelm-core/src/lib.rs"
+      ],
+      "ctxhelmEvidenceMissedTargets": [],
+      "ctxhelmEvidenceOnlyTargets": [],
+      "ctxhelmEvidenceTargetHits": [
+        "crates/ctxhelm-core/src/contracts.rs",
+        "crates/ctxhelm/src/main.rs",
+        "docs/context-governor.md",
+        "scripts/smoke-governor.sh"
+      ],
+      "ctxhelmToolCalls": [
+        {
+          "budget": null,
+          "format": null,
+          "hasRepo": true,
+          "hasTask": true,
+          "name": "prepare_task",
+          "recordTrace": null
+        },
+        {
+          "budget": "standard",
+          "format": "json",
+          "hasRepo": true,
+          "hasTask": true,
+          "name": "get_pack",
+          "recordTrace": false
+        }
+      ],
+      "discoveredFiles": [
+        "docs/context-governor.md",
+        "scripts/smoke-governor.sh",
+        "crates/ctxhelm-compiler/src/eval.rs",
+        "crates/ctxhelm-core/src/contracts.rs",
+        "crates/ctxhelm/src/main.rs",
+        "crates/ctxhelm-compiler/src/lib.rs"
+      ],
+      "discoveredOnlyTargets": [],
+      "evaluationEligible": true,
+      "evaluationStatus": "eligible",
+      "evidenceHashes": {
+        "ctxhelmRequestLogSha256": "828df46ff9239ab7c6e7d73595ee947b434bec0b92555c419d3ad844852b927e",
+        "stderrSha256": "0db85c362f2dfe1e113c6ff44cbed16948337ae193b3f998d42cf8e6413649d3",
+        "streamJsonSha256": "bf503b0a2f73446cf5530f83735613eb631cd626820f22a51ed76456abe9ceca"
+      },
+      "forbiddenCommands": [],
+      "invalidRequiredCtxhelmCalls": [],
+      "irrelevantReads": [
+        "crates/ctxhelm-compiler/src/eval.rs",
+        "crates/ctxhelm-compiler/src/lib.rs"
+      ],
+      "lane": "ctxhelm-standard",
+      "metrics": {
+        "commandExecutionCount": 6,
+        "ctxhelmEvidenceFileCount": 14,
+        "ctxhelmEvidenceMissedTargetCount": 0,
+        "ctxhelmEvidenceOnlyTargetCount": 0,
+        "ctxhelmEvidenceTargetHitCount": 4,
+        "ctxhelmToolCallCount": 2,
+        "discoveredFileCount": 6,
+        "forbiddenCommandCount": 0,
+        "invalidRequiredCtxhelmCallCount": 0,
+        "irrelevantReadCount": 2,
+        "irrelevantReadRate": 0.3333333333333333,
+        "missedTargetCount": 0,
+        "missingRequiredCtxhelmCallCount": 0,
+        "observedRequiredCtxhelmCallCount": 2,
+        "readFileCount": 6,
+        "readsPerTargetRead": 1.5,
+        "requiredCtxhelmCallCount": 2,
+        "targetCount": 4,
+        "targetCoverage": 1.0,
+        "targetDiscoveredOnlyCount": 0,
+        "targetHitCount": 4,
+        "targetReadCount": 4,
+        "targetReadCoverage": 1.0,
+        "targetReadPrecision": 0.6666666666666666
+      },
+      "missedTargetRoleCounts": {},
+      "missedTargets": [],
+      "missingRequiredCtxhelmCalls": [],
+      "mode": "standard",
+      "observedRequiredCtxhelmCalls": [
+        "prepare_task",
+        "get_pack"
+      ],
+      "rateLimitObserved": false,
+      "rawCommandOutputStored": false,
+      "rawMcpTrafficStored": false,
+      "rawPromptStored": false,
+      "rawTranscriptStored": false,
+      "readFiles": [
+        "docs/context-governor.md",
+        "scripts/smoke-governor.sh",
+        "crates/ctxhelm-compiler/src/eval.rs",
+        "crates/ctxhelm-core/src/contracts.rs",
+        "crates/ctxhelm/src/main.rs",
+        "crates/ctxhelm-compiler/src/lib.rs"
+      ],
+      "readRoleCounts": {
+        "docs": 1,
+        "source": 5
+      },
+      "requiredCtxhelmCallSpecs": [
+        {
+          "name": "prepare_task",
+          "requiresRepo": true,
+          "requiresTask": true
+        },
+        {
+          "budget": "standard",
+          "format": "json",
+          "name": "get_pack",
+          "recordTrace": false,
+          "requiresRepo": true,
+          "requiresTask": true
+        }
+      ],
+      "requiredCtxhelmCalls": [
+        "prepare_task",
+        "get_pack"
+      ],
+      "retry": {
+        "eligible": true,
+        "evidenceOnlyTargetCountAfterRetry": 0,
+        "evidenceOnlyTargetCountBeforeRetry": 0,
+        "irrelevantReadCountAfterRetry": 2,
+        "irrelevantReadCountBeforeRetry": 2,
+        "irrelevantReadCountDelta": 0,
+        "readFileCountAfterRetry": 6,
+        "readFileCountBeforeRetry": 6,
+        "readFileCountDelta": 0,
+        "selected": false,
+        "targetReadCoverageAfterRetry": 1.0,
+        "targetReadCoverageBeforeRetry": 1.0,
+        "targetReadCoverageDelta": 0.0,
+        "triggered": false
+      },
+      "retryAttempted": false,
+      "retrySelected": false,
+      "sourceTextLogged": false,
+      "status": "passed",
+      "targetHits": [
+        "crates/ctxhelm-core/src/contracts.rs",
+        "crates/ctxhelm/src/main.rs",
+        "docs/context-governor.md",
+        "scripts/smoke-governor.sh"
+      ],
+      "targetReads": [
+        "crates/ctxhelm-core/src/contracts.rs",
+        "crates/ctxhelm/src/main.rs",
+        "docs/context-governor.md",
+        "scripts/smoke-governor.sh"
+      ]
+    },
+    {
+      "clientApiErrorStatus": null,
+      "clientExitStatus": 0,
+      "clientFailureKind": null,
+      "commandExecutions": [
+        {
+          "commandSha256": "7b09873e5e3f3750f2d06180b5d23d005b06180de80b6e5fde23265c81a57d7b",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 1,
+          "paths": [
+            "docs/context-governor.md"
+          ],
+          "status": "completed",
+          "verb": "sed"
+        },
+        {
+          "commandSha256": "2c1d9f535da838a7673c0a850150d1a123be8e62c5b72c80216e6978773d14cb",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 1,
+          "paths": [
+            "scripts/smoke-governor.sh"
+          ],
+          "status": "completed",
+          "verb": "sed"
+        },
+        {
+          "commandSha256": "af2d173be42fe2299e9c3b9c5ec8a4ad669acc07dcd6ab68b66a925db03c0e09",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 1,
+          "paths": [
+            ".planning/ROADMAP.md"
+          ],
+          "status": "completed",
+          "verb": "sed"
+        },
+        {
+          "commandSha256": "5a09543f8ffd9be7129c21ee14b454759d51d7cebea87e703b4b5306a6e1d2a6",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 1,
+          "paths": [
+            "crates/ctxhelm-compiler/src/eval.rs"
+          ],
+          "status": "completed",
+          "verb": "sed"
+        },
+        {
+          "commandSha256": "91f02bb50af47356084436e5eaaeb3304b6ba62744e3134f29dcce82d39d92c9",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 1,
+          "paths": [
+            "crates/ctxhelm-core/src/contracts.rs"
+          ],
+          "status": "completed",
+          "verb": "sed"
+        },
+        {
+          "commandSha256": "ce2ba9b795460aba4bcede2fd957914f82c10cf0ee31ed62eca4705de0d727cf",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 1,
+          "paths": [
+            "crates/ctxhelm/src/main.rs"
+          ],
+          "status": "completed",
+          "verb": "sed"
+        },
+        {
+          "commandSha256": "7172650e3e2e9ca2d95f435bcc38542b33b7e078d2f59e9d6609afb8110b69cc",
+          "exitCode": 0,
+          "forbidden": false,
+          "pathCount": 6,
+          "paths": [
+            "crates/ctxhelm/src/main.rs",
+            "crates/ctxhelm-compiler/src/lib.rs",
+            "crates/ctxhelm-compiler/src/eval.rs",
+            "scripts/release-gate.sh",
+            "docs/release.md",
+            ".planning/MILESTONES.md"
+          ],
+          "status": "completed",
+          "verb": "rg"
+        }
+      ],
+      "ctxhelmCallCompliance": "satisfied",
+      "ctxhelmEvidenceFiles": [
+        "crates/ctxhelm/src/main.rs",
+        "crates/ctxhelm-compiler/src/eval.rs",
+        "crates/ctxhelm-core/src/contracts.rs",
+        "scripts/smoke-governor.sh",
+        "crates/ctxhelm-compiler/src/lib.rs",
+        "docs/context-governor.md",
+        ".planning/STATE.md",
+        ".planning/ROADMAP.md",
+        ".planning/MILESTONES.md",
+        ".planning/research/2026-06-01-world-class-context-engine-gap-plan.md",
+        "crates/ctxhelm/tests/release_packaging.rs",
+        "crates/ctxhelm/tests/cli_compat.rs",
+        "crates/ctxhelm/tests/common/mod.rs",
+        "crates/ctxhelm-core/src/lib.rs"
+      ],
+      "ctxhelmEvidenceMissedTargets": [],
+      "ctxhelmEvidenceOnlyTargets": [],
+      "ctxhelmEvidenceTargetHits": [
+        "crates/ctxhelm-core/src/contracts.rs",
+        "crates/ctxhelm/src/main.rs",
+        "docs/context-governor.md",
+        "scripts/smoke-governor.sh"
+      ],
+      "ctxhelmToolCalls": [
+        {
+          "budget": null,
+          "format": null,
+          "hasRepo": true,
+          "hasTask": true,
+          "name": "prepare_task",
+          "recordTrace": null
+        },
+        {
+          "budget": "standard",
+          "format": "json",
+          "hasRepo": true,
+          "hasTask": true,
+          "name": "get_pack",
+          "recordTrace": false
+        }
+      ],
+      "discoveredFiles": [
+        "docs/context-governor.md",
+        "scripts/smoke-governor.sh",
+        ".planning/ROADMAP.md",
+        "crates/ctxhelm-compiler/src/eval.rs",
+        "crates/ctxhelm-core/src/contracts.rs",
+        "crates/ctxhelm/src/main.rs",
+        "crates/ctxhelm-compiler/src/lib.rs",
+        "scripts/release-gate.sh",
+        "docs/release.md",
+        ".planning/MILESTONES.md"
+      ],
+      "discoveredOnlyTargets": [],
+      "evaluationEligible": true,
+      "evaluationStatus": "eligible",
+      "evidenceHashes": {
+        "ctxhelmRequestLogSha256": "a47e3ca0c274c43575be63fc8555b2a8195fc4f79aec9e47f84bdf586ac93dad",
+        "stderrSha256": "fef1dcf33ea68da9559139bbf7aa7b69b7c4279a2a2f6e5d420f7f9dd78cc91d",
+        "streamJsonSha256": "d744b8630a632b594c0a6ba2bf3d231ae259e2fd0f70990e1fe56faf143db1bc"
+      },
+      "forbiddenCommands": [],
+      "invalidRequiredCtxhelmCalls": [],
+      "irrelevantReads": [
+        ".planning/ROADMAP.md",
+        "crates/ctxhelm-compiler/src/eval.rs"
+      ],
+      "lane": "ctxhelm-memory",
+      "metrics": {
+        "commandExecutionCount": 7,
+        "ctxhelmEvidenceFileCount": 14,
+        "ctxhelmEvidenceMissedTargetCount": 0,
+        "ctxhelmEvidenceOnlyTargetCount": 0,
+        "ctxhelmEvidenceTargetHitCount": 4,
+        "ctxhelmToolCallCount": 2,
+        "discoveredFileCount": 10,
+        "forbiddenCommandCount": 0,
+        "invalidRequiredCtxhelmCallCount": 0,
+        "irrelevantReadCount": 2,
+        "irrelevantReadRate": 0.3333333333333333,
+        "missedTargetCount": 0,
+        "missingRequiredCtxhelmCallCount": 0,
+        "observedRequiredCtxhelmCallCount": 2,
+        "readFileCount": 6,
+        "readsPerTargetRead": 1.5,
+        "requiredCtxhelmCallCount": 2,
+        "targetCount": 4,
+        "targetCoverage": 1.0,
+        "targetDiscoveredOnlyCount": 0,
+        "targetHitCount": 4,
+        "targetReadCount": 4,
+        "targetReadCoverage": 1.0,
+        "targetReadPrecision": 0.6666666666666666
+      },
+      "missedTargetRoleCounts": {},
+      "missedTargets": [],
+      "missingRequiredCtxhelmCalls": [],
+      "mode": "memory",
+      "observedRequiredCtxhelmCalls": [
+        "prepare_task",
+        "get_pack"
+      ],
+      "rateLimitObserved": false,
+      "rawCommandOutputStored": false,
+      "rawMcpTrafficStored": false,
+      "rawPromptStored": false,
+      "rawTranscriptStored": false,
+      "readFiles": [
+        "docs/context-governor.md",
+        "scripts/smoke-governor.sh",
+        ".planning/ROADMAP.md",
+        "crates/ctxhelm-compiler/src/eval.rs",
+        "crates/ctxhelm-core/src/contracts.rs",
+        "crates/ctxhelm/src/main.rs"
+      ],
+      "readRoleCounts": {
+        "docs": 2,
+        "source": 4
+      },
+      "requiredCtxhelmCallSpecs": [
+        {
+          "name": "prepare_task",
+          "requiresRepo": true,
+          "requiresTask": true
+        },
+        {
+          "budget": "standard",
+          "format": "json",
+          "name": "get_pack",
+          "recordTrace": false,
+          "requiresRepo": true,
+          "requiresTask": true
+        }
+      ],
+      "requiredCtxhelmCalls": [
+        "prepare_task",
+        "get_pack"
+      ],
+      "retry": {
+        "eligible": true,
+        "evidenceOnlyTargetCountAfterRetry": 0,
+        "evidenceOnlyTargetCountBeforeRetry": 0,
+        "irrelevantReadCountAfterRetry": 2,
+        "irrelevantReadCountBeforeRetry": 2,
+        "irrelevantReadCountDelta": 0,
+        "readFileCountAfterRetry": 6,
+        "readFileCountBeforeRetry": 6,
+        "readFileCountDelta": 0,
+        "selected": false,
+        "targetReadCoverageAfterRetry": 1.0,
+        "targetReadCoverageBeforeRetry": 1.0,
+        "targetReadCoverageDelta": 0.0,
+        "triggered": false
+      },
+      "retryAttempted": false,
+      "retrySelected": false,
+      "sourceTextLogged": false,
+      "status": "passed",
+      "targetHits": [
+        "crates/ctxhelm-core/src/contracts.rs",
+        "crates/ctxhelm/src/main.rs",
+        "docs/context-governor.md",
+        "scripts/smoke-governor.sh"
+      ],
+      "targetReads": [
+        "crates/ctxhelm-core/src/contracts.rs",
+        "crates/ctxhelm/src/main.rs",
+        "docs/context-governor.md",
+        "scripts/smoke-governor.sh"
+      ]
+    }
+  ],
+  "privacyStatus": {
+    "localOnly": true,
+    "rawCommandOutputStored": false,
+    "rawMcpTrafficStored": false,
+    "rawPromptStored": false,
+    "rawTranscriptStored": false,
+    "remoteEmbeddingsUsed": false,
+    "remoteRerankingUsed": false,
+    "sourceTextLogged": false
+  },
+  "repo": {
+    "label": "ctxhelm",
+    "pathSha256": "823da75306f1c50f536e28905ec7405c88ec43b87fbf3f2afb37d7bf17d143a2"
+  },
+  "runner": {
+    "checkpointValidation": "runner_fingerprint_v1",
+    "contractVersion": "ctxhelm-agent-run-codex-runner-v1",
+    "name": "e2e-agent-run-codex",
+    "scriptSha256": "2e9d10f57ab2032e2b8c68821e1365c7f43de93fe5b5b7163b8e7041bd484d2d"
+  },
+  "schemaVersion": "ctxhelm-agent-run-eval-v1",
+  "status": "passed",
+  "targetFiles": [
+    "crates/ctxhelm/src/main.rs",
+    "crates/ctxhelm-core/src/contracts.rs",
+    "scripts/smoke-governor.sh",
+    "docs/context-governor.md"
+  ],
+  "task": {
+    "rawTaskStored": false,
+    "taskSha256": "aa83fa90917a35640c0338a27f337c3c06ac69259f3488366e54e3d73190352a"
+  },
+  "unsupportedActions": [
+    "source edits",
+    "user project tests",
+    "global agent config mutation",
+    "cloud upload"
+  ],
+  "workflowKind": "paired-agent-context-run"
+}
