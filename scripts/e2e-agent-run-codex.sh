@@ -440,6 +440,7 @@ for entry in entries:
 lane_summaries = []
 for lane_id, bucket in sorted(lane_totals.items()):
     task_count = bucket["taskCount"]
+    read_file_count = bucket["readFileCount"]
     lane_summaries.append({
         "lane": lane_id,
         "taskCount": task_count,
@@ -450,6 +451,9 @@ for lane_id, bucket in sorted(lane_totals.items()):
         "readFileCount": bucket["readFileCount"],
         "irrelevantReadCount": bucket["irrelevantReadCount"],
         "targetReadCount": bucket["targetReadCount"],
+        "targetReadPrecision": bucket["targetReadCount"] / read_file_count if read_file_count else 0.0,
+        "irrelevantReadRate": bucket["irrelevantReadCount"] / read_file_count if read_file_count else 0.0,
+        "readsPerTargetRead": read_file_count / bucket["targetReadCount"] if bucket["targetReadCount"] else 0.0,
         "targetDiscoveredOnlyCount": bucket["targetDiscoveredOnlyCount"],
         "missedTargetCount": bucket["missedTargetCount"],
         "commandExecutionCount": bucket["commandExecutionCount"],
@@ -471,6 +475,56 @@ for lane_id, bucket in sorted(lane_totals.items()):
     })
 
 task_count = len(tasks)
+
+def read_efficiency_summary(lane_summaries):
+    baseline = next((lane for lane in lane_summaries if lane.get("lane") == "baseline"), None)
+    ctxhelm_lanes = [
+        lane for lane in lane_summaries
+        if str(lane.get("lane", "")).startswith("ctxhelm-")
+        and int(lane.get("evaluationEligibleCount", 0) or 0) > 0
+    ]
+    if not baseline or not ctxhelm_lanes:
+        return {
+            "baselineLane": baseline.get("lane") if baseline else None,
+            "efficientCtxhelmLane": None,
+            "analysisAvailable": False,
+        }
+    efficient = max(
+        ctxhelm_lanes,
+        key=lambda lane: (
+            float(lane.get("averageTargetReadCoverage", 0.0) or 0.0),
+            float(lane.get("targetReadPrecision", 0.0) or 0.0),
+            -int(lane.get("irrelevantReadCount", 0) or 0),
+            -int(lane.get("readFileCount", 0) or 0),
+        ),
+    )
+    recovered_targets = int(efficient.get("targetReadCount", 0) or 0) - int(baseline.get("targetReadCount", 0) or 0)
+    extra_reads = int(efficient.get("readFileCount", 0) or 0) - int(baseline.get("readFileCount", 0) or 0)
+    extra_irrelevant = int(efficient.get("irrelevantReadCount", 0) or 0) - int(baseline.get("irrelevantReadCount", 0) or 0)
+    return {
+        "analysisAvailable": True,
+        "baselineLane": baseline.get("lane"),
+        "efficientCtxhelmLane": efficient.get("lane"),
+        "baselineTargetReadCoverage": float(baseline.get("averageTargetReadCoverage", 0.0) or 0.0),
+        "efficientTargetReadCoverage": float(efficient.get("averageTargetReadCoverage", 0.0) or 0.0),
+        "targetReadCoverageDelta": float(efficient.get("averageTargetReadCoverage", 0.0) or 0.0) - float(baseline.get("averageTargetReadCoverage", 0.0) or 0.0),
+        "baselineReadFileCount": int(baseline.get("readFileCount", 0) or 0),
+        "efficientReadFileCount": int(efficient.get("readFileCount", 0) or 0),
+        "extraReadFileCount": extra_reads,
+        "baselineIrrelevantReadCount": int(baseline.get("irrelevantReadCount", 0) or 0),
+        "efficientIrrelevantReadCount": int(efficient.get("irrelevantReadCount", 0) or 0),
+        "extraIrrelevantReadCount": extra_irrelevant,
+        "baselineTargetReadPrecision": float(baseline.get("targetReadPrecision", 0.0) or 0.0),
+        "efficientTargetReadPrecision": float(efficient.get("targetReadPrecision", 0.0) or 0.0),
+        "targetReadPrecisionDelta": float(efficient.get("targetReadPrecision", 0.0) or 0.0) - float(baseline.get("targetReadPrecision", 0.0) or 0.0),
+        "baselineIrrelevantReadRate": float(baseline.get("irrelevantReadRate", 0.0) or 0.0),
+        "efficientIrrelevantReadRate": float(efficient.get("irrelevantReadRate", 0.0) or 0.0),
+        "irrelevantReadRateDelta": float(efficient.get("irrelevantReadRate", 0.0) or 0.0) - float(baseline.get("irrelevantReadRate", 0.0) or 0.0),
+        "recoveredTargetReadCount": recovered_targets,
+        "extraReadsPerRecoveredTarget": extra_reads / recovered_targets if recovered_targets > 0 else 0.0,
+        "extraIrrelevantReadsPerRecoveredTarget": extra_irrelevant / recovered_targets if recovered_targets > 0 else 0.0,
+    }
+
 retry_triggered = retry_cost["retryTriggeredLanes"]
 retry_cost_summary = {
     "retryTriggeredLanes": retry_triggered,
@@ -582,6 +636,7 @@ payload = {
         "ctxhelmUnderReadTargetsObserved": comparison["ctxhelmUnderReadTargetsObserved"],
         "outcomeClaim": outcome_claim,
         "retryCost": retry_cost_summary,
+        "readEfficiency": read_efficiency_summary(lane_summaries),
         "recommendedResearchActions": recommended_research_actions(),
     },
     "privacyStatus": privacy,
@@ -1278,11 +1333,14 @@ payload = {
         "targetHitCount": len(target_hits),
         "targetCount": len(targets),
         "targetReadCount": len(target_reads),
+        "targetReadPrecision": len(target_reads) / len(read_files) if read_files else 0.0,
         "targetDiscoveredOnlyCount": len(discovered_only_targets),
         "missedTargetCount": len(missed_targets),
         "readFileCount": len(read_files),
         "discoveredFileCount": len(discovered_files),
         "irrelevantReadCount": len(irrelevant_reads),
+        "irrelevantReadRate": len(irrelevant_reads) / len(read_files) if read_files else 0.0,
+        "readsPerTargetRead": len(read_files) / len(target_reads) if target_reads else 0.0,
         "commandExecutionCount": len(command_executions),
         "ctxhelmToolCallCount": len(ctxhelm_calls),
         "forbiddenCommandCount": len(forbidden_commands),
@@ -1558,6 +1616,36 @@ def retry_cost_summary(lanes):
         "evidenceOnlyTargetsAfterRetry": sum(int(lane_retry.get("evidenceOnlyTargetCountAfterRetry", 0) or 0) for lane_retry in triggered),
     }
 
+def read_efficiency_summary(baseline, selected):
+    base_metrics = baseline.get("metrics", {})
+    selected_metrics = selected.get("metrics", {})
+    recovered_targets = int(selected_metrics.get("targetReadCount", 0) or 0) - int(base_metrics.get("targetReadCount", 0) or 0)
+    extra_reads = int(selected_metrics.get("readFileCount", 0) or 0) - int(base_metrics.get("readFileCount", 0) or 0)
+    extra_irrelevant = int(selected_metrics.get("irrelevantReadCount", 0) or 0) - int(base_metrics.get("irrelevantReadCount", 0) or 0)
+    return {
+        "analysisAvailable": bool(baseline and selected),
+        "baselineLane": baseline.get("lane"),
+        "efficientCtxhelmLane": selected.get("lane"),
+        "baselineTargetReadCoverage": float(base_metrics.get("targetReadCoverage", 0.0) or 0.0),
+        "efficientTargetReadCoverage": float(selected_metrics.get("targetReadCoverage", 0.0) or 0.0),
+        "targetReadCoverageDelta": float(selected_metrics.get("targetReadCoverage", 0.0) or 0.0) - float(base_metrics.get("targetReadCoverage", 0.0) or 0.0),
+        "baselineReadFileCount": int(base_metrics.get("readFileCount", 0) or 0),
+        "efficientReadFileCount": int(selected_metrics.get("readFileCount", 0) or 0),
+        "extraReadFileCount": extra_reads,
+        "baselineIrrelevantReadCount": int(base_metrics.get("irrelevantReadCount", 0) or 0),
+        "efficientIrrelevantReadCount": int(selected_metrics.get("irrelevantReadCount", 0) or 0),
+        "extraIrrelevantReadCount": extra_irrelevant,
+        "baselineTargetReadPrecision": float(base_metrics.get("targetReadPrecision", 0.0) or 0.0),
+        "efficientTargetReadPrecision": float(selected_metrics.get("targetReadPrecision", 0.0) or 0.0),
+        "targetReadPrecisionDelta": float(selected_metrics.get("targetReadPrecision", 0.0) or 0.0) - float(base_metrics.get("targetReadPrecision", 0.0) or 0.0),
+        "baselineIrrelevantReadRate": float(base_metrics.get("irrelevantReadRate", 0.0) or 0.0),
+        "efficientIrrelevantReadRate": float(selected_metrics.get("irrelevantReadRate", 0.0) or 0.0),
+        "irrelevantReadRateDelta": float(selected_metrics.get("irrelevantReadRate", 0.0) or 0.0) - float(base_metrics.get("irrelevantReadRate", 0.0) or 0.0),
+        "recoveredTargetReadCount": recovered_targets,
+        "extraReadsPerRecoveredTarget": extra_reads / recovered_targets if recovered_targets > 0 else 0.0,
+        "extraIrrelevantReadsPerRecoveredTarget": extra_irrelevant / recovered_targets if recovered_targets > 0 else 0.0,
+    }
+
 status = "passed" if any(lane.get("status") == "passed" for lane in lanes) else "skipped"
 if status == "passed" and (not ctxhelm_called or not comparison_eligible or missing_required_observed or invalid_required_observed or client_failures_observed or forbidden_called):
     status = "degraded"
@@ -1643,6 +1731,7 @@ payload = {
         "ctxhelmUnderReadTargetsObserved": ctxhelm_under_read,
         "outcomeClaim": outcome_claim,
         "retryCost": retry_cost_summary(ctxhelm_lanes),
+        "readEfficiency": read_efficiency_summary(baseline, best),
         "recommendedResearchActions": recommended_research_actions(),
     },
     "privacyStatus": {

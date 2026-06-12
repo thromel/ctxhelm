@@ -5087,6 +5087,7 @@ fn render_agent_run_report(report: &serde_json::Value) -> String {
             render_recommended_research_actions(delta.get("recommendedResearchActions"))
         ));
         output.push_str(&render_retry_cost(delta.get("retryCost")));
+        output.push_str(&render_read_efficiency(delta.get("readEfficiency")));
     }
     if let Some(aggregate) = report.get("aggregate") {
         output.push_str("\n## Suite Aggregate\n\n");
@@ -5172,6 +5173,7 @@ fn render_agent_run_report(report: &serde_json::Value) -> String {
             render_recommended_research_actions(aggregate.get("recommendedResearchActions"))
         ));
         output.push_str(&render_retry_cost(aggregate.get("retryCost")));
+        output.push_str(&render_read_efficiency(aggregate.get("readEfficiency")));
         if let Some(lanes) = aggregate
             .get("laneSummaries")
             .and_then(serde_json::Value::as_array)
@@ -5183,7 +5185,7 @@ fn render_agent_run_report(report: &serde_json::Value) -> String {
                     .and_then(serde_json::Value::as_str)
                     .unwrap_or("unknown");
                 output.push_str(&format!(
-                "- `{lane_id}` tasks `{}` passed `{}` eligible `{}` avg target coverage `{}` avg target read coverage `{}` target reads `{}` discovered-only targets `{}` missed targets `{}` read files `{}` irrelevant reads `{}` tool calls `{}` ctxhelm calls `{}` required ctxhelm calls `{}` observed required `{}` missing required `{}` invalid required `{}` client failures `{}` rate limits `{}` ctxhelm evidence files `{}` evidence target hits `{}` evidence-only targets `{}` evidence misses `{}` forbidden calls `{}` read roles `{}` missed target roles `{}`\n",
+                "- `{lane_id}` tasks `{}` passed `{}` eligible `{}` avg target coverage `{}` avg target read coverage `{}` target reads `{}` read precision `{}` irrelevant rate `{}` reads/target `{}` discovered-only targets `{}` missed targets `{}` read files `{}` irrelevant reads `{}` tool calls `{}` ctxhelm calls `{}` required ctxhelm calls `{}` observed required `{}` missing required `{}` invalid required `{}` client failures `{}` rate limits `{}` ctxhelm evidence files `{}` evidence target hits `{}` evidence-only targets `{}` evidence misses `{}` forbidden calls `{}` read roles `{}` missed target roles `{}`\n",
                     lane.get("taskCount")
                         .and_then(serde_json::Value::as_u64)
                         .map(|value| value.to_string())
@@ -5208,6 +5210,9 @@ fn render_agent_run_report(report: &serde_json::Value) -> String {
                         .and_then(serde_json::Value::as_u64)
                         .map(|value| value.to_string())
                         .unwrap_or_else(|| "n/a".to_string()),
+                    json_f64(lane, "targetReadPrecision"),
+                    json_f64(lane, "irrelevantReadRate"),
+                    json_f64(lane, "readsPerTargetRead"),
                     lane.get("targetDiscoveredOnlyCount")
                         .and_then(serde_json::Value::as_u64)
                         .map(|value| value.to_string())
@@ -5293,7 +5298,7 @@ fn render_agent_run_report(report: &serde_json::Value) -> String {
                 .unwrap_or("unknown");
             let metrics = lane.get("metrics").unwrap_or(&serde_json::Value::Null);
             output.push_str(&format!(
-                "- `{lane_id}` status `{lane_status}` evaluation `{evaluation_status}` eligible `{}` compliance `{}` missing required `{}` invalid required `{}` client failure `{}` rate limited `{}` target coverage `{}` target read coverage `{}` target reads `{}` discovered-only targets `{}` missed targets `{}` read files `{}` irrelevant reads `{}` tool calls `{}` ctxhelm calls `{}` required ctxhelm calls `{}` observed required `{}` missing required count `{}` invalid required count `{}` ctxhelm evidence files `{}` evidence target hits `{}` evidence-only targets `{}` evidence misses `{}` forbidden calls `{}` read roles `{}` missed target roles `{}`\n",
+                "- `{lane_id}` status `{lane_status}` evaluation `{evaluation_status}` eligible `{}` compliance `{}` missing required `{}` invalid required `{}` client failure `{}` rate limited `{}` target coverage `{}` target read coverage `{}` target reads `{}` read precision `{}` irrelevant rate `{}` reads/target `{}` discovered-only targets `{}` missed targets `{}` read files `{}` irrelevant reads `{}` tool calls `{}` ctxhelm calls `{}` required ctxhelm calls `{}` observed required `{}` missing required count `{}` invalid required count `{}` ctxhelm evidence files `{}` evidence target hits `{}` evidence-only targets `{}` evidence misses `{}` forbidden calls `{}` read roles `{}` missed target roles `{}`\n",
                 lane.get("evaluationEligible")
                     .and_then(serde_json::Value::as_bool)
                     .map(|value| value.to_string())
@@ -5325,6 +5330,9 @@ fn render_agent_run_report(report: &serde_json::Value) -> String {
                     .and_then(serde_json::Value::as_u64)
                     .map(|value| value.to_string())
                     .unwrap_or_else(|| "n/a".to_string()),
+                json_f64(metrics, "targetReadPrecision"),
+                json_f64(metrics, "irrelevantReadRate"),
+                json_f64(metrics, "readsPerTargetRead"),
                 metrics
                     .get("targetDiscoveredOnlyCount")
                     .and_then(serde_json::Value::as_u64)
@@ -5511,6 +5519,53 @@ fn render_lane_retry(value: Option<&serde_json::Value>) -> String {
     )
 }
 
+fn render_read_efficiency(value: Option<&serde_json::Value>) -> String {
+    let Some(efficiency) = value else {
+        return String::new();
+    };
+    if efficiency
+        .get("analysisAvailable")
+        .and_then(serde_json::Value::as_bool)
+        == Some(false)
+    {
+        return "- Read efficiency: unavailable\n".to_string();
+    }
+    format!(
+        "- Read efficiency: baseline `{}` efficient ctxhelm `{}` target-read coverage `{}` -> `{}` read precision `{}` -> `{}` irrelevant rate `{}` -> `{}` extra reads `{}` extra irrelevant `{}` recovered targets `{}` extra reads/recovered `{}` extra irrelevant/recovered `{}`\n",
+        efficiency
+            .get("baselineLane")
+            .and_then(serde_json::Value::as_str)
+            .unwrap_or("unknown"),
+        efficiency
+            .get("efficientCtxhelmLane")
+            .and_then(serde_json::Value::as_str)
+            .unwrap_or("unknown"),
+        json_f64(efficiency, "baselineTargetReadCoverage"),
+        json_f64(efficiency, "efficientTargetReadCoverage"),
+        json_f64(efficiency, "baselineTargetReadPrecision"),
+        json_f64(efficiency, "efficientTargetReadPrecision"),
+        json_f64(efficiency, "baselineIrrelevantReadRate"),
+        json_f64(efficiency, "efficientIrrelevantReadRate"),
+        efficiency
+            .get("extraReadFileCount")
+            .and_then(serde_json::Value::as_i64)
+            .map(|value| value.to_string())
+            .unwrap_or_else(|| "n/a".to_string()),
+        efficiency
+            .get("extraIrrelevantReadCount")
+            .and_then(serde_json::Value::as_i64)
+            .map(|value| value.to_string())
+            .unwrap_or_else(|| "n/a".to_string()),
+        efficiency
+            .get("recoveredTargetReadCount")
+            .and_then(serde_json::Value::as_i64)
+            .map(|value| value.to_string())
+            .unwrap_or_else(|| "n/a".to_string()),
+        json_f64(efficiency, "extraReadsPerRecoveredTarget"),
+        json_f64(efficiency, "extraIrrelevantReadsPerRecoveredTarget"),
+    )
+}
+
 fn render_json_count_map(value: Option<&serde_json::Value>) -> String {
     let Some(object) = value.and_then(serde_json::Value::as_object) else {
         return "none".to_string();
@@ -5561,6 +5616,14 @@ fn json_u64_fallback(value: &serde_json::Value, keys: &[&str]) -> String {
                 .and_then(serde_json::Value::as_u64)
                 .map(|number| number.to_string())
         })
+        .unwrap_or_else(|| "n/a".to_string())
+}
+
+fn json_f64(value: &serde_json::Value, key: &str) -> String {
+    value
+        .get(key)
+        .and_then(serde_json::Value::as_f64)
+        .map(|number| format!("{number:.2}"))
         .unwrap_or_else(|| "n/a".to_string())
 }
 
