@@ -257,6 +257,10 @@ derived task comparisons, lane-summary metrics derived from
 per-task retry costs, read-efficiency metrics derived from lane summaries, and
 top-level comparison aggregates derived from `tasks[*].comparison`, including
 coverage deltas, read deltas, command deltas, and ctxhelm tool-call observation.
+The JSON audit summary publishes those coverage deltas as
+`metrics.targetReadCoverageDeltaAverage` and
+`metrics.targetCoverageDeltaAverage`, matching the validated aggregate field
+names.
 The checker also enforces suite status checks by deriving `suite.taskCount` and
 `report.status` from the nested task records, comparison eligibility, and
 boundary state, so stale suite envelopes cannot support proof claims.

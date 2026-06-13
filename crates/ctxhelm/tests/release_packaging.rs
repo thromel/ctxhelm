@@ -1471,6 +1471,24 @@ fn agent_run_proof_checker_accepts_phase322_and_rejects_regression() {
     assert_eq!(summary["status"], "passed");
     assert_eq!(summary["sourceFree"], true);
     assert_eq!(summary["metrics"]["outcomeClaim"], "ctxhelm_improved");
+    assert_eq!(
+        summary["metrics"]["targetReadCoverageDeltaAverage"],
+        serde_json::Value::Number(serde_json::Number::from_f64(0.3125).unwrap())
+    );
+    assert_eq!(
+        summary["metrics"]["targetCoverageDeltaAverage"],
+        serde_json::Value::Number(serde_json::Number::from_f64(0.25).unwrap())
+    );
+    assert!(
+        summary["metrics"]
+            .get("targetReadCoverageDeltaAvg")
+            .is_none(),
+        "suite proof summary should use the validated aggregate field name"
+    );
+    assert!(
+        summary["metrics"].get("targetCoverageDeltaAvg").is_none(),
+        "suite proof summary should use the validated aggregate field name"
+    );
     assert_eq!(summary["identity"]["matchesExpectedCtxhelmVersion"], true);
     assert_eq!(summary["identity"]["matchesExpectedClientName"], true);
     assert_eq!(summary["identity"]["matchesExpectedClientVersion"], true);
