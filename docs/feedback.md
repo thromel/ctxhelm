@@ -257,8 +257,10 @@ derived task comparisons, lane-summary metrics derived from
 per-task retry costs, read-efficiency metrics derived from lane summaries, and
 top-level comparison aggregates derived from `tasks[*].comparison`, including
 coverage deltas, read deltas, command deltas, and ctxhelm tool-call observation.
-The checker also enforces
-strict absence of client failures, rate limits, forbidden commands, evidence
+The checker derives `aggregate.outcomeClaim` and
+`aggregate.recommendedResearchActions` from those source-free comparison
+aggregates and boundary flags, and also enforces strict absence of client
+failures, rate limits, forbidden commands, evidence
 misses, evidence-only targets, and under-read targets. Use it to gate claims
 about a specific saved report; it is not a substitute for collecting a fresh
 real-client report when the client version, ctxhelm version, runner, prompt
@@ -268,8 +270,8 @@ report SHA-256, thresholds, source-free privacy checks, runner metadata,
 identity checks, current runner script freshness, current suite freshness,
 suite-task checks, aggregate metrics, aggregate consistency checks,
 lane-summary metric checks, retry-cost consistency checks, read-efficiency consistency checks,
-comparison aggregate checks, task-lane checks, boundary checks, and lane
-quality summaries.
+comparison aggregate checks, outcome routing checks, task-lane checks, boundary
+checks, and lane quality summaries.
 
 ## Release Coverage
 

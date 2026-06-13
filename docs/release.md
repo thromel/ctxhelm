@@ -361,6 +361,10 @@ It also derives top-level comparison aggregates such as
 `targetReadCoverageDeltaAverage`, `targetCoverageDeltaAverage`,
 `readFileDeltaSum`, `irrelevantReadDeltaSum`, `commandExecutionDeltaSum`, and
 `ctxhelmToolCallsObserved` from `tasks[*].comparison`.
+The checker derives `aggregate.outcomeClaim` and
+`aggregate.recommendedResearchActions` from those source-free comparison
+aggregates and boundary flags, so stale outcome labels or R&D routing actions
+cannot support release claims.
 The release gate passes
 `--expected-ctxhelm-version` from the selected release-gate binary,
 `--expected-client-name codex`, and `--expected-client-version "codex-cli

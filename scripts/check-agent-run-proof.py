@@ -1123,6 +1123,160 @@ def validate_comparison_aggregate_consistency(aggregate: dict, tasks: list) -> d
     }
 
 
+def derived_outcome_claim(
+    task_count: int,
+    comparison_eligible_count: int,
+    comparison_aggregates: dict,
+) -> str:
+    target_read_delta_avg = comparison_aggregates["targetReadCoverageDeltaAverage"]
+    target_delta_avg = comparison_aggregates["targetCoverageDeltaAverage"]
+    irrelevant_delta_sum = comparison_aggregates["irrelevantReadDeltaSum"]
+    ctxhelm_tool_calls_observed = comparison_aggregates["ctxhelmToolCallsObserved"]
+    if task_count and comparison_eligible_count == 0:
+        return "insufficient_comparable_lanes"
+    if ctxhelm_tool_calls_observed and (
+        target_delta_avg > 0
+        or target_read_delta_avg > 0
+        or irrelevant_delta_sum > 0
+    ):
+        return "ctxhelm_improved"
+    if (
+        ctxhelm_tool_calls_observed
+        and target_delta_avg == 0
+        and target_read_delta_avg == 0
+        and irrelevant_delta_sum == 0
+    ):
+        return "ctxhelm_matched"
+    return "no_measured_lift"
+
+
+def derived_research_actions(
+    comparison_eligible_count: int,
+    outcome_claim: str,
+    comparison_aggregates: dict,
+    boundary_fields: dict,
+) -> list:
+    actions = []
+
+    def add(action: str, priority: int, reason: str) -> None:
+        actions.append({"action": action, "priority": priority, "reason": reason})
+
+    ctxhelm_tool_calls_observed = comparison_aggregates["ctxhelmToolCallsObserved"]
+    if boundary_fields["clientFailuresObserved"] or boundary_fields["rateLimitsObserved"]:
+        add(
+            "retry_real_client_when_available",
+            1,
+            "Client availability prevented comparable outcome proof.",
+        )
+    elif not ctxhelm_tool_calls_observed and not comparison_eligible_count:
+        add(
+            "collect_real_client_evidence",
+            1,
+            "No comparable real-client ctxhelm call evidence was collected.",
+        )
+    if (
+        boundary_fields["missingRequiredCtxhelmCallsObserved"]
+        or boundary_fields["invalidRequiredCtxhelmCallsObserved"]
+    ) and not boundary_fields["clientFailuresObserved"] and ctxhelm_tool_calls_observed:
+        add(
+            "harden_required_ctxhelm_call_guidance",
+            1,
+            "A ctxhelm-assisted lane did not make all required source-free ctxhelm calls.",
+        )
+    if boundary_fields["ctxhelmEvidenceMissesObserved"]:
+        add(
+            "fix_retrieval_or_query_construction",
+            1,
+            "ctxhelm evidence did not surface at least one expected target.",
+        )
+    if (
+        boundary_fields["ctxhelmEvidenceOnlyTargetsObserved"]
+        and not boundary_fields["clientFailuresObserved"]
+    ):
+        add(
+            "improve_agent_consumption_guidance",
+            2,
+            "ctxhelm surfaced expected targets that Codex did not consume with read-only commands.",
+        )
+    if (
+        boundary_fields["ctxhelmUnderReadTargetsObserved"]
+        and not boundary_fields["clientFailuresObserved"]
+    ):
+        add(
+            "inspect_pack_ordering_and_native_read_instruction",
+            2,
+            "A ctxhelm-assisted lane under-read targets relative to the native baseline.",
+        )
+    if comparison_eligible_count and outcome_claim == "no_measured_lift":
+        add(
+            "analyze_native_baseline_gap",
+            2,
+            "Comparable lanes produced no measured ctxhelm lift.",
+        )
+    if (
+        comparison_eligible_count
+        and outcome_claim == "ctxhelm_improved"
+        and not boundary_fields["clientFailuresObserved"]
+        and (
+            comparison_aggregates["irrelevantReadDeltaSum"] < 0
+            or comparison_aggregates["readFileDeltaSum"] < 0
+        )
+    ):
+        add(
+            "optimize_agent_read_efficiency",
+            2,
+            "ctxhelm improved target consumption but required more reads or more irrelevant reads than the native baseline.",
+        )
+    if (
+        not actions
+        and comparison_eligible_count
+        and outcome_claim in {"ctxhelm_improved", "ctxhelm_matched"}
+    ):
+        add(
+            "preserve_current_agent_contract",
+            3,
+            "Comparable lanes produced stable source-free outcome evidence.",
+        )
+    return actions
+
+
+def validate_outcome_and_action_consistency(
+    aggregate: dict,
+    derived: dict,
+    comparison_aggregates: dict,
+) -> dict:
+    expected_outcome = derived_outcome_claim(
+        derived["taskCount"],
+        derived["comparisonEligibleCount"],
+        comparison_aggregates,
+    )
+    if aggregate.get("outcomeClaim") != expected_outcome:
+        fail(
+            "aggregate.outcomeClaim did not match derived task comparisons: "
+            f"{aggregate.get('outcomeClaim')} != {expected_outcome}"
+        )
+    expected_actions = derived_research_actions(
+        derived["comparisonEligibleCount"],
+        expected_outcome,
+        comparison_aggregates,
+        derived["boundaryFields"],
+    )
+    actual_actions = require_list(
+        aggregate.get("recommendedResearchActions"),
+        "aggregate.recommendedResearchActions",
+    )
+    if actual_actions != expected_actions:
+        fail(
+            "aggregate.recommendedResearchActions did not match derived outcome routing: "
+            f"{actual_actions} != {expected_actions}"
+        )
+    return {
+        "strictOutcomeRoutingChecks": True,
+        "derivedOutcomeClaim": expected_outcome,
+        "checkedRecommendedResearchActionCount": len(expected_actions),
+    }
+
+
 def validate_aggregate_consistency(aggregate: dict, summaries: list, tasks: list) -> dict:
     derived = derived_aggregate_consistency(aggregate, summaries, tasks)
     for field in ("taskCount", "comparisonEligibleCount", "comparableCtxhelmLaneCount"):
@@ -1153,7 +1307,13 @@ def validate_aggregate_consistency(aggregate: dict, summaries: list, tasks: list
     lane_summary_metrics = validate_lane_summary_consistency(summaries, tasks)
     retry_cost_metrics = validate_retry_cost_consistency(aggregate, tasks)
     read_efficiency_metrics = validate_read_efficiency_consistency(aggregate, summaries)
+    comparison_aggregates = derived_comparison_aggregates(tasks)
     comparison_aggregate_metrics = validate_comparison_aggregate_consistency(aggregate, tasks)
+    outcome_routing_metrics = validate_outcome_and_action_consistency(
+        aggregate,
+        derived,
+        comparison_aggregates,
+    )
     return {
         "strictAggregateConsistencyChecks": True,
         "derivedTaskCount": derived["taskCount"],
@@ -1165,6 +1325,7 @@ def validate_aggregate_consistency(aggregate: dict, summaries: list, tasks: list
         **retry_cost_metrics,
         **read_efficiency_metrics,
         **comparison_aggregate_metrics,
+        **outcome_routing_metrics,
         "matchesDerivedAggregates": True,
     }
 

@@ -1552,6 +1552,18 @@ fn agent_run_proof_checker_accepts_phase322_and_rejects_regression() {
         6
     );
     assert_eq!(
+        summary["aggregateConsistency"]["strictOutcomeRoutingChecks"],
+        true
+    );
+    assert_eq!(
+        summary["aggregateConsistency"]["derivedOutcomeClaim"],
+        "ctxhelm_improved"
+    );
+    assert_eq!(
+        summary["aggregateConsistency"]["checkedRecommendedResearchActionCount"],
+        1
+    );
+    assert_eq!(
         summary["aggregateConsistency"]["matchesDerivedAggregates"],
         true
     );
@@ -1814,6 +1826,91 @@ fn agent_run_proof_checker_accepts_phase322_and_rejects_regression() {
         stderr
             .contains("aggregate.ctxhelmToolCallsObserved did not match derived task comparisons"),
         "unexpected stale-tool-call checker error: {stderr}"
+    );
+
+    let stale_outcome_path = temp.path().join("agent-run-stale-outcome.json");
+    let mut stale_outcome_payload: serde_json::Value =
+        serde_json::from_slice(&fs::read(&phase322_report).unwrap()).unwrap();
+    stale_outcome_payload["aggregate"]["outcomeClaim"] =
+        serde_json::Value::String("ctxhelm_matched".to_string());
+    fs::write(
+        &stale_outcome_path,
+        serde_json::to_string_pretty(&stale_outcome_payload).unwrap(),
+    )
+    .unwrap();
+    let stale_outcome = Command::new("python3")
+        .arg(&script)
+        .arg(&stale_outcome_path)
+        .args([
+            "--workflow",
+            "suite",
+            "--expected-ctxhelm-version",
+            "ctxhelm 2.4.0",
+            "--expected-client-name",
+            "codex",
+            "--expected-client-version",
+            "codex-cli 0.137.0",
+            "--min-task-count",
+            "4",
+            "--min-comparison-eligible",
+            "4",
+            "--min-comparable-ctxhelm-lanes",
+            "16",
+            "--min-ctxhelm-target-read-coverage",
+            "1.0",
+            "--max-extra-read-delta",
+            "2",
+            "--min-irrelevant-read-delta",
+            "2",
+            "--require-retry-cost",
+            "--require-runner-fingerprint",
+        ])
+        .arg("--current-runner-script")
+        .arg(&codex_runner_script)
+        .arg("--current-suite")
+        .arg(&codex_suite)
+        .current_dir(&repo_root)
+        .output()
+        .unwrap();
+    assert!(
+        !stale_outcome.status.success(),
+        "proof with stale outcome claim should fail"
+    );
+    let stderr = String::from_utf8_lossy(&stale_outcome.stderr);
+    assert!(
+        stderr.contains("aggregate.outcomeClaim did not match derived task comparisons"),
+        "unexpected stale-outcome checker error: {stderr}"
+    );
+
+    let stale_action_path = temp.path().join("agent-run-stale-research-action.json");
+    let mut stale_action_payload: serde_json::Value =
+        serde_json::from_slice(&fs::read(&phase322_report).unwrap()).unwrap();
+    stale_action_payload["aggregate"]["recommendedResearchActions"][0]["action"] =
+        serde_json::Value::String("preserve_current_agent_contract".to_string());
+    fs::write(
+        &stale_action_path,
+        serde_json::to_string_pretty(&stale_action_payload).unwrap(),
+    )
+    .unwrap();
+    let stale_action = Command::new("python3")
+        .arg(&script)
+        .arg(&stale_action_path)
+        .args(proof_args)
+        .arg("--current-runner-script")
+        .arg(&codex_runner_script)
+        .arg("--current-suite")
+        .arg(&codex_suite)
+        .current_dir(&repo_root)
+        .output()
+        .unwrap();
+    assert!(
+        !stale_action.status.success(),
+        "proof with stale research action should fail"
+    );
+    let stderr = String::from_utf8_lossy(&stale_action.stderr);
+    assert!(
+        stderr.contains("aggregate.recommendedResearchActions"),
+        "unexpected stale-research-action checker error: {stderr}"
     );
 
     let stale_runner_path = temp.path().join("agent-run-stale-runner.json");
