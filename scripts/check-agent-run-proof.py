@@ -49,6 +49,22 @@ LANE_SUMMARY_COUNT_FIELDS = (
     "targetDiscoveredOnlyCount",
 )
 
+RETRY_COST_COUNT_FIELDS = (
+    "retryTriggeredLanes",
+    "retrySelectedLanes",
+    "evidenceOnlyTargetsBeforeRetry",
+    "evidenceOnlyTargetsAfterRetry",
+)
+
+RETRY_COST_AVERAGE_FIELDS = (
+    "avgReadFilesBeforeRetry",
+    "avgReadFilesAfterRetry",
+    "avgIrrelevantReadsBeforeRetry",
+    "avgIrrelevantReadsAfterRetry",
+    "targetReadCoverageBeforeRetry",
+    "targetReadCoverageAfterRetry",
+)
+
 FLOAT_TOLERANCE = 1e-9
 
 
@@ -816,6 +832,222 @@ def validate_lane_summary_consistency(summaries: list, tasks: list) -> dict:
     }
 
 
+def derived_retry_cost(tasks: list) -> dict:
+    count_sums = {field: 0 for field in RETRY_COST_COUNT_FIELDS}
+    weighted_sums = {field: 0.0 for field in RETRY_COST_AVERAGE_FIELDS}
+    triggered_lanes = 0
+
+    for task_index, task in enumerate(tasks):
+        comparison = require_dict(
+            require_dict(task, f"tasks[{task_index}]").get("comparison"),
+            f"tasks[{task_index}].comparison",
+        )
+        retry_cost = require_dict(
+            comparison.get("retryCost"),
+            f"tasks[{task_index}].comparison.retryCost",
+        )
+        task_triggered = require_int(
+            retry_cost.get("retryTriggeredLanes", 0),
+            f"tasks[{task_index}].comparison.retryCost.retryTriggeredLanes",
+        )
+        triggered_lanes += task_triggered
+        for field in RETRY_COST_COUNT_FIELDS:
+            count_sums[field] += require_int(
+                retry_cost.get(field, 0),
+                f"tasks[{task_index}].comparison.retryCost.{field}",
+            )
+        for field in RETRY_COST_AVERAGE_FIELDS:
+            weighted_sums[field] += (
+                require_number(
+                    retry_cost.get(field, 0.0),
+                    f"tasks[{task_index}].comparison.retryCost.{field}",
+                )
+                * task_triggered
+            )
+
+    return {
+        **count_sums,
+        **{
+            field: safe_ratio(weighted_sums[field], triggered_lanes)
+            for field in RETRY_COST_AVERAGE_FIELDS
+        },
+    }
+
+
+def validate_retry_cost_consistency(aggregate: dict, tasks: list) -> dict:
+    retry_cost = require_dict(aggregate.get("retryCost"), "aggregate.retryCost")
+    derived = derived_retry_cost(tasks)
+    checked_metric_count = 0
+    for field in RETRY_COST_COUNT_FIELDS:
+        actual = require_int(retry_cost.get(field), f"aggregate.retryCost.{field}")
+        if actual != derived[field]:
+            fail(
+                f"aggregate.retryCost.{field} did not match derived task retry costs: "
+                f"{actual} != {derived[field]}"
+            )
+        checked_metric_count += 1
+    for field in RETRY_COST_AVERAGE_FIELDS:
+        if not numbers_match(retry_cost.get(field), derived[field]):
+            fail(
+                f"aggregate.retryCost.{field} did not match derived task retry costs: "
+                f"{retry_cost.get(field)} != {derived[field]}"
+            )
+        checked_metric_count += 1
+    return {
+        "strictRetryCostConsistencyChecks": True,
+        "checkedRetryCostMetricCount": checked_metric_count,
+    }
+
+
+def lane_summaries_by_name(summaries: list) -> dict:
+    by_name = {}
+    for index, summary in enumerate(summaries):
+        summary = require_dict(summary, f"aggregate.laneSummaries[{index}]")
+        lane_name = summary.get("lane")
+        if not isinstance(lane_name, str) or not lane_name:
+            fail(f"aggregate.laneSummaries[{index}].lane was missing")
+        by_name[lane_name] = summary
+    return by_name
+
+
+def derived_read_efficiency(read_efficiency: dict, summaries: list) -> dict:
+    summaries_by_name = lane_summaries_by_name(summaries)
+    baseline_lane = read_efficiency.get("baselineLane")
+    efficient_lane = read_efficiency.get("efficientCtxhelmLane")
+    if baseline_lane not in summaries_by_name:
+        fail(f"aggregate.readEfficiency.baselineLane had no lane summary: {baseline_lane}")
+    if efficient_lane not in summaries_by_name:
+        fail(
+            f"aggregate.readEfficiency.efficientCtxhelmLane had no lane summary: "
+            f"{efficient_lane}"
+        )
+    baseline = summaries_by_name[baseline_lane]
+    efficient = summaries_by_name[efficient_lane]
+    baseline_read_count = require_int(
+        baseline.get("readFileCount"),
+        f"aggregate.laneSummaries[{baseline_lane}].readFileCount",
+    )
+    efficient_read_count = require_int(
+        efficient.get("readFileCount"),
+        f"aggregate.laneSummaries[{efficient_lane}].readFileCount",
+    )
+    baseline_irrelevant_count = require_int(
+        baseline.get("irrelevantReadCount"),
+        f"aggregate.laneSummaries[{baseline_lane}].irrelevantReadCount",
+    )
+    efficient_irrelevant_count = require_int(
+        efficient.get("irrelevantReadCount"),
+        f"aggregate.laneSummaries[{efficient_lane}].irrelevantReadCount",
+    )
+    baseline_target_read_count = require_int(
+        baseline.get("targetReadCount"),
+        f"aggregate.laneSummaries[{baseline_lane}].targetReadCount",
+    )
+    efficient_target_read_count = require_int(
+        efficient.get("targetReadCount"),
+        f"aggregate.laneSummaries[{efficient_lane}].targetReadCount",
+    )
+    recovered_target_reads = efficient_target_read_count - baseline_target_read_count
+    extra_reads = efficient_read_count - baseline_read_count
+    extra_irrelevant_reads = efficient_irrelevant_count - baseline_irrelevant_count
+    baseline_target_read_coverage = require_number(
+        baseline.get("averageTargetReadCoverage"),
+        f"aggregate.laneSummaries[{baseline_lane}].averageTargetReadCoverage",
+    )
+    efficient_target_read_coverage = require_number(
+        efficient.get("averageTargetReadCoverage"),
+        f"aggregate.laneSummaries[{efficient_lane}].averageTargetReadCoverage",
+    )
+    baseline_precision = require_number(
+        baseline.get("targetReadPrecision"),
+        f"aggregate.laneSummaries[{baseline_lane}].targetReadPrecision",
+    )
+    efficient_precision = require_number(
+        efficient.get("targetReadPrecision"),
+        f"aggregate.laneSummaries[{efficient_lane}].targetReadPrecision",
+    )
+    baseline_irrelevant_rate = require_number(
+        baseline.get("irrelevantReadRate"),
+        f"aggregate.laneSummaries[{baseline_lane}].irrelevantReadRate",
+    )
+    efficient_irrelevant_rate = require_number(
+        efficient.get("irrelevantReadRate"),
+        f"aggregate.laneSummaries[{efficient_lane}].irrelevantReadRate",
+    )
+    return {
+        "baselineReadFileCount": baseline_read_count,
+        "baselineIrrelevantReadCount": baseline_irrelevant_count,
+        "baselineTargetReadCoverage": baseline_target_read_coverage,
+        "baselineTargetReadPrecision": baseline_precision,
+        "baselineIrrelevantReadRate": baseline_irrelevant_rate,
+        "efficientReadFileCount": efficient_read_count,
+        "efficientIrrelevantReadCount": efficient_irrelevant_count,
+        "efficientTargetReadCoverage": efficient_target_read_coverage,
+        "efficientTargetReadPrecision": efficient_precision,
+        "efficientIrrelevantReadRate": efficient_irrelevant_rate,
+        "recoveredTargetReadCount": recovered_target_reads,
+        "extraReadFileCount": extra_reads,
+        "extraIrrelevantReadCount": extra_irrelevant_reads,
+        "targetReadCoverageDelta": efficient_target_read_coverage - baseline_target_read_coverage,
+        "targetReadPrecisionDelta": efficient_precision - baseline_precision,
+        "irrelevantReadRateDelta": efficient_irrelevant_rate - baseline_irrelevant_rate,
+        "extraReadsPerRecoveredTarget": safe_ratio(extra_reads, recovered_target_reads),
+        "extraIrrelevantReadsPerRecoveredTarget": safe_ratio(
+            extra_irrelevant_reads,
+            recovered_target_reads,
+        ),
+    }
+
+
+def validate_read_efficiency_consistency(aggregate: dict, summaries: list) -> dict:
+    read_efficiency = require_dict(aggregate.get("readEfficiency"), "aggregate.readEfficiency")
+    if read_efficiency.get("analysisAvailable") is not True:
+        fail("aggregate.readEfficiency.analysisAvailable was not true")
+    derived = derived_read_efficiency(read_efficiency, summaries)
+    int_fields = (
+        "baselineReadFileCount",
+        "baselineIrrelevantReadCount",
+        "efficientReadFileCount",
+        "efficientIrrelevantReadCount",
+        "recoveredTargetReadCount",
+        "extraReadFileCount",
+        "extraIrrelevantReadCount",
+    )
+    float_fields = (
+        "baselineTargetReadCoverage",
+        "baselineTargetReadPrecision",
+        "baselineIrrelevantReadRate",
+        "efficientTargetReadCoverage",
+        "efficientTargetReadPrecision",
+        "efficientIrrelevantReadRate",
+        "targetReadCoverageDelta",
+        "targetReadPrecisionDelta",
+        "irrelevantReadRateDelta",
+        "extraReadsPerRecoveredTarget",
+        "extraIrrelevantReadsPerRecoveredTarget",
+    )
+    checked_metric_count = 0
+    for field in int_fields:
+        actual = require_int(read_efficiency.get(field), f"aggregate.readEfficiency.{field}")
+        if actual != derived[field]:
+            fail(
+                f"aggregate.readEfficiency.{field} did not match derived lane summaries: "
+                f"{actual} != {derived[field]}"
+            )
+        checked_metric_count += 1
+    for field in float_fields:
+        if not numbers_match(read_efficiency.get(field), derived[field]):
+            fail(
+                f"aggregate.readEfficiency.{field} did not match derived lane summaries: "
+                f"{read_efficiency.get(field)} != {derived[field]}"
+            )
+        checked_metric_count += 1
+    return {
+        "strictReadEfficiencyConsistencyChecks": True,
+        "checkedReadEfficiencyMetricCount": checked_metric_count,
+    }
+
+
 def validate_aggregate_consistency(aggregate: dict, summaries: list, tasks: list) -> dict:
     derived = derived_aggregate_consistency(aggregate, summaries, tasks)
     for field in ("taskCount", "comparisonEligibleCount", "comparableCtxhelmLaneCount"):
@@ -844,6 +1076,8 @@ def validate_aggregate_consistency(aggregate: dict, summaries: list, tasks: list
         )
 
     lane_summary_metrics = validate_lane_summary_consistency(summaries, tasks)
+    retry_cost_metrics = validate_retry_cost_consistency(aggregate, tasks)
+    read_efficiency_metrics = validate_read_efficiency_consistency(aggregate, summaries)
     return {
         "strictAggregateConsistencyChecks": True,
         "derivedTaskCount": derived["taskCount"],
@@ -852,6 +1086,8 @@ def validate_aggregate_consistency(aggregate: dict, summaries: list, tasks: list
         "derivedLaneNameCount": len(derived["taskLaneNames"]),
         "laneSummaryCount": len(derived["summaryLaneNames"]),
         **lane_summary_metrics,
+        **retry_cost_metrics,
+        **read_efficiency_metrics,
         "matchesDerivedAggregates": True,
     }
 

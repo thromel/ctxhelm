@@ -1528,6 +1528,22 @@ fn agent_run_proof_checker_accepts_phase322_and_rejects_regression() {
         145
     );
     assert_eq!(
+        summary["aggregateConsistency"]["strictRetryCostConsistencyChecks"],
+        true
+    );
+    assert_eq!(
+        summary["aggregateConsistency"]["checkedRetryCostMetricCount"],
+        10
+    );
+    assert_eq!(
+        summary["aggregateConsistency"]["strictReadEfficiencyConsistencyChecks"],
+        true
+    );
+    assert_eq!(
+        summary["aggregateConsistency"]["checkedReadEfficiencyMetricCount"],
+        18
+    );
+    assert_eq!(
         summary["aggregateConsistency"]["matchesDerivedAggregates"],
         true
     );
@@ -1659,6 +1675,72 @@ fn agent_run_proof_checker_accepts_phase322_and_rejects_regression() {
             "aggregate.laneSummaries[baseline].readFileCount did not match derived task lanes"
         ),
         "unexpected stale-lane-summary-metric checker error: {stderr}"
+    );
+
+    let stale_retry_cost_path = temp.path().join("agent-run-stale-retry-cost.json");
+    let mut stale_retry_cost_payload: serde_json::Value =
+        serde_json::from_slice(&fs::read(&phase322_report).unwrap()).unwrap();
+    stale_retry_cost_payload["aggregate"]["retryCost"]["avgReadFilesAfterRetry"] =
+        serde_json::Value::Number(serde_json::Number::from_f64(6.8).unwrap());
+    fs::write(
+        &stale_retry_cost_path,
+        serde_json::to_string_pretty(&stale_retry_cost_payload).unwrap(),
+    )
+    .unwrap();
+    let stale_retry_cost = Command::new("python3")
+        .arg(&script)
+        .arg(&stale_retry_cost_path)
+        .args(proof_args)
+        .arg("--current-runner-script")
+        .arg(&codex_runner_script)
+        .arg("--current-suite")
+        .arg(&codex_suite)
+        .current_dir(&repo_root)
+        .output()
+        .unwrap();
+    assert!(
+        !stale_retry_cost.status.success(),
+        "proof with stale retry-cost metrics should fail"
+    );
+    let stderr = String::from_utf8_lossy(&stale_retry_cost.stderr);
+    assert!(
+        stderr.contains(
+            "aggregate.retryCost.avgReadFilesAfterRetry did not match derived task retry costs"
+        ),
+        "unexpected stale-retry-cost checker error: {stderr}"
+    );
+
+    let stale_read_efficiency_path = temp.path().join("agent-run-stale-read-efficiency.json");
+    let mut stale_read_efficiency_payload: serde_json::Value =
+        serde_json::from_slice(&fs::read(&phase322_report).unwrap()).unwrap();
+    stale_read_efficiency_payload["aggregate"]["readEfficiency"]["extraReadFileCount"] =
+        serde_json::Value::Number(serde_json::Number::from(5));
+    fs::write(
+        &stale_read_efficiency_path,
+        serde_json::to_string_pretty(&stale_read_efficiency_payload).unwrap(),
+    )
+    .unwrap();
+    let stale_read_efficiency = Command::new("python3")
+        .arg(&script)
+        .arg(&stale_read_efficiency_path)
+        .args(proof_args)
+        .arg("--current-runner-script")
+        .arg(&codex_runner_script)
+        .arg("--current-suite")
+        .arg(&codex_suite)
+        .current_dir(&repo_root)
+        .output()
+        .unwrap();
+    assert!(
+        !stale_read_efficiency.status.success(),
+        "proof with stale read-efficiency metrics should fail"
+    );
+    let stderr = String::from_utf8_lossy(&stale_read_efficiency.stderr);
+    assert!(
+        stderr.contains(
+            "aggregate.readEfficiency.extraReadFileCount did not match derived lane summaries"
+        ),
+        "unexpected stale-read-efficiency checker error: {stderr}"
     );
 
     let stale_runner_path = temp.path().join("agent-run-stale-runner.json");

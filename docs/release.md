@@ -353,6 +353,10 @@ including read counts, target-read coverage, read precision, irrelevant-read
 rate, read-role counts, missed-target role counts, required-call counts, and
 failure/rate-limit counters. That prevents stale `aggregate.laneSummaries`
 metrics from supporting release claims after nested task records change.
+Finally, it derives aggregate retry-cost metrics from per-task retry costs and
+read-efficiency metrics from lane summaries, so stale `aggregate.retryCost` or
+`aggregate.readEfficiency` values cannot support claims about retry overhead,
+recovered target reads, or read precision.
 The release gate passes
 `--expected-ctxhelm-version` from the selected release-gate binary,
 `--expected-client-name codex`, and `--expected-client-version "codex-cli
