@@ -375,6 +375,10 @@ The JSON audit summary uses the same validated aggregate field names in
 `metrics.targetCoverageDeltaAverage`, `metrics.commandExecutionDeltaSum`, and
 `metrics.ctxhelmToolCallsObserved`; it does not publish stale shortened aliases
 or omit validated comparison aggregate fields.
+For a single-run workflow, the JSON audit summary also publishes
+`metrics.commandExecutionDelta` and `metrics.ctxhelmToolCallsObserved`, so a
+standalone accepted report exposes command-cost and ctxhelm-call observation
+without requiring suite JSON archaeology.
 It also enforces suite status checks by deriving `suite.taskCount` and
 `report.status` from the nested task records and boundary state.
 The checker derives `aggregate.outcomeClaim` and

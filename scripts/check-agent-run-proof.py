@@ -1532,6 +1532,8 @@ def validate_run(report: dict, args: argparse.Namespace) -> dict:
             "targetCoverageDelta": comparison.get("targetCoverageDelta"),
             "readFileDelta": comparison.get("readFileDelta"),
             "irrelevantReadDelta": comparison.get("irrelevantReadDelta"),
+            "commandExecutionDelta": comparison.get("commandExecutionDelta"),
+            "ctxhelmToolCallsObserved": comparison.get("ctxhelmToolCallsObserved"),
             "retryCost": comparison.get("retryCost"),
             "readEfficiency": comparison.get("readEfficiency"),
         },

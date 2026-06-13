@@ -262,6 +262,9 @@ The JSON audit summary publishes those comparison aggregates as
 `metrics.targetCoverageDeltaAverage`, plus
 `metrics.commandExecutionDeltaSum` and `metrics.ctxhelmToolCallsObserved`,
 matching the validated aggregate field names.
+For the run workflow, the JSON audit summary also publishes
+`metrics.commandExecutionDelta` and `metrics.ctxhelmToolCallsObserved`, giving
+single accepted reports the same source-free command/tool-call audit surface.
 The checker also enforces suite status checks by deriving `suite.taskCount` and
 `report.status` from the nested task records, comparison eligibility, and
 boundary state, so stale suite envelopes cannot support proof claims.

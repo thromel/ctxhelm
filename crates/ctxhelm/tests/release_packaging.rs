@@ -1383,11 +1383,17 @@ fn agent_run_proof_checker_accepts_phase322_and_rejects_regression() {
 
     let phase322_report =
         repo_root.join(".ctxhelm/e2e/phase322-agent-run-codex-target-first-breadth-suite.json");
+    let phase322_run_report =
+        repo_root.join(".ctxhelm/e2e/phase322-agent-run-codex-target-first-semantic-focused.json");
     let codex_runner_script = repo_root.join("scripts/e2e-agent-run-codex.sh");
     let codex_suite = repo_root.join(".planning/e2e/2026-06-06-phase251-codex-rd-suite.json");
     assert!(
         phase322_report.exists(),
         "Phase 322 agent-run proof fixture is missing"
+    );
+    assert!(
+        phase322_run_report.exists(),
+        "Phase 322 single-run proof fixture is missing"
     );
     assert!(
         codex_runner_script.exists(),
@@ -1504,6 +1510,56 @@ fn agent_run_proof_checker_accepts_phase322_and_rejects_regression() {
         summary["thresholds"]["expectedClientVersion"],
         "codex-cli 0.137.0"
     );
+
+    let run_summary_path = summary_temp
+        .path()
+        .join("agent-run-proof-single-run-check.json");
+    let accepted_run_json = Command::new("python3")
+        .arg(&script)
+        .arg(&phase322_run_report)
+        .args([
+            "--workflow",
+            "run",
+            "--require-outcome",
+            "ctxhelm_improved",
+            "--expected-ctxhelm-version",
+            "ctxhelm 2.4.0",
+            "--expected-client-name",
+            "codex",
+            "--expected-client-version",
+            "codex-cli 0.137.0",
+            "--min-comparable-ctxhelm-lanes",
+            "4",
+            "--min-ctxhelm-target-read-coverage",
+            "1.0",
+            "--max-extra-read-delta",
+            "5",
+            "--min-irrelevant-read-delta",
+            "-2",
+            "--require-retry-cost",
+            "--require-runner-fingerprint",
+        ])
+        .arg("--current-runner-script")
+        .arg(&codex_runner_script)
+        .arg("--format")
+        .arg("json")
+        .arg("--output")
+        .arg(&run_summary_path)
+        .current_dir(&repo_root)
+        .output()
+        .unwrap();
+    assert!(
+        accepted_run_json.status.success(),
+        "Phase 322 single-run JSON proof check should pass: stdout={} stderr={}",
+        String::from_utf8_lossy(&accepted_run_json.stdout),
+        String::from_utf8_lossy(&accepted_run_json.stderr)
+    );
+    let run_summary: serde_json::Value =
+        serde_json::from_slice(&fs::read(&run_summary_path).unwrap()).unwrap();
+    assert_eq!(run_summary["workflow"], "run");
+    assert_eq!(run_summary["metrics"]["commandExecutionDelta"], 2);
+    assert_eq!(run_summary["metrics"]["ctxhelmToolCallsObserved"], true);
+
     assert_eq!(summary["thresholds"]["requireRunnerFingerprint"], true);
     assert_eq!(summary["thresholds"]["requireCurrentRunnerScript"], true);
     assert_eq!(summary["thresholds"]["requireCurrentSuite"], true);
