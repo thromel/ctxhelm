@@ -1497,6 +1497,20 @@ fn agent_run_proof_checker_accepts_phase322_and_rejects_regression() {
     assert_eq!(summary["suiteTaskChecks"]["reportTaskCount"], 4);
     assert_eq!(summary["suiteTaskChecks"]["currentSuiteTaskCount"], 4);
     assert_eq!(summary["suiteTaskChecks"]["matchesCurrentSuiteTasks"], true);
+    assert_eq!(summary["suiteConsistency"]["strictSuiteStatusChecks"], true);
+    assert_eq!(summary["suiteConsistency"]["suiteTaskCount"], 4);
+    assert_eq!(summary["suiteConsistency"]["derivedTaskCount"], 4);
+    assert_eq!(
+        summary["suiteConsistency"]["derivedComparisonEligibleCount"],
+        4
+    );
+    assert_eq!(
+        summary["suiteConsistency"]["derivedBoundaryObserved"],
+        false
+    );
+    assert_eq!(summary["suiteConsistency"]["derivedStatus"], "passed");
+    assert_eq!(summary["suiteConsistency"]["matchesDerivedTaskCount"], true);
+    assert_eq!(summary["suiteConsistency"]["matchesDerivedStatus"], true);
     assert_eq!(summary["taskLaneChecks"]["strictTaskLaneChecks"], true);
     assert_eq!(summary["taskLaneChecks"]["taskLaneCount"], 20);
     assert_eq!(summary["taskLaneChecks"]["ctxhelmTaskLaneCount"], 16);
@@ -1599,6 +1613,69 @@ fn agent_run_proof_checker_accepts_phase322_and_rejects_regression() {
     assert!(
         stderr.contains("ctxhelmEvidenceOnlyTargetsObserved"),
         "unexpected checker error: {stderr}"
+    );
+
+    let stale_suite_task_count_path = temp.path().join("agent-run-stale-suite-task-count.json");
+    let mut stale_suite_task_count_payload: serde_json::Value =
+        serde_json::from_slice(&fs::read(&phase322_report).unwrap()).unwrap();
+    stale_suite_task_count_payload["suite"]["taskCount"] =
+        serde_json::Value::Number(serde_json::Number::from(5));
+    fs::write(
+        &stale_suite_task_count_path,
+        serde_json::to_string_pretty(&stale_suite_task_count_payload).unwrap(),
+    )
+    .unwrap();
+    let stale_suite_task_count = Command::new("python3")
+        .arg(&script)
+        .arg(&stale_suite_task_count_path)
+        .args(proof_args)
+        .arg("--current-runner-script")
+        .arg(&codex_runner_script)
+        .arg("--current-suite")
+        .arg(&codex_suite)
+        .current_dir(&repo_root)
+        .output()
+        .unwrap();
+    assert!(
+        !stale_suite_task_count.status.success(),
+        "proof with stale suite task count should fail"
+    );
+    let stderr = String::from_utf8_lossy(&stale_suite_task_count.stderr);
+    assert!(
+        stderr.contains("suite.taskCount did not match derived tasks"),
+        "unexpected stale-suite-task-count checker error: {stderr}"
+    );
+
+    let stale_status_path = temp.path().join("agent-run-stale-status.json");
+    let mut stale_status_payload: serde_json::Value =
+        serde_json::from_slice(&fs::read(&phase322_report).unwrap()).unwrap();
+    stale_status_payload["status"] = serde_json::Value::String("skipped".to_string());
+    fs::write(
+        &stale_status_path,
+        serde_json::to_string_pretty(&stale_status_payload).unwrap(),
+    )
+    .unwrap();
+    let stale_status = Command::new("python3")
+        .arg(&script)
+        .arg(&stale_status_path)
+        .arg("--require-status")
+        .arg("skipped")
+        .args(proof_args)
+        .arg("--current-runner-script")
+        .arg(&codex_runner_script)
+        .arg("--current-suite")
+        .arg(&codex_suite)
+        .current_dir(&repo_root)
+        .output()
+        .unwrap();
+    assert!(
+        !stale_status.status.success(),
+        "proof with stale suite status should fail"
+    );
+    let stderr = String::from_utf8_lossy(&stale_status.stderr);
+    assert!(
+        stderr.contains("report.status did not match derived suite status"),
+        "unexpected stale-status checker error: {stderr}"
     );
 
     let stale_aggregate_path = temp.path().join("agent-run-stale-aggregate.json");

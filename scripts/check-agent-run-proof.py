@@ -635,6 +635,55 @@ def suite_task_check_summary(tasks: list, current_suite_specs: list | None) -> d
     return summary
 
 
+def derived_suite_status(tasks: list) -> tuple[str, int, bool]:
+    comparison_eligible_count = 0
+    boundary_observed = False
+    for task_index, task in enumerate(tasks):
+        task = require_dict(task, f"tasks[{task_index}]")
+        comparison = require_dict(task.get("comparison"), f"tasks[{task_index}].comparison")
+        if comparison.get("comparisonEligible") is True:
+            comparison_eligible_count += 1
+        for field in STRICT_FALSE_OUTCOME_FIELDS:
+            if comparison.get(field) is True:
+                boundary_observed = True
+
+    task_count = len(tasks)
+    if boundary_observed or (task_count and comparison_eligible_count == 0):
+        return "degraded", comparison_eligible_count, boundary_observed
+    if any(isinstance(task, dict) and task.get("status") == "passed" for task in tasks):
+        return "passed", comparison_eligible_count, boundary_observed
+    return "skipped", comparison_eligible_count, boundary_observed
+
+
+def validate_suite_consistency(report: dict, suite: dict, tasks: list) -> dict:
+    suite_task_count = require_int(suite.get("taskCount"), "suite.taskCount")
+    derived_task_count = len(tasks)
+    if suite_task_count != derived_task_count:
+        fail(
+            "suite.taskCount did not match derived tasks: "
+            f"{suite_task_count} != {derived_task_count}"
+        )
+
+    expected_status, comparison_eligible_count, boundary_observed = derived_suite_status(tasks)
+    actual_status = report.get("status")
+    if actual_status != expected_status:
+        fail(
+            "report.status did not match derived suite status: "
+            f"{actual_status} != {expected_status}"
+        )
+
+    return {
+        "strictSuiteStatusChecks": True,
+        "suiteTaskCount": suite_task_count,
+        "derivedTaskCount": derived_task_count,
+        "derivedComparisonEligibleCount": comparison_eligible_count,
+        "derivedBoundaryObserved": boundary_observed,
+        "derivedStatus": expected_status,
+        "matchesDerivedTaskCount": True,
+        "matchesDerivedStatus": True,
+    }
+
+
 def derived_aggregate_consistency(aggregate: dict, summaries: list, tasks: list) -> dict:
     comparison_eligible_count = 0
     comparable_ctxhelm_lane_count = 0
@@ -1372,6 +1421,7 @@ def validate_suite(report: dict, args: argparse.Namespace) -> dict:
         )
         validate_task_lanes(task, args, f"tasks[{index}]")
     aggregate_consistency = validate_aggregate_consistency(aggregate, summaries, tasks)
+    suite_consistency = validate_suite_consistency(report, suite, tasks)
     return {
         "schemaVersion": "ctxhelm-agent-run-proof-check-v1",
         "status": "passed",
@@ -1385,6 +1435,7 @@ def validate_suite(report: dict, args: argparse.Namespace) -> dict:
         "runner": runner_summary(report, args),
         "suite": suite_summary(suite, args),
         "suiteTaskChecks": suite_task_check_summary(tasks, current_suite_specs),
+        "suiteConsistency": suite_consistency,
         "taskLaneChecks": task_lane_summary(tasks),
         "aggregateConsistency": aggregate_consistency,
         "metrics": {

@@ -336,8 +336,11 @@ source-free `agent-run-outcome-proof.json` audit artifact into
 `ctxhelm-agent-run-proof-check-v1` and records the saved report filename,
 report SHA-256, thresholds, source-free privacy checks, identity checks, runner
 metadata, current runner script freshness, current suite freshness, aggregate
-metrics, aggregate consistency checks, suite-task checks, task-lane checks,
-boundary checks, and lane quality summaries. When `--current-suite` is provided,
+metrics, aggregate consistency checks, suite-task checks, suite status checks,
+task-lane checks, boundary checks, and lane quality summaries. The checker also
+derives `suite.taskCount` from `tasks[*]` and derives `report.status` from
+nested task statuses, comparison eligibility, and strict boundary flags, so a
+stale suite envelope cannot support a release claim. When `--current-suite` is provided,
 the checker re-parses the current suite and validates every saved
 `tasks[*].taskSha256` plus `tasks[*].targetFiles` against the current task text
 and target list. It also validates every task comparison and task lane, so a
@@ -361,6 +364,8 @@ It also derives top-level comparison aggregates such as
 `targetReadCoverageDeltaAverage`, `targetCoverageDeltaAverage`,
 `readFileDeltaSum`, `irrelevantReadDeltaSum`, `commandExecutionDeltaSum`, and
 `ctxhelmToolCallsObserved` from `tasks[*].comparison`.
+It also enforces suite status checks by deriving `suite.taskCount` and
+`report.status` from the nested task records and boundary state.
 The checker derives `aggregate.outcomeClaim` and
 `aggregate.recommendedResearchActions` from those source-free comparison
 aggregates and boundary flags, so stale outcome labels or R&D routing actions

@@ -257,6 +257,9 @@ derived task comparisons, lane-summary metrics derived from
 per-task retry costs, read-efficiency metrics derived from lane summaries, and
 top-level comparison aggregates derived from `tasks[*].comparison`, including
 coverage deltas, read deltas, command deltas, and ctxhelm tool-call observation.
+The checker also enforces suite status checks by deriving `suite.taskCount` and
+`report.status` from the nested task records, comparison eligibility, and
+boundary state, so stale suite envelopes cannot support proof claims.
 The checker derives `aggregate.outcomeClaim` and
 `aggregate.recommendedResearchActions` from those source-free comparison
 aggregates and boundary flags, and also enforces strict absence of client
@@ -268,7 +271,7 @@ contract, or task suite changes. JSON output uses
 `ctxhelm-agent-run-proof-check-v1` and records the saved report filename,
 report SHA-256, thresholds, source-free privacy checks, runner metadata,
 identity checks, current runner script freshness, current suite freshness,
-suite-task checks, aggregate metrics, aggregate consistency checks,
+suite-task checks, suite status checks, aggregate metrics, aggregate consistency checks,
 lane-summary metric checks, retry-cost consistency checks, read-efficiency consistency checks,
 comparison aggregate checks, outcome routing checks, task-lane checks, boundary
 checks, and lane quality summaries.
