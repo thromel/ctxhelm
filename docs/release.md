@@ -287,7 +287,7 @@ After all required checks pass, the gate writes a source-free proof bundle summa
 CTXHELM_PROOF_DIR=/absolute/path/to/proof bash scripts/release-gate.sh
 ```
 
-The proof summary records the checked `ctxhelm` version, binary SHA-256, archive SHA-256, manifest name, audit report name, required check outcomes, optional benchmark/client proof status, resource-backed gap-summary contract status, and privacy status. It records file names and checksums instead of machine-local binary or repository paths.
+The proof summary records the checked `ctxhelm` version, binary SHA-256, archive SHA-256, manifest name, audit report name, required check outcomes, optional benchmark/client proof status, optional agent-run outcome proof status, resource-backed gap-summary contract status, and privacy status. It records file names and checksums instead of machine-local binary or repository paths.
 
 The clean cold fixture proof is the production retrieval-quality release check
 for the four-repo corpus. Prepare the detached fixtures once:
@@ -316,6 +316,33 @@ missing or stale fixtures fail the gate. Maintainers may override the config
 with `CTXHELM_CLEAN_FIXTURE_CONFIG=/absolute/path/to/config.json` or skip the
 check explicitly with `CTXHELM_SKIP_CLEAN_FIXTURE_PROOF=1` for non-release local
 diagnostics.
+
+Agent-run outcome proof is optional because it validates a saved real-client
+report instead of running Codex, Claude, Cursor, or OpenCode during the release
+gate. To enforce the current Codex breadth-suite claim, pass a persisted
+source-free suite report:
+
+```bash
+CTXHELM_AGENT_RUN_PROOF_REPORT="$(pwd)/.ctxhelm/e2e/phase322-agent-run-codex-target-first-breadth-suite.json" \
+  CTXHELM_REQUIRE_AGENT_RUN_PROOF=1 \
+  bash scripts/release-gate.sh
+```
+
+The gate validates the report with `scripts/check-agent-run-proof.py` and
+records `agentRunOutcomeProof` plus `agentRunOutcomeProofRequired` in
+`release-proof-summary.json`. The default thresholds require a suite report
+with `ctxhelm_improved`, at least four tasks, four comparison-eligible tasks,
+sixteen comparable ctxhelm lanes, `1.0` minimum average target-read coverage in
+each ctxhelm lane, retry-cost fields, no runner-fingerprint gap, no more than
+two extra reads across best lanes, and no client failures, rate limits,
+forbidden commands, evidence misses, evidence-only targets, or under-read
+targets. Maintainers can adjust the thresholds with
+`CTXHELM_AGENT_RUN_MIN_TASK_COUNT`,
+`CTXHELM_AGENT_RUN_MIN_COMPARISON_ELIGIBLE`,
+`CTXHELM_AGENT_RUN_MIN_COMPARABLE_CTXHELM_LANES`,
+`CTXHELM_AGENT_RUN_MIN_TARGET_READ_COVERAGE`,
+`CTXHELM_AGENT_RUN_MAX_EXTRA_READ_DELTA`, and
+`CTXHELM_AGENT_RUN_MIN_IRRELEVANT_READ_DELTA`.
 
 Phase 183 refreshes the default clean fixture config after the old pinned
 VeriSchema object became unreachable. The refreshed four-repo proof keeps the

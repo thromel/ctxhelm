@@ -226,6 +226,7 @@ fn release_gate_script_contract() {
         "scripts/check-release-docs.sh",
         "scripts/release-package.sh",
         "scripts/verify-release-archive.sh",
+        "scripts/check-agent-run-proof.py",
         "scripts/smoke-first-pack.sh",
         "scripts/smoke-storage.sh",
         "scripts/smoke-memory.sh",
@@ -271,15 +272,26 @@ fn release_gate_script_contract() {
         "CTXHELM_REAL_CLIENT_EVIDENCE_DIR",
         "CTXHELM_PROOF_DIR",
         "CTXHELM_BENCHMARK_CONFIG",
+        "CTXHELM_AGENT_RUN_PROOF_REPORT",
+        "CTXHELM_REQUIRE_AGENT_RUN_PROOF",
+        "CTXHELM_AGENT_RUN_MIN_TASK_COUNT",
+        "CTXHELM_AGENT_RUN_MIN_COMPARISON_ELIGIBLE",
+        "CTXHELM_AGENT_RUN_MIN_COMPARABLE_CTXHELM_LANES",
+        "CTXHELM_AGENT_RUN_MIN_TARGET_READ_COVERAGE",
+        "CTXHELM_AGENT_RUN_MAX_EXTRA_READ_DELTA",
+        "CTXHELM_AGENT_RUN_MIN_IRRELEVANT_READ_DELTA",
         "phase183-clean-fixture-refresh-config.json",
         "eval proof",
         "check-product-proof.py",
+        "check-agent-run-proof.py",
         "release proof bundle",
         "release-proof-summary.json",
         "binaryIdentity",
         "optionalProofs",
         "cleanColdFixtureProductProof",
         "cleanColdFixtureRequired",
+        "agentRunOutcomeProof",
+        "agentRunOutcomeProofRequired",
         "stale clean proof fixtures",
         "rev-parse",
         "cat-file",
@@ -1335,6 +1347,96 @@ fn product_proof_checker_accepts_promote_and_rejects_block() {
     assert!(
         stderr.contains("broad fixed corpus metric regressed below floor")
             && stderr.contains("VeriSchema.fileRecallAt10"),
+        "unexpected checker error: {stderr}"
+    );
+}
+
+#[test]
+fn agent_run_proof_checker_accepts_phase322_and_rejects_regression() {
+    let repo_root = workspace_root();
+    let script = repo_root.join("scripts/check-agent-run-proof.py");
+    assert!(script.exists(), "agent-run proof checker is missing");
+
+    let compile = Command::new("python3")
+        .arg("-m")
+        .arg("py_compile")
+        .arg(&script)
+        .current_dir(&repo_root)
+        .output()
+        .unwrap();
+    assert!(
+        compile.status.success(),
+        "py_compile failed: {}",
+        String::from_utf8_lossy(&compile.stderr)
+    );
+
+    let phase322_report = repo_root
+        .join(".ctxhelm/e2e/phase322-agent-run-codex-target-first-breadth-suite.json");
+    assert!(
+        phase322_report.exists(),
+        "Phase 322 agent-run proof fixture is missing"
+    );
+
+    let proof_args = [
+        "--workflow",
+        "suite",
+        "--require-outcome",
+        "ctxhelm_improved",
+        "--min-task-count",
+        "4",
+        "--min-comparison-eligible",
+        "4",
+        "--min-comparable-ctxhelm-lanes",
+        "16",
+        "--min-ctxhelm-target-read-coverage",
+        "1.0",
+        "--max-extra-read-delta",
+        "2",
+        "--min-irrelevant-read-delta",
+        "2",
+        "--require-retry-cost",
+        "--require-runner-fingerprint",
+    ];
+
+    let accepted = Command::new("python3")
+        .arg(&script)
+        .arg(&phase322_report)
+        .args(proof_args)
+        .current_dir(&repo_root)
+        .output()
+        .unwrap();
+    assert!(
+        accepted.status.success(),
+        "Phase 322 proof should pass: stdout={} stderr={}",
+        String::from_utf8_lossy(&accepted.stdout),
+        String::from_utf8_lossy(&accepted.stderr)
+    );
+
+    let temp = TempDir::new().unwrap();
+    let mut payload: serde_json::Value =
+        serde_json::from_slice(&fs::read(&phase322_report).unwrap()).unwrap();
+    payload["aggregate"]["ctxhelmEvidenceOnlyTargetsObserved"] = serde_json::Value::Bool(true);
+    let rejected_path = temp.path().join("agent-run-regression.json");
+    fs::write(
+        &rejected_path,
+        serde_json::to_string_pretty(&payload).unwrap(),
+    )
+    .unwrap();
+
+    let rejected = Command::new("python3")
+        .arg(&script)
+        .arg(&rejected_path)
+        .args(proof_args)
+        .current_dir(&repo_root)
+        .output()
+        .unwrap();
+    assert!(
+        !rejected.status.success(),
+        "proof with evidence-only target regression should fail"
+    );
+    let stderr = String::from_utf8_lossy(&rejected.stderr);
+    assert!(
+        stderr.contains("ctxhelmEvidenceOnlyTargetsObserved"),
         "unexpected checker error: {stderr}"
     );
 }

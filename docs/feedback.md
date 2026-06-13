@@ -224,6 +224,31 @@ outcome claim is `insufficient_comparable_lanes`. This is the preferred path
 for comparing native agent search against ctxhelm-assisted exploration across
 repeated tasks.
 
+Persisted suite reports can be checked without rerunning a live agent:
+
+```bash
+python3 scripts/check-agent-run-proof.py \
+  .ctxhelm/e2e/agent-run-suite-codex.json \
+  --workflow suite \
+  --require-outcome ctxhelm_improved \
+  --min-task-count 4 \
+  --min-comparison-eligible 4 \
+  --min-comparable-ctxhelm-lanes 16 \
+  --min-ctxhelm-target-read-coverage 1.0 \
+  --max-extra-read-delta 2 \
+  --min-irrelevant-read-delta 0 \
+  --require-retry-cost \
+  --require-runner-fingerprint
+```
+
+The checker enforces the source-free privacy contract, runner fingerprint
+metadata, comparable-lane counts, target-read coverage floors, retry-cost
+fields, and strict absence of client failures, rate limits, forbidden commands,
+evidence misses, evidence-only targets, and under-read targets. Use it to gate
+claims about a specific saved report; it is not a substitute for collecting a
+fresh real-client report when the client version, runner, prompt contract, or
+task suite changes.
+
 ## Release Coverage
 
 The release gate runs `scripts/smoke-feedback.sh`. The smoke proves source-free

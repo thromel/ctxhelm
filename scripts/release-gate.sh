@@ -6,6 +6,7 @@ repo_root="$(cd "$script_dir/.." && pwd -P)"
 release_package_script="$repo_root/scripts/release-package.sh"
 verify_release_archive_script="$repo_root/scripts/verify-release-archive.sh"
 check_release_docs_script="$repo_root/scripts/check-release-docs.sh"
+check_agent_run_proof_script="$repo_root/scripts/check-agent-run-proof.py"
 smoke_first_pack_script="$repo_root/scripts/smoke-first-pack.sh"
 smoke_storage_script="$repo_root/scripts/smoke-storage.sh"
 smoke_memory_script="$repo_root/scripts/smoke-memory.sh"
@@ -413,6 +414,29 @@ else
   clean_fixture_status="skipped_missing_fixtures"
 fi
 
+log_step "optional agent-run outcome proof"
+agent_run_proof_status="skipped"
+agent_run_proof_required="${CTXHELM_REQUIRE_AGENT_RUN_PROOF:-0}"
+if [[ -n "${CTXHELM_AGENT_RUN_PROOF_REPORT:-}" ]]; then
+  python3 "$check_agent_run_proof_script" "$CTXHELM_AGENT_RUN_PROOF_REPORT" \
+    --workflow suite \
+    --require-outcome "${CTXHELM_AGENT_RUN_REQUIRE_OUTCOME:-ctxhelm_improved}" \
+    --min-task-count "${CTXHELM_AGENT_RUN_MIN_TASK_COUNT:-4}" \
+    --min-comparison-eligible "${CTXHELM_AGENT_RUN_MIN_COMPARISON_ELIGIBLE:-4}" \
+    --min-comparable-ctxhelm-lanes "${CTXHELM_AGENT_RUN_MIN_COMPARABLE_CTXHELM_LANES:-16}" \
+    --min-ctxhelm-target-read-coverage "${CTXHELM_AGENT_RUN_MIN_TARGET_READ_COVERAGE:-1.0}" \
+    --max-extra-read-delta "${CTXHELM_AGENT_RUN_MAX_EXTRA_READ_DELTA:-2}" \
+    --min-irrelevant-read-delta "${CTXHELM_AGENT_RUN_MIN_IRRELEVANT_READ_DELTA:-0}" \
+    --require-retry-cost \
+    --require-runner-fingerprint
+  agent_run_proof_status="passed"
+elif [[ "$agent_run_proof_required" == "1" ]]; then
+  echo "agent-run proof required but CTXHELM_AGENT_RUN_PROOF_REPORT was not set" >&2
+  exit 68
+else
+  echo "agent-run outcome proof skipped: set CTXHELM_AGENT_RUN_PROOF_REPORT=/path/to/report.json"
+fi
+
 log_step "optional Codex real-client evidence"
 codex_status="skipped"
 CTXHELM_BIN="$ctxhelm_bin" \
@@ -477,7 +501,7 @@ else
 fi
 
 log_step "release proof bundle"
-python3 - "$proof_summary_path" "$ctxhelm_version" "$(basename "$ctxhelm_bin")" "$binary_source" "$binary_sha256" "$(basename "$archive_path")" "$archive_sha256" "$(basename "$manifest_path")" "$(basename "$audit_report_path")" "$benchmark_status" "$clean_fixture_status" "$clean_fixture_required" "$codex_status" "$claude_status" "$claude_workflow_status" "$claude_workflow_required" "$real_client_required" "$cursor_real_client_status" "$opencode_real_client_status" <<'PY'
+python3 - "$proof_summary_path" "$ctxhelm_version" "$(basename "$ctxhelm_bin")" "$binary_source" "$binary_sha256" "$(basename "$archive_path")" "$archive_sha256" "$(basename "$manifest_path")" "$(basename "$audit_report_path")" "$benchmark_status" "$clean_fixture_status" "$clean_fixture_required" "$agent_run_proof_status" "$agent_run_proof_required" "$codex_status" "$claude_status" "$claude_workflow_status" "$claude_workflow_required" "$real_client_required" "$cursor_real_client_status" "$opencode_real_client_status" <<'PY'
 import json
 import sys
 
@@ -494,6 +518,8 @@ import sys
     benchmark_status,
     clean_fixture_status,
     clean_fixture_required,
+    agent_run_proof_status,
+    agent_run_proof_required,
     codex_status,
     claude_status,
     claude_workflow_status,
@@ -540,6 +566,8 @@ required_checks = [
 ]
 if clean_fixture_required == "1":
     required_checks.append("clean cold fixture product proof")
+if agent_run_proof_required == "1":
+    required_checks.append("agent-run outcome proof")
 payload = {
     "schemaVersion": 1,
     "status": "passed",
@@ -560,6 +588,8 @@ payload = {
         "benchmarkProductProof": benchmark_status,
         "cleanColdFixtureProductProof": clean_fixture_status,
         "cleanColdFixtureRequired": clean_fixture_required == "1",
+        "agentRunOutcomeProof": agent_run_proof_status,
+        "agentRunOutcomeProofRequired": agent_run_proof_required == "1",
         "resourceBackedGapSummaryContract": (
             "checked"
             if benchmark_status == "passed" or clean_fixture_status == "passed"
