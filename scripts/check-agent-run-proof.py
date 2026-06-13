@@ -177,6 +177,98 @@ def validate_lane_summaries(
                 )
 
 
+def validate_empty_or_missing_list(value: Any, label: str) -> None:
+    if value is None:
+        return
+    items = require_list(value, label)
+    if items:
+        fail(f"{label} was not empty")
+
+
+def validate_task_comparison(comparison: dict, args: argparse.Namespace, label: str) -> None:
+    if comparison.get("comparisonEligible") is not True:
+        fail(f"{label}.comparisonEligible was not true")
+    if args.strict:
+        for field in STRICT_FALSE_OUTCOME_FIELDS:
+            if field in comparison and comparison.get(field) is not False:
+                fail(f"{label}.{field} was not false")
+    if args.require_retry_cost:
+        validate_retry_cost(require_dict(comparison.get("retryCost"), f"{label}.retryCost"), label)
+
+
+def validate_task_lane(lane: dict, args: argparse.Namespace, label: str) -> None:
+    lane_name = str(lane.get("lane", ""))
+    if not lane_name:
+        fail(f"{label}.lane was missing")
+    if lane.get("status") != "passed":
+        fail(f"{label}.status was not passed")
+    if int(lane.get("clientExitStatus", -1)) != 0:
+        fail(f"{label}.clientExitStatus was not zero")
+    metrics = require_dict(lane.get("metrics"), f"{label}.metrics")
+    for field in ("forbiddenCommandCount", "missingRequiredCtxhelmCallCount", "invalidRequiredCtxhelmCallCount"):
+        if int(metrics.get(field, 0)) != 0:
+            fail(f"{label}.metrics.{field} was not zero")
+    validate_empty_or_missing_list(lane.get("forbiddenCommands"), f"{label}.forbiddenCommands")
+    if lane.get("clientFailure") is not None:
+        fail(f"{label}.clientFailure was not null")
+    if lane.get("rateLimit") is not None:
+        fail(f"{label}.rateLimit was not null")
+    validate_empty_or_missing_list(lane.get("ctxhelmUnderReadTargets"), f"{label}.ctxhelmUnderReadTargets")
+
+    if not lane_name.startswith("ctxhelm-"):
+        return
+
+    if args.min_ctxhelm_target_read_coverage is not None:
+        coverage = require_number(
+            metrics.get("targetReadCoverage"),
+            f"{label}.metrics.targetReadCoverage",
+        )
+        if coverage < args.min_ctxhelm_target_read_coverage:
+            fail(
+                f"{label}.metrics.targetReadCoverage "
+                f"{coverage} < {args.min_ctxhelm_target_read_coverage}"
+            )
+    for field in (
+        "ctxhelmEvidenceMissedTargetCount",
+        "ctxhelmEvidenceOnlyTargetCount",
+        "missedTargetCount",
+        "targetDiscoveredOnlyCount",
+    ):
+        if int(metrics.get(field, 0)) != 0:
+            fail(f"{label}.metrics.{field} was not zero")
+    required_calls = require_list(lane.get("requiredCtxhelmCalls"), f"{label}.requiredCtxhelmCalls")
+    if not required_calls:
+        fail(f"{label}.requiredCtxhelmCalls was empty")
+    required_count = int(metrics.get("requiredCtxhelmCallCount", 0))
+    observed_count = int(metrics.get("observedRequiredCtxhelmCallCount", 0))
+    tool_count = int(metrics.get("ctxhelmToolCallCount", 0))
+    if required_count != len(required_calls):
+        fail(f"{label}.metrics.requiredCtxhelmCallCount did not match requiredCtxhelmCalls")
+    if observed_count < required_count:
+        fail(f"{label}.metrics.observedRequiredCtxhelmCallCount was below required count")
+    if tool_count < required_count:
+        fail(f"{label}.metrics.ctxhelmToolCallCount was below required count")
+    validate_empty_or_missing_list(lane.get("ctxhelmEvidenceMisses"), f"{label}.ctxhelmEvidenceMisses")
+    validate_empty_or_missing_list(
+        lane.get("ctxhelmEvidenceOnlyTargets"),
+        f"{label}.ctxhelmEvidenceOnlyTargets",
+    )
+
+
+def validate_task_lanes(task: dict, args: argparse.Namespace, label: str) -> None:
+    lanes = require_list(task.get("lanes"), f"{label}.lanes")
+    if not lanes:
+        fail(f"{label}.lanes was empty")
+    ctxhelm_lane_count = 0
+    for index, lane in enumerate(lanes):
+        lane = require_dict(lane, f"{label}.lanes[{index}]")
+        if str(lane.get("lane", "")).startswith("ctxhelm-"):
+            ctxhelm_lane_count += 1
+        validate_task_lane(lane, args, f"{label}.lanes[{index}]")
+    if ctxhelm_lane_count == 0:
+        fail(f"{label}.lanes had no ctxhelm lanes")
+
+
 def validate_retry_cost(retry_cost: dict, label: str) -> None:
     for field in (
         "retryTriggeredLanes",
@@ -386,6 +478,25 @@ def lane_quality_summary(summaries: list) -> list:
     return quality
 
 
+def task_lane_summary(tasks: list) -> dict:
+    task_lane_count = 0
+    ctxhelm_task_lane_count = 0
+    for task in tasks:
+        if not isinstance(task, dict):
+            continue
+        for lane in task.get("lanes", []):
+            if not isinstance(lane, dict):
+                continue
+            task_lane_count += 1
+            if str(lane.get("lane", "")).startswith("ctxhelm-"):
+                ctxhelm_task_lane_count += 1
+    return {
+        "strictTaskLaneChecks": True,
+        "taskLaneCount": task_lane_count,
+        "ctxhelmTaskLaneCount": ctxhelm_task_lane_count,
+    }
+
+
 def validate_suite(report: dict, args: argparse.Namespace) -> dict:
     if report.get("workflowKind") != "paired-agent-context-suite":
         fail("workflowKind was not paired-agent-context-suite")
@@ -410,7 +521,8 @@ def validate_suite(report: dict, args: argparse.Namespace) -> dict:
         summaries,
         args.min_ctxhelm_target_read_coverage,
     )
-    for index, task in enumerate(require_list(report.get("tasks"), "tasks")):
+    tasks = require_list(report.get("tasks"), "tasks")
+    for index, task in enumerate(tasks):
         task = require_dict(task, f"tasks[{index}]")
         if task.get("status") != "passed":
             fail(f"tasks[{index}].status was not passed")
@@ -419,6 +531,12 @@ def validate_suite(report: dict, args: argparse.Namespace) -> dict:
         if task.get("taskSha256") is None:
             fail(f"tasks[{index}].taskSha256 was missing")
         validate_privacy(task, f"tasks[{index}]")
+        validate_task_comparison(
+            require_dict(task.get("comparison"), f"tasks[{index}].comparison"),
+            args,
+            f"tasks[{index}].comparison",
+        )
+        validate_task_lanes(task, args, f"tasks[{index}]")
     return {
         "schemaVersion": "ctxhelm-agent-run-proof-check-v1",
         "status": "passed",
@@ -431,6 +549,7 @@ def validate_suite(report: dict, args: argparse.Namespace) -> dict:
         "privacyStatus": privacy_summary(report),
         "runner": runner_summary(report, args),
         "suite": suite_summary(suite, args),
+        "taskLaneChecks": task_lane_summary(tasks),
         "metrics": {
             "taskCount": task_count,
             "comparisonEligibleCount": comparison_eligible,

@@ -1381,8 +1381,8 @@ fn agent_run_proof_checker_accepts_phase322_and_rejects_regression() {
         String::from_utf8_lossy(&compile.stderr)
     );
 
-    let phase322_report = repo_root
-        .join(".ctxhelm/e2e/phase322-agent-run-codex-target-first-breadth-suite.json");
+    let phase322_report =
+        repo_root.join(".ctxhelm/e2e/phase322-agent-run-codex-target-first-breadth-suite.json");
     let codex_runner_script = repo_root.join("scripts/e2e-agent-run-codex.sh");
     let codex_suite = repo_root.join(".planning/e2e/2026-06-06-phase251-codex-rd-suite.json");
     assert!(
@@ -1393,7 +1393,10 @@ fn agent_run_proof_checker_accepts_phase322_and_rejects_regression() {
         codex_runner_script.exists(),
         "Codex agent-run runner script is missing"
     );
-    assert!(codex_suite.exists(), "Codex agent-run suite file is missing");
+    assert!(
+        codex_suite.exists(),
+        "Codex agent-run suite file is missing"
+    );
 
     let proof_args = [
         "--workflow",
@@ -1472,7 +1475,10 @@ fn agent_run_proof_checker_accepts_phase322_and_rejects_regression() {
     assert_eq!(summary["identity"]["matchesExpectedClientName"], true);
     assert_eq!(summary["identity"]["matchesExpectedClientVersion"], true);
     assert_eq!(summary["thresholds"]["minTaskCount"], 4);
-    assert_eq!(summary["thresholds"]["expectedCtxhelmVersion"], "ctxhelm 2.4.0");
+    assert_eq!(
+        summary["thresholds"]["expectedCtxhelmVersion"],
+        "ctxhelm 2.4.0"
+    );
     assert_eq!(summary["thresholds"]["expectedClientName"], "codex");
     assert_eq!(
         summary["thresholds"]["expectedClientVersion"],
@@ -1484,6 +1490,9 @@ fn agent_run_proof_checker_accepts_phase322_and_rejects_regression() {
     assert_eq!(summary["privacyStatus"]["sourceTextLogged"], true);
     assert_eq!(summary["runner"]["matchesCurrentRunnerScript"], true);
     assert_eq!(summary["suite"]["matchesCurrentSuite"], true);
+    assert_eq!(summary["taskLaneChecks"]["strictTaskLaneChecks"], true);
+    assert_eq!(summary["taskLaneChecks"]["taskLaneCount"], 20);
+    assert_eq!(summary["taskLaneChecks"]["ctxhelmTaskLaneCount"], 16);
     assert!(summary["reportSha256"].as_str().unwrap().len() == 64);
 
     let temp = TempDir::new().unwrap();
@@ -1521,8 +1530,7 @@ fn agent_run_proof_checker_accepts_phase322_and_rejects_regression() {
     let stale_runner_path = temp.path().join("agent-run-stale-runner.json");
     let mut stale_payload: serde_json::Value =
         serde_json::from_slice(&fs::read(&phase322_report).unwrap()).unwrap();
-    stale_payload["runner"]["scriptSha256"] =
-        serde_json::Value::String("0".repeat(64));
+    stale_payload["runner"]["scriptSha256"] = serde_json::Value::String("0".repeat(64));
     fs::write(
         &stale_runner_path,
         serde_json::to_string_pretty(&stale_payload).unwrap(),
@@ -1552,8 +1560,7 @@ fn agent_run_proof_checker_accepts_phase322_and_rejects_regression() {
     let stale_suite_path = temp.path().join("agent-run-stale-suite.json");
     let mut stale_suite_payload: serde_json::Value =
         serde_json::from_slice(&fs::read(&phase322_report).unwrap()).unwrap();
-    stale_suite_payload["suite"]["suiteSha256"] =
-        serde_json::Value::String("0".repeat(64));
+    stale_suite_payload["suite"]["suiteSha256"] = serde_json::Value::String("0".repeat(64));
     fs::write(
         &stale_suite_path,
         serde_json::to_string_pretty(&stale_suite_payload).unwrap(),
@@ -1609,6 +1616,37 @@ fn agent_run_proof_checker_accepts_phase322_and_rejects_regression() {
     assert!(
         stderr.contains("client.version"),
         "unexpected stale-client checker error: {stderr}"
+    );
+
+    let stale_lane_path = temp.path().join("agent-run-stale-task-lane.json");
+    let mut stale_lane_payload: serde_json::Value =
+        serde_json::from_slice(&fs::read(&phase322_report).unwrap()).unwrap();
+    stale_lane_payload["tasks"][0]["lanes"][1]["metrics"]["ctxhelmEvidenceOnlyTargetCount"] =
+        serde_json::Value::Number(serde_json::Number::from(1));
+    fs::write(
+        &stale_lane_path,
+        serde_json::to_string_pretty(&stale_lane_payload).unwrap(),
+    )
+    .unwrap();
+    let stale_lane = Command::new("python3")
+        .arg(&script)
+        .arg(&stale_lane_path)
+        .args(proof_args)
+        .arg("--current-runner-script")
+        .arg(&codex_runner_script)
+        .arg("--current-suite")
+        .arg(&codex_suite)
+        .current_dir(&repo_root)
+        .output()
+        .unwrap();
+    assert!(
+        !stale_lane.status.success(),
+        "proof with stale task-lane metrics should fail"
+    );
+    let stderr = String::from_utf8_lossy(&stale_lane.stderr);
+    assert!(
+        stderr.contains("tasks[0].lanes[1].metrics.ctxhelmEvidenceOnlyTargetCount"),
+        "unexpected stale-lane checker error: {stderr}"
     );
 }
 
