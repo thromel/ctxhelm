@@ -29,6 +29,16 @@ ctxhelm doctor --repo /path/to/repo --binary "$(command -v ctxhelm)"
 
 **Likely cause:** the client process cannot resolve `ctxhelm` from its PATH.
 
+For Claude Code projects, prefer the one-command project setup:
+
+```bash
+ctxhelm setup claude --repo "$REPO"
+```
+
+It writes project-local `.mcp.json` with an absolute ctxhelm binary path and
+does not mutate global Claude Code config. Preview it first with
+`ctxhelm setup claude --repo "$REPO" --dry-run`.
+
 **Fix:** configure the MCP server command with an absolute path:
 
 ```json

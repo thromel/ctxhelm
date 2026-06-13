@@ -7,7 +7,7 @@ ctxhelm is an agent-native, read-only context broker. It generates repo-local gu
 | Agent | Generated artifact/snippet | Default write scope | Mutates global config by default | setup-check coverage | deterministic protocol proof | Optional real-client proof status | Verified-version/evidence notes |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | Codex CLI | Managed `AGENTS.md` section plus printed MCP setup guidance | Repo-local guidance only; user copies any MCP config manually | No global config mutation | Verifies managed `AGENTS.md` and `.ctxhelm/ctxhelm.toml` | Supported through direct JSON-RPC/MCP smoke against `ctxhelm serve-mcp` | Optional Codex smoke can require server-side `prepare_task` and `get_pack` request-log evidence; current local outcome proof passes with explicit-repo tool-call evidence | Local command available: Codex CLI `0.137.0`; current local matrix records five source-free lanes, four comparable ctxhelm lanes, no forbidden commands, and outcome claim `ctxhelm_improved` |
-| Claude Code | `.claude/commands/ctxhelm-bugfix.md` and `.ctxhelm/adapters/claude-mcp.json` | Repo/project-local command and mergeable MCP snippet | No global config mutation; user merges project MCP config when desired | Verifies Claude command and adapter snippet when `--claude` is requested | Supported through direct JSON-RPC/MCP smoke against `ctxhelm serve-mcp` | Optional Claude smoke and workflow eval can require server-side `prepare_task` and `get_pack` request-log evidence; current availability preflight is rate-limited | Local command available: Claude Code `2.1.163`; current availability proof classifies API status `429` separately from ctxhelm protocol and retrieval behavior |
+| Claude Code | `.claude/commands/ctxhelm-bugfix.md`, `.ctxhelm/adapters/claude-mcp.json`, and project-local `.mcp.json` through `ctxhelm setup claude` | Repo/project-local command and MCP config only | No global config mutation; project MCP write is explicit and repo-local | Verifies Claude command and adapter snippet when `--claude` is requested | Supported through direct JSON-RPC/MCP smoke against `ctxhelm serve-mcp` | Optional Claude smoke and workflow eval can require server-side `prepare_task` and `get_pack` request-log evidence; current availability preflight is rate-limited | Local command available: Claude Code `2.1.163`; current availability proof classifies API status `429` separately from ctxhelm protocol and retrieval behavior |
 | Cursor | `.cursor/rules/ctxhelm.mdc` | Repo-local rule file | No global config mutation | Verifies Cursor rule when `--cursor` is requested | Supported through direct JSON-RPC/MCP smoke against `ctxhelm serve-mcp` | Optional Cursor Agent CLI smoke can require server-side `prepare_task` and `get_pack` request-log evidence; current local proof is skipped because Cursor Agent is not logged in | Local command available: Cursor `3.6.21`; version presence alone is not tool-call proof |
 | OpenCode | `.ctxhelm/adapters/opencode.jsonc.snippet` | Repo-local snippet for manual merge | No global config mutation | Verifies OpenCode snippet when `--opencode` is requested | Supported through direct JSON-RPC/MCP smoke against `ctxhelm serve-mcp` | Optional OpenCode smoke passes locally with server-side `prepare_task` and `get_pack` request-log evidence | Local command available: OpenCode `1.14.25`; current proof records two explicit-repo MCP tool calls |
 
@@ -184,12 +184,31 @@ Codex setup is copy/paste-oriented. ctxhelm does not edit `CODEX_HOME`, user con
 Run:
 
 ```bash
+ctxhelm setup claude --repo "$REPO"
+```
+
+This is the easiest secure Claude path. It initializes the repo-local Claude
+command and adapter snippet, writes or merges project `.mcp.json` with only
+`mcpServers.ctxhelm`, uses an absolute ctxhelm binary path, runs setup
+validation, and does not mutate global Claude Code config.
+
+Preview without writing:
+
+```bash
+ctxhelm setup claude --repo "$REPO" --dry-run
+```
+
+Manual setup is still available:
+
+```bash
 ctxhelm init --repo "$REPO" --claude
 ctxhelm doctor --repo "$REPO"
 ctxhelm setup-check --repo "$REPO" --claude
 ```
 
-The Claude path writes repo-local command guidance and a mergeable `.ctxhelm/adapters/claude-mcp.json` snippet. ctxhelm does not automatically write `.mcp.json`; the user or project maintainer chooses whether to merge the snippet.
+The manual Claude path writes repo-local command guidance and a mergeable
+`.ctxhelm/adapters/claude-mcp.json` snippet. Use it when you want to inspect or
+merge MCP config yourself.
 
 ## Cursor Notes
 

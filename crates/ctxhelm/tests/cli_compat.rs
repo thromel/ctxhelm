@@ -80,6 +80,7 @@ fn help_lists_core_commands() {
         .stdout(contains("related-tests"))
         .stdout(contains("dependencies"))
         .stdout(contains("precision"))
+        .stdout(contains("setup"))
         .stdout(contains("setup-check"))
         .stdout(contains("doctor"))
         .stdout(contains("eval"))
@@ -235,6 +236,73 @@ fn init_with_adapters_reports_repo_local_outputs_only() {
             predicates::str::contains("mutate global Codex, Claude, Cursor, or OpenCode config")
                 .not(),
         );
+}
+
+#[test]
+fn setup_claude_writes_project_local_mcp_config() {
+    let fixture = fixture_repo();
+    fs::write(
+        fixture.repo.join(".mcp.json"),
+        serde_json::to_string_pretty(&json!({
+            "mcpServers": {
+                "other": {
+                    "command": "other-tool",
+                    "args": ["serve"]
+                }
+            }
+        }))
+        .unwrap(),
+    )
+    .unwrap();
+
+    Command::cargo_bin("ctxhelm")
+        .unwrap()
+        .env(CTXHELM_HOME_ENV, &fixture.home)
+        .args(["setup", "claude", "--repo"])
+        .arg(&fixture.repo)
+        .assert()
+        .success()
+        .stdout(contains("Claude Code setup for"))
+        .stdout(contains(".claude/commands/ctxhelm-bugfix.md"))
+        .stdout(contains(".ctxhelm/adapters/claude-mcp.json"))
+        .stdout(contains(".mcp.json"))
+        .stdout(contains("did not mutate global Claude Code config"))
+        .stdout(contains("Setup check for"))
+        .stdout(contains("Result: passed"));
+
+    let mcp: Value =
+        serde_json::from_str(&fs::read_to_string(fixture.repo.join(".mcp.json")).unwrap()).unwrap();
+    assert_eq!(mcp["mcpServers"]["ctxhelm"]["args"], json!(["serve-mcp"]));
+    let command = mcp["mcpServers"]["ctxhelm"]["command"]
+        .as_str()
+        .expect("ctxhelm command should be a string");
+    assert!(
+        Path::new(command).is_absolute(),
+        "setup should write an absolute ctxhelm binary path"
+    );
+    assert_eq!(mcp["mcpServers"]["other"]["command"], "other-tool");
+}
+
+#[test]
+fn setup_claude_dry_run_does_not_write_files() {
+    let fixture = fixture_repo();
+
+    Command::cargo_bin("ctxhelm")
+        .unwrap()
+        .env(CTXHELM_HOME_ENV, &fixture.home)
+        .args(["setup", "claude", "--repo"])
+        .arg(&fixture.repo)
+        .arg("--dry-run")
+        .assert()
+        .success()
+        .stdout(contains("Claude Code setup dry run"))
+        .stdout(contains("would write project MCP config"));
+
+    assert!(!fixture.repo.join(".mcp.json").exists());
+    assert!(!fixture
+        .repo
+        .join(".claude/commands/ctxhelm-bugfix.md")
+        .exists());
 }
 
 #[test]

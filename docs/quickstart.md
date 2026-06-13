@@ -44,6 +44,24 @@ Use an absolute path when possible. The same explicit `--repo` value should appe
 
 ## Initialize Repo-Local Guidance
 
+For Claude Code, the easiest secure path is the one-command setup:
+
+```bash
+ctxhelm setup claude --repo "$REPO"
+```
+
+It writes repo-local Claude guidance, merges a project-local `.mcp.json`
+`mcpServers.ctxhelm` entry that launches `ctxhelm serve-mcp`, uses an absolute
+ctxhelm binary path, and does not mutate global Claude Code config. Preview the
+same change without writing files:
+
+```bash
+ctxhelm setup claude --repo "$REPO" --dry-run
+```
+
+For all adapter snippets, or when you want manual control over MCP merging, use
+`init` plus `setup-check`:
+
 ```bash
 ctxhelm init --repo "$REPO" --cursor --claude --opencode
 ```
@@ -53,7 +71,7 @@ This writes repo-local guidance and optional adapter snippets:
 - `AGENTS.md` managed ctxhelm section
 - `.ctxhelm/ctxhelm.toml`
 - `.cursor/rules/ctxhelm.mdc` when `--cursor` is used
-- `.claude/commands/ctxhelm-bugfix.md` and `.ctxhelm/adapters/claude-mcp.json` when `--claude` is used
+- `.claude/commands/ctxhelm-bugfix.md` and `.ctxhelm/adapters/claude-mcp.json` when `--claude` is used; `ctxhelm setup claude` also writes or merges project `.mcp.json`
 - `.ctxhelm/adapters/opencode.jsonc.snippet` when `--opencode` is used
 
 Codex setup remains copy/paste-oriented. ctxhelm prints guidance but does not mutate global Codex configuration.

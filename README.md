@@ -104,10 +104,16 @@ ctxhelm doctor --repo "$REPO"
 Initialize repo-local guidance and optional agent snippets:
 
 ```bash
+ctxhelm setup claude --repo "$REPO"
 ctxhelm init --repo "$REPO" --cursor --claude --opencode
 ctxhelm doctor --repo "$REPO"
 ctxhelm setup-check --repo "$REPO" --cursor --claude --opencode
 ```
+
+`ctxhelm setup claude` is the easiest Claude Code path: it writes repo-local
+Claude guidance, merges a project-local `.mcp.json` entry for `ctxhelm
+serve-mcp`, uses an absolute ctxhelm binary path, and does not mutate global
+Claude Code config. Use `--dry-run` to preview the files first.
 
 Ask for a task plan with an explicit repo and, when you know it, an active file path:
 

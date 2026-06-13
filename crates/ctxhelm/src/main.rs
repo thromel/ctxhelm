@@ -1,4 +1,4 @@
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use clap::{Args, Parser, Subcommand, ValueEnum};
 use ctxhelm_compiler::{
     build_agent_preview_report_with_provider, build_graph_neighborhood_report,
@@ -81,6 +81,11 @@ struct Cli {
 #[derive(Debug, Subcommand)]
 enum Command {
     Init(InitArgs),
+    #[command(about = "Set up a supported agent with secure repo-local defaults")]
+    Setup {
+        #[command(subcommand)]
+        command: SetupCommand,
+    },
     #[command(about = "Run a read-only validation of generated setup artifacts")]
     SetupCheck(SetupCheckArgs),
     #[command(about = "Verify install, upgrade, release manifest, and local state compatibility")]
@@ -131,6 +136,28 @@ struct InitArgs {
     claude: bool,
     #[arg(long)]
     opencode: bool,
+}
+
+#[derive(Debug, Subcommand)]
+enum SetupCommand {
+    #[command(about = "Initialize Claude Code guidance and project-local MCP config")]
+    Claude(ClaudeSetupArgs),
+}
+
+#[derive(Debug, Args)]
+struct ClaudeSetupArgs {
+    #[arg(long)]
+    repo: Option<PathBuf>,
+    #[arg(
+        long,
+        help = "Preview the files and project MCP entry without writing anything."
+    )]
+    dry_run: bool,
+    #[arg(
+        long,
+        help = "ctxhelm binary to place in .mcp.json. Defaults to the running executable."
+    )]
+    binary: Option<PathBuf>,
 }
 
 #[derive(Debug, Args)]
@@ -1623,6 +1650,11 @@ fn main() -> Result<()> {
             let report = run_init(&repo.path, &init_options(&args))?;
             print_init_report(&report);
         }
+        Command::Setup { command } => match command {
+            SetupCommand::Claude(args) => {
+                run_claude_setup(&args)?;
+            }
+        },
         Command::SetupCheck(args) => {
             let start = args.repo.clone().unwrap_or(std::env::current_dir()?);
             let repo = RepoRoot::discover_from(&start)?;
@@ -2941,6 +2973,135 @@ fn setup_check_options(args: &SetupCheckArgs) -> InitOptions {
     adapter_options(args.cursor, args.claude, args.opencode)
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum ProjectMcpAction {
+    Created,
+    Updated,
+    Unchanged,
+}
+
+fn run_claude_setup(args: &ClaudeSetupArgs) -> Result<()> {
+    let start = args.repo.clone().unwrap_or(std::env::current_dir()?);
+    let repo = RepoRoot::discover_from(&start)?;
+    let binary = resolve_ctxhelm_setup_binary(args.binary.as_ref())?;
+    let mcp_path = repo.path.join(".mcp.json");
+
+    if args.dry_run {
+        println!("Claude Code setup dry run for {}", repo.path.display());
+        println!("- would initialize repo-local Claude guidance");
+        println!("- would write project MCP config: {}", mcp_path.display());
+        println!(
+            "- would register ctxhelm with absolute binary: {}",
+            binary.display()
+        );
+        println!();
+        println!("Run without --dry-run to write repo-local setup files.");
+        return Ok(());
+    }
+
+    let init_options = InitOptions {
+        adapters: vec![AgentAdapter::Claude],
+    };
+    let init_report = run_init(&repo.path, &init_options)?;
+    let mcp_action = write_claude_project_mcp(&mcp_path, &binary)?;
+    let setup_report = run_setup_check(&repo.path, &init_options)?;
+    let passed = setup_report.passed;
+
+    print_claude_setup_report(&repo.path, &binary, &init_report, &mcp_path, mcp_action);
+    print_setup_check_report(&setup_report);
+    if !passed {
+        std::process::exit(1);
+    }
+    Ok(())
+}
+
+fn resolve_ctxhelm_setup_binary(binary: Option<&PathBuf>) -> Result<PathBuf> {
+    let path = match binary {
+        Some(path) => path.clone(),
+        None => std::env::current_exe()?,
+    };
+    let canonical = fs::canonicalize(&path).map_err(|source| {
+        anyhow!(
+            "failed to resolve ctxhelm binary {}: {source}",
+            path.display()
+        )
+    })?;
+    if !canonical.is_file() {
+        return Err(anyhow!(
+            "ctxhelm binary path is not a file: {}",
+            canonical.display()
+        ));
+    }
+    Ok(canonical)
+}
+
+fn write_claude_project_mcp(path: &Path, binary: &Path) -> Result<ProjectMcpAction> {
+    if let Ok(metadata) = fs::symlink_metadata(path) {
+        if metadata.file_type().is_symlink() {
+            return Err(anyhow!(
+                "refusing to write symlinked project MCP config: {}",
+                path.display()
+            ));
+        }
+        if metadata.is_dir() {
+            return Err(anyhow!(
+                "project MCP config path is a directory: {}",
+                path.display()
+            ));
+        }
+    }
+
+    let existed = path.exists();
+    let mut value = if existed {
+        let raw = fs::read_to_string(path)?;
+        if raw.trim().is_empty() {
+            serde_json::json!({})
+        } else {
+            serde_json::from_str::<serde_json::Value>(&raw)?
+        }
+    } else {
+        serde_json::json!({})
+    };
+
+    let root = value.as_object_mut().ok_or_else(|| {
+        anyhow!(
+            "project MCP config root must be a JSON object: {}",
+            path.display()
+        )
+    })?;
+    if !root.contains_key("mcpServers") {
+        root.insert("mcpServers".to_string(), serde_json::json!({}));
+    }
+    let servers = root
+        .get_mut("mcpServers")
+        .and_then(serde_json::Value::as_object_mut)
+        .ok_or_else(|| {
+            anyhow!(
+                "project MCP config mcpServers must be a JSON object: {}",
+                path.display()
+            )
+        })?;
+    servers.insert(
+        "ctxhelm".to_string(),
+        serde_json::json!({
+            "command": binary.display().to_string(),
+            "args": ["serve-mcp"]
+        }),
+    );
+
+    let next = format!("{}\n", serde_json::to_string_pretty(&value)?);
+    let action = match fs::read_to_string(path) {
+        Ok(existing) if existing == next => ProjectMcpAction::Unchanged,
+        Ok(_) => ProjectMcpAction::Updated,
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => ProjectMcpAction::Created,
+        Err(error) => return Err(error.into()),
+    };
+    if action != ProjectMcpAction::Unchanged {
+        fs::write(path, next)?;
+    }
+    Ok(action)
+}
+
 fn workspace_repo_entry(
     workspace_root: &Path,
     repo_root: &Path,
@@ -3055,6 +3216,40 @@ fn print_init_report(report: &InitReport) {
         "ctxhelm writes repo-local setup files only; it does not mutate global agent config. Copy/paste or merge agent configuration explicitly."
     );
     println!("{}", report.codex_mcp_setup);
+}
+
+fn print_claude_setup_report(
+    repo_root: &Path,
+    binary: &Path,
+    init_report: &InitReport,
+    mcp_path: &Path,
+    mcp_action: ProjectMcpAction,
+) {
+    println!("Claude Code setup for {}", repo_root.display());
+    for file in &init_report.files {
+        let action = match file.action {
+            InitAction::Created => "created",
+            InitAction::Updated => "updated",
+            InitAction::Unchanged => "unchanged",
+            InitAction::Skipped => "skipped",
+        };
+        println!("- {action}: {}", file.path.display());
+    }
+    let mcp_action = match mcp_action {
+        ProjectMcpAction::Created => "created",
+        ProjectMcpAction::Updated => "updated",
+        ProjectMcpAction::Unchanged => "unchanged",
+    };
+    println!("- {mcp_action}: {}", mcp_path.display());
+    println!("- ctxhelm binary: {}", binary.display());
+    println!();
+    println!("Security boundary:");
+    println!("- wrote repo-local files only");
+    println!("- did not mutate global Claude Code config");
+    println!("- .mcp.json uses an absolute ctxhelm binary path");
+    println!();
+    println!("Use Claude Code from this project and run the generated /ctxhelm-bugfix command for non-trivial bug fixes.");
+    println!();
 }
 
 fn print_setup_check_report(report: &SetupCheckReport) {
