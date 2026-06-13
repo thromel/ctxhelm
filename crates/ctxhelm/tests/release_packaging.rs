@@ -1490,6 +1490,13 @@ fn agent_run_proof_checker_accepts_phase322_and_rejects_regression() {
     assert_eq!(summary["privacyStatus"]["sourceTextLogged"], true);
     assert_eq!(summary["runner"]["matchesCurrentRunnerScript"], true);
     assert_eq!(summary["suite"]["matchesCurrentSuite"], true);
+    assert_eq!(
+        summary["suiteTaskChecks"]["strictCurrentSuiteTaskChecks"],
+        true
+    );
+    assert_eq!(summary["suiteTaskChecks"]["reportTaskCount"], 4);
+    assert_eq!(summary["suiteTaskChecks"]["currentSuiteTaskCount"], 4);
+    assert_eq!(summary["suiteTaskChecks"]["matchesCurrentSuiteTasks"], true);
     assert_eq!(summary["taskLaneChecks"]["strictTaskLaneChecks"], true);
     assert_eq!(summary["taskLaneChecks"]["taskLaneCount"], 20);
     assert_eq!(summary["taskLaneChecks"]["ctxhelmTaskLaneCount"], 16);
@@ -1647,6 +1654,37 @@ fn agent_run_proof_checker_accepts_phase322_and_rejects_regression() {
     assert!(
         stderr.contains("tasks[0].lanes[1].metrics.ctxhelmEvidenceOnlyTargetCount"),
         "unexpected stale-lane checker error: {stderr}"
+    );
+
+    let stale_task_path = temp.path().join("agent-run-stale-suite-task.json");
+    let mut stale_task_payload: serde_json::Value =
+        serde_json::from_slice(&fs::read(&phase322_report).unwrap()).unwrap();
+    stale_task_payload["tasks"][0]["targetFiles"][0] =
+        serde_json::Value::String("scripts/not-the-current-suite-target.sh".to_string());
+    fs::write(
+        &stale_task_path,
+        serde_json::to_string_pretty(&stale_task_payload).unwrap(),
+    )
+    .unwrap();
+    let stale_task = Command::new("python3")
+        .arg(&script)
+        .arg(&stale_task_path)
+        .args(proof_args)
+        .arg("--current-runner-script")
+        .arg(&codex_runner_script)
+        .arg("--current-suite")
+        .arg(&codex_suite)
+        .current_dir(&repo_root)
+        .output()
+        .unwrap();
+    assert!(
+        !stale_task.status.success(),
+        "proof with stale suite task targets should fail"
+    );
+    let stderr = String::from_utf8_lossy(&stale_task.stderr);
+    assert!(
+        stderr.contains("tasks[0].targetFiles did not match current suite task"),
+        "unexpected stale-task checker error: {stderr}"
     );
 }
 

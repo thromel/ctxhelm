@@ -336,12 +336,14 @@ source-free `agent-run-outcome-proof.json` audit artifact into
 `ctxhelm-agent-run-proof-check-v1` and records the saved report filename,
 report SHA-256, thresholds, source-free privacy checks, identity checks, runner
 metadata, current runner script freshness, current suite freshness, aggregate
-metrics, task-lane checks, boundary checks, and lane quality summaries. The
-checker validates every task comparison and task lane, so a saved report fails
-if a nested ctxhelm lane contains a client failure, rate limit, forbidden
-command, missing required ctxhelm call, under-read target, evidence miss,
-evidence-only target, or target-read coverage below the release floor even when
-the aggregate summary still looks clean. The release gate passes
+metrics, suite-task checks, task-lane checks, boundary checks, and lane quality
+summaries. When `--current-suite` is provided, the checker re-parses the current
+suite and validates every saved `tasks[*].taskSha256` plus `tasks[*].targetFiles`
+against the current task text and target list. It also validates every task comparison and task lane, so a saved report fails if a nested ctxhelm lane
+contains a client failure, rate limit, forbidden command, missing required
+ctxhelm call, under-read target, evidence miss, evidence-only target, or
+target-read coverage below the release floor even when the aggregate summary
+still looks clean. The release gate passes
 `--expected-ctxhelm-version` from the selected release-gate binary,
 `--expected-client-name codex`, and `--expected-client-version "codex-cli
 0.137.0"` by default, so a saved report fails if it no longer matches the

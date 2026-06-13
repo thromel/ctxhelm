@@ -134,6 +134,62 @@ def validate_suite_fingerprint(suite: dict, args: argparse.Namespace) -> None:
         fail(f"suite.suiteSha256 did not match current suite {args.current_suite.name}")
 
 
+def current_suite_task_specs(args: argparse.Namespace) -> list | None:
+    if args.current_suite is None:
+        return None
+    try:
+        payload = json.loads(args.current_suite.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as error:
+        fail(f"invalid current suite JSON: {error}")
+    tasks = payload.get("tasks") if isinstance(payload, dict) else payload
+    if not isinstance(tasks, list) or not tasks:
+        fail("current suite did not contain a non-empty tasks array")
+    specs = []
+    for index, task in enumerate(tasks):
+        if not isinstance(task, dict):
+            fail(f"current suite tasks[{index}] was not an object")
+        task_text = task.get("task") or task.get("prompt")
+        if not isinstance(task_text, str) or not task_text.strip():
+            fail(f"current suite tasks[{index}] had no task or prompt")
+        targets = task.get("targetFiles") or task.get("target_files")
+        if not isinstance(targets, list) or not targets:
+            fail(f"current suite tasks[{index}] had no targetFiles")
+        target_strings = []
+        for target_index, target in enumerate(targets):
+            if not isinstance(target, str) or not target.strip():
+                fail(f"current suite tasks[{index}].targetFiles[{target_index}] was invalid")
+            target_strings.append(target)
+        specs.append(
+            {
+                "taskSha256": hashlib.sha256(task_text.encode("utf-8")).hexdigest(),
+                "targetFiles": target_strings,
+            }
+        )
+    return specs
+
+
+def validate_tasks_against_current_suite(
+    tasks: list,
+    args: argparse.Namespace,
+) -> list | None:
+    specs = current_suite_task_specs(args)
+    if specs is None:
+        return None
+    if len(tasks) != len(specs):
+        fail(f"tasks length {len(tasks)} did not match current suite task count {len(specs)}")
+    for index, (task, spec) in enumerate(zip(tasks, specs)):
+        if not isinstance(task, dict):
+            fail(f"tasks[{index}] was not an object")
+        if task.get("taskSha256") != spec["taskSha256"]:
+            fail(f"tasks[{index}].taskSha256 did not match current suite task")
+        target_files = task.get("targetFiles")
+        if not isinstance(target_files, list):
+            fail(f"tasks[{index}].targetFiles was not a list")
+        if target_files != spec["targetFiles"]:
+            fail(f"tasks[{index}].targetFiles did not match current suite task")
+    return specs
+
+
 def validate_required_calls(summary: dict, label: str) -> None:
     for field in ("missingRequiredCtxhelmCallCount", "invalidRequiredCtxhelmCallCount"):
         if field in summary and int(summary.get(field, 0)) != 0:
@@ -497,6 +553,17 @@ def task_lane_summary(tasks: list) -> dict:
     }
 
 
+def suite_task_check_summary(tasks: list, current_suite_specs: list | None) -> dict:
+    summary = {
+        "reportTaskCount": len(tasks),
+        "strictCurrentSuiteTaskChecks": current_suite_specs is not None,
+    }
+    if current_suite_specs is not None:
+        summary["currentSuiteTaskCount"] = len(current_suite_specs)
+        summary["matchesCurrentSuiteTasks"] = True
+    return summary
+
+
 def validate_suite(report: dict, args: argparse.Namespace) -> dict:
     if report.get("workflowKind") != "paired-agent-context-suite":
         fail("workflowKind was not paired-agent-context-suite")
@@ -522,6 +589,7 @@ def validate_suite(report: dict, args: argparse.Namespace) -> dict:
         args.min_ctxhelm_target_read_coverage,
     )
     tasks = require_list(report.get("tasks"), "tasks")
+    current_suite_specs = validate_tasks_against_current_suite(tasks, args)
     for index, task in enumerate(tasks):
         task = require_dict(task, f"tasks[{index}]")
         if task.get("status") != "passed":
@@ -549,6 +617,7 @@ def validate_suite(report: dict, args: argparse.Namespace) -> dict:
         "privacyStatus": privacy_summary(report),
         "runner": runner_summary(report, args),
         "suite": suite_summary(suite, args),
+        "suiteTaskChecks": suite_task_check_summary(tasks, current_suite_specs),
         "taskLaneChecks": task_lane_summary(tasks),
         "metrics": {
             "taskCount": task_count,
