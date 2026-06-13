@@ -1516,6 +1516,18 @@ fn agent_run_proof_checker_accepts_phase322_and_rejects_regression() {
     assert_eq!(summary["aggregateConsistency"]["derivedLaneNameCount"], 5);
     assert_eq!(summary["aggregateConsistency"]["laneSummaryCount"], 5);
     assert_eq!(
+        summary["aggregateConsistency"]["strictLaneSummaryMetricChecks"],
+        true
+    );
+    assert_eq!(
+        summary["aggregateConsistency"]["checkedLaneSummaryCount"],
+        5
+    );
+    assert_eq!(
+        summary["aggregateConsistency"]["checkedLaneSummaryMetricCount"],
+        145
+    );
+    assert_eq!(
         summary["aggregateConsistency"]["matchesDerivedAggregates"],
         true
     );
@@ -1613,6 +1625,40 @@ fn agent_run_proof_checker_accepts_phase322_and_rejects_regression() {
     assert!(
         stderr.contains("aggregate.laneSummaries lane names did not match derived task lanes"),
         "unexpected stale-lane-summary checker error: {stderr}"
+    );
+
+    let stale_lane_summary_metric_path =
+        temp.path().join("agent-run-stale-lane-summary-metric.json");
+    let mut stale_lane_summary_metric_payload: serde_json::Value =
+        serde_json::from_slice(&fs::read(&phase322_report).unwrap()).unwrap();
+    stale_lane_summary_metric_payload["aggregate"]["laneSummaries"][0]["readFileCount"] =
+        serde_json::Value::Number(serde_json::Number::from(18));
+    fs::write(
+        &stale_lane_summary_metric_path,
+        serde_json::to_string_pretty(&stale_lane_summary_metric_payload).unwrap(),
+    )
+    .unwrap();
+    let stale_lane_summary_metric = Command::new("python3")
+        .arg(&script)
+        .arg(&stale_lane_summary_metric_path)
+        .args(proof_args)
+        .arg("--current-runner-script")
+        .arg(&codex_runner_script)
+        .arg("--current-suite")
+        .arg(&codex_suite)
+        .current_dir(&repo_root)
+        .output()
+        .unwrap();
+    assert!(
+        !stale_lane_summary_metric.status.success(),
+        "proof with stale lane summary metrics should fail"
+    );
+    let stderr = String::from_utf8_lossy(&stale_lane_summary_metric.stderr);
+    assert!(
+        stderr.contains(
+            "aggregate.laneSummaries[baseline].readFileCount did not match derived task lanes"
+        ),
+        "unexpected stale-lane-summary-metric checker error: {stderr}"
     );
 
     let stale_runner_path = temp.path().join("agent-run-stale-runner.json");

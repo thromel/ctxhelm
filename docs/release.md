@@ -348,6 +348,11 @@ floor even when the aggregate summary still looks clean. It derives aggregate
 task counts, comparison-eligible counts, comparable ctxhelm lane counts,
 strict boundary booleans, and lane summary names from `tasks[*]`, so a report
 also fails when top-level aggregate fields drift from derived task comparisons.
+It also derives lane-summary metrics from `tasks[*].lanes[*].metrics`,
+including read counts, target-read coverage, read precision, irrelevant-read
+rate, read-role counts, missed-target role counts, required-call counts, and
+failure/rate-limit counters. That prevents stale `aggregate.laneSummaries`
+metrics from supporting release claims after nested task records change.
 The release gate passes
 `--expected-ctxhelm-version` from the selected release-gate binary,
 `--expected-client-name codex`, and `--expected-client-version "codex-cli

@@ -30,6 +30,27 @@ STRICT_FALSE_OUTCOME_FIELDS = (
     "invalidRequiredCtxhelmCallsObserved",
 )
 
+LANE_SUMMARY_COUNT_FIELDS = (
+    "readFileCount",
+    "targetReadCount",
+    "irrelevantReadCount",
+    "commandExecutionCount",
+    "ctxhelmToolCallCount",
+    "forbiddenCommandCount",
+    "requiredCtxhelmCallCount",
+    "observedRequiredCtxhelmCallCount",
+    "missingRequiredCtxhelmCallCount",
+    "invalidRequiredCtxhelmCallCount",
+    "ctxhelmEvidenceFileCount",
+    "ctxhelmEvidenceTargetHitCount",
+    "ctxhelmEvidenceMissedTargetCount",
+    "ctxhelmEvidenceOnlyTargetCount",
+    "missedTargetCount",
+    "targetDiscoveredOnlyCount",
+)
+
+FLOAT_TOLERANCE = 1e-9
+
 
 def fail(message: str) -> None:
     raise SystemExit(message)
@@ -61,6 +82,20 @@ def require_int(value: Any, label: str) -> int:
         return int(value)
     except (TypeError, ValueError):
         fail(f"{label} was not an integer")
+
+
+def numbers_match(actual: Any, expected: float) -> bool:
+    try:
+        actual_number = float(actual)
+    except (TypeError, ValueError):
+        return False
+    return abs(actual_number - expected) <= FLOAT_TOLERANCE
+
+
+def safe_ratio(numerator: float, denominator: float) -> float:
+    if denominator == 0:
+        return 0.0
+    return numerator / denominator
 
 
 def validate_privacy(report: dict, label: str) -> None:
@@ -617,6 +652,170 @@ def derived_aggregate_consistency(aggregate: dict, summaries: list, tasks: list)
     }
 
 
+def sum_role_counts(lanes: list, field: str) -> dict:
+    counts: dict[str, int] = {}
+    for lane in lanes:
+        role_counts = lane.get(field)
+        if role_counts is None:
+            continue
+        role_counts = require_dict(role_counts, f"lane.{field}")
+        for role, count in role_counts.items():
+            if not isinstance(role, str) or not role:
+                fail(f"lane.{field} contained an invalid role")
+            counts[role] = counts.get(role, 0) + require_int(
+                count,
+                f"lane.{field}.{role}",
+            )
+    return dict(sorted(counts.items()))
+
+
+def derived_lane_summary(lane_name: str, lanes: list) -> dict:
+    count_sums = {field: 0 for field in LANE_SUMMARY_COUNT_FIELDS}
+    target_read_coverage_sum = 0.0
+    target_coverage_sum = 0.0
+    passed_count = 0
+    evaluation_eligible_count = 0
+    client_failure_count = 0
+    rate_limit_count = 0
+
+    for lane_index, lane in enumerate(lanes):
+        metrics = require_dict(
+            lane.get("metrics"),
+            f"derivedLane[{lane_name}][{lane_index}].metrics",
+        )
+        for field in LANE_SUMMARY_COUNT_FIELDS:
+            count_sums[field] += require_int(
+                metrics.get(field, 0),
+                f"derivedLane[{lane_name}][{lane_index}].metrics.{field}",
+            )
+        target_read_coverage_sum += require_number(
+            metrics.get("targetReadCoverage"),
+            f"derivedLane[{lane_name}][{lane_index}].metrics.targetReadCoverage",
+        )
+        target_coverage_sum += require_number(
+            metrics.get("targetCoverage"),
+            f"derivedLane[{lane_name}][{lane_index}].metrics.targetCoverage",
+        )
+        if lane.get("status") == "passed":
+            passed_count += 1
+        if lane.get("evaluationEligible") is True:
+            evaluation_eligible_count += 1
+        if int(lane.get("clientExitStatus", 0)) != 0 or lane.get("clientFailureKind") is not None:
+            client_failure_count += 1
+        if lane.get("clientApiErrorStatus") is not None:
+            client_failure_count += 1
+        if lane.get("rateLimitObserved") is True:
+            rate_limit_count += 1
+
+    task_count = len(lanes)
+    read_file_count = count_sums["readFileCount"]
+    target_read_count = count_sums["targetReadCount"]
+    derived = {
+        **count_sums,
+        "toolCallCount": count_sums["commandExecutionCount"],
+        "taskCount": task_count,
+        "passedCount": passed_count,
+        "evaluationEligibleCount": evaluation_eligible_count,
+        "clientFailureCount": client_failure_count,
+        "rateLimitCount": rate_limit_count,
+        "averageTargetReadCoverage": safe_ratio(target_read_coverage_sum, task_count),
+        "averageTargetCoverage": safe_ratio(target_coverage_sum, task_count),
+        "targetReadPrecision": safe_ratio(target_read_count, read_file_count),
+        "irrelevantReadRate": safe_ratio(count_sums["irrelevantReadCount"], read_file_count),
+        "readsPerTargetRead": safe_ratio(read_file_count, target_read_count),
+        "readRoleCounts": sum_role_counts(lanes, "readRoleCounts"),
+        "missedTargetRoleCounts": sum_role_counts(lanes, "missedTargetRoleCounts"),
+    }
+    return derived
+
+
+def validate_lane_summary_consistency(summaries: list, tasks: list) -> dict:
+    lanes_by_name: dict[str, list] = {}
+    for task_index, task in enumerate(tasks):
+        task = require_dict(task, f"tasks[{task_index}]")
+        lanes = require_list(task.get("lanes"), f"tasks[{task_index}].lanes")
+        for lane_index, lane in enumerate(lanes):
+            lane = require_dict(lane, f"tasks[{task_index}].lanes[{lane_index}]")
+            lane_name = str(lane.get("lane", ""))
+            lanes_by_name.setdefault(lane_name, []).append(lane)
+
+    numeric_fields = (
+        *LANE_SUMMARY_COUNT_FIELDS,
+        "toolCallCount",
+        "taskCount",
+        "passedCount",
+        "evaluationEligibleCount",
+        "clientFailureCount",
+        "rateLimitCount",
+    )
+    float_fields = (
+        "averageTargetReadCoverage",
+        "averageTargetCoverage",
+        "targetReadPrecision",
+        "irrelevantReadRate",
+        "readsPerTargetRead",
+    )
+    map_fields = ("readRoleCounts", "missedTargetRoleCounts")
+
+    checked_lane_count = 0
+    checked_metric_count = 0
+    for summary_index, summary in enumerate(summaries):
+        summary = require_dict(summary, f"aggregate.laneSummaries[{summary_index}]")
+        lane_name = str(summary.get("lane", ""))
+        lanes = lanes_by_name.get(lane_name)
+        if not lanes:
+            fail(f"aggregate.laneSummaries[{summary_index}].lane had no derived task lanes")
+        derived = derived_lane_summary(lane_name, lanes)
+        checked_lane_count += 1
+        for field in numeric_fields:
+            if field not in summary:
+                fail(f"aggregate.laneSummaries[{lane_name}].{field} was missing")
+            actual = require_int(
+                summary.get(field),
+                f"aggregate.laneSummaries[{lane_name}].{field}",
+            )
+            if actual != derived[field]:
+                fail(
+                    f"aggregate.laneSummaries[{lane_name}].{field} did not match derived task lanes: "
+                    f"{actual} != {derived[field]}"
+                )
+            checked_metric_count += 1
+        for field in float_fields:
+            if field not in summary:
+                fail(f"aggregate.laneSummaries[{lane_name}].{field} was missing")
+            if not numbers_match(summary.get(field), derived[field]):
+                fail(
+                    f"aggregate.laneSummaries[{lane_name}].{field} did not match derived task lanes: "
+                    f"{summary.get(field)} != {derived[field]}"
+                )
+            checked_metric_count += 1
+        for field in map_fields:
+            actual = require_dict(
+                summary.get(field),
+                f"aggregate.laneSummaries[{lane_name}].{field}",
+            )
+            normalized_actual = {
+                str(role): require_int(
+                    count,
+                    f"aggregate.laneSummaries[{lane_name}].{field}.{role}",
+                )
+                for role, count in actual.items()
+            }
+            normalized_actual = dict(sorted(normalized_actual.items()))
+            if normalized_actual != derived[field]:
+                fail(
+                    f"aggregate.laneSummaries[{lane_name}].{field} did not match derived task lanes: "
+                    f"{normalized_actual} != {derived[field]}"
+                )
+            checked_metric_count += 1
+
+    return {
+        "strictLaneSummaryMetricChecks": True,
+        "checkedLaneSummaryCount": checked_lane_count,
+        "checkedLaneSummaryMetricCount": checked_metric_count,
+    }
+
+
 def validate_aggregate_consistency(aggregate: dict, summaries: list, tasks: list) -> dict:
     derived = derived_aggregate_consistency(aggregate, summaries, tasks)
     for field in ("taskCount", "comparisonEligibleCount", "comparableCtxhelmLaneCount"):
@@ -644,6 +843,7 @@ def validate_aggregate_consistency(aggregate: dict, summaries: list, tasks: list
             f"{derived['summaryLaneNames']} != {derived['taskLaneNames']}"
         )
 
+    lane_summary_metrics = validate_lane_summary_consistency(summaries, tasks)
     return {
         "strictAggregateConsistencyChecks": True,
         "derivedTaskCount": derived["taskCount"],
@@ -651,6 +851,7 @@ def validate_aggregate_consistency(aggregate: dict, summaries: list, tasks: list
         "derivedComparableCtxhelmLaneCount": derived["comparableCtxhelmLaneCount"],
         "derivedLaneNameCount": len(derived["taskLaneNames"]),
         "laneSummaryCount": len(derived["summaryLaneNames"]),
+        **lane_summary_metrics,
         "matchesDerivedAggregates": True,
     }
 
