@@ -2,6 +2,7 @@
 """Validate source-free paired agent-run proof JSON for release-gate use."""
 
 import argparse
+import hashlib
 import json
 import pathlib
 import sys
@@ -207,7 +208,81 @@ def validate_common_outcome_fields(outcome: dict, args: argparse.Namespace, labe
         validate_retry_cost(require_dict(retry_cost, f"{label}.retryCost"), label)
 
 
-def validate_suite(report: dict, args: argparse.Namespace) -> str:
+def proof_thresholds(args: argparse.Namespace) -> dict:
+    return {
+        "requiredStatus": args.require_status,
+        "requiredOutcome": args.require_outcome,
+        "minTaskCount": args.min_task_count,
+        "minComparisonEligible": args.min_comparison_eligible,
+        "minComparableCtxhelmLanes": args.min_comparable_ctxhelm_lanes,
+        "minCtxhelmTargetReadCoverage": args.min_ctxhelm_target_read_coverage,
+        "maxExtraReadDelta": args.max_extra_read_delta,
+        "minIrrelevantReadDelta": args.min_irrelevant_read_delta,
+        "requireRetryCost": args.require_retry_cost,
+        "requireRunnerFingerprint": args.require_runner_fingerprint,
+        "strictBoundaries": args.strict,
+    }
+
+
+def report_digest(path: pathlib.Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def runner_summary(report: dict) -> dict:
+    runner = report.get("runner")
+    if not isinstance(runner, dict):
+        return {"present": False}
+    return {
+        "present": True,
+        "name": runner.get("name"),
+        "contractVersion": runner.get("contractVersion"),
+        "checkpointValidation": runner.get("checkpointValidation"),
+        "scriptSha256": runner.get("scriptSha256"),
+    }
+
+
+def boundary_summary(outcome: dict) -> dict:
+    return {field: outcome.get(field) is False for field in STRICT_FALSE_OUTCOME_FIELDS}
+
+
+def privacy_summary(report: dict) -> dict:
+    privacy = require_dict(report.get("privacyStatus"), "privacyStatus")
+    return {
+        "localOnly": privacy.get("localOnly") is True,
+        **{field: privacy.get(field) is False for field in STRICT_FALSE_PRIVACY_FIELDS},
+    }
+
+
+def lane_quality_summary(summaries: list) -> list:
+    quality = []
+    for summary in summaries:
+        if not isinstance(summary, dict) or not str(summary.get("lane", "")).startswith("ctxhelm-"):
+            continue
+        quality.append(
+            {
+                "lane": summary.get("lane"),
+                "averageTargetReadCoverage": summary.get("averageTargetReadCoverage"),
+                "readFileCount": summary.get("readFileCount"),
+                "irrelevantReadCount": summary.get("irrelevantReadCount"),
+                "targetReadPrecision": summary.get("targetReadPrecision"),
+                "irrelevantReadRate": summary.get("irrelevantReadRate"),
+                "forbiddenCommandCount": summary.get("forbiddenCommandCount"),
+                "clientFailureCount": summary.get("clientFailureCount"),
+                "rateLimitCount": summary.get("rateLimitCount"),
+                "missingRequiredCtxhelmCallCount": summary.get("missingRequiredCtxhelmCallCount"),
+                "invalidRequiredCtxhelmCallCount": summary.get("invalidRequiredCtxhelmCallCount"),
+                "ctxhelmEvidenceMissedTargetCount": summary.get("ctxhelmEvidenceMissedTargetCount"),
+                "ctxhelmEvidenceOnlyTargetCount": summary.get("ctxhelmEvidenceOnlyTargetCount"),
+            }
+        )
+    return quality
+
+
+def validate_suite(report: dict, args: argparse.Namespace) -> dict:
     if report.get("workflowKind") != "paired-agent-context-suite":
         fail("workflowKind was not paired-agent-context-suite")
     validate_common_report(report, args, "report")
@@ -239,15 +314,34 @@ def validate_suite(report: dict, args: argparse.Namespace) -> str:
         if task.get("taskSha256") is None:
             fail(f"tasks[{index}].taskSha256 was missing")
         validate_privacy(task, f"tasks[{index}]")
-    return (
-        "agent-run proof passed: "
-        f"workflow=suite tasks={task_count} comparable={comparison_eligible} "
-        f"ctxhelm_lanes={aggregate.get('comparableCtxhelmLaneCount')} "
-        f"outcome={aggregate.get('outcomeClaim')}"
-    )
+    return {
+        "schemaVersion": "ctxhelm-agent-run-proof-check-v1",
+        "status": "passed",
+        "workflow": "suite",
+        "reportFileName": args.report.name,
+        "reportSha256": report_digest(args.report),
+        "thresholds": proof_thresholds(args),
+        "sourceFree": True,
+        "privacyStatus": privacy_summary(report),
+        "runner": runner_summary(report),
+        "metrics": {
+            "taskCount": task_count,
+            "comparisonEligibleCount": comparison_eligible,
+            "comparableCtxhelmLaneCount": aggregate.get("comparableCtxhelmLaneCount"),
+            "outcomeClaim": aggregate.get("outcomeClaim"),
+            "targetReadCoverageDeltaAvg": aggregate.get("targetReadCoverageDeltaAvg"),
+            "targetCoverageDeltaAvg": aggregate.get("targetCoverageDeltaAvg"),
+            "readFileDeltaSum": aggregate.get("readFileDeltaSum"),
+            "irrelevantReadDeltaSum": aggregate.get("irrelevantReadDeltaSum"),
+            "retryCost": aggregate.get("retryCost"),
+            "readEfficiency": aggregate.get("readEfficiency"),
+        },
+        "boundaryChecks": boundary_summary(aggregate),
+        "laneSummaries": lane_quality_summary(summaries),
+    }
 
 
-def validate_run(report: dict, args: argparse.Namespace) -> str:
+def validate_run(report: dict, args: argparse.Namespace) -> dict:
     if report.get("workflowKind") != "paired-agent-context-run":
         fail("workflowKind was not paired-agent-context-run")
     validate_common_report(report, args, "report")
@@ -284,10 +378,47 @@ def validate_run(report: dict, args: argparse.Namespace) -> str:
                     f"lanes[{lane.get('lane')}].metrics.targetReadCoverage "
                     f"{coverage} < {args.min_ctxhelm_target_read_coverage}"
                 )
+    return {
+        "schemaVersion": "ctxhelm-agent-run-proof-check-v1",
+        "status": "passed",
+        "workflow": "run",
+        "reportFileName": args.report.name,
+        "reportSha256": report_digest(args.report),
+        "thresholds": proof_thresholds(args),
+        "sourceFree": True,
+        "privacyStatus": privacy_summary(report),
+        "runner": runner_summary(report),
+        "metrics": {
+            "comparisonEligibleCount": 1,
+            "comparableCtxhelmLaneCount": comparison.get("comparableCtxhelmLaneCount"),
+            "outcomeClaim": comparison.get("outcomeClaim"),
+            "targetReadCoverageDelta": comparison.get("targetReadCoverageDelta"),
+            "targetCoverageDelta": comparison.get("targetCoverageDelta"),
+            "readFileDelta": comparison.get("readFileDelta"),
+            "irrelevantReadDelta": comparison.get("irrelevantReadDelta"),
+            "retryCost": comparison.get("retryCost"),
+            "readEfficiency": comparison.get("readEfficiency"),
+        },
+        "boundaryChecks": boundary_summary(comparison),
+        "laneSummaries": [],
+    }
+
+
+def render_summary(summary: dict, args: argparse.Namespace) -> str:
+    if args.format == "json":
+        return json.dumps(summary, indent=2, sort_keys=True) + "\n"
+    metrics = summary["metrics"]
+    task_text = (
+        f"tasks={metrics.get('taskCount')} "
+        if summary["workflow"] == "suite"
+        else ""
+    )
     return (
         "agent-run proof passed: "
-        f"workflow=run comparable=1 ctxhelm_lanes={ctxhelm_lane_count} "
-        f"outcome={comparison.get('outcomeClaim')}"
+        f"workflow={summary['workflow']} {task_text}"
+        f"comparable={metrics.get('comparisonEligibleCount')} "
+        f"ctxhelm_lanes={metrics.get('comparableCtxhelmLaneCount')} "
+        f"outcome={metrics.get('outcomeClaim')}"
     )
 
 
@@ -305,6 +436,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--min-irrelevant-read-delta", type=int)
     parser.add_argument("--require-retry-cost", action="store_true")
     parser.add_argument("--require-runner-fingerprint", action="store_true")
+    parser.add_argument("--format", choices=("text", "json"), default="text")
+    parser.add_argument("--output", type=pathlib.Path, help="Write rendered proof check output here")
     parser.add_argument(
         "--allow-degraded-boundaries",
         action="store_false",
@@ -326,11 +459,17 @@ def main() -> None:
     report = require_dict(report, "report")
     workflow = report.get("workflowKind")
     if args.workflow == "suite" or (args.workflow == "auto" and workflow == "paired-agent-context-suite"):
-        print(validate_suite(report, args))
+        summary = validate_suite(report, args)
     elif args.workflow == "run" or (args.workflow == "auto" and workflow == "paired-agent-context-run"):
-        print(validate_run(report, args))
+        summary = validate_run(report, args)
     else:
         fail(f"unsupported workflowKind: {workflow}")
+    rendered = render_summary(summary, args)
+    if args.output:
+        args.output.parent.mkdir(parents=True, exist_ok=True)
+        args.output.write_text(rendered, encoding="utf-8")
+    else:
+        print(rendered, end="")
 
 
 if __name__ == "__main__":

@@ -328,15 +328,21 @@ CTXHELM_AGENT_RUN_PROOF_REPORT="$(pwd)/.ctxhelm/e2e/phase322-agent-run-codex-tar
   bash scripts/release-gate.sh
 ```
 
-The gate validates the report with `scripts/check-agent-run-proof.py` and
-records `agentRunOutcomeProof` plus `agentRunOutcomeProofRequired` in
-`release-proof-summary.json`. The default thresholds require a suite report
-with `ctxhelm_improved`, at least four tasks, four comparison-eligible tasks,
-sixteen comparable ctxhelm lanes, `1.0` minimum average target-read coverage in
-each ctxhelm lane, retry-cost fields, no runner-fingerprint gap, no more than
-two extra reads across best lanes, and no client failures, rate limits,
-forbidden commands, evidence misses, evidence-only targets, or under-read
-targets. Maintainers can adjust the thresholds with
+The gate validates the report with `scripts/check-agent-run-proof.py`, writes a
+source-free `agent-run-outcome-proof.json` audit artifact into
+`CTXHELM_PROOF_DIR`, and records `agentRunOutcomeProof`,
+`agentRunOutcomeProofRequired`, and `agentRunOutcomeProofReport` in
+`release-proof-summary.json`. The audit artifact uses
+`ctxhelm-agent-run-proof-check-v1` and records the saved report filename,
+report SHA-256, thresholds, source-free privacy checks, runner metadata,
+aggregate metrics, boundary checks, and lane quality summaries. The default
+thresholds require a suite report with `ctxhelm_improved`, at least four tasks,
+four comparison-eligible tasks, sixteen comparable ctxhelm lanes, `1.0` minimum
+average target-read coverage in each ctxhelm lane, retry-cost fields, no
+runner-fingerprint gap, no more than two extra reads across best lanes, and no
+client failures, rate limits, forbidden commands, evidence misses,
+evidence-only targets, or under-read targets. Maintainers can adjust the
+thresholds with
 `CTXHELM_AGENT_RUN_MIN_TASK_COUNT`,
 `CTXHELM_AGENT_RUN_MIN_COMPARISON_ELIGIBLE`,
 `CTXHELM_AGENT_RUN_MIN_COMPARABLE_CTXHELM_LANES`,

@@ -292,6 +292,10 @@ fn release_gate_script_contract() {
         "cleanColdFixtureRequired",
         "agentRunOutcomeProof",
         "agentRunOutcomeProofRequired",
+        "agentRunOutcomeProofReport",
+        "agent-run-outcome-proof.json",
+        "--format json",
+        "--output",
         "stale clean proof fixtures",
         "rev-parse",
         "cat-file",
@@ -1411,6 +1415,35 @@ fn agent_run_proof_checker_accepts_phase322_and_rejects_regression() {
         String::from_utf8_lossy(&accepted.stdout),
         String::from_utf8_lossy(&accepted.stderr)
     );
+
+    let summary_temp = TempDir::new().unwrap();
+    let summary_path = summary_temp.path().join("agent-run-proof-check.json");
+    let accepted_json = Command::new("python3")
+        .arg(&script)
+        .arg(&phase322_report)
+        .args(proof_args)
+        .arg("--format")
+        .arg("json")
+        .arg("--output")
+        .arg(&summary_path)
+        .current_dir(&repo_root)
+        .output()
+        .unwrap();
+    assert!(
+        accepted_json.status.success(),
+        "Phase 322 JSON proof check should pass: {}",
+        String::from_utf8_lossy(&accepted_json.stderr)
+    );
+    let summary: serde_json::Value =
+        serde_json::from_slice(&fs::read(&summary_path).unwrap()).unwrap();
+    assert_eq!(summary["schemaVersion"], "ctxhelm-agent-run-proof-check-v1");
+    assert_eq!(summary["status"], "passed");
+    assert_eq!(summary["sourceFree"], true);
+    assert_eq!(summary["metrics"]["outcomeClaim"], "ctxhelm_improved");
+    assert_eq!(summary["thresholds"]["minTaskCount"], 4);
+    assert_eq!(summary["thresholds"]["requireRunnerFingerprint"], true);
+    assert_eq!(summary["privacyStatus"]["sourceTextLogged"], true);
+    assert!(summary["reportSha256"].as_str().unwrap().len() == 64);
 
     let temp = TempDir::new().unwrap();
     let mut payload: serde_json::Value =

@@ -238,7 +238,9 @@ python3 scripts/check-agent-run-proof.py \
   --max-extra-read-delta 2 \
   --min-irrelevant-read-delta 0 \
   --require-retry-cost \
-  --require-runner-fingerprint
+  --require-runner-fingerprint \
+  --format json \
+  --output .ctxhelm/e2e/agent-run-proof-check.json
 ```
 
 The checker enforces the source-free privacy contract, runner fingerprint
@@ -247,7 +249,10 @@ fields, and strict absence of client failures, rate limits, forbidden commands,
 evidence misses, evidence-only targets, and under-read targets. Use it to gate
 claims about a specific saved report; it is not a substitute for collecting a
 fresh real-client report when the client version, runner, prompt contract, or
-task suite changes.
+task suite changes. JSON output uses
+`ctxhelm-agent-run-proof-check-v1` and records the saved report filename,
+report SHA-256, thresholds, source-free privacy checks, runner metadata,
+aggregate metrics, boundary checks, and lane quality summaries.
 
 ## Release Coverage
 

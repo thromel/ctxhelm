@@ -416,8 +416,10 @@ fi
 
 log_step "optional agent-run outcome proof"
 agent_run_proof_status="skipped"
+agent_run_proof_check_report=""
 agent_run_proof_required="${CTXHELM_REQUIRE_AGENT_RUN_PROOF:-0}"
 if [[ -n "${CTXHELM_AGENT_RUN_PROOF_REPORT:-}" ]]; then
+  agent_run_proof_check_report="$proof_dir/agent-run-outcome-proof.json"
   python3 "$check_agent_run_proof_script" "$CTXHELM_AGENT_RUN_PROOF_REPORT" \
     --workflow suite \
     --require-outcome "${CTXHELM_AGENT_RUN_REQUIRE_OUTCOME:-ctxhelm_improved}" \
@@ -428,7 +430,9 @@ if [[ -n "${CTXHELM_AGENT_RUN_PROOF_REPORT:-}" ]]; then
     --max-extra-read-delta "${CTXHELM_AGENT_RUN_MAX_EXTRA_READ_DELTA:-2}" \
     --min-irrelevant-read-delta "${CTXHELM_AGENT_RUN_MIN_IRRELEVANT_READ_DELTA:-0}" \
     --require-retry-cost \
-    --require-runner-fingerprint
+    --require-runner-fingerprint \
+    --format json \
+    --output "$agent_run_proof_check_report"
   agent_run_proof_status="passed"
 elif [[ "$agent_run_proof_required" == "1" ]]; then
   echo "agent-run proof required but CTXHELM_AGENT_RUN_PROOF_REPORT was not set" >&2
@@ -501,7 +505,11 @@ else
 fi
 
 log_step "release proof bundle"
-python3 - "$proof_summary_path" "$ctxhelm_version" "$(basename "$ctxhelm_bin")" "$binary_source" "$binary_sha256" "$(basename "$archive_path")" "$archive_sha256" "$(basename "$manifest_path")" "$(basename "$audit_report_path")" "$benchmark_status" "$clean_fixture_status" "$clean_fixture_required" "$agent_run_proof_status" "$agent_run_proof_required" "$codex_status" "$claude_status" "$claude_workflow_status" "$claude_workflow_required" "$real_client_required" "$cursor_real_client_status" "$opencode_real_client_status" <<'PY'
+agent_run_proof_check_report_name=""
+if [[ -n "$agent_run_proof_check_report" ]]; then
+  agent_run_proof_check_report_name="$(basename "$agent_run_proof_check_report")"
+fi
+python3 - "$proof_summary_path" "$ctxhelm_version" "$(basename "$ctxhelm_bin")" "$binary_source" "$binary_sha256" "$(basename "$archive_path")" "$archive_sha256" "$(basename "$manifest_path")" "$(basename "$audit_report_path")" "$benchmark_status" "$clean_fixture_status" "$clean_fixture_required" "$agent_run_proof_status" "$agent_run_proof_required" "$agent_run_proof_check_report_name" "$codex_status" "$claude_status" "$claude_workflow_status" "$claude_workflow_required" "$real_client_required" "$cursor_real_client_status" "$opencode_real_client_status" <<'PY'
 import json
 import sys
 
@@ -520,6 +528,7 @@ import sys
     clean_fixture_required,
     agent_run_proof_status,
     agent_run_proof_required,
+    agent_run_proof_check_report_name,
     codex_status,
     claude_status,
     claude_workflow_status,
@@ -590,6 +599,7 @@ payload = {
         "cleanColdFixtureRequired": clean_fixture_required == "1",
         "agentRunOutcomeProof": agent_run_proof_status,
         "agentRunOutcomeProofRequired": agent_run_proof_required == "1",
+        "agentRunOutcomeProofReport": agent_run_proof_check_report_name,
         "resourceBackedGapSummaryContract": (
             "checked"
             if benchmark_status == "passed" or clean_fixture_status == "passed"
