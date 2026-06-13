@@ -371,9 +371,10 @@ It also derives top-level comparison aggregates such as
 `readFileDeltaSum`, `irrelevantReadDeltaSum`, `commandExecutionDeltaSum`, and
 `ctxhelmToolCallsObserved` from `tasks[*].comparison`.
 The JSON audit summary uses the same validated aggregate field names in
-`metrics.targetReadCoverageDeltaAverage` and
-`metrics.targetCoverageDeltaAverage`; it does not publish stale shortened
-aliases.
+`metrics.targetReadCoverageDeltaAverage`,
+`metrics.targetCoverageDeltaAverage`, `metrics.commandExecutionDeltaSum`, and
+`metrics.ctxhelmToolCallsObserved`; it does not publish stale shortened aliases
+or omit validated comparison aggregate fields.
 It also enforces suite status checks by deriving `suite.taskCount` and
 `report.status` from the nested task records and boundary state.
 The checker derives `aggregate.outcomeClaim` and

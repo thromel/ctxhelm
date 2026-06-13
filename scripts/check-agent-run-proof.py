@@ -1464,6 +1464,8 @@ def validate_suite(report: dict, args: argparse.Namespace) -> dict:
             "targetCoverageDeltaAverage": aggregate.get("targetCoverageDeltaAverage"),
             "readFileDeltaSum": aggregate.get("readFileDeltaSum"),
             "irrelevantReadDeltaSum": aggregate.get("irrelevantReadDeltaSum"),
+            "commandExecutionDeltaSum": aggregate.get("commandExecutionDeltaSum"),
+            "ctxhelmToolCallsObserved": aggregate.get("ctxhelmToolCallsObserved"),
             "retryCost": aggregate.get("retryCost"),
             "readEfficiency": aggregate.get("readEfficiency"),
         },

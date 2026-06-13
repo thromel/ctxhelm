@@ -1479,6 +1479,8 @@ fn agent_run_proof_checker_accepts_phase322_and_rejects_regression() {
         summary["metrics"]["targetCoverageDeltaAverage"],
         serde_json::Value::Number(serde_json::Number::from_f64(0.25).unwrap())
     );
+    assert_eq!(summary["metrics"]["commandExecutionDeltaSum"], 9);
+    assert_eq!(summary["metrics"]["ctxhelmToolCallsObserved"], true);
     assert!(
         summary["metrics"]
             .get("targetReadCoverageDeltaAvg")
