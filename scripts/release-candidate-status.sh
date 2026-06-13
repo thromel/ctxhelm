@@ -127,7 +127,7 @@ if proof_summary_path:
 payload = {
     "schemaVersion": 1,
     "package": "ctxhelm",
-    "version": "2.4.0",
+    "version": "2.4.1",
     "status": status,
     "createdAt": dt.datetime.now(dt.timezone.utc).replace(microsecond=0).isoformat(),
     "proofLevel": proof_level,
@@ -154,7 +154,7 @@ payload = {
         "cratesIo": "deferred",
         "signedInstaller": "deferred",
         "selfUpdate": "not_implemented",
-        "reason": "v2.4.0 production candidate supports local archives, the Apple Silicon Homebrew tap, and a tag-publishing multi-platform archive workflow; crates.io publication, signed installers, and self-update remain future work.",
+        "reason": "v2.4.1 production candidate supports local archives, the Apple Silicon Homebrew tap, and a tag-publishing multi-platform archive workflow; crates.io publication, signed installers, and self-update remain future work.",
     },
     "knownLimitations": [
         "Cursor and OpenCode real-client proof is optional and source-free; unavailable auth/provider state is recorded as a skip.",
@@ -224,14 +224,14 @@ if distribution.get("multiPlatformArchiveWorkflow") not in {"ready", "deferred"}
 expected_platform_assets = "ready" if payload.get("status") == "ready" else "deferred"
 if distribution.get("publishedAdditionalPlatformArchives") != expected_platform_assets:
     raise SystemExit(
-        f"publishedAdditionalPlatformArchives must be {expected_platform_assets} for v2.4.0"
+        f"publishedAdditionalPlatformArchives must be {expected_platform_assets} for v2.4.1"
     )
 expected_homebrew = "ready" if payload.get("status") == "ready" else "deferred"
 if distribution.get("homebrewFormula") != expected_homebrew:
-    raise SystemExit(f"homebrewFormula must be {expected_homebrew} for v2.4.0")
+    raise SystemExit(f"homebrewFormula must be {expected_homebrew} for v2.4.1")
 for deferred in ["cratesIo", "signedInstaller"]:
     if distribution.get(deferred) != "deferred":
-        raise SystemExit(f"{deferred} must be deferred for v2.4.0")
+        raise SystemExit(f"{deferred} must be deferred for v2.4.1")
 if distribution.get("selfUpdate") != "not_implemented":
     raise SystemExit("selfUpdate must be not_implemented")
 privacy = payload.get("privacyStatus", {})

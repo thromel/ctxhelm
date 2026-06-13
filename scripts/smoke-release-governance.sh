@@ -37,7 +37,7 @@ for status in ready deferred blocked; do
     "resourceBackedGapSummaryContract": "checked"
   },
   "releaseArchive": {
-    "name": "ctxhelm-v2.4.0-aarch64-apple-darwin.tar.gz",
+    "name": "ctxhelm-v2.4.1-aarch64-apple-darwin.tar.gz",
     "sha256": "archive-sha256"
   },
   "requiredChecks": [
@@ -55,8 +55,8 @@ done
 
 assets_dir="$work_dir/assets"
 mkdir -p "$assets_dir"
-printf 'archive\n' >"$assets_dir/ctxhelm-v2.4.0-test.tar.gz"
-printf 'manifest\n' >"$assets_dir/ctxhelm-v2.4.0-test.manifest.json"
+printf 'archive\n' >"$assets_dir/ctxhelm-v2.4.1-test.tar.gz"
+printf 'manifest\n' >"$assets_dir/ctxhelm-v2.4.1-test.manifest.json"
 release_json="$work_dir/github-release.json"
 python3 - "$release_json" "$assets_dir" <<'PY'
 import hashlib
@@ -66,38 +66,38 @@ import sys
 
 out, assets_dir = sys.argv[1:]
 assets = pathlib.Path(assets_dir)
-archive_digest = hashlib.sha256((assets / "ctxhelm-v2.4.0-test.tar.gz").read_bytes()).hexdigest()
-manifest_digest = hashlib.sha256((assets / "ctxhelm-v2.4.0-test.manifest.json").read_bytes()).hexdigest()
+archive_digest = hashlib.sha256((assets / "ctxhelm-v2.4.1-test.tar.gz").read_bytes()).hexdigest()
+manifest_digest = hashlib.sha256((assets / "ctxhelm-v2.4.1-test.manifest.json").read_bytes()).hexdigest()
 payload = {
     "assets": [
         {
             "digest": f"sha256:{archive_digest}",
-            "name": "ctxhelm-v2.4.0-test.tar.gz",
+            "name": "ctxhelm-v2.4.1-test.tar.gz",
             "state": "uploaded",
         },
         {
             "digest": f"sha256:{manifest_digest}",
-            "name": "ctxhelm-v2.4.0-test.manifest.json",
+            "name": "ctxhelm-v2.4.1-test.manifest.json",
             "state": "uploaded",
         },
     ],
     "isDraft": False,
     "isPrerelease": False,
     "publishedAt": "2026-06-01T00:00:00Z",
-    "tagName": "v2.4.0",
+    "tagName": "v2.4.1",
     "targetCommitish": "abc123",
-    "url": "https://github.com/thromel/ctxhelm/releases/tag/v2.4.0",
+    "url": "https://github.com/thromel/ctxhelm/releases/tag/v2.4.1",
 }
 pathlib.Path(out).write_text(json.dumps(payload, sort_keys=True) + "\n")
 PY
 bash "$repo_root/scripts/verify-github-release.sh" \
-  --tag v2.4.0 \
+  --tag v2.4.1 \
   --target abc123 \
   --assets-dir "$assets_dir" \
   --release-json "$release_json" >/dev/null
 
 bash "$repo_root/scripts/check-public-release-freshness.sh" \
-  --tag v2.4.0 \
+  --tag v2.4.1 \
   --current-commit def456 \
   --release-json "$release_json" \
   --output "$work_dir/release-freshness.json" >/dev/null
@@ -116,7 +116,7 @@ PY
 candidate_dir="$work_dir/candidate"
 mkdir -p "$candidate_dir"
 touch "$candidate_dir/.ctxhelm-release-candidate"
-printf 'artifact placeholder\n' >"$candidate_dir/ctxhelm-v2.4.0-aarch64-apple-darwin.tar.gz"
+printf 'artifact placeholder\n' >"$candidate_dir/ctxhelm-v2.4.1-aarch64-apple-darwin.tar.gz"
 metadata="$work_dir/release-metadata.json"
 previous="$work_dir/previous-release-metadata.json"
 printf '{"version":"candidate"}\n' >"$metadata"

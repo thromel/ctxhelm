@@ -23,8 +23,8 @@ Use this checklist before marking a candidate `ready`.
 - [ ] optional real-client proof for Codex CLI
 - [ ] optional real-client proof for Claude Code
 - [ ] optional public-archive real-client refresh with `bash scripts/smoke-public-real-clients.sh --repo ... --tag ... --target-label ...`
-- [ ] Cursor real-client proof: not claimed for v2.4.0
-- [ ] OpenCode real-client proof: not claimed for v2.4.0
+- [ ] Cursor real-client proof: not claimed for v2.4.1
+- [ ] OpenCode real-client proof: not claimed for v2.4.1
 - [ ] additional benchmark product proof with `CTXHELM_BENCHMARK_CONFIG`
 
 ## Candidate Status
@@ -40,7 +40,7 @@ Allowed statuses are `ready`, `deferred`, and `blocked`.
 - Use `blocked` when a required gate, source-free check, or privacy boundary
   fails.
 
-For v2.4.0, the local archive, multi-platform archive workflow, published
+For v2.4.1, the local archive, multi-platform archive workflow, published
 additional platform release assets, and Apple Silicon Homebrew tap channels can
 be `ready`; crates.io, signed installers, and self-update stay deferred.
 

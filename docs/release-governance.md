@@ -54,12 +54,12 @@ Allowed candidate statuses:
 - `blocked`: release must not be announced because a required gate failed or a
   privacy/source-free boundary regressed.
 
-For v2.4.0, `ready` means the local archive channel is ready and the Apple
+For v2.4.1, `ready` means the local archive channel is ready and the Apple
 Silicon Homebrew tap is ready. It also means the multi-platform archive workflow
 at `.github/workflows/release-artifacts.yml` is ready to build and verify Linux
 x64, macOS Intel, and macOS Apple Silicon artifacts, and to upload those
 verified target assets to the matching GitHub release on version-tag pushes.
-In the v2.4.0 candidate metadata, published additional platform release assets
+In the v2.4.1 candidate metadata, published additional platform release assets
 are ready after the tag workflow succeeds. Crates.io, signed installers, and
 self-update remain explicitly deferred in the candidate status metadata.
 
@@ -77,7 +77,7 @@ against the local artifacts without uploading or mutating anything:
 
 ```bash
 bash scripts/verify-github-release.sh \
-  --tag v2.4.0 \
+  --tag v2.4.1 \
   --target "$(git rev-parse HEAD)" \
   --assets-dir dist
 ```
@@ -91,9 +91,9 @@ Then verify the public user install path:
 ```bash
 bash scripts/verify-public-archive-install.sh \
   --repo thromel/ctxhelm \
-  --tag v2.4.0 \
+  --tag v2.4.1 \
   --target-label aarch64-apple-darwin \
-  --expected-version "ctxhelm 2.4.0" \
+  --expected-version "ctxhelm 2.4.1" \
   --output .ctxhelm/e2e/phase130-public-archive-install.json
 ```
 
@@ -107,9 +107,9 @@ archive binary, run:
 ```bash
 bash scripts/smoke-public-real-clients.sh \
   --repo thromel/ctxhelm \
-  --tag v2.4.0 \
+  --tag v2.4.1 \
   --target-label aarch64-apple-darwin \
-  --expected-version "ctxhelm 2.4.0" \
+  --expected-version "ctxhelm 2.4.1" \
   --output .ctxhelm/e2e/phase130-public-real-client-smoke.json
 ```
 
@@ -124,7 +124,7 @@ the current branch tip:
 ```bash
 bash scripts/check-public-release-freshness.sh \
   --repo thromel/ctxhelm \
-  --tag v2.4.0 \
+  --tag v2.4.1 \
   --output .ctxhelm/e2e/phase130-public-release-freshness.json
 ```
 

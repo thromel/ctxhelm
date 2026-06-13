@@ -108,11 +108,11 @@ fn release_artifact_audit_script_contract() {
 fn release_artifact_audit_rejects_local_state_archive() {
     let archive = archive_with_entries(&[
         (
-            "ctxhelm-v2.4.0-test/ctxhelm",
+            "ctxhelm-v2.4.1-test/ctxhelm",
             "#!/usr/bin/env bash\nexit 0\n",
         ),
         (
-            "ctxhelm-v2.4.0-test/.ctxhelm/repos/repo/traces.jsonl",
+            "ctxhelm-v2.4.1-test/.ctxhelm/repos/repo/traces.jsonl",
             "{\"sourceTextLogged\":false}\n",
         ),
     ]);
@@ -132,12 +132,12 @@ fn release_artifact_audit_rejects_local_state_archive() {
 fn release_artifact_audit_accepts_minimal_release_archive() {
     let archive = archive_with_entries(&[
         (
-            "ctxhelm-v2.4.0-test/ctxhelm",
+            "ctxhelm-v2.4.1-test/ctxhelm",
             "#!/usr/bin/env bash\nexit 0\n",
         ),
-        ("ctxhelm-v2.4.0-test/README.md", "ctxhelm release\n"),
-        ("ctxhelm-v2.4.0-test/LICENSE", "MIT License\n"),
-        ("ctxhelm-v2.4.0-test/VERSION", "ctxhelm 2.4.0\n"),
+        ("ctxhelm-v2.4.1-test/README.md", "ctxhelm release\n"),
+        ("ctxhelm-v2.4.1-test/LICENSE", "MIT License\n"),
+        ("ctxhelm-v2.4.1-test/VERSION", "ctxhelm 2.4.1\n"),
     ]);
 
     let output = Command::new(workspace_root().join("scripts/audit-release-artifact.sh"))
@@ -156,12 +156,12 @@ fn release_artifact_audit_accepts_minimal_release_archive() {
 fn release_artifact_audit_writes_source_free_report() {
     let archive = archive_with_entries(&[
         (
-            "ctxhelm-v2.4.0-test/ctxhelm",
+            "ctxhelm-v2.4.1-test/ctxhelm",
             "#!/usr/bin/env bash\nexit 0\n",
         ),
-        ("ctxhelm-v2.4.0-test/README.md", "ctxhelm release\n"),
-        ("ctxhelm-v2.4.0-test/LICENSE", "MIT License\n"),
-        ("ctxhelm-v2.4.0-test/VERSION", "ctxhelm 2.4.0\n"),
+        ("ctxhelm-v2.4.1-test/README.md", "ctxhelm release\n"),
+        ("ctxhelm-v2.4.1-test/LICENSE", "MIT License\n"),
+        ("ctxhelm-v2.4.1-test/VERSION", "ctxhelm 2.4.1\n"),
     ]);
     let report_dir = TempDir::new().unwrap();
     let report_path = report_dir.path().join("audit.json");
@@ -931,9 +931,9 @@ fn public_release_freshness_script_reports_outdated_without_mutation() {
   "isDraft": false,
   "isPrerelease": false,
   "publishedAt": "2026-06-01T00:00:00Z",
-  "tagName": "v2.4.0",
+  "tagName": "v2.4.1",
   "targetCommitish": "release-commit",
-  "url": "https://github.com/thromel/ctxhelm/releases/tag/v2.4.0"
+  "url": "https://github.com/thromel/ctxhelm/releases/tag/v2.4.1"
 }
 "#,
     )
@@ -941,7 +941,7 @@ fn public_release_freshness_script_reports_outdated_without_mutation() {
 
     let output = Command::new("bash")
         .arg(&script)
-        .args(["--tag", "v2.4.0"])
+        .args(["--tag", "v2.4.1"])
         .args(["--current-commit", "current-commit"])
         .arg("--release-json")
         .arg(&release_json)
@@ -965,7 +965,7 @@ fn public_release_freshness_script_reports_outdated_without_mutation() {
 
     let required_current = Command::new("bash")
         .arg(&script)
-        .args(["--tag", "v2.4.0"])
+        .args(["--tag", "v2.4.1"])
         .args(["--current-commit", "current-commit"])
         .arg("--release-json")
         .arg(&release_json)
@@ -1081,9 +1081,9 @@ fn public_release_freshness_distinguishes_proof_only_commits() {
   "isDraft": false,
   "isPrerelease": false,
   "publishedAt": "2026-06-01T00:00:00Z",
-  "tagName": "v2.4.0",
+  "tagName": "v2.4.1",
   "targetCommitish": "{release_commit}",
-  "url": "https://github.com/thromel/ctxhelm/releases/tag/v2.4.0"
+  "url": "https://github.com/thromel/ctxhelm/releases/tag/v2.4.1"
 }}
 "#
         ),
@@ -1092,7 +1092,7 @@ fn public_release_freshness_distinguishes_proof_only_commits() {
 
     let output = Command::new("bash")
         .arg(&script)
-        .args(["--tag", "v2.4.0"])
+        .args(["--tag", "v2.4.1"])
         .args(["--current-commit", &current_commit])
         .arg("--release-json")
         .arg(&release_json)
@@ -1119,7 +1119,7 @@ fn public_release_freshness_distinguishes_proof_only_commits() {
 
     let required_current = Command::new("bash")
         .arg(&script)
-        .args(["--tag", "v2.4.0"])
+        .args(["--tag", "v2.4.1"])
         .args(["--current-commit", &current_commit])
         .arg("--release-json")
         .arg(&release_json)
@@ -1383,17 +1383,11 @@ fn agent_run_proof_checker_accepts_phase322_and_rejects_regression() {
 
     let phase322_report =
         repo_root.join(".ctxhelm/e2e/phase322-agent-run-codex-target-first-breadth-suite.json");
-    let phase322_run_report =
-        repo_root.join(".ctxhelm/e2e/phase322-agent-run-codex-target-first-semantic-focused.json");
     let codex_runner_script = repo_root.join("scripts/e2e-agent-run-codex.sh");
     let codex_suite = repo_root.join(".planning/e2e/2026-06-06-phase251-codex-rd-suite.json");
     assert!(
         phase322_report.exists(),
         "Phase 322 agent-run proof fixture is missing"
-    );
-    assert!(
-        phase322_run_report.exists(),
-        "Phase 322 single-run proof fixture is missing"
     );
     assert!(
         codex_runner_script.exists(),
@@ -1514,6 +1508,35 @@ fn agent_run_proof_checker_accepts_phase322_and_rejects_regression() {
     let run_summary_path = summary_temp
         .path()
         .join("agent-run-proof-single-run-check.json");
+    let phase322_suite: serde_json::Value =
+        serde_json::from_slice(&fs::read(&phase322_report).unwrap()).unwrap();
+    let run_task = phase322_suite["tasks"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|task| task["taskId"] == "governor-release-proof")
+        .expect("Phase 322 suite should include governor-release-proof task");
+    let phase322_run_report = summary_temp
+        .path()
+        .join("phase322-derived-agent-run-proof.json");
+    let derived_run_report = serde_json::json!({
+        "schemaVersion": phase322_suite["schemaVersion"],
+        "workflowKind": "paired-agent-context-run",
+        "status": run_task["status"],
+        "ctxhelmVersion": phase322_suite["ctxhelmVersion"],
+        "client": phase322_suite["client"],
+        "repo": phase322_suite["repo"],
+        "privacyStatus": run_task["privacyStatus"],
+        "runner": phase322_suite["runner"],
+        "targetFiles": run_task["targetFiles"],
+        "comparison": run_task["comparison"],
+        "lanes": run_task["lanes"],
+    });
+    fs::write(
+        &phase322_run_report,
+        serde_json::to_vec_pretty(&derived_run_report).unwrap(),
+    )
+    .unwrap();
     let accepted_run_json = Command::new("python3")
         .arg(&script)
         .arg(&phase322_run_report)
@@ -1533,9 +1556,9 @@ fn agent_run_proof_checker_accepts_phase322_and_rejects_regression() {
             "--min-ctxhelm-target-read-coverage",
             "1.0",
             "--max-extra-read-delta",
-            "5",
+            "2",
             "--min-irrelevant-read-delta",
-            "-2",
+            "0",
             "--require-retry-cost",
             "--require-runner-fingerprint",
         ])
@@ -2491,7 +2514,7 @@ fn release_docs_script_contract() {
         "docs/release-governance.md",
         "ctxhelm --version",
         "ctxhelm --help",
-        "v2.4.0",
+        "v2.4.1",
         "sha256sums.txt",
         "Why ctxhelm",
         "Current proof snapshot",
@@ -2520,7 +2543,7 @@ fn release_docs_script_contract() {
         "Cursor",
         "OpenCode",
         "cargo install --git",
-        "--tag v2.4.0",
+        "--tag v2.4.1",
         "--locked",
         "crates.io",
         "Homebrew",

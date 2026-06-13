@@ -231,7 +231,7 @@ python3 scripts/check-agent-run-proof.py \
   .ctxhelm/e2e/agent-run-suite-codex.json \
   --workflow suite \
   --require-outcome ctxhelm_improved \
-  --expected-ctxhelm-version "ctxhelm 2.4.0" \
+  --expected-ctxhelm-version "ctxhelm 2.4.1" \
   --expected-client-name codex \
   --expected-client-version "codex-cli 0.137.0" \
   --min-task-count 4 \

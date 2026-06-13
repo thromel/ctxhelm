@@ -1,7 +1,7 @@
 # crates.io preparation
 
 This directory records future crates.io preparation notes. The current release
-path is a prebuilt local archive; crates.io publication is not part of v2.4.0.
+path is a prebuilt local archive; crates.io publication is not part of v2.4.1.
 
 Before any future registry publication:
 
