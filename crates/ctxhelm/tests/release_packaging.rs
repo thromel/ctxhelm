@@ -3,6 +3,16 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 use tempfile::TempDir;
 
+fn python3_command() -> Command {
+    let mut command = Command::new("python3");
+    command.env("PYTHONDONTWRITEBYTECODE", "1");
+    command.env(
+        "PYTHONPYCACHEPREFIX",
+        std::env::temp_dir().join("ctxhelm-release-packaging-pycache"),
+    );
+    command
+}
+
 #[test]
 fn release_package_script_contract() {
     let repo_root = workspace_root();
@@ -1238,7 +1248,7 @@ fn product_proof_checker_accepts_promote_and_rejects_block() {
     )
     .unwrap();
 
-    let promote = Command::new("python3")
+    let promote = python3_command()
         .arg(&script)
         .arg(&promote_path)
         .current_dir(&repo_root)
@@ -1250,7 +1260,7 @@ fn product_proof_checker_accepts_promote_and_rejects_block() {
         String::from_utf8_lossy(&promote.stderr)
     );
 
-    let block = Command::new("python3")
+    let block = python3_command()
         .arg(&script)
         .arg(&block_path)
         .current_dir(&repo_root)
@@ -1267,7 +1277,7 @@ fn product_proof_checker_accepts_promote_and_rejects_block() {
         "unexpected checker error: {stderr}"
     );
 
-    let missing_resource = Command::new("python3")
+    let missing_resource = python3_command()
         .arg(&script)
         .arg(&missing_resource_path)
         .current_dir(&repo_root)
@@ -1284,7 +1294,7 @@ fn product_proof_checker_accepts_promote_and_rejects_block() {
         "unexpected checker error: {stderr}"
     );
 
-    let missing_report = Command::new("python3")
+    let missing_report = python3_command()
         .arg(&script)
         .arg(&missing_report_path)
         .current_dir(&repo_root)
@@ -1300,7 +1310,7 @@ fn product_proof_checker_accepts_promote_and_rejects_block() {
         "unexpected checker error: {stderr}"
     );
 
-    let missing_source = Command::new("python3")
+    let missing_source = python3_command()
         .arg(&script)
         .arg(&missing_source_path)
         .current_dir(&repo_root)
@@ -1316,7 +1326,7 @@ fn product_proof_checker_accepts_promote_and_rejects_block() {
         "unexpected checker error: {stderr}"
     );
 
-    let source_regression = Command::new("python3")
+    let source_regression = python3_command()
         .arg(&script)
         .arg(&source_regression_path)
         .current_dir(&repo_root)
@@ -1332,7 +1342,7 @@ fn product_proof_checker_accepts_promote_and_rejects_block() {
         "unexpected checker error: {stderr}"
     );
 
-    let broad_floor = Command::new("python3")
+    let broad_floor = python3_command()
         .arg(&script)
         .arg(&broad_floor_path)
         .current_dir(&repo_root)
@@ -1344,7 +1354,7 @@ fn product_proof_checker_accepts_promote_and_rejects_block() {
         String::from_utf8_lossy(&broad_floor.stderr)
     );
 
-    let broad_regression = Command::new("python3")
+    let broad_regression = python3_command()
         .arg(&script)
         .arg(&broad_regression_path)
         .current_dir(&repo_root)
@@ -1368,7 +1378,7 @@ fn agent_run_proof_checker_accepts_phase322_and_rejects_regression() {
     let script = repo_root.join("scripts/check-agent-run-proof.py");
     assert!(script.exists(), "agent-run proof checker is missing");
 
-    let compile = Command::new("python3")
+    let compile = python3_command()
         .arg("-m")
         .arg("py_compile")
         .arg(&script)
@@ -1425,7 +1435,7 @@ fn agent_run_proof_checker_accepts_phase322_and_rejects_regression() {
         "--require-runner-fingerprint",
     ];
 
-    let accepted = Command::new("python3")
+    let accepted = python3_command()
         .arg(&script)
         .arg(&phase322_report)
         .args(proof_args)
@@ -1445,7 +1455,7 @@ fn agent_run_proof_checker_accepts_phase322_and_rejects_regression() {
 
     let summary_temp = TempDir::new().unwrap();
     let summary_path = summary_temp.path().join("agent-run-proof-check.json");
-    let accepted_json = Command::new("python3")
+    let accepted_json = python3_command()
         .arg(&script)
         .arg(&phase322_report)
         .args(proof_args)
@@ -1537,7 +1547,7 @@ fn agent_run_proof_checker_accepts_phase322_and_rejects_regression() {
         serde_json::to_vec_pretty(&derived_run_report).unwrap(),
     )
     .unwrap();
-    let accepted_run_json = Command::new("python3")
+    let accepted_run_json = python3_command()
         .arg(&script)
         .arg(&phase322_run_report)
         .args([
@@ -1735,7 +1745,7 @@ fn agent_run_proof_checker_accepts_phase322_and_rejects_regression() {
     )
     .unwrap();
 
-    let rejected = Command::new("python3")
+    let rejected = python3_command()
         .arg(&script)
         .arg(&rejected_path)
         .args(proof_args)
@@ -1766,7 +1776,7 @@ fn agent_run_proof_checker_accepts_phase322_and_rejects_regression() {
         serde_json::to_string_pretty(&stale_suite_task_count_payload).unwrap(),
     )
     .unwrap();
-    let stale_suite_task_count = Command::new("python3")
+    let stale_suite_task_count = python3_command()
         .arg(&script)
         .arg(&stale_suite_task_count_path)
         .args(proof_args)
@@ -1796,7 +1806,7 @@ fn agent_run_proof_checker_accepts_phase322_and_rejects_regression() {
         serde_json::to_string_pretty(&stale_status_payload).unwrap(),
     )
     .unwrap();
-    let stale_status = Command::new("python3")
+    let stale_status = python3_command()
         .arg(&script)
         .arg(&stale_status_path)
         .arg("--require-status")
@@ -1829,7 +1839,7 @@ fn agent_run_proof_checker_accepts_phase322_and_rejects_regression() {
         serde_json::to_string_pretty(&stale_aggregate_payload).unwrap(),
     )
     .unwrap();
-    let stale_aggregate = Command::new("python3")
+    let stale_aggregate = python3_command()
         .arg(&script)
         .arg(&stale_aggregate_path)
         .args(proof_args)
@@ -1860,7 +1870,7 @@ fn agent_run_proof_checker_accepts_phase322_and_rejects_regression() {
         serde_json::to_string_pretty(&stale_lane_summary_payload).unwrap(),
     )
     .unwrap();
-    let stale_lane_summary = Command::new("python3")
+    let stale_lane_summary = python3_command()
         .arg(&script)
         .arg(&stale_lane_summary_path)
         .args(proof_args)
@@ -1892,7 +1902,7 @@ fn agent_run_proof_checker_accepts_phase322_and_rejects_regression() {
         serde_json::to_string_pretty(&stale_lane_summary_metric_payload).unwrap(),
     )
     .unwrap();
-    let stale_lane_summary_metric = Command::new("python3")
+    let stale_lane_summary_metric = python3_command()
         .arg(&script)
         .arg(&stale_lane_summary_metric_path)
         .args(proof_args)
@@ -1925,7 +1935,7 @@ fn agent_run_proof_checker_accepts_phase322_and_rejects_regression() {
         serde_json::to_string_pretty(&stale_retry_cost_payload).unwrap(),
     )
     .unwrap();
-    let stale_retry_cost = Command::new("python3")
+    let stale_retry_cost = python3_command()
         .arg(&script)
         .arg(&stale_retry_cost_path)
         .args(proof_args)
@@ -1958,7 +1968,7 @@ fn agent_run_proof_checker_accepts_phase322_and_rejects_regression() {
         serde_json::to_string_pretty(&stale_read_efficiency_payload).unwrap(),
     )
     .unwrap();
-    let stale_read_efficiency = Command::new("python3")
+    let stale_read_efficiency = python3_command()
         .arg(&script)
         .arg(&stale_read_efficiency_path)
         .args(proof_args)
@@ -1991,7 +2001,7 @@ fn agent_run_proof_checker_accepts_phase322_and_rejects_regression() {
         serde_json::to_string_pretty(&stale_delta_payload).unwrap(),
     )
     .unwrap();
-    let stale_delta = Command::new("python3")
+    let stale_delta = python3_command()
         .arg(&script)
         .arg(&stale_delta_path)
         .args(proof_args)
@@ -2024,7 +2034,7 @@ fn agent_run_proof_checker_accepts_phase322_and_rejects_regression() {
         serde_json::to_string_pretty(&stale_tool_call_payload).unwrap(),
     )
     .unwrap();
-    let stale_tool_call = Command::new("python3")
+    let stale_tool_call = python3_command()
         .arg(&script)
         .arg(&stale_tool_call_path)
         .args(proof_args)
@@ -2056,7 +2066,7 @@ fn agent_run_proof_checker_accepts_phase322_and_rejects_regression() {
         serde_json::to_string_pretty(&stale_outcome_payload).unwrap(),
     )
     .unwrap();
-    let stale_outcome = Command::new("python3")
+    let stale_outcome = python3_command()
         .arg(&script)
         .arg(&stale_outcome_path)
         .args([
@@ -2110,7 +2120,7 @@ fn agent_run_proof_checker_accepts_phase322_and_rejects_regression() {
         serde_json::to_string_pretty(&stale_action_payload).unwrap(),
     )
     .unwrap();
-    let stale_action = Command::new("python3")
+    let stale_action = python3_command()
         .arg(&script)
         .arg(&stale_action_path)
         .args(proof_args)
@@ -2140,7 +2150,7 @@ fn agent_run_proof_checker_accepts_phase322_and_rejects_regression() {
         serde_json::to_string_pretty(&stale_payload).unwrap(),
     )
     .unwrap();
-    let stale_runner = Command::new("python3")
+    let stale_runner = python3_command()
         .arg(&script)
         .arg(&stale_runner_path)
         .args(proof_args)
@@ -2170,7 +2180,7 @@ fn agent_run_proof_checker_accepts_phase322_and_rejects_regression() {
         serde_json::to_string_pretty(&stale_suite_payload).unwrap(),
     )
     .unwrap();
-    let stale_suite = Command::new("python3")
+    let stale_suite = python3_command()
         .arg(&script)
         .arg(&stale_suite_path)
         .args(proof_args)
@@ -2201,7 +2211,7 @@ fn agent_run_proof_checker_accepts_phase322_and_rejects_regression() {
         serde_json::to_string_pretty(&stale_client_payload).unwrap(),
     )
     .unwrap();
-    let stale_client = Command::new("python3")
+    let stale_client = python3_command()
         .arg(&script)
         .arg(&stale_client_path)
         .args(proof_args)
@@ -2232,7 +2242,7 @@ fn agent_run_proof_checker_accepts_phase322_and_rejects_regression() {
         serde_json::to_string_pretty(&stale_lane_payload).unwrap(),
     )
     .unwrap();
-    let stale_lane = Command::new("python3")
+    let stale_lane = python3_command()
         .arg(&script)
         .arg(&stale_lane_path)
         .args(proof_args)
@@ -2263,7 +2273,7 @@ fn agent_run_proof_checker_accepts_phase322_and_rejects_regression() {
         serde_json::to_string_pretty(&stale_task_payload).unwrap(),
     )
     .unwrap();
-    let stale_task = Command::new("python3")
+    let stale_task = python3_command()
         .arg(&script)
         .arg(&stale_task_path)
         .args(proof_args)
