@@ -63,6 +63,33 @@ def validate_privacy(report: dict, label: str) -> None:
             fail(f"{label}.privacyStatus.{field} was not false")
 
 
+def validate_report_identity(report: dict, args: argparse.Namespace, label: str) -> None:
+    if args.expected_ctxhelm_version is not None:
+        actual = report.get("ctxhelmVersion")
+        if actual != args.expected_ctxhelm_version:
+            fail(
+                f"{label}.ctxhelmVersion was {actual}, "
+                f"expected {args.expected_ctxhelm_version}"
+            )
+    if args.expected_client_name is None and args.expected_client_version is None:
+        return
+    client = require_dict(report.get("client"), f"{label}.client")
+    if args.expected_client_name is not None:
+        actual = client.get("name")
+        if actual != args.expected_client_name:
+            fail(
+                f"{label}.client.name was {actual}, "
+                f"expected {args.expected_client_name}"
+            )
+    if args.expected_client_version is not None:
+        actual = client.get("version")
+        if actual != args.expected_client_version:
+            fail(
+                f"{label}.client.version was {actual}, "
+                f"expected {args.expected_client_version}"
+            )
+
+
 def validate_runner(report: dict, args: argparse.Namespace, label: str) -> None:
     runner = report.get("runner")
     if runner is None:
@@ -176,6 +203,7 @@ def validate_common_report(report: dict, args: argparse.Namespace, label: str) -
         fail(f"{label}.schemaVersion was not ctxhelm-agent-run-eval-v1")
     if args.require_status and report.get("status") != args.require_status:
         fail(f"{label}.status was {report.get('status')}, expected {args.require_status}")
+    validate_report_identity(report, args, label)
     validate_privacy(report, label)
     validate_runner(report, args, label)
 
@@ -234,6 +262,9 @@ def proof_thresholds(args: argparse.Namespace) -> dict:
     return {
         "requiredStatus": args.require_status,
         "requiredOutcome": args.require_outcome,
+        "expectedCtxhelmVersion": args.expected_ctxhelm_version,
+        "expectedClientName": args.expected_client_name,
+        "expectedClientVersion": args.expected_client_version,
         "minTaskCount": args.min_task_count,
         "minComparisonEligible": args.min_comparison_eligible,
         "minComparableCtxhelmLanes": args.min_comparable_ctxhelm_lanes,
@@ -307,6 +338,29 @@ def privacy_summary(report: dict) -> dict:
     }
 
 
+def identity_summary(report: dict, args: argparse.Namespace) -> dict:
+    client = report.get("client") if isinstance(report.get("client"), dict) else {}
+    summary = {
+        "ctxhelmVersion": report.get("ctxhelmVersion"),
+        "clientName": client.get("name"),
+        "clientVersion": client.get("version"),
+    }
+    if args.expected_ctxhelm_version is not None:
+        summary["expectedCtxhelmVersion"] = args.expected_ctxhelm_version
+        summary["matchesExpectedCtxhelmVersion"] = (
+            report.get("ctxhelmVersion") == args.expected_ctxhelm_version
+        )
+    if args.expected_client_name is not None:
+        summary["expectedClientName"] = args.expected_client_name
+        summary["matchesExpectedClientName"] = client.get("name") == args.expected_client_name
+    if args.expected_client_version is not None:
+        summary["expectedClientVersion"] = args.expected_client_version
+        summary["matchesExpectedClientVersion"] = (
+            client.get("version") == args.expected_client_version
+        )
+    return summary
+
+
 def lane_quality_summary(summaries: list) -> list:
     quality = []
     for summary in summaries:
@@ -373,6 +427,7 @@ def validate_suite(report: dict, args: argparse.Namespace) -> dict:
         "reportSha256": report_digest(args.report),
         "thresholds": proof_thresholds(args),
         "sourceFree": True,
+        "identity": identity_summary(report, args),
         "privacyStatus": privacy_summary(report),
         "runner": runner_summary(report, args),
         "suite": suite_summary(suite, args),
@@ -438,6 +493,7 @@ def validate_run(report: dict, args: argparse.Namespace) -> dict:
         "reportSha256": report_digest(args.report),
         "thresholds": proof_thresholds(args),
         "sourceFree": True,
+        "identity": identity_summary(report, args),
         "privacyStatus": privacy_summary(report),
         "runner": runner_summary(report, args),
         "metrics": {
@@ -480,6 +536,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--workflow", choices=("auto", "suite", "run"), default="auto")
     parser.add_argument("--require-status", default="passed")
     parser.add_argument("--require-outcome")
+    parser.add_argument("--expected-ctxhelm-version")
+    parser.add_argument("--expected-client-name")
+    parser.add_argument("--expected-client-version")
     parser.add_argument("--min-task-count", type=int, default=0)
     parser.add_argument("--min-comparison-eligible", type=int, default=0)
     parser.add_argument("--min-comparable-ctxhelm-lanes", type=int)

@@ -334,20 +334,27 @@ source-free `agent-run-outcome-proof.json` audit artifact into
 `agentRunOutcomeProofRequired`, and `agentRunOutcomeProofReport` in
 `release-proof-summary.json`. The audit artifact uses
 `ctxhelm-agent-run-proof-check-v1` and records the saved report filename,
-report SHA-256, thresholds, source-free privacy checks, runner metadata,
-current runner script freshness, current suite freshness, aggregate metrics,
-boundary checks, and lane quality summaries. The release gate passes
-`--current-runner-script
+report SHA-256, thresholds, source-free privacy checks, identity checks, runner
+metadata, current runner script freshness, current suite freshness, aggregate
+metrics, boundary checks, and lane quality summaries. The release gate passes
+`--expected-ctxhelm-version` from the selected release-gate binary,
+`--expected-client-name codex`, and `--expected-client-version "codex-cli
+0.137.0"` by default, so a saved report fails if it no longer matches the
+versioned Codex proof claim. Maintainers can override the expected client
+identity with `CTXHELM_AGENT_RUN_EXPECTED_CLIENT_NAME` and
+`CTXHELM_AGENT_RUN_EXPECTED_CLIENT_VERSION` when refreshing proof for a newer
+client. The release gate also passes `--current-runner-script
 scripts/e2e-agent-run-codex.sh`, so a saved report fails if its
 `runner.scriptSha256` no longer matches the current Codex runner script. It also
 passes `--current-suite .planning/e2e/2026-06-06-phase251-codex-rd-suite.json`,
 so a saved report fails if `suite.suiteSha256` no longer matches the current
 four-task R&D suite. The default thresholds require a suite report with
-`ctxhelm_improved`, at least four tasks, four comparison-eligible tasks, sixteen
-comparable ctxhelm lanes, `1.0` minimum average target-read coverage in each
-ctxhelm lane, retry-cost fields, no runner-fingerprint gap, no more than two
-extra reads across best lanes, and no client failures, rate limits, forbidden
-commands, evidence misses, evidence-only targets, or under-read targets.
+`ctxhelm_improved`, the selected ctxhelm version, Codex `codex-cli 0.137.0`, at
+least four tasks, four comparison-eligible tasks, sixteen comparable ctxhelm
+lanes, `1.0` minimum average target-read coverage in each ctxhelm lane,
+retry-cost fields, no runner-fingerprint gap, no more than two extra reads
+across best lanes, and no client failures, rate limits, forbidden commands,
+evidence misses, evidence-only targets, or under-read targets.
 Maintainers can adjust the thresholds with
 `CTXHELM_AGENT_RUN_MIN_TASK_COUNT`,
 `CTXHELM_AGENT_RUN_MIN_COMPARISON_ELIGIBLE`,

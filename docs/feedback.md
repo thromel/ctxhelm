@@ -231,6 +231,9 @@ python3 scripts/check-agent-run-proof.py \
   .ctxhelm/e2e/agent-run-suite-codex.json \
   --workflow suite \
   --require-outcome ctxhelm_improved \
+  --expected-ctxhelm-version "ctxhelm 2.4.0" \
+  --expected-client-name codex \
+  --expected-client-version "codex-cli 0.137.0" \
   --min-task-count 4 \
   --min-comparison-eligible 4 \
   --min-comparable-ctxhelm-lanes 16 \
@@ -246,16 +249,17 @@ python3 scripts/check-agent-run-proof.py \
 ```
 
 The checker enforces the source-free privacy contract, runner fingerprint
-metadata, comparable-lane counts, target-read coverage floors, retry-cost
-fields, and strict absence of client failures, rate limits, forbidden commands,
-evidence misses, evidence-only targets, and under-read targets. Use it to gate
-claims about a specific saved report; it is not a substitute for collecting a
-fresh real-client report when the client version, runner, prompt contract, or
+metadata, expected client identity, expected ctxhelm version, comparable-lane
+counts, target-read coverage floors, retry-cost fields, and strict absence of
+client failures, rate limits, forbidden commands, evidence misses,
+evidence-only targets, and under-read targets. Use it to gate claims about a
+specific saved report; it is not a substitute for collecting a fresh real-client
+report when the client version, ctxhelm version, runner, prompt contract, or
 task suite changes. JSON output uses
 `ctxhelm-agent-run-proof-check-v1` and records the saved report filename,
 report SHA-256, thresholds, source-free privacy checks, runner metadata,
-current runner script freshness, current suite freshness, aggregate metrics,
-boundary checks, and lane quality summaries.
+identity checks, current runner script freshness, current suite freshness,
+aggregate metrics, boundary checks, and lane quality summaries.
 
 ## Release Coverage
 

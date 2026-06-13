@@ -294,6 +294,10 @@ fn release_gate_script_contract() {
         "agentRunOutcomeProofRequired",
         "agentRunOutcomeProofReport",
         "agent-run-outcome-proof.json",
+        "--expected-ctxhelm-version",
+        "--expected-client-name",
+        "--expected-client-version",
+        "CTXHELM_AGENT_RUN_EXPECTED_CLIENT_VERSION",
         "--current-runner-script",
         "--current-suite",
         "2026-06-06-phase251-codex-rd-suite.json",
@@ -1396,6 +1400,12 @@ fn agent_run_proof_checker_accepts_phase322_and_rejects_regression() {
         "suite",
         "--require-outcome",
         "ctxhelm_improved",
+        "--expected-ctxhelm-version",
+        "ctxhelm 2.4.0",
+        "--expected-client-name",
+        "codex",
+        "--expected-client-version",
+        "codex-cli 0.137.0",
         "--min-task-count",
         "4",
         "--min-comparison-eligible",
@@ -1458,7 +1468,16 @@ fn agent_run_proof_checker_accepts_phase322_and_rejects_regression() {
     assert_eq!(summary["status"], "passed");
     assert_eq!(summary["sourceFree"], true);
     assert_eq!(summary["metrics"]["outcomeClaim"], "ctxhelm_improved");
+    assert_eq!(summary["identity"]["matchesExpectedCtxhelmVersion"], true);
+    assert_eq!(summary["identity"]["matchesExpectedClientName"], true);
+    assert_eq!(summary["identity"]["matchesExpectedClientVersion"], true);
     assert_eq!(summary["thresholds"]["minTaskCount"], 4);
+    assert_eq!(summary["thresholds"]["expectedCtxhelmVersion"], "ctxhelm 2.4.0");
+    assert_eq!(summary["thresholds"]["expectedClientName"], "codex");
+    assert_eq!(
+        summary["thresholds"]["expectedClientVersion"],
+        "codex-cli 0.137.0"
+    );
     assert_eq!(summary["thresholds"]["requireRunnerFingerprint"], true);
     assert_eq!(summary["thresholds"]["requireCurrentRunnerScript"], true);
     assert_eq!(summary["thresholds"]["requireCurrentSuite"], true);
@@ -1559,6 +1578,37 @@ fn agent_run_proof_checker_accepts_phase322_and_rejects_regression() {
     assert!(
         stderr.contains("did not match current suite"),
         "unexpected stale-suite checker error: {stderr}"
+    );
+
+    let stale_client_path = temp.path().join("agent-run-stale-client.json");
+    let mut stale_client_payload: serde_json::Value =
+        serde_json::from_slice(&fs::read(&phase322_report).unwrap()).unwrap();
+    stale_client_payload["client"]["version"] =
+        serde_json::Value::String("codex-cli 0.136.0".to_string());
+    fs::write(
+        &stale_client_path,
+        serde_json::to_string_pretty(&stale_client_payload).unwrap(),
+    )
+    .unwrap();
+    let stale_client = Command::new("python3")
+        .arg(&script)
+        .arg(&stale_client_path)
+        .args(proof_args)
+        .arg("--current-runner-script")
+        .arg(&codex_runner_script)
+        .arg("--current-suite")
+        .arg(&codex_suite)
+        .current_dir(&repo_root)
+        .output()
+        .unwrap();
+    assert!(
+        !stale_client.status.success(),
+        "proof with stale client version should fail"
+    );
+    let stderr = String::from_utf8_lossy(&stale_client.stderr);
+    assert!(
+        stderr.contains("client.version"),
+        "unexpected stale-client checker error: {stderr}"
     );
 }
 

@@ -418,11 +418,16 @@ log_step "optional agent-run outcome proof"
 agent_run_proof_status="skipped"
 agent_run_proof_check_report=""
 agent_run_proof_required="${CTXHELM_REQUIRE_AGENT_RUN_PROOF:-0}"
+agent_run_expected_client_name="${CTXHELM_AGENT_RUN_EXPECTED_CLIENT_NAME:-codex}"
+agent_run_expected_client_version="${CTXHELM_AGENT_RUN_EXPECTED_CLIENT_VERSION:-codex-cli 0.137.0}"
 if [[ -n "${CTXHELM_AGENT_RUN_PROOF_REPORT:-}" ]]; then
   agent_run_proof_check_report="$proof_dir/agent-run-outcome-proof.json"
   python3 "$check_agent_run_proof_script" "$CTXHELM_AGENT_RUN_PROOF_REPORT" \
     --workflow suite \
     --require-outcome "${CTXHELM_AGENT_RUN_REQUIRE_OUTCOME:-ctxhelm_improved}" \
+    --expected-ctxhelm-version "$ctxhelm_version" \
+    --expected-client-name "$agent_run_expected_client_name" \
+    --expected-client-version "$agent_run_expected_client_version" \
     --min-task-count "${CTXHELM_AGENT_RUN_MIN_TASK_COUNT:-4}" \
     --min-comparison-eligible "${CTXHELM_AGENT_RUN_MIN_COMPARISON_ELIGIBLE:-4}" \
     --min-comparable-ctxhelm-lanes "${CTXHELM_AGENT_RUN_MIN_COMPARABLE_CTXHELM_LANES:-16}" \
