@@ -549,11 +549,27 @@ def boundary_summary(outcome: dict) -> dict:
     return {field: outcome.get(field) is False for field in STRICT_FALSE_OUTCOME_FIELDS}
 
 
+def boundary_status(outcome: dict) -> dict:
+    return {field: outcome.get(field) for field in STRICT_FALSE_OUTCOME_FIELDS}
+
+
 def privacy_summary(report: dict) -> dict:
     privacy = require_dict(report.get("privacyStatus"), "privacyStatus")
     return {
+        "localOnly": privacy.get("localOnly"),
+        **{field: privacy.get(field) for field in STRICT_FALSE_PRIVACY_FIELDS},
+    }
+
+
+def privacy_checks(report: dict) -> dict:
+    privacy = require_dict(report.get("privacyStatus"), "privacyStatus")
+    strict_false_fields = {
+        field: privacy.get(field) is False for field in STRICT_FALSE_PRIVACY_FIELDS
+    }
+    return {
         "localOnly": privacy.get("localOnly") is True,
-        **{field: privacy.get(field) is False for field in STRICT_FALSE_PRIVACY_FIELDS},
+        "allSourceFreeFieldsFalse": all(strict_false_fields.values()),
+        "strictFalseFields": strict_false_fields,
     }
 
 
@@ -1432,6 +1448,7 @@ def validate_suite(report: dict, args: argparse.Namespace) -> dict:
         "sourceFree": True,
         "identity": identity_summary(report, args),
         "privacyStatus": privacy_summary(report),
+        "privacyChecks": privacy_checks(report),
         "runner": runner_summary(report, args),
         "suite": suite_summary(suite, args),
         "suiteTaskChecks": suite_task_check_summary(tasks, current_suite_specs),
@@ -1450,6 +1467,7 @@ def validate_suite(report: dict, args: argparse.Namespace) -> dict:
             "retryCost": aggregate.get("retryCost"),
             "readEfficiency": aggregate.get("readEfficiency"),
         },
+        "boundaryStatus": boundary_status(aggregate),
         "boundaryChecks": boundary_summary(aggregate),
         "laneSummaries": lane_quality_summary(summaries),
     }
@@ -1502,6 +1520,7 @@ def validate_run(report: dict, args: argparse.Namespace) -> dict:
         "sourceFree": True,
         "identity": identity_summary(report, args),
         "privacyStatus": privacy_summary(report),
+        "privacyChecks": privacy_checks(report),
         "runner": runner_summary(report, args),
         "metrics": {
             "comparisonEligibleCount": 1,
@@ -1514,6 +1533,7 @@ def validate_run(report: dict, args: argparse.Namespace) -> dict:
             "retryCost": comparison.get("retryCost"),
             "readEfficiency": comparison.get("readEfficiency"),
         },
+        "boundaryStatus": boundary_status(comparison),
         "boundaryChecks": boundary_summary(comparison),
         "laneSummaries": [],
     }

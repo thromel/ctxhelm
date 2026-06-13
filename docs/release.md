@@ -334,10 +334,16 @@ source-free `agent-run-outcome-proof.json` audit artifact into
 `agentRunOutcomeProofRequired`, and `agentRunOutcomeProofReport` in
 `release-proof-summary.json`. The audit artifact uses
 `ctxhelm-agent-run-proof-check-v1` and records the saved report filename,
-report SHA-256, thresholds, source-free privacy checks, identity checks, runner
+report SHA-256, thresholds, factual `privacyStatus`, source-free
+`privacyChecks`, identity checks, runner
 metadata, current runner script freshness, current suite freshness, aggregate
 metrics, aggregate consistency checks, suite-task checks, suite status checks,
-task-lane checks, boundary checks, and lane quality summaries. The checker also
+task-lane checks, factual `boundaryStatus`, boundary checks, and lane quality
+summaries. `privacyStatus` mirrors the original report booleans, such as
+`sourceTextLogged: false`, while `privacyChecks.strictFalseFields` records
+which source-free checks passed. `boundaryStatus` mirrors observed boundary
+booleans, such as `clientFailuresObserved: false`, while `boundaryChecks`
+records strict-false pass/fail results for the same fields. The checker also
 derives `suite.taskCount` from `tasks[*]` and derives `report.status` from
 nested task statuses, comparison eligibility, and strict boundary flags, so a
 stale suite envelope cannot support a release claim. When `--current-suite` is provided,

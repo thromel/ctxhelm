@@ -1505,7 +1505,49 @@ fn agent_run_proof_checker_accepts_phase322_and_rejects_regression() {
     assert_eq!(summary["thresholds"]["requireRunnerFingerprint"], true);
     assert_eq!(summary["thresholds"]["requireCurrentRunnerScript"], true);
     assert_eq!(summary["thresholds"]["requireCurrentSuite"], true);
-    assert_eq!(summary["privacyStatus"]["sourceTextLogged"], true);
+    assert_eq!(summary["privacyStatus"]["localOnly"], true);
+    assert_eq!(summary["privacyStatus"]["sourceTextLogged"], false);
+    assert_eq!(summary["privacyStatus"]["rawPromptStored"], false);
+    assert_eq!(summary["privacyStatus"]["rawTranscriptStored"], false);
+    assert_eq!(summary["privacyStatus"]["rawMcpTrafficStored"], false);
+    assert_eq!(summary["privacyStatus"]["rawCommandOutputStored"], false);
+    assert_eq!(summary["privacyStatus"]["remoteEmbeddingsUsed"], false);
+    assert_eq!(summary["privacyStatus"]["remoteRerankingUsed"], false);
+    assert_eq!(summary["privacyChecks"]["localOnly"], true);
+    assert_eq!(summary["privacyChecks"]["allSourceFreeFieldsFalse"], true);
+    assert_eq!(
+        summary["privacyChecks"]["strictFalseFields"]["sourceTextLogged"],
+        true
+    );
+    assert_eq!(summary["boundaryStatus"]["clientFailuresObserved"], false);
+    assert_eq!(summary["boundaryStatus"]["rateLimitsObserved"], false);
+    assert_eq!(
+        summary["boundaryStatus"]["forbiddenCommandsObserved"],
+        false
+    );
+    assert_eq!(
+        summary["boundaryStatus"]["ctxhelmEvidenceMissesObserved"],
+        false
+    );
+    assert_eq!(
+        summary["boundaryStatus"]["ctxhelmEvidenceOnlyTargetsObserved"],
+        false
+    );
+    assert_eq!(
+        summary["boundaryStatus"]["ctxhelmUnderReadTargetsObserved"],
+        false
+    );
+    assert_eq!(
+        summary["boundaryStatus"]["missingRequiredCtxhelmCallsObserved"],
+        false
+    );
+    assert_eq!(
+        summary["boundaryStatus"]["invalidRequiredCtxhelmCallsObserved"],
+        false
+    );
+    assert_eq!(summary["boundaryChecks"]["clientFailuresObserved"], true);
+    assert_eq!(summary["boundaryChecks"]["rateLimitsObserved"], true);
+    assert_eq!(summary["boundaryChecks"]["forbiddenCommandsObserved"], true);
     assert_eq!(summary["runner"]["matchesCurrentRunnerScript"], true);
     assert_eq!(summary["suite"]["matchesCurrentSuite"], true);
     assert_eq!(

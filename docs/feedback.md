@@ -273,12 +273,15 @@ about a specific saved report; it is not a substitute for collecting a fresh
 real-client report when the client version, ctxhelm version, runner, prompt
 contract, or task suite changes. JSON output uses
 `ctxhelm-agent-run-proof-check-v1` and records the saved report filename,
-report SHA-256, thresholds, source-free privacy checks, runner metadata,
+report SHA-256, thresholds, factual `privacyStatus`, source-free
+`privacyChecks`, runner metadata,
 identity checks, current runner script freshness, current suite freshness,
 suite-task checks, suite status checks, aggregate metrics, aggregate consistency checks,
 lane-summary metric checks, retry-cost consistency checks, read-efficiency consistency checks,
-comparison aggregate checks, outcome routing checks, task-lane checks, boundary
-checks, and lane quality summaries.
+comparison aggregate checks, outcome routing checks, task-lane checks, factual
+`boundaryStatus`, boundary checks, and lane quality summaries. `privacyStatus`
+and `boundaryStatus` preserve the report facts, while `privacyChecks` and
+`boundaryChecks` record the corresponding pass/fail proof checks.
 
 ## Release Coverage
 
