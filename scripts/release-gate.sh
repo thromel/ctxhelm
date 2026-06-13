@@ -431,6 +431,7 @@ if [[ -n "${CTXHELM_AGENT_RUN_PROOF_REPORT:-}" ]]; then
     --min-irrelevant-read-delta "${CTXHELM_AGENT_RUN_MIN_IRRELEVANT_READ_DELTA:-0}" \
     --require-retry-cost \
     --require-runner-fingerprint \
+    --current-runner-script "$repo_root/scripts/e2e-agent-run-codex.sh" \
     --format json \
     --output "$agent_run_proof_check_report"
   agent_run_proof_status="passed"

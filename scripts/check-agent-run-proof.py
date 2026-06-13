@@ -63,10 +63,10 @@ def validate_privacy(report: dict, label: str) -> None:
             fail(f"{label}.privacyStatus.{field} was not false")
 
 
-def validate_runner(report: dict, label: str, require_runner: bool) -> None:
+def validate_runner(report: dict, args: argparse.Namespace, label: str) -> None:
     runner = report.get("runner")
     if runner is None:
-        if require_runner:
+        if args.require_runner_fingerprint:
             fail(f"{label}.runner was missing")
         return
     runner = require_dict(runner, f"{label}.runner")
@@ -83,6 +83,13 @@ def validate_runner(report: dict, label: str, require_runner: bool) -> None:
         int(script_sha256, 16)
     except ValueError:
         fail(f"{label}.runner.scriptSha256 was not hex")
+    if args.current_runner_script is not None:
+        current_sha256 = report_digest(args.current_runner_script)
+        if script_sha256 != current_sha256:
+            fail(
+                f"{label}.runner.scriptSha256 did not match current runner script "
+                f"{args.current_runner_script.name}"
+            )
 
 
 def validate_required_calls(summary: dict, label: str) -> None:
@@ -155,7 +162,7 @@ def validate_common_report(report: dict, args: argparse.Namespace, label: str) -
     if args.require_status and report.get("status") != args.require_status:
         fail(f"{label}.status was {report.get('status')}, expected {args.require_status}")
     validate_privacy(report, label)
-    validate_runner(report, label, args.require_runner_fingerprint)
+    validate_runner(report, args, label)
 
 
 def validate_common_outcome_fields(outcome: dict, args: argparse.Namespace, label: str) -> None:
@@ -220,6 +227,10 @@ def proof_thresholds(args: argparse.Namespace) -> dict:
         "minIrrelevantReadDelta": args.min_irrelevant_read_delta,
         "requireRetryCost": args.require_retry_cost,
         "requireRunnerFingerprint": args.require_runner_fingerprint,
+        "currentRunnerScriptName": (
+            args.current_runner_script.name if args.current_runner_script is not None else None
+        ),
+        "requireCurrentRunnerScript": args.current_runner_script is not None,
         "strictBoundaries": args.strict,
     }
 
@@ -232,17 +243,23 @@ def report_digest(path: pathlib.Path) -> str:
     return digest.hexdigest()
 
 
-def runner_summary(report: dict) -> dict:
+def runner_summary(report: dict, args: argparse.Namespace) -> dict:
     runner = report.get("runner")
     if not isinstance(runner, dict):
         return {"present": False}
-    return {
+    summary = {
         "present": True,
         "name": runner.get("name"),
         "contractVersion": runner.get("contractVersion"),
         "checkpointValidation": runner.get("checkpointValidation"),
         "scriptSha256": runner.get("scriptSha256"),
     }
+    if args.current_runner_script is not None:
+        current_sha256 = report_digest(args.current_runner_script)
+        summary["currentRunnerScriptName"] = args.current_runner_script.name
+        summary["currentRunnerScriptSha256"] = current_sha256
+        summary["matchesCurrentRunnerScript"] = runner.get("scriptSha256") == current_sha256
+    return summary
 
 
 def boundary_summary(outcome: dict) -> dict:
@@ -323,7 +340,7 @@ def validate_suite(report: dict, args: argparse.Namespace) -> dict:
         "thresholds": proof_thresholds(args),
         "sourceFree": True,
         "privacyStatus": privacy_summary(report),
-        "runner": runner_summary(report),
+        "runner": runner_summary(report, args),
         "metrics": {
             "taskCount": task_count,
             "comparisonEligibleCount": comparison_eligible,
@@ -387,7 +404,7 @@ def validate_run(report: dict, args: argparse.Namespace) -> dict:
         "thresholds": proof_thresholds(args),
         "sourceFree": True,
         "privacyStatus": privacy_summary(report),
-        "runner": runner_summary(report),
+        "runner": runner_summary(report, args),
         "metrics": {
             "comparisonEligibleCount": 1,
             "comparableCtxhelmLaneCount": comparison.get("comparableCtxhelmLaneCount"),
@@ -436,6 +453,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--min-irrelevant-read-delta", type=int)
     parser.add_argument("--require-retry-cost", action="store_true")
     parser.add_argument("--require-runner-fingerprint", action="store_true")
+    parser.add_argument(
+        "--current-runner-script",
+        type=pathlib.Path,
+        help="Require runner.scriptSha256 to match this current local runner script.",
+    )
     parser.add_argument("--format", choices=("text", "json"), default="text")
     parser.add_argument("--output", type=pathlib.Path, help="Write rendered proof check output here")
     parser.add_argument(
@@ -452,6 +474,8 @@ def main() -> None:
     args = parse_args()
     if not args.report.is_file():
         fail(f"missing agent-run report: {args.report}")
+    if args.current_runner_script is not None and not args.current_runner_script.is_file():
+        fail(f"missing current runner script: {args.current_runner_script}")
     try:
         report = json.loads(args.report.read_text(encoding="utf-8"))
     except json.JSONDecodeError as error:

@@ -334,11 +334,14 @@ source-free `agent-run-outcome-proof.json` audit artifact into
 `agentRunOutcomeProofRequired`, and `agentRunOutcomeProofReport` in
 `release-proof-summary.json`. The audit artifact uses
 `ctxhelm-agent-run-proof-check-v1` and records the saved report filename,
-report SHA-256, thresholds, source-free privacy checks, runner metadata,
-aggregate metrics, boundary checks, and lane quality summaries. The default
-thresholds require a suite report with `ctxhelm_improved`, at least four tasks,
-four comparison-eligible tasks, sixteen comparable ctxhelm lanes, `1.0` minimum
-average target-read coverage in each ctxhelm lane, retry-cost fields, no
+report SHA-256, thresholds, source-free privacy checks, runner metadata, current
+runner script freshness, aggregate metrics, boundary checks, and lane quality
+summaries. The release gate passes `--current-runner-script
+scripts/e2e-agent-run-codex.sh`, so a saved report fails if its
+`runner.scriptSha256` no longer matches the current Codex runner script. The
+default thresholds require a suite report with `ctxhelm_improved`, at least four
+tasks, four comparison-eligible tasks, sixteen comparable ctxhelm lanes, `1.0`
+minimum average target-read coverage in each ctxhelm lane, retry-cost fields, no
 runner-fingerprint gap, no more than two extra reads across best lanes, and no
 client failures, rate limits, forbidden commands, evidence misses,
 evidence-only targets, or under-read targets. Maintainers can adjust the

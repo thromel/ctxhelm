@@ -294,6 +294,7 @@ fn release_gate_script_contract() {
         "agentRunOutcomeProofRequired",
         "agentRunOutcomeProofReport",
         "agent-run-outcome-proof.json",
+        "--current-runner-script",
         "--format json",
         "--output",
         "stale clean proof fixtures",
@@ -1376,9 +1377,14 @@ fn agent_run_proof_checker_accepts_phase322_and_rejects_regression() {
 
     let phase322_report = repo_root
         .join(".ctxhelm/e2e/phase322-agent-run-codex-target-first-breadth-suite.json");
+    let codex_runner_script = repo_root.join("scripts/e2e-agent-run-codex.sh");
     assert!(
         phase322_report.exists(),
         "Phase 322 agent-run proof fixture is missing"
+    );
+    assert!(
+        codex_runner_script.exists(),
+        "Codex agent-run runner script is missing"
     );
 
     let proof_args = [
@@ -1406,6 +1412,8 @@ fn agent_run_proof_checker_accepts_phase322_and_rejects_regression() {
         .arg(&script)
         .arg(&phase322_report)
         .args(proof_args)
+        .arg("--current-runner-script")
+        .arg(&codex_runner_script)
         .current_dir(&repo_root)
         .output()
         .unwrap();
@@ -1422,6 +1430,8 @@ fn agent_run_proof_checker_accepts_phase322_and_rejects_regression() {
         .arg(&script)
         .arg(&phase322_report)
         .args(proof_args)
+        .arg("--current-runner-script")
+        .arg(&codex_runner_script)
         .arg("--format")
         .arg("json")
         .arg("--output")
@@ -1442,7 +1452,9 @@ fn agent_run_proof_checker_accepts_phase322_and_rejects_regression() {
     assert_eq!(summary["metrics"]["outcomeClaim"], "ctxhelm_improved");
     assert_eq!(summary["thresholds"]["minTaskCount"], 4);
     assert_eq!(summary["thresholds"]["requireRunnerFingerprint"], true);
+    assert_eq!(summary["thresholds"]["requireCurrentRunnerScript"], true);
     assert_eq!(summary["privacyStatus"]["sourceTextLogged"], true);
+    assert_eq!(summary["runner"]["matchesCurrentRunnerScript"], true);
     assert!(summary["reportSha256"].as_str().unwrap().len() == 64);
 
     let temp = TempDir::new().unwrap();
@@ -1460,6 +1472,8 @@ fn agent_run_proof_checker_accepts_phase322_and_rejects_regression() {
         .arg(&script)
         .arg(&rejected_path)
         .args(proof_args)
+        .arg("--current-runner-script")
+        .arg(&codex_runner_script)
         .current_dir(&repo_root)
         .output()
         .unwrap();
@@ -1471,6 +1485,35 @@ fn agent_run_proof_checker_accepts_phase322_and_rejects_regression() {
     assert!(
         stderr.contains("ctxhelmEvidenceOnlyTargetsObserved"),
         "unexpected checker error: {stderr}"
+    );
+
+    let stale_runner_path = temp.path().join("agent-run-stale-runner.json");
+    let mut stale_payload: serde_json::Value =
+        serde_json::from_slice(&fs::read(&phase322_report).unwrap()).unwrap();
+    stale_payload["runner"]["scriptSha256"] =
+        serde_json::Value::String("0".repeat(64));
+    fs::write(
+        &stale_runner_path,
+        serde_json::to_string_pretty(&stale_payload).unwrap(),
+    )
+    .unwrap();
+    let stale_runner = Command::new("python3")
+        .arg(&script)
+        .arg(&stale_runner_path)
+        .args(proof_args)
+        .arg("--current-runner-script")
+        .arg(&codex_runner_script)
+        .current_dir(&repo_root)
+        .output()
+        .unwrap();
+    assert!(
+        !stale_runner.status.success(),
+        "proof with stale runner fingerprint should fail"
+    );
+    let stderr = String::from_utf8_lossy(&stale_runner.stderr);
+    assert!(
+        stderr.contains("did not match current runner script"),
+        "unexpected stale-runner checker error: {stderr}"
     );
 }
 
