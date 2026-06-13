@@ -357,6 +357,10 @@ Finally, it derives aggregate retry-cost metrics from per-task retry costs and
 read-efficiency metrics from lane summaries, so stale `aggregate.retryCost` or
 `aggregate.readEfficiency` values cannot support claims about retry overhead,
 recovered target reads, or read precision.
+It also derives top-level comparison aggregates such as
+`targetReadCoverageDeltaAverage`, `targetCoverageDeltaAverage`,
+`readFileDeltaSum`, `irrelevantReadDeltaSum`, `commandExecutionDeltaSum`, and
+`ctxhelmToolCallsObserved` from `tasks[*].comparison`.
 The release gate passes
 `--expected-ctxhelm-version` from the selected release-gate binary,
 `--expected-client-name codex`, and `--expected-client-version "codex-cli

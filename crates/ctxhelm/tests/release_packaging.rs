@@ -1544,6 +1544,14 @@ fn agent_run_proof_checker_accepts_phase322_and_rejects_regression() {
         18
     );
     assert_eq!(
+        summary["aggregateConsistency"]["strictComparisonAggregateChecks"],
+        true
+    );
+    assert_eq!(
+        summary["aggregateConsistency"]["checkedComparisonAggregateMetricCount"],
+        6
+    );
+    assert_eq!(
         summary["aggregateConsistency"]["matchesDerivedAggregates"],
         true
     );
@@ -1741,6 +1749,71 @@ fn agent_run_proof_checker_accepts_phase322_and_rejects_regression() {
             "aggregate.readEfficiency.extraReadFileCount did not match derived lane summaries"
         ),
         "unexpected stale-read-efficiency checker error: {stderr}"
+    );
+
+    let stale_delta_path = temp.path().join("agent-run-stale-aggregate-delta.json");
+    let mut stale_delta_payload: serde_json::Value =
+        serde_json::from_slice(&fs::read(&phase322_report).unwrap()).unwrap();
+    stale_delta_payload["aggregate"]["targetReadCoverageDeltaAverage"] =
+        serde_json::Value::Number(serde_json::Number::from_f64(0.4125).unwrap());
+    fs::write(
+        &stale_delta_path,
+        serde_json::to_string_pretty(&stale_delta_payload).unwrap(),
+    )
+    .unwrap();
+    let stale_delta = Command::new("python3")
+        .arg(&script)
+        .arg(&stale_delta_path)
+        .args(proof_args)
+        .arg("--current-runner-script")
+        .arg(&codex_runner_script)
+        .arg("--current-suite")
+        .arg(&codex_suite)
+        .current_dir(&repo_root)
+        .output()
+        .unwrap();
+    assert!(
+        !stale_delta.status.success(),
+        "proof with stale aggregate delta metrics should fail"
+    );
+    let stderr = String::from_utf8_lossy(&stale_delta.stderr);
+    assert!(
+        stderr.contains(
+            "aggregate.targetReadCoverageDeltaAverage did not match derived task comparisons"
+        ),
+        "unexpected stale-delta checker error: {stderr}"
+    );
+
+    let stale_tool_call_path = temp.path().join("agent-run-stale-tool-call-observed.json");
+    let mut stale_tool_call_payload: serde_json::Value =
+        serde_json::from_slice(&fs::read(&phase322_report).unwrap()).unwrap();
+    stale_tool_call_payload["aggregate"]["ctxhelmToolCallsObserved"] =
+        serde_json::Value::Bool(false);
+    fs::write(
+        &stale_tool_call_path,
+        serde_json::to_string_pretty(&stale_tool_call_payload).unwrap(),
+    )
+    .unwrap();
+    let stale_tool_call = Command::new("python3")
+        .arg(&script)
+        .arg(&stale_tool_call_path)
+        .args(proof_args)
+        .arg("--current-runner-script")
+        .arg(&codex_runner_script)
+        .arg("--current-suite")
+        .arg(&codex_suite)
+        .current_dir(&repo_root)
+        .output()
+        .unwrap();
+    assert!(
+        !stale_tool_call.status.success(),
+        "proof with stale ctxhelm tool-call aggregate should fail"
+    );
+    let stderr = String::from_utf8_lossy(&stale_tool_call.stderr);
+    assert!(
+        stderr
+            .contains("aggregate.ctxhelmToolCallsObserved did not match derived task comparisons"),
+        "unexpected stale-tool-call checker error: {stderr}"
     );
 
     let stale_runner_path = temp.path().join("agent-run-stale-runner.json");

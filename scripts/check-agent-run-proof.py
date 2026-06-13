@@ -65,6 +65,17 @@ RETRY_COST_AVERAGE_FIELDS = (
     "targetReadCoverageAfterRetry",
 )
 
+AGGREGATE_COMPARISON_SUM_FIELDS = {
+    "readFileDeltaSum": "readFileDelta",
+    "irrelevantReadDeltaSum": "irrelevantReadDelta",
+    "commandExecutionDeltaSum": "commandExecutionDelta",
+}
+
+AGGREGATE_COMPARISON_AVERAGE_FIELDS = {
+    "targetReadCoverageDeltaAverage": "targetReadCoverageDelta",
+    "targetCoverageDeltaAverage": "targetCoverageDelta",
+}
+
 FLOAT_TOLERANCE = 1e-9
 
 
@@ -1048,6 +1059,70 @@ def validate_read_efficiency_consistency(aggregate: dict, summaries: list) -> di
     }
 
 
+def derived_comparison_aggregates(tasks: list) -> dict:
+    sum_fields = {field: 0 for field in AGGREGATE_COMPARISON_SUM_FIELDS}
+    average_sums = {field: 0.0 for field in AGGREGATE_COMPARISON_AVERAGE_FIELDS}
+    ctxhelm_tool_calls_observed = False
+
+    for task_index, task in enumerate(tasks):
+        comparison = require_dict(
+            require_dict(task, f"tasks[{task_index}]").get("comparison"),
+            f"tasks[{task_index}].comparison",
+        )
+        for aggregate_field, task_field in AGGREGATE_COMPARISON_SUM_FIELDS.items():
+            sum_fields[aggregate_field] += require_int(
+                comparison.get(task_field, 0),
+                f"tasks[{task_index}].comparison.{task_field}",
+            )
+        for aggregate_field, task_field in AGGREGATE_COMPARISON_AVERAGE_FIELDS.items():
+            average_sums[aggregate_field] += require_number(
+                comparison.get(task_field, 0.0),
+                f"tasks[{task_index}].comparison.{task_field}",
+            )
+        if comparison.get("ctxhelmToolCallsObserved") is True:
+            ctxhelm_tool_calls_observed = True
+
+    return {
+        **sum_fields,
+        **{
+            field: safe_ratio(total, len(tasks))
+            for field, total in average_sums.items()
+        },
+        "ctxhelmToolCallsObserved": ctxhelm_tool_calls_observed,
+    }
+
+
+def validate_comparison_aggregate_consistency(aggregate: dict, tasks: list) -> dict:
+    derived = derived_comparison_aggregates(tasks)
+    checked_metric_count = 0
+    for field in AGGREGATE_COMPARISON_SUM_FIELDS:
+        actual = require_int(aggregate.get(field), f"aggregate.{field}")
+        if actual != derived[field]:
+            fail(
+                f"aggregate.{field} did not match derived task comparisons: "
+                f"{actual} != {derived[field]}"
+            )
+        checked_metric_count += 1
+    for field in AGGREGATE_COMPARISON_AVERAGE_FIELDS:
+        if not numbers_match(aggregate.get(field), derived[field]):
+            fail(
+                f"aggregate.{field} did not match derived task comparisons: "
+                f"{aggregate.get(field)} != {derived[field]}"
+            )
+        checked_metric_count += 1
+    if aggregate.get("ctxhelmToolCallsObserved") is not derived["ctxhelmToolCallsObserved"]:
+        fail(
+            "aggregate.ctxhelmToolCallsObserved did not match derived task comparisons: "
+            f"{aggregate.get('ctxhelmToolCallsObserved')} != "
+            f"{derived['ctxhelmToolCallsObserved']}"
+        )
+    checked_metric_count += 1
+    return {
+        "strictComparisonAggregateChecks": True,
+        "checkedComparisonAggregateMetricCount": checked_metric_count,
+    }
+
+
 def validate_aggregate_consistency(aggregate: dict, summaries: list, tasks: list) -> dict:
     derived = derived_aggregate_consistency(aggregate, summaries, tasks)
     for field in ("taskCount", "comparisonEligibleCount", "comparableCtxhelmLaneCount"):
@@ -1078,6 +1153,7 @@ def validate_aggregate_consistency(aggregate: dict, summaries: list, tasks: list
     lane_summary_metrics = validate_lane_summary_consistency(summaries, tasks)
     retry_cost_metrics = validate_retry_cost_consistency(aggregate, tasks)
     read_efficiency_metrics = validate_read_efficiency_consistency(aggregate, summaries)
+    comparison_aggregate_metrics = validate_comparison_aggregate_consistency(aggregate, tasks)
     return {
         "strictAggregateConsistencyChecks": True,
         "derivedTaskCount": derived["taskCount"],
@@ -1088,6 +1164,7 @@ def validate_aggregate_consistency(aggregate: dict, summaries: list, tasks: list
         **lane_summary_metrics,
         **retry_cost_metrics,
         **read_efficiency_metrics,
+        **comparison_aggregate_metrics,
         "matchesDerivedAggregates": True,
     }
 
