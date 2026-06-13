@@ -1500,6 +1500,25 @@ fn agent_run_proof_checker_accepts_phase322_and_rejects_regression() {
     assert_eq!(summary["taskLaneChecks"]["strictTaskLaneChecks"], true);
     assert_eq!(summary["taskLaneChecks"]["taskLaneCount"], 20);
     assert_eq!(summary["taskLaneChecks"]["ctxhelmTaskLaneCount"], 16);
+    assert_eq!(
+        summary["aggregateConsistency"]["strictAggregateConsistencyChecks"],
+        true
+    );
+    assert_eq!(summary["aggregateConsistency"]["derivedTaskCount"], 4);
+    assert_eq!(
+        summary["aggregateConsistency"]["derivedComparisonEligibleCount"],
+        4
+    );
+    assert_eq!(
+        summary["aggregateConsistency"]["derivedComparableCtxhelmLaneCount"],
+        16
+    );
+    assert_eq!(summary["aggregateConsistency"]["derivedLaneNameCount"], 5);
+    assert_eq!(summary["aggregateConsistency"]["laneSummaryCount"], 5);
+    assert_eq!(
+        summary["aggregateConsistency"]["matchesDerivedAggregates"],
+        true
+    );
     assert!(summary["reportSha256"].as_str().unwrap().len() == 64);
 
     let temp = TempDir::new().unwrap();
@@ -1532,6 +1551,68 @@ fn agent_run_proof_checker_accepts_phase322_and_rejects_regression() {
     assert!(
         stderr.contains("ctxhelmEvidenceOnlyTargetsObserved"),
         "unexpected checker error: {stderr}"
+    );
+
+    let stale_aggregate_path = temp.path().join("agent-run-stale-aggregate.json");
+    let mut stale_aggregate_payload: serde_json::Value =
+        serde_json::from_slice(&fs::read(&phase322_report).unwrap()).unwrap();
+    stale_aggregate_payload["aggregate"]["comparisonEligibleCount"] =
+        serde_json::Value::Number(serde_json::Number::from(5));
+    fs::write(
+        &stale_aggregate_path,
+        serde_json::to_string_pretty(&stale_aggregate_payload).unwrap(),
+    )
+    .unwrap();
+    let stale_aggregate = Command::new("python3")
+        .arg(&script)
+        .arg(&stale_aggregate_path)
+        .args(proof_args)
+        .arg("--current-runner-script")
+        .arg(&codex_runner_script)
+        .arg("--current-suite")
+        .arg(&codex_suite)
+        .current_dir(&repo_root)
+        .output()
+        .unwrap();
+    assert!(
+        !stale_aggregate.status.success(),
+        "proof with stale aggregate comparison count should fail"
+    );
+    let stderr = String::from_utf8_lossy(&stale_aggregate.stderr);
+    assert!(
+        stderr.contains("aggregate.comparisonEligibleCount did not match derived task comparisons"),
+        "unexpected stale-aggregate checker error: {stderr}"
+    );
+
+    let stale_lane_summary_path = temp.path().join("agent-run-stale-lane-summary.json");
+    let mut stale_lane_summary_payload: serde_json::Value =
+        serde_json::from_slice(&fs::read(&phase322_report).unwrap()).unwrap();
+    stale_lane_summary_payload["aggregate"]["laneSummaries"][0]["lane"] =
+        serde_json::Value::String("not-a-derived-lane".to_string());
+    fs::write(
+        &stale_lane_summary_path,
+        serde_json::to_string_pretty(&stale_lane_summary_payload).unwrap(),
+    )
+    .unwrap();
+    let stale_lane_summary = Command::new("python3")
+        .arg(&script)
+        .arg(&stale_lane_summary_path)
+        .args(proof_args)
+        .arg("--current-runner-script")
+        .arg(&codex_runner_script)
+        .arg("--current-suite")
+        .arg(&codex_suite)
+        .current_dir(&repo_root)
+        .output()
+        .unwrap();
+    assert!(
+        !stale_lane_summary.status.success(),
+        "proof with stale lane summary names should fail"
+    );
+    let stderr = String::from_utf8_lossy(&stale_lane_summary.stderr);
+    assert!(
+        stderr.contains("aggregate.laneSummaries lane names did not match derived task lanes"),
+        "unexpected stale-lane-summary checker error: {stderr}"
     );
 
     let stale_runner_path = temp.path().join("agent-run-stale-runner.json");

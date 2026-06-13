@@ -251,17 +251,17 @@ python3 scripts/check-agent-run-proof.py \
 The checker enforces the source-free privacy contract, runner fingerprint
 metadata, expected client identity, expected ctxhelm version, comparable-lane
 counts, current-suite task hashes and target lists, per-task lane metrics,
-target-read coverage floors, retry-cost fields, and strict absence of client
-failures, rate limits, forbidden commands, evidence misses, evidence-only
-targets, and under-read targets. Use it to gate claims about a specific saved
-report; it is not a substitute for collecting a fresh real-client report when
-the client version, ctxhelm version, runner, prompt contract, or task suite
-changes. JSON output uses
+target-read coverage floors, retry-cost fields, aggregate consistency against
+derived task comparisons, and strict absence of client failures, rate limits,
+forbidden commands, evidence misses, evidence-only targets, and under-read
+targets. Use it to gate claims about a specific saved report; it is not a
+substitute for collecting a fresh real-client report when the client version,
+ctxhelm version, runner, prompt contract, or task suite changes. JSON output uses
 `ctxhelm-agent-run-proof-check-v1` and records the saved report filename,
 report SHA-256, thresholds, source-free privacy checks, runner metadata,
 identity checks, current runner script freshness, current suite freshness,
-suite-task checks, aggregate metrics, task-lane checks, boundary checks, and
-lane quality summaries.
+suite-task checks, aggregate metrics, aggregate consistency checks,
+task-lane checks, boundary checks, and lane quality summaries.
 
 ## Release Coverage
 

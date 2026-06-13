@@ -54,6 +54,15 @@ def require_number(value: Any, label: str) -> float:
         fail(f"{label} was not numeric")
 
 
+def require_int(value: Any, label: str) -> int:
+    if isinstance(value, bool):
+        fail(f"{label} was not an integer")
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        fail(f"{label} was not an integer")
+
+
 def validate_privacy(report: dict, label: str) -> None:
     privacy = require_dict(report.get("privacyStatus"), f"{label}.privacyStatus")
     if privacy.get("localOnly") is not True:
@@ -564,6 +573,88 @@ def suite_task_check_summary(tasks: list, current_suite_specs: list | None) -> d
     return summary
 
 
+def derived_aggregate_consistency(aggregate: dict, summaries: list, tasks: list) -> dict:
+    comparison_eligible_count = 0
+    comparable_ctxhelm_lane_count = 0
+    derived_boundary_fields = {field: False for field in STRICT_FALSE_OUTCOME_FIELDS}
+    task_lane_names: set[str] = set()
+
+    for task_index, task in enumerate(tasks):
+        task = require_dict(task, f"tasks[{task_index}]")
+        comparison = require_dict(task.get("comparison"), f"tasks[{task_index}].comparison")
+        if comparison.get("comparisonEligible") is True:
+            comparison_eligible_count += 1
+        comparable_ctxhelm_lane_count += require_int(
+            comparison.get("comparableCtxhelmLaneCount", 0),
+            f"tasks[{task_index}].comparison.comparableCtxhelmLaneCount",
+        )
+        for field in STRICT_FALSE_OUTCOME_FIELDS:
+            if comparison.get(field) is True:
+                derived_boundary_fields[field] = True
+        lanes = require_list(task.get("lanes"), f"tasks[{task_index}].lanes")
+        for lane_index, lane in enumerate(lanes):
+            lane = require_dict(lane, f"tasks[{task_index}].lanes[{lane_index}]")
+            lane_name = lane.get("lane")
+            if not isinstance(lane_name, str) or not lane_name:
+                fail(f"tasks[{task_index}].lanes[{lane_index}].lane was missing")
+            task_lane_names.add(lane_name)
+
+    summary_lane_names: set[str] = set()
+    for index, summary in enumerate(summaries):
+        summary = require_dict(summary, f"aggregate.laneSummaries[{index}]")
+        lane_name = summary.get("lane")
+        if not isinstance(lane_name, str) or not lane_name:
+            fail(f"aggregate.laneSummaries[{index}].lane was missing")
+        summary_lane_names.add(lane_name)
+
+    return {
+        "taskCount": len(tasks),
+        "comparisonEligibleCount": comparison_eligible_count,
+        "comparableCtxhelmLaneCount": comparable_ctxhelm_lane_count,
+        "boundaryFields": derived_boundary_fields,
+        "taskLaneNames": sorted(task_lane_names),
+        "summaryLaneNames": sorted(summary_lane_names),
+    }
+
+
+def validate_aggregate_consistency(aggregate: dict, summaries: list, tasks: list) -> dict:
+    derived = derived_aggregate_consistency(aggregate, summaries, tasks)
+    for field in ("taskCount", "comparisonEligibleCount", "comparableCtxhelmLaneCount"):
+        actual = require_int(aggregate.get(field), f"aggregate.{field}")
+        if actual != derived[field]:
+            fail(
+                f"aggregate.{field} did not match derived task comparisons: "
+                f"{actual} != {derived[field]}"
+            )
+
+    for field in STRICT_FALSE_OUTCOME_FIELDS:
+        if field not in aggregate:
+            fail(f"aggregate.{field} was missing")
+        actual = aggregate.get(field)
+        expected = derived["boundaryFields"][field]
+        if actual is not expected:
+            fail(
+                f"aggregate.{field} did not match derived task comparisons: "
+                f"{actual} != {expected}"
+            )
+
+    if derived["summaryLaneNames"] != derived["taskLaneNames"]:
+        fail(
+            "aggregate.laneSummaries lane names did not match derived task lanes: "
+            f"{derived['summaryLaneNames']} != {derived['taskLaneNames']}"
+        )
+
+    return {
+        "strictAggregateConsistencyChecks": True,
+        "derivedTaskCount": derived["taskCount"],
+        "derivedComparisonEligibleCount": derived["comparisonEligibleCount"],
+        "derivedComparableCtxhelmLaneCount": derived["comparableCtxhelmLaneCount"],
+        "derivedLaneNameCount": len(derived["taskLaneNames"]),
+        "laneSummaryCount": len(derived["summaryLaneNames"]),
+        "matchesDerivedAggregates": True,
+    }
+
+
 def validate_suite(report: dict, args: argparse.Namespace) -> dict:
     if report.get("workflowKind") != "paired-agent-context-suite":
         fail("workflowKind was not paired-agent-context-suite")
@@ -605,6 +696,7 @@ def validate_suite(report: dict, args: argparse.Namespace) -> dict:
             f"tasks[{index}].comparison",
         )
         validate_task_lanes(task, args, f"tasks[{index}]")
+    aggregate_consistency = validate_aggregate_consistency(aggregate, summaries, tasks)
     return {
         "schemaVersion": "ctxhelm-agent-run-proof-check-v1",
         "status": "passed",
@@ -619,6 +711,7 @@ def validate_suite(report: dict, args: argparse.Namespace) -> dict:
         "suite": suite_summary(suite, args),
         "suiteTaskChecks": suite_task_check_summary(tasks, current_suite_specs),
         "taskLaneChecks": task_lane_summary(tasks),
+        "aggregateConsistency": aggregate_consistency,
         "metrics": {
             "taskCount": task_count,
             "comparisonEligibleCount": comparison_eligible,
