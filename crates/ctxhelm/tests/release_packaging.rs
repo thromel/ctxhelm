@@ -295,6 +295,8 @@ fn release_gate_script_contract() {
         "agentRunOutcomeProofReport",
         "agent-run-outcome-proof.json",
         "--current-runner-script",
+        "--current-suite",
+        "2026-06-06-phase251-codex-rd-suite.json",
         "--format json",
         "--output",
         "stale clean proof fixtures",
@@ -1378,6 +1380,7 @@ fn agent_run_proof_checker_accepts_phase322_and_rejects_regression() {
     let phase322_report = repo_root
         .join(".ctxhelm/e2e/phase322-agent-run-codex-target-first-breadth-suite.json");
     let codex_runner_script = repo_root.join("scripts/e2e-agent-run-codex.sh");
+    let codex_suite = repo_root.join(".planning/e2e/2026-06-06-phase251-codex-rd-suite.json");
     assert!(
         phase322_report.exists(),
         "Phase 322 agent-run proof fixture is missing"
@@ -1386,6 +1389,7 @@ fn agent_run_proof_checker_accepts_phase322_and_rejects_regression() {
         codex_runner_script.exists(),
         "Codex agent-run runner script is missing"
     );
+    assert!(codex_suite.exists(), "Codex agent-run suite file is missing");
 
     let proof_args = [
         "--workflow",
@@ -1414,6 +1418,8 @@ fn agent_run_proof_checker_accepts_phase322_and_rejects_regression() {
         .args(proof_args)
         .arg("--current-runner-script")
         .arg(&codex_runner_script)
+        .arg("--current-suite")
+        .arg(&codex_suite)
         .current_dir(&repo_root)
         .output()
         .unwrap();
@@ -1432,6 +1438,8 @@ fn agent_run_proof_checker_accepts_phase322_and_rejects_regression() {
         .args(proof_args)
         .arg("--current-runner-script")
         .arg(&codex_runner_script)
+        .arg("--current-suite")
+        .arg(&codex_suite)
         .arg("--format")
         .arg("json")
         .arg("--output")
@@ -1453,8 +1461,10 @@ fn agent_run_proof_checker_accepts_phase322_and_rejects_regression() {
     assert_eq!(summary["thresholds"]["minTaskCount"], 4);
     assert_eq!(summary["thresholds"]["requireRunnerFingerprint"], true);
     assert_eq!(summary["thresholds"]["requireCurrentRunnerScript"], true);
+    assert_eq!(summary["thresholds"]["requireCurrentSuite"], true);
     assert_eq!(summary["privacyStatus"]["sourceTextLogged"], true);
     assert_eq!(summary["runner"]["matchesCurrentRunnerScript"], true);
+    assert_eq!(summary["suite"]["matchesCurrentSuite"], true);
     assert!(summary["reportSha256"].as_str().unwrap().len() == 64);
 
     let temp = TempDir::new().unwrap();
@@ -1474,6 +1484,8 @@ fn agent_run_proof_checker_accepts_phase322_and_rejects_regression() {
         .args(proof_args)
         .arg("--current-runner-script")
         .arg(&codex_runner_script)
+        .arg("--current-suite")
+        .arg(&codex_suite)
         .current_dir(&repo_root)
         .output()
         .unwrap();
@@ -1503,6 +1515,8 @@ fn agent_run_proof_checker_accepts_phase322_and_rejects_regression() {
         .args(proof_args)
         .arg("--current-runner-script")
         .arg(&codex_runner_script)
+        .arg("--current-suite")
+        .arg(&codex_suite)
         .current_dir(&repo_root)
         .output()
         .unwrap();
@@ -1514,6 +1528,37 @@ fn agent_run_proof_checker_accepts_phase322_and_rejects_regression() {
     assert!(
         stderr.contains("did not match current runner script"),
         "unexpected stale-runner checker error: {stderr}"
+    );
+
+    let stale_suite_path = temp.path().join("agent-run-stale-suite.json");
+    let mut stale_suite_payload: serde_json::Value =
+        serde_json::from_slice(&fs::read(&phase322_report).unwrap()).unwrap();
+    stale_suite_payload["suite"]["suiteSha256"] =
+        serde_json::Value::String("0".repeat(64));
+    fs::write(
+        &stale_suite_path,
+        serde_json::to_string_pretty(&stale_suite_payload).unwrap(),
+    )
+    .unwrap();
+    let stale_suite = Command::new("python3")
+        .arg(&script)
+        .arg(&stale_suite_path)
+        .args(proof_args)
+        .arg("--current-runner-script")
+        .arg(&codex_runner_script)
+        .arg("--current-suite")
+        .arg(&codex_suite)
+        .current_dir(&repo_root)
+        .output()
+        .unwrap();
+    assert!(
+        !stale_suite.status.success(),
+        "proof with stale suite fingerprint should fail"
+    );
+    let stderr = String::from_utf8_lossy(&stale_suite.stderr);
+    assert!(
+        stderr.contains("did not match current suite"),
+        "unexpected stale-suite checker error: {stderr}"
     );
 }
 

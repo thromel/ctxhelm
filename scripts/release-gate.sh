@@ -432,6 +432,7 @@ if [[ -n "${CTXHELM_AGENT_RUN_PROOF_REPORT:-}" ]]; then
     --require-retry-cost \
     --require-runner-fingerprint \
     --current-runner-script "$repo_root/scripts/e2e-agent-run-codex.sh" \
+    --current-suite "$repo_root/.planning/e2e/2026-06-06-phase251-codex-rd-suite.json" \
     --format json \
     --output "$agent_run_proof_check_report"
   agent_run_proof_status="passed"

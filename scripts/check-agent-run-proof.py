@@ -92,6 +92,21 @@ def validate_runner(report: dict, args: argparse.Namespace, label: str) -> None:
             )
 
 
+def validate_suite_fingerprint(suite: dict, args: argparse.Namespace) -> None:
+    suite_sha256 = suite.get("suiteSha256")
+    if args.current_suite is None:
+        return
+    if not isinstance(suite_sha256, str) or len(suite_sha256) != 64:
+        fail("suite.suiteSha256 was not a SHA-256 hex string")
+    try:
+        int(suite_sha256, 16)
+    except ValueError:
+        fail("suite.suiteSha256 was not hex")
+    current_sha256 = report_digest(args.current_suite)
+    if suite_sha256 != current_sha256:
+        fail(f"suite.suiteSha256 did not match current suite {args.current_suite.name}")
+
+
 def validate_required_calls(summary: dict, label: str) -> None:
     for field in ("missingRequiredCtxhelmCallCount", "invalidRequiredCtxhelmCallCount"):
         if field in summary and int(summary.get(field, 0)) != 0:
@@ -231,6 +246,8 @@ def proof_thresholds(args: argparse.Namespace) -> dict:
             args.current_runner_script.name if args.current_runner_script is not None else None
         ),
         "requireCurrentRunnerScript": args.current_runner_script is not None,
+        "currentSuiteName": args.current_suite.name if args.current_suite is not None else None,
+        "requireCurrentSuite": args.current_suite is not None,
         "strictBoundaries": args.strict,
     }
 
@@ -259,6 +276,22 @@ def runner_summary(report: dict, args: argparse.Namespace) -> dict:
         summary["currentRunnerScriptName"] = args.current_runner_script.name
         summary["currentRunnerScriptSha256"] = current_sha256
         summary["matchesCurrentRunnerScript"] = runner.get("scriptSha256") == current_sha256
+    return summary
+
+
+def suite_summary(suite: dict, args: argparse.Namespace) -> dict:
+    summary = {
+        "taskCount": suite.get("taskCount"),
+        "rawTasksStored": suite.get("rawTasksStored"),
+        "suiteSha256": suite.get("suiteSha256"),
+        "checkpointEnabled": suite.get("checkpointEnabled"),
+        "reusedTaskCount": suite.get("reusedTaskCount"),
+    }
+    if args.current_suite is not None:
+        current_sha256 = report_digest(args.current_suite)
+        summary["currentSuiteName"] = args.current_suite.name
+        summary["currentSuiteSha256"] = current_sha256
+        summary["matchesCurrentSuite"] = suite.get("suiteSha256") == current_sha256
     return summary
 
 
@@ -306,6 +339,7 @@ def validate_suite(report: dict, args: argparse.Namespace) -> dict:
     suite = require_dict(report.get("suite"), "suite")
     if suite.get("rawTasksStored") is not False:
         fail("suite.rawTasksStored was not false")
+    validate_suite_fingerprint(suite, args)
     task_count = int(suite.get("taskCount", report.get("aggregate", {}).get("taskCount", 0)))
     if task_count < args.min_task_count:
         fail(f"suite taskCount {task_count} < {args.min_task_count}")
@@ -341,6 +375,7 @@ def validate_suite(report: dict, args: argparse.Namespace) -> dict:
         "sourceFree": True,
         "privacyStatus": privacy_summary(report),
         "runner": runner_summary(report, args),
+        "suite": suite_summary(suite, args),
         "metrics": {
             "taskCount": task_count,
             "comparisonEligibleCount": comparison_eligible,
@@ -458,6 +493,11 @@ def parse_args() -> argparse.Namespace:
         type=pathlib.Path,
         help="Require runner.scriptSha256 to match this current local runner script.",
     )
+    parser.add_argument(
+        "--current-suite",
+        type=pathlib.Path,
+        help="Require suite.suiteSha256 to match this current local suite file.",
+    )
     parser.add_argument("--format", choices=("text", "json"), default="text")
     parser.add_argument("--output", type=pathlib.Path, help="Write rendered proof check output here")
     parser.add_argument(
@@ -476,6 +516,8 @@ def main() -> None:
         fail(f"missing agent-run report: {args.report}")
     if args.current_runner_script is not None and not args.current_runner_script.is_file():
         fail(f"missing current runner script: {args.current_runner_script}")
+    if args.current_suite is not None and not args.current_suite.is_file():
+        fail(f"missing current suite: {args.current_suite}")
     try:
         report = json.loads(args.report.read_text(encoding="utf-8"))
     except json.JSONDecodeError as error:

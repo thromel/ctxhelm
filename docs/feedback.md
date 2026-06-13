@@ -240,6 +240,7 @@ python3 scripts/check-agent-run-proof.py \
   --require-retry-cost \
   --require-runner-fingerprint \
   --current-runner-script scripts/e2e-agent-run-codex.sh \
+  --current-suite .planning/e2e/2026-06-06-phase251-codex-rd-suite.json \
   --format json \
   --output .ctxhelm/e2e/agent-run-proof-check.json
 ```
@@ -253,8 +254,8 @@ fresh real-client report when the client version, runner, prompt contract, or
 task suite changes. JSON output uses
 `ctxhelm-agent-run-proof-check-v1` and records the saved report filename,
 report SHA-256, thresholds, source-free privacy checks, runner metadata,
-current runner script freshness, aggregate metrics, boundary checks, and lane
-quality summaries.
+current runner script freshness, current suite freshness, aggregate metrics,
+boundary checks, and lane quality summaries.
 
 ## Release Coverage
 
