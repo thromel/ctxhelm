@@ -61,6 +61,8 @@ HTML_OUT="${TMP_DIR}/inspector.html"
 PROOF_REPORT="${TMP_DIR}/agent-run-proof.json"
 PROOF_MD_OUT="${TMP_DIR}/proof-inspector.md"
 PROOF_JSON_OUT="${TMP_DIR}/proof-inspector.json"
+PRODUCT_PROOF_REPORT="${TMP_DIR}/product-proof.json"
+PRODUCT_PROOF_JSON_OUT="${TMP_DIR}/product-proof-inspector.json"
 
 cat >"${PROOF_REPORT}" <<'EOF'
 {
@@ -136,6 +138,44 @@ cat >"${PROOF_REPORT}" <<'EOF'
 }
 EOF
 
+cat >"${PRODUCT_PROOF_REPORT}" <<'EOF'
+{
+  "suiteName": "inspector-product-proof-smoke",
+  "suiteId": "suite-hash",
+  "evaluatedRepositoryCount": 1,
+  "evaluatedCommitCount": 3,
+  "releaseGate": {
+    "decision": "promote",
+    "defaultPromotionAllowed": true,
+    "decisionReason": "Promote: source-free proof is clean.",
+    "lexicalComparison": {
+      "contextClaim": "beats_all_corpora",
+      "agentEvidenceClaim": "beats_all_corpora",
+      "allFileClaim": "mixed",
+      "averageContextDeltaAt10": 0.2,
+      "averageAgentEvidenceDeltaAt10": 0.3,
+      "averageFileDeltaAt10": 0.1
+    },
+    "corpusVerdicts": [
+      {
+        "repository": "fixture",
+        "status": "beat",
+        "protectedEvidenceTargetMissRateAt10": 0.0
+      }
+    ]
+  },
+  "privacyStatus": {
+    "localOnly": true,
+    "sourceTextLogged": false,
+    "rawPromptStored": false,
+    "rawTranscriptStored": false,
+    "rawMcpTrafficStored": false,
+    "remoteEmbeddingsUsed": false,
+    "remoteRerankingUsed": false
+  }
+}
+EOF
+
 (
   cd "${ROOT_DIR}"
   run_ctxhelm inspector export "fix requireSession sentinel" \
@@ -157,6 +197,11 @@ EOF
     --report "${PROOF_REPORT}" \
     --format json \
     --output "${PROOF_JSON_OUT}"
+  run_ctxhelm inspector proof \
+    --repo "${REPO}" \
+    --report "${PRODUCT_PROOF_REPORT}" \
+    --format json \
+    --output "${PRODUCT_PROOF_JSON_OUT}"
 )
 
 require_text "${JSON_OUT}" '"sourceTextLogged": false'
@@ -187,6 +232,13 @@ require_text "${PROOF_JSON_OUT}" '"claim": "ctxhelm_improved"'
 require_text "${PROOF_JSON_OUT}" '"evidenceOnlyTargetsAfterRetry": 0'
 require_text "${PROOF_JSON_OUT}" '"sourceFreeSummary": true'
 reject_text "${PROOF_JSON_OUT}" "INSPECTOR_UI_SOURCE_SENTINEL"
+
+require_text "${PRODUCT_PROOF_JSON_OUT}" '"reportKind": "product_proof"'
+require_text "${PRODUCT_PROOF_JSON_OUT}" '"releaseGateDecision": "promote"'
+require_text "${PRODUCT_PROOF_JSON_OUT}" '"contextClaim": "beats_all_corpora"'
+require_text "${PRODUCT_PROOF_JSON_OUT}" '"maxProtectedTargetMissRateAt10": 0.0'
+require_text "${PRODUCT_PROOF_JSON_OUT}" '"sourceFreeSummary": true'
+reject_text "${PRODUCT_PROOF_JSON_OUT}" "INSPECTOR_UI_SOURCE_SENTINEL"
 
 PORT="$(python3 - <<'PY'
 import socket

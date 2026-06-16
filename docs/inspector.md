@@ -52,12 +52,15 @@ ctxhelm inspector proof \
   --format json
 ```
 
-The proof inspector currently summarizes agent-run proof reports. It renders
-outcome claim, comparable task/lane counts, target-read coverage, evidence-only
-target state, retry cost, memory guard status when reported, client
-failures/rate limits, forbidden boundary events, source-free privacy flags, and
-a recommended next action. It does not print raw task text, raw prompts, raw
-transcripts, MCP traffic, or target file lists.
+The proof inspector summarizes agent-run proof reports and product-proof
+reports. For agent-run reports, it renders outcome claim, comparable task/lane
+counts, target-read coverage, evidence-only target state, retry cost, memory
+guard status when reported, client failures/rate limits, forbidden boundary
+events, source-free privacy flags, and a recommended next action. For
+product-proof reports, it renders release-gate decision, promotion allowance,
+corpus verdict count, lexical/context claims, protected target miss-rate, and
+the source-free privacy boundary. It does not print raw task text, raw prompts,
+raw transcripts, MCP traffic, or target file lists.
 
 ## Local Shell
 

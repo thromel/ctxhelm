@@ -2702,6 +2702,92 @@ fn inspector_proof_summarizes_agent_run_report_source_free() {
 }
 
 #[test]
+fn inspector_proof_summarizes_product_proof_report_source_free() {
+    let fixture = fixture_repo();
+    let report_path = fixture.temp.path().join("product-proof.json");
+    fs::write(
+        &report_path,
+        json!({
+            "suiteName": "product-proof-smoke",
+            "suiteId": "suite-hash",
+            "evaluatedRepositoryCount": 1,
+            "evaluatedCommitCount": 3,
+            "headlineMetrics": [],
+            "releaseGate": {
+                "decision": "promote",
+                "defaultPromotionAllowed": true,
+                "decisionReason": "Promote: source-free proof is clean.",
+                "lexicalComparison": {
+                    "contextClaim": "beats_all_corpora",
+                    "agentEvidenceClaim": "beats_all_corpora",
+                    "allFileClaim": "mixed",
+                    "averageContextDeltaAt10": 0.20,
+                    "averageAgentEvidenceDeltaAt10": 0.30,
+                    "averageFileDeltaAt10": 0.10
+                },
+                "corpusVerdicts": [
+                    {
+                        "repository": "fixture",
+                        "status": "beat",
+                        "protectedEvidenceTargetMissRateAt10": 0.0
+                    }
+                ]
+            },
+            "privacyStatus": {
+                "localOnly": true,
+                "sourceTextLogged": false,
+                "rawPromptStored": false,
+                "rawTranscriptStored": false,
+                "rawMcpTrafficStored": false,
+                "remoteEmbeddingsUsed": false,
+                "remoteRerankingUsed": false
+            }
+        })
+        .to_string(),
+    )
+    .unwrap();
+
+    Command::cargo_bin("ctxhelm")
+        .unwrap()
+        .args(["inspector", "proof", "--report"])
+        .arg(&report_path)
+        .assert()
+        .success()
+        .stdout(contains("Report kind: `product_proof`"))
+        .stdout(contains("Release gate decision: `promote`"))
+        .stdout(contains("Default promotion allowed: `true`"))
+        .stdout(contains("Context claim: `beats_all_corpora`"))
+        .stdout(contains("Max protected target miss-rate@10: `0.00`"))
+        .stdout(contains(
+            "Use as source-free product-proof evidence, then pair it with real-agent outcome proof before making agent-productivity claims.",
+        ))
+        .stdout(contains("Source text logged: `false`"));
+
+    let rendered_json = json_stdout(
+        Command::cargo_bin("ctxhelm")
+            .unwrap()
+            .args(["inspector", "proof", "--report"])
+            .arg(&report_path)
+            .args(["--format", "json"])
+            .assert(),
+    );
+    assert_eq!(rendered_json["schemaVersion"], "ctxhelm-proof-inspector-v1");
+    assert_eq!(rendered_json["reportKind"], "product_proof");
+    assert_eq!(
+        rendered_json["productProof"]["releaseGateDecision"],
+        "promote"
+    );
+    assert_eq!(
+        rendered_json["productProof"]["maxProtectedTargetMissRateAt10"],
+        0.0
+    );
+    assert_eq!(
+        rendered_json["recommendedNextAction"],
+        "Use as source-free product-proof evidence, then pair it with real-agent outcome proof before making agent-productivity claims."
+    );
+}
+
+#[test]
 fn eval_benchmark_runs_named_suite_source_free() {
     let first = fixture_repo();
     let second = fixture_repo();

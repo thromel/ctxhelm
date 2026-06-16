@@ -5356,11 +5356,33 @@ struct ProofInspectorReport {
     retry_cost: Option<serde_json::Value>,
     #[serde(skip_serializing_if = "Option::is_none")]
     read_efficiency: Option<serde_json::Value>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    product_proof: Option<ProductProofInspectorSummary>,
     memory_guard: ProofInspectorMemoryGuard,
     boundary: ProofInspectorBoundary,
     privacy_status: ProofInspectorPrivacyStatus,
     recommended_next_action: String,
     notes: Vec<String>,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct ProductProofInspectorSummary {
+    suite_name: String,
+    suite_id: String,
+    evaluated_repository_count: Option<u64>,
+    evaluated_commit_count: Option<u64>,
+    release_gate_decision: String,
+    default_promotion_allowed: Option<bool>,
+    decision_reason: String,
+    corpus_verdict_count: usize,
+    context_claim: String,
+    agent_evidence_claim: String,
+    all_file_claim: String,
+    average_context_delta_at_10: Option<f64>,
+    average_agent_evidence_delta_at_10: Option<f64>,
+    average_file_delta_at_10: Option<f64>,
+    max_protected_target_miss_rate_at_10: Option<f64>,
 }
 
 #[derive(Debug, Serialize)]
@@ -5426,6 +5448,7 @@ struct ProofInspectorPrivacyStatus {
 }
 
 fn build_proof_inspector_report(report: &serde_json::Value) -> ProofInspectorReport {
+    let product_proof = product_proof_summary(report);
     let source = proof_summary_source(report);
     let retry_cost = source.get("retryCost").cloned();
     let read_efficiency = source.get("readEfficiency").cloned();
@@ -5470,10 +5493,14 @@ fn build_proof_inspector_report(report: &serde_json::Value) -> ProofInspectorRep
             &["invalidRequiredCtxhelmCallsObserved"],
         ),
     };
+    let outcome_claim = product_proof
+        .as_ref()
+        .map(|summary| summary.release_gate_decision.clone())
+        .or_else(|| proof_string(source, "outcomeClaim"))
+        .or_else(|| proof_string(report, "outcomeClaim"))
+        .unwrap_or_else(|| "unknown".to_string());
     let outcome = ProofInspectorOutcome {
-        claim: proof_string(source, "outcomeClaim")
-            .or_else(|| proof_string(report, "outcomeClaim"))
-            .unwrap_or_else(|| "unknown".to_string()),
+        claim: outcome_claim,
         comparison_eligible,
         comparison_eligible_count,
         comparable_ctxhelm_lane_count: source
@@ -5535,18 +5562,20 @@ fn build_proof_inspector_report(report: &serde_json::Value) -> ProofInspectorRep
         source_free_summary: true,
     };
     let mut notes = Vec::new();
-    if report.get("aggregate").is_none() {
+    if report.get("aggregate").is_none() && product_proof.is_none() {
         notes.push("single-report summary; suite aggregate fields were not present".to_string());
     }
     if memory_guard.status == "not_reported" {
         notes.push("memory guard status was not present in this proof report".to_string());
     }
-    if retry_cost.is_none() {
+    if retry_cost.is_none() && product_proof.is_none() {
         notes.push("retry-cost fields were not present in this proof report".to_string());
     }
     ProofInspectorReport {
         schema_version: "ctxhelm-proof-inspector-v1",
-        report_kind: if report.get("aggregate").is_some() {
+        report_kind: if product_proof.is_some() {
+            "product_proof".to_string()
+        } else if report.get("aggregate").is_some() {
             "agent_run_suite".to_string()
         } else {
             "agent_run".to_string()
@@ -5575,11 +5604,13 @@ fn build_proof_inspector_report(report: &serde_json::Value) -> ProofInspectorRep
             &evidence,
             &boundary,
             &privacy_status,
+            product_proof.as_ref(),
         ),
         outcome,
         evidence,
         retry_cost,
         read_efficiency,
+        product_proof,
         memory_guard,
         boundary,
         privacy_status,
@@ -5628,6 +5659,27 @@ fn render_proof_inspector_report(report: &ProofInspectorReport) -> String {
     } else {
         output.push_str("- Retry cost: `not_reported`\n");
     }
+    if let Some(product) = report.product_proof.as_ref() {
+        output.push_str("\n## Product Proof\n\n");
+        output.push_str(&format!(
+            "- Suite: `{}`\n- Suite ID: `{}`\n- Evaluated repositories: `{}`\n- Evaluated commits: `{}`\n- Release gate decision: `{}`\n- Default promotion allowed: `{}`\n- Corpus verdicts: `{}`\n- Context claim: `{}`\n- Agent-evidence claim: `{}`\n- All-file claim: `{}`\n- Average context delta@10: `{}`\n- Average agent-evidence delta@10: `{}`\n- Average all-file delta@10: `{}`\n- Max protected target miss-rate@10: `{}`\n- Decision reason: {}\n",
+            product.suite_name,
+            product.suite_id,
+            optional_u64(product.evaluated_repository_count),
+            optional_u64(product.evaluated_commit_count),
+            product.release_gate_decision,
+            optional_bool(product.default_promotion_allowed),
+            product.corpus_verdict_count,
+            product.context_claim,
+            product.agent_evidence_claim,
+            product.all_file_claim,
+            optional_f64(product.average_context_delta_at_10),
+            optional_f64(product.average_agent_evidence_delta_at_10),
+            optional_f64(product.average_file_delta_at_10),
+            optional_f64(product.max_protected_target_miss_rate_at_10),
+            product.decision_reason,
+        ));
+    }
     output.push_str("\n## Memory Guard\n\n");
     output.push_str(&format!(
         "- Status: `{}`\n- Detail: {}\n\n",
@@ -5670,6 +5722,61 @@ fn proof_summary_source(report: &serde_json::Value) -> &serde_json::Value {
         .get("aggregate")
         .or_else(|| report.get("comparison"))
         .unwrap_or(report)
+}
+
+fn product_proof_summary(report: &serde_json::Value) -> Option<ProductProofInspectorSummary> {
+    let release_gate = report.get("releaseGate")?;
+    let lexical = release_gate
+        .get("lexicalComparison")
+        .unwrap_or(&serde_json::Value::Null);
+    let verdicts = release_gate
+        .get("corpusVerdicts")
+        .and_then(serde_json::Value::as_array)
+        .map(Vec::as_slice)
+        .unwrap_or(&[]);
+    let max_protected_target_miss_rate_at_10 = verdicts
+        .iter()
+        .filter_map(|verdict| {
+            verdict
+                .get("protectedEvidenceTargetMissRateAt10")
+                .or_else(|| verdict.get("protectedEvidenceMissRateAt10"))
+                .and_then(serde_json::Value::as_f64)
+        })
+        .reduce(f64::max);
+    Some(ProductProofInspectorSummary {
+        suite_name: proof_string(report, "suiteName").unwrap_or_else(|| "unknown".to_string()),
+        suite_id: proof_string(report, "suiteId").unwrap_or_else(|| "unknown".to_string()),
+        evaluated_repository_count: report
+            .get("evaluatedRepositoryCount")
+            .and_then(serde_json::Value::as_u64),
+        evaluated_commit_count: report
+            .get("evaluatedCommitCount")
+            .and_then(serde_json::Value::as_u64),
+        release_gate_decision: proof_string(release_gate, "decision")
+            .unwrap_or_else(|| "unknown".to_string()),
+        default_promotion_allowed: release_gate
+            .get("defaultPromotionAllowed")
+            .and_then(serde_json::Value::as_bool),
+        decision_reason: proof_string(release_gate, "decisionReason")
+            .unwrap_or_else(|| "not reported".to_string()),
+        corpus_verdict_count: verdicts.len(),
+        context_claim: proof_string(lexical, "contextClaim")
+            .unwrap_or_else(|| "unknown".to_string()),
+        agent_evidence_claim: proof_string(lexical, "agentEvidenceClaim")
+            .unwrap_or_else(|| "unknown".to_string()),
+        all_file_claim: proof_string(lexical, "allFileClaim")
+            .unwrap_or_else(|| "unknown".to_string()),
+        average_context_delta_at_10: lexical
+            .get("averageContextDeltaAt10")
+            .and_then(serde_json::Value::as_f64),
+        average_agent_evidence_delta_at_10: lexical
+            .get("averageAgentEvidenceDeltaAt10")
+            .and_then(serde_json::Value::as_f64),
+        average_file_delta_at_10: lexical
+            .get("averageFileDeltaAt10")
+            .and_then(serde_json::Value::as_f64),
+        max_protected_target_miss_rate_at_10,
+    })
 }
 
 fn proof_string(value: &serde_json::Value, key: &str) -> Option<String> {
@@ -5799,6 +5906,7 @@ fn recommended_proof_next_action(
     evidence: &ProofInspectorEvidence,
     boundary: &ProofInspectorBoundary,
     privacy: &ProofInspectorPrivacyStatus,
+    product_proof: Option<&ProductProofInspectorSummary>,
 ) -> String {
     if privacy.source_text_logged == Some(true)
         || privacy.raw_prompt_stored == Some(true)
@@ -5816,6 +5924,15 @@ fn recommended_proof_next_action(
     {
         return "Treat this as availability-blocked and rerun after the client is stable."
             .to_string();
+    }
+    if let Some(product) = product_proof {
+        if product.release_gate_decision == "promote"
+            && product.default_promotion_allowed == Some(true)
+            && product.max_protected_target_miss_rate_at_10.unwrap_or(1.0) <= f64::EPSILON
+        {
+            return "Use as source-free product-proof evidence, then pair it with real-agent outcome proof before making agent-productivity claims.".to_string();
+        }
+        return "Do not promote this product proof until the release-gate decision, promotion allowance, and protected-target miss-rate are clean.".to_string();
     }
     if outcome.comparison_eligible_count == Some(0)
         || outcome.comparable_ctxhelm_lane_count == Some(0)
