@@ -60,6 +60,7 @@ use ctxhelm_index::{
     StorageProofReportRecord, StorageReport, StorageSemanticIndexReport, StorageStatusReport,
     StoreConfig, SymbolOptions, FEEDBACK_EVENT_SCHEMA_VERSION, WORKSPACE_MANIFEST_SCHEMA_VERSION,
 };
+use serde::Serialize;
 use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
 use std::io::{Read, Write};
@@ -428,6 +429,8 @@ struct GraphNeighborhoodArgs {
 enum InspectorCommand {
     #[command(about = "Export a source-free pack inspector artifact.")]
     Export(InspectorExportArgs),
+    #[command(about = "Summarize source-free proof reports for adoption and release review.")]
+    Proof(InspectorProofArgs),
     #[command(about = "Serve a localhost-only, read-only inspector shell.")]
     Serve(InspectorServeArgs),
 }
@@ -463,6 +466,18 @@ struct InspectorExportArgs {
     #[arg(long, value_enum, default_value_t = InspectorFormat::Json)]
     format: InspectorFormat,
     #[arg(long, help = "Write the artifact to a file instead of stdout.")]
+    output: Option<PathBuf>,
+}
+
+#[derive(Debug, Args)]
+struct InspectorProofArgs {
+    #[arg(long, help = "Path to a source-free proof JSON report.")]
+    report: PathBuf,
+    #[arg(long)]
+    repo: Option<PathBuf>,
+    #[arg(long, value_enum, default_value_t = PackFormat::Markdown)]
+    format: PackFormat,
+    #[arg(long, help = "Write the proof summary to a file instead of stdout.")]
     output: Option<PathBuf>,
 }
 
@@ -1846,6 +1861,19 @@ fn main() -> Result<()> {
                     InspectorFormat::Json => serde_json::to_string_pretty(&view)?,
                     InspectorFormat::Markdown => render_pack_inspector_markdown(&view),
                     InspectorFormat::Html => render_pack_inspector_html(&view),
+                };
+                write_or_print(args.output.as_deref(), &artifact)?;
+            }
+            InspectorCommand::Proof(args) => {
+                if let Some(start) = args.repo.as_ref() {
+                    let _repo = RepoRoot::discover_from(start)?;
+                }
+                let raw = fs::read_to_string(&args.report)?;
+                let report: serde_json::Value = serde_json::from_str(&raw)?;
+                let summary = build_proof_inspector_report(&report);
+                let artifact = match args.format {
+                    PackFormat::Json => serde_json::to_string_pretty(&summary)?,
+                    PackFormat::Markdown => render_proof_inspector_report(&summary),
                 };
                 write_or_print(args.output.as_deref(), &artifact)?;
             }
@@ -5311,6 +5339,527 @@ fn render_outcome_comparison_report(report: &AgentOutcomeComparisonReport) -> St
         ));
     }
     output
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct ProofInspectorReport {
+    schema_version: &'static str,
+    report_kind: String,
+    report_schema_version: String,
+    status: String,
+    workflow_kind: String,
+    client: ProofInspectorClient,
+    outcome: ProofInspectorOutcome,
+    evidence: ProofInspectorEvidence,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    retry_cost: Option<serde_json::Value>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    read_efficiency: Option<serde_json::Value>,
+    memory_guard: ProofInspectorMemoryGuard,
+    boundary: ProofInspectorBoundary,
+    privacy_status: ProofInspectorPrivacyStatus,
+    recommended_next_action: String,
+    notes: Vec<String>,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct ProofInspectorClient {
+    name: String,
+    version: String,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct ProofInspectorOutcome {
+    claim: String,
+    comparison_eligible: Option<bool>,
+    comparison_eligible_count: Option<u64>,
+    comparable_ctxhelm_lane_count: Option<u64>,
+    target_coverage_delta: Option<f64>,
+    target_read_coverage_delta: Option<f64>,
+    target_read_coverage: Option<f64>,
+    target_read_precision: Option<f64>,
+    irrelevant_read_delta: Option<i64>,
+    total_irrelevant_read_count: Option<u64>,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct ProofInspectorEvidence {
+    evidence_misses_observed: Option<bool>,
+    evidence_only_targets_observed: Option<bool>,
+    evidence_only_target_count: Option<u64>,
+    evidence_only_targets_after_retry: Option<u64>,
+    under_read_targets_observed: Option<bool>,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct ProofInspectorMemoryGuard {
+    status: String,
+    detail: String,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct ProofInspectorBoundary {
+    client_failures_observed: Option<bool>,
+    rate_limits_observed: Option<bool>,
+    forbidden_boundary_events_observed: Option<bool>,
+    missing_required_ctxhelm_calls_observed: Option<bool>,
+    invalid_required_ctxhelm_calls_observed: Option<bool>,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct ProofInspectorPrivacyStatus {
+    local_only: Option<bool>,
+    source_text_logged: Option<bool>,
+    raw_prompt_stored: Option<bool>,
+    raw_transcript_stored: Option<bool>,
+    raw_mcp_traffic_stored: Option<bool>,
+    remote_embeddings_used: Option<bool>,
+    remote_reranking_used: Option<bool>,
+    source_free_summary: bool,
+}
+
+fn build_proof_inspector_report(report: &serde_json::Value) -> ProofInspectorReport {
+    let source = proof_summary_source(report);
+    let retry_cost = source.get("retryCost").cloned();
+    let read_efficiency = source.get("readEfficiency").cloned();
+    let privacy = report
+        .get("privacyStatus")
+        .unwrap_or(&serde_json::Value::Null);
+    let comparison_eligible = source
+        .get("comparisonEligible")
+        .and_then(serde_json::Value::as_bool);
+    let comparison_eligible_count = source
+        .get("comparisonEligibleCount")
+        .and_then(serde_json::Value::as_u64)
+        .or_else(|| comparison_eligible.map(|eligible| if eligible { 1 } else { 0 }));
+    let evidence_only_after_retry = retry_cost
+        .as_ref()
+        .and_then(|value| value.get("evidenceOnlyTargetsAfterRetry"))
+        .and_then(serde_json::Value::as_u64);
+    let total_irrelevant_read_count =
+        sum_lane_metric(report, "irrelevantReadCount").or_else(|| {
+            read_efficiency.as_ref().and_then(|value| {
+                value
+                    .get("efficientIrrelevantReadCount")
+                    .and_then(serde_json::Value::as_u64)
+            })
+        });
+    let evidence_only_target_count =
+        sum_lane_metric(report, "ctxhelmEvidenceOnlyTargetCount").or(evidence_only_after_retry);
+    let memory_guard = proof_memory_guard(report);
+    let boundary = ProofInspectorBoundary {
+        client_failures_observed: proof_bool(source, &["clientFailuresObserved"]),
+        rate_limits_observed: proof_bool(source, &["rateLimitsObserved"]),
+        forbidden_boundary_events_observed: proof_bool(
+            source,
+            &["forbiddenToolCallsObserved", "forbiddenCommandsObserved"],
+        ),
+        missing_required_ctxhelm_calls_observed: proof_bool(
+            source,
+            &["missingRequiredCtxhelmCallsObserved"],
+        ),
+        invalid_required_ctxhelm_calls_observed: proof_bool(
+            source,
+            &["invalidRequiredCtxhelmCallsObserved"],
+        ),
+    };
+    let outcome = ProofInspectorOutcome {
+        claim: proof_string(source, "outcomeClaim")
+            .or_else(|| proof_string(report, "outcomeClaim"))
+            .unwrap_or_else(|| "unknown".to_string()),
+        comparison_eligible,
+        comparison_eligible_count,
+        comparable_ctxhelm_lane_count: source
+            .get("comparableCtxhelmLaneCount")
+            .and_then(serde_json::Value::as_u64),
+        target_coverage_delta: proof_f64(
+            source,
+            &["targetCoverageDeltaAverage", "targetCoverageDelta"],
+        ),
+        target_read_coverage_delta: proof_f64(
+            source,
+            &["targetReadCoverageDeltaAverage", "targetReadCoverageDelta"],
+        ),
+        target_read_coverage: proof_f64_from_value(
+            read_efficiency.as_ref(),
+            &["efficientTargetReadCoverage"],
+        )
+        .or_else(|| best_lane_metric(report, "targetReadCoverage")),
+        target_read_precision: proof_f64_from_value(
+            read_efficiency.as_ref(),
+            &["efficientTargetReadPrecision"],
+        )
+        .or_else(|| best_lane_metric(report, "targetReadPrecision")),
+        irrelevant_read_delta: proof_i64(
+            source,
+            &["irrelevantReadDeltaSum", "irrelevantReadDelta"],
+        ),
+        total_irrelevant_read_count,
+    };
+    let evidence = ProofInspectorEvidence {
+        evidence_misses_observed: proof_bool(source, &["ctxhelmEvidenceMissesObserved"]),
+        evidence_only_targets_observed: proof_bool(source, &["ctxhelmEvidenceOnlyTargetsObserved"]),
+        evidence_only_target_count,
+        evidence_only_targets_after_retry: evidence_only_after_retry,
+        under_read_targets_observed: proof_bool(source, &["ctxhelmUnderReadTargetsObserved"]),
+    };
+    let privacy_status = ProofInspectorPrivacyStatus {
+        local_only: privacy
+            .get("localOnly")
+            .and_then(serde_json::Value::as_bool),
+        source_text_logged: privacy
+            .get("sourceTextLogged")
+            .and_then(serde_json::Value::as_bool),
+        raw_prompt_stored: privacy
+            .get("rawPromptStored")
+            .and_then(serde_json::Value::as_bool),
+        raw_transcript_stored: privacy
+            .get("rawTranscriptStored")
+            .and_then(serde_json::Value::as_bool),
+        raw_mcp_traffic_stored: privacy
+            .get("rawMcpTrafficStored")
+            .and_then(serde_json::Value::as_bool),
+        remote_embeddings_used: privacy
+            .get("remoteEmbeddingsUsed")
+            .and_then(serde_json::Value::as_bool),
+        remote_reranking_used: privacy
+            .get("remoteRerankingUsed")
+            .and_then(serde_json::Value::as_bool),
+        source_free_summary: true,
+    };
+    let mut notes = Vec::new();
+    if report.get("aggregate").is_none() {
+        notes.push("single-report summary; suite aggregate fields were not present".to_string());
+    }
+    if memory_guard.status == "not_reported" {
+        notes.push("memory guard status was not present in this proof report".to_string());
+    }
+    if retry_cost.is_none() {
+        notes.push("retry-cost fields were not present in this proof report".to_string());
+    }
+    ProofInspectorReport {
+        schema_version: "ctxhelm-proof-inspector-v1",
+        report_kind: if report.get("aggregate").is_some() {
+            "agent_run_suite".to_string()
+        } else {
+            "agent_run".to_string()
+        },
+        report_schema_version: proof_string(report, "schemaVersion")
+            .unwrap_or_else(|| "unknown".to_string()),
+        status: proof_string(report, "status").unwrap_or_else(|| "unknown".to_string()),
+        workflow_kind: proof_string(report, "workflowKind")
+            .unwrap_or_else(|| "unknown".to_string()),
+        client: ProofInspectorClient {
+            name: report
+                .get("client")
+                .and_then(|value| value.get("name"))
+                .and_then(serde_json::Value::as_str)
+                .unwrap_or("unknown")
+                .to_string(),
+            version: report
+                .get("client")
+                .and_then(|value| value.get("version"))
+                .and_then(serde_json::Value::as_str)
+                .unwrap_or("unknown")
+                .to_string(),
+        },
+        recommended_next_action: recommended_proof_next_action(
+            &outcome,
+            &evidence,
+            &boundary,
+            &privacy_status,
+        ),
+        outcome,
+        evidence,
+        retry_cost,
+        read_efficiency,
+        memory_guard,
+        boundary,
+        privacy_status,
+        notes,
+    }
+}
+
+fn render_proof_inspector_report(report: &ProofInspectorReport) -> String {
+    let mut output = String::from("# ctxhelm Proof Inspector\n\n");
+    output.push_str(&format!(
+        "- Inspector schema: `{}`\n- Report kind: `{}`\n- Report schema: `{}`\n- Status: `{}`\n- Workflow: `{}`\n- Client: `{}` `{}`\n\n",
+        report.schema_version,
+        report.report_kind,
+        report.report_schema_version,
+        report.status,
+        report.workflow_kind,
+        report.client.name,
+        report.client.version
+    ));
+    output.push_str("## Outcome Claim\n\n");
+    output.push_str(&format!(
+        "- Claim: `{}`\n- Comparison eligible: `{}`\n- Comparable tasks: `{}`\n- Comparable ctxhelm lanes: `{}`\n- Target coverage delta: `{}`\n- Target-read coverage delta: `{}`\n- Target-read coverage: `{}`\n- Target-read precision: `{}`\n- Irrelevant-read delta: `{}`\n- Total irrelevant reads: `{}`\n\n",
+        report.outcome.claim,
+        optional_bool(report.outcome.comparison_eligible),
+        optional_u64(report.outcome.comparison_eligible_count),
+        optional_u64(report.outcome.comparable_ctxhelm_lane_count),
+        optional_f64(report.outcome.target_coverage_delta),
+        optional_f64(report.outcome.target_read_coverage_delta),
+        optional_f64(report.outcome.target_read_coverage),
+        optional_f64(report.outcome.target_read_precision),
+        optional_i64(report.outcome.irrelevant_read_delta),
+        optional_u64(report.outcome.total_irrelevant_read_count),
+    ));
+    output.push_str("## Evidence Consumption\n\n");
+    output.push_str(&format!(
+        "- Evidence misses observed: `{}`\n- Evidence-only targets observed: `{}`\n- Evidence-only target count: `{}`\n- Evidence-only targets after retry: `{}`\n- Under-read targets observed: `{}`\n\n",
+        optional_bool(report.evidence.evidence_misses_observed),
+        optional_bool(report.evidence.evidence_only_targets_observed),
+        optional_u64(report.evidence.evidence_only_target_count),
+        optional_u64(report.evidence.evidence_only_targets_after_retry),
+        optional_bool(report.evidence.under_read_targets_observed),
+    ));
+    output.push_str("## Retry Cost\n\n");
+    if let Some(retry) = report.retry_cost.as_ref() {
+        output.push_str(&render_retry_cost(Some(retry)));
+    } else {
+        output.push_str("- Retry cost: `not_reported`\n");
+    }
+    output.push_str("\n## Memory Guard\n\n");
+    output.push_str(&format!(
+        "- Status: `{}`\n- Detail: {}\n\n",
+        report.memory_guard.status, report.memory_guard.detail
+    ));
+    output.push_str("## Boundaries\n\n");
+    output.push_str(&format!(
+        "- Client failures observed: `{}`\n- Rate limits observed: `{}`\n- Forbidden boundary events observed: `{}`\n- Missing required ctxhelm calls observed: `{}`\n- Invalid required ctxhelm calls observed: `{}`\n\n",
+        optional_bool(report.boundary.client_failures_observed),
+        optional_bool(report.boundary.rate_limits_observed),
+        optional_bool(report.boundary.forbidden_boundary_events_observed),
+        optional_bool(report.boundary.missing_required_ctxhelm_calls_observed),
+        optional_bool(report.boundary.invalid_required_ctxhelm_calls_observed),
+    ));
+    output.push_str("## Source-Free Privacy\n\n");
+    output.push_str(&format!(
+        "- Local only: `{}`\n- Source text logged: `{}`\n- Raw prompt stored: `{}`\n- Raw transcript stored: `{}`\n- Raw MCP traffic stored: `{}`\n- Remote embeddings used: `{}`\n- Remote reranking used: `{}`\n- Summary source-free: `{}`\n\n",
+        optional_bool(report.privacy_status.local_only),
+        optional_bool(report.privacy_status.source_text_logged),
+        optional_bool(report.privacy_status.raw_prompt_stored),
+        optional_bool(report.privacy_status.raw_transcript_stored),
+        optional_bool(report.privacy_status.raw_mcp_traffic_stored),
+        optional_bool(report.privacy_status.remote_embeddings_used),
+        optional_bool(report.privacy_status.remote_reranking_used),
+        report.privacy_status.source_free_summary,
+    ));
+    output.push_str("## Recommended Next Action\n\n");
+    output.push_str(&format!("- {}\n", report.recommended_next_action));
+    if !report.notes.is_empty() {
+        output.push_str("\n## Notes\n\n");
+        for note in &report.notes {
+            output.push_str(&format!("- {note}\n"));
+        }
+    }
+    output
+}
+
+fn proof_summary_source(report: &serde_json::Value) -> &serde_json::Value {
+    report
+        .get("aggregate")
+        .or_else(|| report.get("comparison"))
+        .unwrap_or(report)
+}
+
+fn proof_string(value: &serde_json::Value, key: &str) -> Option<String> {
+    value
+        .get(key)
+        .and_then(serde_json::Value::as_str)
+        .map(str::to_string)
+}
+
+fn proof_bool(value: &serde_json::Value, keys: &[&str]) -> Option<bool> {
+    keys.iter()
+        .find_map(|key| value.get(*key).and_then(serde_json::Value::as_bool))
+}
+
+fn proof_f64(value: &serde_json::Value, keys: &[&str]) -> Option<f64> {
+    keys.iter()
+        .find_map(|key| value.get(*key).and_then(serde_json::Value::as_f64))
+}
+
+fn proof_f64_from_value(value: Option<&serde_json::Value>, keys: &[&str]) -> Option<f64> {
+    value.and_then(|value| proof_f64(value, keys))
+}
+
+fn proof_i64(value: &serde_json::Value, keys: &[&str]) -> Option<i64> {
+    keys.iter()
+        .find_map(|key| value.get(*key).and_then(serde_json::Value::as_i64))
+}
+
+fn sum_lane_metric(report: &serde_json::Value, metric: &str) -> Option<u64> {
+    let lane_summaries = report
+        .get("aggregate")
+        .and_then(|value| value.get("laneSummaries"))
+        .and_then(serde_json::Value::as_array);
+    if let Some(lanes) = lane_summaries {
+        return Some(
+            lanes
+                .iter()
+                .filter_map(|lane| lane.get(metric).and_then(serde_json::Value::as_u64))
+                .sum(),
+        );
+    }
+    let lanes = report.get("lanes").and_then(serde_json::Value::as_array)?;
+    Some(
+        lanes
+            .iter()
+            .filter_map(|lane| {
+                lane.get("metrics")
+                    .and_then(|metrics| metrics.get(metric))
+                    .and_then(serde_json::Value::as_u64)
+            })
+            .sum(),
+    )
+}
+
+fn best_lane_metric(report: &serde_json::Value, metric: &str) -> Option<f64> {
+    let source = proof_summary_source(report);
+    let efficient_lane = source
+        .get("readEfficiency")
+        .and_then(|value| value.get("efficientCtxhelmLane"))
+        .and_then(serde_json::Value::as_str);
+    let best_lane = source
+        .get("bestLane")
+        .and_then(serde_json::Value::as_str)
+        .or(efficient_lane);
+    if let Some(lane_name) = best_lane {
+        if let Some(lanes) = report
+            .get("aggregate")
+            .and_then(|value| value.get("laneSummaries"))
+            .and_then(serde_json::Value::as_array)
+        {
+            if let Some(lane) = lanes.iter().find(|lane| {
+                lane.get("lane").and_then(serde_json::Value::as_str) == Some(lane_name)
+            }) {
+                return lane
+                    .get(metric)
+                    .or_else(|| {
+                        if metric == "targetReadCoverage" {
+                            lane.get("averageTargetReadCoverage")
+                        } else {
+                            None
+                        }
+                    })
+                    .and_then(serde_json::Value::as_f64);
+            }
+        }
+        if let Some(lanes) = report.get("lanes").and_then(serde_json::Value::as_array) {
+            if let Some(lane) = lanes.iter().find(|lane| {
+                lane.get("lane").and_then(serde_json::Value::as_str) == Some(lane_name)
+            }) {
+                return lane
+                    .get("metrics")
+                    .and_then(|metrics| metrics.get(metric))
+                    .and_then(serde_json::Value::as_f64);
+            }
+        }
+    }
+    None
+}
+
+fn proof_memory_guard(report: &serde_json::Value) -> ProofInspectorMemoryGuard {
+    if let Some(status) = report
+        .get("memoryGuard")
+        .and_then(|value| value.get("status"))
+        .and_then(serde_json::Value::as_str)
+        .or_else(|| {
+            report
+                .get("aggregate")
+                .and_then(|value| value.get("memoryGuardStatus"))
+                .and_then(serde_json::Value::as_str)
+        })
+    {
+        return ProofInspectorMemoryGuard {
+            status: status.to_string(),
+            detail: "memory guard status was reported by the proof artifact".to_string(),
+        };
+    }
+    ProofInspectorMemoryGuard {
+        status: "not_reported".to_string(),
+        detail:
+            "this proof report did not include a dedicated memory guard field; inspect memory-specific proof before making memory claims"
+                .to_string(),
+    }
+}
+
+fn recommended_proof_next_action(
+    outcome: &ProofInspectorOutcome,
+    evidence: &ProofInspectorEvidence,
+    boundary: &ProofInspectorBoundary,
+    privacy: &ProofInspectorPrivacyStatus,
+) -> String {
+    if privacy.source_text_logged == Some(true)
+        || privacy.raw_prompt_stored == Some(true)
+        || privacy.raw_transcript_stored == Some(true)
+        || privacy.raw_mcp_traffic_stored == Some(true)
+    {
+        return "Reject this proof for public claims until the source-free privacy boundary is restored.".to_string();
+    }
+    if boundary.forbidden_boundary_events_observed == Some(true) {
+        return "Do not promote this run; investigate read-only boundary violations first."
+            .to_string();
+    }
+    if boundary.client_failures_observed == Some(true)
+        || boundary.rate_limits_observed == Some(true)
+    {
+        return "Treat this as availability-blocked and rerun after the client is stable."
+            .to_string();
+    }
+    if outcome.comparison_eligible_count == Some(0)
+        || outcome.comparable_ctxhelm_lane_count == Some(0)
+        || outcome.claim == "insufficient_comparable_lanes"
+    {
+        return "Collect a comparable baseline plus at least one ctxhelm-assisted lane before making an outcome claim.".to_string();
+    }
+    if evidence.evidence_misses_observed == Some(true) {
+        return "Fix retrieval or task construction before promoting this proof.".to_string();
+    }
+    if evidence.evidence_only_targets_after_retry.unwrap_or(0) > 0
+        || evidence.under_read_targets_observed == Some(true)
+    {
+        return "Tighten agent consumption guidance or retry enforcement before claiming reliable consumption.".to_string();
+    }
+    if outcome.claim == "ctxhelm_improved" {
+        return "Use as source-free outcome evidence, then repeat the suite to check stability and efficiency.".to_string();
+    }
+    "Inspect the full agent-run report and choose the next R&D action from its recommendations."
+        .to_string()
+}
+
+fn optional_bool(value: Option<bool>) -> String {
+    value
+        .map(|value| value.to_string())
+        .unwrap_or_else(|| "n/a".to_string())
+}
+
+fn optional_u64(value: Option<u64>) -> String {
+    value
+        .map(|value| value.to_string())
+        .unwrap_or_else(|| "n/a".to_string())
+}
+
+fn optional_i64(value: Option<i64>) -> String {
+    value
+        .map(|value| value.to_string())
+        .unwrap_or_else(|| "n/a".to_string())
+}
+
+fn optional_f64(value: Option<f64>) -> String {
+    value
+        .map(|value| format!("{value:.2}"))
+        .unwrap_or_else(|| "n/a".to_string())
 }
 
 fn render_agent_run_report(report: &serde_json::Value) -> String {
@@ -9325,6 +9874,35 @@ mod tests {
         assert!(matches!(args.format, InspectorFormat::Html));
         assert_eq!(args.target_agent, "codex");
         assert_eq!(args.output, Some(PathBuf::from("pack.html")));
+    }
+
+    #[test]
+    fn inspector_proof_command_parses_report_and_output() {
+        let cli = Cli::try_parse_from([
+            "ctxhelm",
+            "inspector",
+            "proof",
+            "--report",
+            "agent-run.json",
+            "--repo",
+            ".",
+            "--format",
+            "json",
+            "--output",
+            "proof-summary.json",
+        ])
+        .unwrap();
+
+        let Command::Inspector(InspectorArgs {
+            command: InspectorCommand::Proof(args),
+        }) = cli.command
+        else {
+            panic!("expected inspector proof command");
+        };
+        assert_eq!(args.report, PathBuf::from("agent-run.json"));
+        assert_eq!(args.repo, Some(PathBuf::from(".")));
+        assert!(matches!(args.format, PackFormat::Json));
+        assert_eq!(args.output, Some(PathBuf::from("proof-summary.json")));
     }
 
     #[test]

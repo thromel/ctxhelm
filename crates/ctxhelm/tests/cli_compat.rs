@@ -2577,6 +2577,131 @@ fn eval_agent_run_renders_source_free_suite_report() {
 }
 
 #[test]
+fn inspector_proof_summarizes_agent_run_report_source_free() {
+    let fixture = fixture_repo();
+    let report_path = fixture.temp.path().join("agent-run-suite.json");
+    fs::write(
+        &report_path,
+        json!({
+            "schemaVersion": "ctxhelm-agent-run-eval-v1",
+            "status": "passed",
+            "workflowKind": "paired-agent-context-suite",
+            "client": {
+                "name": "codex",
+                "version": "Codex test"
+            },
+            "aggregate": {
+                "taskCount": 2,
+                "comparisonEligibleCount": 2,
+                "comparableCtxhelmLaneCount": 1,
+                "targetCoverageDeltaAverage": 0.25,
+                "targetReadCoverageDeltaAverage": 0.25,
+                "irrelevantReadDeltaSum": -3,
+                "ctxhelmToolCallsObserved": true,
+                "forbiddenToolCallsObserved": false,
+                "missingRequiredCtxhelmCallsObserved": false,
+                "invalidRequiredCtxhelmCallsObserved": false,
+                "clientFailuresObserved": false,
+                "rateLimitsObserved": false,
+                "ctxhelmEvidenceMissesObserved": false,
+                "ctxhelmEvidenceOnlyTargetsObserved": true,
+                "ctxhelmUnderReadTargetsObserved": false,
+                "retryCost": {
+                    "retryTriggeredLanes": 1,
+                    "retrySelectedLanes": 1,
+                    "avgReadFilesBeforeRetry": 4.0,
+                    "avgReadFilesAfterRetry": 5.0,
+                    "avgIrrelevantReadsBeforeRetry": 2.0,
+                    "avgIrrelevantReadsAfterRetry": 1.0,
+                    "targetReadCoverageBeforeRetry": 0.5,
+                    "targetReadCoverageAfterRetry": 0.75,
+                    "evidenceOnlyTargetsBeforeRetry": 1,
+                    "evidenceOnlyTargetsAfterRetry": 0
+                },
+                "readEfficiency": {
+                    "analysisAvailable": true,
+                    "baselineLane": "baseline",
+                    "efficientCtxhelmLane": "ctxhelm-brief",
+                    "efficientTargetReadCoverage": 0.75,
+                    "efficientTargetReadPrecision": 0.6,
+                    "efficientIrrelevantReadCount": 1
+                },
+                "outcomeClaim": "ctxhelm_improved",
+                "laneSummaries": [
+                    {
+                        "lane": "baseline",
+                        "averageTargetReadCoverage": 0.5,
+                        "targetReadPrecision": 0.25,
+                        "irrelevantReadCount": 4,
+                        "ctxhelmEvidenceOnlyTargetCount": 0
+                    },
+                    {
+                        "lane": "ctxhelm-brief",
+                        "averageTargetReadCoverage": 0.75,
+                        "targetReadPrecision": 0.6,
+                        "irrelevantReadCount": 1,
+                        "ctxhelmEvidenceOnlyTargetCount": 0
+                    }
+                ]
+            },
+            "privacyStatus": {
+                "localOnly": true,
+                "sourceTextLogged": false,
+                "rawPromptStored": false,
+                "rawTranscriptStored": false,
+                "rawMcpTrafficStored": false,
+                "remoteEmbeddingsUsed": false,
+                "remoteRerankingUsed": false
+            }
+        })
+        .to_string(),
+    )
+    .unwrap();
+
+    Command::cargo_bin("ctxhelm")
+        .unwrap()
+        .args(["inspector", "proof", "--report"])
+        .arg(&report_path)
+        .assert()
+        .success()
+        .stdout(contains("# ctxhelm Proof Inspector"))
+        .stdout(contains("Report kind: `agent_run_suite`"))
+        .stdout(contains("Claim: `ctxhelm_improved`"))
+        .stdout(contains("Comparable tasks: `2`"))
+        .stdout(contains("Target-read coverage: `0.75`"))
+        .stdout(contains("Evidence-only targets after retry: `0`"))
+        .stdout(contains("Retry cost: triggered `1` selected `1`"))
+        .stdout(contains("Forbidden boundary events observed: `false`"))
+        .stdout(contains("Source text logged: `false`"))
+        .stdout(contains("Summary source-free: `true`"))
+        .stdout(contains(
+            "Use as source-free outcome evidence, then repeat the suite to check stability and efficiency.",
+        ));
+
+    let rendered_json = json_stdout(
+        Command::cargo_bin("ctxhelm")
+            .unwrap()
+            .args(["inspector", "proof", "--report"])
+            .arg(&report_path)
+            .args(["--format", "json"])
+            .assert(),
+    );
+    assert_eq!(rendered_json["schemaVersion"], "ctxhelm-proof-inspector-v1");
+    assert_eq!(rendered_json["reportKind"], "agent_run_suite");
+    assert_eq!(rendered_json["outcome"]["claim"], "ctxhelm_improved");
+    assert_eq!(rendered_json["outcome"]["comparisonEligibleCount"], 2);
+    assert_eq!(
+        rendered_json["evidence"]["evidenceOnlyTargetsAfterRetry"],
+        0
+    );
+    assert_eq!(rendered_json["privacyStatus"]["sourceFreeSummary"], true);
+    assert_eq!(
+        rendered_json["recommendedNextAction"],
+        "Use as source-free outcome evidence, then repeat the suite to check stability and efficiency."
+    );
+}
+
+#[test]
 fn eval_benchmark_runs_named_suite_source_free() {
     let first = fixture_repo();
     let second = fixture_repo();

@@ -34,6 +34,31 @@ text, category, and source-bearing sections, plus tables for target files,
 related tests, validation commands, warnings, diagnostics, retrieval
 candidates, selected memory, and section token estimates.
 
+## Proof Summary
+
+Summarize a saved source-free proof report:
+
+```bash
+ctxhelm inspector proof \
+  --report .ctxhelm/e2e/phase322-agent-run-codex-target-first-breadth-suite.json
+```
+
+Machine-readable output is available for release notes, dashboards, or adoption
+checks:
+
+```bash
+ctxhelm inspector proof \
+  --report .ctxhelm/e2e/phase322-agent-run-codex-target-first-breadth-suite.json \
+  --format json
+```
+
+The proof inspector currently summarizes agent-run proof reports. It renders
+outcome claim, comparable task/lane counts, target-read coverage, evidence-only
+target state, retry cost, memory guard status when reported, client
+failures/rate limits, forbidden boundary events, source-free privacy flags, and
+a recommended next action. It does not print raw task text, raw prompts, raw
+transcripts, MCP traffic, or target file lists.
+
 ## Local Shell
 
 Run the optional localhost-only diagnostic shell:
@@ -115,6 +140,8 @@ The inspector is metadata-only by design:
 - It does not store raw source text.
 - It does not store raw prompts, terminal logs, or model transcripts.
 - It labels source-bearing pack sections instead of copying their content.
+- It summarizes proof reports from source-free metrics instead of copying task
+  text, target files, prompts, transcripts, or MCP traffic.
 - It preserves `PrivacyStatus` from the compiled pack.
 - It keeps cloud embeddings and cloud reranking disabled unless a future
   explicit policy gate enables them.
