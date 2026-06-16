@@ -5,7 +5,7 @@ use crate::inventory::{
 };
 use crate::policy::{read_safe_source, SourceReadStatus, SOURCE_READ_MAX_BYTES};
 use crate::symbols::extract_symbols_report;
-use ctxhelm_core::{CacheStatus, CacheStatusKind, Diagnostic, FileRole};
+use ctxhelm_core::{explicit_query_paths, CacheStatus, CacheStatusKind, Diagnostic, FileRole};
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet, VecDeque};
 use std::fs;
@@ -62,6 +62,7 @@ pub fn lexical_search_report(
 ) -> Result<SearchReport, InventoryError> {
     let repo_root = canonicalize(repo_root.as_ref())?;
     let query_terms = query_terms(query);
+    let explicit_query_paths = explicit_query_paths(query);
     let inventory_report = load_or_refresh_inventory(&repo_root, &InventoryOptions::default())?;
     let mut diagnostics = inventory_report.diagnostics.clone();
     let cache_status = inventory_report.cache_status.clone();
@@ -78,6 +79,7 @@ pub fn lexical_search_report(
         query,
         options.limit,
         &query_terms,
+        &explicit_query_paths,
     );
     if let Ok(json) = fs::read_to_string(&cache_path) {
         if let Ok(mut cached) = serde_json::from_str::<SearchReport>(&json) {
@@ -94,6 +96,7 @@ pub fn lexical_search_report(
         &repo_root,
         &inventory_report.inventory,
         &query_terms,
+        &explicit_query_paths,
         options,
     )?;
     diagnostics.extend(bm25_diagnostics);
@@ -121,6 +124,7 @@ pub fn legacy_lexical_search_report(
 ) -> Result<SearchReport, InventoryError> {
     let repo_root = canonicalize(repo_root.as_ref())?;
     let query_terms = query_terms(query);
+    let explicit_query_paths = explicit_query_paths(query);
     let inventory_report = load_or_refresh_inventory(&repo_root, &InventoryOptions::default())?;
     let mut diagnostics = inventory_report.diagnostics.clone();
     let cache_status = inventory_report.cache_status.clone();
@@ -149,7 +153,8 @@ pub fn legacy_lexical_search_report(
             continue;
         };
         let content = source.text.unwrap_or_default();
-        let Some((score, reason)) = score_file(file, &content, &query_terms) else {
+        let Some((score, reason)) = score_file(file, &content, &query_terms, &explicit_query_paths)
+        else {
             continue;
         };
 
@@ -197,13 +202,18 @@ fn lexical_search_cache_path(
     query: &str,
     limit: usize,
     query_terms: &[String],
+    explicit_query_paths: &[String],
 ) -> std::path::PathBuf {
     let mut key = blake3::Hasher::new();
-    key.update(b"lexical-search-cache-v7");
+    key.update(b"lexical-search-cache-v8");
     key.update(query.trim().as_bytes());
     key.update(&limit.max(1).to_le_bytes());
     for term in query_terms {
         key.update(term.as_bytes());
+        key.update(b"\0");
+    }
+    for path in explicit_query_paths {
+        key.update(path.as_bytes());
         key.update(b"\0");
     }
     key.update(inventory_content_fingerprint(inventory).as_bytes());
@@ -261,6 +271,7 @@ fn bm25_lexical_search(
     repo_root: &Path,
     inventory: &RepoInventory,
     query_terms: &[String],
+    explicit_query_paths: &[String],
     options: &SearchOptions,
 ) -> Result<(Vec<SearchResult>, Vec<Diagnostic>), InventoryError> {
     let mut diagnostics = Vec::new();
@@ -278,8 +289,14 @@ fn bm25_lexical_search(
         inventory_content_fingerprint(inventory)
     );
     if let Some(cached) = get_cached_bm25_index(&index_cache_key) {
-        return search_cached_bm25_index(&cached, query_terms, &weighted_query_terms, limit)
-            .map(|results| (results, cached.diagnostics.clone()));
+        return search_cached_bm25_index(
+            &cached,
+            query_terms,
+            explicit_query_paths,
+            &weighted_query_terms,
+            limit,
+        )
+        .map(|results| (results, cached.diagnostics.clone()));
     }
 
     let mut documents = Vec::new();
@@ -307,7 +324,8 @@ fn bm25_lexical_search(
         });
     }
 
-    let exact_evidence_by_path = exact_evidence_by_path(&documents, query_terms);
+    let exact_evidence_by_path =
+        exact_evidence_by_path(&documents, query_terms, explicit_query_paths);
     if should_use_exact_primary_path(exact_evidence_by_path.len(), limit, &weighted_query_terms) {
         return Ok((
             exact_primary_results(
@@ -373,8 +391,14 @@ fn bm25_lexical_search(
         diagnostics: diagnostics.clone(),
     });
     remember_cached_bm25_index(index_cache_key, cached.clone());
-    search_cached_bm25_index(&cached, query_terms, &weighted_query_terms, limit)
-        .map(|results| (results, diagnostics))
+    search_cached_bm25_index(
+        &cached,
+        query_terms,
+        explicit_query_paths,
+        &weighted_query_terms,
+        limit,
+    )
+    .map(|results| (results, diagnostics))
 }
 
 fn get_cached_bm25_index(key: &str) -> Option<Arc<CachedBm25Index>> {
@@ -407,12 +431,17 @@ fn remember_cached_bm25_index(key: String, index: Arc<CachedBm25Index>) {
 fn exact_evidence_by_path(
     documents: &[CachedIndexedDocument],
     query_terms: &[String],
+    explicit_query_paths: &[String],
 ) -> BTreeMap<String, IndexedFileEvidence> {
     documents
         .iter()
         .filter_map(|document| {
-            let (exact_score, exact_reason) =
-                score_file(&document.file, &document.content, query_terms)?;
+            let (exact_score, exact_reason) = score_file(
+                &document.file,
+                &document.content,
+                query_terms,
+                explicit_query_paths,
+            )?;
             Some((
                 document.file.path.clone(),
                 IndexedFileEvidence {
@@ -428,13 +457,18 @@ fn exact_evidence_by_path(
 fn indexed_evidence_by_path(
     documents: &[CachedIndexedDocument],
     query_terms: &[String],
+    explicit_query_paths: &[String],
 ) -> BTreeMap<String, IndexedFileEvidence> {
     documents
         .iter()
         .map(|document| {
-            let (exact_score, exact_reason) =
-                score_file(&document.file, &document.content, query_terms)
-                    .unwrap_or_else(|| (0.0, "no exact field match".to_string()));
+            let (exact_score, exact_reason) = score_file(
+                &document.file,
+                &document.content,
+                query_terms,
+                explicit_query_paths,
+            )
+            .unwrap_or_else(|| (0.0, "no exact field match".to_string()));
             (
                 document.file.path.clone(),
                 IndexedFileEvidence {
@@ -512,10 +546,12 @@ fn exact_primary_results(
 fn search_cached_bm25_index(
     cached: &CachedBm25Index,
     query_terms: &[String],
+    explicit_query_paths: &[String],
     weighted_query_terms: &[String],
     limit: usize,
 ) -> Result<Vec<SearchResult>, InventoryError> {
-    let exact_evidence_by_path = exact_evidence_by_path(&cached.documents, query_terms);
+    let exact_evidence_by_path =
+        exact_evidence_by_path(&cached.documents, query_terms, explicit_query_paths);
     if should_use_exact_primary_path(exact_evidence_by_path.len(), limit, weighted_query_terms) {
         return Ok(exact_primary_results(
             &exact_evidence_by_path,
@@ -524,7 +560,8 @@ fn search_cached_bm25_index(
         ));
     }
 
-    let evidence_by_path = indexed_evidence_by_path(&cached.documents, query_terms);
+    let evidence_by_path =
+        indexed_evidence_by_path(&cached.documents, query_terms, explicit_query_paths);
     let reader = cached
         .index
         .reader()
@@ -575,6 +612,9 @@ fn search_cached_bm25_index(
         let Some(evidence) = evidence_by_path.get(&path) else {
             continue;
         };
+        if !explicit_query_paths.is_empty() && evidence.exact_score <= 0.0 {
+            continue;
+        }
         let mut score = if evidence.exact_score > 0.0 {
             evidence.exact_score * EXACT_LEXICAL_SCORE_MULTIPLIER
         } else {
@@ -674,12 +714,25 @@ fn score_file(
     file: &FileInventoryEntry,
     content: &str,
     query_terms: &[String],
+    explicit_query_paths: &[String],
 ) -> Option<(f32, String)> {
     let path = file.path.to_ascii_lowercase();
     let file_name = path.rsplit('/').next().unwrap_or(path.as_str());
     let content = content.to_ascii_lowercase();
     let mut score = 0.0;
     let mut reasons = Vec::new();
+    let explicit_path_match = explicit_query_paths
+        .iter()
+        .any(|explicit_path| explicit_path == &path);
+    let path_component_only_guard = !explicit_query_paths.is_empty() && !explicit_path_match;
+    let path_component_weight = if path_component_only_guard { 0.25 } else { 1.0 };
+    let mut matched_exact_or_content_evidence = false;
+
+    if explicit_path_match {
+        score += 50.0;
+        matched_exact_or_content_evidence = true;
+        reasons.push(format!("explicit path matched `{path}`"));
+    }
 
     for term in query_terms {
         let weight = query_term_weight(term);
@@ -689,12 +742,12 @@ fn score_file(
         let mut matched = false;
 
         if path.contains(term) {
-            score += 8.0 * weight;
+            score += 8.0 * weight * path_component_weight;
             matched = true;
             reasons.push(format!("path matched `{term}`"));
         }
         if file_name.contains(term) {
-            score += 5.0 * weight;
+            score += 5.0 * weight * path_component_weight;
             matched = true;
             reasons.push(format!("file name matched `{term}`"));
         }
@@ -703,6 +756,7 @@ fn score_file(
         if occurrences > 0 {
             score += (2.0 + occurrences.min(10) as f32) * weight;
             matched = true;
+            matched_exact_or_content_evidence = true;
             reasons.push(format!("content matched `{term}` {occurrences} time(s)"));
         }
 
@@ -712,6 +766,9 @@ fn score_file(
     }
 
     if score <= 0.0 {
+        return None;
+    }
+    if path_component_only_guard && !matched_exact_or_content_evidence {
         return None;
     }
 
@@ -809,6 +866,18 @@ pub(crate) fn query_term_weight(term: &str) -> f32 {
 mod tests {
     use super::*;
 
+    fn source_file(path: &str) -> FileInventoryEntry {
+        FileInventoryEntry {
+            path: path.to_string(),
+            language: Some("text".to_string()),
+            role: FileRole::Source,
+            hash: "test".to_string(),
+            size_bytes: 0,
+            generated: false,
+            ignored: false,
+        }
+    }
+
     #[test]
     fn query_terms_add_hyphenated_identifier_aliases() {
         let terms = query_terms("Improve agent-run report attribution");
@@ -816,5 +885,47 @@ mod tests {
         assert!(terms.contains(&"agent".to_string()));
         assert!(terms.contains(&"run".to_string()));
         assert!(terms.contains(&"agent_run".to_string()));
+    }
+
+    #[test]
+    fn explicit_query_paths_boost_exact_path_and_drop_path_only_siblings() {
+        let terms = query_terms("fix src/orders/status.txt update flow");
+        let explicit_paths = explicit_query_paths("fix src/orders/status.txt update flow");
+
+        let exact = score_file(
+            &source_file("src/orders/status.txt"),
+            "current implementation",
+            &terms,
+            &explicit_paths,
+        )
+        .expect("exact path should be selected");
+        let sibling = score_file(
+            &source_file("src/orders/notifications.txt"),
+            "unrelated implementation",
+            &terms,
+            &explicit_paths,
+        );
+
+        assert!(exact.1.contains("explicit path matched"));
+        assert!(
+            sibling.is_none(),
+            "sibling should not qualify from shared path components alone"
+        );
+    }
+
+    #[test]
+    fn explicit_query_paths_keep_non_exact_files_with_content_evidence() {
+        let terms = query_terms("fix src/orders/status.txt update flow");
+        let explicit_paths = explicit_query_paths("fix src/orders/status.txt update flow");
+
+        let sibling = score_file(
+            &source_file("src/orders/notifications.txt"),
+            "status update notification flow",
+            &terms,
+            &explicit_paths,
+        )
+        .expect("content evidence should still rescue a non-exact sibling");
+
+        assert!(sibling.1.contains("content matched"));
     }
 }

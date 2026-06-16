@@ -39,7 +39,7 @@ use uuid::Uuid;
 
 const HISTORICAL_EVAL_CACHE_SCHEMA_VERSION: &str = "historical-eval-cache-v2.3.5";
 const LEXICAL_BACKEND_CORPUS_SCHEMA_VERSION: &str = "lexical-backend-corpus-v1";
-const PARENT_SNAPSHOT_BATCH_READ_TIMEOUT: Duration = Duration::from_millis(500);
+const PARENT_SNAPSHOT_BATCH_READ_TIMEOUT: Duration = Duration::from_secs(5);
 const PARENT_SNAPSHOT_SCHEMA_VERSION: &str = "historical-eval-parent-snapshot-v2";
 const PARENT_SNAPSHOT_MANIFEST: &str = ".ctxhelm/parent-snapshot.json";
 

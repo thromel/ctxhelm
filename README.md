@@ -29,7 +29,7 @@ that is not enough:
 
 Current proof snapshot:
 
-- Public `v2.4.1` archive install is current and verified through checksum,
+- Public `v2.4.2` archive install is current and verified through checksum,
   archive, temporary install, version/help, doctor, and first-pack checks.
 - The four-repo product proof reports zero protected target misses across
   RefactoringMiner, ctxhelm, ReAgent, and VeriSchema.
@@ -56,7 +56,7 @@ ctxhelm exposes compact task context through:
 ctxhelm writes repo-local guidance, optional adapter snippets, and local ctxhelm
 state only.
 
-## Install v2.4.1
+## Install v2.4.2
 
 On Apple Silicon macOS, install from the public Homebrew tap:
 
@@ -68,8 +68,8 @@ ctxhelm --help
 ```
 
 The archive install path remains available for manual verification and
-non-Homebrew workflows. The v2.4.1 archive is named like
-`ctxhelm-v2.4.1-aarch64-apple-darwin.tar.gz`.
+non-Homebrew workflows. The v2.4.2 archive is named like
+`ctxhelm-v2.4.2-aarch64-apple-darwin.tar.gz`.
 
 Download the archive and checksum file for your platform, then verify the SHA-256 checksums:
 
@@ -81,14 +81,14 @@ sha256sum -c sha256sums.txt
 Extract the archive and put the binary on your `PATH`:
 
 ```bash
-tar -xzf ctxhelm-v2.4.1-aarch64-apple-darwin.tar.gz
-install -m 0755 ctxhelm-v2.4.1-aarch64-apple-darwin/ctxhelm ~/.local/bin/ctxhelm
+tar -xzf ctxhelm-v2.4.2-aarch64-apple-darwin.tar.gz
+install -m 0755 ctxhelm-v2.4.2-aarch64-apple-darwin/ctxhelm ~/.local/bin/ctxhelm
 ctxhelm --version
 ctxhelm --help
-ctxhelm doctor --binary "$(command -v ctxhelm)" --release-manifest ctxhelm-v2.4.1-aarch64-apple-darwin.manifest.json
+ctxhelm doctor --binary "$(command -v ctxhelm)" --release-manifest ctxhelm-v2.4.2-aarch64-apple-darwin.manifest.json
 ```
 
-The expected version diagnostic is `ctxhelm 2.4.1`. See [docs/release.md](docs/release.md) for release details, source-build fallbacks, and maintainer packaging checks.
+The expected version diagnostic is `ctxhelm 2.4.2`. See [docs/release.md](docs/release.md) for release details, source-build fallbacks, and maintainer packaging checks.
 
 ## Install To First Pack
 

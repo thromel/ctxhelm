@@ -7,12 +7,13 @@ use crate::ranking::{
     AnchorCandidate, MemoryPathCandidate, RankingInput,
 };
 use ctxhelm_core::{
-    context_area_for_path, context_area_resource_uri, Command, ContextArea, ContextPlan,
-    Diagnostic, DiagnosticSeverity, FileRole, FusionControlSummary, InspectionPressureBreakdown,
-    MemoryCard, MemoryFreshness, MemoryReviewStatus, PackBudget, PackOption, PrivacyStatus,
-    ProviderDecisionStatus, QueryConstructionTrace, QueryFacet, QueryFacetKind, RetrievalCandidate,
-    RetrievalCandidateKind, RetrievalEvidence, RetrievalSignalKind, RetrievalSignalScore,
-    RetrieverQuerySet, RiskFlag, SelectedMemory, TargetFile, TaskType,
+    context_area_for_path, context_area_resource_uri, explicit_query_paths, Command, ContextArea,
+    ContextPlan, Diagnostic, DiagnosticSeverity, FileRole, FusionControlSummary,
+    InspectionPressureBreakdown, MemoryCard, MemoryFreshness, MemoryReviewStatus, PackBudget,
+    PackOption, PrivacyStatus, ProviderDecisionStatus, QueryConstructionTrace, QueryFacet,
+    QueryFacetKind, RetrievalCandidate, RetrievalCandidateKind, RetrievalEvidence,
+    RetrievalSignalKind, RetrievalSignalScore, RetrieverQuerySet, RiskFlag, SelectedMemory,
+    TargetFile, TaskType,
 };
 use ctxhelm_index::{
     co_change_hints_report, current_diff_summary_report, lexical_search_report, list_memory_cards,
@@ -2236,18 +2237,7 @@ fn dominant_source_languages(roles: &BTreeMap<String, FileRole>) -> Vec<String> 
 }
 
 fn extract_path_facets(task: &str) -> Vec<String> {
-    task.split_whitespace()
-        .filter_map(|token| {
-            let token = clean_query_token(token);
-            let looks_like_path = token.contains('/')
-                && [
-                    ".ts", ".tsx", ".js", ".jsx", ".py", ".rs", ".go", ".java", ".kt", ".md",
-                ]
-                .iter()
-                .any(|extension| token.ends_with(extension));
-            looks_like_path.then_some(normalize_query_path(&token))
-        })
-        .collect()
+    explicit_query_paths(task)
 }
 
 fn extract_stack_frame_facets(task: &str) -> Vec<String> {
@@ -3367,7 +3357,7 @@ mod tests {
     #[test]
     fn query_trace_extracts_source_free_facets() {
         let trace = construct_query_trace(
-            "fix src/auth/session.ts\nsrc/auth/session.ts:42\nError: getSession failed in AuthService",
+            "fix src/auth/session.ts and src/orders/status.txt\nsrc/auth/session.ts:42\nError: getSession failed in AuthService",
             &["tests/auth/session.test.ts".to_string()],
         );
 
@@ -3378,6 +3368,11 @@ mod tests {
             .iter()
             .any(|facet| facet.kind == QueryFacetKind::ExplicitPath
                 && facet.value == "src/auth/session.ts"));
+        assert!(trace
+            .facets
+            .iter()
+            .any(|facet| facet.kind == QueryFacetKind::ExplicitPath
+                && facet.value == "src/orders/status.txt"));
         assert!(trace
             .facets
             .iter()

@@ -23,7 +23,7 @@ tree-sitter-parsers = [
 
 [dependencies]
 blake3.workspace = true
-ctxhelm-core = { path = "../ctxhelm-core", version = "2.4.1" }
+ctxhelm-core = { path = "../ctxhelm-core", version = "2.4.2" }
 fastembed = { workspace = true, optional = true }
 ignore.workspace = true
 rusqlite.workspace = true

@@ -190,6 +190,49 @@ mod tests {
     }
 
     #[test]
+    fn prepare_context_plan_drops_path_component_only_siblings_for_explicit_path_tasks() {
+        let _guard = env_lock();
+        let temp = tempfile::tempdir().unwrap();
+        let repo = temp.path().join("repo");
+        let home = temp.path().join("ctxhelm-home");
+        fs::create_dir_all(repo.join("src/orders")).unwrap();
+        run_git(&repo, &["init"]);
+        run_git(&repo, &["config", "user.email", "ctxhelm@example.com"]);
+        run_git(&repo, &["config", "user.name", "ctxhelm"]);
+        fs::write(repo.join("src/orders/status.txt"), "current order state\n").unwrap();
+        run_git(&repo, &["add", "."]);
+        run_git(&repo, &["commit", "-m", "add order status fixture"]);
+        fs::write(
+            repo.join("src/orders/notifications.txt"),
+            "notification delivery template\n",
+        )
+        .unwrap();
+        run_git(&repo, &["add", "."]);
+        run_git(&repo, &["commit", "-m", "add notification fixture"]);
+        std::env::set_var("CTXHELM_HOME", &home);
+
+        let plan = prepare_context_plan(
+            &repo,
+            "fix src/orders/status.txt update flow",
+            TaskType::BugFix,
+        )
+        .unwrap();
+        let paths = plan
+            .target_files
+            .iter()
+            .map(|target| target.path.as_str())
+            .collect::<Vec<_>>();
+
+        assert!(paths.contains(&"src/orders/status.txt"));
+        assert!(
+            !paths.contains(&"src/orders/notifications.txt"),
+            "sibling should not enter targetFiles from shared path components alone: {paths:?}"
+        );
+
+        std::env::remove_var("CTXHELM_HOME");
+    }
+
+    #[test]
     fn prepare_context_plan_keeps_supporting_targets_past_top_five() {
         let _guard = env_lock();
         let temp = tempfile::tempdir().unwrap();
