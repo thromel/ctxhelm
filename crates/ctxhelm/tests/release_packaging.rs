@@ -838,6 +838,43 @@ fn ci_workflow_contract() {
 }
 
 #[test]
+fn inspector_smoke_script_contract() {
+    let repo_root = workspace_root();
+    let smoke = repo_root.join("scripts/smoke-inspector.sh");
+    assert!(smoke.exists(), "inspector smoke is missing");
+
+    let syntax = Command::new("bash")
+        .arg("-n")
+        .arg(&smoke)
+        .current_dir(&repo_root)
+        .output()
+        .unwrap();
+    assert!(
+        syntax.status.success(),
+        "bash -n failed for {}: {}",
+        smoke.display(),
+        String::from_utf8_lossy(&syntax.stderr)
+    );
+
+    let smoke_text = fs::read_to_string(&smoke).unwrap();
+    for required in [
+        "ctxhelm inspector proof",
+        "ctxhelm-proof-inspector-v1",
+        "agent_run_suite",
+        "ctxhelm_improved",
+        "evidenceOnlyTargetsAfterRetry",
+        "sourceFreeSummary",
+        "Use as source-free outcome evidence",
+        "INSPECTOR_UI_SOURCE_SENTINEL",
+    ] {
+        assert!(
+            smoke_text.contains(required),
+            "inspector smoke missing {required}"
+        );
+    }
+}
+
+#[test]
 fn release_artifacts_workflow_contract() {
     let repo_root = workspace_root();
     let workflow = repo_root.join(".github/workflows/release-artifacts.yml");

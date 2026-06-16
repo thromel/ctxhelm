@@ -58,6 +58,83 @@ git -C "${REPO}" commit -m "add session" >/dev/null
 
 JSON_OUT="${TMP_DIR}/inspector.json"
 HTML_OUT="${TMP_DIR}/inspector.html"
+PROOF_REPORT="${TMP_DIR}/agent-run-proof.json"
+PROOF_MD_OUT="${TMP_DIR}/proof-inspector.md"
+PROOF_JSON_OUT="${TMP_DIR}/proof-inspector.json"
+
+cat >"${PROOF_REPORT}" <<'EOF'
+{
+  "schemaVersion": "ctxhelm-agent-run-eval-v1",
+  "status": "passed",
+  "workflowKind": "paired-agent-context-suite",
+  "client": {
+    "name": "codex",
+    "version": "codex-cli smoke"
+  },
+  "aggregate": {
+    "taskCount": 2,
+    "comparisonEligibleCount": 2,
+    "comparableCtxhelmLaneCount": 1,
+    "targetCoverageDeltaAverage": 0.25,
+    "targetReadCoverageDeltaAverage": 0.25,
+    "irrelevantReadDeltaSum": -2,
+    "forbiddenToolCallsObserved": false,
+    "missingRequiredCtxhelmCallsObserved": false,
+    "invalidRequiredCtxhelmCallsObserved": false,
+    "clientFailuresObserved": false,
+    "rateLimitsObserved": false,
+    "ctxhelmEvidenceMissesObserved": false,
+    "ctxhelmEvidenceOnlyTargetsObserved": true,
+    "ctxhelmUnderReadTargetsObserved": false,
+    "retryCost": {
+      "retryTriggeredLanes": 1,
+      "retrySelectedLanes": 1,
+      "avgReadFilesBeforeRetry": 4.0,
+      "avgReadFilesAfterRetry": 5.0,
+      "avgIrrelevantReadsBeforeRetry": 2.0,
+      "avgIrrelevantReadsAfterRetry": 1.0,
+      "targetReadCoverageBeforeRetry": 0.5,
+      "targetReadCoverageAfterRetry": 0.75,
+      "evidenceOnlyTargetsBeforeRetry": 1,
+      "evidenceOnlyTargetsAfterRetry": 0
+    },
+    "readEfficiency": {
+      "analysisAvailable": true,
+      "baselineLane": "baseline",
+      "efficientCtxhelmLane": "ctxhelm-brief",
+      "efficientTargetReadCoverage": 0.75,
+      "efficientTargetReadPrecision": 0.6,
+      "efficientIrrelevantReadCount": 1
+    },
+    "outcomeClaim": "ctxhelm_improved",
+    "laneSummaries": [
+      {
+        "lane": "baseline",
+        "averageTargetReadCoverage": 0.5,
+        "targetReadPrecision": 0.25,
+        "irrelevantReadCount": 3,
+        "ctxhelmEvidenceOnlyTargetCount": 0
+      },
+      {
+        "lane": "ctxhelm-brief",
+        "averageTargetReadCoverage": 0.75,
+        "targetReadPrecision": 0.6,
+        "irrelevantReadCount": 1,
+        "ctxhelmEvidenceOnlyTargetCount": 0
+      }
+    ]
+  },
+  "privacyStatus": {
+    "localOnly": true,
+    "sourceTextLogged": false,
+    "rawPromptStored": false,
+    "rawTranscriptStored": false,
+    "rawMcpTrafficStored": false,
+    "remoteEmbeddingsUsed": false,
+    "remoteRerankingUsed": false
+  }
+}
+EOF
 
 (
   cd "${ROOT_DIR}"
@@ -71,6 +148,15 @@ HTML_OUT="${TMP_DIR}/inspector.html"
     --mode bug-fix \
     --format html \
     --output "${HTML_OUT}"
+  run_ctxhelm inspector proof \
+    --repo "${REPO}" \
+    --report "${PROOF_REPORT}" \
+    --output "${PROOF_MD_OUT}"
+  run_ctxhelm inspector proof \
+    --repo "${REPO}" \
+    --report "${PROOF_REPORT}" \
+    --format json \
+    --output "${PROOF_JSON_OUT}"
 )
 
 require_text "${JSON_OUT}" '"sourceTextLogged": false'
@@ -86,6 +172,21 @@ require_text "${HTML_OUT}" 'Retrieval Candidates'
 require_text "${HTML_OUT}" 'Selected Memory'
 require_text "${HTML_OUT}" 'hidden-by-filter'
 reject_text "${HTML_OUT}" "INSPECTOR_UI_SOURCE_SENTINEL"
+
+require_text "${PROOF_MD_OUT}" '# ctxhelm Proof Inspector'
+require_text "${PROOF_MD_OUT}" 'Report kind: `agent_run_suite`'
+require_text "${PROOF_MD_OUT}" 'Claim: `ctxhelm_improved`'
+require_text "${PROOF_MD_OUT}" 'Evidence-only targets after retry: `0`'
+require_text "${PROOF_MD_OUT}" 'Summary source-free: `true`'
+require_text "${PROOF_MD_OUT}" 'Use as source-free outcome evidence'
+reject_text "${PROOF_MD_OUT}" "INSPECTOR_UI_SOURCE_SENTINEL"
+
+require_text "${PROOF_JSON_OUT}" '"schemaVersion": "ctxhelm-proof-inspector-v1"'
+require_text "${PROOF_JSON_OUT}" '"reportKind": "agent_run_suite"'
+require_text "${PROOF_JSON_OUT}" '"claim": "ctxhelm_improved"'
+require_text "${PROOF_JSON_OUT}" '"evidenceOnlyTargetsAfterRetry": 0'
+require_text "${PROOF_JSON_OUT}" '"sourceFreeSummary": true'
+reject_text "${PROOF_JSON_OUT}" "INSPECTOR_UI_SOURCE_SENTINEL"
 
 PORT="$(python3 - <<'PY'
 import socket

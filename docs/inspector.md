@@ -155,5 +155,6 @@ bash scripts/smoke-inspector.sh
 ```
 
 The smoke creates a temporary repository, exports JSON and HTML inspector
-artifacts, starts `ctxhelm inspector serve`, verifies the shell, graph, setup,
-and health routes, and rejects a source sentinel in all inspected outputs.
+artifacts, summarizes a synthetic source-free agent-run proof report, starts
+`ctxhelm inspector serve`, verifies the shell, graph, setup, and health routes,
+and rejects a source sentinel in all inspected outputs.
