@@ -1,15 +1,15 @@
 # Agent Setup Matrix
 
-ctxhelm is an agent-native, read-only context broker. It generates repo-local guidance and snippets that help existing agents call `prepare_task`, read returned target files natively, and request `get_pack` only when they need more context. Treat path discovery as a weaker signal than file consumption: agents should read the files they rely on before editing or answering.
+ctxhelm is an agent-native, read-only context broker. `ctxhelm setup repo` generates repo-local guidance and snippets that help existing agents call `prepare_task`, read returned target files natively, and request `get_pack` only when they need more context. Treat path discovery as a weaker signal than file consumption: agents should read the files they rely on before editing or answering.
 
 ## Support Matrix
 
 | Agent | Generated artifact/snippet | Default write scope | Mutates global config by default | setup-check coverage | deterministic protocol proof | Optional real-client proof status | Verified-version/evidence notes |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| Codex CLI | Managed `AGENTS.md` section plus printed MCP setup guidance | Repo-local guidance only; user copies any MCP config manually | No global config mutation | Verifies managed `AGENTS.md` and `.ctxhelm/ctxhelm.toml` | Supported through direct JSON-RPC/MCP smoke against `ctxhelm serve-mcp` | Optional Codex smoke can require server-side `prepare_task` and `get_pack` request-log evidence; current local outcome proof passes with explicit-repo tool-call evidence | Local command available: Codex CLI `0.137.0`; current local matrix records five source-free lanes, four comparable ctxhelm lanes, no forbidden commands, and outcome claim `ctxhelm_improved` |
-| Claude Code | `.claude/commands/ctxhelm-bugfix.md`, `.ctxhelm/adapters/claude-mcp.json`, and project-local `.mcp.json` through `ctxhelm setup claude` | Repo/project-local command and MCP config only | No global config mutation; project MCP write is explicit and repo-local | Verifies Claude command and adapter snippet when `--claude` is requested | Supported through direct JSON-RPC/MCP smoke against `ctxhelm serve-mcp` | Optional Claude smoke and workflow eval can require server-side `prepare_task` and `get_pack` request-log evidence; current availability preflight is rate-limited | Local command available: Claude Code `2.1.163`; current availability proof classifies API status `429` separately from ctxhelm protocol and retrieval behavior |
-| Cursor | `.cursor/rules/ctxhelm.mdc` | Repo-local rule file | No global config mutation | Verifies Cursor rule when `--cursor` is requested | Supported through direct JSON-RPC/MCP smoke against `ctxhelm serve-mcp` | Optional Cursor Agent CLI smoke can require server-side `prepare_task` and `get_pack` request-log evidence; current local proof is skipped because Cursor Agent is not logged in | Local command available: Cursor `3.6.21`; version presence alone is not tool-call proof |
-| OpenCode | `.ctxhelm/adapters/opencode.jsonc.snippet` | Repo-local snippet for manual merge | No global config mutation | Verifies OpenCode snippet when `--opencode` is requested | Supported through direct JSON-RPC/MCP smoke against `ctxhelm serve-mcp` | Optional OpenCode smoke passes locally with server-side `prepare_task` and `get_pack` request-log evidence | Local command available: OpenCode `1.14.25`; current proof records two explicit-repo MCP tool calls |
+| Codex CLI | Managed `AGENTS.md` section through `ctxhelm setup repo`, plus printed MCP setup guidance | Repo-local guidance only; user copies any MCP config manually | No global config mutation | Verifies managed `AGENTS.md` and `.ctxhelm/ctxhelm.toml` | Supported through direct JSON-RPC/MCP smoke against `ctxhelm serve-mcp` | Optional Codex smoke can require server-side `prepare_task` and `get_pack` request-log evidence; current local outcome proof passes with explicit-repo tool-call evidence | Local command available: Codex CLI `0.137.0`; current local matrix records five source-free lanes, four comparable ctxhelm lanes, no forbidden commands, and outcome claim `ctxhelm_improved` |
+| Claude Code | `.claude/commands/ctxhelm-bugfix.md`, `.ctxhelm/adapters/claude-mcp.json`, and project-local `.mcp.json` through `ctxhelm setup repo` or `ctxhelm setup claude` | Repo/project-local command and MCP config only | No global config mutation; project MCP write is explicit and repo-local | Verifies Claude command and adapter snippet when `--claude` is requested | Supported through direct JSON-RPC/MCP smoke against `ctxhelm serve-mcp` | Optional Claude smoke and workflow eval can require server-side `prepare_task` and `get_pack` request-log evidence; current availability preflight is rate-limited | Local command available: Claude Code `2.1.163`; current availability proof classifies API status `429` separately from ctxhelm protocol and retrieval behavior |
+| Cursor | `.cursor/rules/ctxhelm.mdc` through `ctxhelm setup repo` or `ctxhelm init --cursor` | Repo-local rule file | No global config mutation | Verifies Cursor rule when `--cursor` is requested | Supported through direct JSON-RPC/MCP smoke against `ctxhelm serve-mcp` | Optional Cursor Agent CLI smoke can require server-side `prepare_task` and `get_pack` request-log evidence; current local proof is skipped because Cursor Agent is not logged in | Local command available: Cursor `3.6.21`; version presence alone is not tool-call proof |
+| OpenCode | `.ctxhelm/adapters/opencode.jsonc.snippet` through `ctxhelm setup repo` or `ctxhelm init --opencode` | Repo-local snippet for manual merge | No global config mutation | Verifies OpenCode snippet when `--opencode` is requested | Supported through direct JSON-RPC/MCP smoke against `ctxhelm serve-mcp` | Optional OpenCode smoke passes locally with server-side `prepare_task` and `get_pack` request-log evidence | Local command available: OpenCode `1.14.25`; current proof records two explicit-repo MCP tool calls |
 
 ## Proof Taxonomy
 
@@ -166,6 +166,35 @@ For a durable reconnect path, call `get_pack` directly:
 ```
 
 Pack resource URIs returned by `prepare_task` are available during the same MCP server session. After reconnecting, ask for `get_pack` instead of reading an old URI.
+
+## One-Command Repo Setup
+
+Run:
+
+```bash
+ctxhelm setup repo --repo "$REPO"
+```
+
+This is the default secure onboarding path. It writes repo-local `AGENTS.md`,
+`.ctxhelm/ctxhelm.toml`, Cursor guidance, Claude guidance, a Claude MCP
+snippet, an OpenCode snippet, and project-local `.mcp.json` for local MCP. It
+uses an absolute ctxhelm binary path and does not mutate global Codex, Claude,
+Cursor, or OpenCode config.
+
+Preview without writing:
+
+```bash
+ctxhelm setup repo --repo "$REPO" --dry-run
+```
+
+Automation can request a source-free setup report:
+
+```bash
+ctxhelm setup repo --repo "$REPO" --dry-run --format json
+```
+
+Use agent-specific setup only when you intentionally want fewer repo-local
+artifacts.
 
 ## Codex CLI Notes
 

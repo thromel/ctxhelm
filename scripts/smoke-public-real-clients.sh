@@ -17,9 +17,9 @@ EOF
 }
 
 repo="thromel/ctxhelm"
-tag="v2.4.2"
+tag="v2.4.3"
 target_label="$(rustc -vV 2>/dev/null | awk '/^host:/ { print $2 }')"
-expected_version="ctxhelm 2.4.2"
+expected_version="ctxhelm 2.4.3"
 smoke_repo="$PWD"
 output_path=""
 

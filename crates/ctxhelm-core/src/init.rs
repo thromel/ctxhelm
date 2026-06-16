@@ -19,6 +19,18 @@ pub struct InitOptions {
     pub adapters: Vec<AgentAdapter>,
 }
 
+impl InitOptions {
+    pub fn all_adapters() -> Self {
+        Self {
+            adapters: vec![
+                AgentAdapter::Cursor,
+                AgentAdapter::Claude,
+                AgentAdapter::OpenCode,
+            ],
+        }
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum InitAction {
@@ -85,6 +97,72 @@ pub struct SetupCheckReport {
     pub repo_root: PathBuf,
     pub items: Vec<SetupCheckItem>,
     pub passed: bool,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum ProjectMcpAction {
+    Planned,
+    Created,
+    Updated,
+    Unchanged,
+}
+
+impl ProjectMcpAction {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            ProjectMcpAction::Planned => "planned",
+            ProjectMcpAction::Created => "created",
+            ProjectMcpAction::Updated => "updated",
+            ProjectMcpAction::Unchanged => "unchanged",
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct SetupRunReport {
+    pub schema_version: String,
+    pub command: String,
+    pub repo_root: PathBuf,
+    pub dry_run: bool,
+    pub planned_files: Vec<PathBuf>,
+    pub init_report: Option<InitReport>,
+    pub project_mcp: ProjectMcpReport,
+    pub setup_check: Option<SetupCheckReport>,
+    pub privacy_status: SetupPrivacyStatus,
+    pub unsupported_actions: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct SetupPrivacyStatus {
+    pub local_only: bool,
+    pub source_text_logged: bool,
+    pub raw_prompt_stored: bool,
+    pub global_config_mutated: bool,
+    pub remote_embeddings_used: bool,
+    pub remote_reranking_used: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct ProjectMcpReport {
+    pub path: PathBuf,
+    pub action: ProjectMcpAction,
+    pub binary: PathBuf,
+    pub command_uses_absolute_binary: bool,
+}
+
+#[derive(Debug, Clone)]
+pub struct SetupRunReportInput {
+    pub command: String,
+    pub repo_root: PathBuf,
+    pub dry_run: bool,
+    pub planned_files: Vec<PathBuf>,
+    pub init_report: Option<InitReport>,
+    pub project_mcp: ProjectMcpReport,
+    pub setup_check: Option<SetupCheckReport>,
 }
 
 #[derive(Debug, Error)]
@@ -298,6 +376,83 @@ pub fn run_setup_check(
         items,
         passed,
     })
+}
+
+pub fn build_setup_run_report(input: SetupRunReportInput) -> SetupRunReport {
+    SetupRunReport {
+        schema_version: "ctxhelm-setup-report-v1".to_string(),
+        command: input.command,
+        repo_root: input.repo_root,
+        dry_run: input.dry_run,
+        planned_files: input.planned_files,
+        init_report: input.init_report,
+        project_mcp: input.project_mcp,
+        setup_check: input.setup_check,
+        privacy_status: SetupPrivacyStatus {
+            local_only: true,
+            source_text_logged: false,
+            raw_prompt_stored: false,
+            global_config_mutated: false,
+            remote_embeddings_used: false,
+            remote_reranking_used: false,
+        },
+        unsupported_actions: vec![
+            "global agent config mutation".to_string(),
+            "source edits".to_string(),
+            "project dependency install".to_string(),
+            "cloud upload".to_string(),
+            "model invocation".to_string(),
+        ],
+    }
+}
+
+pub fn project_mcp_report(
+    mcp_path: impl AsRef<Path>,
+    action: ProjectMcpAction,
+    binary: impl AsRef<Path>,
+) -> ProjectMcpReport {
+    let binary = binary.as_ref().to_path_buf();
+    ProjectMcpReport {
+        path: mcp_path.as_ref().to_path_buf(),
+        action,
+        command_uses_absolute_binary: binary.is_absolute(),
+        binary,
+    }
+}
+
+pub fn repo_setup_planned_files(repo_root: impl AsRef<Path>) -> Vec<PathBuf> {
+    planned_files(
+        repo_root.as_ref(),
+        &[
+            "AGENTS.md",
+            ".ctxhelm/ctxhelm.toml",
+            ".cursor/rules/ctxhelm.mdc",
+            ".claude/commands/ctxhelm-bugfix.md",
+            ".ctxhelm/adapters/claude-mcp.json",
+            ".ctxhelm/adapters/opencode.jsonc.snippet",
+            ".mcp.json",
+        ],
+    )
+}
+
+pub fn claude_setup_planned_files(repo_root: impl AsRef<Path>) -> Vec<PathBuf> {
+    planned_files(
+        repo_root.as_ref(),
+        &[
+            "AGENTS.md",
+            ".ctxhelm/ctxhelm.toml",
+            ".claude/commands/ctxhelm-bugfix.md",
+            ".ctxhelm/adapters/claude-mcp.json",
+            ".mcp.json",
+        ],
+    )
+}
+
+fn planned_files(repo_root: &Path, relative_paths: &[&str]) -> Vec<PathBuf> {
+    relative_paths
+        .iter()
+        .map(|path| repo_root.join(path))
+        .collect()
 }
 
 #[derive(Debug, Clone, Copy)]

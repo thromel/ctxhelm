@@ -39,7 +39,7 @@ fn workspace_packages_have_release_identity() {
             .iter()
             .find(|package| package["name"] == name)
             .unwrap_or_else(|| panic!("missing package metadata for {name}"));
-        assert_eq!(package["version"], "2.4.2", "{name} version");
+        assert_eq!(package["version"], "2.4.3", "{name} version");
         assert_eq!(package["license"], "MIT", "{name} license");
         assert!(
             package["repository"]
@@ -95,7 +95,7 @@ fn version_reports_release_identity() {
         .arg("--version")
         .assert()
         .success()
-        .stdout(contains("ctxhelm 2.4.2"));
+        .stdout(contains("ctxhelm 2.4.3"));
 }
 
 #[test]
@@ -106,16 +106,16 @@ fn doctor_verifies_binary_manifest_and_local_state_source_free() {
     fs::write(
         &manifest_path,
         json!({
-            "version": "2.4.2",
+            "version": "2.4.3",
             "archive": {
-                "name": "ctxhelm-v2.4.2-test.tar.gz",
+                "name": "ctxhelm-v2.4.3-test.tar.gz",
                 "sha256": "archive-sha"
             },
             "binary": {
                 "name": "ctxhelm",
                 "sha256": "binary-sha"
             },
-            "auditReport": "ctxhelm-v2.4.2-test.audit.json",
+            "auditReport": "ctxhelm-v2.4.3-test.audit.json",
             "privacyStatus": {
                 "localOnly": true,
                 "sourceTextLogged": false
@@ -140,8 +140,8 @@ fn doctor_verifies_binary_manifest_and_local_state_source_free() {
     );
 
     assert_eq!(value["passed"], true);
-    assert_eq!(value["binary"]["version"], "ctxhelm 2.4.2");
-    assert_eq!(value["releaseManifest"]["version"], "2.4.2");
+    assert_eq!(value["binary"]["version"], "ctxhelm 2.4.3");
+    assert_eq!(value["releaseManifest"]["version"], "2.4.3");
     assert_eq!(value["privacyStatus"]["localOnly"], true);
     assert_eq!(value["mutatesGlobalAgentConfig"], false);
     assert!(value["checks"]
@@ -303,6 +303,169 @@ fn setup_claude_dry_run_does_not_write_files() {
         .repo
         .join(".claude/commands/ctxhelm-bugfix.md")
         .exists());
+}
+
+#[test]
+fn setup_repo_writes_secure_repo_local_agent_artifacts() {
+    let fixture = fixture_repo();
+    fs::write(
+        fixture.repo.join(".mcp.json"),
+        serde_json::to_string_pretty(&json!({
+            "mcpServers": {
+                "existing": {
+                    "command": "existing-tool",
+                    "args": ["serve"]
+                }
+            }
+        }))
+        .unwrap(),
+    )
+    .unwrap();
+
+    Command::cargo_bin("ctxhelm")
+        .unwrap()
+        .env(CTXHELM_HOME_ENV, &fixture.home)
+        .args(["setup", "repo", "--repo"])
+        .arg(&fixture.repo)
+        .assert()
+        .success()
+        .stdout(contains("Repo setup for"))
+        .stdout(contains(".cursor/rules/ctxhelm.mdc"))
+        .stdout(contains(".claude/commands/ctxhelm-bugfix.md"))
+        .stdout(contains(".ctxhelm/adapters/claude-mcp.json"))
+        .stdout(contains(".ctxhelm/adapters/opencode.jsonc.snippet"))
+        .stdout(contains(".mcp.json"))
+        .stdout(contains(
+            "did not mutate global Codex, Claude, Cursor, or OpenCode config",
+        ))
+        .stdout(contains("Setup check for"))
+        .stdout(contains("Result: passed"));
+
+    assert!(fixture.repo.join(".cursor/rules/ctxhelm.mdc").is_file());
+    assert!(fixture
+        .repo
+        .join(".claude/commands/ctxhelm-bugfix.md")
+        .is_file());
+    assert!(fixture
+        .repo
+        .join(".ctxhelm/adapters/opencode.jsonc.snippet")
+        .is_file());
+
+    let mcp: Value =
+        serde_json::from_str(&fs::read_to_string(fixture.repo.join(".mcp.json")).unwrap()).unwrap();
+    assert_eq!(mcp["mcpServers"]["ctxhelm"]["args"], json!(["serve-mcp"]));
+    let command = mcp["mcpServers"]["ctxhelm"]["command"]
+        .as_str()
+        .expect("ctxhelm command should be a string");
+    assert!(
+        Path::new(command).is_absolute(),
+        "repo setup should write an absolute ctxhelm binary path"
+    );
+    assert_eq!(mcp["mcpServers"]["existing"]["command"], "existing-tool");
+}
+
+#[test]
+fn setup_repo_dry_run_does_not_write_files() {
+    let fixture = fixture_repo();
+
+    Command::cargo_bin("ctxhelm")
+        .unwrap()
+        .env(CTXHELM_HOME_ENV, &fixture.home)
+        .args(["setup", "repo", "--repo"])
+        .arg(&fixture.repo)
+        .arg("--dry-run")
+        .assert()
+        .success()
+        .stdout(contains("Repo setup dry run"))
+        .stdout(contains("would write Cursor rule"))
+        .stdout(contains("would write project MCP config"))
+        .stdout(contains(
+            "would not mutate global Codex, Claude, Cursor, or OpenCode config",
+        ));
+
+    assert!(!fixture.repo.join(".mcp.json").exists());
+    assert!(!fixture.repo.join(".cursor/rules/ctxhelm.mdc").exists());
+    assert!(!fixture
+        .repo
+        .join(".claude/commands/ctxhelm-bugfix.md")
+        .exists());
+    assert!(!fixture
+        .repo
+        .join(".ctxhelm/adapters/opencode.jsonc.snippet")
+        .exists());
+}
+
+#[test]
+fn setup_repo_json_reports_source_free_security_boundary() {
+    let fixture = fixture_repo();
+
+    let value = json_stdout(
+        Command::cargo_bin("ctxhelm")
+            .unwrap()
+            .env(CTXHELM_HOME_ENV, &fixture.home)
+            .args(["setup", "repo", "--repo"])
+            .arg(&fixture.repo)
+            .args(["--format", "json"])
+            .assert(),
+    );
+
+    assert_eq!(value["schemaVersion"], "ctxhelm-setup-report-v1");
+    assert_eq!(value["command"], "setup repo");
+    assert_eq!(value["dryRun"], false);
+    assert_eq!(value["privacyStatus"]["localOnly"], true);
+    assert_eq!(value["privacyStatus"]["sourceTextLogged"], false);
+    assert_eq!(value["projectMcp"]["action"], "created");
+    assert_eq!(value["projectMcp"]["commandUsesAbsoluteBinary"], true);
+    assert_eq!(
+        value["projectMcp"]["path"],
+        fixture.repo.join(".mcp.json").display().to_string()
+    );
+    assert_eq!(value["setupCheck"]["passed"], true);
+    assert!(value["plannedFiles"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .any(|path| path == &json!(fixture.repo.join(".cursor/rules/ctxhelm.mdc"))));
+    assert!(value["unsupportedActions"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .any(|action| action == "global agent config mutation"));
+    assert_no_source_or_prompt_text(&value);
+}
+
+#[test]
+fn setup_claude_json_dry_run_reports_planned_without_writes() {
+    let fixture = fixture_repo();
+
+    let value = json_stdout(
+        Command::cargo_bin("ctxhelm")
+            .unwrap()
+            .env(CTXHELM_HOME_ENV, &fixture.home)
+            .args(["setup", "claude", "--repo"])
+            .arg(&fixture.repo)
+            .args(["--dry-run", "--format", "json"])
+            .assert(),
+    );
+
+    assert_eq!(value["schemaVersion"], "ctxhelm-setup-report-v1");
+    assert_eq!(value["command"], "setup claude");
+    assert_eq!(value["dryRun"], true);
+    assert_eq!(value["projectMcp"]["action"], "planned");
+    assert_eq!(value["projectMcp"]["commandUsesAbsoluteBinary"], true);
+    assert!(value["initReport"].is_null());
+    assert!(value["setupCheck"].is_null());
+    assert!(value["plannedFiles"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .any(|path| path == &json!(fixture.repo.join(".claude/commands/ctxhelm-bugfix.md"))));
+    assert!(!fixture.repo.join(".mcp.json").exists());
+    assert!(!fixture
+        .repo
+        .join(".claude/commands/ctxhelm-bugfix.md")
+        .exists());
+    assert_no_source_or_prompt_text(&value);
 }
 
 #[test]
@@ -1719,7 +1882,7 @@ fn eval_agent_run_renders_source_free_report() {
                 "name": "claude",
                 "version": "Claude Code test"
             },
-            "ctxhelmVersion": "ctxhelm 2.4.2",
+            "ctxhelmVersion": "ctxhelm 2.4.3",
             "repo": {
                 "label": "fixture",
                 "pathSha256": "repo-hash"
@@ -2166,7 +2329,7 @@ fn eval_agent_run_renders_source_free_suite_report() {
                 "name": "claude",
                 "version": "Claude Code test"
             },
-            "ctxhelmVersion": "ctxhelm 2.4.2",
+            "ctxhelmVersion": "ctxhelm 2.4.3",
             "repo": {
                 "label": "fixture",
                 "pathSha256": "repo-hash"

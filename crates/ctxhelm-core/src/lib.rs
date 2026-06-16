@@ -6,8 +6,10 @@ pub mod repo;
 
 pub use contracts::*;
 pub use init::{
-    run_init, run_setup_check, AgentAdapter, InitAction, InitOptions, InitReport, SetupCheckItem,
-    SetupCheckReport, SetupCheckStatus,
+    build_setup_run_report, claude_setup_planned_files, project_mcp_report,
+    repo_setup_planned_files, run_init, run_setup_check, AgentAdapter, InitAction, InitOptions,
+    InitReport, ProjectMcpAction, ProjectMcpReport, SetupCheckItem, SetupCheckReport,
+    SetupCheckStatus, SetupPrivacyStatus, SetupRunReport, SetupRunReportInput,
 };
 pub use privacy::PrivacyStatus;
 pub use query_paths::{

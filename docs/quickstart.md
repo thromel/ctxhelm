@@ -18,7 +18,7 @@ ctxhelm --help
 ctxhelm doctor --repo "$REPO"
 ```
 
-For v2.4.2, `ctxhelm --version` should print `ctxhelm 2.4.2`. If the command is not found, fix your shell or agent `PATH`, or use an absolute binary path in the MCP configuration.
+For v2.4.3, `ctxhelm --version` should print `ctxhelm 2.4.3`. If the command is not found, fix your shell or agent `PATH`, or use an absolute binary path in the MCP configuration.
 
 When installing from a release archive, keep the release manifest beside the
 archive and verify it against the active binary:
@@ -27,7 +27,7 @@ archive and verify it against the active binary:
 ctxhelm doctor \
   --repo "$REPO" \
   --binary "$(command -v ctxhelm)" \
-  --release-manifest /path/to/ctxhelm-v2.4.2-aarch64-apple-darwin.manifest.json
+  --release-manifest /path/to/ctxhelm-v2.4.3-aarch64-apple-darwin.manifest.json
 ```
 
 `doctor` is read-only. It checks the binary path, `--version`, `--help`, release

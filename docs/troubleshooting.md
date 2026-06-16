@@ -29,15 +29,15 @@ ctxhelm doctor --repo /path/to/repo --binary "$(command -v ctxhelm)"
 
 **Likely cause:** the client process cannot resolve `ctxhelm` from its PATH.
 
-For Claude Code projects, prefer the one-command project setup:
+Prefer the one-command repo-local setup:
 
 ```bash
-ctxhelm setup claude --repo "$REPO"
+ctxhelm setup repo --repo "$REPO"
 ```
 
 It writes project-local `.mcp.json` with an absolute ctxhelm binary path and
-does not mutate global Claude Code config. Preview it first with
-`ctxhelm setup claude --repo "$REPO" --dry-run`.
+does not mutate global agent config. Preview it first with
+`ctxhelm setup repo --repo "$REPO" --dry-run`.
 
 **Fix:** configure the MCP server command with an absolute path:
 
@@ -99,7 +99,7 @@ ctxhelm --version
 ctxhelm doctor \
   --repo /path/to/repo \
   --binary "$(command -v ctxhelm)" \
-  --release-manifest /path/to/ctxhelm-v2.4.2-aarch64-apple-darwin.manifest.json
+  --release-manifest /path/to/ctxhelm-v2.4.3-aarch64-apple-darwin.manifest.json
 ```
 
 If `doctor` reports a manifest version mismatch, update the binary path used by
