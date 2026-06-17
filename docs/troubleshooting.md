@@ -155,7 +155,14 @@ ctxhelm does not require permission to modify your source files.
 
 ## `setup-check` Scope
 
-`setup-check` validates repo-local generated artifacts such as `AGENTS.md`, `.ctxhelm/ctxhelm.toml`, `.cursor/rules/ctxhelm.mdc`, `.claude/commands/ctxhelm-bugfix.md`, and adapter snippets when requested.
+`setup-check` validates repo-local generated artifacts such as `AGENTS.md`, `.ctxhelm/ctxhelm.toml`, `.cursor/rules/ctxhelm.mdc`, `.claude/commands/ctxhelm-bugfix.md`, and adapter snippets when requested. With `--claude`, it also checks project `.mcp.json` for a `mcpServers.ctxhelm` entry that uses an absolute ctxhelm binary path and `["serve-mcp"]` args.
+
+If `.mcp.json` is missing, `setup-check --claude` reports a warning rather than
+failing because manual `ctxhelm init --claude` users may still be inspecting the
+mergeable snippet. Run `ctxhelm setup claude --repo "$REPO"` when you want
+ctxhelm to write or merge the project-local MCP entry. Existing malformed,
+symlinked, or relative-command `.mcp.json` entries fail validation because they
+can prevent secure agent startup.
 
 It does not run real agent clients, does not prove a client called MCP tools, and does not mutate global Codex, Claude, Cursor, or OpenCode configuration.
 

@@ -93,7 +93,12 @@ source-free context artifacts.
 ctxhelm setup-check --repo "$REPO" --cursor --claude --opencode
 ```
 
-`setup-check` validates repo-local generated artifacts. It does not run real agent clients, edit client configuration, or prove that Cursor, Claude Code, Codex CLI, or OpenCode called a tool.
+`setup-check` validates repo-local generated artifacts. With `--claude`, it also
+checks whether project `.mcp.json` has a `mcpServers.ctxhelm` entry with an
+absolute ctxhelm binary path and `["serve-mcp"]` args. A missing `.mcp.json` is
+a warning for manual setup users; malformed or relative-command project MCP
+config fails. It does not run real agent clients, edit client configuration, or
+prove that Cursor, Claude Code, Codex CLI, or OpenCode called a tool.
 
 ## Deterministic MCP Proof Context
 

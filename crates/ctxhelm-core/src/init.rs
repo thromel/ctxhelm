@@ -359,6 +359,9 @@ pub fn run_setup_check(
             };
             check_setup_file(repo_root, path, kind, &mut items);
         }
+        if *adapter == AgentAdapter::Claude {
+            check_project_mcp_config(repo_root, &mut items);
+        }
     }
 
     items.push(SetupCheckItem {
@@ -510,6 +513,94 @@ fn check_setup_file(
             detail,
         }),
     }
+}
+
+fn check_project_mcp_config(repo_root: &Path, items: &mut Vec<SetupCheckItem>) {
+    const RELATIVE_PATH: &str = ".mcp.json";
+
+    if let Err(error) = reject_existing_symlink_components(repo_root, RELATIVE_PATH) {
+        items.push(SetupCheckItem {
+            name: RELATIVE_PATH.to_string(),
+            status: SetupCheckStatus::Fail,
+            detail: format!("unsafe project MCP config path: {error}"),
+        });
+        return;
+    }
+
+    let path = repo_root.join(RELATIVE_PATH);
+    let content = match fs::read_to_string(&path) {
+        Ok(content) => content,
+        Err(error) if error.kind() == io::ErrorKind::NotFound => {
+            items.push(SetupCheckItem {
+                name: RELATIVE_PATH.to_string(),
+                status: SetupCheckStatus::Warn,
+                detail:
+                    "project MCP config is not present; run `ctxhelm setup claude` or `ctxhelm setup repo` to write a repo-local ctxhelm server entry."
+                        .to_string(),
+            });
+            return;
+        }
+        Err(error) => {
+            items.push(SetupCheckItem {
+                name: RELATIVE_PATH.to_string(),
+                status: SetupCheckStatus::Fail,
+                detail: format!("failed to read project MCP config: {error}"),
+            });
+            return;
+        }
+    };
+
+    match validate_project_mcp_content(&content) {
+        Ok(()) => items.push(SetupCheckItem {
+            name: RELATIVE_PATH.to_string(),
+            status: SetupCheckStatus::Pass,
+            detail: "project MCP config registers ctxhelm with an absolute binary path and serve-mcp args."
+                .to_string(),
+        }),
+        Err(detail) => items.push(SetupCheckItem {
+            name: RELATIVE_PATH.to_string(),
+            status: SetupCheckStatus::Fail,
+            detail,
+        }),
+    }
+}
+
+fn validate_project_mcp_content(content: &str) -> Result<(), String> {
+    let value = serde_json::from_str::<serde_json::Value>(content)
+        .map_err(|error| format!("project MCP config is invalid JSON: {error}"))?;
+    let root = value
+        .as_object()
+        .ok_or_else(|| "project MCP config root must be a JSON object".to_string())?;
+    let servers = root
+        .get("mcpServers")
+        .and_then(serde_json::Value::as_object)
+        .ok_or_else(|| "project MCP config is missing object `mcpServers`".to_string())?;
+    let ctxhelm = servers
+        .get("ctxhelm")
+        .and_then(serde_json::Value::as_object)
+        .ok_or_else(|| "project MCP config is missing `mcpServers.ctxhelm`".to_string())?;
+    let command = ctxhelm
+        .get("command")
+        .and_then(serde_json::Value::as_str)
+        .ok_or_else(|| "`mcpServers.ctxhelm.command` must be a string".to_string())?;
+    if !Path::new(command).is_absolute() {
+        return Err("`mcpServers.ctxhelm.command` must be an absolute path".to_string());
+    }
+    let args = ctxhelm
+        .get("args")
+        .and_then(serde_json::Value::as_array)
+        .ok_or_else(|| "`mcpServers.ctxhelm.args` must be an array".to_string())?;
+    let args = args
+        .iter()
+        .map(|arg| {
+            arg.as_str()
+                .ok_or_else(|| "`mcpServers.ctxhelm.args` must contain only strings".to_string())
+        })
+        .collect::<Result<Vec<_>, _>>()?;
+    if args != ["serve-mcp"] {
+        return Err("`mcpServers.ctxhelm.args` must be [\"serve-mcp\"]".to_string());
+    }
+    Ok(())
 }
 
 fn validate_setup_content(
@@ -1434,6 +1525,7 @@ mod setup_check_tests {
             ".ctxhelm/adapters/opencode.jsonc.snippet",
             SetupCheckStatus::Pass,
         );
+        assert_item_status(&report, ".mcp.json", SetupCheckStatus::Warn);
     }
 
     #[test]
@@ -1509,6 +1601,64 @@ mod setup_check_tests {
         assert!(rendered.contains("absolute path"));
     }
 
+    #[test]
+    fn setup_check_passes_project_mcp_config_with_absolute_ctxhelm_command() {
+        let temp = tempfile::tempdir().unwrap();
+        let options = InitOptions {
+            adapters: vec![AgentAdapter::Claude],
+        };
+        run_init(temp.path(), &options).unwrap();
+        std::fs::write(
+            temp.path().join(".mcp.json"),
+            serde_json::json!({
+                "mcpServers": {
+                    "ctxhelm": {
+                        "command": "/usr/local/bin/ctxhelm",
+                        "args": ["serve-mcp"]
+                    },
+                    "other": {
+                        "command": "other-tool"
+                    }
+                }
+            })
+            .to_string(),
+        )
+        .unwrap();
+
+        let report = run_setup_check(temp.path(), &options).unwrap();
+
+        assert!(report.passed);
+        assert_item_status(&report, ".mcp.json", SetupCheckStatus::Pass);
+    }
+
+    #[test]
+    fn setup_check_rejects_project_mcp_config_with_relative_ctxhelm_command() {
+        let temp = tempfile::tempdir().unwrap();
+        let options = InitOptions {
+            adapters: vec![AgentAdapter::Claude],
+        };
+        run_init(temp.path(), &options).unwrap();
+        std::fs::write(
+            temp.path().join(".mcp.json"),
+            serde_json::json!({
+                "mcpServers": {
+                    "ctxhelm": {
+                        "command": "ctxhelm",
+                        "args": ["serve-mcp"]
+                    }
+                }
+            })
+            .to_string(),
+        )
+        .unwrap();
+
+        let report = run_setup_check(temp.path(), &options).unwrap();
+
+        assert!(!report.passed);
+        assert_item_status(&report, ".mcp.json", SetupCheckStatus::Fail);
+        assert!(setup_item_detail(&report, ".mcp.json").contains("absolute path"));
+    }
+
     fn assert_item_status(report: &SetupCheckReport, name: &str, status: SetupCheckStatus) {
         let item = report
             .items
@@ -1516,5 +1666,14 @@ mod setup_check_tests {
             .find(|item| item.name.contains(name))
             .unwrap_or_else(|| panic!("missing setup-check item for {name}"));
         assert_eq!(item.status, status, "{name}: {}", item.detail);
+    }
+
+    fn setup_item_detail<'a>(report: &'a SetupCheckReport, name: &str) -> &'a str {
+        report
+            .items
+            .iter()
+            .find(|item| item.name.contains(name))
+            .map(|item| item.detail.as_str())
+            .unwrap_or_else(|| panic!("missing setup-check item for {name}"))
     }
 }
