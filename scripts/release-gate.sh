@@ -384,11 +384,13 @@ PY
 )"
 
 log_step "optional benchmark product proof"
+product_proof_bundle_report=""
 if [[ -n "${CTXHELM_BENCHMARK_CONFIG:-}" ]]; then
   proof_report="$proof_dir/product-proof.json"
   "$ctxhelm_bin" eval proof --config "$CTXHELM_BENCHMARK_CONFIG" --format json >"$proof_report"
   python3 "$repo_root/scripts/check-product-proof.py" "$proof_report"
   benchmark_status="passed"
+  product_proof_bundle_report="$proof_report"
 else
   echo "benchmark product proof skipped: set CTXHELM_BENCHMARK_CONFIG=/path/to/suite.json"
   benchmark_status="skipped"
@@ -404,6 +406,7 @@ elif clean_fixture_error="$(clean_fixture_ready "$clean_fixture_config" 2>&1)"; 
   "$ctxhelm_bin" eval proof --config "$clean_fixture_config" --format json >"$clean_fixture_report"
   python3 "$repo_root/scripts/check-product-proof.py" "$clean_fixture_report"
   clean_fixture_status="passed"
+  product_proof_bundle_report="$clean_fixture_report"
 else
   if [[ "$clean_fixture_required" == "1" ]]; then
     echo "$clean_fixture_error" >&2
@@ -446,6 +449,27 @@ elif [[ "$agent_run_proof_required" == "1" ]]; then
   exit 68
 else
   echo "agent-run outcome proof skipped: set CTXHELM_AGENT_RUN_PROOF_REPORT=/path/to/report.json"
+fi
+
+log_step "optional proof-inspector readiness bundle"
+proof_inspector_readiness_status="skipped"
+proof_inspector_readiness_report=""
+proof_inspector_readiness_required="${CTXHELM_REQUIRE_PROOF_INSPECTOR_READY:-0}"
+if [[ -n "$product_proof_bundle_report" && "$agent_run_proof_status" == "passed" ]]; then
+  proof_inspector_readiness_report="$proof_dir/proof-inspector-readiness-bundle.json"
+  "$ctxhelm_bin" inspector proof \
+    --repo "$repo_root" \
+    --report "$product_proof_bundle_report" \
+    --report "$CTXHELM_AGENT_RUN_PROOF_REPORT" \
+    --format json \
+    --require-ready \
+    --output "$proof_inspector_readiness_report"
+  proof_inspector_readiness_status="passed"
+elif [[ "$proof_inspector_readiness_required" == "1" ]]; then
+  echo "proof-inspector readiness required but clean product proof and agent-run proof were not both available" >&2
+  exit 69
+else
+  echo "proof-inspector readiness bundle skipped: provide both clean product proof and agent-run proof, or set CTXHELM_REQUIRE_PROOF_INSPECTOR_READY=1 to require it"
 fi
 
 log_step "optional Codex real-client evidence"
@@ -516,7 +540,11 @@ agent_run_proof_check_report_name=""
 if [[ -n "$agent_run_proof_check_report" ]]; then
   agent_run_proof_check_report_name="$(basename "$agent_run_proof_check_report")"
 fi
-python3 - "$proof_summary_path" "$ctxhelm_version" "$(basename "$ctxhelm_bin")" "$binary_source" "$binary_sha256" "$(basename "$archive_path")" "$archive_sha256" "$(basename "$manifest_path")" "$(basename "$audit_report_path")" "$benchmark_status" "$clean_fixture_status" "$clean_fixture_required" "$agent_run_proof_status" "$agent_run_proof_required" "$agent_run_proof_check_report_name" "$codex_status" "$claude_status" "$claude_workflow_status" "$claude_workflow_required" "$real_client_required" "$cursor_real_client_status" "$opencode_real_client_status" <<'PY'
+proof_inspector_readiness_report_name=""
+if [[ -n "$proof_inspector_readiness_report" ]]; then
+  proof_inspector_readiness_report_name="$(basename "$proof_inspector_readiness_report")"
+fi
+python3 - "$proof_summary_path" "$ctxhelm_version" "$(basename "$ctxhelm_bin")" "$binary_source" "$binary_sha256" "$(basename "$archive_path")" "$archive_sha256" "$(basename "$manifest_path")" "$(basename "$audit_report_path")" "$benchmark_status" "$clean_fixture_status" "$clean_fixture_required" "$agent_run_proof_status" "$agent_run_proof_required" "$agent_run_proof_check_report_name" "$proof_inspector_readiness_status" "$proof_inspector_readiness_required" "$proof_inspector_readiness_report_name" "$codex_status" "$claude_status" "$claude_workflow_status" "$claude_workflow_required" "$real_client_required" "$cursor_real_client_status" "$opencode_real_client_status" <<'PY'
 import json
 import sys
 
@@ -536,6 +564,9 @@ import sys
     agent_run_proof_status,
     agent_run_proof_required,
     agent_run_proof_check_report_name,
+    proof_inspector_readiness_status,
+    proof_inspector_readiness_required,
+    proof_inspector_readiness_report_name,
     codex_status,
     claude_status,
     claude_workflow_status,
@@ -584,6 +615,8 @@ if clean_fixture_required == "1":
     required_checks.append("clean cold fixture product proof")
 if agent_run_proof_required == "1":
     required_checks.append("agent-run outcome proof")
+if proof_inspector_readiness_required == "1":
+    required_checks.append("proof-inspector readiness bundle")
 payload = {
     "schemaVersion": 1,
     "status": "passed",
@@ -607,6 +640,9 @@ payload = {
         "agentRunOutcomeProof": agent_run_proof_status,
         "agentRunOutcomeProofRequired": agent_run_proof_required == "1",
         "agentRunOutcomeProofReport": agent_run_proof_check_report_name,
+        "proofInspectorReadinessBundle": proof_inspector_readiness_status,
+        "proofInspectorReadinessRequired": proof_inspector_readiness_required == "1",
+        "proofInspectorReadinessReport": proof_inspector_readiness_report_name,
         "resourceBackedGapSummaryContract": (
             "checked"
             if benchmark_status == "passed" or clean_fixture_status == "passed"

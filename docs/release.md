@@ -378,7 +378,28 @@ or omit validated comparison aggregate fields.
 For a single-run workflow, the JSON audit summary also publishes
 `metrics.commandExecutionDelta` and `metrics.ctxhelmToolCallsObserved`, so a
 standalone accepted report exposes command-cost and ctxhelm-call observation
-without requiring suite JSON archaeology.
+metrics.
+
+When both clean product proof and agent-run proof are available, the release
+gate also runs:
+
+```bash
+ctxhelm inspector proof \
+  --report <product-proof.json> \
+  --report "$CTXHELM_AGENT_RUN_PROOF_REPORT" \
+  --format json \
+  --require-ready \
+  --output "$CTXHELM_PROOF_DIR/proof-inspector-readiness-bundle.json"
+```
+
+That source-free bundle records whether release-quality product proof and
+real-agent outcome proof jointly support an adoption-facing claim without
+requiring suite JSON archaeology. The release summary records
+`proofInspectorReadinessBundle`,
+`proofInspectorReadinessRequired`, and `proofInspectorReadinessReport`. Set
+`CTXHELM_REQUIRE_PROOF_INSPECTOR_READY=1` to fail the release gate unless both
+proof families are present and `ctxhelm inspector proof --require-ready`
+accepts the consolidated bundle.
 It also enforces suite status checks by deriving `suite.taskCount` and
 `report.status` from the nested task records and boundary state.
 The checker derives `aggregate.outcomeClaim` and
