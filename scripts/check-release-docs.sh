@@ -197,6 +197,9 @@ require_text "${AGENT_SETUP_DOC}" "scripts/smoke-cursor-real-client.sh"
 require_text "${AGENT_SETUP_DOC}" "scripts/smoke-opencode-real-client.sh"
 require_text "${AGENT_SETUP_DOC}" "Cursor Agent is not logged in"
 require_text "${AGENT_SETUP_DOC}" 'OpenCode `1.14.25`'
+require_text "${AGENT_SETUP_DOC}" "Dry-run setup is a read-only preflight"
+require_text "${AGENT_SETUP_DOC}" "setupCheck"
+require_text "${AGENT_SETUP_DOC}" "exit status successful"
 
 require_text "${TROUBLESHOOTING_DOC}" "PATH"
 require_text "${TROUBLESHOOTING_DOC}" "absolute"

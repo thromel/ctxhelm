@@ -187,11 +187,20 @@ Preview without writing:
 ctxhelm setup repo --repo "$REPO" --dry-run
 ```
 
+Dry-run setup is a read-only preflight: it lists the files that would be
+written, runs `setup-check` against the current repo-local artifacts, and keeps
+the exit status successful even when the current repo is not configured yet.
+Use this when you want a safe setup plan before letting ctxhelm write files.
+
 Automation can request a source-free setup report:
 
 ```bash
 ctxhelm setup repo --repo "$REPO" --dry-run --format json
 ```
+
+The JSON dry-run report includes `setupCheck`, `privacyStatus`, and
+`unsupportedActions`, so automation can distinguish missing repo-local setup
+from privacy or global-config mutation concerns without reading source text.
 
 Use agent-specific setup only when you intentionally want fewer repo-local
 artifacts.
@@ -226,6 +235,11 @@ Preview without writing:
 ```bash
 ctxhelm setup claude --repo "$REPO" --dry-run
 ```
+
+The Claude dry-run path also embeds the read-only setup-check result, so a user
+can see whether `.claude/commands/ctxhelm-bugfix.md`,
+`.ctxhelm/adapters/claude-mcp.json`, and `.mcp.json` are already ready before
+writing repo-local files.
 
 Manual setup is still available:
 

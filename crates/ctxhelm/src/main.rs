@@ -3083,6 +3083,7 @@ fn run_repo_setup(args: &RepoSetupArgs) -> Result<()> {
     let init_options = InitOptions::all_adapters();
 
     if args.dry_run {
+        let setup_report = run_setup_check(&repo.path, &init_options)?;
         let report = build_setup_run_report(SetupRunReportInput {
             command: "setup repo".to_string(),
             repo_root: repo.path.clone(),
@@ -3090,10 +3091,13 @@ fn run_repo_setup(args: &RepoSetupArgs) -> Result<()> {
             planned_files: repo_setup_planned_files(&repo.path),
             init_report: None,
             project_mcp: project_mcp_report(&mcp_path, ProjectMcpAction::Planned, &binary),
-            setup_check: None,
+            setup_check: Some(setup_report.clone()),
         });
         match args.format {
-            PackFormat::Markdown => print_repo_setup_dry_run(&repo.path, &binary, &mcp_path),
+            PackFormat::Markdown => {
+                print_repo_setup_dry_run(&repo.path, &binary, &mcp_path);
+                print_dry_run_setup_status(&setup_report);
+            }
             PackFormat::Json => println!("{}", serde_json::to_string_pretty(&report)?),
         }
         return Ok(());
@@ -3133,6 +3137,10 @@ fn run_claude_setup(args: &ClaudeSetupArgs) -> Result<()> {
     let mcp_path = repo.path.join(".mcp.json");
 
     if args.dry_run {
+        let init_options = InitOptions {
+            adapters: vec![AgentAdapter::Claude],
+        };
+        let setup_report = run_setup_check(&repo.path, &init_options)?;
         let report = build_setup_run_report(SetupRunReportInput {
             command: "setup claude".to_string(),
             repo_root: repo.path.clone(),
@@ -3140,10 +3148,13 @@ fn run_claude_setup(args: &ClaudeSetupArgs) -> Result<()> {
             planned_files: claude_setup_planned_files(&repo.path),
             init_report: None,
             project_mcp: project_mcp_report(&mcp_path, ProjectMcpAction::Planned, &binary),
-            setup_check: None,
+            setup_check: Some(setup_report.clone()),
         });
         match args.format {
-            PackFormat::Markdown => print_claude_setup_dry_run(&repo.path, &binary, &mcp_path),
+            PackFormat::Markdown => {
+                print_claude_setup_dry_run(&repo.path, &binary, &mcp_path);
+                print_dry_run_setup_status(&setup_report);
+            }
             PackFormat::Json => println!("{}", serde_json::to_string_pretty(&report)?),
         }
         return Ok(());
@@ -3412,6 +3423,13 @@ fn print_claude_setup_dry_run(repo_root: &Path, binary: &Path, mcp_path: &Path) 
     );
     println!();
     println!("Run without --dry-run to write repo-local setup files.");
+}
+
+fn print_dry_run_setup_status(report: &SetupCheckReport) {
+    println!();
+    println!("Current setup status:");
+    print_setup_check_report(report);
+    println!("Dry-run setup status is informational and does not change the exit status.");
 }
 
 fn print_repo_setup_report(

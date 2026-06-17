@@ -296,7 +296,9 @@ fn setup_claude_dry_run_does_not_write_files() {
         .assert()
         .success()
         .stdout(contains("Claude Code setup dry run"))
-        .stdout(contains("would write project MCP config"));
+        .stdout(contains("would write project MCP config"))
+        .stdout(contains("Current setup status:"))
+        .stdout(contains("Dry-run setup status is informational"));
 
     assert!(!fixture.repo.join(".mcp.json").exists());
     assert!(!fixture
@@ -381,7 +383,9 @@ fn setup_repo_dry_run_does_not_write_files() {
         .stdout(contains("would write project MCP config"))
         .stdout(contains(
             "would not mutate global Codex, Claude, Cursor, or OpenCode config",
-        ));
+        ))
+        .stdout(contains("Current setup status:"))
+        .stdout(contains("Dry-run setup status is informational"));
 
     assert!(!fixture.repo.join(".mcp.json").exists());
     assert!(!fixture.repo.join(".cursor/rules/ctxhelm.mdc").exists());
@@ -454,7 +458,14 @@ fn setup_claude_json_dry_run_reports_planned_without_writes() {
     assert_eq!(value["projectMcp"]["action"], "planned");
     assert_eq!(value["projectMcp"]["commandUsesAbsoluteBinary"], true);
     assert!(value["initReport"].is_null());
-    assert!(value["setupCheck"].is_null());
+    assert_eq!(value["setupCheck"]["passed"], false);
+    assert!(value["setupCheck"]["items"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .any(
+            |item| item["name"] == ".claude/commands/ctxhelm-bugfix.md" && item["status"] == "fail"
+        ));
     assert!(value["plannedFiles"]
         .as_array()
         .unwrap()
