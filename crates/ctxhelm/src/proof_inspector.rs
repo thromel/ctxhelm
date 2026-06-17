@@ -10,6 +10,8 @@ pub(crate) struct ProofInspectorReport {
     workflow_kind: String,
     client: ProofInspectorClient,
     outcome: ProofInspectorOutcome,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    availability: Option<ProofInspectorAvailability>,
     evidence: ProofInspectorEvidence,
     #[serde(skip_serializing_if = "Option::is_none")]
     retry_cost: Option<serde_json::Value>,
@@ -103,6 +105,17 @@ struct ProofInspectorOutcome {
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
+struct ProofInspectorAvailability {
+    tiny_prompt_available: Option<bool>,
+    paired_suite_available: Option<bool>,
+    rate_limited: Option<bool>,
+    client_failure_observed: Option<bool>,
+    comparable_lane_count: Option<u64>,
+    availability_blocker: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
 struct ProofInspectorEvidence {
     evidence_misses_observed: Option<bool>,
     evidence_only_targets_observed: Option<bool>,
@@ -171,6 +184,7 @@ pub(crate) fn build_proof_inspector_report(report: &serde_json::Value) -> ProofI
     let evidence_only_target_count =
         sum_lane_metric(report, "ctxhelmEvidenceOnlyTargetCount").or(evidence_only_after_retry);
     let memory_guard = proof_memory_guard(report);
+    let availability = proof_availability(report);
     let boundary = ProofInspectorBoundary {
         client_failures_observed: proof_bool(source, &["clientFailuresObserved"]),
         rate_limits_observed: proof_bool(source, &["rateLimitsObserved"]),
@@ -295,12 +309,14 @@ pub(crate) fn build_proof_inspector_report(report: &serde_json::Value) -> ProofI
         },
         recommended_next_action: recommended_proof_next_action(
             &outcome,
+            availability.as_ref(),
             &evidence,
             &boundary,
             &privacy_status,
             product_proof.as_ref(),
         ),
         outcome,
+        availability,
         evidence,
         retry_cost,
         read_efficiency,
@@ -338,6 +354,21 @@ pub(crate) fn render_proof_inspector_report(report: &ProofInspectorReport) -> St
         optional_i64(report.outcome.irrelevant_read_delta),
         optional_u64(report.outcome.total_irrelevant_read_count),
     ));
+    if let Some(availability) = report.availability.as_ref() {
+        output.push_str("## Client Availability\n\n");
+        output.push_str(&format!(
+            "- Tiny prompt available: `{}`\n- Paired suite available: `{}`\n- Availability blocker: `{}`\n- Rate-limited: `{}`\n- Client failure observed: `{}`\n- Comparable lanes: `{}`\n\n",
+            optional_bool(availability.tiny_prompt_available),
+            optional_bool(availability.paired_suite_available),
+            availability
+                .availability_blocker
+                .as_deref()
+                .unwrap_or("none"),
+            optional_bool(availability.rate_limited),
+            optional_bool(availability.client_failure_observed),
+            optional_u64(availability.comparable_lane_count),
+        ));
+    }
     output.push_str("## Evidence Consumption\n\n");
     output.push_str(&format!(
         "- Evidence misses observed: `{}`\n- Evidence-only targets observed: `{}`\n- Evidence-only target count: `{}`\n- Evidence-only targets after retry: `{}`\n- Under-read targets observed: `{}`\n\n",
@@ -441,6 +472,11 @@ pub(crate) fn build_proof_inspector_bundle(
         .filter(|report| {
             report.boundary.client_failures_observed == Some(true)
                 || report.boundary.rate_limits_observed == Some(true)
+                || report
+                    .availability
+                    .as_ref()
+                    .and_then(|availability| availability.paired_suite_available)
+                    == Some(false)
                 || report.outcome.claim == "insufficient_comparable_lanes"
         })
         .count();
@@ -572,6 +608,11 @@ pub(crate) fn proof_inspector_bundle_ready(bundle: &ProofInspectorBundleReport) 
 fn proof_report_has_clean_agent_outcome(report: &ProofInspectorReport) -> bool {
     (report.report_kind == "agent_run" || report.report_kind == "agent_run_suite")
         && !proof_report_has_privacy_boundary_failure(report)
+        && report
+            .availability
+            .as_ref()
+            .and_then(|availability| availability.paired_suite_available)
+            != Some(false)
         && report.boundary.forbidden_boundary_events_observed != Some(true)
         && report.boundary.client_failures_observed != Some(true)
         && report.boundary.rate_limits_observed != Some(true)
@@ -826,8 +867,34 @@ fn proof_memory_guard(report: &serde_json::Value) -> ProofInspectorMemoryGuard {
     }
 }
 
+fn proof_availability(report: &serde_json::Value) -> Option<ProofInspectorAvailability> {
+    let availability = report.get("clientAvailability")?;
+    Some(ProofInspectorAvailability {
+        tiny_prompt_available: availability
+            .get("tinyPromptAvailable")
+            .and_then(serde_json::Value::as_bool),
+        paired_suite_available: availability
+            .get("pairedSuiteAvailable")
+            .and_then(serde_json::Value::as_bool),
+        rate_limited: availability
+            .get("rateLimited")
+            .and_then(serde_json::Value::as_bool),
+        client_failure_observed: availability
+            .get("clientFailureObserved")
+            .and_then(serde_json::Value::as_bool),
+        comparable_lane_count: availability
+            .get("comparableLaneCount")
+            .and_then(serde_json::Value::as_u64),
+        availability_blocker: availability
+            .get("availabilityBlocker")
+            .and_then(serde_json::Value::as_str)
+            .map(str::to_string),
+    })
+}
+
 fn recommended_proof_next_action(
     outcome: &ProofInspectorOutcome,
+    availability: Option<&ProofInspectorAvailability>,
     evidence: &ProofInspectorEvidence,
     boundary: &ProofInspectorBoundary,
     privacy: &ProofInspectorPrivacyStatus,
@@ -846,6 +913,7 @@ fn recommended_proof_next_action(
     }
     if boundary.client_failures_observed == Some(true)
         || boundary.rate_limits_observed == Some(true)
+        || availability.and_then(|availability| availability.paired_suite_available) == Some(false)
     {
         return "Treat this as availability-blocked and rerun after the client is stable."
             .to_string();

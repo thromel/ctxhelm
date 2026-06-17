@@ -73,9 +73,13 @@ ctxhelm inspector proof \
 
 The proof inspector summarizes agent-run proof reports and product-proof
 reports. For agent-run reports, it renders outcome claim, comparable task/lane
-counts, target-read coverage, evidence-only target state, retry cost, memory
-guard status when reported, client failures/rate limits, forbidden boundary
-events, source-free privacy flags, and a recommended next action. For
+counts, target-read coverage, client availability, evidence-only target state,
+retry cost, memory guard status when reported, client failures/rate limits,
+forbidden boundary events, source-free privacy flags, and a recommended next
+action. The client availability section reports `tinyPromptAvailable`,
+`pairedSuiteAvailable`, `availabilityBlocker`, rate-limit status, client-failure
+status, and comparable lane count, so a tiny-prompt pass is not confused with a
+comparable paired-suite proof. For
 product-proof reports, it renders release-gate decision, promotion allowance,
 corpus verdict count, lexical/context claims, protected target miss-rate, and
 the source-free privacy boundary. When more than one `--report` is provided, it

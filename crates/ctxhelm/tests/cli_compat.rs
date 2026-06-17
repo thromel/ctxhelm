@@ -2786,6 +2786,14 @@ fn inspector_proof_summarizes_agent_run_report_source_free() {
                 "name": "codex",
                 "version": "Codex test"
             },
+            "clientAvailability": {
+                "tinyPromptAvailable": true,
+                "pairedSuiteAvailable": true,
+                "rateLimited": false,
+                "clientFailureObserved": false,
+                "comparableLaneCount": 1,
+                "availabilityBlocker": null
+            },
             "aggregate": {
                 "taskCount": 2,
                 "comparisonEligibleCount": 2,
@@ -2865,6 +2873,10 @@ fn inspector_proof_summarizes_agent_run_report_source_free() {
         .stdout(contains("Claim: `ctxhelm_improved`"))
         .stdout(contains("Comparable tasks: `2`"))
         .stdout(contains("Target-read coverage: `0.75`"))
+        .stdout(contains("## Client Availability"))
+        .stdout(contains("Tiny prompt available: `true`"))
+        .stdout(contains("Paired suite available: `true`"))
+        .stdout(contains("Availability blocker: `none`"))
         .stdout(contains("Evidence-only targets after retry: `0`"))
         .stdout(contains("Retry cost: triggered `1` selected `1`"))
         .stdout(contains("Forbidden boundary events observed: `false`"))
@@ -2886,6 +2898,7 @@ fn inspector_proof_summarizes_agent_run_report_source_free() {
     assert_eq!(rendered_json["reportKind"], "agent_run_suite");
     assert_eq!(rendered_json["outcome"]["claim"], "ctxhelm_improved");
     assert_eq!(rendered_json["outcome"]["comparisonEligibleCount"], 2);
+    assert_eq!(rendered_json["availability"]["pairedSuiteAvailable"], true);
     assert_eq!(
         rendered_json["evidence"]["evidenceOnlyTargetsAfterRetry"],
         0
@@ -3162,6 +3175,14 @@ fn inspector_proof_summarizes_multi_report_bundle_source_free() {
                 "name": "claude",
                 "version": "Claude Code test"
             },
+            "clientAvailability": {
+                "tinyPromptAvailable": true,
+                "pairedSuiteAvailable": false,
+                "rateLimited": true,
+                "clientFailureObserved": true,
+                "comparableLaneCount": 0,
+                "availabilityBlocker": "rate_limit"
+            },
             "aggregate": {
                 "taskCount": 1,
                 "comparisonEligibleCount": 0,
@@ -3202,6 +3223,7 @@ fn inspector_proof_summarizes_multi_report_bundle_source_free() {
         .stdout(contains(
             "Maturity verdict: `product_proof_ready_agent_outcome_needed`",
         ))
+        .stdout(contains("Availability-blocked reports: `1`"))
         .stderr(contains(
             "proof bundle was not release_and_agent_outcome_evidence_ready",
         ));
