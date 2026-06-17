@@ -20,10 +20,10 @@ local-embeddings = [
 anyhow.workspace = true
 blake3.workspace = true
 clap.workspace = true
-ctxhelm-compiler = { path = "../ctxhelm-compiler", version = "2.4.6" }
-ctxhelm-core = { path = "../ctxhelm-core", version = "2.4.6" }
-ctxhelm-index = { path = "../ctxhelm-index", version = "2.4.6" }
-ctxhelm-mcp = { path = "../ctxhelm-mcp", version = "2.4.6" }
+ctxhelm-compiler = { path = "../ctxhelm-compiler", version = "2.4.7" }
+ctxhelm-core = { path = "../ctxhelm-core", version = "2.4.7" }
+ctxhelm-index = { path = "../ctxhelm-index", version = "2.4.7" }
+ctxhelm-mcp = { path = "../ctxhelm-mcp", version = "2.4.7" }
 serde.workspace = true
 serde_json.workspace = true
 uuid.workspace = true

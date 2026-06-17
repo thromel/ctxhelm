@@ -1,13 +1,13 @@
 {
   "schemaVersion": 1,
   "package": "ctxhelm",
-  "version": "2.4.6",
+  "version": "2.4.7",
   "artifacts": [
     {
       "targetLabel": "aarch64-apple-darwin",
-      "archiveName": "ctxhelm-v2.4.6-aarch64-apple-darwin.tar.gz",
+      "archiveName": "ctxhelm-v2.4.7-aarch64-apple-darwin.tar.gz",
       "archiveSha256": "replace-with-release-archive-sha256",
-      "manifestName": "ctxhelm-v2.4.6-aarch64-apple-darwin.manifest.json"
+      "manifestName": "ctxhelm-v2.4.7-aarch64-apple-darwin.manifest.json"
     }
   ],
   "privacyStatus": {
