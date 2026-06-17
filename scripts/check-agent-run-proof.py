@@ -1130,6 +1130,65 @@ def validate_read_efficiency_consistency(aggregate: dict, summaries: list) -> di
     }
 
 
+def efficiency_status(read_efficiency: object) -> dict:
+    if not isinstance(read_efficiency, dict) or read_efficiency.get("analysisAvailable") is not True:
+        return {
+            "status": "not_reported",
+            "reliabilityImproved": False,
+            "efficiencyImproved": False,
+            "readOverheadObserved": False,
+            "irrelevantReadOverheadObserved": False,
+            "efficiencyPromotionAllowed": False,
+        }
+
+    required = (
+        "targetReadCoverageDelta",
+        "extraReadFileCount",
+        "extraIrrelevantReadCount",
+        "recoveredTargetReadCount",
+    )
+    if any(field not in read_efficiency for field in required):
+        return {
+            "status": "insufficient_metrics",
+            "reliabilityImproved": False,
+            "efficiencyImproved": False,
+            "readOverheadObserved": False,
+            "irrelevantReadOverheadObserved": False,
+            "efficiencyPromotionAllowed": False,
+        }
+
+    target_delta = float(read_efficiency.get("targetReadCoverageDelta") or 0.0)
+    extra_reads = int(read_efficiency.get("extraReadFileCount") or 0)
+    extra_irrelevant = int(read_efficiency.get("extraIrrelevantReadCount") or 0)
+    recovered = int(read_efficiency.get("recoveredTargetReadCount") or 0)
+    reliability_improved = target_delta > 0.0 and recovered > 0
+    read_overhead = extra_reads > 0
+    irrelevant_overhead = extra_irrelevant > 0
+    efficiency_improved = extra_reads <= 0 and extra_irrelevant <= 0
+
+    if reliability_improved and efficiency_improved:
+        status = "reliability_and_efficiency_improved"
+    elif reliability_improved and (read_overhead or irrelevant_overhead):
+        status = "reliability_improved_with_read_overhead"
+    elif not reliability_improved and efficiency_improved:
+        status = "efficiency_improved_without_reliability_lift"
+    else:
+        status = "no_efficiency_lift"
+
+    return {
+        "status": status,
+        "reliabilityImproved": reliability_improved,
+        "efficiencyImproved": efficiency_improved,
+        "readOverheadObserved": read_overhead,
+        "irrelevantReadOverheadObserved": irrelevant_overhead,
+        "efficiencyPromotionAllowed": reliability_improved and efficiency_improved,
+        "extraReadFileCount": extra_reads,
+        "extraIrrelevantReadCount": extra_irrelevant,
+        "recoveredTargetReadCount": recovered,
+        "targetReadCoverageDelta": target_delta,
+    }
+
+
 def derived_comparison_aggregates(tasks: list) -> dict:
     sum_fields = {field: 0 for field in AGGREGATE_COMPARISON_SUM_FIELDS}
     average_sums = {field: 0.0 for field in AGGREGATE_COMPARISON_AVERAGE_FIELDS}
@@ -1474,6 +1533,7 @@ def validate_suite(report: dict, args: argparse.Namespace) -> dict:
             "ctxhelmToolCallsObserved": aggregate.get("ctxhelmToolCallsObserved"),
             "retryCost": aggregate.get("retryCost"),
             "readEfficiency": aggregate.get("readEfficiency"),
+            "efficiencyStatus": efficiency_status(aggregate.get("readEfficiency")),
         },
         "boundaryStatus": boundary_status(aggregate),
         "boundaryChecks": boundary_summary(aggregate),
@@ -1542,6 +1602,7 @@ def validate_run(report: dict, args: argparse.Namespace) -> dict:
             "ctxhelmToolCallsObserved": comparison.get("ctxhelmToolCallsObserved"),
             "retryCost": comparison.get("retryCost"),
             "readEfficiency": comparison.get("readEfficiency"),
+            "efficiencyStatus": efficiency_status(comparison.get("readEfficiency")),
         },
         "boundaryStatus": boundary_status(comparison),
         "boundaryChecks": boundary_summary(comparison),

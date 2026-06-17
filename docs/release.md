@@ -428,6 +428,8 @@ evidence misses, evidence-only targets, or under-read targets.
 The Codex runner also retries ctxhelm lanes when a target is discovered but not
 read, and the retry-cost summary records discovered-only target counts before
 and after retry so path discovery is not mistaken for file consumption.
+Proof-check summaries derive `efficiencyStatus` from read-efficiency counters
+so reliability wins with extra reads stay separate from efficiency wins.
 Maintainers can adjust the thresholds with
 `CTXHELM_AGENT_RUN_MIN_TASK_COUNT`,
 `CTXHELM_AGENT_RUN_MIN_COMPARISON_ELIGIBLE`,

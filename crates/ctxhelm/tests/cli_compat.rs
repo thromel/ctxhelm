@@ -2310,7 +2310,7 @@ fn eval_agent_run_renders_source_free_report() {
         .stdout(contains("ctxhelm evidence misses observed: `false`"))
         .stdout(contains("ctxhelm evidence-only targets observed: `false`"))
         .stdout(contains("Retry cost: triggered `1` selected `1` avg reads before `3.00` after `2.00` avg irrelevant before `1.00` after `0.00` target-read coverage before `0.50` after `1.00` evidence-only targets before `1` after `0` discovered-only targets before `1` after `0`"))
-        .stdout(contains("Read efficiency: baseline `baseline` efficient ctxhelm `ctxhelm-brief` target-read coverage `0.50` -> `1.00` read precision `0.25` -> `1.00` irrelevant rate `0.50` -> `0.00` extra reads `-2` extra irrelevant `-2` recovered targets `1` extra reads/recovered `-2.00` extra irrelevant/recovered `-2.00`"))
+        .stdout(contains("Read efficiency: status `reliability_and_efficiency_improved` baseline `baseline` efficient ctxhelm `ctxhelm-brief` target-read coverage `0.50` -> `1.00` read precision `0.25` -> `1.00` irrelevant rate `0.50` -> `0.00` extra reads `-2` extra irrelevant `-2` recovered targets `1` extra reads/recovered `-2.00` extra irrelevant/recovered `-2.00`"))
         .stdout(contains(
             "Recommended R&D actions: `preserve_current_agent_contract(p3)`",
         ))
@@ -2736,7 +2736,7 @@ fn eval_agent_run_renders_source_free_suite_report() {
         .stdout(contains("Target read coverage delta average: `0.25`"))
         .stdout(contains("Irrelevant read delta sum: `3`"))
         .stdout(contains("Retry cost: triggered `1` selected `1` avg reads before `4.00` after `5.00` avg irrelevant before `2.00` after `1.00` target-read coverage before `0.50` after `0.75` evidence-only targets before `1` after `0` discovered-only targets before `1` after `0`"))
-        .stdout(contains("Read efficiency: baseline `baseline` efficient ctxhelm `ctxhelm-brief` target-read coverage `0.50` -> `0.75` read precision `0.25` -> `0.60` irrelevant rate `0.50` -> `0.20` extra reads `-3` extra irrelevant `-3` recovered targets `1` extra reads/recovered `-3.00` extra irrelevant/recovered `-3.00`"))
+        .stdout(contains("Read efficiency: status `reliability_and_efficiency_improved` baseline `baseline` efficient ctxhelm `ctxhelm-brief` target-read coverage `0.50` -> `0.75` read precision `0.25` -> `0.60` irrelevant rate `0.50` -> `0.20` extra reads `-3` extra irrelevant `-3` recovered targets `1` extra reads/recovered `-3.00` extra irrelevant/recovered `-3.00`"))
         .stdout(contains("## Suite Lanes"))
         .stdout(contains("ctxhelm-brief"))
         .stdout(contains("eligible `2`"))
@@ -2834,9 +2834,24 @@ fn inspector_proof_summarizes_agent_run_report_source_free() {
                     "analysisAvailable": true,
                     "baselineLane": "baseline",
                     "efficientCtxhelmLane": "ctxhelm-brief",
+                    "baselineTargetReadCoverage": 0.5,
                     "efficientTargetReadCoverage": 0.75,
+                    "targetReadCoverageDelta": 0.25,
+                    "baselineReadFileCount": 8,
+                    "efficientReadFileCount": 13,
+                    "extraReadFileCount": 5,
+                    "baselineIrrelevantReadCount": 4,
+                    "efficientIrrelevantReadCount": 7,
+                    "extraIrrelevantReadCount": 3,
+                    "baselineTargetReadPrecision": 0.25,
                     "efficientTargetReadPrecision": 0.6,
-                    "efficientIrrelevantReadCount": 1
+                    "targetReadPrecisionDelta": 0.35,
+                    "baselineIrrelevantReadRate": 0.5,
+                    "efficientIrrelevantReadRate": 0.5384615385,
+                    "irrelevantReadRateDelta": 0.0384615385,
+                    "recoveredTargetReadCount": 1,
+                    "extraReadsPerRecoveredTarget": 5.0,
+                    "extraIrrelevantReadsPerRecoveredTarget": 3.0
                 },
                 "outcomeClaim": "ctxhelm_improved",
                 "laneSummaries": [
@@ -2887,11 +2902,13 @@ fn inspector_proof_summarizes_agent_run_report_source_free() {
         .stdout(contains("Availability blocker: `none`"))
         .stdout(contains("Evidence-only targets after retry: `0`"))
         .stdout(contains("Retry cost: triggered `1` selected `1`"))
+        .stdout(contains("Status: `reliability_improved_with_read_overhead`"))
+        .stdout(contains("Efficiency promotion allowed: `false`"))
         .stdout(contains("Forbidden boundary events observed: `false`"))
         .stdout(contains("Source text logged: `false`"))
         .stdout(contains("Summary source-free: `true`"))
         .stdout(contains(
-            "Use as source-free outcome evidence, then repeat the suite to check stability and efficiency.",
+            "Use as reliability evidence, but do not claim read efficiency yet; reduce extra and irrelevant reads before efficiency promotion.",
         ));
 
     let rendered_json = json_stdout(
@@ -2908,13 +2925,21 @@ fn inspector_proof_summarizes_agent_run_report_source_free() {
     assert_eq!(rendered_json["outcome"]["comparisonEligibleCount"], 2);
     assert_eq!(rendered_json["availability"]["pairedSuiteAvailable"], true);
     assert_eq!(
+        rendered_json["efficiency"]["status"],
+        "reliability_improved_with_read_overhead"
+    );
+    assert_eq!(
+        rendered_json["efficiency"]["efficiencyPromotionAllowed"],
+        false
+    );
+    assert_eq!(
         rendered_json["evidence"]["evidenceOnlyTargetsAfterRetry"],
         0
     );
     assert_eq!(rendered_json["privacyStatus"]["sourceFreeSummary"], true);
     assert_eq!(
         rendered_json["recommendedNextAction"],
-        "Use as source-free outcome evidence, then repeat the suite to check stability and efficiency."
+        "Use as reliability evidence, but do not claim read efficiency yet; reduce extra and irrelevant reads before efficiency promotion."
     );
 }
 
@@ -3285,10 +3310,26 @@ fn inspector_proof_summarizes_multi_report_bundle_source_free() {
                 },
                 "readEfficiency": {
                     "analysisAvailable": true,
+                    "baselineLane": "baseline",
                     "efficientCtxhelmLane": "ctxhelm-standard",
+                    "baselineTargetReadCoverage": 0.5,
                     "efficientTargetReadCoverage": 1.0,
+                    "targetReadCoverageDelta": 0.5,
+                    "baselineReadFileCount": 4,
+                    "efficientReadFileCount": 2,
+                    "extraReadFileCount": -2,
+                    "baselineIrrelevantReadCount": 2,
+                    "efficientIrrelevantReadCount": 0,
+                    "extraIrrelevantReadCount": -2,
+                    "baselineTargetReadPrecision": 0.25,
                     "efficientTargetReadPrecision": 1.0,
-                    "efficientIrrelevantReadCount": 0
+                    "targetReadPrecisionDelta": 0.75,
+                    "baselineIrrelevantReadRate": 0.5,
+                    "efficientIrrelevantReadRate": 0.0,
+                    "irrelevantReadRateDelta": -0.5,
+                    "recoveredTargetReadCount": 1,
+                    "extraReadsPerRecoveredTarget": -2.0,
+                    "extraIrrelevantReadsPerRecoveredTarget": -2.0
                 },
                 "outcomeClaim": "ctxhelm_improved",
                 "laneSummaries": [

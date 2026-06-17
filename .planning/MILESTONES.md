@@ -843,16 +843,18 @@ Previous follow-ups: Phase 250 fixes a real Codex under-read regression for cont
 
 ### v2.5 Current Production-Readiness Follow-Up
 
-**Latest evidence:** `.planning/e2e/2026-06-17-phase324-codex-discovered-only-retry.md`
+**Latest evidence:** `.planning/e2e/2026-06-17-phase325-efficiency-status-verdict.md`
 
 **Current R&D status:** Phase 324 closes the remaining Codex consumption
 boundary where target paths were discovered but not read. The retry proof now
 tracks discovered-only target counts before and after retry, and the strict
 Phase 324 Codex breadth-suite proof passed with no evidence-only targets after
 retry and no under-read targets. Efficiency is still not promoted: the
-promotion-style irrelevant-read floor failed in the live run, so the next R&D
-slice should reduce retry/read overhead without weakening target-consumption
-enforcement.
+promotion-style irrelevant-read floor failed in the live run. Phase 325 makes
+that claim boundary machine-readable through `efficiencyStatus`, classifying
+the current real Codex proof as `reliability_improved_with_read_overhead`
+rather than efficiency evidence. The next R&D slice should reduce retry/read
+overhead without weakening target-consumption enforcement.
 
 **Delivered through Phase 204:** Codex CLI and Claude Code real-client smoke evidence is now request-auditable without storing raw MCP traffic: evidence files keep compatibility booleans and add source-free request hashes, line counts, explicit repo tool-call counts, sanitized observed tool calls, and request-summary sidecars. History-unavailable benchmark repos keep embedded insufficient-evidence reports instead of returning `report: null`. The broad four-repo proof hydrates all configured repositories with embedded reports, the refreshed clean fixture proof now promotes with reachable RefactoringMiner, ctxhelm, ReAgent, and VeriSchema fixtures, broad context-area guidance exposes source-free signal profiles for progressive native reads, retrieval-gap summaries now include those area profiles when available, grouped gap summaries deduplicate area-profile counts without hiding per-file misses, corroborated source-history candidates now receive bounded target-file budget when co-change evidence has dependency/lexical/symbol support, historical commit evals now expose selected top-10 signal/role profiles for ranking-budget diagnosis, broad governance docs now regain budget before broad source-history while preserving the measured source recall gain, plan-level context areas now expose coverage/inspection-pressure signals so packs can prioritize high-pressure progressive native reads without target-file churn, pressure breakdowns now explain whether remaining unread area pressure comes from source-like, validation, or docs paths, eval/proof reports now aggregate that pressure per repository to expose the dominant broad-area bottleneck, next-read recovery summaries quantify how often progressive area guidance recovers files missed by top-10 context, next-read ordering now prefers stronger source-free local signals before weaker progressive reads, high-pressure areas now expose a larger bounded next-read budget without changing selected target-file metrics, broad plans now reserve selected validation areas plus package-mirrored test clusters so progressive reads can follow validation evidence instead of only source-tail pressure, product proof now separately reports how many selected-file misses are recoverable through the full agent evidence bundle, candidate coverage accounting now separates generated-but-unselected misses from true no-candidate gaps, candidate miss pressure profiles now summarize those generated-but-unselected misses by role, signal, and context area, broad tasks now reserve one nested README doc after config/workflow evidence to recover contextual documentation targets without source/test/validation regression, context-area next-read summaries now explain the remaining gap between progressive reads and the broader agent evidence bundle by role and area, markdown reports render those agent-evidence-only counts, roles, and areas for normal review, generated packs now surface selected related tests as source-free validation evidence with area/reason/confidence/command details so agents can consume tests even when they are not repeated in context-area next-read lists, and paired real-agent reports now surface forbidden shell/edit/write tool calls so read-only outcome proof cannot hide boundary violations.
 

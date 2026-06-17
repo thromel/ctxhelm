@@ -1812,6 +1812,14 @@ fn agent_run_proof_checker_accepts_phase322_and_rejects_regression() {
         true
     );
     assert_eq!(
+        summary["metrics"]["efficiencyStatus"]["status"],
+        "reliability_improved_with_read_overhead"
+    );
+    assert_eq!(
+        summary["metrics"]["efficiencyStatus"]["efficiencyPromotionAllowed"],
+        false
+    );
+    assert_eq!(
         summary["aggregateConsistency"]["checkedReadEfficiencyMetricCount"],
         18
     );

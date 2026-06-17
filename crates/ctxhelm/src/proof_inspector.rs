@@ -17,6 +17,7 @@ pub(crate) struct ProofInspectorReport {
     retry_cost: Option<serde_json::Value>,
     #[serde(skip_serializing_if = "Option::is_none")]
     read_efficiency: Option<serde_json::Value>,
+    efficiency: ProofInspectorEfficiency,
     #[serde(skip_serializing_if = "Option::is_none")]
     product_proof: Option<ProductProofInspectorSummary>,
     memory_guard: ProofInspectorMemoryGuard,
@@ -135,6 +136,21 @@ struct ProofInspectorEvidence {
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
+struct ProofInspectorEfficiency {
+    status: String,
+    reliability_improved: bool,
+    efficiency_improved: bool,
+    read_overhead_observed: bool,
+    irrelevant_read_overhead_observed: bool,
+    efficiency_promotion_allowed: bool,
+    extra_read_file_count: Option<i64>,
+    extra_irrelevant_read_count: Option<i64>,
+    recovered_target_read_count: Option<i64>,
+    target_read_coverage_delta: Option<f64>,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
 struct ProofInspectorMemoryGuard {
     status: String,
     detail: String,
@@ -169,6 +185,7 @@ pub(crate) fn build_proof_inspector_report(report: &serde_json::Value) -> ProofI
     let source = proof_summary_source(report);
     let retry_cost = source.get("retryCost").cloned();
     let read_efficiency = source.get("readEfficiency").cloned();
+    let efficiency = proof_efficiency(read_efficiency.as_ref());
     let privacy = report
         .get("privacyStatus")
         .unwrap_or(&serde_json::Value::Null);
@@ -369,6 +386,7 @@ pub(crate) fn build_proof_inspector_report(report: &serde_json::Value) -> ProofI
             &outcome,
             availability.as_ref(),
             &evidence,
+            &efficiency,
             &boundary,
             &privacy_status,
             product_proof.as_ref(),
@@ -378,6 +396,7 @@ pub(crate) fn build_proof_inspector_report(report: &serde_json::Value) -> ProofI
         evidence,
         retry_cost,
         read_efficiency,
+        efficiency,
         product_proof,
         memory_guard,
         boundary,
@@ -460,6 +479,20 @@ pub(crate) fn render_proof_inspector_report(report: &ProofInspectorReport) -> St
     } else {
         output.push_str("- Retry cost: `not_reported`\n");
     }
+    output.push_str("\n## Read Efficiency\n\n");
+    output.push_str(&format!(
+        "- Status: `{}`\n- Reliability improved: `{}`\n- Efficiency improved: `{}`\n- Efficiency promotion allowed: `{}`\n- Read overhead observed: `{}`\n- Irrelevant-read overhead observed: `{}`\n- Extra reads: `{}`\n- Extra irrelevant reads: `{}`\n- Recovered target reads: `{}`\n- Target-read coverage delta: `{}`\n",
+        report.efficiency.status,
+        report.efficiency.reliability_improved,
+        report.efficiency.efficiency_improved,
+        report.efficiency.efficiency_promotion_allowed,
+        report.efficiency.read_overhead_observed,
+        report.efficiency.irrelevant_read_overhead_observed,
+        optional_i64(report.efficiency.extra_read_file_count),
+        optional_i64(report.efficiency.extra_irrelevant_read_count),
+        optional_i64(report.efficiency.recovered_target_read_count),
+        optional_f64(report.efficiency.target_read_coverage_delta),
+    ));
     if let Some(product) = report.product_proof.as_ref() {
         output.push_str("\n## Product Proof\n\n");
         output.push_str(&format!(
@@ -885,6 +918,108 @@ fn proof_i64(value: &serde_json::Value, keys: &[&str]) -> Option<i64> {
         .find_map(|key| value.get(*key).and_then(serde_json::Value::as_i64))
 }
 
+fn proof_efficiency(read_efficiency: Option<&serde_json::Value>) -> ProofInspectorEfficiency {
+    let Some(efficiency) = read_efficiency else {
+        return ProofInspectorEfficiency {
+            status: "not_reported".to_string(),
+            reliability_improved: false,
+            efficiency_improved: false,
+            read_overhead_observed: false,
+            irrelevant_read_overhead_observed: false,
+            efficiency_promotion_allowed: false,
+            extra_read_file_count: None,
+            extra_irrelevant_read_count: None,
+            recovered_target_read_count: None,
+            target_read_coverage_delta: None,
+        };
+    };
+    if efficiency
+        .get("analysisAvailable")
+        .and_then(serde_json::Value::as_bool)
+        != Some(true)
+    {
+        return ProofInspectorEfficiency {
+            status: "not_reported".to_string(),
+            reliability_improved: false,
+            efficiency_improved: false,
+            read_overhead_observed: false,
+            irrelevant_read_overhead_observed: false,
+            efficiency_promotion_allowed: false,
+            extra_read_file_count: None,
+            extra_irrelevant_read_count: None,
+            recovered_target_read_count: None,
+            target_read_coverage_delta: None,
+        };
+    }
+
+    let target_delta = efficiency
+        .get("targetReadCoverageDelta")
+        .and_then(serde_json::Value::as_f64);
+    let extra_reads = efficiency
+        .get("extraReadFileCount")
+        .and_then(serde_json::Value::as_i64);
+    let extra_irrelevant = efficiency
+        .get("extraIrrelevantReadCount")
+        .and_then(serde_json::Value::as_i64);
+    let recovered = efficiency
+        .get("recoveredTargetReadCount")
+        .and_then(serde_json::Value::as_i64);
+    let Some(target_delta_value) = target_delta else {
+        return insufficient_efficiency_metrics();
+    };
+    let Some(extra_reads_value) = extra_reads else {
+        return insufficient_efficiency_metrics();
+    };
+    let Some(extra_irrelevant_value) = extra_irrelevant else {
+        return insufficient_efficiency_metrics();
+    };
+    let Some(recovered_value) = recovered else {
+        return insufficient_efficiency_metrics();
+    };
+
+    let reliability_improved = target_delta_value > 0.0 && recovered_value > 0;
+    let read_overhead = extra_reads_value > 0;
+    let irrelevant_overhead = extra_irrelevant_value > 0;
+    let efficiency_improved = extra_reads_value <= 0 && extra_irrelevant_value <= 0;
+    let status = if reliability_improved && efficiency_improved {
+        "reliability_and_efficiency_improved"
+    } else if reliability_improved && (read_overhead || irrelevant_overhead) {
+        "reliability_improved_with_read_overhead"
+    } else if !reliability_improved && efficiency_improved {
+        "efficiency_improved_without_reliability_lift"
+    } else {
+        "no_efficiency_lift"
+    };
+
+    ProofInspectorEfficiency {
+        status: status.to_string(),
+        reliability_improved,
+        efficiency_improved,
+        read_overhead_observed: read_overhead,
+        irrelevant_read_overhead_observed: irrelevant_overhead,
+        efficiency_promotion_allowed: reliability_improved && efficiency_improved,
+        extra_read_file_count: extra_reads,
+        extra_irrelevant_read_count: extra_irrelevant,
+        recovered_target_read_count: recovered,
+        target_read_coverage_delta: target_delta,
+    }
+}
+
+fn insufficient_efficiency_metrics() -> ProofInspectorEfficiency {
+    ProofInspectorEfficiency {
+        status: "insufficient_metrics".to_string(),
+        reliability_improved: false,
+        efficiency_improved: false,
+        read_overhead_observed: false,
+        irrelevant_read_overhead_observed: false,
+        efficiency_promotion_allowed: false,
+        extra_read_file_count: None,
+        extra_irrelevant_read_count: None,
+        recovered_target_read_count: None,
+        target_read_coverage_delta: None,
+    }
+}
+
 fn sum_lane_metric(report: &serde_json::Value, metric: &str) -> Option<u64> {
     let lane_summaries = report
         .get("aggregate")
@@ -1077,6 +1212,7 @@ fn recommended_proof_next_action(
     outcome: &ProofInspectorOutcome,
     availability: Option<&ProofInspectorAvailability>,
     evidence: &ProofInspectorEvidence,
+    efficiency: &ProofInspectorEfficiency,
     boundary: &ProofInspectorBoundary,
     privacy: &ProofInspectorPrivacyStatus,
     product_proof: Option<&ProductProofInspectorSummary>,
@@ -1129,6 +1265,12 @@ fn recommended_proof_next_action(
         || evidence.under_read_targets_observed == Some(true)
     {
         return "Tighten agent consumption guidance or retry enforcement before claiming reliable consumption.".to_string();
+    }
+    if efficiency.status == "reliability_improved_with_read_overhead" {
+        return "Use as reliability evidence, but do not claim read efficiency yet; reduce extra and irrelevant reads before efficiency promotion.".to_string();
+    }
+    if efficiency.status == "reliability_and_efficiency_improved" {
+        return "Use as source-free outcome and efficiency evidence, then repeat the suite to check stability.".to_string();
     }
     if outcome.claim == "ctxhelm_improved" {
         return "Use as source-free outcome evidence, then repeat the suite to check stability and efficiency.".to_string();

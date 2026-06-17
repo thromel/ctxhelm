@@ -6040,8 +6040,10 @@ fn render_read_efficiency(value: Option<&serde_json::Value>) -> String {
     {
         return "- Read efficiency: unavailable\n".to_string();
     }
+    let status = read_efficiency_status(efficiency);
     format!(
-        "- Read efficiency: baseline `{}` efficient ctxhelm `{}` target-read coverage `{}` -> `{}` read precision `{}` -> `{}` irrelevant rate `{}` -> `{}` extra reads `{}` extra irrelevant `{}` recovered targets `{}` extra reads/recovered `{}` extra irrelevant/recovered `{}`\n",
+        "- Read efficiency: status `{}` baseline `{}` efficient ctxhelm `{}` target-read coverage `{}` -> `{}` read precision `{}` -> `{}` irrelevant rate `{}` -> `{}` extra reads `{}` extra irrelevant `{}` recovered targets `{}` extra reads/recovered `{}` extra irrelevant/recovered `{}`\n",
+        status,
         efficiency
             .get("baselineLane")
             .and_then(serde_json::Value::as_str)
@@ -6074,6 +6076,44 @@ fn render_read_efficiency(value: Option<&serde_json::Value>) -> String {
         json_f64(efficiency, "extraReadsPerRecoveredTarget"),
         json_f64(efficiency, "extraIrrelevantReadsPerRecoveredTarget"),
     )
+}
+
+fn read_efficiency_status(efficiency: &serde_json::Value) -> &'static str {
+    let Some(target_delta) = efficiency
+        .get("targetReadCoverageDelta")
+        .and_then(serde_json::Value::as_f64)
+    else {
+        return "insufficient_metrics";
+    };
+    let Some(extra_reads) = efficiency
+        .get("extraReadFileCount")
+        .and_then(serde_json::Value::as_i64)
+    else {
+        return "insufficient_metrics";
+    };
+    let Some(extra_irrelevant) = efficiency
+        .get("extraIrrelevantReadCount")
+        .and_then(serde_json::Value::as_i64)
+    else {
+        return "insufficient_metrics";
+    };
+    let Some(recovered) = efficiency
+        .get("recoveredTargetReadCount")
+        .and_then(serde_json::Value::as_i64)
+    else {
+        return "insufficient_metrics";
+    };
+    let reliability_improved = target_delta > 0.0 && recovered > 0;
+    let efficiency_improved = extra_reads <= 0 && extra_irrelevant <= 0;
+    if reliability_improved && efficiency_improved {
+        "reliability_and_efficiency_improved"
+    } else if reliability_improved && (extra_reads > 0 || extra_irrelevant > 0) {
+        "reliability_improved_with_read_overhead"
+    } else if !reliability_improved && efficiency_improved {
+        "efficiency_improved_without_reliability_lift"
+    } else {
+        "no_efficiency_lift"
+    }
 }
 
 fn render_json_count_map(value: Option<&serde_json::Value>) -> String {
