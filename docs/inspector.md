@@ -61,6 +61,16 @@ ctxhelm inspector proof \
   --report .ctxhelm/e2e/phase322-agent-run-codex-target-first-breadth-suite.json
 ```
 
+Use `--require-ready` when a CI job or release checklist should fail unless
+the report is ready for its evidence claim:
+
+```bash
+ctxhelm inspector proof \
+  --report .ctxhelm/proof/product-proof.json \
+  --report .ctxhelm/e2e/phase322-agent-run-codex-target-first-breadth-suite.json \
+  --require-ready
+```
+
 The proof inspector summarizes agent-run proof reports and product-proof
 reports. For agent-run reports, it renders outcome claim, comparable task/lane
 counts, target-read coverage, evidence-only target state, retry cost, memory
@@ -71,8 +81,11 @@ corpus verdict count, lexical/context claims, protected target miss-rate, and
 the source-free privacy boundary. When more than one `--report` is provided, it
 renders a bundle verdict with clean product-proof count, clean agent-outcome
 count, availability-blocked count, source-free/privacy status, read-only
-boundary status, and the next evidence action. It does not print raw task text,
-raw prompts, raw transcripts, MCP traffic, or target file lists.
+boundary status, and the next evidence action. With `--require-ready`, single
+reports pass only when they are clean product-proof or clean agent-outcome
+evidence, and bundles pass only when they contain both clean product proof and
+clean agent outcome evidence. It does not print raw task text, raw prompts, raw
+transcripts, MCP traffic, or target file lists.
 
 ## Local Shell
 

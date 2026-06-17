@@ -561,6 +561,14 @@ fn proof_report_has_clean_product_proof(report: &ProofInspectorReport) -> bool {
         && product.max_protected_target_miss_rate_at_10.unwrap_or(1.0) <= f64::EPSILON
 }
 
+pub(crate) fn proof_inspector_report_ready(report: &ProofInspectorReport) -> bool {
+    proof_report_has_clean_product_proof(report) || proof_report_has_clean_agent_outcome(report)
+}
+
+pub(crate) fn proof_inspector_bundle_ready(bundle: &ProofInspectorBundleReport) -> bool {
+    bundle.maturity_verdict == "release_and_agent_outcome_evidence_ready"
+}
+
 fn proof_report_has_clean_agent_outcome(report: &ProofInspectorReport) -> bool {
     (report.report_kind == "agent_run" || report.report_kind == "agent_run_suite")
         && !proof_report_has_privacy_boundary_failure(report)

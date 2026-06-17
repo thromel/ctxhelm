@@ -2920,6 +2920,19 @@ fn inspector_proof_summarizes_multi_report_bundle_source_free() {
         .stdout(contains("Read-only boundary failed: `false`"))
         .stdout(contains("Use this as the adoption-facing proof bundle"));
 
+    Command::cargo_bin("ctxhelm")
+        .unwrap()
+        .args(["inspector", "proof", "--report"])
+        .arg(&product_report_path)
+        .args(["--report"])
+        .arg(&agent_report_path)
+        .args(["--require-ready"])
+        .assert()
+        .success()
+        .stdout(contains(
+            "Maturity verdict: `release_and_agent_outcome_evidence_ready`",
+        ));
+
     let rendered_json = json_stdout(
         Command::cargo_bin("ctxhelm")
             .unwrap()
@@ -2941,6 +2954,61 @@ fn inspector_proof_summarizes_multi_report_bundle_source_free() {
     assert_eq!(rendered_json["inventory"]["cleanProductProofCount"], 1);
     assert_eq!(rendered_json["inventory"]["cleanAgentOutcomeCount"], 1);
     assert_eq!(rendered_json["boundary"]["privacyBoundaryFailed"], false);
+
+    let blocked_agent_report_path = fixture.temp.path().join("agent-run-blocked.json");
+    fs::write(
+        &blocked_agent_report_path,
+        json!({
+            "schemaVersion": "ctxhelm-agent-run-eval-v1",
+            "status": "degraded",
+            "workflowKind": "paired-agent-context-suite",
+            "client": {
+                "name": "claude",
+                "version": "Claude Code test"
+            },
+            "aggregate": {
+                "taskCount": 1,
+                "comparisonEligibleCount": 0,
+                "comparableCtxhelmLaneCount": 0,
+                "forbiddenToolCallsObserved": false,
+                "missingRequiredCtxhelmCallsObserved": false,
+                "invalidRequiredCtxhelmCallsObserved": false,
+                "clientFailuresObserved": true,
+                "rateLimitsObserved": true,
+                "ctxhelmEvidenceMissesObserved": false,
+                "ctxhelmEvidenceOnlyTargetsObserved": false,
+                "ctxhelmUnderReadTargetsObserved": false,
+                "outcomeClaim": "insufficient_comparable_lanes"
+            },
+            "privacyStatus": {
+                "localOnly": true,
+                "sourceTextLogged": false,
+                "rawPromptStored": false,
+                "rawTranscriptStored": false,
+                "rawMcpTrafficStored": false,
+                "remoteEmbeddingsUsed": false,
+                "remoteRerankingUsed": false
+            }
+        })
+        .to_string(),
+    )
+    .unwrap();
+
+    Command::cargo_bin("ctxhelm")
+        .unwrap()
+        .args(["inspector", "proof", "--report"])
+        .arg(&product_report_path)
+        .args(["--report"])
+        .arg(&blocked_agent_report_path)
+        .args(["--require-ready"])
+        .assert()
+        .failure()
+        .stdout(contains(
+            "Maturity verdict: `product_proof_ready_agent_outcome_needed`",
+        ))
+        .stderr(contains(
+            "proof bundle was not release_and_agent_outcome_evidence_ready",
+        ));
 }
 
 #[test]

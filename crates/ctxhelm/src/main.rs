@@ -72,8 +72,8 @@ use uuid::Uuid;
 mod proof_inspector;
 
 use proof_inspector::{
-    build_proof_inspector_bundle, build_proof_inspector_report, render_proof_inspector_bundle,
-    render_proof_inspector_report,
+    build_proof_inspector_bundle, build_proof_inspector_report, proof_inspector_bundle_ready,
+    proof_inspector_report_ready, render_proof_inspector_bundle, render_proof_inspector_report,
 };
 
 const DEFAULT_LOCAL_FASTEMBED_INDEX_LIMIT: usize = 16;
@@ -489,6 +489,11 @@ struct InspectorProofArgs {
     format: PackFormat,
     #[arg(long, help = "Write the proof summary to a file instead of stdout.")]
     output: Option<PathBuf>,
+    #[arg(
+        long,
+        help = "Exit non-zero unless the report or bundle is ready for its evidence claim."
+    )]
+    require_ready: bool,
 }
 
 #[derive(Debug, Args)]
@@ -1887,22 +1892,36 @@ fn main() -> Result<()> {
                         Ok(build_proof_inspector_report(&report))
                     })
                     .collect::<Result<Vec<_>>>()?;
-                let artifact = if summaries.len() == 1 {
+                let (artifact, ready, not_ready_reason) = if summaries.len() == 1 {
                     let summary = summaries
                         .first()
                         .expect("single proof summary should be present");
-                    match args.format {
+                    let artifact = match args.format {
                         PackFormat::Json => serde_json::to_string_pretty(summary)?,
                         PackFormat::Markdown => render_proof_inspector_report(summary),
-                    }
+                    };
+                    (
+                        artifact,
+                        proof_inspector_report_ready(summary),
+                        "proof report is not ready for its evidence claim",
+                    )
                 } else {
                     let bundle = build_proof_inspector_bundle(summaries);
-                    match args.format {
+                    let ready = proof_inspector_bundle_ready(&bundle);
+                    let artifact = match args.format {
                         PackFormat::Json => serde_json::to_string_pretty(&bundle)?,
                         PackFormat::Markdown => render_proof_inspector_bundle(&bundle),
-                    }
+                    };
+                    (
+                        artifact,
+                        ready,
+                        "proof bundle was not release_and_agent_outcome_evidence_ready",
+                    )
                 };
                 write_or_print(args.output.as_deref(), &artifact)?;
+                if args.require_ready && !ready {
+                    return Err(anyhow!(not_ready_reason));
+                }
             }
             InspectorCommand::Serve(args) => {
                 serve_inspector_shell(args)?;
@@ -9394,6 +9413,7 @@ mod tests {
             ".",
             "--format",
             "json",
+            "--require-ready",
             "--output",
             "proof-summary.json",
         ])
@@ -9409,6 +9429,7 @@ mod tests {
         assert_eq!(args.repo, Some(PathBuf::from(".")));
         assert!(matches!(args.format, PackFormat::Json));
         assert_eq!(args.output, Some(PathBuf::from("proof-summary.json")));
+        assert!(args.require_ready);
     }
 
     #[test]

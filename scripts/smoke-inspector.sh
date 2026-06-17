@@ -208,6 +208,7 @@ EOF
     --report "${PRODUCT_PROOF_REPORT}" \
     --report "${PROOF_REPORT}" \
     --format json \
+    --require-ready \
     --output "${PROOF_BUNDLE_JSON_OUT}"
 )
 
