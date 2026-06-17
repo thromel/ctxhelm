@@ -20,7 +20,8 @@ for the same source-free readiness report. JSON mode preserves the normal exit
 behavior: failed setup checks still exit nonzero after writing the report. The
 report includes `schemaVersion: "ctxhelm-setup-check-report-v1"` for stable CI
 and wrapper integrations, plus `checkedAdapters` and `summary` fields for direct
-machine gating.
+machine gating. `recommendedNextAction` reports whether the setup is ready,
+needs project MCP setup, or needs setup failure review.
 
 **deterministic protocol proof** means direct JSON-RPC/MCP smoke through `ctxhelm serve-mcp`. The smoke sends machine-checkable tool calls with an explicit `repo`, verifies `prepare_task` returns target files and pack options, verifies `get_pack` returns a structured pack, reads context-area resources from a non-repo server cwd, and can read a pack resource during the same MCP server session.
 

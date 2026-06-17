@@ -172,6 +172,7 @@ require_text "${QUICKSTART_DOC}" "setup-check --repo \"\$REPO\" --all --format j
 require_text "${QUICKSTART_DOC}" "ctxhelm-setup-check-report-v1"
 require_text "${QUICKSTART_DOC}" "checkedAdapters"
 require_text "${QUICKSTART_DOC}" "summary"
+require_text "${QUICKSTART_DOC}" "recommendedNextAction"
 require_text "${QUICKSTART_DOC}" "mcpServers.ctxhelm"
 require_text "${QUICKSTART_DOC}" "A missing \`.mcp.json\` is"
 require_text "${QUICKSTART_DOC}" "ctxhelm doctor"
@@ -212,6 +213,7 @@ require_text "${AGENT_SETUP_DOC}" "setup-check --repo \"\$REPO\" --all --format 
 require_text "${AGENT_SETUP_DOC}" "ctxhelm-setup-check-report-v1"
 require_text "${AGENT_SETUP_DOC}" "checkedAdapters"
 require_text "${AGENT_SETUP_DOC}" "summary"
+require_text "${AGENT_SETUP_DOC}" "recommendedNextAction"
 require_text "${AGENT_SETUP_DOC}" "mcpServers.ctxhelm"
 require_text "${AGENT_SETUP_DOC}" "Missing \`.mcp.json\` is a warning"
 
@@ -227,6 +229,7 @@ require_text "${TROUBLESHOOTING_DOC}" "setup-check --repo \"\$REPO\" --all --for
 require_text "${TROUBLESHOOTING_DOC}" "ctxhelm-setup-check-report-v1"
 require_text "${TROUBLESHOOTING_DOC}" "checkedAdapters"
 require_text "${TROUBLESHOOTING_DOC}" "summary"
+require_text "${TROUBLESHOOTING_DOC}" "recommendedNextAction"
 require_text "${TROUBLESHOOTING_DOC}" "JSON output still exits nonzero"
 require_text "${TROUBLESHOOTING_DOC}" "relative-command \`.mcp.json\` entries fail"
 require_text "${TROUBLESHOOTING_DOC}" "ctxhelm doctor"

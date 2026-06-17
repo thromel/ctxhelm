@@ -101,6 +101,8 @@ pub struct SetupCheckReport {
     pub checked_adapters: Vec<AgentAdapter>,
     #[serde(default)]
     pub summary: SetupCheckSummary,
+    #[serde(default)]
+    pub recommended_next_action: SetupCheckRecommendedAction,
     pub items: Vec<SetupCheckItem>,
     pub passed: bool,
 }
@@ -115,6 +117,16 @@ pub struct SetupCheckSummary {
     pub pass_count: usize,
     pub warn_count: usize,
     pub fail_count: usize,
+}
+
+#[derive(Debug, Clone, Copy, Default, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum SetupCheckRecommendedAction {
+    #[default]
+    Ready,
+    RunSetupClaude,
+    RunSetupRepo,
+    ReviewSetupFailures,
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
@@ -390,12 +402,14 @@ pub fn run_setup_check(
 
     let summary = setup_check_summary(&items);
     let passed = summary.fail_count == 0;
+    let recommended_next_action = setup_check_recommended_next_action(options, &items, &summary);
 
     Ok(SetupCheckReport {
         schema_version: setup_check_report_schema_version(),
         repo_root: repo_root.to_path_buf(),
         checked_adapters: options.adapters.clone(),
         summary,
+        recommended_next_action,
         items,
         passed,
     })
@@ -411,6 +425,29 @@ fn setup_check_summary(items: &[SetupCheckItem]) -> SetupCheckSummary {
         }
     }
     summary
+}
+
+fn setup_check_recommended_next_action(
+    options: &InitOptions,
+    items: &[SetupCheckItem],
+    summary: &SetupCheckSummary,
+) -> SetupCheckRecommendedAction {
+    if summary.fail_count > 0 {
+        return SetupCheckRecommendedAction::ReviewSetupFailures;
+    }
+
+    let missing_project_mcp = items
+        .iter()
+        .any(|item| item.name == ".mcp.json" && item.status == SetupCheckStatus::Warn);
+    if missing_project_mcp {
+        if options.adapters == [AgentAdapter::Claude] {
+            SetupCheckRecommendedAction::RunSetupClaude
+        } else {
+            SetupCheckRecommendedAction::RunSetupRepo
+        }
+    } else {
+        SetupCheckRecommendedAction::Ready
+    }
 }
 
 pub fn build_setup_run_report(input: SetupRunReportInput) -> SetupRunReport {
@@ -1549,6 +1586,10 @@ mod setup_check_tests {
                 fail_count: 0,
             }
         );
+        assert_eq!(
+            report.recommended_next_action,
+            SetupCheckRecommendedAction::RunSetupRepo
+        );
         assert_item_status(&report, "AGENTS.md", SetupCheckStatus::Pass);
         assert_item_status(&report, ".ctxhelm/ctxhelm.toml", SetupCheckStatus::Pass);
         assert_item_status(&report, ".cursor/rules/ctxhelm.mdc", SetupCheckStatus::Pass);
@@ -1581,6 +1622,7 @@ mod setup_check_tests {
                 warn_count: 0,
                 fail_count: 0,
             },
+            recommended_next_action: SetupCheckRecommendedAction::Ready,
             items: Vec::new(),
             passed: true,
         };
@@ -1588,6 +1630,7 @@ mod setup_check_tests {
         assert_eq!(value["schemaVersion"], "ctxhelm-setup-check-report-v1");
         assert_eq!(value["checkedAdapters"], serde_json::json!(["claude"]));
         assert_eq!(value["summary"]["passCount"], 1);
+        assert_eq!(value["recommendedNextAction"], "ready");
         assert!(value.get("schema_version").is_none());
 
         let old_json = serde_json::json!({
@@ -1599,6 +1642,28 @@ mod setup_check_tests {
         assert_eq!(old_report.schema_version, "ctxhelm-setup-check-report-v1");
         assert!(old_report.checked_adapters.is_empty());
         assert_eq!(old_report.summary, SetupCheckSummary::default());
+        assert_eq!(
+            old_report.recommended_next_action,
+            SetupCheckRecommendedAction::Ready
+        );
+    }
+
+    #[test]
+    fn setup_check_recommends_claude_setup_for_missing_project_mcp() {
+        let temp = tempfile::tempdir().unwrap();
+        let options = InitOptions {
+            adapters: vec![AgentAdapter::Claude],
+        };
+        run_init(temp.path(), &options).unwrap();
+
+        let report = run_setup_check(temp.path(), &options).unwrap();
+
+        assert!(report.passed);
+        assert_item_status(&report, ".mcp.json", SetupCheckStatus::Warn);
+        assert_eq!(
+            report.recommended_next_action,
+            SetupCheckRecommendedAction::RunSetupClaude
+        );
     }
 
     #[test]
@@ -1613,6 +1678,10 @@ mod setup_check_tests {
         let report = run_setup_check(temp.path(), &options).unwrap();
 
         assert!(!report.passed);
+        assert_eq!(
+            report.recommended_next_action,
+            SetupCheckRecommendedAction::ReviewSetupFailures
+        );
         assert_item_status(&report, ".cursor/rules/ctxhelm.mdc", SetupCheckStatus::Fail);
     }
 

@@ -110,7 +110,9 @@ ctxhelm setup-check --repo "$REPO" --all --format json
 The JSON report includes `schemaVersion: "ctxhelm-setup-check-report-v1"` so CI
 or agent wrappers can reject incompatible future contracts without scraping
 human-readable text. It also includes `checkedAdapters` and a `summary` with
-pass, warning, and failure counts for direct gating.
+pass, warning, and failure counts for direct gating. Use
+`recommendedNextAction` to distinguish ready setup from missing project MCP
+configuration or setup failures.
 
 ## Deterministic MCP Proof Context
 

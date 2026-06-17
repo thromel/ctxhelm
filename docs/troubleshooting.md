@@ -168,7 +168,10 @@ Use `ctxhelm setup-check --repo "$REPO" --all --format json` when CI or an
 agent wrapper needs the same source-free readiness report without parsing human
 text. JSON output still exits nonzero when any setup item fails, and includes
 `schemaVersion: "ctxhelm-setup-check-report-v1"`, `checkedAdapters`, and a
-`summary` of pass, warning, and failure counts for compatibility checks.
+`summary` of pass, warning, and failure counts for compatibility checks. Use
+`recommendedNextAction` before parsing item details: `run_setup_claude` means
+the project MCP entry is missing, while `review_setup_failures` means at least
+one generated artifact failed validation.
 
 It does not run real agent clients, does not prove a client called MCP tools, and does not mutate global Codex, Claude, Cursor, or OpenCode configuration.
 
