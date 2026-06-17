@@ -471,8 +471,12 @@ struct InspectorExportArgs {
 
 #[derive(Debug, Args)]
 struct InspectorProofArgs {
-    #[arg(long, help = "Path to a source-free proof JSON report.")]
-    report: PathBuf,
+    #[arg(
+        long,
+        required = true,
+        help = "Path to a source-free proof JSON report. Repeat to render a bundle summary."
+    )]
+    report: Vec<PathBuf>,
     #[arg(long)]
     repo: Option<PathBuf>,
     #[arg(long, value_enum, default_value_t = PackFormat::Markdown)]
@@ -1868,12 +1872,29 @@ fn main() -> Result<()> {
                 if let Some(start) = args.repo.as_ref() {
                     let _repo = RepoRoot::discover_from(start)?;
                 }
-                let raw = fs::read_to_string(&args.report)?;
-                let report: serde_json::Value = serde_json::from_str(&raw)?;
-                let summary = build_proof_inspector_report(&report);
-                let artifact = match args.format {
-                    PackFormat::Json => serde_json::to_string_pretty(&summary)?,
-                    PackFormat::Markdown => render_proof_inspector_report(&summary),
+                let summaries = args
+                    .report
+                    .iter()
+                    .map(|report_path| {
+                        let raw = fs::read_to_string(report_path)?;
+                        let report: serde_json::Value = serde_json::from_str(&raw)?;
+                        Ok(build_proof_inspector_report(&report))
+                    })
+                    .collect::<Result<Vec<_>>>()?;
+                let artifact = if summaries.len() == 1 {
+                    let summary = summaries
+                        .first()
+                        .expect("single proof summary should be present");
+                    match args.format {
+                        PackFormat::Json => serde_json::to_string_pretty(summary)?,
+                        PackFormat::Markdown => render_proof_inspector_report(summary),
+                    }
+                } else {
+                    let bundle = build_proof_inspector_bundle(summaries);
+                    match args.format {
+                        PackFormat::Json => serde_json::to_string_pretty(&bundle)?,
+                        PackFormat::Markdown => render_proof_inspector_bundle(&bundle),
+                    }
                 };
                 write_or_print(args.output.as_deref(), &artifact)?;
             }
@@ -5367,6 +5388,41 @@ struct ProofInspectorReport {
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
+struct ProofInspectorBundleReport {
+    schema_version: &'static str,
+    report_count: usize,
+    inventory: ProofInspectorBundleInventory,
+    boundary: ProofInspectorBundleBoundary,
+    maturity_verdict: String,
+    recommended_next_action: String,
+    reports: Vec<ProofInspectorReport>,
+    notes: Vec<String>,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct ProofInspectorBundleInventory {
+    product_proof_count: usize,
+    clean_product_proof_count: usize,
+    agent_outcome_count: usize,
+    clean_agent_outcome_count: usize,
+    agent_run_suite_count: usize,
+    availability_blocked_count: usize,
+    degraded_report_count: usize,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct ProofInspectorBundleBoundary {
+    source_free_summary: bool,
+    privacy_boundary_failed: bool,
+    read_only_boundary_failed: bool,
+    client_failures_observed: bool,
+    rate_limits_observed: bool,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
 struct ProductProofInspectorSummary {
     suite_name: String,
     suite_id: String,
@@ -5715,6 +5771,227 @@ fn render_proof_inspector_report(report: &ProofInspectorReport) -> String {
         }
     }
     output
+}
+
+fn build_proof_inspector_bundle(reports: Vec<ProofInspectorReport>) -> ProofInspectorBundleReport {
+    let product_proof_count = reports
+        .iter()
+        .filter(|report| report.report_kind == "product_proof")
+        .count();
+    let clean_product_proof_count = reports
+        .iter()
+        .filter(|report| proof_report_has_clean_product_proof(report))
+        .count();
+    let agent_outcome_count = reports
+        .iter()
+        .filter(|report| {
+            report.report_kind == "agent_run" || report.report_kind == "agent_run_suite"
+        })
+        .count();
+    let clean_agent_outcome_count = reports
+        .iter()
+        .filter(|report| proof_report_has_clean_agent_outcome(report))
+        .count();
+    let agent_run_suite_count = reports
+        .iter()
+        .filter(|report| report.report_kind == "agent_run_suite")
+        .count();
+    let availability_blocked_count = reports
+        .iter()
+        .filter(|report| {
+            report.boundary.client_failures_observed == Some(true)
+                || report.boundary.rate_limits_observed == Some(true)
+                || report.outcome.claim == "insufficient_comparable_lanes"
+        })
+        .count();
+    let degraded_report_count = reports
+        .iter()
+        .filter(|report| report.status == "degraded" || report.status == "failed")
+        .count();
+    let privacy_boundary_failed = reports
+        .iter()
+        .any(proof_report_has_privacy_boundary_failure);
+    let read_only_boundary_failed = reports.iter().any(|report| {
+        report.boundary.forbidden_boundary_events_observed == Some(true)
+            || report.boundary.missing_required_ctxhelm_calls_observed == Some(true)
+            || report.boundary.invalid_required_ctxhelm_calls_observed == Some(true)
+    });
+    let client_failures_observed = reports
+        .iter()
+        .any(|report| report.boundary.client_failures_observed == Some(true));
+    let rate_limits_observed = reports
+        .iter()
+        .any(|report| report.boundary.rate_limits_observed == Some(true));
+    let inventory = ProofInspectorBundleInventory {
+        product_proof_count,
+        clean_product_proof_count,
+        agent_outcome_count,
+        clean_agent_outcome_count,
+        agent_run_suite_count,
+        availability_blocked_count,
+        degraded_report_count,
+    };
+    let boundary = ProofInspectorBundleBoundary {
+        source_free_summary: !privacy_boundary_failed,
+        privacy_boundary_failed,
+        read_only_boundary_failed,
+        client_failures_observed,
+        rate_limits_observed,
+    };
+    let (maturity_verdict, recommended_next_action) =
+        proof_bundle_verdict_and_action(&inventory, &boundary);
+    let mut notes = Vec::new();
+    if product_proof_count == 0 {
+        notes.push("bundle did not include a product-proof report".to_string());
+    }
+    if agent_outcome_count == 0 {
+        notes.push("bundle did not include an agent-run outcome report".to_string());
+    }
+    if availability_blocked_count > 0 {
+        notes.push("at least one report was availability-blocked or not comparable".to_string());
+    }
+    ProofInspectorBundleReport {
+        schema_version: "ctxhelm-proof-inspector-bundle-v1",
+        report_count: reports.len(),
+        inventory,
+        boundary,
+        maturity_verdict,
+        recommended_next_action,
+        reports,
+        notes,
+    }
+}
+
+fn render_proof_inspector_bundle(bundle: &ProofInspectorBundleReport) -> String {
+    let mut output = String::from("# ctxhelm Proof Bundle Inspector\n\n");
+    output.push_str(&format!(
+        "- Inspector schema: `{}`\n- Reports: `{}`\n- Maturity verdict: `{}`\n\n",
+        bundle.schema_version, bundle.report_count, bundle.maturity_verdict
+    ));
+    output.push_str("## Evidence Inventory\n\n");
+    output.push_str(&format!(
+        "- Product-proof reports: `{}`\n- Clean product proofs: `{}`\n- Agent outcome reports: `{}`\n- Clean agent outcomes: `{}`\n- Agent-run suite reports: `{}`\n- Availability-blocked reports: `{}`\n- Degraded reports: `{}`\n\n",
+        bundle.inventory.product_proof_count,
+        bundle.inventory.clean_product_proof_count,
+        bundle.inventory.agent_outcome_count,
+        bundle.inventory.clean_agent_outcome_count,
+        bundle.inventory.agent_run_suite_count,
+        bundle.inventory.availability_blocked_count,
+        bundle.inventory.degraded_report_count,
+    ));
+    output.push_str("## Boundaries\n\n");
+    output.push_str(&format!(
+        "- Summary source-free: `{}`\n- Privacy boundary failed: `{}`\n- Read-only boundary failed: `{}`\n- Client failures observed: `{}`\n- Rate limits observed: `{}`\n\n",
+        bundle.boundary.source_free_summary,
+        bundle.boundary.privacy_boundary_failed,
+        bundle.boundary.read_only_boundary_failed,
+        bundle.boundary.client_failures_observed,
+        bundle.boundary.rate_limits_observed,
+    ));
+    output.push_str("## Report Summaries\n\n");
+    for (index, report) in bundle.reports.iter().enumerate() {
+        output.push_str(&format!(
+            "- Report `{}` kind `{}` status `{}` claim `{}` next `{}`\n",
+            index + 1,
+            report.report_kind,
+            report.status,
+            report.outcome.claim,
+            report.recommended_next_action
+        ));
+    }
+    output.push_str("\n## Recommended Next Action\n\n");
+    output.push_str(&format!("- {}\n", bundle.recommended_next_action));
+    if !bundle.notes.is_empty() {
+        output.push_str("\n## Notes\n\n");
+        for note in &bundle.notes {
+            output.push_str(&format!("- {note}\n"));
+        }
+    }
+    output
+}
+
+fn proof_report_has_clean_product_proof(report: &ProofInspectorReport) -> bool {
+    let Some(product) = report.product_proof.as_ref() else {
+        return false;
+    };
+    !proof_report_has_privacy_boundary_failure(report)
+        && report.boundary.forbidden_boundary_events_observed != Some(true)
+        && product.release_gate_decision == "promote"
+        && product.default_promotion_allowed == Some(true)
+        && product.max_protected_target_miss_rate_at_10.unwrap_or(1.0) <= f64::EPSILON
+}
+
+fn proof_report_has_clean_agent_outcome(report: &ProofInspectorReport) -> bool {
+    (report.report_kind == "agent_run" || report.report_kind == "agent_run_suite")
+        && !proof_report_has_privacy_boundary_failure(report)
+        && report.boundary.forbidden_boundary_events_observed != Some(true)
+        && report.boundary.client_failures_observed != Some(true)
+        && report.boundary.rate_limits_observed != Some(true)
+        && report.boundary.missing_required_ctxhelm_calls_observed != Some(true)
+        && report.boundary.invalid_required_ctxhelm_calls_observed != Some(true)
+        && report.outcome.claim == "ctxhelm_improved"
+        && report.evidence.evidence_misses_observed != Some(true)
+        && report
+            .evidence
+            .evidence_only_targets_after_retry
+            .unwrap_or(0)
+            == 0
+        && report.evidence.under_read_targets_observed != Some(true)
+}
+
+fn proof_report_has_privacy_boundary_failure(report: &ProofInspectorReport) -> bool {
+    report.privacy_status.source_text_logged == Some(true)
+        || report.privacy_status.raw_prompt_stored == Some(true)
+        || report.privacy_status.raw_transcript_stored == Some(true)
+        || report.privacy_status.raw_mcp_traffic_stored == Some(true)
+}
+
+fn proof_bundle_verdict_and_action(
+    inventory: &ProofInspectorBundleInventory,
+    boundary: &ProofInspectorBundleBoundary,
+) -> (String, String) {
+    if boundary.privacy_boundary_failed {
+        return (
+            "privacy_boundary_failed".to_string(),
+            "Reject the bundle for public claims until every report is source-free.".to_string(),
+        );
+    }
+    if boundary.read_only_boundary_failed {
+        return (
+            "read_only_boundary_failed".to_string(),
+            "Fix forbidden or invalid agent-boundary events before using this bundle as proof."
+                .to_string(),
+        );
+    }
+    if inventory.clean_product_proof_count > 0 && inventory.clean_agent_outcome_count > 0 {
+        return (
+            "release_and_agent_outcome_evidence_ready".to_string(),
+            "Use this as the adoption-facing proof bundle, then repeat agent outcome suites across more clients before broader productivity claims.".to_string(),
+        );
+    }
+    if inventory.clean_product_proof_count > 0 {
+        return (
+            "product_proof_ready_agent_outcome_needed".to_string(),
+            "Pair the clean product proof with comparable real-agent outcome evidence before making agent-productivity claims.".to_string(),
+        );
+    }
+    if inventory.clean_agent_outcome_count > 0 {
+        return (
+            "agent_outcome_ready_product_proof_needed".to_string(),
+            "Pair the clean agent outcome proof with a current product-proof release gate before making release-readiness claims.".to_string(),
+        );
+    }
+    if inventory.availability_blocked_count > 0 {
+        return (
+            "availability_blocked".to_string(),
+            "Rerun availability-blocked clients before treating this proof bundle as comparable evidence.".to_string(),
+        );
+    }
+    (
+        "insufficient_proof".to_string(),
+        "Add at least one clean product-proof report and one clean agent outcome report."
+            .to_string(),
+    )
 }
 
 fn proof_summary_source(report: &serde_json::Value) -> &serde_json::Value {
@@ -10016,7 +10293,7 @@ mod tests {
         else {
             panic!("expected inspector proof command");
         };
-        assert_eq!(args.report, PathBuf::from("agent-run.json"));
+        assert_eq!(args.report, vec![PathBuf::from("agent-run.json")]);
         assert_eq!(args.repo, Some(PathBuf::from(".")));
         assert!(matches!(args.format, PackFormat::Json));
         assert_eq!(args.output, Some(PathBuf::from("proof-summary.json")));

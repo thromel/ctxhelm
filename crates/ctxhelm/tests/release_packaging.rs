@@ -865,6 +865,8 @@ fn inspector_smoke_script_contract() {
         "evidenceOnlyTargetsAfterRetry",
         "sourceFreeSummary",
         "product-proof",
+        "ctxhelm-proof-inspector-bundle-v1",
+        "release_and_agent_outcome_evidence_ready",
         "releaseGateDecision",
         "maxProtectedTargetMissRateAt10",
         "Use as source-free outcome evidence",

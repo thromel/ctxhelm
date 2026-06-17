@@ -63,6 +63,7 @@ PROOF_MD_OUT="${TMP_DIR}/proof-inspector.md"
 PROOF_JSON_OUT="${TMP_DIR}/proof-inspector.json"
 PRODUCT_PROOF_REPORT="${TMP_DIR}/product-proof.json"
 PRODUCT_PROOF_JSON_OUT="${TMP_DIR}/product-proof-inspector.json"
+PROOF_BUNDLE_JSON_OUT="${TMP_DIR}/proof-bundle-inspector.json"
 
 cat >"${PROOF_REPORT}" <<'EOF'
 {
@@ -202,6 +203,12 @@ EOF
     --report "${PRODUCT_PROOF_REPORT}" \
     --format json \
     --output "${PRODUCT_PROOF_JSON_OUT}"
+  run_ctxhelm inspector proof \
+    --repo "${REPO}" \
+    --report "${PRODUCT_PROOF_REPORT}" \
+    --report "${PROOF_REPORT}" \
+    --format json \
+    --output "${PROOF_BUNDLE_JSON_OUT}"
 )
 
 require_text "${JSON_OUT}" '"sourceTextLogged": false'
@@ -239,6 +246,13 @@ require_text "${PRODUCT_PROOF_JSON_OUT}" '"contextClaim": "beats_all_corpora"'
 require_text "${PRODUCT_PROOF_JSON_OUT}" '"maxProtectedTargetMissRateAt10": 0.0'
 require_text "${PRODUCT_PROOF_JSON_OUT}" '"sourceFreeSummary": true'
 reject_text "${PRODUCT_PROOF_JSON_OUT}" "INSPECTOR_UI_SOURCE_SENTINEL"
+
+require_text "${PROOF_BUNDLE_JSON_OUT}" '"schemaVersion": "ctxhelm-proof-inspector-bundle-v1"'
+require_text "${PROOF_BUNDLE_JSON_OUT}" '"maturityVerdict": "release_and_agent_outcome_evidence_ready"'
+require_text "${PROOF_BUNDLE_JSON_OUT}" '"cleanProductProofCount": 1'
+require_text "${PROOF_BUNDLE_JSON_OUT}" '"cleanAgentOutcomeCount": 1'
+require_text "${PROOF_BUNDLE_JSON_OUT}" '"privacyBoundaryFailed": false'
+reject_text "${PROOF_BUNDLE_JSON_OUT}" "INSPECTOR_UI_SOURCE_SENTINEL"
 
 PORT="$(python3 - <<'PY'
 import socket

@@ -2788,6 +2788,162 @@ fn inspector_proof_summarizes_product_proof_report_source_free() {
 }
 
 #[test]
+fn inspector_proof_summarizes_multi_report_bundle_source_free() {
+    let fixture = fixture_repo();
+    let product_report_path = fixture.temp.path().join("product-proof.json");
+    fs::write(
+        &product_report_path,
+        json!({
+            "suiteName": "product-proof-smoke",
+            "suiteId": "suite-hash",
+            "evaluatedRepositoryCount": 1,
+            "evaluatedCommitCount": 3,
+            "releaseGate": {
+                "decision": "promote",
+                "defaultPromotionAllowed": true,
+                "decisionReason": "Promote: source-free proof is clean.",
+                "lexicalComparison": {
+                    "contextClaim": "beats_all_corpora",
+                    "agentEvidenceClaim": "beats_all_corpora",
+                    "allFileClaim": "mixed",
+                    "averageContextDeltaAt10": 0.20,
+                    "averageAgentEvidenceDeltaAt10": 0.30,
+                    "averageFileDeltaAt10": 0.10
+                },
+                "corpusVerdicts": [
+                    {
+                        "repository": "fixture",
+                        "status": "beat",
+                        "protectedEvidenceTargetMissRateAt10": 0.0
+                    }
+                ]
+            },
+            "privacyStatus": {
+                "localOnly": true,
+                "sourceTextLogged": false,
+                "rawPromptStored": false,
+                "rawTranscriptStored": false,
+                "rawMcpTrafficStored": false,
+                "remoteEmbeddingsUsed": false,
+                "remoteRerankingUsed": false
+            }
+        })
+        .to_string(),
+    )
+    .unwrap();
+    let agent_report_path = fixture.temp.path().join("agent-run-suite.json");
+    fs::write(
+        &agent_report_path,
+        json!({
+            "schemaVersion": "ctxhelm-agent-run-eval-v1",
+            "status": "passed",
+            "workflowKind": "paired-agent-context-suite",
+            "client": {
+                "name": "codex",
+                "version": "Codex test"
+            },
+            "aggregate": {
+                "taskCount": 1,
+                "comparisonEligibleCount": 1,
+                "comparableCtxhelmLaneCount": 1,
+                "targetCoverageDeltaAverage": 0.25,
+                "targetReadCoverageDeltaAverage": 0.25,
+                "irrelevantReadDeltaSum": -2,
+                "ctxhelmToolCallsObserved": true,
+                "forbiddenToolCallsObserved": false,
+                "missingRequiredCtxhelmCallsObserved": false,
+                "invalidRequiredCtxhelmCallsObserved": false,
+                "clientFailuresObserved": false,
+                "rateLimitsObserved": false,
+                "ctxhelmEvidenceMissesObserved": false,
+                "ctxhelmEvidenceOnlyTargetsObserved": true,
+                "ctxhelmUnderReadTargetsObserved": false,
+                "retryCost": {
+                    "retryTriggeredLanes": 1,
+                    "retrySelectedLanes": 1,
+                    "avgReadFilesBeforeRetry": 3.0,
+                    "avgReadFilesAfterRetry": 2.0,
+                    "avgIrrelevantReadsBeforeRetry": 1.0,
+                    "avgIrrelevantReadsAfterRetry": 0.0,
+                    "targetReadCoverageBeforeRetry": 0.5,
+                    "targetReadCoverageAfterRetry": 1.0,
+                    "evidenceOnlyTargetsBeforeRetry": 1,
+                    "evidenceOnlyTargetsAfterRetry": 0
+                },
+                "readEfficiency": {
+                    "analysisAvailable": true,
+                    "efficientCtxhelmLane": "ctxhelm-standard",
+                    "efficientTargetReadCoverage": 1.0,
+                    "efficientTargetReadPrecision": 1.0,
+                    "efficientIrrelevantReadCount": 0
+                },
+                "outcomeClaim": "ctxhelm_improved",
+                "laneSummaries": [
+                    {
+                        "lane": "ctxhelm-standard",
+                        "averageTargetReadCoverage": 1.0,
+                        "targetReadPrecision": 1.0,
+                        "irrelevantReadCount": 0,
+                        "ctxhelmEvidenceOnlyTargetCount": 0
+                    }
+                ]
+            },
+            "privacyStatus": {
+                "localOnly": true,
+                "sourceTextLogged": false,
+                "rawPromptStored": false,
+                "rawTranscriptStored": false,
+                "rawMcpTrafficStored": false,
+                "remoteEmbeddingsUsed": false,
+                "remoteRerankingUsed": false
+            }
+        })
+        .to_string(),
+    )
+    .unwrap();
+
+    Command::cargo_bin("ctxhelm")
+        .unwrap()
+        .args(["inspector", "proof", "--report"])
+        .arg(&product_report_path)
+        .args(["--report"])
+        .arg(&agent_report_path)
+        .assert()
+        .success()
+        .stdout(contains("# ctxhelm Proof Bundle Inspector"))
+        .stdout(contains(
+            "Maturity verdict: `release_and_agent_outcome_evidence_ready`",
+        ))
+        .stdout(contains("Clean product proofs: `1`"))
+        .stdout(contains("Clean agent outcomes: `1`"))
+        .stdout(contains("Privacy boundary failed: `false`"))
+        .stdout(contains("Read-only boundary failed: `false`"))
+        .stdout(contains("Use this as the adoption-facing proof bundle"));
+
+    let rendered_json = json_stdout(
+        Command::cargo_bin("ctxhelm")
+            .unwrap()
+            .args(["inspector", "proof", "--report"])
+            .arg(&product_report_path)
+            .args(["--report"])
+            .arg(&agent_report_path)
+            .args(["--format", "json"])
+            .assert(),
+    );
+    assert_eq!(
+        rendered_json["schemaVersion"],
+        "ctxhelm-proof-inspector-bundle-v1"
+    );
+    assert_eq!(
+        rendered_json["maturityVerdict"],
+        "release_and_agent_outcome_evidence_ready"
+    );
+    assert_eq!(rendered_json["inventory"]["cleanProductProofCount"], 1);
+    assert_eq!(rendered_json["inventory"]["cleanAgentOutcomeCount"], 1);
+    assert_eq!(rendered_json["boundary"]["privacyBoundaryFailed"], false);
+}
+
+#[test]
 fn eval_benchmark_runs_named_suite_source_free() {
     let first = fixture_repo();
     let second = fixture_repo();

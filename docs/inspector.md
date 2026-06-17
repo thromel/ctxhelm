@@ -52,6 +52,15 @@ ctxhelm inspector proof \
   --format json
 ```
 
+Summarize a product-proof report together with an agent outcome report when you
+need an adoption-facing evidence bundle:
+
+```bash
+ctxhelm inspector proof \
+  --report .ctxhelm/proof/product-proof.json \
+  --report .ctxhelm/e2e/phase322-agent-run-codex-target-first-breadth-suite.json
+```
+
 The proof inspector summarizes agent-run proof reports and product-proof
 reports. For agent-run reports, it renders outcome claim, comparable task/lane
 counts, target-read coverage, evidence-only target state, retry cost, memory
@@ -59,8 +68,11 @@ guard status when reported, client failures/rate limits, forbidden boundary
 events, source-free privacy flags, and a recommended next action. For
 product-proof reports, it renders release-gate decision, promotion allowance,
 corpus verdict count, lexical/context claims, protected target miss-rate, and
-the source-free privacy boundary. It does not print raw task text, raw prompts,
-raw transcripts, MCP traffic, or target file lists.
+the source-free privacy boundary. When more than one `--report` is provided, it
+renders a bundle verdict with clean product-proof count, clean agent-outcome
+count, availability-blocked count, source-free/privacy status, read-only
+boundary status, and the next evidence action. It does not print raw task text,
+raw prompts, raw transcripts, MCP traffic, or target file lists.
 
 ## Local Shell
 
@@ -158,6 +170,7 @@ bash scripts/smoke-inspector.sh
 ```
 
 The smoke creates a temporary repository, exports JSON and HTML inspector
-artifacts, summarizes a synthetic source-free agent-run proof report, starts
-`ctxhelm inspector serve`, verifies the shell, graph, setup, and health routes,
-and rejects a source sentinel in all inspected outputs.
+artifacts, summarizes synthetic source-free agent-run, product-proof, and
+multi-report proof bundle reports, starts `ctxhelm inspector serve`, verifies
+the shell, graph, setup, and health routes, and rejects a source sentinel in all
+inspected outputs.
