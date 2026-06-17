@@ -344,7 +344,7 @@ pub(crate) fn build_proof_inspector_report(report: &serde_json::Value) -> ProofI
                 .get("client")
                 .and_then(|value| value.get("name"))
                 .and_then(serde_json::Value::as_str)
-                .or_else(|| {
+                .or({
                     if is_client_availability {
                         Some("multi-client")
                     } else {
