@@ -16,9 +16,9 @@ local-embeddings = [
 ]
 
 [dependencies]
-ctxhelm-compiler = { path = "../ctxhelm-compiler", version = "2.4.3" }
-ctxhelm-core = { path = "../ctxhelm-core", version = "2.4.3" }
-ctxhelm-index = { path = "../ctxhelm-index", version = "2.4.3" }
+ctxhelm-compiler = { path = "../ctxhelm-compiler", version = "2.4.4" }
+ctxhelm-core = { path = "../ctxhelm-core", version = "2.4.4" }
+ctxhelm-index = { path = "../ctxhelm-index", version = "2.4.4" }
 serde = { workspace = true }
 serde_json = { workspace = true }
 
