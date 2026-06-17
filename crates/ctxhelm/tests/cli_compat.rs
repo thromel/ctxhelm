@@ -429,6 +429,11 @@ fn setup_repo_json_reports_source_free_security_boundary() {
         value["setupCheck"]["schemaVersion"],
         "ctxhelm-setup-check-report-v1"
     );
+    assert_eq!(
+        value["setupCheck"]["checkedAdapters"],
+        json!(["cursor", "claude", "opencode"])
+    );
+    assert_eq!(value["setupCheck"]["summary"]["failCount"], 0);
     assert!(value["plannedFiles"]
         .as_array()
         .unwrap()
@@ -466,6 +471,13 @@ fn setup_claude_json_dry_run_reports_planned_without_writes() {
     assert_eq!(
         value["setupCheck"]["schemaVersion"],
         "ctxhelm-setup-check-report-v1"
+    );
+    assert_eq!(value["setupCheck"]["checkedAdapters"], json!(["claude"]));
+    assert!(
+        value["setupCheck"]["summary"]["failCount"]
+            .as_u64()
+            .unwrap()
+            > 0
     );
     assert!(value["setupCheck"]["items"]
         .as_array()
@@ -859,6 +871,8 @@ fn setup_check_json_reports_source_free_project_mcp_readiness() {
 
     assert_eq!(value["schemaVersion"], "ctxhelm-setup-check-report-v1");
     assert_eq!(value["passed"], true);
+    assert_eq!(value["checkedAdapters"], json!(["claude"]));
+    assert_eq!(value["summary"]["failCount"], 0);
     assert_eq!(value["repoRoot"], fixture.repo.display().to_string());
     assert!(value["items"]
         .as_array()
@@ -892,6 +906,13 @@ fn setup_check_all_json_reports_all_supported_agent_artifacts() {
 
     assert_eq!(value["schemaVersion"], "ctxhelm-setup-check-report-v1");
     assert_eq!(value["passed"], true);
+    assert_eq!(
+        value["checkedAdapters"],
+        json!(["cursor", "claude", "opencode"])
+    );
+    assert_eq!(value["summary"]["passCount"], 7);
+    assert_eq!(value["summary"]["warnCount"], 1);
+    assert_eq!(value["summary"]["failCount"], 0);
     let items = value["items"].as_array().unwrap();
     for name in [
         "AGENTS.md",
@@ -936,6 +957,8 @@ fn setup_check_json_failure_preserves_parseable_report_and_exit_status() {
 
     assert_eq!(value["schemaVersion"], "ctxhelm-setup-check-report-v1");
     assert_eq!(value["passed"], false);
+    assert_eq!(value["checkedAdapters"], json!(["cursor"]));
+    assert!(value["summary"]["failCount"].as_u64().unwrap() > 0);
     assert!(value["items"]
         .as_array()
         .unwrap()

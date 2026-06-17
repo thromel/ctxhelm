@@ -97,12 +97,24 @@ pub struct SetupCheckReport {
     #[serde(default = "setup_check_report_schema_version")]
     pub schema_version: String,
     pub repo_root: PathBuf,
+    #[serde(default)]
+    pub checked_adapters: Vec<AgentAdapter>,
+    #[serde(default)]
+    pub summary: SetupCheckSummary,
     pub items: Vec<SetupCheckItem>,
     pub passed: bool,
 }
 
 pub fn setup_check_report_schema_version() -> String {
     "ctxhelm-setup-check-report-v1".to_string()
+}
+
+#[derive(Debug, Clone, Copy, Default, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct SetupCheckSummary {
+    pub pass_count: usize,
+    pub warn_count: usize,
+    pub fail_count: usize,
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
@@ -376,16 +388,29 @@ pub fn run_setup_check(
         detail: "Run `ctxhelm --version`; if an agent cannot find ctxhelm on PATH, use the absolute path from `which ctxhelm` in that agent's explicit configuration.".to_string(),
     });
 
-    let passed = !items
-        .iter()
-        .any(|item| item.status == SetupCheckStatus::Fail);
+    let summary = setup_check_summary(&items);
+    let passed = summary.fail_count == 0;
 
     Ok(SetupCheckReport {
         schema_version: setup_check_report_schema_version(),
         repo_root: repo_root.to_path_buf(),
+        checked_adapters: options.adapters.clone(),
+        summary,
         items,
         passed,
     })
+}
+
+fn setup_check_summary(items: &[SetupCheckItem]) -> SetupCheckSummary {
+    let mut summary = SetupCheckSummary::default();
+    for item in items {
+        match item.status {
+            SetupCheckStatus::Pass => summary.pass_count += 1,
+            SetupCheckStatus::Warn => summary.warn_count += 1,
+            SetupCheckStatus::Fail => summary.fail_count += 1,
+        }
+    }
+    summary
 }
 
 pub fn build_setup_run_report(input: SetupRunReportInput) -> SetupRunReport {
@@ -1515,6 +1540,15 @@ mod setup_check_tests {
 
         assert!(report.passed);
         assert_eq!(report.schema_version, "ctxhelm-setup-check-report-v1");
+        assert_eq!(report.checked_adapters, options.adapters);
+        assert_eq!(
+            report.summary,
+            SetupCheckSummary {
+                pass_count: 6,
+                warn_count: 2,
+                fail_count: 0,
+            }
+        );
         assert_item_status(&report, "AGENTS.md", SetupCheckStatus::Pass);
         assert_item_status(&report, ".ctxhelm/ctxhelm.toml", SetupCheckStatus::Pass);
         assert_item_status(&report, ".cursor/rules/ctxhelm.mdc", SetupCheckStatus::Pass);
@@ -1541,11 +1575,19 @@ mod setup_check_tests {
         let report = SetupCheckReport {
             schema_version: setup_check_report_schema_version(),
             repo_root: PathBuf::from("/repo"),
+            checked_adapters: vec![AgentAdapter::Claude],
+            summary: SetupCheckSummary {
+                pass_count: 1,
+                warn_count: 0,
+                fail_count: 0,
+            },
             items: Vec::new(),
             passed: true,
         };
         let value = serde_json::to_value(&report).unwrap();
         assert_eq!(value["schemaVersion"], "ctxhelm-setup-check-report-v1");
+        assert_eq!(value["checkedAdapters"], serde_json::json!(["claude"]));
+        assert_eq!(value["summary"]["passCount"], 1);
         assert!(value.get("schema_version").is_none());
 
         let old_json = serde_json::json!({
@@ -1555,6 +1597,8 @@ mod setup_check_tests {
         });
         let old_report: SetupCheckReport = serde_json::from_value(old_json).unwrap();
         assert_eq!(old_report.schema_version, "ctxhelm-setup-check-report-v1");
+        assert!(old_report.checked_adapters.is_empty());
+        assert_eq!(old_report.summary, SetupCheckSummary::default());
     }
 
     #[test]
