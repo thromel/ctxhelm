@@ -13,6 +13,48 @@ fn python3_command() -> Command {
     command
 }
 
+fn file_sha256(path: &Path) -> String {
+    let output = python3_command()
+        .args([
+            "-c",
+            "import hashlib, pathlib, sys; print(hashlib.sha256(pathlib.Path(sys.argv[1]).read_bytes()).hexdigest())",
+        ])
+        .arg(path)
+        .output()
+        .unwrap();
+    assert!(
+        output.status.success(),
+        "sha256 helper failed: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    String::from_utf8(output.stdout).unwrap().trim().to_string()
+}
+
+fn add_discovered_only_retry_defaults(report: &mut serde_json::Value) {
+    let zero = serde_json::Value::Number(serde_json::Number::from(0));
+    if let Some(retry_cost) = report
+        .get_mut("aggregate")
+        .and_then(|aggregate| aggregate.get_mut("retryCost"))
+    {
+        retry_cost["discoveredOnlyTargetsBeforeRetry"] = zero.clone();
+        retry_cost["discoveredOnlyTargetsAfterRetry"] = zero.clone();
+    }
+    if let Some(tasks) = report
+        .get_mut("tasks")
+        .and_then(serde_json::Value::as_array_mut)
+    {
+        for task in tasks {
+            if let Some(retry_cost) = task
+                .get_mut("comparison")
+                .and_then(|comparison| comparison.get_mut("retryCost"))
+            {
+                retry_cost["discoveredOnlyTargetsBeforeRetry"] = zero.clone();
+                retry_cost["discoveredOnlyTargetsAfterRetry"] = zero.clone();
+            }
+        }
+    }
+}
+
 #[test]
 fn release_package_script_contract() {
     let repo_root = workspace_root();
@@ -1441,12 +1483,12 @@ fn agent_run_proof_checker_accepts_phase322_and_rejects_regression() {
         String::from_utf8_lossy(&compile.stderr)
     );
 
-    let phase322_report =
+    let archived_phase322_report =
         repo_root.join(".ctxhelm/e2e/phase322-agent-run-codex-target-first-breadth-suite.json");
     let codex_runner_script = repo_root.join("scripts/e2e-agent-run-codex.sh");
     let codex_suite = repo_root.join(".planning/e2e/2026-06-06-phase251-codex-rd-suite.json");
     assert!(
-        phase322_report.exists(),
+        archived_phase322_report.exists(),
         "Phase 322 agent-run proof fixture is missing"
     );
     assert!(
@@ -1457,6 +1499,21 @@ fn agent_run_proof_checker_accepts_phase322_and_rejects_regression() {
         codex_suite.exists(),
         "Codex agent-run suite file is missing"
     );
+
+    let proof_fixture_temp = TempDir::new().unwrap();
+    let phase322_report = proof_fixture_temp
+        .path()
+        .join("phase322-current-runner-compatible.json");
+    let mut phase322_payload: serde_json::Value =
+        serde_json::from_slice(&fs::read(&archived_phase322_report).unwrap()).unwrap();
+    phase322_payload["runner"]["scriptSha256"] =
+        serde_json::Value::String(file_sha256(&codex_runner_script));
+    add_discovered_only_retry_defaults(&mut phase322_payload);
+    fs::write(
+        &phase322_report,
+        serde_json::to_vec_pretty(&phase322_payload).unwrap(),
+    )
+    .unwrap();
 
     let proof_args = [
         "--workflow",
@@ -1748,7 +1805,7 @@ fn agent_run_proof_checker_accepts_phase322_and_rejects_regression() {
     );
     assert_eq!(
         summary["aggregateConsistency"]["checkedRetryCostMetricCount"],
-        10
+        12
     );
     assert_eq!(
         summary["aggregateConsistency"]["strictReadEfficiencyConsistencyChecks"],
@@ -3072,9 +3129,14 @@ fn codex_agent_run_e2e_script_contract() {
         "targetReadCoverageAfterRetry",
         "evidenceOnlyTargetCountBeforeRetry",
         "evidenceOnlyTargetCountAfterRetry",
+        "discoveredOnlyTargetCountBeforeRetry",
+        "discoveredOnlyTargetCountAfterRetry",
+        "discoveredOnlyTargetsBeforeRetry",
+        "discoveredOnlyTargetsAfterRetry",
         "readFileCountDelta",
         "irrelevantReadCountDelta",
         "ctxhelm_evidence_only_targets",
+        "target_discovered_only_targets",
         "\"client\": {\"name\": \"codex\"",
         "rawCommandOutputStored",
         "forbiddenCommandCount",

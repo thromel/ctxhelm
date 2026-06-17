@@ -1166,7 +1166,7 @@ fn render_retry_cost(value: Option<&serde_json::Value>) -> String {
         return String::new();
     };
     format!(
-        "- Retry cost: triggered `{}` selected `{}` avg reads before `{}` after `{}` avg irrelevant before `{}` after `{}` target-read coverage before `{}` after `{}` evidence-only targets before `{}` after `{}`\n",
+        "- Retry cost: triggered `{}` selected `{}` avg reads before `{}` after `{}` avg irrelevant before `{}` after `{}` target-read coverage before `{}` after `{}` evidence-only targets before `{}` after `{}` discovered-only targets before `{}` after `{}`\n",
         retry
             .get("retryTriggeredLanes")
             .and_then(serde_json::Value::as_u64)
@@ -1214,6 +1214,16 @@ fn render_retry_cost(value: Option<&serde_json::Value>) -> String {
             .unwrap_or_else(|| "n/a".to_string()),
         retry
             .get("evidenceOnlyTargetsAfterRetry")
+            .and_then(serde_json::Value::as_u64)
+            .map(|value| value.to_string())
+            .unwrap_or_else(|| "n/a".to_string()),
+        retry
+            .get("discoveredOnlyTargetsBeforeRetry")
+            .and_then(serde_json::Value::as_u64)
+            .map(|value| value.to_string())
+            .unwrap_or_else(|| "n/a".to_string()),
+        retry
+            .get("discoveredOnlyTargetsAfterRetry")
             .and_then(serde_json::Value::as_u64)
             .map(|value| value.to_string())
             .unwrap_or_else(|| "n/a".to_string()),

@@ -2170,6 +2170,8 @@ fn eval_agent_run_renders_source_free_report() {
                         "selected": true,
                         "evidenceOnlyTargetCountBeforeRetry": 1,
                         "evidenceOnlyTargetCountAfterRetry": 0,
+                        "discoveredOnlyTargetCountBeforeRetry": 1,
+                        "discoveredOnlyTargetCountAfterRetry": 0,
                         "readFileCountBeforeRetry": 3,
                         "readFileCountAfterRetry": 2,
                         "irrelevantReadCountBeforeRetry": 1,
@@ -2230,7 +2232,9 @@ fn eval_agent_run_renders_source_free_report() {
                     "targetReadCoverageBeforeRetry": 0.5,
                     "targetReadCoverageAfterRetry": 1.0,
                     "evidenceOnlyTargetsBeforeRetry": 1,
-                    "evidenceOnlyTargetsAfterRetry": 0
+                    "evidenceOnlyTargetsAfterRetry": 0,
+                    "discoveredOnlyTargetsBeforeRetry": 1,
+                    "discoveredOnlyTargetsAfterRetry": 0
                 },
                 "readEfficiency": {
                     "analysisAvailable": true,
@@ -2305,7 +2309,7 @@ fn eval_agent_run_renders_source_free_report() {
         .stdout(contains("Rate limits observed: `false`"))
         .stdout(contains("ctxhelm evidence misses observed: `false`"))
         .stdout(contains("ctxhelm evidence-only targets observed: `false`"))
-        .stdout(contains("Retry cost: triggered `1` selected `1` avg reads before `3.00` after `2.00` avg irrelevant before `1.00` after `0.00` target-read coverage before `0.50` after `1.00` evidence-only targets before `1` after `0`"))
+        .stdout(contains("Retry cost: triggered `1` selected `1` avg reads before `3.00` after `2.00` avg irrelevant before `1.00` after `0.00` target-read coverage before `0.50` after `1.00` evidence-only targets before `1` after `0` discovered-only targets before `1` after `0`"))
         .stdout(contains("Read efficiency: baseline `baseline` efficient ctxhelm `ctxhelm-brief` target-read coverage `0.50` -> `1.00` read precision `0.25` -> `1.00` irrelevant rate `0.50` -> `0.00` extra reads `-2` extra irrelevant `-2` recovered targets `1` extra reads/recovered `-2.00` extra irrelevant/recovered `-2.00`"))
         .stdout(contains(
             "Recommended R&D actions: `preserve_current_agent_contract(p3)`",
@@ -2318,7 +2322,7 @@ fn eval_agent_run_renders_source_free_report() {
         .stdout(contains("client failure `none` rate limited `false`"))
         .stdout(contains("missed targets `0`"))
         .stdout(contains("ctxhelm evidence files `3` evidence target hits `2` evidence-only targets `0` evidence misses `0`"))
-        .stdout(contains("retry eligible `true` triggered `true` selected `true` evidence-only before `1` after `0` read delta `-1` irrelevant delta `-1` target-read delta `0.50`"))
+        .stdout(contains("retry eligible `true` triggered `true` selected `true` evidence-only before `1` after `0` discovered-only before `1` after `0` read delta `-1` irrelevant delta `-1` target-read delta `0.50`"))
         .stdout(contains("read roles `docs=1, source=1`"))
         .stdout(contains("ctxhelm calls `2`"))
         .stdout(contains("forbidden calls `0`"));
@@ -2581,7 +2585,9 @@ fn eval_agent_run_renders_source_free_suite_report() {
                     "targetReadCoverageBeforeRetry": 0.5,
                     "targetReadCoverageAfterRetry": 0.75,
                     "evidenceOnlyTargetsBeforeRetry": 1,
-                    "evidenceOnlyTargetsAfterRetry": 0
+                    "evidenceOnlyTargetsAfterRetry": 0,
+                    "discoveredOnlyTargetsBeforeRetry": 1,
+                    "discoveredOnlyTargetsAfterRetry": 0
                 },
                 "readEfficiency": {
                     "analysisAvailable": true,
@@ -2729,7 +2735,7 @@ fn eval_agent_run_renders_source_free_suite_report() {
         .stdout(contains("Target coverage delta average: `0.25`"))
         .stdout(contains("Target read coverage delta average: `0.25`"))
         .stdout(contains("Irrelevant read delta sum: `3`"))
-        .stdout(contains("Retry cost: triggered `1` selected `1` avg reads before `4.00` after `5.00` avg irrelevant before `2.00` after `1.00` target-read coverage before `0.50` after `0.75` evidence-only targets before `1` after `0`"))
+        .stdout(contains("Retry cost: triggered `1` selected `1` avg reads before `4.00` after `5.00` avg irrelevant before `2.00` after `1.00` target-read coverage before `0.50` after `0.75` evidence-only targets before `1` after `0` discovered-only targets before `1` after `0`"))
         .stdout(contains("Read efficiency: baseline `baseline` efficient ctxhelm `ctxhelm-brief` target-read coverage `0.50` -> `0.75` read precision `0.25` -> `0.60` irrelevant rate `0.50` -> `0.20` extra reads `-3` extra irrelevant `-3` recovered targets `1` extra reads/recovered `-3.00` extra irrelevant/recovered `-3.00`"))
         .stdout(contains("## Suite Lanes"))
         .stdout(contains("ctxhelm-brief"))
@@ -2820,7 +2826,9 @@ fn inspector_proof_summarizes_agent_run_report_source_free() {
                     "targetReadCoverageBeforeRetry": 0.5,
                     "targetReadCoverageAfterRetry": 0.75,
                     "evidenceOnlyTargetsBeforeRetry": 1,
-                    "evidenceOnlyTargetsAfterRetry": 0
+                    "evidenceOnlyTargetsAfterRetry": 0,
+                    "discoveredOnlyTargetsBeforeRetry": 1,
+                    "discoveredOnlyTargetsAfterRetry": 0
                 },
                 "readEfficiency": {
                     "analysisAvailable": true,
@@ -3271,7 +3279,9 @@ fn inspector_proof_summarizes_multi_report_bundle_source_free() {
                     "targetReadCoverageBeforeRetry": 0.5,
                     "targetReadCoverageAfterRetry": 1.0,
                     "evidenceOnlyTargetsBeforeRetry": 1,
-                    "evidenceOnlyTargetsAfterRetry": 0
+                    "evidenceOnlyTargetsAfterRetry": 0,
+                    "discoveredOnlyTargetsBeforeRetry": 1,
+                    "discoveredOnlyTargetsAfterRetry": 0
                 },
                 "readEfficiency": {
                     "analysisAvailable": true,

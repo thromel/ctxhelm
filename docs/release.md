@@ -425,6 +425,9 @@ lanes, `1.0` minimum average target-read coverage in each ctxhelm lane,
 retry-cost fields, no runner-fingerprint gap, no more than two extra reads
 across best lanes, and no client failures, rate limits, forbidden commands,
 evidence misses, evidence-only targets, or under-read targets.
+The Codex runner also retries ctxhelm lanes when a target is discovered but not
+read, and the retry-cost summary records discovered-only target counts before
+and after retry so path discovery is not mistaken for file consumption.
 Maintainers can adjust the thresholds with
 `CTXHELM_AGENT_RUN_MIN_TASK_COUNT`,
 `CTXHELM_AGENT_RUN_MIN_COMPARISON_ELIGIBLE`,

@@ -351,6 +351,8 @@ retry_cost = {
     "targetReadCoverageAfterRetrySum": 0.0,
     "evidenceOnlyTargetsBeforeRetry": 0,
     "evidenceOnlyTargetsAfterRetry": 0,
+    "discoveredOnlyTargetsBeforeRetry": 0,
+    "discoveredOnlyTargetsAfterRetry": 0,
 }
 privacy = {
     "localOnly": True,
@@ -435,6 +437,8 @@ for entry in entries:
             retry_cost["targetReadCoverageAfterRetrySum"] += float(lane_retry.get("targetReadCoverageAfterRetry", 0.0) or 0.0)
             retry_cost["evidenceOnlyTargetsBeforeRetry"] += int(lane_retry.get("evidenceOnlyTargetCountBeforeRetry", 0) or 0)
             retry_cost["evidenceOnlyTargetsAfterRetry"] += int(lane_retry.get("evidenceOnlyTargetCountAfterRetry", 0) or 0)
+            retry_cost["discoveredOnlyTargetsBeforeRetry"] += int(lane_retry.get("discoveredOnlyTargetCountBeforeRetry", 0) or 0)
+            retry_cost["discoveredOnlyTargetsAfterRetry"] += int(lane_retry.get("discoveredOnlyTargetCountAfterRetry", 0) or 0)
         bucket = lane_totals[lane_id]
         bucket["taskCount"] += 1
         bucket["passedCount"] += 1 if lane.get("status") == "passed" else 0
@@ -567,6 +571,8 @@ retry_cost_summary = {
     "targetReadCoverageAfterRetry": retry_cost["targetReadCoverageAfterRetrySum"] / retry_triggered if retry_triggered else 0.0,
     "evidenceOnlyTargetsBeforeRetry": retry_cost["evidenceOnlyTargetsBeforeRetry"],
     "evidenceOnlyTargetsAfterRetry": retry_cost["evidenceOnlyTargetsAfterRetry"],
+    "discoveredOnlyTargetsBeforeRetry": retry_cost["discoveredOnlyTargetsBeforeRetry"],
+    "discoveredOnlyTargetsAfterRetry": retry_cost["discoveredOnlyTargetsAfterRetry"],
 }
 target_delta_avg = comparison["targetCoverageDeltaSum"] / task_count if task_count else 0.0
 target_read_delta_avg = comparison["targetReadCoverageDeltaSum"] / task_count if task_count else 0.0
@@ -1450,7 +1456,10 @@ needs_retry = (
     lane.get("evaluationEligible", False)
     and not lane.get("clientFailureKind")
     and not lane.get("forbiddenCommands")
-    and int(metrics.get("ctxhelmEvidenceOnlyTargetCount", 0) or 0) > 0
+    and (
+        int(metrics.get("ctxhelmEvidenceOnlyTargetCount", 0) or 0) > 0
+        or int(metrics.get("targetDiscoveredOnlyCount", 0) or 0) > 0
+    )
 )
 print("retry" if needs_retry else "keep")
 PY
@@ -1480,6 +1489,8 @@ lane["retry"] = {
     "selected": False,
     "evidenceOnlyTargetCountBeforeRetry": int(metrics.get("ctxhelmEvidenceOnlyTargetCount", 0) or 0),
     "evidenceOnlyTargetCountAfterRetry": int(metrics.get("ctxhelmEvidenceOnlyTargetCount", 0) or 0),
+    "discoveredOnlyTargetCountBeforeRetry": int(metrics.get("targetDiscoveredOnlyCount", 0) or 0),
+    "discoveredOnlyTargetCountAfterRetry": int(metrics.get("targetDiscoveredOnlyCount", 0) or 0),
     "readFileCountBeforeRetry": int(metrics.get("readFileCount", 0) or 0),
     "readFileCountAfterRetry": int(metrics.get("readFileCount", 0) or 0),
     "irrelevantReadCountBeforeRetry": int(metrics.get("irrelevantReadCount", 0) or 0),
@@ -1547,7 +1558,16 @@ selected = dict(selected)
 selected["lane"] = lane_name
 selected["retryAttempted"] = True
 selected["retrySelected"] = selected_retry
-selected["retryReason"] = "ctxhelm_evidence_only_targets"
+original_evidence_only = int(original_summary["ctxhelmEvidenceOnlyTargetCount"] or 0)
+original_discovered_only = int(original_summary["targetDiscoveredOnlyCount"] or 0)
+if original_evidence_only > 0 and original_discovered_only > 0:
+    retry_reason = "ctxhelm_evidence_only_and_discovered_only_targets"
+elif original_evidence_only > 0:
+    retry_reason = "ctxhelm_evidence_only_targets"
+else:
+    retry_reason = "target_discovered_only_targets"
+
+selected["retryReason"] = retry_reason
 selected["initialAttempt"] = original_summary
 selected["retryAttempt"] = retry_summary
 selected["retry"] = {
@@ -1556,6 +1576,8 @@ selected["retry"] = {
     "selected": selected_retry,
     "evidenceOnlyTargetCountBeforeRetry": original_summary["ctxhelmEvidenceOnlyTargetCount"],
     "evidenceOnlyTargetCountAfterRetry": retry_summary["ctxhelmEvidenceOnlyTargetCount"],
+    "discoveredOnlyTargetCountBeforeRetry": original_summary["targetDiscoveredOnlyCount"],
+    "discoveredOnlyTargetCountAfterRetry": retry_summary["targetDiscoveredOnlyCount"],
     "readFileCountBeforeRetry": original_summary["readFileCount"],
     "readFileCountAfterRetry": retry_summary["readFileCount"],
     "irrelevantReadCountBeforeRetry": original_summary["irrelevantReadCount"],
@@ -1657,6 +1679,8 @@ def retry_cost_summary(lanes):
         "targetReadCoverageAfterRetry": sum(float(lane_retry.get("targetReadCoverageAfterRetry", 0.0) or 0.0) for lane_retry in triggered) / count if count else 0.0,
         "evidenceOnlyTargetsBeforeRetry": sum(int(lane_retry.get("evidenceOnlyTargetCountBeforeRetry", 0) or 0) for lane_retry in triggered),
         "evidenceOnlyTargetsAfterRetry": sum(int(lane_retry.get("evidenceOnlyTargetCountAfterRetry", 0) or 0) for lane_retry in triggered),
+        "discoveredOnlyTargetsBeforeRetry": sum(int(lane_retry.get("discoveredOnlyTargetCountBeforeRetry", 0) or 0) for lane_retry in triggered),
+        "discoveredOnlyTargetsAfterRetry": sum(int(lane_retry.get("discoveredOnlyTargetCountAfterRetry", 0) or 0) for lane_retry in triggered),
     }
 
 def read_efficiency_summary(baseline, selected):

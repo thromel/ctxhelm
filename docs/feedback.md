@@ -251,8 +251,9 @@ python3 scripts/check-agent-run-proof.py \
 The checker enforces the source-free privacy contract, runner fingerprint
 metadata, expected client identity, expected ctxhelm version, comparable-lane
 counts, current-suite task hashes and target lists, per-task lane metrics,
-target-read coverage floors, retry-cost fields, aggregate consistency against
-derived task comparisons, lane-summary metrics derived from
+target-read coverage floors, retry-cost fields, discovered-only target counts
+before and after retry, aggregate consistency against derived task comparisons,
+lane-summary metrics derived from
 `tasks[*].lanes[*].metrics`, aggregate retry-cost metrics derived from
 per-task retry costs, read-efficiency metrics derived from lane summaries, and
 top-level comparison aggregates derived from `tasks[*].comparison`, including

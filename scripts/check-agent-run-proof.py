@@ -54,6 +54,8 @@ RETRY_COST_COUNT_FIELDS = (
     "retrySelectedLanes",
     "evidenceOnlyTargetsBeforeRetry",
     "evidenceOnlyTargetsAfterRetry",
+    "discoveredOnlyTargetsBeforeRetry",
+    "discoveredOnlyTargetsAfterRetry",
 )
 
 RETRY_COST_AVERAGE_FIELDS = (
@@ -408,6 +410,8 @@ def validate_retry_cost(retry_cost: dict, label: str) -> None:
         "targetReadCoverageAfterRetry",
         "evidenceOnlyTargetsBeforeRetry",
         "evidenceOnlyTargetsAfterRetry",
+        "discoveredOnlyTargetsBeforeRetry",
+        "discoveredOnlyTargetsAfterRetry",
     ):
         if field not in retry_cost:
             fail(f"{label}.retryCost.{field} was missing")
@@ -415,6 +419,8 @@ def validate_retry_cost(retry_cost: dict, label: str) -> None:
         fail(f"{label}.retryCost selected more lanes than it triggered")
     if int(retry_cost["evidenceOnlyTargetsAfterRetry"]) != 0:
         fail(f"{label}.retryCost evidence-only targets after retry was not zero")
+    if int(retry_cost["discoveredOnlyTargetsAfterRetry"]) != 0:
+        fail(f"{label}.retryCost discovered-only targets after retry was not zero")
 
 
 def validate_common_report(report: dict, args: argparse.Namespace, label: str) -> None:
