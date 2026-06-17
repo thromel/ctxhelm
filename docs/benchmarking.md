@@ -1652,6 +1652,13 @@ Recommendation today:
   report rate limiting, so the artifact is `degraded` with zero
   comparison-eligible tasks and zero comparable ctxhelm lanes. This remains
   client-availability evidence, not retrieval-quality evidence.
+- Phase 315 makes that boundary explicit in report JSON. Claude paired-run and
+  suite reports expose `clientAvailability.tinyPromptAvailable` separately from
+  `clientAvailability.pairedSuiteAvailable`, with
+  `clientAvailability.availabilityBlocker` naming blockers such as
+  `rate_limit`, `client_failure`, or `no_comparable_lanes`. A tiny-prompt pass
+  is not enough to support retrieval-quality claims unless the paired suite is
+  also comparable.
 - Phase 222 adds memory-vs-signal R&D measurement. The multi-repo memory
   generalization suite can run with `--semantic --semantic-provider local_hash`
   and reports source-free semantic selected-target pairs, graph-edge ablation

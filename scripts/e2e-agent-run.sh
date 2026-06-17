@@ -426,6 +426,7 @@ for entry in entries:
         "taskSha256": report.get("task", {}).get("taskSha256"),
         "targetFiles": report.get("targetFiles", []),
         "clientPreflight": report.get("clientPreflight", {}),
+        "clientAvailability": report.get("clientAvailability", {}),
         "comparison": report.get("comparison", {}),
         "lanes": report.get("lanes", []),
         "privacyStatus": report.get("privacyStatus", {}),
@@ -548,6 +549,92 @@ client_preflight_failure_count = sum(
 client_preflight_rate_limit_count = sum(
     1 for task in tasks if task.get("clientPreflight", {}).get("rateLimitObserved")
 )
+
+def derive_task_availability(task):
+    availability = task.get("clientAvailability") or {}
+    if availability:
+        return availability
+    preflight = task.get("clientPreflight") or {}
+    task_comparison = task.get("comparison") or {}
+    comparable_lane_count = int(task_comparison.get("comparableCtxhelmLaneCount", 0) or 0)
+    comparison_eligible = bool(task_comparison.get("comparisonEligible", False))
+    rate_limited = bool(
+        task_comparison.get("rateLimitsObserved", False)
+        or preflight.get("rateLimitObserved", False)
+    )
+    client_failure = bool(
+        task_comparison.get("clientFailuresObserved", False)
+        or preflight.get("clientFailureKind")
+        or preflight.get("status") == "failed"
+    )
+    paired_suite_available = bool(
+        comparison_eligible
+        and comparable_lane_count > 0
+        and not rate_limited
+        and not bool(task_comparison.get("clientFailuresObserved", False))
+    )
+    if rate_limited:
+        blocker = "rate_limit"
+    elif task_comparison.get("clientFailuresObserved", False):
+        blocker = "paired_suite_client_failure"
+    elif preflight.get("clientFailureKind"):
+        blocker = preflight.get("clientFailureKind")
+    elif comparable_lane_count == 0 or not comparison_eligible:
+        blocker = "no_comparable_lanes"
+    elif preflight.get("status") in {"not_requested", "disabled"}:
+        blocker = preflight.get("status")
+    elif preflight.get("status") != "passed":
+        blocker = "tiny_prompt_unavailable"
+    else:
+        blocker = None
+    return {
+        "tinyPromptAvailable": preflight.get("status") == "passed",
+        "tinyPromptStatus": preflight.get("status"),
+        "pairedSuiteAvailable": paired_suite_available,
+        "rateLimited": rate_limited,
+        "clientFailureObserved": client_failure,
+        "comparableLaneCount": comparable_lane_count,
+        "availabilityBlocker": blocker,
+    }
+
+task_availability = [derive_task_availability(task) for task in tasks]
+tiny_prompt_available_count = sum(
+    1 for availability in task_availability if availability.get("tinyPromptAvailable")
+)
+paired_suite_available_count = sum(
+    1 for availability in task_availability if availability.get("pairedSuiteAvailable")
+)
+availability_rate_limited = any(
+    availability.get("rateLimited", False) for availability in task_availability
+)
+availability_client_failure = any(
+    availability.get("clientFailureObserved", False) for availability in task_availability
+)
+availability_blockers = sorted({
+    availability.get("availabilityBlocker")
+    for availability in task_availability
+    if availability.get("availabilityBlocker")
+})
+suite_paired_available = bool(
+    task_count
+    and paired_suite_available_count == task_count
+    and comparison_eligible_count == task_count
+    and not availability_rate_limited
+    and not comparison["clientFailuresObserved"]
+)
+if suite_paired_available:
+    availability_blocker = None
+elif availability_rate_limited:
+    availability_blocker = "rate_limit"
+elif availability_client_failure:
+    availability_blocker = "client_failure"
+elif task_count and paired_suite_available_count == 0:
+    availability_blocker = "no_comparable_lanes"
+elif task_count and tiny_prompt_available_count == 0:
+    availability_blocker = "tiny_prompt_unavailable"
+else:
+    availability_blocker = None
+
 target_delta_avg = comparison["targetCoverageDeltaSum"] / task_count if task_count else 0.0
 target_read_delta_avg = comparison["targetReadCoverageDeltaSum"] / task_count if task_count else 0.0
 irrelevant_delta_sum = comparison["irrelevantReadDeltaSum"]
@@ -663,6 +750,17 @@ payload = {
         "taskCount": task_count,
     },
     "tasks": tasks,
+    "clientAvailability": {
+        "tinyPromptAvailable": tiny_prompt_available_count > 0,
+        "tinyPromptAvailableCount": tiny_prompt_available_count,
+        "pairedSuiteAvailable": suite_paired_available,
+        "pairedSuiteAvailableCount": paired_suite_available_count,
+        "rateLimited": availability_rate_limited,
+        "clientFailureObserved": availability_client_failure,
+        "comparableLaneCount": comparison["comparableCtxhelmLaneCount"],
+        "availabilityBlocker": availability_blocker,
+        "availabilityBlockers": availability_blockers,
+    },
     "aggregate": {
         "taskCount": task_count,
         "laneSummaries": lane_summaries,
@@ -1540,6 +1638,55 @@ ctxhelm_under_read = any(
     < base_metrics.get("targetReadCoverage", 0.0)
     for lane in ctxhelm_lanes
 )
+
+def client_availability_summary(
+    *,
+    preflight,
+    comparison_eligible,
+    comparable_lane_count,
+    client_failures_observed,
+    rate_limits_observed,
+):
+    preflight_status = preflight.get("status")
+    tiny_prompt_available = preflight_status == "passed"
+    rate_limited = bool(rate_limits_observed or preflight.get("rateLimitObserved", False))
+    client_failure_observed = bool(
+        client_failures_observed
+        or preflight.get("clientFailureKind")
+        or preflight_status == "failed"
+    )
+    paired_suite_available = bool(
+        comparison_eligible
+        and comparable_lane_count > 0
+        and not rate_limited
+        and not client_failures_observed
+    )
+    if paired_suite_available:
+        blocker = None
+    elif rate_limited:
+        blocker = "rate_limit"
+    elif client_failures_observed:
+        blocker = "paired_suite_client_failure"
+    elif preflight.get("clientFailureKind"):
+        blocker = preflight.get("clientFailureKind")
+    elif comparable_lane_count == 0 or not comparison_eligible:
+        blocker = "no_comparable_lanes"
+    elif preflight_status in {"not_requested", "disabled"}:
+        blocker = preflight_status
+    elif not tiny_prompt_available:
+        blocker = "tiny_prompt_unavailable"
+    else:
+        blocker = None
+    return {
+        "tinyPromptAvailable": tiny_prompt_available,
+        "tinyPromptStatus": preflight_status,
+        "pairedSuiteAvailable": paired_suite_available,
+        "rateLimited": rate_limited,
+        "clientFailureObserved": client_failure_observed,
+        "comparableLaneCount": comparable_lane_count,
+        "availabilityBlocker": blocker,
+    }
+
 status = "passed" if any(lane.get("status") == "passed" for lane in lanes) else "skipped"
 if status == "passed" and (not ctxhelm_called or not comparison_eligible or missing_required_observed or invalid_required_observed or client_failures_observed):
     status = "degraded"
@@ -1646,6 +1793,13 @@ payload = {
     },
     "targetFiles": targets,
     "clientPreflight": client_preflight,
+    "clientAvailability": client_availability_summary(
+        preflight=client_preflight,
+        comparison_eligible=comparison_eligible,
+        comparable_lane_count=len(eligible_ctxhelm_lanes),
+        client_failures_observed=client_failures_observed,
+        rate_limits_observed=rate_limits_observed,
+    ),
     "lanes": lanes,
     "comparison": {
         "baselineLane": baseline.get("lane"),

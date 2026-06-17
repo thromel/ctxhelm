@@ -2052,6 +2052,15 @@ fn eval_agent_run_renders_source_free_report() {
                 "taskSha256": "task-hash",
                 "rawTaskStored": false
             },
+            "clientAvailability": {
+                "tinyPromptAvailable": true,
+                "tinyPromptStatus": "passed",
+                "pairedSuiteAvailable": true,
+                "rateLimited": false,
+                "clientFailureObserved": false,
+                "comparableLaneCount": 1,
+                "availabilityBlocker": null
+            },
             "lanes": [
                 {
                     "lane": "baseline",
@@ -2285,6 +2294,9 @@ fn eval_agent_run_renders_source_free_report() {
         .stdout(contains("# ctxhelm Agent Run Report"))
         .stdout(contains("ctxhelm-agent-run-eval-v1"))
         .stdout(contains("ctxhelm-brief"))
+        .stdout(contains("Tiny prompt available: `true`"))
+        .stdout(contains("Paired suite available: `true`"))
+        .stdout(contains("Availability blocker: `none`"))
         .stdout(contains("Comparison eligible: `true`"))
         .stdout(contains("Comparable ctxhelm lanes: `1`"))
         .stdout(contains("Missing required ctxhelm calls observed: `false`"))
@@ -2329,6 +2341,10 @@ fn eval_agent_run_renders_source_free_report() {
     assert_eq!(
         rendered_json["comparison"]["retryCost"]["retryTriggeredLanes"],
         1
+    );
+    assert_eq!(
+        rendered_json["clientAvailability"]["pairedSuiteAvailable"],
+        true
     );
 }
 
@@ -2499,6 +2515,17 @@ fn eval_agent_run_renders_source_free_suite_report() {
                 "suiteSha256": "suite-hash",
                 "rawTasksStored": false,
                 "taskCount": 2
+            },
+            "clientAvailability": {
+                "tinyPromptAvailable": true,
+                "tinyPromptAvailableCount": 1,
+                "pairedSuiteAvailable": false,
+                "pairedSuiteAvailableCount": 1,
+                "rateLimited": true,
+                "clientFailureObserved": true,
+                "comparableLaneCount": 1,
+                "availabilityBlocker": "rate_limit",
+                "availabilityBlockers": ["rate_limit"]
             },
             "tasks": [
                 {
@@ -2684,6 +2711,10 @@ fn eval_agent_run_renders_source_free_suite_report() {
         .assert()
         .success()
         .stdout(contains("## Suite Aggregate"))
+        .stdout(contains("Tiny prompt available: `true`"))
+        .stdout(contains("Paired suite available: `false`"))
+        .stdout(contains("Availability blocker: `rate_limit`"))
+        .stdout(contains("Availability rate-limited: `true`"))
         .stdout(contains("Comparison eligible tasks: `1`"))
         .stdout(contains("Comparable ctxhelm lanes: `1`"))
         .stdout(contains("Missing required ctxhelm calls observed: `false`"))
@@ -2734,6 +2765,10 @@ fn eval_agent_run_renders_source_free_suite_report() {
     assert_eq!(
         rendered_json["aggregate"]["readEfficiency"]["efficientCtxhelmLane"],
         "ctxhelm-brief"
+    );
+    assert_eq!(
+        rendered_json["clientAvailability"]["availabilityBlocker"],
+        "rate_limit"
     );
 }
 

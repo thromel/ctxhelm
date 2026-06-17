@@ -5438,6 +5438,9 @@ fn render_agent_run_report(report: &serde_json::Value) -> String {
             output.push_str(&format!("- Repo label: `{label}`\n"));
         }
     }
+    output.push_str(&render_client_availability(
+        report.get("clientAvailability"),
+    ));
     if let Some(delta) = report.get("comparison") {
         output.push_str(&format!(
             "- Best lane: `{}`\n- Comparison eligible: `{}`\n- Comparable ctxhelm lanes: `{}`\n- Target coverage delta: `{}`\n- Target read coverage delta: `{}`\n- Irrelevant read delta: `{}`\n- Command execution delta: `{}`\n- Read file delta: `{}`\n- Missing required ctxhelm calls observed: `{}`\n- Missing required ctxhelm calls: `{}`\n- Invalid required ctxhelm calls observed: `{}`\n- Invalid required ctxhelm calls: `{}`\n- Client failures observed: `{}`\n- Rate limits observed: `{}`\n- ctxhelm evidence misses observed: `{}`\n- ctxhelm evidence misses: `{}`\n- ctxhelm evidence-only targets observed: `{}`\n- ctxhelm evidence-only targets: `{}`\n- Forbidden tool calls observed: `{}`\n- ctxhelm under-read targets observed: `{}`\n- Source text logged: `{}`\n",
@@ -5537,6 +5540,9 @@ fn render_agent_run_report(report: &serde_json::Value) -> String {
     }
     if let Some(aggregate) = report.get("aggregate") {
         output.push_str("\n## Suite Aggregate\n\n");
+        output.push_str(&render_client_availability(
+            report.get("clientAvailability"),
+        ));
         output.push_str(&format!(
             "- Tasks: `{}`\n- Comparison eligible tasks: `{}`\n- Comparable ctxhelm lanes: `{}`\n- Target coverage delta average: `{}`\n- Target read coverage delta average: `{}`\n- Irrelevant read delta sum: `{}`\n- Outcome claim: `{}`\n- ctxhelm calls observed: `{}`\n- Missing required ctxhelm calls observed: `{}`\n- Invalid required ctxhelm calls observed: `{}`\n- Client failures observed: `{}`\n- Rate limits observed: `{}`\n- ctxhelm evidence misses observed: `{}`\n- ctxhelm evidence-only targets observed: `{}`\n- ctxhelm under-read targets observed: `{}`\n",
             aggregate
@@ -5910,6 +5916,44 @@ fn render_retry_cost(value: Option<&serde_json::Value>) -> String {
             .unwrap_or_else(|| "n/a".to_string()),
         retry
             .get("evidenceOnlyTargetsAfterRetry")
+            .and_then(serde_json::Value::as_u64)
+            .map(|value| value.to_string())
+            .unwrap_or_else(|| "n/a".to_string()),
+    )
+}
+
+fn render_client_availability(value: Option<&serde_json::Value>) -> String {
+    let Some(availability) = value else {
+        return String::new();
+    };
+    format!(
+        "- Tiny prompt available: `{}`\n- Paired suite available: `{}`\n- Availability blocker: `{}`\n- Availability rate-limited: `{}`\n- Availability client failure observed: `{}`\n- Availability comparable lanes: `{}`\n",
+        availability
+            .get("tinyPromptAvailable")
+            .and_then(serde_json::Value::as_bool)
+            .map(|value| value.to_string())
+            .unwrap_or_else(|| "n/a".to_string()),
+        availability
+            .get("pairedSuiteAvailable")
+            .and_then(serde_json::Value::as_bool)
+            .map(|value| value.to_string())
+            .unwrap_or_else(|| "n/a".to_string()),
+        availability
+            .get("availabilityBlocker")
+            .and_then(serde_json::Value::as_str)
+            .unwrap_or("none"),
+        availability
+            .get("rateLimited")
+            .and_then(serde_json::Value::as_bool)
+            .map(|value| value.to_string())
+            .unwrap_or_else(|| "n/a".to_string()),
+        availability
+            .get("clientFailureObserved")
+            .and_then(serde_json::Value::as_bool)
+            .map(|value| value.to_string())
+            .unwrap_or_else(|| "n/a".to_string()),
+        availability
+            .get("comparableLaneCount")
             .and_then(serde_json::Value::as_u64)
             .map(|value| value.to_string())
             .unwrap_or_else(|| "n/a".to_string()),

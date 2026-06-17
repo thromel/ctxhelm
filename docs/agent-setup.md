@@ -96,6 +96,11 @@ proof should be separated from the older paired Claude outcome refresh: the
 2026-06-05 availability preflight for Claude Code `2.1.163` hit API status
 `429` and reported `clientFailureKind = rate_limited`, which is client
 availability evidence rather than ctxhelm retrieval failure.
+Current paired Claude reports also include a source-free `clientAvailability`
+summary. `tinyPromptAvailable` records whether the lightweight no-tool prompt
+worked, while `pairedSuiteAvailable`, `comparableLaneCount`,
+`rateLimited`, `clientFailureObserved`, and `availabilityBlocker` record whether
+the paired outcome suite is eligible for retrieval-quality claims.
 
 Historical Codex outcome evidence remains part of the release-doc contract. The
 first current Codex CLI `0.137.0` outcome refresh is recorded in
