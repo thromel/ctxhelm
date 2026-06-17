@@ -18,7 +18,7 @@ ctxhelm --help
 ctxhelm doctor --repo "$REPO"
 ```
 
-For v2.4.4, `ctxhelm --version` should print `ctxhelm 2.4.4`. If the command is not found, fix your shell or agent `PATH`, or use an absolute binary path in the MCP configuration.
+For v2.4.5, `ctxhelm --version` should print `ctxhelm 2.4.5`. If the command is not found, fix your shell or agent `PATH`, or use an absolute binary path in the MCP configuration.
 
 When installing from a release archive, keep the release manifest beside the
 archive and verify it against the active binary:
@@ -27,7 +27,7 @@ archive and verify it against the active binary:
 ctxhelm doctor \
   --repo "$REPO" \
   --binary "$(command -v ctxhelm)" \
-  --release-manifest /path/to/ctxhelm-v2.4.4-aarch64-apple-darwin.manifest.json
+  --release-manifest /path/to/ctxhelm-v2.4.5-aarch64-apple-darwin.manifest.json
 ```
 
 `doctor` is read-only. It checks the binary path, `--version`, `--help`, release
@@ -99,6 +99,12 @@ absolute ctxhelm binary path and `["serve-mcp"]` args. A missing `.mcp.json` is
 a warning for manual setup users; malformed or relative-command project MCP
 config fails. It does not run real agent clients, edit client configuration, or
 prove that Cursor, Claude Code, Codex CLI, or OpenCode called a tool.
+
+For automation, request the same read-only report as JSON:
+
+```bash
+ctxhelm setup-check --repo "$REPO" --claude --format json
+```
 
 ## Deterministic MCP Proof Context
 

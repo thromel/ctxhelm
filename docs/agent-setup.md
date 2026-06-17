@@ -15,6 +15,10 @@ ctxhelm is an agent-native, read-only context broker. `ctxhelm setup repo` gener
 
 **Generated artifact checks** are read-only setup validation. `ctxhelm setup-check --repo "$REPO" --cursor --claude --opencode` confirms expected repo-local files exist and contain recognizable ctxhelm guidance. With `--claude`, it also checks whether project `.mcp.json` registers `mcpServers.ctxhelm` with an absolute binary path and `["serve-mcp"]` args. Missing `.mcp.json` is a warning so the manual `init --claude` path remains inspectable; malformed or unsafe existing project MCP config is a failure. It does not run real agent clients.
 
+Automation can use `ctxhelm setup-check --repo "$REPO" --claude --format json`
+for the same source-free readiness report. JSON mode preserves the normal exit
+behavior: failed setup checks still exit nonzero after writing the report.
+
 **deterministic protocol proof** means direct JSON-RPC/MCP smoke through `ctxhelm serve-mcp`. The smoke sends machine-checkable tool calls with an explicit `repo`, verifies `prepare_task` returns target files and pack options, verifies `get_pack` returns a structured pack, reads context-area resources from a non-repo server cwd, and can read a pack resource during the same MCP server session.
 
 **real-client proof** means an actual agent client starts ctxhelm as an MCP server and produces request-log evidence for tool calls. For v1.1, this optional proof path is maintained for Codex CLI, Claude Code, Cursor Agent CLI, and OpenCode because the smoke scripts can inspect server-side requests for explicit-repo `prepare_task` and `get_pack` calls tied to exact client versions.

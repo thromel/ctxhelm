@@ -13,8 +13,8 @@ default = []
 local-embeddings = ["ctxhelm-index/local-embeddings"]
 
 [dependencies]
-ctxhelm-core = { path = "../ctxhelm-core", version = "2.4.4" }
-ctxhelm-index = { path = "../ctxhelm-index", version = "2.4.4" }
+ctxhelm-core = { path = "../ctxhelm-core", version = "2.4.5" }
+ctxhelm-index = { path = "../ctxhelm-index", version = "2.4.5" }
 serde.workspace = true
 serde_json.workspace = true
 tempfile.workspace = true

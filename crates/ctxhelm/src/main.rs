@@ -205,6 +205,8 @@ struct SetupCheckArgs {
     claude: bool,
     #[arg(long, help = "Validate the generated OpenCode MCP snippet file.")]
     opencode: bool,
+    #[arg(long, value_enum, default_value_t = PackFormat::Markdown)]
+    format: PackFormat,
 }
 
 #[derive(Debug, Args)]
@@ -1718,7 +1720,10 @@ fn main() -> Result<()> {
             let repo = RepoRoot::discover_from(&start)?;
             let report = run_setup_check(&repo.path, &setup_check_options(&args))?;
             let passed = report.passed;
-            print_setup_check_report(&report);
+            match args.format {
+                PackFormat::Markdown => print_setup_check_report(&report),
+                PackFormat::Json => println!("{}", serde_json::to_string_pretty(&report)?),
+            }
             if !passed {
                 std::process::exit(1);
             }

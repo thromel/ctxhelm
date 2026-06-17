@@ -39,7 +39,7 @@ fn workspace_packages_have_release_identity() {
             .iter()
             .find(|package| package["name"] == name)
             .unwrap_or_else(|| panic!("missing package metadata for {name}"));
-        assert_eq!(package["version"], "2.4.4", "{name} version");
+        assert_eq!(package["version"], "2.4.5", "{name} version");
         assert_eq!(package["license"], "MIT", "{name} license");
         assert!(
             package["repository"]
@@ -95,7 +95,7 @@ fn version_reports_release_identity() {
         .arg("--version")
         .assert()
         .success()
-        .stdout(contains("ctxhelm 2.4.4"));
+        .stdout(contains("ctxhelm 2.4.5"));
 }
 
 #[test]
@@ -106,16 +106,16 @@ fn doctor_verifies_binary_manifest_and_local_state_source_free() {
     fs::write(
         &manifest_path,
         json!({
-            "version": "2.4.4",
+            "version": "2.4.5",
             "archive": {
-                "name": "ctxhelm-v2.4.4-test.tar.gz",
+                "name": "ctxhelm-v2.4.5-test.tar.gz",
                 "sha256": "archive-sha"
             },
             "binary": {
                 "name": "ctxhelm",
                 "sha256": "binary-sha"
             },
-            "auditReport": "ctxhelm-v2.4.4-test.audit.json",
+            "auditReport": "ctxhelm-v2.4.5-test.audit.json",
             "privacyStatus": {
                 "localOnly": true,
                 "sourceTextLogged": false
@@ -140,8 +140,8 @@ fn doctor_verifies_binary_manifest_and_local_state_source_free() {
     );
 
     assert_eq!(value["passed"], true);
-    assert_eq!(value["binary"]["version"], "ctxhelm 2.4.4");
-    assert_eq!(value["releaseManifest"]["version"], "2.4.4");
+    assert_eq!(value["binary"]["version"], "ctxhelm 2.4.5");
+    assert_eq!(value["releaseManifest"]["version"], "2.4.5");
     assert_eq!(value["privacyStatus"]["localOnly"], true);
     assert_eq!(value["mutatesGlobalAgentConfig"], false);
     assert!(value["checks"]
@@ -828,6 +828,69 @@ fn setup_check_reports_generated_artifacts() {
 }
 
 #[test]
+fn setup_check_json_reports_source_free_project_mcp_readiness() {
+    let fixture = fixture_repo();
+
+    Command::cargo_bin("ctxhelm")
+        .unwrap()
+        .env(CTXHELM_HOME_ENV, &fixture.home)
+        .args(["setup", "claude", "--repo"])
+        .arg(&fixture.repo)
+        .assert()
+        .success();
+
+    let value = json_stdout(
+        Command::cargo_bin("ctxhelm")
+            .unwrap()
+            .env(CTXHELM_HOME_ENV, &fixture.home)
+            .args(["setup-check", "--repo"])
+            .arg(&fixture.repo)
+            .args(["--claude", "--format", "json"])
+            .assert(),
+    );
+
+    assert_eq!(value["passed"], true);
+    assert_eq!(value["repoRoot"], fixture.repo.display().to_string());
+    assert!(value["items"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .any(|item| item["name"] == ".mcp.json" && item["status"] == "pass"));
+    assert_no_source_or_prompt_text(&value);
+}
+
+#[test]
+fn setup_check_json_failure_preserves_parseable_report_and_exit_status() {
+    let fixture = fixture_repo();
+
+    Command::cargo_bin("ctxhelm")
+        .unwrap()
+        .env(CTXHELM_HOME_ENV, &fixture.home)
+        .args(["init", "--repo"])
+        .arg(&fixture.repo)
+        .assert()
+        .success();
+
+    let assert = Command::cargo_bin("ctxhelm")
+        .unwrap()
+        .env(CTXHELM_HOME_ENV, &fixture.home)
+        .args(["setup-check", "--repo"])
+        .arg(&fixture.repo)
+        .args(["--cursor", "--format", "json"])
+        .assert()
+        .failure();
+    let value: Value = serde_json::from_slice(&assert.get_output().stdout).unwrap();
+
+    assert_eq!(value["passed"], false);
+    assert!(value["items"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .any(|item| { item["name"] == ".cursor/rules/ctxhelm.mdc" && item["status"] == "fail" }));
+    assert_no_source_or_prompt_text(&value);
+}
+
+#[test]
 fn setup_check_fails_when_expected_adapter_file_is_missing() {
     let fixture = fixture_repo();
 
@@ -861,7 +924,8 @@ fn setup_check_help_documents_read_only_validation() {
         .stdout(contains("generated setup artifacts"))
         .stdout(contains("--cursor"))
         .stdout(contains("--claude"))
-        .stdout(contains("--opencode"));
+        .stdout(contains("--opencode"))
+        .stdout(contains("--format"));
 }
 
 #[test]
@@ -1893,7 +1957,7 @@ fn eval_agent_run_renders_source_free_report() {
                 "name": "claude",
                 "version": "Claude Code test"
             },
-            "ctxhelmVersion": "ctxhelm 2.4.4",
+            "ctxhelmVersion": "ctxhelm 2.4.5",
             "repo": {
                 "label": "fixture",
                 "pathSha256": "repo-hash"
@@ -2340,7 +2404,7 @@ fn eval_agent_run_renders_source_free_suite_report() {
                 "name": "claude",
                 "version": "Claude Code test"
             },
-            "ctxhelmVersion": "ctxhelm 2.4.4",
+            "ctxhelmVersion": "ctxhelm 2.4.5",
             "repo": {
                 "label": "fixture",
                 "pathSha256": "repo-hash"

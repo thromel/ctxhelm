@@ -99,7 +99,7 @@ ctxhelm --version
 ctxhelm doctor \
   --repo /path/to/repo \
   --binary "$(command -v ctxhelm)" \
-  --release-manifest /path/to/ctxhelm-v2.4.4-aarch64-apple-darwin.manifest.json
+  --release-manifest /path/to/ctxhelm-v2.4.5-aarch64-apple-darwin.manifest.json
 ```
 
 If `doctor` reports a manifest version mismatch, update the binary path used by
@@ -163,6 +163,10 @@ mergeable snippet. Run `ctxhelm setup claude --repo "$REPO"` when you want
 ctxhelm to write or merge the project-local MCP entry. Existing malformed,
 symlinked, or relative-command `.mcp.json` entries fail validation because they
 can prevent secure agent startup.
+
+Use `ctxhelm setup-check --repo "$REPO" --claude --format json` when CI or an
+agent wrapper needs the same source-free readiness report without parsing human
+text. JSON output still exits nonzero when any setup item fails.
 
 It does not run real agent clients, does not prove a client called MCP tools, and does not mutate global Codex, Claude, Cursor, or OpenCode configuration.
 
