@@ -118,11 +118,11 @@ fn release_artifact_audit_script_contract() {
 fn release_artifact_audit_rejects_local_state_archive() {
     let archive = archive_with_entries(&[
         (
-            "ctxhelm-v2.4.5-test/ctxhelm",
+            "ctxhelm-v2.4.6-test/ctxhelm",
             "#!/usr/bin/env bash\nexit 0\n",
         ),
         (
-            "ctxhelm-v2.4.5-test/.ctxhelm/repos/repo/traces.jsonl",
+            "ctxhelm-v2.4.6-test/.ctxhelm/repos/repo/traces.jsonl",
             "{\"sourceTextLogged\":false}\n",
         ),
     ]);
@@ -142,12 +142,12 @@ fn release_artifact_audit_rejects_local_state_archive() {
 fn release_artifact_audit_accepts_minimal_release_archive() {
     let archive = archive_with_entries(&[
         (
-            "ctxhelm-v2.4.5-test/ctxhelm",
+            "ctxhelm-v2.4.6-test/ctxhelm",
             "#!/usr/bin/env bash\nexit 0\n",
         ),
-        ("ctxhelm-v2.4.5-test/README.md", "ctxhelm release\n"),
-        ("ctxhelm-v2.4.5-test/LICENSE", "MIT License\n"),
-        ("ctxhelm-v2.4.5-test/VERSION", "ctxhelm 2.4.5\n"),
+        ("ctxhelm-v2.4.6-test/README.md", "ctxhelm release\n"),
+        ("ctxhelm-v2.4.6-test/LICENSE", "MIT License\n"),
+        ("ctxhelm-v2.4.6-test/VERSION", "ctxhelm 2.4.6\n"),
     ]);
 
     let output = Command::new(workspace_root().join("scripts/audit-release-artifact.sh"))
@@ -166,12 +166,12 @@ fn release_artifact_audit_accepts_minimal_release_archive() {
 fn release_artifact_audit_writes_source_free_report() {
     let archive = archive_with_entries(&[
         (
-            "ctxhelm-v2.4.5-test/ctxhelm",
+            "ctxhelm-v2.4.6-test/ctxhelm",
             "#!/usr/bin/env bash\nexit 0\n",
         ),
-        ("ctxhelm-v2.4.5-test/README.md", "ctxhelm release\n"),
-        ("ctxhelm-v2.4.5-test/LICENSE", "MIT License\n"),
-        ("ctxhelm-v2.4.5-test/VERSION", "ctxhelm 2.4.5\n"),
+        ("ctxhelm-v2.4.6-test/README.md", "ctxhelm release\n"),
+        ("ctxhelm-v2.4.6-test/LICENSE", "MIT License\n"),
+        ("ctxhelm-v2.4.6-test/VERSION", "ctxhelm 2.4.6\n"),
     ]);
     let report_dir = TempDir::new().unwrap();
     let report_path = report_dir.path().join("audit.json");
@@ -991,9 +991,9 @@ fn public_release_freshness_script_reports_outdated_without_mutation() {
   "isDraft": false,
   "isPrerelease": false,
   "publishedAt": "2026-06-01T00:00:00Z",
-  "tagName": "v2.4.5",
+  "tagName": "v2.4.6",
   "targetCommitish": "release-commit",
-  "url": "https://github.com/thromel/ctxhelm/releases/tag/v2.4.5"
+  "url": "https://github.com/thromel/ctxhelm/releases/tag/v2.4.6"
 }
 "#,
     )
@@ -1001,7 +1001,7 @@ fn public_release_freshness_script_reports_outdated_without_mutation() {
 
     let output = Command::new("bash")
         .arg(&script)
-        .args(["--tag", "v2.4.5"])
+        .args(["--tag", "v2.4.6"])
         .args(["--current-commit", "current-commit"])
         .arg("--release-json")
         .arg(&release_json)
@@ -1025,7 +1025,7 @@ fn public_release_freshness_script_reports_outdated_without_mutation() {
 
     let required_current = Command::new("bash")
         .arg(&script)
-        .args(["--tag", "v2.4.5"])
+        .args(["--tag", "v2.4.6"])
         .args(["--current-commit", "current-commit"])
         .arg("--release-json")
         .arg(&release_json)
@@ -1141,9 +1141,9 @@ fn public_release_freshness_distinguishes_proof_only_commits() {
   "isDraft": false,
   "isPrerelease": false,
   "publishedAt": "2026-06-01T00:00:00Z",
-  "tagName": "v2.4.5",
+  "tagName": "v2.4.6",
   "targetCommitish": "{release_commit}",
-  "url": "https://github.com/thromel/ctxhelm/releases/tag/v2.4.5"
+  "url": "https://github.com/thromel/ctxhelm/releases/tag/v2.4.6"
 }}
 "#
         ),
@@ -1152,7 +1152,7 @@ fn public_release_freshness_distinguishes_proof_only_commits() {
 
     let output = Command::new("bash")
         .arg(&script)
-        .args(["--tag", "v2.4.5"])
+        .args(["--tag", "v2.4.6"])
         .args(["--current-commit", &current_commit])
         .arg("--release-json")
         .arg(&release_json)
@@ -1179,7 +1179,7 @@ fn public_release_freshness_distinguishes_proof_only_commits() {
 
     let required_current = Command::new("bash")
         .arg(&script)
-        .args(["--tag", "v2.4.5"])
+        .args(["--tag", "v2.4.6"])
         .args(["--current-commit", &current_commit])
         .arg("--release-json")
         .arg(&release_json)
@@ -2574,7 +2574,7 @@ fn release_docs_script_contract() {
         "docs/release-governance.md",
         "ctxhelm --version",
         "ctxhelm --help",
-        "v2.4.5",
+        "v2.4.6",
         "sha256sums.txt",
         "Why ctxhelm",
         "Current proof snapshot",
@@ -2603,7 +2603,7 @@ fn release_docs_script_contract() {
         "Cursor",
         "OpenCode",
         "cargo install --git",
-        "--tag v2.4.5",
+        "--tag v2.4.6",
         "--locked",
         "crates.io",
         "Homebrew",

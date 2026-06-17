@@ -1,6 +1,6 @@
 # Distribution Metadata
 
-ctxhelm v2.4.5 ships through public release archives and a public Apple Silicon
+ctxhelm v2.4.6 ships through public release archives and a public Apple Silicon
 Homebrew tap. This document records the distribution metadata and the boundaries
 for channels that remain deferred.
 
@@ -28,8 +28,8 @@ Verify an already-built archive from a clean temporary extraction directory:
 
 ```bash
 bash scripts/verify-release-archive.sh \
-  --archive dist/ctxhelm-v2.4.5-aarch64-apple-darwin.tar.gz \
-  --manifest dist/ctxhelm-v2.4.5-aarch64-apple-darwin.manifest.json \
+  --archive dist/ctxhelm-v2.4.6-aarch64-apple-darwin.tar.gz \
+  --manifest dist/ctxhelm-v2.4.6-aarch64-apple-darwin.manifest.json \
   --checksums dist/sha256sums.txt
 ```
 
@@ -61,7 +61,7 @@ archive checksums, manifest names, and privacy posture.
 
 ## Signing And Notarization
 
-Current v2.4.5 archives are checksum-audited but not signed installers. Future
+Current v2.4.6 archives are checksum-audited but not signed installers. Future
 distribution work should add signing and notarization gaps to the release
 checklist before claiming signed macOS installers or package-manager formulas.
 
@@ -75,20 +75,20 @@ brew install ctxhelm
 ctxhelm --version
 ```
 
-The v2.4.5 tap proof verifies:
+The v2.4.6 tap proof verifies:
 
 - `brew tap thromel/tap`
 - `brew audit --strict --new ctxhelm`
 - `brew install thromel/tap/ctxhelm`
 - `brew test thromel/tap/ctxhelm`
-- installed binary output `ctxhelm 2.4.5`
+- installed binary output `ctxhelm 2.4.6`
 
 The formula is currently constrained to `arch: :arm64` because the published
 archive asset is `aarch64-apple-darwin`.
 
 ## Candidate Decision
 
-The v2.4.5 production candidate has these distribution states:
+The v2.4.6 production candidate has these distribution states:
 
 - local archive: ready after the release gate passes with the archive binary
   and required clean fixture proof
@@ -140,8 +140,8 @@ The public Homebrew tap can be verified with:
 bash scripts/verify-homebrew-tap.sh \
   --tap thromel/tap \
   --formula ctxhelm \
-  --expected-version "ctxhelm 2.4.5" \
-  --expected-url https://github.com/thromel/ctxhelm/releases/download/v2.4.5/ctxhelm-v2.4.5-aarch64-apple-darwin.tar.gz \
+  --expected-version "ctxhelm 2.4.6" \
+  --expected-url https://github.com/thromel/ctxhelm/releases/download/v2.4.6/ctxhelm-v2.4.6-aarch64-apple-darwin.tar.gz \
   --expected-sha256 <sha256-from-release-asset>
 ```
 
