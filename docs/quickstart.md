@@ -107,6 +107,10 @@ For automation, request the same read-only report as JSON:
 ctxhelm setup-check --repo "$REPO" --all --format json
 ```
 
+The JSON report includes `schemaVersion: "ctxhelm-setup-check-report-v1"` so CI
+or agent wrappers can reject incompatible future contracts without scraping
+human-readable text.
+
 ## Deterministic MCP Proof Context
 
 The hard automated proof for v1.1 is deterministic JSON-RPC/MCP protocol smoke through `ctxhelm serve-mcp`. That proof starts the ctxhelm MCP server, sends machine-checkable `prepare_task` and `get_pack` calls with an explicit `repo`, and inspects structured responses.

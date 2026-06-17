@@ -94,9 +94,15 @@ pub struct SetupCheckItem {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct SetupCheckReport {
+    #[serde(default = "setup_check_report_schema_version")]
+    pub schema_version: String,
     pub repo_root: PathBuf,
     pub items: Vec<SetupCheckItem>,
     pub passed: bool,
+}
+
+pub fn setup_check_report_schema_version() -> String {
+    "ctxhelm-setup-check-report-v1".to_string()
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
@@ -375,6 +381,7 @@ pub fn run_setup_check(
         .any(|item| item.status == SetupCheckStatus::Fail);
 
     Ok(SetupCheckReport {
+        schema_version: setup_check_report_schema_version(),
         repo_root: repo_root.to_path_buf(),
         items,
         passed,
@@ -1507,6 +1514,7 @@ mod setup_check_tests {
         let report = run_setup_check(temp.path(), &options).unwrap();
 
         assert!(report.passed);
+        assert_eq!(report.schema_version, "ctxhelm-setup-check-report-v1");
         assert_item_status(&report, "AGENTS.md", SetupCheckStatus::Pass);
         assert_item_status(&report, ".ctxhelm/ctxhelm.toml", SetupCheckStatus::Pass);
         assert_item_status(&report, ".cursor/rules/ctxhelm.mdc", SetupCheckStatus::Pass);
@@ -1526,6 +1534,27 @@ mod setup_check_tests {
             SetupCheckStatus::Pass,
         );
         assert_item_status(&report, ".mcp.json", SetupCheckStatus::Warn);
+    }
+
+    #[test]
+    fn setup_check_report_serializes_schema_version_and_defaults_old_json() {
+        let report = SetupCheckReport {
+            schema_version: setup_check_report_schema_version(),
+            repo_root: PathBuf::from("/repo"),
+            items: Vec::new(),
+            passed: true,
+        };
+        let value = serde_json::to_value(&report).unwrap();
+        assert_eq!(value["schemaVersion"], "ctxhelm-setup-check-report-v1");
+        assert!(value.get("schema_version").is_none());
+
+        let old_json = serde_json::json!({
+            "repoRoot": "/repo",
+            "items": [],
+            "passed": true
+        });
+        let old_report: SetupCheckReport = serde_json::from_value(old_json).unwrap();
+        assert_eq!(old_report.schema_version, "ctxhelm-setup-check-report-v1");
     }
 
     #[test]

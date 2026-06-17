@@ -425,6 +425,10 @@ fn setup_repo_json_reports_source_free_security_boundary() {
         fixture.repo.join(".mcp.json").display().to_string()
     );
     assert_eq!(value["setupCheck"]["passed"], true);
+    assert_eq!(
+        value["setupCheck"]["schemaVersion"],
+        "ctxhelm-setup-check-report-v1"
+    );
     assert!(value["plannedFiles"]
         .as_array()
         .unwrap()
@@ -459,6 +463,10 @@ fn setup_claude_json_dry_run_reports_planned_without_writes() {
     assert_eq!(value["projectMcp"]["commandUsesAbsoluteBinary"], true);
     assert!(value["initReport"].is_null());
     assert_eq!(value["setupCheck"]["passed"], false);
+    assert_eq!(
+        value["setupCheck"]["schemaVersion"],
+        "ctxhelm-setup-check-report-v1"
+    );
     assert!(value["setupCheck"]["items"]
         .as_array()
         .unwrap()
@@ -849,6 +857,7 @@ fn setup_check_json_reports_source_free_project_mcp_readiness() {
             .assert(),
     );
 
+    assert_eq!(value["schemaVersion"], "ctxhelm-setup-check-report-v1");
     assert_eq!(value["passed"], true);
     assert_eq!(value["repoRoot"], fixture.repo.display().to_string());
     assert!(value["items"]
@@ -881,6 +890,7 @@ fn setup_check_all_json_reports_all_supported_agent_artifacts() {
             .assert(),
     );
 
+    assert_eq!(value["schemaVersion"], "ctxhelm-setup-check-report-v1");
     assert_eq!(value["passed"], true);
     let items = value["items"].as_array().unwrap();
     for name in [
@@ -924,6 +934,7 @@ fn setup_check_json_failure_preserves_parseable_report_and_exit_status() {
         .failure();
     let value: Value = serde_json::from_slice(&assert.get_output().stdout).unwrap();
 
+    assert_eq!(value["schemaVersion"], "ctxhelm-setup-check-report-v1");
     assert_eq!(value["passed"], false);
     assert!(value["items"]
         .as_array()
