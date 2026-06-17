@@ -2997,6 +2997,200 @@ fn inspector_proof_summarizes_product_proof_report_source_free() {
 }
 
 #[test]
+fn inspector_proof_summarizes_client_availability_report_source_free() {
+    let fixture = fixture_repo();
+    let report_path = fixture.temp.path().join("client-availability.json");
+    fs::write(
+        &report_path,
+        json!({
+            "schemaVersion": "ctxhelm-agent-client-availability-v1",
+            "status": "passed",
+            "workflowKind": "agent-client-availability",
+            "ctxhelmVersion": "ctxhelm 2.4.7",
+            "repo": {
+                "label": "fixture",
+                "pathSha256": "repo-hash"
+            },
+            "task": {
+                "taskSha256": "task-hash",
+                "rawTaskStored": false
+            },
+            "summary": {
+                "clientCount": 2,
+                "readyClientCount": 1,
+                "unavailableClientCount": 1,
+                "rateLimitedClientCount": 0,
+                "streamDisconnectedClientCount": 0,
+                "realAgentOutcomeCurrentlyRunnable": true,
+                "recommendedResearchActions": ["run_real_agent_outcome_matrix"]
+            },
+            "clients": [
+                {
+                    "client": "codex",
+                    "clientVersion": "Codex test",
+                    "ctxhelmVersion": "ctxhelm 2.4.7",
+                    "status": "available",
+                    "realClientReady": true,
+                    "clientExitStatus": 0,
+                    "clientFailureKind": null,
+                    "clientApiErrorStatus": null,
+                    "rateLimitObserved": false,
+                    "deterministicProtocol": true,
+                    "explicitRepoToolCallCount": 2,
+                    "observedToolCalls": ["prepare_task", "get_pack"],
+                    "sourceTextLogged": false,
+                    "rawPromptStored": false,
+                    "rawTranscriptStored": false,
+                    "rawMcpTrafficStored": false
+                },
+                {
+                    "client": "claude",
+                    "clientVersion": "Claude Code test",
+                    "ctxhelmVersion": "ctxhelm 2.4.7",
+                    "status": "unavailable",
+                    "realClientReady": false,
+                    "clientExitStatus": 1,
+                    "clientFailureKind": "missing_client",
+                    "clientApiErrorStatus": null,
+                    "rateLimitObserved": false,
+                    "deterministicProtocol": null,
+                    "explicitRepoToolCallCount": null,
+                    "observedToolCalls": [],
+                    "sourceTextLogged": false,
+                    "rawPromptStored": false,
+                    "rawTranscriptStored": false,
+                    "rawMcpTrafficStored": false
+                }
+            ],
+            "privacyStatus": {
+                "localOnly": true,
+                "sourceTextLogged": false,
+                "rawPromptStored": false,
+                "rawTranscriptStored": false,
+                "rawMcpTrafficStored": false,
+                "remoteEmbeddingsUsed": false,
+                "remoteRerankingUsed": false
+            },
+            "unsupportedActions": [
+                "source edits",
+                "user project tests",
+                "global agent config mutation",
+                "cloud upload"
+            ]
+        })
+        .to_string(),
+    )
+    .unwrap();
+
+    Command::cargo_bin("ctxhelm")
+        .unwrap()
+        .args(["inspector", "proof", "--report"])
+        .arg(&report_path)
+        .assert()
+        .success()
+        .stdout(contains("Report kind: `client_availability`"))
+        .stdout(contains(
+            "Claim: `real_agent_outcome_currently_runnable`",
+        ))
+        .stdout(contains("Clients checked: `2`"))
+        .stdout(contains("Ready clients: `1`"))
+        .stdout(contains("Unavailable clients: `1`"))
+        .stdout(contains(
+            "Real agent outcome currently runnable: `true`",
+        ))
+        .stdout(contains(
+            "Recommended research actions: `run_real_agent_outcome_matrix`",
+        ))
+        .stdout(contains(
+            "Run comparable paired real-agent outcome suites for the ready clients; do not treat availability as outcome proof.",
+        ))
+        .stdout(contains(
+            "standalone client availability preflight; this is not agent outcome proof",
+        ));
+
+    Command::cargo_bin("ctxhelm")
+        .unwrap()
+        .args(["inspector", "proof", "--report"])
+        .arg(&report_path)
+        .args(["--require-ready"])
+        .assert()
+        .failure()
+        .stderr(contains("proof report is not ready"));
+
+    let rendered_json = json_stdout(
+        Command::cargo_bin("ctxhelm")
+            .unwrap()
+            .args(["inspector", "proof", "--report"])
+            .arg(&report_path)
+            .args(["--format", "json"])
+            .assert(),
+    );
+    assert_eq!(rendered_json["schemaVersion"], "ctxhelm-proof-inspector-v1");
+    assert_eq!(rendered_json["reportKind"], "client_availability");
+    assert_eq!(
+        rendered_json["outcome"]["claim"],
+        "real_agent_outcome_currently_runnable"
+    );
+    assert_eq!(rendered_json["availability"]["clientCount"], 2);
+    assert_eq!(rendered_json["availability"]["readyClientCount"], 1);
+    assert_eq!(
+        rendered_json["availability"]["realAgentOutcomeCurrentlyRunnable"],
+        true
+    );
+    assert_eq!(
+        rendered_json["availability"]["recommendedResearchActions"][0],
+        "run_real_agent_outcome_matrix"
+    );
+    assert_eq!(rendered_json["privacyStatus"]["sourceFreeSummary"], true);
+    assert_no_source_or_prompt_text(&rendered_json);
+
+    let blocked_path = fixture.temp.path().join("client-availability-blocked.json");
+    fs::write(
+        &blocked_path,
+        json!({
+            "schemaVersion": "ctxhelm-agent-client-availability-v1",
+            "status": "degraded",
+            "workflowKind": "agent-client-availability",
+            "ctxhelmVersion": "ctxhelm 2.4.7",
+            "summary": {
+                "clientCount": 2,
+                "readyClientCount": 0,
+                "unavailableClientCount": 2,
+                "rateLimitedClientCount": 1,
+                "streamDisconnectedClientCount": 0,
+                "realAgentOutcomeCurrentlyRunnable": false,
+                "recommendedResearchActions": ["retry_real_client_when_available"]
+            },
+            "clients": [],
+            "privacyStatus": {
+                "localOnly": true,
+                "sourceTextLogged": false,
+                "rawPromptStored": false,
+                "rawTranscriptStored": false,
+                "rawMcpTrafficStored": false,
+                "remoteEmbeddingsUsed": false,
+                "remoteRerankingUsed": false
+            }
+        })
+        .to_string(),
+    )
+    .unwrap();
+
+    Command::cargo_bin("ctxhelm")
+        .unwrap()
+        .args(["inspector", "proof", "--report"])
+        .arg(&blocked_path)
+        .assert()
+        .success()
+        .stdout(contains("Claim: `availability_blocked`"))
+        .stdout(contains("Availability blocker: `rate_limit`"))
+        .stdout(contains("Rate-limited clients: `1`"))
+        .stdout(contains(
+            "Treat this as availability-blocked and rerun after the client is stable.",
+        ));
+}
+
+#[test]
 fn inspector_proof_summarizes_multi_report_bundle_source_free() {
     let fixture = fixture_repo();
     let product_report_path = fixture.temp.path().join("product-proof.json");

@@ -47,6 +47,8 @@ struct ProofInspectorBundleInventory {
     agent_outcome_count: usize,
     clean_agent_outcome_count: usize,
     agent_run_suite_count: usize,
+    client_availability_count: usize,
+    ready_client_availability_count: usize,
     availability_blocked_count: usize,
     degraded_report_count: usize,
 }
@@ -112,6 +114,13 @@ struct ProofInspectorAvailability {
     client_failure_observed: Option<bool>,
     comparable_lane_count: Option<u64>,
     availability_blocker: Option<String>,
+    client_count: Option<u64>,
+    ready_client_count: Option<u64>,
+    unavailable_client_count: Option<u64>,
+    rate_limited_client_count: Option<u64>,
+    stream_disconnected_client_count: Option<u64>,
+    real_agent_outcome_currently_runnable: Option<bool>,
+    recommended_research_actions: Vec<String>,
 }
 
 #[derive(Debug, Serialize)]
@@ -155,6 +164,7 @@ struct ProofInspectorPrivacyStatus {
 }
 
 pub(crate) fn build_proof_inspector_report(report: &serde_json::Value) -> ProofInspectorReport {
+    let is_client_availability = is_client_availability_report(report);
     let product_proof = product_proof_summary(report);
     let source = proof_summary_source(report);
     let retry_cost = source.get("retryCost").cloned();
@@ -186,8 +196,24 @@ pub(crate) fn build_proof_inspector_report(report: &serde_json::Value) -> ProofI
     let memory_guard = proof_memory_guard(report);
     let availability = proof_availability(report);
     let boundary = ProofInspectorBoundary {
-        client_failures_observed: proof_bool(source, &["clientFailuresObserved"]),
-        rate_limits_observed: proof_bool(source, &["rateLimitsObserved"]),
+        client_failures_observed: proof_bool(source, &["clientFailuresObserved"]).or_else(|| {
+            if is_client_availability {
+                availability
+                    .as_ref()
+                    .map(|availability| availability.unavailable_client_count.unwrap_or(0) > 0)
+            } else {
+                None
+            }
+        }),
+        rate_limits_observed: proof_bool(source, &["rateLimitsObserved"]).or_else(|| {
+            if is_client_availability {
+                availability
+                    .as_ref()
+                    .map(|availability| availability.rate_limited_client_count.unwrap_or(0) > 0)
+            } else {
+                None
+            }
+        }),
         forbidden_boundary_events_observed: proof_bool(
             source,
             &["forbiddenToolCallsObserved", "forbiddenCommandsObserved"],
@@ -204,6 +230,19 @@ pub(crate) fn build_proof_inspector_report(report: &serde_json::Value) -> ProofI
     let outcome_claim = product_proof
         .as_ref()
         .map(|summary| summary.release_gate_decision.clone())
+        .or_else(|| {
+            if is_client_availability {
+                availability.as_ref().map(|availability| {
+                    if availability.real_agent_outcome_currently_runnable == Some(true) {
+                        "real_agent_outcome_currently_runnable".to_string()
+                    } else {
+                        "availability_blocked".to_string()
+                    }
+                })
+            } else {
+                None
+            }
+        })
         .or_else(|| proof_string(source, "outcomeClaim"))
         .or_else(|| proof_string(report, "outcomeClaim"))
         .unwrap_or_else(|| "unknown".to_string());
@@ -273,16 +312,23 @@ pub(crate) fn build_proof_inspector_report(report: &serde_json::Value) -> ProofI
     if report.get("aggregate").is_none() && product_proof.is_none() {
         notes.push("single-report summary; suite aggregate fields were not present".to_string());
     }
+    if is_client_availability {
+        notes.push(
+            "standalone client availability preflight; this is not agent outcome proof".to_string(),
+        );
+    }
     if memory_guard.status == "not_reported" {
         notes.push("memory guard status was not present in this proof report".to_string());
     }
-    if retry_cost.is_none() && product_proof.is_none() {
+    if retry_cost.is_none() && product_proof.is_none() && !is_client_availability {
         notes.push("retry-cost fields were not present in this proof report".to_string());
     }
     ProofInspectorReport {
         schema_version: "ctxhelm-proof-inspector-v1",
         report_kind: if product_proof.is_some() {
             "product_proof".to_string()
+        } else if is_client_availability {
+            "client_availability".to_string()
         } else if report.get("aggregate").is_some() {
             "agent_run_suite".to_string()
         } else {
@@ -298,12 +344,24 @@ pub(crate) fn build_proof_inspector_report(report: &serde_json::Value) -> ProofI
                 .get("client")
                 .and_then(|value| value.get("name"))
                 .and_then(serde_json::Value::as_str)
+                .or_else(|| {
+                    if is_client_availability {
+                        Some("multi-client")
+                    } else {
+                        None
+                    }
+                })
                 .unwrap_or("unknown")
                 .to_string(),
             version: report
                 .get("client")
                 .and_then(|value| value.get("version"))
                 .and_then(serde_json::Value::as_str)
+                .or_else(|| {
+                    report
+                        .get("ctxhelmVersion")
+                        .and_then(serde_json::Value::as_str)
+                })
                 .unwrap_or("unknown")
                 .to_string(),
         },
@@ -357,7 +415,7 @@ pub(crate) fn render_proof_inspector_report(report: &ProofInspectorReport) -> St
     if let Some(availability) = report.availability.as_ref() {
         output.push_str("## Client Availability\n\n");
         output.push_str(&format!(
-            "- Tiny prompt available: `{}`\n- Paired suite available: `{}`\n- Availability blocker: `{}`\n- Rate-limited: `{}`\n- Client failure observed: `{}`\n- Comparable lanes: `{}`\n\n",
+            "- Tiny prompt available: `{}`\n- Paired suite available: `{}`\n- Availability blocker: `{}`\n- Rate-limited: `{}`\n- Client failure observed: `{}`\n- Comparable lanes: `{}`\n",
             optional_bool(availability.tiny_prompt_available),
             optional_bool(availability.paired_suite_available),
             availability
@@ -368,6 +426,24 @@ pub(crate) fn render_proof_inspector_report(report: &ProofInspectorReport) -> St
             optional_bool(availability.client_failure_observed),
             optional_u64(availability.comparable_lane_count),
         ));
+        if availability.client_count.is_some() {
+            output.push_str(&format!(
+                "- Clients checked: `{}`\n- Ready clients: `{}`\n- Unavailable clients: `{}`\n- Rate-limited clients: `{}`\n- Stream-disconnected clients: `{}`\n- Real agent outcome currently runnable: `{}`\n",
+                optional_u64(availability.client_count),
+                optional_u64(availability.ready_client_count),
+                optional_u64(availability.unavailable_client_count),
+                optional_u64(availability.rate_limited_client_count),
+                optional_u64(availability.stream_disconnected_client_count),
+                optional_bool(availability.real_agent_outcome_currently_runnable),
+            ));
+            if !availability.recommended_research_actions.is_empty() {
+                output.push_str(&format!(
+                    "- Recommended research actions: `{}`\n",
+                    availability.recommended_research_actions.join(", ")
+                ));
+            }
+        }
+        output.push('\n');
     }
     output.push_str("## Evidence Consumption\n\n");
     output.push_str(&format!(
@@ -467,17 +543,34 @@ pub(crate) fn build_proof_inspector_bundle(
         .iter()
         .filter(|report| report.report_kind == "agent_run_suite")
         .count();
+    let client_availability_count = reports
+        .iter()
+        .filter(|report| report.report_kind == "client_availability")
+        .count();
+    let ready_client_availability_count = reports
+        .iter()
+        .filter(|report| {
+            report.report_kind == "client_availability"
+                && report
+                    .availability
+                    .as_ref()
+                    .and_then(|availability| availability.real_agent_outcome_currently_runnable)
+                    == Some(true)
+        })
+        .count();
     let availability_blocked_count = reports
         .iter()
         .filter(|report| {
-            report.boundary.client_failures_observed == Some(true)
-                || report.boundary.rate_limits_observed == Some(true)
+            (report.report_kind != "client_availability"
+                && (report.boundary.client_failures_observed == Some(true)
+                    || report.boundary.rate_limits_observed == Some(true)))
                 || report
                     .availability
                     .as_ref()
                     .and_then(|availability| availability.paired_suite_available)
                     == Some(false)
                 || report.outcome.claim == "insufficient_comparable_lanes"
+                || report.outcome.claim == "availability_blocked"
         })
         .count();
     let degraded_report_count = reports
@@ -504,6 +597,8 @@ pub(crate) fn build_proof_inspector_bundle(
         agent_outcome_count,
         clean_agent_outcome_count,
         agent_run_suite_count,
+        client_availability_count,
+        ready_client_availability_count,
         availability_blocked_count,
         degraded_report_count,
     };
@@ -522,6 +617,12 @@ pub(crate) fn build_proof_inspector_bundle(
     }
     if agent_outcome_count == 0 {
         notes.push("bundle did not include an agent-run outcome report".to_string());
+    }
+    if client_availability_count > 0 && ready_client_availability_count > 0 {
+        notes.push(
+            "bundle included ready client availability preflight; run comparable outcome suites next"
+                .to_string(),
+        );
     }
     if availability_blocked_count > 0 {
         notes.push("at least one report was availability-blocked or not comparable".to_string());
@@ -546,12 +647,14 @@ pub(crate) fn render_proof_inspector_bundle(bundle: &ProofInspectorBundleReport)
     ));
     output.push_str("## Evidence Inventory\n\n");
     output.push_str(&format!(
-        "- Product-proof reports: `{}`\n- Clean product proofs: `{}`\n- Agent outcome reports: `{}`\n- Clean agent outcomes: `{}`\n- Agent-run suite reports: `{}`\n- Availability-blocked reports: `{}`\n- Degraded reports: `{}`\n\n",
+        "- Product-proof reports: `{}`\n- Clean product proofs: `{}`\n- Agent outcome reports: `{}`\n- Clean agent outcomes: `{}`\n- Agent-run suite reports: `{}`\n- Client availability reports: `{}`\n- Ready client availability reports: `{}`\n- Availability-blocked reports: `{}`\n- Degraded reports: `{}`\n\n",
         bundle.inventory.product_proof_count,
         bundle.inventory.clean_product_proof_count,
         bundle.inventory.agent_outcome_count,
         bundle.inventory.clean_agent_outcome_count,
         bundle.inventory.agent_run_suite_count,
+        bundle.inventory.client_availability_count,
+        bundle.inventory.ready_client_availability_count,
         bundle.inventory.availability_blocked_count,
         bundle.inventory.degraded_report_count,
     ));
@@ -688,6 +791,17 @@ fn proof_summary_source(report: &serde_json::Value) -> &serde_json::Value {
         .get("aggregate")
         .or_else(|| report.get("comparison"))
         .unwrap_or(report)
+}
+
+fn is_client_availability_report(report: &serde_json::Value) -> bool {
+    report
+        .get("schemaVersion")
+        .and_then(serde_json::Value::as_str)
+        == Some("ctxhelm-agent-client-availability-v1")
+        || report
+            .get("workflowKind")
+            .and_then(serde_json::Value::as_str)
+            == Some("agent-client-availability")
 }
 
 fn product_proof_summary(report: &serde_json::Value) -> Option<ProductProofInspectorSummary> {
@@ -868,6 +982,52 @@ fn proof_memory_guard(report: &serde_json::Value) -> ProofInspectorMemoryGuard {
 }
 
 fn proof_availability(report: &serde_json::Value) -> Option<ProofInspectorAvailability> {
+    if is_client_availability_report(report) {
+        let summary = report.get("summary")?;
+        let real_agent_outcome_currently_runnable = summary
+            .get("realAgentOutcomeCurrentlyRunnable")
+            .and_then(serde_json::Value::as_bool);
+        let rate_limited_client_count = summary
+            .get("rateLimitedClientCount")
+            .and_then(serde_json::Value::as_u64);
+        let unavailable_client_count = summary
+            .get("unavailableClientCount")
+            .and_then(serde_json::Value::as_u64);
+        let stream_disconnected_client_count = summary
+            .get("streamDisconnectedClientCount")
+            .and_then(serde_json::Value::as_u64);
+        let availability_blocker = if real_agent_outcome_currently_runnable == Some(true) {
+            None
+        } else if rate_limited_client_count.unwrap_or(0) > 0 {
+            Some("rate_limit".to_string())
+        } else if stream_disconnected_client_count.unwrap_or(0) > 0 {
+            Some("stream_disconnected".to_string())
+        } else if unavailable_client_count.unwrap_or(0) > 0 {
+            Some("client_unavailable".to_string())
+        } else {
+            Some("no_ready_clients".to_string())
+        };
+        return Some(ProofInspectorAvailability {
+            tiny_prompt_available: None,
+            paired_suite_available: None,
+            rate_limited: rate_limited_client_count.map(|count| count > 0),
+            client_failure_observed: unavailable_client_count.map(|count| count > 0),
+            comparable_lane_count: None,
+            availability_blocker,
+            client_count: summary
+                .get("clientCount")
+                .and_then(serde_json::Value::as_u64),
+            ready_client_count: summary
+                .get("readyClientCount")
+                .and_then(serde_json::Value::as_u64),
+            unavailable_client_count,
+            rate_limited_client_count,
+            stream_disconnected_client_count,
+            real_agent_outcome_currently_runnable,
+            recommended_research_actions: string_array(summary, "recommendedResearchActions"),
+        });
+    }
+
     let availability = report.get("clientAvailability")?;
     Some(ProofInspectorAvailability {
         tiny_prompt_available: availability
@@ -889,7 +1049,28 @@ fn proof_availability(report: &serde_json::Value) -> Option<ProofInspectorAvaila
             .get("availabilityBlocker")
             .and_then(serde_json::Value::as_str)
             .map(str::to_string),
+        client_count: None,
+        ready_client_count: None,
+        unavailable_client_count: None,
+        rate_limited_client_count: None,
+        stream_disconnected_client_count: None,
+        real_agent_outcome_currently_runnable: None,
+        recommended_research_actions: Vec::new(),
     })
+}
+
+fn string_array(value: &serde_json::Value, key: &str) -> Vec<String> {
+    value
+        .get(key)
+        .and_then(serde_json::Value::as_array)
+        .map(|items| {
+            items
+                .iter()
+                .filter_map(serde_json::Value::as_str)
+                .map(str::to_string)
+                .collect()
+        })
+        .unwrap_or_default()
 }
 
 fn recommended_proof_next_action(
@@ -911,6 +1092,11 @@ fn recommended_proof_next_action(
         return "Do not promote this run; investigate read-only boundary violations first."
             .to_string();
     }
+    if availability.and_then(|availability| availability.real_agent_outcome_currently_runnable)
+        == Some(true)
+    {
+        return "Run comparable paired real-agent outcome suites for the ready clients; do not treat availability as outcome proof.".to_string();
+    }
     if boundary.client_failures_observed == Some(true)
         || boundary.rate_limits_observed == Some(true)
         || availability.and_then(|availability| availability.paired_suite_available) == Some(false)
@@ -926,6 +1112,9 @@ fn recommended_proof_next_action(
             return "Use as source-free product-proof evidence, then pair it with real-agent outcome proof before making agent-productivity claims.".to_string();
         }
         return "Do not promote this product proof until the release-gate decision, promotion allowance, and protected-target miss-rate are clean.".to_string();
+    }
+    if outcome.claim == "availability_blocked" {
+        return "Treat this as availability-blocked and rerun after at least one real client is ready.".to_string();
     }
     if outcome.comparison_eligible_count == Some(0)
         || outcome.comparable_ctxhelm_lane_count == Some(0)

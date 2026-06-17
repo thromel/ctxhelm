@@ -72,24 +72,34 @@ ctxhelm inspector proof \
 ```
 
 The proof inspector summarizes agent-run proof reports and product-proof
-reports. For agent-run reports, it renders outcome claim, comparable task/lane
+reports. It also summarizes standalone client availability preflight reports
+with schema `ctxhelm-agent-client-availability-v1`. For agent-run reports, it
+renders outcome claim, comparable task/lane
 counts, target-read coverage, client availability, evidence-only target state,
 retry cost, memory guard status when reported, client failures/rate limits,
 forbidden boundary events, source-free privacy flags, and a recommended next
 action. The client availability section reports `tinyPromptAvailable`,
 `pairedSuiteAvailable`, `availabilityBlocker`, rate-limit status, client-failure
 status, and comparable lane count, so a tiny-prompt pass is not confused with a
-comparable paired-suite proof. For
+comparable paired-suite proof. Standalone client availability reports render
+client count, ready client count, unavailable client count, rate-limited client
+count, stream-disconnected client count,
+`realAgentOutcomeCurrentlyRunnable`, and `recommendedResearchActions`. A ready
+standalone availability preflight recommends running comparable paired real-agent
+outcome suites, but it does not count as clean agent-outcome proof by itself.
+For
 product-proof reports, it renders release-gate decision, promotion allowance,
 corpus verdict count, lexical/context claims, protected target miss-rate, and
 the source-free privacy boundary. When more than one `--report` is provided, it
-renders a bundle verdict with clean product-proof count, clean agent-outcome
-count, availability-blocked count, source-free/privacy status, read-only
-boundary status, and the next evidence action. With `--require-ready`, single
-reports pass only when they are clean product-proof or clean agent-outcome
-evidence, and bundles pass only when they contain both clean product proof and
-clean agent outcome evidence. It does not print raw task text, raw prompts, raw
-transcripts, MCP traffic, or target file lists.
+renders a multi-report proof bundle verdict with clean product-proof count,
+clean agent-outcome count, client availability report count, ready client
+availability report count, availability-blocked count, source-free/privacy
+status, read-only boundary status, and the next evidence action. With
+`--require-ready`, single reports pass only when they are clean product-proof or
+clean agent-outcome evidence, and bundles pass only when they contain both clean
+product proof and clean agent outcome evidence. Client availability reports are
+preflight routing evidence, not outcome evidence. It does not print raw task
+text, raw prompts, raw transcripts, MCP traffic, or target file lists.
 
 ## Local Shell
 
