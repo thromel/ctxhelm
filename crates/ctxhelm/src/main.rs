@@ -196,6 +196,8 @@ struct ClaudeSetupArgs {
 struct SetupCheckArgs {
     #[arg(long)]
     repo: Option<PathBuf>,
+    #[arg(long, help = "Validate all supported generated agent setup artifacts.")]
+    all: bool,
     #[arg(long, help = "Validate the generated Cursor rule file.")]
     cursor: bool,
     #[arg(
@@ -3077,7 +3079,11 @@ fn init_options(args: &InitArgs) -> InitOptions {
 }
 
 fn setup_check_options(args: &SetupCheckArgs) -> InitOptions {
-    adapter_options(args.cursor, args.claude, args.opencode)
+    if args.all {
+        InitOptions::all_adapters()
+    } else {
+        adapter_options(args.cursor, args.claude, args.opencode)
+    }
 }
 
 fn run_repo_setup(args: &RepoSetupArgs) -> Result<()> {

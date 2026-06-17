@@ -13,9 +13,9 @@ ctxhelm is an agent-native, read-only context broker. `ctxhelm setup repo` gener
 
 ## Proof Taxonomy
 
-**Generated artifact checks** are read-only setup validation. `ctxhelm setup-check --repo "$REPO" --cursor --claude --opencode` confirms expected repo-local files exist and contain recognizable ctxhelm guidance. With `--claude`, it also checks whether project `.mcp.json` registers `mcpServers.ctxhelm` with an absolute binary path and `["serve-mcp"]` args. Missing `.mcp.json` is a warning so the manual `init --claude` path remains inspectable; malformed or unsafe existing project MCP config is a failure. It does not run real agent clients.
+**Generated artifact checks** are read-only setup validation. `ctxhelm setup-check --repo "$REPO" --all` confirms expected repo-local files exist and contain recognizable ctxhelm guidance for all supported adapters. With `--claude`, or through `--all`, it also checks whether project `.mcp.json` registers `mcpServers.ctxhelm` with an absolute binary path and `["serve-mcp"]` args. Missing `.mcp.json` is a warning so the manual `init --claude` path remains inspectable; malformed or unsafe existing project MCP config is a failure. It does not run real agent clients.
 
-Automation can use `ctxhelm setup-check --repo "$REPO" --claude --format json`
+Automation can use `ctxhelm setup-check --repo "$REPO" --all --format json`
 for the same source-free readiness report. JSON mode preserves the normal exit
 behavior: failed setup checks still exit nonzero after writing the report.
 

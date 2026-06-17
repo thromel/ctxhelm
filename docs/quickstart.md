@@ -90,10 +90,11 @@ source-free context artifacts.
 ## Validate Setup
 
 ```bash
-ctxhelm setup-check --repo "$REPO" --cursor --claude --opencode
+ctxhelm setup-check --repo "$REPO" --all
 ```
 
-`setup-check` validates repo-local generated artifacts. With `--claude`, it also
+`setup-check --all` validates all supported repo-local generated artifacts.
+With `--claude`, or through `--all`, it also
 checks whether project `.mcp.json` has a `mcpServers.ctxhelm` entry with an
 absolute ctxhelm binary path and `["serve-mcp"]` args. A missing `.mcp.json` is
 a warning for manual setup users; malformed or relative-command project MCP
@@ -103,7 +104,7 @@ prove that Cursor, Claude Code, Codex CLI, or OpenCode called a tool.
 For automation, request the same read-only report as JSON:
 
 ```bash
-ctxhelm setup-check --repo "$REPO" --claude --format json
+ctxhelm setup-check --repo "$REPO" --all --format json
 ```
 
 ## Deterministic MCP Proof Context

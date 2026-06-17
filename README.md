@@ -107,7 +107,7 @@ Initialize repo-local guidance and optional agent snippets:
 ctxhelm setup repo --repo "$REPO"
 ctxhelm init --repo "$REPO" --cursor --claude --opencode
 ctxhelm doctor --repo "$REPO"
-ctxhelm setup-check --repo "$REPO" --cursor --claude --opencode
+ctxhelm setup-check --repo "$REPO" --all
 ```
 
 `ctxhelm setup repo` is the easiest secure path: it writes repo-local guidance

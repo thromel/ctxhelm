@@ -155,7 +155,7 @@ ctxhelm does not require permission to modify your source files.
 
 ## `setup-check` Scope
 
-`setup-check` validates repo-local generated artifacts such as `AGENTS.md`, `.ctxhelm/ctxhelm.toml`, `.cursor/rules/ctxhelm.mdc`, `.claude/commands/ctxhelm-bugfix.md`, and adapter snippets when requested. With `--claude`, it also checks project `.mcp.json` for a `mcpServers.ctxhelm` entry that uses an absolute ctxhelm binary path and `["serve-mcp"]` args.
+`setup-check` validates repo-local generated artifacts such as `AGENTS.md`, `.ctxhelm/ctxhelm.toml`, `.cursor/rules/ctxhelm.mdc`, `.claude/commands/ctxhelm-bugfix.md`, and adapter snippets when requested. Use `--all` to validate every supported adapter artifact. With `--claude`, or through `--all`, it also checks project `.mcp.json` for a `mcpServers.ctxhelm` entry that uses an absolute ctxhelm binary path and `["serve-mcp"]` args.
 
 If `.mcp.json` is missing, `setup-check --claude` reports a warning rather than
 failing because manual `ctxhelm init --claude` users may still be inspecting the
@@ -164,7 +164,7 @@ ctxhelm to write or merge the project-local MCP entry. Existing malformed,
 symlinked, or relative-command `.mcp.json` entries fail validation because they
 can prevent secure agent startup.
 
-Use `ctxhelm setup-check --repo "$REPO" --claude --format json` when CI or an
+Use `ctxhelm setup-check --repo "$REPO" --all --format json` when CI or an
 agent wrapper needs the same source-free readiness report without parsing human
 text. JSON output still exits nonzero when any setup item fails.
 

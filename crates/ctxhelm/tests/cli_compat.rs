@@ -860,6 +860,49 @@ fn setup_check_json_reports_source_free_project_mcp_readiness() {
 }
 
 #[test]
+fn setup_check_all_json_reports_all_supported_agent_artifacts() {
+    let fixture = fixture_repo();
+
+    Command::cargo_bin("ctxhelm")
+        .unwrap()
+        .env(CTXHELM_HOME_ENV, &fixture.home)
+        .args(["setup", "repo", "--repo"])
+        .arg(&fixture.repo)
+        .assert()
+        .success();
+
+    let value = json_stdout(
+        Command::cargo_bin("ctxhelm")
+            .unwrap()
+            .env(CTXHELM_HOME_ENV, &fixture.home)
+            .args(["setup-check", "--repo"])
+            .arg(&fixture.repo)
+            .args(["--all", "--format", "json"])
+            .assert(),
+    );
+
+    assert_eq!(value["passed"], true);
+    let items = value["items"].as_array().unwrap();
+    for name in [
+        "AGENTS.md",
+        ".ctxhelm/ctxhelm.toml",
+        ".cursor/rules/ctxhelm.mdc",
+        ".claude/commands/ctxhelm-bugfix.md",
+        ".ctxhelm/adapters/claude-mcp.json",
+        ".ctxhelm/adapters/opencode.jsonc.snippet",
+        ".mcp.json",
+    ] {
+        assert!(
+            items
+                .iter()
+                .any(|item| item["name"] == name && item["status"] == "pass"),
+            "missing passing setup-check item for {name}: {items:?}"
+        );
+    }
+    assert_no_source_or_prompt_text(&value);
+}
+
+#[test]
 fn setup_check_json_failure_preserves_parseable_report_and_exit_status() {
     let fixture = fixture_repo();
 
@@ -922,6 +965,7 @@ fn setup_check_help_documents_read_only_validation() {
         .success()
         .stdout(contains("read-only"))
         .stdout(contains("generated setup artifacts"))
+        .stdout(contains("--all"))
         .stdout(contains("--cursor"))
         .stdout(contains("--claude"))
         .stdout(contains("--opencode"))
